@@ -1,5 +1,5 @@
 from galaxy.web.base.controller import *
-from galaxy.web.framework.helpers.grids import *
+from galaxy.web.framework.helpers import time_ago, iff, grids
 import webhelpers
 from datetime import datetime
 from cgi import escape
@@ -9,42 +9,33 @@ log = logging.getLogger( __name__ )
 # States for passing messages
 SUCCESS, INFO, WARNING, ERROR = "done", "info", "warning", "error"
 
-def time_ago( x ):
-    return webhelpers.date.distance_of_time_in_words( x, datetime.utcnow() )
-
-def iff( a, b, c ):
-    if a:
-        return b
-    else:
-        return c
-
-class HistoryListGrid( Grid ):
+class HistoryListGrid( grids.Grid ):
     
     title = "Stored histories"
     model_class = model.History
     default_sort_key = "-create_time"
     columns = [
-        GridColumn( "Name", key="name",
+        grids.GridColumn( "Name", key="name",
                     link=( lambda item: iff( item.deleted, None, dict( operation="switch", id=item.id ) ) ),
                     attach_popup=True ),
-        GridColumn( "Datasets (by state)", method='_build_datasets_by_state', ncells=4 ),
-        GridColumn( "Status", method='_build_status' ),
-        GridColumn( "Age", key="create_time", format=time_ago ),
-        GridColumn( "Last update", key="update_time", format=time_ago ),
+        grids.GridColumn( "Datasets (by state)", method='_build_datasets_by_state', ncells=4 ),
+        grids.GridColumn( "Status", method='_build_status' ),
+        grids.GridColumn( "Age", key="create_time", format=time_ago ),
+        grids.GridColumn( "Last update", key="update_time", format=time_ago ),
         # Valid for filtering but invisible
-        GridColumn( "Deleted", key="deleted", visible=False )
+        grids.GridColumn( "Deleted", key="deleted", visible=False )
     ]
     operations = [
-        GridOperation( "Switch", allow_multiple=False, condition=( lambda item: not item.deleted ) ),
-        GridOperation( "Share", condition=( lambda item: not item.deleted )  ),
-        GridOperation( "Rename", condition=( lambda item: not item.deleted )  ),
-        GridOperation( "Delete", condition=( lambda item: not item.deleted ) ),
-        GridOperation( "Undelete", condition=( lambda item: item.deleted ) )
+        grids.GridOperation( "Switch", allow_multiple=False, condition=( lambda item: not item.deleted ) ),
+        grids.GridOperation( "Share", condition=( lambda item: not item.deleted )  ),
+        grids.GridOperation( "Rename", condition=( lambda item: not item.deleted )  ),
+        grids.GridOperation( "Delete", condition=( lambda item: not item.deleted ) ),
+        grids.GridOperation( "Undelete", condition=( lambda item: item.deleted ) )
     ]
     standard_filters = [
-        GridColumnFilter( "Active", args=dict( deleted=False ) ),
-        GridColumnFilter( "Deleted", args=dict( deleted=True ) ),
-        GridColumnFilter( "All", args=dict( deleted='All' ) )
+        grids.GridColumnFilter( "Active", args=dict( deleted=False ) ),
+        grids.GridColumnFilter( "Deleted", args=dict( deleted=True ) ),
+        grids.GridColumnFilter( "All", args=dict( deleted='All' ) )
     ]
     default_filter = dict( deleted=False )
     
@@ -53,41 +44,7 @@ class HistoryListGrid( Grid ):
     
     def apply_default_filter( self, trans, query ):
         return query.filter_by( user=trans.user, purged=False )
-            
-    def handle_operation( self, trans, operation, history_ids ):
-        # Display no message by default
-        status, message = None, None
-        refresh_history = False
-        # Load the histories and ensure they all belong to the current user
-        histories = []
-        for hid in history_ids:            
-            history = model.History.get( hid )
-            if history:
-                # Ensure history is owned by current user
-                if history.user_id != None and trans.user:
-                    assert trans.user.id == history.user_id, "History does not belong to current user"
-                histories.append( history )
-            else:
-                log.warn( "Invalid history id '%r' passed to list", hid )
-        operation = operation.lower()
-        if operation == "switch":
-            status, message = self._list_switch( trans, histories )
-            # Current history changed, refresh history frame
-            trans.template_context['refresh_frames'] = ['history']
-        elif operation == "share":
-            ## Caught above for now
-            pass
-        elif operation == "rename":
-            ## Caught above for now
-            pass
-        elif operation == "delete":
-            status, message = self._list_delete( trans, histories )
-        elif operation == "undelete":
-            status, message = self._list_undelete( trans, histories )
-        trans.sa_session.flush()
-        # Render the list view
-        return status, message
-    
+                
     def _build_datasets_by_state( self, trans, history ):
         rval = []
         for state in ( 'ok', 'running', 'queued', 'error' ):
@@ -102,6 +59,64 @@ class HistoryListGrid( Grid ):
         if history.deleted:
             return "deleted"
         return ""
+
+class HistoryController( BaseController ):
+    
+    @web.expose
+    def index( self, trans ):
+        return ""
+    
+    @web.expose
+    def list_as_xml( self, trans ):
+        """
+        XML history list for functional tests
+        """
+        return trans.fill_template( "/history/list_as_xml.mako" )
+    
+    list_grid = HistoryListGrid()
+    
+    @web.expose
+    @web.require_login( "work with multiple histories" )
+    def list( self, trans, **kwargs ):
+        """
+        List all available histories
+        """
+        status = message = None
+        if 'operation' in kwargs:
+            operation = kwargs['operation'].lower()
+            if operation == "share":
+                return self.share( trans, **kwargs )
+            elif operation == "rename":
+                return self.rename( trans, **kwargs )
+            # Display no message by default
+            status, message = None, None
+            refresh_history = False
+            # Load the histories and ensure they all belong to the current user
+            history_ids = kwargs.get( 'id', [] )
+            if type( history_ids ) is not list:
+                history_ids = [ history_ids ]
+            histories = []
+            for hid in history_ids:            
+                history = model.History.get( hid )
+                if history:
+                    # Ensure history is owned by current user
+                    if history.user_id != None and trans.user:
+                        assert trans.user.id == history.user_id, "History does not belong to current user"
+                    histories.append( history )
+                else:
+                    log.warn( "Invalid history id '%r' passed to list", hid )
+            if histories:            
+                if operation == "switch":
+                    status, message = self._list_switch( trans, histories )
+                    # Current history changed, refresh history frame
+                    trans.template_context['refresh_frames'] = ['history']
+                elif operation == "delete":
+                    status, message = self._list_delete( trans, histories )
+                elif operation == "undelete":
+                    status, message = self._list_undelete( trans, histories )
+                trans.sa_session.flush()
+        # Render the list view
+        return self.list_grid( trans, status=status, message=message, **kwargs )
     
     def _list_delete( self, trans, histories ):
         """Delete histories"""
@@ -164,37 +179,6 @@ class HistoryListGrid( Grid ):
         trans.log_event( "History switched to id: %s, name: '%s'" % (str(new_history.id), new_history.name ) )
         # No message
         return None, None
-
-class HistoryController( BaseController ):
-    
-    @web.expose
-    def index( self, trans ):
-        return ""
-    
-    @web.expose
-    def list_as_xml( self, trans ):
-        """
-        XML history list for functional tests
-        """
-        return trans.fill_template( "/history/list_as_xml.mako" )
-            
-    _list_grid = HistoryListGrid()
-    
-    @web.expose
-    @web.require_login( "work with multiple histories" )
-    def list( self, trans, *args, **kwargs ):
-        """
-        List all available histories
-        """
-        # TODO: these two operations need to be updates still
-        operation = kwargs.get( 'operation', None )
-        if operation:
-            operation = operation.lower()
-        if operation == "share":
-            return self.share( trans, **kwargs )
-        elif operation == "rename":
-            return self.rename( trans, **kwargs )
-        return self._list_grid( trans, *args, **kwargs )
     
     @web.expose
     def delete_current( self, trans ):

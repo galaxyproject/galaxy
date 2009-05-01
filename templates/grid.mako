@@ -85,9 +85,7 @@
     %endfor
 </div>
 
-<form name="history_actions" action="${h.url_for()}" method="post" >
-
-    <input type="hidden" name="sort" value="${sort_key}">
+<form name="history_actions" action="${url()}" method="post" >
     
     <table class="grid">
         <thead>

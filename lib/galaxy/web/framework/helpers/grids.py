@@ -16,18 +16,13 @@ class Grid( object ):
     standard_filters = []
     default_filter = None
     default_sort_key = None
+    pass_through_operations = {}
     def __init__( self ):
         pass
     def __call__( self, trans, **kwargs ):
-        # Session
+        status = kwargs.get( 'status', None )
+        message = kwargs.get( 'message', None )
         session = trans.sa_session
-        # Process any actions
-        status = message = None
-        ids = self.get_ids( **kwargs )
-        operation = kwargs.get( 'operation', None )
-        if operation:
-            operation = operation.lower()
-            status, message = self.handle_operation( trans, operation, ids )
         # Build initial query
         query = self.build_initial_query( session )
         query = self.apply_default_filter( trans, query )
@@ -83,7 +78,7 @@ class Grid( object ):
                                     encoded_sort_key=encoded_sort_key,
                                     sort_order=sort_order,
                                     current_item=current_item,
-                                    ids = ids,
+                                    ids = kwargs.get( 'id', [] ),
                                     url = url,
                                     message_type = status,
                                     message = message )
