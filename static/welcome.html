@@ -8,39 +8,22 @@
 <style type="text/css">
       .quickie {
 	    text-align: center;
-	    min-height: 100px;
 	    background: black;
+	    margin: 10px;
       }
       .current-quickie {
 	    width: 100%;
 	    background: black;
       }
-      .quickie .head {
-	    font-size: 200%;
-	    color: white;
-	    padding: 20px 20px;
-      }
-      .quickie .sub {
-	    font-size: 150%;
-	    color: orange;
-	    padding: 20px 20px;
-      }
       .previous {
 	    width: 100%;
 	    overflow: auto;
+	    border: solid #ccc 1px;
       }
       .previous .quickie {
+	    padding-top: 10px;
+	    min-height: 90px;
 	    min-width: 150px;
-      }
-      .previous .quickie .head {
-      	    font-size: 120%;
-	    padding: 10px 10px;
-	    text-decoration: none;
-      }
-      .previous .quickie .sub {
-	    font-size: 100%;
-	    padding: 10px 10px;
-	    text-decoration: none;
       }
       #screencasts {
 	    max-width: 50em;
@@ -64,7 +47,6 @@
 <div id="screencasts">
 
 <h2>Introducing Galactic Quickies</h2>
-<hr>
 <p>
     Galactic quickies are <i>super-short</i> screencasts that are <i>always</i> under 5 minutes. We thought it may be a good way to spread the word about Galaxy's functionality while keeping the &quot;annoyance factor&quot; to the minimum. The quickies will be updated weekly.
 </p>
@@ -84,35 +66,32 @@
 </div>
 
 <h3>Previous Quickies</h3>
-<hr>
 
-<div class="previous">
+<div class="previous" id="previous">
         <table border="0" cellpadding="0" cellspacing="0" width="100%">
             <tr>
-                <td width="50%" style="border-right: solid white 10px; border-bottom: solid white 10px">
+                <td>
                     <a href="javascript:parent.show_in_overlay({url:'http://screencast.g2.bx.psu.edu/galaxy/quickie1_TabSeq/flow.html',width:640,height:500,scroll:'no'})">
 	                   <div class="quickie">
                         <img src="images/qk/quickie1_small.png" border="0">
 	                   </div>
                     </a>
                 </td>
-                <td width="50%" style="border-left: solid white 10px; border-bottom: solid white 10px">
+                <td>
                     <a href="javascript:parent.show_in_overlay({url:'http://screencast.g2.bx.psu.edu/galaxy/quickie2_Grouping/flow.html',width:640,height:500,scroll:'no'})">
 	                   <div class="quickie">
                         <img src="images/qk/quickie2_small.png" border="0">
 	                   </div>
                     </a>
                 </td>
-            </tr>
-            <tr>
-                <td width="50%" style="border-right: solid white 10px; border-top: solid white 10px" >
+                <td>
                     <a href="javascript:parent.show_in_overlay({url:'http://screencast.g2.bx.psu.edu/galaxy/quickie3_Intervals/flow.html',width:640,height:500,scroll:'no'})">
 	                   <div class="quickie">
                         <img src="images/qk/quickie3_small.png" border="0">
 	                   </div>
                     </a>
                 </td>
-                <td width="50%" style="border-left: solid white 10px; border-top: solid white 10px" >
+                <td>
                     <a href="javascript:parent.show_in_overlay({url:'http://screencast.g2.bx.psu.edu/galaxy/quickie4_whatsNew/flow.html',width:640,height:500,scroll:'no'})">
 	                   <div class="quickie">
                         <img src="images/qk/quickie4_small.png" border="0">
@@ -122,6 +101,11 @@
             </tr>
       </table>
 </div>
+
+<script type="text/javascript">
+      // Scroll to last quickie in box
+      document.getElementById("previous").scrollLeft = 100000000;
+</script>
 
 <br/>
 <br/>
