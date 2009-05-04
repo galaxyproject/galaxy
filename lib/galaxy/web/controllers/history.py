@@ -213,6 +213,57 @@ class HistoryController( BaseController ):
     ## These have been moved from 'root' but not cleaned up
     
     @web.expose
+    def imp( self, trans, id=None, confirm=False, **kwd ):
+        msg = ""
+        user = trans.get_user()
+        user_history = trans.get_history()
+        if not id:
+            return trans.show_error_message( "You must specify a history you want to import.")
+        id = trans.security.decode_id( id )
+        import_history = trans.app.model.History.get( id )
+        if not import_history:
+            return trans.show_error_message( "The specified history does not exist.")
+        if user:
+            if import_history.user_id == user.id:
+                return trans.show_error_message( "You cannot import your own history.")
+            new_history = import_history.copy( target_user=trans.user )
+            new_history.name = "imported: "+new_history.name
+            new_history.user_id = user.id
+            galaxy_session = trans.get_galaxy_session()
+            try:
+                association = trans.app.model.GalaxySessionToHistoryAssociation.filter_by( session_id=galaxy_session.id, history_id=new_history.id ).first()
+            except:
+                association = None
+            new_history.add_galaxy_session( galaxy_session, association=association )
+            new_history.flush()
+            if not user_history.datasets:
+                trans.set_history( new_history )
+            trans.log_event( "History imported, id: %s, name: '%s': " % (str(new_history.id) , new_history.name ) )
+            return trans.show_ok_message( """
+                History "%s" has been imported. Click <a href="%s">here</a>
+                to begin.""" % ( new_history.name, web.url_for( '/' ) ) )
+        elif not user_history.datasets or confirm:
+            new_history = import_history.copy()
+            new_history.name = "imported: "+new_history.name
+            new_history.user_id = None
+            galaxy_session = trans.get_galaxy_session()
+            try:
+                association = trans.app.model.GalaxySessionToHistoryAssociation.filter_by( session_id=galaxy_session.id, history_id=new_history.id ).first()
+            except:
+                association = None
+            new_history.add_galaxy_session( galaxy_session, association=association )
+            new_history.flush()
+            trans.set_history( new_history )
+            trans.log_event( "History imported, id: %s, name: '%s': " % (str(new_history.id) , new_history.name ) )
+            return trans.show_ok_message( """
+                History "%s" has been imported. Click <a href="%s">here</a>
+                to begin.""" % ( new_history.name, web.url_for( '/' ) ) )
+        return trans.show_warn_message( """
+            Warning! If you import this history, you will lose your current
+            history. Click <a href="%s">here</a> to confirm.
+            """ % web.url_for( id=id, confirm=True ) )
+    
+    @web.expose
     @web.require_login( "share histories with other users" )
     def share( self, trans, id=None, email="", **kwd ):
         send_to_err = ""

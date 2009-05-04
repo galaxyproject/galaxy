@@ -18,7 +18,7 @@
                                 ${len(history.datasets)}
                             %endif
                         </td>
-                        <td align="center"><a href="${h.url_for( action='history_import', id=history.id )}">${_('copy link to share')}</a></td>
+                        <td align="center"><a href="${h.url_for( controller='history', action='imp', id=trans.security.encode_id(history.id) )}">${_('copy link to share')}</a></td>
                     </tr>
                 %endfor
                 <tr><td>${_('Email of User to share with:')}</td><td><input type="text" name="email" value="${email}" size="40"></td></tr>
