@@ -63,28 +63,28 @@
             <div style="clear: both"></div>
         </div>
         <div class="form-row">
-            <label>Uploaded by:</lable>
+            <label>Uploaded by:</label>
             <div style="float: left; width: 250px; margin-right: 10px;">
                 ${uploaded_by}
             </div>
             <div style="clear: both"></div>
         </div>
         <div class="form-row">
-            <label>Date uploaded:</lable>
+            <label>Date uploaded:</label>
             <div style="float: left; width: 250px; margin-right: 10px;">
                 ${ldda.create_time.strftime( "%Y-%m-%d" )}
             </div>
             <div style="clear: both"></div>
         </div>
         <div class="form-row">
-            <label>Build:</lable>
+            <label>Build:</label>
             <div style="float: left; width: 250px; margin-right: 10px;">
                 ${ldda.dbkey}
             </div>
             <div style="clear: both"></div>
         </div>
         <div class="form-row">
-            <label>Miscellaneous information:</lable>
+            <label>Miscellaneous information:</label>
             <div style="float: left; width: 250px; margin-right: 10px;">
                 ${ldda.info}
             </div>
@@ -96,7 +96,7 @@
         <div class="form-row">
            <div id="info${ldda.id}" class="historyItemBody">
                 %if ldda.peek != "no peek":
-                    <label>Peek:</lable>
+                    <label>Peek:</label>
                     <div><pre id="peek${ldda.id}" class="peek">${ldda.display_peek()}</pre></div>
                 %endif
                 ## Recurse for child datasets
