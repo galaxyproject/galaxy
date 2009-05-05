@@ -2,6 +2,7 @@ from galaxy.web.base.controller import *
 from galaxy.model.orm import *
 from galaxy.datatypes import sniff
 from galaxy import util
+from galaxy.util.streamball import StreamBall
 import logging, tempfile, zipfile, tarfile, os, sys
 
 if sys.version_info[:2] < ( 2, 6 ):
@@ -10,6 +11,40 @@ if sys.version_info[:2] < ( 2, 5 ):
     zipfile.LargeZipFile = zipfile.error
 
 log = logging.getLogger( __name__ )
+
+# Test for available compression types
+tmpd = tempfile.mkdtemp()
+comptypes = []
+for comptype in ( 'gz', 'bz2' ):
+    tmpf = os.path.join( tmpd, 'compression_test.tar.' + comptype )
+    try:
+        archive = tarfile.open( tmpf, 'w:' + comptype )
+        archive.close()
+        comptypes.append( comptype )
+    except tarfile.CompressionError:
+        log.exception( "Compression error when testing %s compression.  This option will be disabled for library downloads." % comptype )
+    try:
+        os.unlink( tmpf )
+    except OSError:
+        pass
+ziptype = '32'
+tmpf = os.path.join( tmpd, 'compression_test.zip' )
+try:
+    archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED, True )
+    archive.close()
+    comptypes.append( 'zip' )
+    ziptype = '64'
+except RuntimeError:
+    log.exception( "Compression error when testing zip compression. This option will be disabled for library downloads." )
+except (TypeError, zipfile.LargeZipFile):
+    # ZIP64 is only in Python2.5+.  Remove TypeError when 2.4 support is dropped
+    log.warning( 'Max zip file size is 2GB, ZIP64 not supported' )
+    comptypes.append( 'zip' )
+try:
+    os.unlink( tmpf )
+except OSError:
+    pass
+os.rmdir( tmpd )
 
 class Library( BaseController ):
     @web.expose
@@ -66,6 +101,7 @@ class Library( BaseController ):
                                     library=trans.app.model.Library.get( id ),
                                     created_ldda_ids=created_ldda_ids,
                                     default_action=params.get( 'default_action', None ),
+                                    comptypes=comptypes,
                                     msg=msg,
                                     messagetype=messagetype )
     @web.expose
@@ -195,49 +231,21 @@ class Library( BaseController ):
                                                        msg=util.sanitize_text( msg ),
                                                        messagetype=messagetype ) )
         else:
-            # Can't use mkstemp - the file must not exist first
             try:
-                tmpd = tempfile.mkdtemp()
-                tmpf = os.path.join( tmpd, 'library_download.' + params.do_action )
                 if params.do_action == 'zip':
-                    try:
+                    # Can't use mkstemp - the file must not exist first
+                    tmpd = tempfile.mkdtemp()
+                    tmpf = os.path.join( tmpd, 'library_download.' + params.do_action )
+                    if ziptype == '64':
                         archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED, True )
-                    except RuntimeError:
-                        log.exception( "Compression error when opening zipfile for library download" )
-                        msg = "ZIP compression is not available in this Python, please notify an administrator"
-                        return trans.response.send_redirect( web.url_for( controller='library',
-                                                                          action='browse_library',
-                                                                          id=library_id,
-                                                                          msg=util.sanitize_text( msg ),
-                                                                          messagetype='error' ) )
-                    except (TypeError, zipfile.LargeZipFile):
-                        # ZIP64 is only in Python2.5+.  Remove TypeError when 2.4 support is dropped
-                        log.warning( 'Max zip file size is 2GB, ZIP64 not supported' )
+                    else:
                         archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED )
                     archive.add = lambda x, y: archive.write( x, y.encode('CP437') )
                 elif params.do_action == 'tgz':
-                    try:
-                        archive = tarfile.open( tmpf, 'w:gz' )
-                    except tarfile.CompressionError:
-                        log.exception( "Compression error when opening tarfile for library download" )
-                        msg = "gzip compression is not available in this Python, please notify an administrator"
-                        return trans.response.send_redirect( web.url_for( controller='library',
-                                                                          action='browse_library',
-                                                                          id=library_id,
-                                                                          msg=util.sanitize_text( msg ),
-                                                                          messagetype='error' ) )
+                    archive = util.streamball.StreamBall( 'w|gz' )
                 elif params.do_action == 'tbz':
-                    try:
-                        archive = tarfile.open( tmpf, 'w:bz2' )
-                    except tarfile.CompressionError:
-                        log.exception( "Compression error when opening tarfile for library download" )
-                        msg = "bzip2 compression is not available in this Python, please notify an administrator"
-                        return trans.response.send_redirect( web.url_for( controller='library',
-                                                                          action='browse_library',
-                                                                          id=library_id,
-                                                                          msg=util.sanitize_text( msg ),
-                                                                          messagetype='error' ) )
-            except (OSError, zipfile.BadZipFile, tarfile.ReadError):
+                    archive = util.streamball.StreamBall( 'w|bz2' )
+            except (OSError, zipfile.BadZipFile):
                 log.exception( "Unable to create archive for download" )
                 msg = "Unable to create archive for download, please report this error"
                 return trans.response.send_redirect( web.url_for( controller='library',
@@ -255,9 +263,11 @@ class Library( BaseController ):
                 path = ""
                 parent_folder = ldda.library_dataset.folder
                 while parent_folder is not None:
-                    path = os.path.join( parent_folder.name, path )
+                    # Exclude the now-hidden "root folder"
                     if parent_folder.parent is None:
                         path = os.path.join( parent_folder.library_root[0].name, path )
+                        break
+                    path = os.path.join( parent_folder.name, path )
                     parent_folder = parent_folder.parent
                 path += ldda.name
                 while path in seen:
@@ -273,22 +283,28 @@ class Library( BaseController ):
                                                                       id=library_id,
                                                                       msg=util.sanitize_text( msg ),
                                                                       messagetype='error' ) )
-            archive.close()
-            tmpfh = open( tmpf )
-            # clean up now
-            try:
-                os.unlink( tmpf )
-                os.rmdir( tmpd )
-            except OSError:
-                log.exception( "Unable to remove temporary library download archive and directory" )
-                msg = "Unable to create archive for download, please report this error"
-                return trans.response.send_redirect( web.url_for( controller='library',
-                                                                  action='browse_library',
-                                                                  id=library_id,
-                                                                  msg=util.sanitize_text( msg ),
-                                                                  messagetype='error' ) )
-            trans.response.headers[ "Content-Disposition" ] = "attachment; filename=GalaxyLibraryFiles.%s" % params.do_action
-            return tmpfh
+            if params.do_action == 'zip':
+                archive.close()
+                tmpfh = open( tmpf )
+                # clean up now
+                try:
+                    os.unlink( tmpf )
+                    os.rmdir( tmpd )
+                except OSError:
+                    log.exception( "Unable to remove temporary library download archive and directory" )
+                    msg = "Unable to create archive for download, please report this error"
+                    return trans.response.send_redirect( web.url_for( controller='library',
+                                                                      action='browse_library',
+                                                                      id=library_id,
+                                                                      msg=util.sanitize_text( msg ),
+                                                                      messagetype='error' ) )
+                trans.response.set_content_type( "application/x-zip-compressed" )
+                trans.response.headers[ "Content-Disposition" ] = "attachment; filename=GalaxyLibraryFiles.%s" % params.do_action
+                return tmpfh
+            else:
+                trans.response.set_content_type( "application/x-tar" )
+                trans.response.headers[ "Content-Disposition" ] = "attachment; filename=GalaxyLibraryFiles.%s" % params.do_action
+                return archive.stream()
     @web.expose
     def download_dataset_from_folder(self, trans, id, library_id=None, **kwd):
         """Catches the dataset id and displays file contents as directed"""

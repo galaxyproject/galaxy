@@ -268,13 +268,38 @@ def name_sorted( l ):
             # This condition should not contain an else clause because the user is not authorized
             # to manage dataset permissions unless the default action is 'manage_permissions'
         %endif
-        %if default_action == 'download':
-            <option value="zip" selected>Download selected datasets as a .zip file</option>
-        %else:
+        %if 'bz2' in comptypes:
+            <option value="tbz"
+            %if default_action == 'download':
+                selected
+            %endif>
+            >Download selected datasets as a .tar.bz2 file</option>
+        %endif
+        %if 'gz' in comptypes:
+            <option value="tgz">Download selected datasets as a .tar.gz file</option>
+        %endif
+        %if 'zip' in comptypes:
             <option value="zip">Download selected datasets as a .zip file</option>
         %endif
-        <option value="tgz">Download selected datasets as a .tar.gz file</option>
-        <option value="tbz">Download selected datasets as a .tar.bz2 file</option>
     </select>
     <input type="submit" class="primary-button" name="action_on_datasets_button" id="action_on_datasets_button" value="Go"/>
 </form>
+
+%if len( comptypes ) > 1:
+    <div>
+        <p class="infomark">
+            TIP: Multiple compression options are available for downloading library datasets:
+        </p>
+        <ul style="padding-left: 1em; list-style-type: disc;">
+            %if 'bz2' in comptypes:
+                <li>bzip2: Compression takes the most time but is better for slower network connections (that transfer slower than the rate of compression) since the resulting file size is smallest.</li>
+            %endif
+            %if 'gz' in comptypes:
+                <li>gzip: Compression is faster and yields a larger file, making it more suitable for fast network connections.</li>
+            %endif
+            %if 'zip' in comptypes:
+                <li>ZIP: Not recommended but is provided as an option for those on Windows without WinZip (since WinZip can read .bz2 and .gz files).</li>
+            %endif
+        </ul>
+    </div>
+%endif
