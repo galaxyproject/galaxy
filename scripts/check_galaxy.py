@@ -141,15 +141,8 @@ class Browser:
             print "Remaining datasets ids:", " ".join( p.dids )
             raise Exception, "History still contains datasets after attempting to delete them"
         if new_history:
-            self.get("/root/history_options")
-            p = hidParser()
-            p.feed(tc.browser.get_html())
-            if p.hid is None:
-                print "Unable to determine hid to delete old history"
-                sys.exit(1)
-            else:
-                self.get("/root/history_delete?id=%s" % p.hid)
-                tc.save_cookies(self.cookie_jar)
+            self.get("/history/delete_current")
+            tc.save_cookies(self.cookie_jar)
 
     def check_redir(self, url):
         try:
@@ -333,16 +326,6 @@ class didParser(htmllib.HTMLParser):
             if i[0] == "id" and i[1].startswith("historyItemContainer-"):
                 self.dids.append( i[1].rsplit("historyItemContainer-", 1)[1] )
                 dprint("got a dataset id: %s" % self.dids[-1])
-
-class hidParser(htmllib.HTMLParser):
-    def __init__(self):
-        htmllib.HTMLParser.__init__(self, formatter.NullFormatter())
-        self.hid = None
-    def start_a(self, attrs):
-        for i in attrs:
-            if i[0] == "href" and i[1].startswith("/root/history_delete"):
-                self.hid = i[1].rsplit("=", 1)[1]
-                dprint("got a history id: %s" % self.hid)
 
 class loggedinParser(htmllib.HTMLParser):
     def __init__(self):
