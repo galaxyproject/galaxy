@@ -219,6 +219,8 @@ class RootController( BaseController ):
         if id is not None and data.history.user is not None and data.history.user != trans.user:
             return trans.show_error_message( "This instance of a dataset (%s) in a history does not belong to you." % ( data.id ) )
         if trans.app.security_agent.allow_action( trans.user, data.permitted_actions.DATASET_ACCESS, dataset=data ):
+            if data.state == trans.model.Dataset.states.UPLOAD:
+                return trans.show_error_message( "Please wait until this dataset finishes uploading before attempting to edit its metadata." )
             params = util.Params( kwd, safe=False )
             if params.change:
                 # The user clicked the Save button on the 'Change data type' form

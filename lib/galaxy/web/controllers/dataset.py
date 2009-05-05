@@ -103,6 +103,8 @@ class DatasetInterface( BaseController ):
         if not data:
             raise paste.httpexceptions.HTTPRequestRangeNotSatisfiable( "Invalid reference dataset id: %s." % str( dataset_id ) )
         if trans.app.security_agent.allow_action( trans.user, data.permitted_actions.DATASET_ACCESS, dataset = data ):
+            if data.state == trans.model.Dataset.states.UPLOAD:
+                return trans.show_error_message( "Please wait until this dataset finishes uploading before attempting to view it." )
             if filename is None or filename.lower() == "index":
                 mime = trans.app.datatypes_registry.get_mimetype_by_extension( data.extension.lower() )
                 trans.response.set_content_type(mime)
