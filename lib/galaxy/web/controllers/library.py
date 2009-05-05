@@ -587,8 +587,6 @@ class Library( BaseController ):
                                                 msg=msg,
                                                 messagetype=messagetype )
                 elif params.get( 'delete', False ):
-                    # TODO: need to revamp the way we remove datasets from disk.
-                    # The user selected the "Remove this dataset from the library" pop-up menu option
                     if trans.app.security_agent.allow_action( trans.user,
                                                               trans.app.security_agent.permitted_actions.LIBRARY_MODIFY,
                                                               library_item=folder ):

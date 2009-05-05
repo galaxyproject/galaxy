@@ -111,7 +111,10 @@
                     <div>
                         There are ${len( ldda.visible_children )} secondary datasets.
                         %for idx, child in enumerate( ldda.visible_children ):
-                            ${ render_dataset( child, selected, library.deleted ) }
+                            ## TODO: do we need to clarify if the child is deleted?
+                            %if not child.purged:
+                                ${ render_dataset( child, selected, library ) }
+                            %endif
                         %endfor
                     </div>
                 %endif

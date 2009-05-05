@@ -678,6 +678,7 @@ class Admin( BaseController ):
                                     libraries=trans.app.model.Library.filter( trans.app.model.Library.table.c.deleted==False ) \
                                                                      .order_by( trans.app.model.Library.name ).all(),
                                     deleted=False,
+                                    show_deleted=False,
                                     msg=msg,
                                     messagetype=messagetype )
     @web.expose
@@ -687,6 +688,8 @@ class Admin( BaseController ):
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
         id = params.get( 'id', None )
+        deleted = util.string_as_bool( params.get( 'deleted', False ) )
+        show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
         if not id:
             msg = "You must specify a library id."
             return trans.response.send_redirect( web.url_for( controller='admin',
@@ -701,9 +704,9 @@ class Admin( BaseController ):
                                                               msg=util.sanitize_text( msg ),
                                                               messagetype='error' ) )
         created_ldda_ids = params.get( 'created_ldda_ids', '' )
-        show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
         return trans.fill_template( '/admin/library/browse_library.mako', 
                                     library=trans.app.model.Library.get( id ),
+                                    deleted=deleted,
                                     created_ldda_ids=created_ldda_ids,
                                     msg=msg,
                                     messagetype=messagetype,
@@ -842,7 +845,7 @@ class Admin( BaseController ):
                                     deleted=True,
                                     msg=msg,
                                     messagetype=messagetype,
-                                    show_deleted = True )
+                                    show_deleted=True )
     @web.expose
     @web.require_admin
     def undelete_library( self, trans, **kwd ):
@@ -1088,7 +1091,9 @@ class Admin( BaseController ):
     def library_dataset_dataset_association( self, trans, library_id, folder_id, id=None, **kwd ):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
-        messagetype = params.get( 'messagetype', 'done' ) 
+        messagetype = params.get( 'messagetype', 'done' )
+        deleted = util.string_as_bool( params.get( 'deleted', False ) )
+        show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
         dbkey = params.get( 'dbkey', None )
         if isinstance( dbkey, list ):
             last_used_build = dbkey[0]
@@ -1250,6 +1255,8 @@ class Admin( BaseController ):
                 return trans.fill_template( '/admin/library/ldda_info.mako',
                                             ldda=ldda,
                                             library_id=library_id,
+                                            deleted=deleted,
+                                            show_deleted=show_deleted,
                                             msg=msg,
                                             messagetype=messagetype )
             elif action == 'edit_info':
@@ -1322,8 +1329,6 @@ class Admin( BaseController ):
                                                 msg=msg,
                                                 messagetype=messagetype )
                 elif params.get( 'delete', False ):
-                    # TODO: need to revamp the way we remove datasets from disk.
-                    # The user selected the "Remove this dataset from the library" pop-up menu option
                     ldda.deleted = True
                     ldda.flush()
                     msg = 'Dataset %s has been removed from this library' % ldda.name
@@ -1955,69 +1960,56 @@ class Admin( BaseController ):
                                                            id=library_id,
                                                        msg=util.sanitize_text( msg ),
                                                        messagetype=messagetype ) )
-
     @web.expose
     @web.require_admin
-    def delete_library_item( self, trans, library_id = None, library_item_id = None, library_item_type = None ):
-        #this action will handle deleting all types of library items in library browsing mode
-        library_item_types = { 'library': trans.app.model.Library, 'folder': trans.app.model.LibraryFolder, 'dataset': trans.app.model.LibraryDataset, }
+    def delete_library_item( self, trans, library_id, library_item_id, library_item_type ):
+        # This action will handle deleting all types of library items.  State is saved for libraries and
+        # folders ( i.e., if undeleted, the state of contents of the library or folder will remain, so previously
+        # deleted / purged contents will have the same state ).  When a library or folder has been deleted for
+        # the amount of time defined in the cleanup_datasets.py script, the library or folder and all of its
+        # contents will be purged.  The association between this method and the cleanup_datasets.py script
+        # enables clean maintenance of libraries and library dataset disk files.  This is also why the following
+        # 3 objects, and not any of the associations ( the cleanup_datasets.py scipot handles everything else ).
+        library_item_types = { 'library': trans.app.model.Library,
+                               'folder': trans.app.model.LibraryFolder,
+                               'library_dataset': trans.app.model.LibraryDataset }
         if library_item_type not in library_item_types:
-            raise ValueError( 'Bad library_item_type specified: %s' % library_item_types )
-        if library_item_id is None:
-            raise ValueError( 'library_item_id not specified' )
-        library_item = library_item_types[ library_item_type ].get( int( library_item_id ) )
-        library_item.deleted = True
-        library_item.flush()
-        #need to str because unicode isn't accepted...
-        msg = str( "%s '%s' has been marked deleted" % ( library_item_type, library_item.name ) )
-        messagetype = str( "done" )
-        if library_item_type == 'library' or library_id is None:
-            return self.browse_libraries( trans, msg = msg, messagetype = messagetype )
+            msg = 'Bad library_item_type specified: %s' % str( library_item_type )
+            messagetype = 'error'
         else:
-            return self.browse_library( trans, id = library_id , msg = msg, messagetype = messagetype )
-    
+            library_item = library_item_types[ library_item_type ].get( int( library_item_id ) )
+            library_item.deleted = True
+            library_item.flush()
+            msg = util.sanitize_text( "%s '%s' has been marked deleted" % ( library_item_type, library_item.name ) )
+            messagetype = 'done'
+        if library_item_type == 'library':
+            return self.browse_libraries( trans, msg=msg, messagetype=messagetype )
+        else:
+            return self.browse_library( trans, id=library_id , msg=msg, messagetype=messagetype )
     @web.expose
     @web.require_admin
-    def undelete_library_item( self, trans, library_id = None, library_item_id = None, library_item_type = None ):
-        #this action will handle deleting all types of library items in library browsing mode
-        library_item_types = { 'library': trans.app.model.Library, 'folder': trans.app.model.LibraryFolder, 'dataset': trans.app.model.LibraryDataset, }
+    def undelete_library_item( self, trans, library_id, library_item_id, library_item_type ):
+        # This action will handle undeleting all types of library items
+        library_item_types = { 'library': trans.app.model.Library,
+                               'folder': trans.app.model.LibraryFolder,
+                               'library_dataset': trans.app.model.LibraryDataset }
         if library_item_type not in library_item_types:
-            raise ValueError( 'Bad library_item_type specified: %s' % library_item_types )
-        if library_item_id is None:
-            raise ValueError( 'library_item_id not specified' )
-        library_item = library_item_types[ library_item_type ].get( int( library_item_id ) )
-        if library_item.purged:
-            raise ValueError( '%s %s cannot be undeleted' % ( library_item_type, library_item.name ) )
-        library_item.deleted = False
-        library_item.flush()
-        msg = str( "%s '%s' has been undeleted" % ( library_item_type, library_item.name ) )
-        messagetype = str( "done" )
-        if library_item_type == 'library' or library_id is None:
-            return self.browse_libraries( trans, msg = msg, messagetype = messagetype )
+            msg = 'Bad library_item_type specified: %s' % str( library_item_type )
+            messagetype = 'error'
         else:
-            return self.browse_library( trans, id = library_id , msg = msg, messagetype = messagetype )
-    
-    
-    
-    #@web.expose
-    #@web.require_admin
-    #def delete_dataset( self, trans, id=None, **kwd):
-    #    if id:
-    #        # id is a LibraryDatasetDatasetAssociation.id
-    #        ldda = trans.app.model.LibraryDatasetDatasetAssociation.get( id )
-    #        ldda.deleted = True
-    #        ldda.flush()
-    #        msg = "Dataset %s was deleted from library folder %s" % ( ldda.name, ldda.folder.name )
-    #        trans.response.send_redirect( web.url_for( action='folder', 
-    #                                                   id=str( ldda.folder.id ),
-    #                                                   msg=util.sanitize_text( msg ),
-    #                                                   messagetype='done' ) )
-    #    msg = "You did not specify a dataset to delete."
-    #    return trans.response.send_redirect( web.url_for( action='folder',
-    #                                                      id=str( ldda.folder.id ),
-    #                                                      msg=util.sanitize_text( msg ),
-    #                                                      messagetype='error' ) )
-
+            library_item = library_item_types[ library_item_type ].get( int( library_item_id ) )
+            if library_item.purged:
+                msg = '%s %s has been purged, so it cannot be undeleted' % ( library_item_type, library_item.name )
+                messagetype = 'error'
+            else:
+                library_item.deleted = False
+                library_item.flush()
+                msg = util.sanitize_text( "%s '%s' has been marked undeleted" % ( library_item_type, library_item.name ) )
+                messagetype = 'done'
+        if library_item_type == 'library':
+            return self.browse_libraries( trans, msg=msg, messagetype=messagetype )
+        else:
+            return self.browse_library( trans, id=library_id , msg=msg, messagetype=messagetype )
     @web.expose
     @web.require_admin
     def memdump( self, trans, ids = 'None', sorts = 'None', pages = 'None', new_id = None, new_sort = None, **kwd ):

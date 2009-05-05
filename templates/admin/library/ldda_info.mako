@@ -5,6 +5,7 @@
 <% from galaxy import util %>
 
 <%
+    library = trans.app.model.Library.get( library_id )
     if ldda == ldda.library_dataset.library_dataset_dataset_association:
         current_version = True
     else:
@@ -20,7 +21,7 @@
 
 <ul class="manage-table-actions">
     <li>
-        <a class="action-button" href="${h.url_for( controller='admin', action='browse_library', id=library_id )}"><span>Browse this library</span></a>
+        <a class="action-button" href="${h.url_for( controller='admin', action='browse_library', id=library_id, deleted=library.deleted, show_deleted=show_deleted )}"><span>Browse this library</span></a>
     </li>
 </ul>
 
@@ -38,21 +39,24 @@
 <div class="toolForm">
     <div class="toolFormTitle">
         Information about ${ldda.name}
-        <a id="dataset-${ldda.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
-        <div popupmenu="dataset-${ldda.id}-popup">
-            <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', library_id=library_id, folder_id=ldda.library_dataset.folder.id, id=ldda.id, edit_info=True )}">Edit this dataset's information</a>
-            ## We're disabling the ability to add templates at the LDDA and LibraryDataset level, but will leave this here for possible future use
-            ##<a class="action-button" href="${h.url_for( controller='admin', action='info_template', library_id=library_id, library_dataset_id=ldda.library_dataset.id, new_template=True )}">Add an information template to this dataset</a>
-            <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', library_id=library_id, folder_id=ldda.library_dataset.folder.id, id=ldda.id, permissions=True )}">Edit this dataset's permissions</a>
-            %if current_version:
-                <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', library_id=library_id, folder_id=ldda.library_dataset.folder.id, replace_id=ldda.library_dataset.id )}">Upload a new version of this dataset</a>
-            %endif
-            %if ldda.has_data:
-                <a class="action-button" href="${h.url_for( controller='admin', action='download_dataset_from_folder', id=ldda.id, library_id=library_id )}">Download this dataset</a>
-            %endif
-            ##TODO: need to revamp the way we remove datasets from disk.
-            ##<a class="action-button" confirm="Click OK to remove dataset '${ldda.name}'?" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', library_id=library_id, folder_id=ldda.library_dataset.folder.id, id=ldda.id, delete=True )}">Remove this dataset from the library</a>
-        </div>
+        %if not library.deleted and not ldda.library_dataset.folder.deleted and not ldda.deleted:
+            <a id="dataset-${ldda.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
+            <div popupmenu="dataset-${ldda.id}-popup">
+                <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', library_id=library_id, folder_id=ldda.library_dataset.folder.id, id=ldda.id, edit_info=True )}">Edit this dataset's information</a>
+                ## We're disabling the ability to add templates at the LDDA and LibraryDataset level, but will leave this here for possible future use
+                ##<a class="action-button" href="${h.url_for( controller='admin', action='info_template', library_id=library_id, library_dataset_id=ldda.library_dataset.id, new_template=True )}">Add an information template to this dataset</a>
+                <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', library_id=library_id, folder_id=ldda.library_dataset.folder.id, id=ldda.id, permissions=True )}">Edit this dataset's permissions</a>
+                %if current_version:
+                    <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', library_id=library_id, folder_id=ldda.library_dataset.folder.id, replace_id=ldda.library_dataset.id )}">Upload a new version of this dataset</a>
+                %endif
+                %if ldda.has_data:
+                    <a class="action-button" href="${h.url_for( controller='admin', action='download_dataset_from_folder', id=ldda.id, library_id=library_id )}">Download this dataset</a>
+                %endif
+                %if not library.deleted and not ldda.library_dataset.folder.deleted and not ldda.deleted:
+                    <a class="action-button" confirm="Click OK to remove dataset '${ldda.name}'?" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', library_id=library_id, folder_id=ldda.library_dataset.folder.id, id=ldda.id, delete=True )}">Delete this dataset</a>
+                %endif
+            </div>
+        %endif
     </div>
     <div class="toolFormBody">
         <div class="form-row">
@@ -104,7 +108,10 @@
                     <div>
                         There are ${len( ldda.visible_children )} secondary datasets.
                         %for idx, child in enumerate( ldda.visible_children ):
-                            ${ render_dataset( child, selected, library.deleted ) }
+                            ## TODO: do we need to clarify if the child is deleted?
+                            %if not child.purged:
+                                ${ render_dataset( child, selected, library, False, False ) }
+                            %endif
                         %endfor
                     </div>
                 %endif

@@ -57,24 +57,24 @@ $().ready(function() {
             </div>
             <div class="form-row">
                 <div style="float: left; margin-right: 10px;">
-                    <label>Groups associated with new role</label>
+                    <label>Roles associated with new group</label>
                     ${render_select( "in_roles", in_roles )}<br/>
                     <input type="submit" id="roles_remove_button" value=">>"/>
                 </div>
                 <div>
-                    <label>Groups not associated with new role</label>
+                    <label>Roles not associated with new group</label>
                     ${render_select( "out_roles", out_roles )}<br/>
                     <input type="submit" id="roles_add_button" value="<<"/>
                 </div>
             </div>
             <div class="form-row">
                 <div style="float: left; margin-right: 10px;">
-                    <label>Users associated with new role</label>
+                    <label>Users associated with new group</label>
                     ${render_select( "in_users", in_users )}<br/>
                     <input type="submit" id="users_remove_button" value=">>"/>
                 </div>
                 <div>
-                    <label>Users not associated with new role</label>
+                    <label>Users not associated with new group</label>
                     ${render_select( "out_users", out_users )}<br/>
                     <input type="submit" id="users_add_button" value="<<"/>
                 </div>
