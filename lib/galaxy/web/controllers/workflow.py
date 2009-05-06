@@ -441,11 +441,11 @@ class WorkflowController( BaseController ):
             # Ensure job_ids and dataset_ids are lists (possibly empty)
             if job_ids is None:
                 job_ids = []
-            elif type( job_ids ) == str:
+            elif type( job_ids ) is not list:
                 job_ids = [ job_ids ]
             if dataset_ids is None:
                 dataset_ids = []
-            elif type( dataset_ids ) == str:
+            elif type( dataset_ids ) is not list:
                 dataset_ids = [ dataset_ids ]
             # Convert both sets of ids to integers
             job_ids = [ int( id ) for id in job_ids ]
@@ -455,7 +455,7 @@ class WorkflowController( BaseController ):
             jobs, warnings = get_job_dict( trans )
             jobs_by_id = dict( ( job.id, job ) for job in jobs.keys() )
             steps = []
-            steps_by_job_id= {}
+            steps_by_job_id = {}
             hid_to_output_pair = {}
             # Input dataset steps
             for hid in dataset_ids:
