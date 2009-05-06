@@ -281,6 +281,10 @@
     <tool file="emboss_5/emboss_wordmatch.xml" /> 
   </section> 
   -->
+  <section name="SOLiD Data Analysis" id="solid_tools">
+    <tool file="solid_tools/solid_qual_stats.xml" />
+    <tool file="solid_tools/solid_qual_boxplot.xml" />
+  </section>
   <section name="FASTA manipulation" id="fasta_manipulation">
     <tool file="fasta_tools/fasta_compute_length.xml" />
     <tool file="fasta_tools/fasta_filter_by_length.xml" />
