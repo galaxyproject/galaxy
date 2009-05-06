@@ -304,7 +304,9 @@ class Library( BaseController ):
             else:
                 trans.response.set_content_type( "application/x-tar" )
                 trans.response.headers[ "Content-Disposition" ] = "attachment; filename=GalaxyLibraryFiles.%s" % params.do_action
-                return archive.stream()
+                archive.wsgi_status = trans.response.wsgi_status()
+                archive.wsgi_headeritems = trans.response.wsgi_headeritems()
+                return archive.stream
     @web.expose
     def download_dataset_from_folder(self, trans, id, library_id=None, **kwd):
         """Catches the dataset id and displays file contents as directed"""
