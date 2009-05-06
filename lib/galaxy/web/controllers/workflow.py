@@ -35,8 +35,9 @@ class WorkflowController( BaseController ):
         shared_by_others = trans.sa_session \
             .query( model.StoredWorkflowUserShareAssociation ) \
             .filter_by( user=user ) \
-            .filter( model.StoredWorkflow.c.deleted == False ) \
-            .order_by( desc( model.StoredWorkflow.c.update_time ) ) \
+            .join( 'stored_workflow' ) \
+            .filter( model.StoredWorkflow.deleted == False ) \
+            .order_by( desc( model.StoredWorkflow.update_time ) ) \
             .all()
         return trans.fill_template( "workflow/list.mako",
                                     workflows = workflows,
