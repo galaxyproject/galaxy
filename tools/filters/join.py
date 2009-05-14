@@ -8,8 +8,21 @@ User can also opt to have have non-joining rows of file1 echoed.
 
 """
 
-import  optparse, os, sys, tempfile, struct
+import optparse, os, sys, tempfile, struct
 import psyco_full
+
+try:
+    simple_json_exception = None
+    from galaxy import eggs
+    from galaxy.util.bunch import Bunch
+    from galaxy.util import stringify_dictionary_keys
+    import pkg_resources
+    pkg_resources.require("simplejson")
+    import simplejson
+except Exception, e:
+    simplejson_exception = e
+    simplejson = None
+
 
 class OffsetList:
     def __init__( self, filesize = 0, fmt = None ):
@@ -235,7 +248,22 @@ class BufferedIndex:
             for offset in self.buffered_offsets[identifier]:
                 yield self.index.get_line_by_offset( offset )
 
-def join_files( filename1, column1, filename2, column2, out_filename, split = None, buffer = 1000000, keep_unmatched = False, keep_partial = False, index_depth = 3 ):
+
+def fill_empty_columns( line, split, fill_values ):
+    if not fill_values:
+        return line
+    filled_columns = []
+    for i, field in enumerate( line.split( split ) ):
+        if field or i >= len( fill_values ):
+            filled_columns.append( field )
+        else:
+            filled_columns.append( fill_values[i] )
+    if len( fill_values ) > len( filled_columns ):
+        filled_columns.extend( fill_values[ len( filled_columns ) : ] )
+    return split.join( filled_columns )
+
+
+def join_files( filename1, column1, filename2, column2, out_filename, split = None, buffer = 1000000, keep_unmatched = False, keep_partial = False, index_depth = 3, fill_options = None ):
     #return identifier based upon line
     def get_identifier_by_line( line, column, split = None ):
         if isinstance( line, str ):
@@ -243,6 +271,8 @@ def join_files( filename1, column1, filename2, column2, out_filename, split = No
             if column < len( fields ):
                 return fields[column]
         return None
+    if fill_options is None:
+        fill_options = Bunch( fill_unjoined_only = True, file1_columns = None, file2_columns = None )
     out = open( out_filename, 'w+b' )
     index = BufferedIndex( filename2, column2, split, buffer, index_depth )
     for line1 in open( filename1, 'rb' ):
@@ -250,12 +280,21 @@ def join_files( filename1, column1, filename2, column2, out_filename, split = No
         if identifier:
             written = False
             for line2 in index.get_lines_by_identifier( identifier ):
-                out.write( "%s%s%s\n" % ( line1.rstrip( '\r\n' ), split, line2.rstrip( '\r\n' ) ) )
+                if not fill_options.fill_unjoined_only:
+                    out.write( "%s%s%s\n" % ( fill_empty_columns( line1.rstrip( '\r\n' ), split, fill_options.file1_columns ), split, fill_empty_columns( line2.rstrip( '\r\n' ), split, fill_options.file2_columns ) ) )
+                else:
+                    out.write( "%s%s%s\n" % ( line1.rstrip( '\r\n' ), split, line2.rstrip( '\r\n' ) ) )
                 written = True
             if not written and keep_unmatched:
-                out.write( "%s\n" % ( line1.rstrip( '\r\n' ) ) )
+                out.write( fill_empty_columns( line1.rstrip( '\r\n' ), split, fill_options.file1_columns ) )
+                if fill_options:
+                    out.write( fill_empty_columns( "", split, fill_options.file2_columns ) )
+                out.write( "\n" )
         elif keep_partial:
-            out.write( "%s\n" % ( line1.rstrip( '\r\n' ) ) )
+            out.write( fill_empty_columns( line1.rstrip( '\r\n' ), split, fill_options.file1_columns ) )
+            if fill_options:
+                out.write( fill_empty_columns( "", split, fill_options.file2_columns ) )
+            out.write( "\n" )
     out.close()
 
 def main():
@@ -284,8 +323,32 @@ def main():
         dest='keep_unmatched',
         default=False,
         help='Keep rows in first input which are not joined with the second input.')
+    parser.add_option(
+        '-f','--fill_options_file',
+        dest='fill_options_file',
+        type='str',default=None,
+        help='Fill empty columns with a values from a JSONified file.')
+    
     
     options, args = parser.parse_args()
+    
+    fill_options = None
+    if options.fill_options_file is not None:
+        try:
+            if simplejson is None:
+                raise simplejson_exception
+            fill_options = Bunch( **stringify_dictionary_keys( simplejson.load( open( options.fill_options_file ) ) ) ) #simplejson.load( open( options.fill_options_file ) )
+        except Exception, e:
+            print "Warning: Ignoring fill options due to simplejson error (%s)." % e
+    if fill_options is None:
+        fill_options = Bunch()
+    if 'fill_unjoined_only' not in fill_options:
+        fill_options.fill_unjoined_only = True
+    if 'file1_columns' not in fill_options:
+        fill_options.file1_columns = None
+    if 'file2_columns' not in fill_options:
+        fill_options.file2_columns = None
+    
     
     try:
         filename1 = args[0]
@@ -300,6 +363,6 @@ def main():
     #Character for splitting fields and joining lines
     split = "\t"
     
-    return join_files( filename1, column1, filename2, column2, out_filename, split, options.buffer, options.keep_unmatched, options.keep_partial, options.index_depth )
+    return join_files( filename1, column1, filename2, column2, out_filename, split, options.buffer, options.keep_unmatched, options.keep_partial, options.index_depth, fill_options = fill_options )
 
 if __name__ == "__main__": main()

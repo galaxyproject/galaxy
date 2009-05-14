@@ -1,6 +1,6 @@
-<tool id="join1" name="Join two Queries" version="2.0.0">
+<tool id="join1" name="Join two Queries" version="2.0.1">
   <description>side by side on a specified field</description>
-  <command interpreter="python">join.py $input1 $input2 $field1 $field2 $out_file1 $unmatched $partial --index_depth=3 --buffer=50000000</command>
+  <command interpreter="python">join.py $input1 $input2 $field1 $field2 $out_file1 $unmatched $partial --index_depth=3 --buffer=50000000 --fill_options_file=$fill_options_file</command>
   <inputs>
     <param format="tabular" name="input1" type="data" label="Join"/>
     <param name="field1" label="using column" type="data_column" data_ref="input1" />
@@ -14,7 +14,66 @@
       <option value="-p">Yes</option>
       <option value="" selected="true">No</option>
     </param>
+    <conditional name="fill_empty_columns">
+      <param name="fill_empty_columns_switch" type="select" label="Fill empty columns">
+        <option value="no_fill" selected="True">No</option>
+        <option value="fill_empty">Yes</option>
+      </param>
+     <when value="no_fill">
+        <!-- do nothing -->
+     </when>
+     <when value="fill_empty">
+       <param type="select" name="fill_columns_by" label="Only fill unjoined rows">
+         <option value="fill_unjoined_only" selected="True">Yes</option>
+         <option value="fill_all">No</option>
+       </param>
+       <conditional name="do_fill_empty_columns">
+         <param name="column_fill_type" type="select" label="Fill Columns by">
+           <option value="single_fill_value" selected="True">Single fill value</option>
+           <option value="fill_value_by_column">Values by column</option>
+         </param>
+         <when value="single_fill_value">
+           <param type="text" name="fill_value" label="Fill value" value="."/>
+         </when>
+         <when value="fill_value_by_column">
+           <repeat name="column_fill1" title="Fill Column for Input 1">
+             <param name="column_number1" label="Column" type="data_column" data_ref="input1" />
+             <param type="text" name="fill_value1" value="."/>
+           </repeat>
+           <repeat name="column_fill2" title="Fill Column for Input 2">
+             <param name="column_number2" label="Column" type="data_column" data_ref="input2" />
+             <param type="text" name="fill_value2" value="."/>
+           </repeat>
+         </when>
+       </conditional>
+     </when>
+   </conditional>
   </inputs>
+  <configfiles>
+    <configfile name="fill_options_file">&lt;%
+import simplejson
+%&gt;#set $__fill_options = {}
+#if $fill_empty_columns['fill_empty_columns_switch'] == 'fill_empty':
+#set $__fill_options['fill_unjoined_only'] = $fill_empty_columns['fill_columns_by'].value == 'fill_unjoined_only'
+#if $fill_empty_columns['do_fill_empty_columns']['column_fill_type'] == 'single_fill_value':
+#set $__start_fill = $fill_empty_columns['do_fill_empty_columns']['fill_value'].value
+#else:
+#set $__start_fill = ""
+#end if
+#set $__fill_options['file1_columns'] = [ $__start_fill for i in range( int( $input1.metadata.columns ) ) ]
+#set $__fill_options['file2_columns'] = [ $__start_fill for i in range( int( $input2.metadata.columns ) ) ]
+#if $fill_empty_columns['do_fill_empty_columns']['column_fill_type'] == 'fill_value_by_column':
+#for column_fill1 in $fill_empty_columns['do_fill_empty_columns']['column_fill1']:
+#set $__fill_options['file1_columns'][ int( column_fill1['column_number1'].value ) - 1 ] = column_fill1['fill_value1'].value
+#end for
+#for column_fill2 in $fill_empty_columns['do_fill_empty_columns']['column_fill2']:
+#set $__fill_options['file2_columns'][ int( column_fill2['column_number2'].value ) - 1 ] = column_fill2['fill_value2'].value
+#end for
+#end if
+#end if
+${simplejson.dumps( __fill_options )}
+    </configfile>
+  </configfiles>
   <outputs>
      <data format="input" name="out_file1" metadata_source="input1" />
   </outputs>
@@ -26,6 +85,7 @@
       <param name="field2" value="2"/>
       <param name="unmatched" value=""/>
       <param name="partial" value=""/>
+      <param name="fill_empty_columns_switch" value="no_fill"/>
       <output name="out_file1" file="joiner_out1.bed"/>
     </test>
     <test>
@@ -35,8 +95,22 @@
       <param name="field2" value="2"/>
       <param name="unmatched" value="Yes"/>
       <param name="partial" value="Yes"/>
+      <param name="fill_empty_columns_switch" value="no_fill"/>
       <output name="out_file1" file="joiner_out2.bed"/>
     </test>
+<!--this throws an exception in the test framework - we need tests for the fill empty columns enhancements    <test>
+      <param name="input1" value="1.bed"/>
+      <param name="input2" value="2.bed"/>
+      <param name="field1" value="2"/>
+      <param name="field2" value="2"/>
+      <param name="unmatched" value="Yes"/>
+      <param name="partial" value="Yes"/>
+      <param name="fill_empty_columns_switch" value="fill_empty"/>
+      <param name="fill_columns_by" value="fill_all"/>
+      <param name="column_fill_type" value="single_fill_value"/>
+      <param name="fill_value" value="~"/>
+      <output name="out_file1" file="joiner_out3.bed"/>
+    </test>-->
   </tests>
   <help>
 
