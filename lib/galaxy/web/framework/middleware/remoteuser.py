@@ -35,7 +35,7 @@ errorpage = """
 </html>
 """
 
-UCSC_SERVERS = (
+UCSC_MAIN_SERVERS = (
     'hgw1.cse.ucsc.edu',
     'hgw2.cse.ucsc.edu',
     'hgw3.cse.ucsc.edu',
@@ -45,23 +45,30 @@ UCSC_SERVERS = (
     'hgw7.cse.ucsc.edu',
     'hgw8.cse.ucsc.edu',
 )
+UCSC_ARCHAEA_SERVERS = (
+    'lowepub.cse.ucsc.edu',
+)
 
 class RemoteUser( object ):
     def __init__( self, app, maildomain=None, ucsc_display_sites=[] ):
         self.app = app
         self.maildomain = maildomain
-        self.allow_ucsc = False
-        if len( ucsc_display_sites ):
-            self.allow_ucsc = True
+        self.allow_ucsc_main = False
+        self.allow_ucsc_archaea = False
+        if 'main' in ucsc_display_sites or 'test' in ucsc_display_sites:
+            self.allow_ucsc_main = True
+        if 'archaea' in ucsc_display_sites:
+            self.allow_ucsc_archaea = True
     def __call__( self, environ, start_response ):
         # Allow through UCSC if the UCSC display links are enabled
-        if self.allow_ucsc and environ.has_key( 'REMOTE_ADDR' ):
+        if ( self.allow_ucsc_main or self.allow_ucsc_archaea ) and environ.has_key( 'REMOTE_ADDR' ):
             try:
                 host = socket.gethostbyaddr( environ[ 'REMOTE_ADDR' ] )[0]
             except( socket.error, socket.herror, socket.gaierror, socket.timeout ):
                 # in the event of a lookup failure, deny access
                 host = None
-            if host in UCSC_SERVERS:
+            if ( self.allow_ucsc_main and host in UCSC_MAIN_SERVERS ) or \
+               ( self.allow_ucsc_archaea and host in UCSC_ARCHAEA_SERVERS ):
                 environ[ 'HTTP_REMOTE_USER' ] = 'ucsc_browser_display@example.org'
                 return self.app( environ, start_response )
         # Apache sets REMOTE_USER to the string '(null)' when using the
