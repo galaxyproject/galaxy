@@ -882,6 +882,7 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
                 from_file = os.path.join( tool.app.config.tool_data_path, from_file )
             elem = XML( "<root>%s</root>" % open( from_file ).read() )
         self.is_dynamic = False
+        self.dynamic_options = None #backwards compatibility with SelectToolParameter's old dynamic options and late validation
         self.options = []
         self.filtered = {}
         if elem.find( 'filter' ):
