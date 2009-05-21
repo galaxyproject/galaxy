@@ -351,7 +351,7 @@ class JobWrapper( object ):
         incoming['userId'] = userId
         incoming['userEmail'] = userEmail
         # Build params, done before hook so hook can use
-        param_dict = self.tool.build_param_dict( incoming, inp_data, out_data, self.get_output_fnames() )
+        param_dict = self.tool.build_param_dict( incoming, inp_data, out_data, self.get_output_fnames(), self.working_directory )
         # Certain tools require tasks to be completed prior to job execution
         # ( this used to be performed in the "exec_before_job" hook, but hooks are deprecated ).
         if self.tool.tool_type is not None:
@@ -529,7 +529,7 @@ class JobWrapper( object ):
         param_dict = dict( [ ( p.name, p.value ) for p in job.parameters ] ) # why not re-use self.param_dict here? ##dunno...probably should, this causes tools.parameters.basic.UnvalidatedValue to be used in following methods instead of validated and transformed values during i.e. running workflows
         param_dict = self.tool.params_from_strings( param_dict, self.app )
         # Check for and move associated_files
-        self.tool.collect_associated_files(out_data)
+        self.tool.collect_associated_files(out_data, self.working_directory)
         # Create generated output children and primary datasets and add to param_dict
         collected_datasets = {'children':self.tool.collect_child_datasets(out_data),'primary':self.tool.collect_primary_datasets(out_data)}
         param_dict.update({'__collected_datasets__':collected_datasets})
@@ -596,7 +596,7 @@ class JobWrapper( object ):
         job = model.Job.get( self.job_id )
         if self.app.config.outputs_to_working_directory:
             self.output_paths = []
-            for name, data in [ ( da.name, da.dataset ) for da in job.output_datasets ]:
+            for name, data in [ ( da.name, da.dataset.dataset ) for da in job.output_datasets ]:
                 false_path = os.path.abspath( os.path.join( self.working_directory, "galaxy_dataset_%d.dat" % data.id ) )
                 self.output_paths.append( DatasetPath( data.file_name, false_path ) )
         else:

@@ -1140,7 +1140,7 @@ class Tool:
             message = e.message
         return message
     
-    def build_param_dict( self, incoming, input_datasets, output_datasets, output_paths ):
+    def build_param_dict( self, incoming, input_datasets, output_datasets, output_paths, job_working_directory ):
         """
         Build the dictionary of parameters for substituting into the command
         line. Each value is wrapped in a `InputValueWrapper`, which allows
@@ -1191,22 +1191,22 @@ class Tool:
             if data:
                 for child in data.children:
                     param_dict[ "_CHILD___%s___%s" % ( name, child.designation ) ] = DatasetFilenameWrapper( child )
-        for name, data in output_datasets.items():
+        for name, hda in output_datasets.items():
             # Write outputs to the working directory (for security purposes) if desired.
             if self.app.config.outputs_to_working_directory:
                 try:
-                    false_path = [ dp.false_path for dp in output_paths if dp.real_path == data.file_name ][0]
-                    param_dict[name] = DatasetFilenameWrapper( data, false_path = false_path )
+                    false_path = [ dp.false_path for dp in output_paths if dp.real_path == hda.file_name ][0]
+                    param_dict[name] = DatasetFilenameWrapper( hda, false_path = false_path )
                     open( false_path, 'w' ).close()
                 except IndexError:
                     log.warning( "Unable to determine alternate path for writing job outputs, outputs will be written to their real paths" )
-                    param_dict[name] = DatasetFilenameWrapper( data )
+                    param_dict[name] = DatasetFilenameWrapper( hda )
             else:
-                param_dict[name] = DatasetFilenameWrapper( data )
+                param_dict[name] = DatasetFilenameWrapper( hda )
             # Provide access to a path to store additional files
             # TODO: path munging for cluster/dataset server relocatability
-            param_dict[name].files_path = os.path.abspath(os.path.join(self.app.config.new_file_path, "dataset_%s_files" % (data.id) ))
-            for child in data.children:
+            param_dict[name].files_path = os.path.abspath(os.path.join( job_working_directory, "dataset_%s_files" % (hda.dataset.id) ))
+            for child in hda.children:
                 param_dict[ "_CHILD___%s___%s" % ( name, child.designation ) ] = DatasetFilenameWrapper( child )
         # We add access to app here, this allows access to app.config, etc
         param_dict['__app__'] = RawObjectWrapper( self.app )
@@ -1394,12 +1394,12 @@ class Tool:
             data.set_peek()
             data.flush()
 
-    def collect_associated_files( self, output ):
-        for name, outdata in output.items():
-            temp_file_path = os.path.join( self.app.config.new_file_path, "dataset_%s_files" % ( outdata.id ) )
+    def collect_associated_files( self, output, job_working_directory ):
+        for name, hda in output.items():
+            temp_file_path = os.path.join( job_working_directory, "dataset_%s_files" % ( hda.dataset.id ) )
             try:
                 if len( os.listdir( temp_file_path ) ) > 0:
-                    store_file_path = os.path.join( os.path.join( self.app.config.file_path, *directory_hash_id( outdata.id ) ), "dataset_%d_files" % outdata.id )
+                    store_file_path = os.path.join( os.path.join( self.app.config.file_path, *directory_hash_id( hda.dataset.id ) ), "dataset_%d_files" % hda.dataset.id )
                     shutil.move( temp_file_path, store_file_path )
             except:
                 continue
