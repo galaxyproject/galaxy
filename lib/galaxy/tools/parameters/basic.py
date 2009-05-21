@@ -1028,7 +1028,10 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
         #        are not dynamic
         if self.is_dynamic:
             if value:
-                rval = [ value ]
+                if isinstance( value, list ):
+                    rval = value
+                else:
+                    rval = [ value ]
             else:
                 rval = []
         else:

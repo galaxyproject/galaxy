@@ -101,7 +101,7 @@ class DefaultToolAction( object ):
                                                              tool = tool,
                                                              name = input.name )
                 elif isinstance( input, SelectToolParameter ):
-                    input_values[ input.name ] = galaxy.tools.SelectToolParameterWrapper( input, input_values[ input.name ], tool.app )
+                    input_values[ input.name ] = galaxy.tools.SelectToolParameterWrapper( input, input_values[ input.name ], tool.app, other_values = incoming )
                 else:
                     input_values[ input.name ] = galaxy.tools.InputValueWrapper( input, input_values[ input.name ], incoming )
         out_data = {}

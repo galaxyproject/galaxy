@@ -1168,7 +1168,7 @@ class Tool:
                                                 tool = self,
                                                 name = input.name )
                 elif isinstance( input, SelectToolParameter ):
-                    input_values[ input.name ] = SelectToolParameterWrapper( input, input_values[ input.name ], self.app )
+                    input_values[ input.name ] = SelectToolParameterWrapper( input, input_values[ input.name ], self.app, other_values = param_dict )
                 else:
                     input_values[ input.name ] = InputValueWrapper( input, input_values[ input.name ], param_dict )
         # HACK: only wrap if check_values is not false, this deals with external
@@ -1515,12 +1515,13 @@ class SelectToolParameterWrapper( object ):
     Wraps a SelectTooParameter so that __str__ returns the selected value, but all other
     attributes are accessible.
     """
-    def __init__( self, input, value, app ):
+    def __init__( self, input, value, app, other_values={} ):
         self.input = input
         self.value = value
         self.input.value_label = input.value_to_display_text( value, app )
+        self._other_values = other_values
     def __str__( self ):
-        return self.input.to_param_dict_string( self.value )
+        return self.input.to_param_dict_string( self.value, other_values = self._other_values )
     def __getattr__( self, key ):
         return getattr( self.input, key )
 
