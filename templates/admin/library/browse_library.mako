@@ -115,7 +115,8 @@ def name_sorted( l ):
                     %if folder.library_folder_info_template_associations:
                         <% template = folder.get_library_item_info_templates( template_list=[], restrict=True )[0] %>
                         <a class="action-button" href="${h.url_for( controller='admin', action='info_template', library_id=library_id, id=template.id, edit_template=True )}">Edit this folder's information template</a>
-                    %else:
+                    %elif not folder.library_folder_info_associations:
+                        ## Only allow adding a new template to the folder if a previously inherited template has not already been used
                         <a class="action-button" href="${h.url_for( controller='admin', action='info_template', library_id=library_id, folder_id=folder.id, new_template=True )}">Add an information template to this folder</a>
                     %endif
                     <a class="action-button" href="${h.url_for( controller='admin', action='folder', permissions=True, id=folder.id, library_id=library_id )}">Edit this folder's permissions</a>

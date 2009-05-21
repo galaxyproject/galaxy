@@ -84,11 +84,10 @@
         elif isinstance( library_item, trans.app.model.LibraryDatasetDatasetAssociation ):
             library_item_type = 'library_dataset_dataset_association'
             library_item_desc = 'library dataset'
-            library_item_info_associations = library_item.library_dataset_dataset_info_associations
-        elif isinstance( library_item, trans.app.model.LibraryItemInfoElement ):
-            library_item_type = 'library_item_info'
-            library_item_desc = 'information'
-            library_item_info_associations = None
+            if library_item.library_dataset_dataset_info_associations:
+                library_item_info_associations = library_item.library_dataset_dataset_info_associations
+            elif library_item.library_dataset_dataset_info_template_associations:
+                library_item_info_associations = library_item.library_dataset_dataset_info_template_associations
     %>
     %if library_item_info_associations:
         <p/>
@@ -100,17 +99,18 @@
                     <input type="hidden" name="library_item_type" value="${library_item_type}"/>
                     %for library_item_info_association in library_item_info_associations:
                         %for template_element in library_item_info_association.library_item_info.library_item_info_template.elements:
-                            <% element = library_item_info_association.library_item_info.get_element_by_template_element( template_element ) %>
+                            <% element = library_item_info_association.library_item_info.get_element_by_template_element( template_element, create_element=True ) %>
                             <input type="hidden" name="id" value="${element.id}"/>
                             <div class="form-row">
-                                <label>
-                                    ${template_element.name}:
-                                    <a id="element-${element.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
-                                    <div popupmenu="element-${element.id}-popup">
-                                        <a class="action-button" href="${h.url_for( controller='admin', action='library_item_info', library_id=library_id, id=element.id, library_item_type='library_item_info_elememt', permissions=True )}">Edit this information's permissions</a>
-                                    </div>
-                                </label>
-                                <textarea name="info_element_${element.id}" rows="3" cols="35">${element.contents}</textarea>
+                                <label>${template_element.name}:</label>
+                                %if element.contents:
+                                    <textarea name="info_element_${element.id}" rows="3" cols="35">${element.contents}</textarea>
+                                %else:
+                                    <textarea name="info_element_${element.id}" rows="3" cols="35"></textarea>
+                                %endif
+                                <div class="toolParamHelp" style="clear: both;">
+                                    ${template_element.description}
+                                </div>
                                 <div style="clear: both"></div>
                             </div>
                         %endfor
@@ -145,11 +145,10 @@
         elif isinstance( library_item, trans.app.model.LibraryDatasetDatasetAssociation ):
             library_item_type = 'library_dataset_dataset_association'
             library_item_desc = 'library dataset'
-            library_item_info_associations = library_item.library_dataset_dataset_info_associations
-        elif isinstance( library_item, trans.app.model.LibraryItemInfoElement ):
-            library_item_type = 'library_item_info'
-            library_item_desc = 'information'
-            library_item_info_associations = None
+            if library_item.library_dataset_dataset_info_associations:
+                library_item_info_associations = library_item.library_dataset_dataset_info_associations
+            elif library_item.library_dataset_dataset_info_template_associations:
+                library_item_info_associations = library_item.library_dataset_dataset_info_template_associations
     %>
     %if library_item_info_associations:
         <p/>
@@ -158,11 +157,16 @@
             <div class="toolFormBody">
                 %for library_item_info_association in library_item_info_associations:
                     %for template_element in library_item_info_association.library_item_info.library_item_info_template.elements:
-                        <% element = library_item_info_association.library_item_info.get_element_by_template_element( template_element ) %>
+                        <% element = library_item_info_association.library_item_info.get_element_by_template_element( template_element, create_element=True ) %>
                         <div class="form-row">
                             <label>${template_element.name}:</label>
-                            <div style="float: left; width: 250px; margin-right: 10px;">
-                                ${element.contents}
+                            %if element.contents:
+                                <div style="float: left; width: 250px; margin-right: 10px;">
+                                    ${element.contents}
+                                </div>
+                            %endif
+                            <div class="toolParamHelp" style="clear: both;">
+                                ${template_element.description}
                             </div>
                             <div style="clear: both"></div>
                         </div>

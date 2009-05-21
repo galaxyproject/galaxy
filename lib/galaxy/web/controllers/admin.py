@@ -848,32 +848,6 @@ class Admin( BaseController ):
                                     show_deleted=True )
     @web.expose
     @web.require_admin
-    def undelete_library( self, trans, **kwd ):
-        params = util.Params( kwd )
-        library = trans.app.model.Library.get( int( params.id ) )
-        def undelete_folder( library_folder ):
-            for folder in library_folder.folders:
-                folder.refresh()
-                undelete_folder( folder )
-            library_folder.refresh()
-            for library_dataset in library_folder.datasets:
-                library_dataset.refresh()
-                ldda = library_dataset.library_dataset_dataset_association
-                if ldda:
-                    ldda.refresh()
-                    ldda.deleted = False
-                    ldda.flush()
-                library_dataset.deleted = False
-                library_dataset.flush()
-            library_folder.deleted = False
-            library_folder.flush()
-        undelete_folder( library.root_folder )
-        library.deleted = False
-        library.flush()
-        msg = "Library '%s' and all of its contents have been marked not deleted" % library.name
-        return trans.response.send_redirect( web.url_for( action='browse_libraries', msg=util.sanitize_text( msg ), messagetype='done' ) )
-    @web.expose
-    @web.require_admin
     def purge_library( self, trans, **kwd ):
         params = util.Params( kwd )
         library = trans.app.model.Library.get( int( params.id ) )
@@ -1104,7 +1078,7 @@ class Admin( BaseController ):
             last_used_build = folder.genome_build
         replace_id = params.get( 'replace_id', None )
         if replace_id:
-            replace_dataset = trans.app.model.LibraryDataset.get( params.get( 'replace_id', None ) )
+            replace_dataset = trans.app.model.LibraryDataset.get( int( replace_id ) )
             if not last_used_build:
                 last_used_build = replace_dataset.library_dataset_dataset_association.dbkey
         else:
@@ -1197,6 +1171,8 @@ class Admin( BaseController ):
                     permissions = {}
                     accessible = False
                     for k, v in trans.app.model.Dataset.permitted_actions.items():
+                        # TODO: need to handle case where a user has the DATASET_MANAGE_PERMISSIONS permission, but not
+                        # the DATASET_ACCESS permission, making the former useless.  Need to display a warning message.
                         in_roles = [ trans.app.model.Role.get( x ) for x in util.listify( params.get( k + '_in', [] ) ) ]
                         # At least 1 user must have every role associated with this dataset, or the dataset is inaccessible
                         if v == trans.app.security_agent.permitted_actions.DATASET_ACCESS:
@@ -1381,6 +1357,8 @@ class Admin( BaseController ):
                     permissions = {}
                     accessible = False
                     for k, v in trans.app.model.Dataset.permitted_actions.items():
+                        # TODO: need to handle case where a user has the DATASET_MANAGE_PERMISSIONS permission, but not
+                        # the DATASET_ACCESS permission, making the former useless.  Need to display a warning message.
                         in_roles = [ trans.app.model.Role.get( x ) for x in util.listify( params.get( k + '_in', [] ) ) ]
                         # At least 1 user must have every role associated with this dataset, or the dataset is inaccessible
                         if v == trans.app.security_agent.permitted_actions.DATASET_ACCESS:
@@ -1567,7 +1545,7 @@ class Admin( BaseController ):
                                             messagetype=messagetype )
     @web.expose
     @web.require_admin
-    def info_template( self, trans, library_id, id=None, num_fields=0, folder_id=None, ldda_id=None, library_dataset_id=None, **kwd ):        
+    def info_template( self, trans, library_id, id=None, num_fields=0, folder_id=None, ldda_id=None, library_dataset_id=None, **kwd ): 
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
@@ -1646,7 +1624,7 @@ class Admin( BaseController ):
                 liit.description = util.restore_text( params.get( 'description', '' ) )
                 liit.flush()
                 # Inherit the template's permissions from the library_item
-                trans.app.security_agent.copy_library_permissions( liit, library_item )
+                trans.app.security_agent.copy_library_permissions( library_item, liit )
                 # Create template association
                 if folder_id:
                     liit_assoc = trans.app.model.LibraryFolderInfoTemplateAssociation()
@@ -1694,7 +1672,13 @@ class Admin( BaseController ):
                                         msg=msg,
                                         messagetype=messagetype )
         elif action == 'edit_template':
-            if params.get( 'edit_info_template_button', False ):
+            define_or_save = 'define'
+            edit_info_template_button = params.get( 'edit_info_template_button', False )
+            if edit_info_template_button:
+                if edit_info_template_button == 'Define fields':
+                    define_or_save = 'save'
+                else:
+                    define_or_save = 'define'
                 # Save changes to existing attributes, only set name if nonempty/nonNone is passed, but always set description
                 name = params.get( 'name', None )
                 if name:
@@ -1702,7 +1686,7 @@ class Admin( BaseController ):
                 library_item.description = params.get( 'description', '' )
                 library_item.flush()
                 # Save changes to exisiting elements
-                for elem_id in params.get( 'element_ids', [] ):
+                for elem_id in util.listify( params.get( 'element_ids', [] ) ):
                     liit_element = trans.app.model.LibraryItemInfoTemplateElement.get( elem_id )
                     name = params.get( 'element_name_%s' % elem_id, None )
                     if name:
@@ -1721,7 +1705,7 @@ class Admin( BaseController ):
                     if elem_name:
                         library_item.add_element( name=elem_name, description=elem_description )
                 library_item.refresh()
-                msg = 'Information template %s has been updated' % library_item.name
+                msg = "Information template '%s' has been updated" % library_item.name
             return trans.fill_template( "/admin/library/edit_info_template.mako",
                                         liit=library_item,
                                         num_fields=num_fields,
@@ -1731,6 +1715,7 @@ class Admin( BaseController ):
                                         folder_id=folder_id,
                                         library_item_name=library_item.name,
                                         library_item_desc=library_item_desc,
+                                        define_or_save=define_or_save,
                                         msg=msg,
                                         messagetype=messagetype )
         elif action == 'permissions':
@@ -1771,6 +1756,8 @@ class Admin( BaseController ):
             library_item = trans.app.model.LibraryDatasetDatasetAssociation.get( library_item_id )
             # This response_action method requires a folder_id
             folder_id = library_item.library_dataset.folder.id
+        elif library_item_type == 'library_item_info_elememt':
+            library_item = trans.app.model.LibraryItemInfoElement.get( library_item_id )
         else:
             msg = "Invalid library item type ( %s ) specified, id ( %s )" % ( str( library_item_type ), str( library_item_id ) )
             return trans.response.send_redirect( web.url_for( controller='admin',
@@ -1869,6 +1856,7 @@ class Admin( BaseController ):
                                                                   action='library_item_info',
                                                                   library_id=library_id,
                                                                   id=id,
+                                                                  library_item_id=library_item_id,
                                                                   library_item_type=library_item_type,
                                                                   permissions=True,
                                                                   msg=util.sanitize_text( msg ),
@@ -1977,10 +1965,14 @@ class Admin( BaseController ):
             msg = 'Bad library_item_type specified: %s' % str( library_item_type )
             messagetype = 'error'
         else:
+            if library_item_type == 'library_dataset':
+                library_item_desc = 'Dataset'
+            else:
+                library_item_desc = library_item_type.capitalize()
             library_item = library_item_types[ library_item_type ].get( int( library_item_id ) )
             library_item.deleted = True
             library_item.flush()
-            msg = util.sanitize_text( "%s '%s' has been marked deleted" % ( library_item_type, library_item.name ) )
+            msg = util.sanitize_text( "%s '%s' has been marked deleted" % ( library_item_desc, library_item.name ) )
             messagetype = 'done'
         if library_item_type == 'library':
             return self.browse_libraries( trans, msg=msg, messagetype=messagetype )
@@ -1997,14 +1989,18 @@ class Admin( BaseController ):
             msg = 'Bad library_item_type specified: %s' % str( library_item_type )
             messagetype = 'error'
         else:
+            if library_item_type == 'library_dataset':
+                library_item_desc = 'Dataset'
+            else:
+                library_item_desc = library_item_type.capitalize()
             library_item = library_item_types[ library_item_type ].get( int( library_item_id ) )
             if library_item.purged:
-                msg = '%s %s has been purged, so it cannot be undeleted' % ( library_item_type, library_item.name )
+                msg = '%s %s has been purged, so it cannot be undeleted' % ( library_item_desc, library_item.name )
                 messagetype = 'error'
             else:
                 library_item.deleted = False
                 library_item.flush()
-                msg = util.sanitize_text( "%s '%s' has been marked undeleted" % ( library_item_type, library_item.name ) )
+                msg = util.sanitize_text( "%s '%s' has been marked undeleted" % ( library_item_desc, library_item.name ) )
                 messagetype = 'done'
         if library_item_type == 'library':
             return self.browse_libraries( trans, msg=msg, messagetype=messagetype )

@@ -816,6 +816,19 @@ class TwillTestCase( unittest.TestCase ):
         tc.fv( "1", "2", description ) # form field 1 is the field named name...
         tc.submit( "create_library_button" )
         self.home()
+    def set_library_permissions( self, library_id, library_name, role_id, permissions_in, permissions_out ):
+        url = "admin/library?id=%s&permissions=True&update_roles_button=Save" % ( library_id )
+        for po in permissions_out:
+            key = '%s_out' % po
+            url ="%s&%s=%s" % ( url, key, str( role_id ) )
+        for pi in permissions_in:
+            key = '%s_in' % pi
+            url ="%s&%s=%s" % ( url, key, str( role_id ) )
+        self.home()
+        self.visit_url( "%s/%s" % ( self.url, url ) )
+        check_str = "Permissions updated for library '%s'" % library_name
+        self.check_page_for_string( check_str )
+        self.home()
     def rename_library( self, library_id, old_name, name='Library One Renamed', description='This is Library One Re-described' ):
         """Rename a library"""
         self.home()
@@ -829,16 +842,71 @@ class TwillTestCase( unittest.TestCase ):
         check_str = "Library '%s' has been renamed to '%s'" % ( old_name, name )
         self.check_page_for_string( check_str )
         self.home()
-    def add_library_info_template( self, library_id, library_name ):
+    def add_library_info_template( self, library_id, library_name, num_fields='2', name='Library Template 1', ele_name_0='Foo', ele_name_1='Doh' ):
         """Add a new info template to a library"""
         self.home()
         url = "%s/admin/info_template?library_id=%s&new_template=True&num_fields=2&create_info_template_button=Go" % ( self.url, library_id )
-        self.home()
         self.visit_url( url )
         check_str = "Create a new information template for library '%s'" % library_name
         self.check_page_for_string ( check_str )
-        # TODO: finish this...
-    def add_folder_info_template( self, library_id, library_name, folder_id, folder_name ):
+        tc.fv( '1', 'library_id', library_id )
+        tc.fv( '1', 'set_num_fields', num_fields )
+        tc.fv( '1', 'name', name )
+        tc.fv( '1', 'new_element_name_0', ele_name_0 )
+        tc.fv( '1', 'new_element_name_1', ele_name_1 )
+        tc.submit( 'new_info_template_button' )
+        self.home()
+    def add_library_info_template_element( self, library_id, template_id, template_name, ele_name_1, ele_desc_1, 
+                                           ele_name_2, ele_desc_2, new_ele_name='Fubar', new_ele_desc='This is the Fubar compnent' ):
+        """Add a new element to an existing library info template"""
+        self.home()
+        url = "%s/admin/info_template?library_id=%s&id=%s&edit_template=True&num_fields=1&edit_info_template_button=Save" % \
+            ( self.url, library_id, template_id )
+        self.visit_url( url )
+        check_str = "Edit template '%s'" % template_name
+        self.check_page_for_string ( check_str )
+        tc.fv( '1', 'id', template_id )
+        tc.fv( '1', 'set_num_fields', '0' )
+        tc.fv( '1', 'name', template_name )
+        tc.fv( '1', 'element_name_1', ele_name_1 )
+        tc.fv( '1', 'element_description_1', ele_desc_1 )
+        tc.fv( '1', 'element_name_2', ele_name_2 )
+        tc.fv( '1', 'element_description_2', ele_desc_2 )
+        tc.fv( '1', 'new_element_name_0', new_ele_name )
+        tc.fv( '1', 'new_element_description_0', new_ele_desc )
+        tc.submit( 'edit_info_template_button' )
+        check_str = "Information template '%s' has been updated" % template_name
+        self.check_page_for_string( check_str )
+        self.home()
+    def edit_library_info( self, library_id, library_name, ele_1_field_name, ele_1_contents, ele_2_field_name, ele_2_contents ):
+        """Add information to a library using an existing template with 2 elements"""
+        self.home()
+        self.visit_url( "%s/admin/library?information=True&id=%s" % ( self.url, library_id ) )
+        check_str = 'Other information about library %s' % library_name
+        self.check_page_for_string( check_str )
+        tc.fv( '2', ele_1_field_name, ele_1_contents )
+        tc.fv( '2', ele_2_field_name, ele_2_contents )
+        tc.submit( 'create_new_info_button' )
+        self.home()
+    def edit_library_info_template( self, library_id, id, name, name_1, desc_1, name_2, desc_2 ):
+        """Edit an existing library info template"""
+        self.home()
+        url = "%s/admin/info_template?library_id=%s&id=%s&edit_template=True" % ( self.url, library_id, id )
+        self.visit_url( url )
+        self.check_page_for_string ( 'Edit template' )
+        tc.fv( '1', 'id', id )
+        tc.fv( '1', 'set_num_fields', '0' )
+        tc.fv( '1', 'name', name )
+        tc.fv( '1', 'element_name_1', name_1 )
+        tc.fv( '1', 'element_description_1', desc_1 )
+        tc.fv( '1', 'element_name_2', name_2 )
+        tc.fv( '1', 'element_description_2', desc_2 )
+        tc.submit( 'edit_info_template_button' )
+        check_str = "Information template '%s' has been updated" % name
+        self.check_page_for_string( check_str )
+        self.home()
+    def add_folder_info_template( self, library_id, library_name, folder_id, folder_name, num_fields='2',
+                                  name='Folder Template 1', ele_name_0='Fu', ele_help_0='', ele_name_1='Bar', ele_help_1='' ):
         """Add a new info template to a folder"""
         self.home()
         url = "%s/admin/info_template?library_id=%s&folder_id=%s&new_template=True&num_fields=2&create_info_template_button=Go" % \
@@ -847,7 +915,16 @@ class TwillTestCase( unittest.TestCase ):
         self.visit_url( url )
         check_str = "Create a new information template for folder '%s'" % folder_name
         self.check_page_for_string ( check_str ) 
-        # TODO: finish this...
+        tc.fv( '1', 'library_id', library_id )
+        tc.fv( '1', 'folder_id', folder_id )
+        tc.fv( '1', 'set_num_fields', num_fields )
+        tc.fv( '1', 'name', name )
+        tc.fv( '1', 'new_element_name_0', ele_name_0 )
+        tc.fv( '1', 'new_element_description_0', ele_help_0.replace( '+', ' ' ) )
+        tc.fv( '1', 'new_element_name_1', ele_name_1 )
+        tc.fv( '1', 'new_element_description_1', ele_help_1.replace( '+', ' ' ) )
+        tc.submit( 'new_info_template_button' )
+        self.home()
     def add_folder( self, library_id, folder_id, name='Folder One', description='NThis is Folder One' ):
         """Create a new folder"""
         self.home()
@@ -870,16 +947,27 @@ class TwillTestCase( unittest.TestCase ):
         check_str = "Folder '%s' has been renamed to '%s'" % ( old_name, name )
         self.check_page_for_string( check_str )
         self.home()
-    def add_library_dataset( self, filename, library_id, folder_id, folder_name, file_format='auto', dbkey='hg18', roles=[], message='', root=False ):
+    def add_library_dataset( self, filename, library_id, folder_id, folder_name, file_format='auto',
+                             dbkey='hg18', roles=[], message='', root=False, check_template_str1='', check_template_str2='',
+                             check_template_str3='' ):
         """Add a dataset to a folder"""
         filename = self.get_filename( filename )
         self.home()
-        self.visit_url( "%s/admin/library_dataset_dataset_association?upload_option=upload_file&library_id=%s&folder_id=%s&message=%s" % ( self.url, library_id, folder_id, message ) )
+        self.visit_url( "%s/admin/library_dataset_dataset_association?upload_option=upload_file&library_id=%s&folder_id=%s&message=%s" % \
+                        ( self.url, library_id, folder_id, message ) )
         self.check_page_for_string( 'Upload files' )
+        # If we've been sent some template labels, make sure they are included in the upload form
+        if check_template_str1:
+            self.check_page_for_string( check_template_str1 )
+        if check_template_str2:
+            self.check_page_for_string( check_template_str2 )
+        if check_template_str3:
+            self.check_page_for_string( check_template_str3 )
         tc.fv( "1", "folder_id", folder_id )
         tc.formfile( "1", "file_data", filename )
         tc.fv( "1", "file_format", file_format )
         tc.fv( "1", "dbkey", dbkey )
+        tc.fv( "1", "message", message.replace( '+', ' ' ) )
         for role_id in roles:
             tc.fv( "1", "roles", role_id ) # form field 7 is the select list named out_groups, note the buttons...
         tc.submit( "new_dataset_button" )
@@ -887,6 +975,125 @@ class TwillTestCase( unittest.TestCase ):
             check_str = "Added 1 datasets to the library '%s' ( each is selected )." % folder_name
         else:
             check_str = "Added 1 datasets to the folder '%s' ( each is selected )." % folder_name
+        self.check_page_for_string( check_str )
+        self.home()
+    def set_library_dataset_permissions( self, library_id, folder_id, ldda_id, ldda_name, role_id, permissions_in, permissions_out ):
+        url = "admin/library_dataset_dataset_association?library_id=%s&folder_id=%s&&id=%s&permissions=True&update_roles_button=Save" % \
+            ( library_id, folder_id, ldda_id )
+        #role_ids = util.listify( role_ids )
+        #for role_id in role_ids:
+        for po in permissions_out:
+            key = '%s_out' % po
+            url ="%s&%s=%s" % ( url, key, str( role_id ) )
+        for pi in permissions_in:
+            key = '%s_in' % pi
+            url ="%s&%s=%s" % ( url, key, str( role_id ) )
+        print url
+        self.home()
+        self.visit_url( "%s/%s" % ( self.url, url ) )
+        check_str = "Permissions updated for dataset '%s'" % ldda_name
+        self.check_page_for_string( check_str )
+        self.home()
+    def edit_ldda_template_element_info( self, library_id, folder_id, ldda_id, ldda_name, ele_1_field_name, 
+                        ele_1_contents, ele_2_field_name, ele_2_contents, ele_1_help='', ele_2_help='',
+                        ele_3_field_name='', ele_3_contents='', ele_3_help='' ):
+        """Edit library_dataset_dataset_association template element information"""
+        self.home()
+        self.visit_url( "%s/admin/library_dataset_dataset_association?edit_info=True&library_id=%s&folder_id=%s&id=%s" % \
+                        ( self.url, library_id, folder_id, ldda_id ) )        
+        check_str = 'Edit attributes of %s' % ldda_name
+        self.check_page_for_string( check_str )
+        ele_1_contents = ele_1_contents.replace( '+', ' ' )
+        ele_2_contents = ele_2_contents.replace( '+', ' ' )
+        tc.fv( '4', ele_1_field_name, ele_1_contents )
+        tc.fv( '4', ele_2_field_name, ele_2_contents.replace( '+', ' ' ) )
+        if ele_3_field_name and ele_3_contents:
+            ele_3_contents = ele_3_contents.replace( '+', ' ' )
+            tc.fv( '4', ele_3_field_name, ele_3_contents )
+        tc.submit( 'edit_info_button' )
+        self.check_page_for_string( 'This is the latest version of this library dataset' )
+        self.check_page_for_string( 'The information has been updated.' )
+        self.check_page_for_string( ele_1_contents )
+        self.check_page_for_string( ele_2_contents )
+        if ele_3_field_name and ele_3_contents:
+            self.check_page_for_string( ele_3_contents )
+        if ele_1_help:
+            check_str = ele_1_help.replace( '+', ' ' )
+            self.check_page_for_string( check_str )
+        self.check_page_for_string( ele_2_contents )
+        if ele_2_help:
+            check_str = ele_2_help.replace( '+', ' ' )
+            self.check_page_for_string( check_str )
+        if ele_2_help:
+            check_str = ele_3_help.replace( '+', ' ' )
+            self.check_page_for_string( check_str )
+        self.home()
+    def edit_ldda_attribute_info( self, library_id, folder_id, ldda_id, ldda_name, new_ldda_name ):
+        """Edit library_dataset_dataset_association attribute information"""
+        self.home()
+        self.visit_url( "%s/admin/library_dataset_dataset_association?edit_info=True&library_id=%s&folder_id=%s&id=%s" % \
+                        ( self.url, library_id, folder_id, ldda_id ) )
+        check_str = 'Edit attributes of %s' % ldda_name
+        self.check_page_for_string( check_str )
+        tc.fv( '1', 'name', new_ldda_name )
+        tc.submit( 'save' )
+        check_str = 'Attributes updated for library dataset %s' % new_ldda_name
+        self.check_page_for_string( check_str )
+        check_str = 'Edit attributes of %s' % new_ldda_name
+        self.check_page_for_string( check_str )
+        self.home()
+    def upload_new_dataset_version( self, filename, library_id, folder_id, folder_name, library_dataset_id, ldda_name, file_format='auto',
+                                    dbkey='hg18', message='', check_template_str1='', check_template_str2='', check_template_str3='' ):
+        """Upload new version(s) of a dataset"""
+        self.home()
+        filename = self.get_filename( filename )
+        
+        url = "%s/admin/library_dataset_dataset_association?upload_option=upload_file&library_id=%s&folder_id=%s&replace_id=%s&message=%s" % \
+                        ( self.url, library_id, folder_id, library_dataset_id, message )
+        print "####url: ", url
+        
+        self.visit_url( "%s/admin/library_dataset_dataset_association?upload_option=upload_file&library_id=%s&folder_id=%s&replace_id=%s&message=%s" % \
+                        ( self.url, library_id, folder_id, library_dataset_id, message ) )
+        self.check_page_for_string( 'Upload files' )
+        self.check_page_for_string( 'You are currently selecting a new file to replace' )
+        self.check_page_for_string( ldda_name )
+        # If we've been sent some template labels, make sure they are included in the upload form
+        if check_template_str1:
+            self.check_page_for_string( check_template_str1 )
+        if check_template_str2:
+            self.check_page_for_string( check_template_str2 )
+        if check_template_str3:
+            self.check_page_for_string( check_template_str3 )
+        tc.formfile( "1", "file_data", filename )
+        tc.fv( "1", "file_format", file_format )
+        tc.fv( "1", "dbkey", dbkey )
+        tc.fv( "1", "message", message.replace( '+', ' ' ) )
+        tc.submit( "new_dataset_button" )
+        check_str = "Added 1 dataset versions to the library dataset '%s' in the folder '%s'." % ( ldda_name, folder_name )
+        self.check_page_for_string( check_str )
+        self.home()
+    def upload_new_dataset_versions( self, library_id, folder_id, folder_name, library_dataset_id, ldda_name, file_format='auto',
+                                    dbkey='hg18', message='', check_template_str1='', check_template_str2='', check_template_str3='' ):
+        """Upload new version(s) of a dataset using a directory of files"""
+        self.home()
+        self.visit_url( "%s/admin/library_dataset_dataset_association?upload_option=upload_directory&library_id=%s&folder_id=%s&replace_id=%s" \
+                        % ( self.url, library_id, folder_id, library_dataset_id ) )
+        self.check_page_for_string( 'Upload a directory of files' )
+        self.check_page_for_string( 'You are currently selecting a new file to replace' )
+        # If we've been sent some template labels, make sure they are included in the upload form
+        if check_template_str1:
+            self.check_page_for_string( check_template_str1 )
+        if check_template_str2:
+            self.check_page_for_string( check_template_str2 )
+        if check_template_str3:
+            self.check_page_for_string( check_template_str3 )
+        tc.fv( "1", "file_format", file_format )
+        tc.fv( "1", "dbkey", dbkey )
+        tc.fv( "1", "message", message.replace( '+', ' ' ) )
+        library_dir = "%s" % self.file_dir
+        tc.fv( "1", "server_dir", "library" )
+        tc.submit( "new_dataset_button" )
+        check_str = "Added 3 dataset versions to the library dataset '%s' in the folder '%s'." % ( ldda_name, folder_name )
         self.check_page_for_string( check_str )
         self.home()
     def add_history_datasets_to_library( self, library_id, folder_id, folder_name, hda_id, root=False ):
@@ -900,15 +1107,24 @@ class TwillTestCase( unittest.TestCase ):
             check_str = "Added 1 datasets to the folder '%s' ( each is selected )." % folder_name
         self.check_page_for_string( check_str )
         self.home()
-    def add_datasets_from_library_dir( self, library_id, folder_id, folder_name, file_format='auto', dbkey='hg18', roles_tuple=[], root=False ):
+    def add_datasets_from_library_dir( self, library_id, folder_id, folder_name, file_format='auto', dbkey='hg18', roles_tuple=[],
+                                       message='', root=False, check_template_str1='', check_template_str2='', check_template_str3='' ):
         """Add a directory of datasets to a folder"""
         # roles is a list of tuples: [ ( role_id, role_description ) ]
         self.home()
         self.visit_url( "%s/admin/library_dataset_dataset_association?upload_option=upload_directory&library_id=%s&folder_id=%s" % ( self.url, library_id, folder_id ) )
         self.check_page_for_string( 'Upload a directory of files' )
+        # If we've been sent some template labels, make sure they are included in the upload form
+        if check_template_str1:
+            self.check_page_for_string( check_template_str1 )
+        if check_template_str2:
+            self.check_page_for_string( check_template_str2 )
+        if check_template_str3:
+            self.check_page_for_string( check_template_str3 )
         tc.fv( "1", "folder_id", folder_id )
         tc.fv( "1", "file_format", file_format )
         tc.fv( "1", "dbkey", dbkey )
+        tc.fv( "1", "message", message.replace( '+', ' ' ) )
         library_dir = "%s" % self.file_dir
         tc.fv( "1", "server_dir", "library" )
         for role_tuple in roles_tuple:
@@ -920,18 +1136,28 @@ class TwillTestCase( unittest.TestCase ):
             check_str = "Added 3 datasets to the folder '%s' ( each is selected )." % folder_name
         self.check_page_for_string( check_str )
         self.home()
-    def mark_library_deleted( self, library_id, library_name ):
-        """Mark a library as deleted"""
+    def delete_library_item( self, library_id, library_item_id, library_item_name, library_item_type='library_dataset' ):
+        """Mark a library item as deleted"""
         self.home()
-        self.visit_url( "%s/admin/library?id=%s&delete=True" % ( self.url, library_id ) )
-        check_str = "Library '%s' and all of its contents have been marked deleted" % library_name
+        self.visit_url( "%s/admin/delete_library_item?library_id=%s&library_item_id=%s&library_item_type=%s" \
+                        % ( self.url, library_id, library_item_id, library_item_type ) )
+        if library_item_type == 'library_dataset':
+            library_item_desc = 'Dataset'
+        else:
+            library_item_desc = library_item_type.capitalize()
+        check_str = "%s '%s' has been marked deleted" % ( library_item_desc, library_item_name )
         self.check_page_for_string( check_str )
         self.home()
-    def undelete_library( self, library_id, library_name ):
-        """Mark a library as not deleted"""
+    def undelete_library_item( self, library_id, library_item_id, library_item_name, library_item_type='library_dataset' ):
+        """Mark a library item as deleted"""
         self.home()
-        self.visit_url( "%s/admin/undelete_library?id=%s" % ( self.url, library_id ) )
-        check_str = "Library '%s' and all of its contents have been marked not deleted" % library_name
+        self.visit_url( "%s/admin/undelete_library_item?library_id=%s&library_item_id=%s&library_item_type=%s" \
+                        % ( self.url, library_id, library_item_id, library_item_type ) )
+        if library_item_type == 'library_dataset':
+            library_item_desc = 'Dataset'
+        else:
+            library_item_desc = library_item_type.capitalize()
+        check_str = "%s '%s' has been marked undeleted" % ( library_item_desc, library_item_name )
         self.check_page_for_string( check_str )
         self.home()
     def purge_library( self, library_id, library_name ):

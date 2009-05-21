@@ -43,5 +43,6 @@
 %elif folder.library_folder_info_template_associations:
     ${render_available_templates( folder, library_id, restrict=True )}
 %else:
+    ## Look for any inheritable templates
     ${render_available_templates( folder, library_id, restrict=False )}
 %endif

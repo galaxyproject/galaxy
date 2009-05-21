@@ -300,6 +300,9 @@ class LibraryDatasetDatasetAssociationPermissions( object ):
 
 class LibraryItemInfoPermissions( object ):
     def __init__( self, action, library_item, role ):
+        # LIBRARY_ADD -> Not Applicable
+        # LIBRARY_MODIFY -> Can modify LibraryItemInfoElement.contents
+        # LIBRARY_MANAGE -> Can change permissions on LibraryItemInfo
         self.action = action
         if isinstance( library_item, LibraryItemInfo ):
             self.library_item_info = library_item
@@ -309,6 +312,9 @@ class LibraryItemInfoPermissions( object ):
 
 class LibraryItemInfoTemplatePermissions( object ):
     def __init__( self, action, library_item, role ):
+        # LIBRARY_ADD -> Not Applicable
+        # LIBRARY_MODIFY -> Can add or delete LibraryItemInfoTemplateElements
+        # LIBRARY_MANAGE -> Can change permissions on LibraryItemInfoTemplate
         self.action = action
         if isinstance( library_item, LibraryItemInfoTemplate ):
             self.library_item_info_template = library_item
@@ -673,7 +679,9 @@ class Library( object ):
         self.description = description
         self.root_folder = root_folder
     def get_library_item_info_templates( self, template_list=[], restrict=False ):
-        if self.library_info_template_associations:
+        # We only want the next available template in the inheritable hierarchy, so we'll only extend
+        # template_list if it is empty
+        if not template_list and self.library_info_template_associations:
             template_list.extend( [ lita.library_item_info_template for lita in self.library_info_template_associations if lita.library_item_info_template not in template_list ] )
         return template_list
 
@@ -696,11 +704,13 @@ class LibraryFolder( object ):
         self.item_count += 1
     def get_library_item_info_templates( self, template_list=[], restrict=False ):
         # If restrict is True, we'll return only those templates directly associated with this Folder
-        if self.library_folder_info_template_associations:
+        # We only want the next available template in the inheritable hierarchy, so we'll only extend
+        # template_list if it is empty
+        if not template_list and self.library_folder_info_template_associations:
             template_list.extend( [ lfita.library_item_info_template for lfita in self.library_folder_info_template_associations if lfita.library_item_info_template not in template_list ] )
-        if restrict not in [ 'True', True ] and self.parent:
+        if not template_list and restrict not in [ 'True', True ] and self.parent:
             self.parent.get_library_item_info_templates( template_list )
-        elif restrict not in [ 'True', True, 'folder' ] and self.library_root:
+        elif not template_list and restrict not in [ 'True', True, 'folder' ] and self.library_root:
             for library_root in self.library_root:
                 library_root.get_library_item_info_templates( template_list )
         return template_list
@@ -759,9 +769,11 @@ class LibraryDataset( object ):
     purged = property( get_purged, set_purged )
     def get_library_item_info_templates( self, template_list=[], restrict=False ):
         # If restrict is True, we'll return only those templates directly associated with this LibraryDataset
-        if self.library_dataset_info_template_associations:
+        # We only want the next available template in the inheritable hierarchy, so we'll only extend
+        # template_list if it is empty
+        if not template_list and self.library_dataset_info_template_associations:
             template_list.extend( [ ldita.library_item_info_template for ldita in self.library_dataset_info_template_associations if ldita.library_item_info_template not in template_list ] )
-        if restrict not in [ 'True', True ]:
+        if not template_list and restrict not in [ 'True', True ]:
             self.folder.get_library_item_info_templates( template_list, restrict )
         return template_list
 
@@ -828,9 +840,12 @@ class LibraryDatasetDatasetAssociation( DatasetInstance ):
         return
     def get_library_item_info_templates( self, template_list=[], restrict=False ):
         # If restrict is True, we'll return only those templates directly associated with this LibraryDatasetDatasetAssociation
-        if self.library_dataset_dataset_info_template_associations:
+        # We only want the next available template in the inheritable hierarchy, so we'll only extend
+        # template_list if it is empty
+        if not template_list and self.library_dataset_dataset_info_template_associations:
             template_list.extend( [ lddita.library_item_info_template for lddita in self.library_dataset_dataset_info_template_associations if lddita.library_item_info_template not in template_list ] )
-        self.library_dataset.get_library_item_info_templates( template_list, restrict )
+        if not template_list:
+            self.library_dataset.get_library_item_info_templates( template_list, restrict )
         return template_list
 
 class LibraryInfoTemplateAssociation( object ):
@@ -902,11 +917,22 @@ class LibraryDatasetDatasetInfoAssociation( object ):
 class LibraryItemInfo( object ):
     def __init__( self, user=None ):
         self.user = user
-    def get_element_by_template_element( self, template_element ):
+    def get_element_by_template_element( self, template_element, create_element=False ):
         for element in self.elements:
             if element.library_item_info_template_element == template_element:
                 return element
-        raise 'element not found'
+        if create_element:
+            # Template elements may have been added to the template after the 
+            # library item initially inherited it, so we'll add the additional
+            # element to the library item
+            element = LibraryItemInfoElement()
+            element.library_item_info_template_element = template_element
+            element.library_item_info = self
+            element.flush()
+            self.elements.append( element )
+            return element
+        else:
+            return None
 
 class LibraryItemInfoElement( object ):
     pass

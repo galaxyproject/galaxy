@@ -1169,7 +1169,13 @@ class Library( BaseController ):
                                         msg=msg,
                                         messagetype=messagetype )
         elif action == 'edit_template':
-            if params.get( 'edit_info_template_button', False ):
+            define_or_save = 'define'
+            edit_info_template_button = params.get( 'edit_info_template_button', False )
+            if edit_info_template_button:
+                if edit_info_template_button == 'Define fields':
+                    define_or_save = 'save'
+                else:
+                    define_or_save = 'define'
                 # Save changes to existing attributes, only set name if nonempty/nonNone is passed, but always set description
                 name = params.get( 'name', None )
                 if name:
@@ -1177,7 +1183,7 @@ class Library( BaseController ):
                 library_item.description = params.get( 'description', '' )
                 library_item.flush()
                 # Save changes to exisiting elements
-                for elem_id in params.get( 'element_ids', [] ):
+                for elem_id in util.listify( params.get( 'element_ids', [] ) ):
                     liit_element = trans.app.model.LibraryItemInfoTemplateElement.get( elem_id )
                     name = params.get( 'element_name_%s' % elem_id, None )
                     if name:
@@ -1206,6 +1212,7 @@ class Library( BaseController ):
                                         folder_id=folder_id,
                                         library_item_name=library_item.name,
                                         library_item_desc=library_item_desc,
+                                        define_or_save=define_or_save,
                                         msg=msg,
                                         messagetype=messagetype )
         elif action == 'permissions':
@@ -1246,6 +1253,8 @@ class Library( BaseController ):
             library_item = trans.app.model.LibraryDatasetDatasetAssociation.get( library_item_id )
             # This response_action method requires a folder_id
             folder_id = library_item.library_dataset.folder.id
+        elif library_item_type == 'library_item_info_elememt':
+            library_item = trans.app.model.LibraryItemInfoElement.get( library_item_id )
         else:
             msg = "Invalid library item type ( %s ) specified, id ( %s )" % ( str( library_item_type ), str( library_item_id ) )
             return trans.response.send_redirect( web.url_for( controller='library',
@@ -1339,17 +1348,18 @@ class Library( BaseController ):
                 trans.app.security_agent.set_all_library_permissions( library_item.library_item_info, permissions )
                 library_item.library_item_info.refresh()
                 library_item.refresh()
-                msg = "Permissions updated for field '%s'" % library_item.name
+                msg = "Permissions updated for field '%s'" % library_item.library_item_info_template_element.name
                 return trans.response.send_redirect( web.url_for( controller='library',
                                                                   action='library_item_info',
                                                                   library_id=library_id,
                                                                   id=id,
+                                                                  library_item_id=library_item_id,
                                                                   library_item_type=library_item_type,
                                                                   permissions=True,
                                                                   msg=util.sanitize_text( msg ),
                                                                   messagetype='done' ) )
             return trans.fill_template( '/library/info_permissions.mako',
-                                        library_item_info_element=library_item_info_element,
+                                        library_item_info_element=library_item,
                                         library_id=library_id,
                                         msg=msg,
                                         messagetype=messagetype )

@@ -54,13 +54,8 @@
         </div>
         <div class="toolFormBody">
             <div class="form-row">
-                <label>Add additional template fields:</label>
-                <div style="float: left; width: 250px; margin-right: 10px;">
-                    <input type="text" name="num_fields" value="0" size="3"/>
-                </div>
-                <div style="clear: both"></div>
+                <input type="submit" name="new_info_template_button" value="Save"/>
             </div>
-            <input type="submit" name="new_info_template_button" value="Save"/>
         </div>
     </form>
 </div>

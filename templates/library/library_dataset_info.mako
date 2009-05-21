@@ -47,7 +47,7 @@
     </div>
 %else:
     <div class="toolForm">
-        <div class="toolFormTitle">View attributes of ${library_dataset.name}</div>
+        <div class="toolFormTitle">View information about ${library_dataset.name}</div>
         <div class="toolFormBody">
             <div class="form-row">
                 <b>Name:</b> ${library_dataset.name}

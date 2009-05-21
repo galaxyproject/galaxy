@@ -56,7 +56,11 @@
                 <div class="form-row">
                     <label>Message:</label>
                     <div style="float: left; width: 250px; margin-right: 10px;">
-                        <textarea name="message" rows="3" cols="35">${ldda.message}</textarea>
+                        %if ldda.message:
+                            <textarea name="message" rows="3" cols="35">${ldda.message}</textarea>
+                        %else:
+                            <textarea name="message" rows="3" cols="35"></textarea>
+                        %endif
                     </div>
                     <div class="toolParamHelp" style="clear: both;">
                         This information will be displayed in the library browser
@@ -116,7 +120,7 @@
     <p/>
 %else:
     <div class="toolForm">
-        <div class="toolFormTitle">View attributes of ${ldda.name}</div>
+        <div class="toolFormTitle">View information about ${ldda.name}</div>
         <div class="toolFormBody">
             <div class="form-row">
                 <b>Name:</b> ${ldda.name}

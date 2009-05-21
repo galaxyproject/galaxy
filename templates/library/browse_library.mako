@@ -105,26 +105,26 @@ def name_sorted( l ):
 </script>
 <![endif]>
 
-<%def name="render_folder( parent, parent_pad, created_ldda_ids, library_id )">
+<%def name="render_folder( folder, folder_pad, created_ldda_ids, library_id )">
     <%
         def show_folder():
-            if trans.app.security_agent.check_folder_contents( trans.user, parent ) or trans.app.security_agent.show_library_item( trans.user, parent ):
+            if trans.app.security_agent.check_folder_contents( trans.user, folder ) or trans.app.security_agent.show_library_item( trans.user, folder ):
                 return True
             return False
         if not show_folder:
             return ""
-        root_folder = not parent.parent
+        root_folder = not folder.parent
         if root_folder:
-            pad = parent_pad
+            pad = folder_pad
         else:
-            pad = parent_pad + 20
-        if parent_pad == 0:
+            pad = folder_pad + 20
+        if folder_pad == 0:
             expander = "/static/images/silk/resultset_bottom.png"
-            folder = "/static/images/silk/folder_page.png"
+            folder_img = "/static/images/silk/folder_page.png"
             subfolder = False
         else:
             expander = "/static/images/silk/resultset_next.png"
-            folder = "/static/images/silk/folder.png"
+            folder_img = "/static/images/silk/folder.png"
             subfolder = True
         created_ldda_id_list = util.listify( created_ldda_ids )
         if created_ldda_id_list:
@@ -134,34 +134,35 @@ def name_sorted( l ):
         <li class="folderRow libraryOrFolderRow" style="padding-left: ${pad}px;">
             <input type="checkbox" class="folderCheckbox" style="float: left;"/>
             <div class="rowTitle">
-                <span class="expandLink"><img src="${h.url_for( expander )}" class="expanderIcon"/><img src="${h.url_for( folder )}" class="rowIcon"/>
-                ${parent.name}
-                %if parent.description:
-                    <i>- ${parent.description}</i>
+                <span class="expandLink"><img src="${h.url_for( expander )}" class="expanderIcon"/><img src="${h.url_for( folder_img )}" class="rowIcon"/>
+                ${folder.name}
+                %if folder.description:
+                    <i>- ${folder.description}</i>
                 %endif
-                <a id="folder-${parent.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
-                <div popupmenu="folder-${parent.id}-popup">
-                    %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=parent ):
-                        <a class="action-button" href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library_id, folder_id=parent.id )}">Add datasets to this folder</a>
-                        <a class="action-button" href="${h.url_for( controller='library', action='folder', new=True, id=parent.id, library_id=library_id )}">Create a new sub-folder in this folder</a>
+                <a id="folder_img-${folder.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
+                <div popupmenu="folder_img-${folder.id}-popup">
+                    %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=folder ):
+                        <a class="action-button" href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library_id, folder_id=folder.id )}">Add datasets to this folder</a>
+                        <a class="action-button" href="${h.url_for( controller='library', action='folder', new=True, id=folder.id, library_id=library_id )}">Create a new sub-folder in this folder</a>
                     %endif
-                    %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=parent ):
-                        <a class="action-button" href="${h.url_for( controller='library', action='folder', information=True, id=parent.id, library_id=library_id )}">Edit this folder's information</a>
+                    %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=folder ):
+                        <a class="action-button" href="${h.url_for( controller='library', action='folder', information=True, id=folder.id, library_id=library_id )}">Edit this folder's information</a>
                     %else:
-                        <a class="action-button" href="${h.url_for( controller='library', action='folder', information=True, id=parent.id, library_id=library_id )}">View this folder's information</a>
+                        <a class="action-button" href="${h.url_for( controller='library', action='folder', information=True, id=folder.id, library_id=library_id )}">View this folder's information</a>
                     %endif
-                    %if parent.library_folder_info_template_associations:
-                        %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=parent ):
-                            <% template = parent.get_library_item_info_templates( template_list=[], restrict=True )[0] %>
+                    %if folder.library_folder_info_template_associations:
+                        %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=folder ):
+                            <% template = folder.get_library_item_info_templates( template_list=[], restrict=True )[0] %>
                             <a class="action-button" href="${h.url_for( controller='library', action='info_template', library_id=library.id, id=template.id, edit_template=True )}">Edit this folder's information template</a>
                         %endif
-                    %else:
-                        %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=parent ):
-                            <a class="action-button" href="${h.url_for( controller='library', action='info_template', library_id=library.id, folder_id=parent.id, new_template=True )}">Add an information template to this folder</a>
+                    %elif not folder.library_folder_info_associations:
+                        ## Only allow adding a new template to the folder if a previously inherited template has not already been used
+                        %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=folder ):
+                            <a class="action-button" href="${h.url_for( controller='library', action='info_template', library_id=library.id, folder_id=folder.id, new_template=True )}">Add an information template to this folder</a>
                         %endif
                     %endif
-                    %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MANAGE, library_item=parent ):
-                        <a class="action-button" href="${h.url_for( controller='library', action='folder', permissions=True, id=parent.id, library_id=library_id )}">Edit this folder's permissions</a>
+                    %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MANAGE, library_item=folder ):
+                        <a class="action-button" href="${h.url_for( controller='library', action='folder', permissions=True, id=folder.id, library_id=library_id )}">Edit this folder's permissions</a>
                     %endif
                 </div>
             </div>
@@ -172,10 +173,10 @@ def name_sorted( l ):
     %else:
         <ul>
     %endif
-        %for folder in name_sorted( parent.active_folders ):
-            ${render_folder( folder, pad, created_ldda_ids, library_id )}
+        %for child_folder in name_sorted( folder.active_folders ):
+            ${render_folder( child_folder, pad, created_ldda_ids, library_id )}
         %endfor
-        %for library_dataset in name_sorted( parent.active_datasets ):
+        %for library_dataset in name_sorted( folder.active_datasets ):
             <%
                 selected = created_ldda_ids and library_dataset.library_dataset_dataset_association.id in created_ldda_ids
             %>
