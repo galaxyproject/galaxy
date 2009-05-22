@@ -61,7 +61,18 @@ class RootController( BaseController ):
             return trans.fill_template_mako( "root/history_as_xml.mako", history=history, show_deleted=util.string_as_bool( show_deleted ) )
         else:
             template = "root/history.mako"
-            return trans.fill_template( "root/history.mako", history=history, show_deleted=util.string_as_bool( show_deleted ) )
+            show_deleted = util.string_as_bool( show_deleted )
+            query = trans.sa_session.query( model.HistoryDatasetAssociation ) \
+                .filter( model.HistoryDatasetAssociation.history == history ) \
+                .options( eagerload( "children" ) ) \
+                .join( "dataset" ).filter( model.Dataset.purged == False ) \
+                .options( eagerload_all( "dataset.actions" ) )
+            if not show_deleted:
+                query.filter_by( deleted=False )
+            return trans.stream_template_mako( "root/history.mako",
+                                               history = history,
+                                               datasets = query.all(),
+                                               show_deleted = show_deleted )
 
     @web.expose
     def dataset_state ( self, trans, id=None, stamp=None ):

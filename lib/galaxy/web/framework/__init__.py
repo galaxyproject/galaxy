@@ -23,6 +23,7 @@ from paste.deploy.converters import asbool
 pkg_resources.require( "Mako" )
 import mako.template
 import mako.lookup
+import mako.runtime
 
 pkg_resources.require( "Babel" )
 from babel.support import Translations
@@ -575,6 +576,23 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         data.update( self.template_context )
         data.update( kwargs )
         return template.render( **data )
+    def stream_template_mako( self, filename, **kwargs ):
+        template = self.webapp.mako_template_lookup.get_template( filename )
+        template.output_encoding = 'utf-8' 
+        data = dict( caller=self, t=self, trans=self, h=webhelpers, util=util, request=self.request, response=self.response, app=self.app )
+        data.update( self.template_context )
+        data.update( kwargs )
+        ## return template.render( **data )
+        def render( environ, start_response ):
+            response_write = start_response( self.response.wsgi_status(), 
+            self.response.wsgi_headeritems() )
+            class C:
+                def write( self, *args, **kwargs ):
+                    response_write( *args, **kwargs )
+            context = mako.runtime.Context( C(), **data )
+            template.render_context( context )
+            return []
+        return render
     def fill_template_string(self, template_string, context=None, **kwargs):
         """
         Fill in a template, putting any keyword arguments on the context.

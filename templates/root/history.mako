@@ -70,7 +70,15 @@
 	    $("#history-name-area").append( t );
 	    t.focus();
 	    return false;
-	})
+	});
+        // Updater
+        updater({
+            %for data in reversed( datasets ):
+                %if data.visible and data.state not in [ "deleted", "empty", "error", "ok" ]:
+                    "${data.id}": "${data.state}";
+                %endif
+            %endfor
+        });
     })
     //' Functionized so AJAX'd datasets can call them
     // Get shown/hidden state from cookie
@@ -80,7 +88,7 @@
         var state = new CookieSet( "galaxy.history.expand_state" );
 	for ( id in state.store ) {
 	    if ( id ) {
-		$( "#" + id ).children( "div.historyItemBody" ).show();
+		$( "#" + id + " div.historyItemBody" ).show();
 	    }
 	}
         // If Mozilla, hide scrollbars in hidden items since they cause animation bugs
@@ -114,51 +122,51 @@
                     state.add( id ); state.save();
                     delete state;
                 }
-        return false;
+                return false;
             });
             // Delete link
             $(this).find( "a.historyItemDelete" ).each( function() {
-        var data_id = this.id.split( "-" )[1];
-        $(this).click( function() {
-            $( '#progress-' + data_id ).show();
-            $.ajax({
-            url: "${h.url_for( action='delete_async', id='XXX' )}".replace( 'XXX', data_id ),
-            error: function() { alert( "Delete failed" ) },
-            success: function() {
-            %if show_deleted:
-                var to_update = {};
-                to_update[data_id] = "none";
-                updater( to_update );
-            %else:
-                $( "#historyItem-" + data_id ).fadeOut( "fast", function() {
-                $( "#historyItemContainer-" + data_id ).remove();
-                if ( $( "div.historyItemContainer" ).length < 1 ) {
-                    $( "#emptyHistoryMessage" ).show();
-                }
+                var data_id = this.id.split( "-" )[1];
+                $(this).click( function() {
+                    $( '#progress-' + data_id ).show();
+                    $.ajax({
+                        url: "${h.url_for( action='delete_async', id='XXX' )}".replace( 'XXX', data_id ),
+                        error: function() { alert( "Delete failed" ) },
+                        success: function() {
+                            %if show_deleted:
+                                var to_update = {};
+                                to_update[data_id] = "none";
+                                updater( to_update );
+                            %else:
+                                $( "#historyItem-" + data_id ).fadeOut( "fast", function() {
+                                $( "#historyItemContainer-" + data_id ).remove();
+                                if ( $( "div.historyItemContainer" ).length < 1 ) {
+                                    $( "#emptyHistoryMessage" ).show();
+                                }
+                                });
+                            %endif
+                        }
+                    });
+                    return false;
                 });
-            %endif
-            }
             });
-            return false;
-        });
-        });
             // Undelete link
             $(this).find( "a.historyItemUndelete" ).each( function() {
-        var data_id = this.id.split( "-" )[1];
-        $(this).click( function() {
-            $( '#progress-' + data_id ).show();
-            $.ajax({
-            url: "${h.url_for( controller='dataset', action='undelete_async', id='XXX' )}".replace( 'XXX', data_id ),
-            error: function() { alert( "Undelete failed" ) },
-            success: function() {
-                var to_update = {};
-                to_update[data_id] = "none";
-                updater( to_update );
-            }
+                var data_id = this.id.split( "-" )[1];
+                $(this).click( function() {
+                    $( '#progress-' + data_id ).show();
+                    $.ajax({
+                        url: "${h.url_for( controller='dataset', action='undelete_async', id='XXX' )}".replace( 'XXX', data_id ),
+                        error: function() { alert( "Undelete failed" ) },
+                        success: function() {
+                            var to_update = {};
+                            to_update[data_id] = "none";
+                            updater( to_update );
+                        }
+                    });
+                    return false;
+                });
             });
-            return false;
-        });
-        });
         });
     };
     // Looks for changes in dataset state using an async request. Keeps
@@ -261,36 +269,21 @@
 
 <%namespace file="history_common.mako" import="render_dataset" />
 
-<% activatable_datasets = history.activatable_datasets %>
+%if not datasets:
 
-%if ( show_deleted and not activatable_datasets ) or ( not show_deleted and not history.active_datasets ):
     <div class="infomessagesmall" id="emptyHistoryMessage">
+
 %else:    
-    <%
-    if show_deleted:
-        ## All datasets
-        datasets_to_show = activatable_datasets
-    else:
-        ## Active (not deleted)
-        datasets_to_show = history.active_datasets
-    %>
+
     ## Render requested datasets, ordered from newest to oldest
-    %for data in reversed( datasets_to_show ):
+    %for data in reversed( datasets ):
         %if data.visible:
             <div class="historyItemContainer" id="historyItemContainer-${data.id}">
                 ${render_dataset( data, data.hid, show_deleted_on_refresh = show_deleted )}
             </div>
         %endif
     %endfor
-    <script type="text/javascript">
-    var tracked_datasets = {};
-    %for data in reversed( history.active_datasets ):
-        %if data.visible and data.state not in [ "deleted", "empty", "error", "ok" ]:
-            tracked_datasets[ ${data.id} ] = "${data.state}";
-        %endif
-    %endfor
-    updater( tracked_datasets );
-    </script>
+
     <div class="infomessagesmall" id="emptyHistoryMessage" style="display:none;">
 %endif
         ${_("Your history is empty. Click 'Get Data' on the left pane to start")}
