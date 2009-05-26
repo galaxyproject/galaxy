@@ -515,17 +515,30 @@ class TestSecurityAndLibraries( TwillTestCase ):
             info_permissions.sort()
             assert actions == info_permissions, "Permissions for library_item_info id %s not correctly inherited from library %s" \
                                 % ( library_item_info.id, library_one.name )
-        # Need the current library_item_info_element.id
-        last_library_item_info_element_id = galaxy.model.LibraryItemInfoElement.query() \
-            .order_by( desc( galaxy.model.LibraryItemInfoElement.table.c.id ) ).first()
-        if last_library_item_info_element_id is None:
-            last_library_item_info_element_id = 0
+        element_ids = []
+        if library_one.library_info_associations:
+            # We have a set of LibraryItemInfoElements
+            last_library_item_info_element = galaxy.model.LibraryItemInfoElement.query() \
+                .order_by( desc( galaxy.model.LibraryItemInfoElement.table.c.id ) ).first()
+            if not last_library_item_info_element:
+                element_ids.append( 0 )
+                element_ids.append( 1 )
+            else:
+                element_ids.append( last_library_item_info_element.id + 1 )
+                element_ids.append( last_library_item_info_element.id + 2 )
+        else:
+            # We only have a set of LibraryItemInfoTemplateElements
+            for ele in library_one_template.elements:
+                element_ids.append( ele.id )
+            element_ids.sort()
         # Add information to the library using the template
-        ele_1_field_name = "info_element_%s_%s" % ( str( library_one_template.id ), str( last_library_item_info_element_id + 1 ) )
+        ele_1_field_name = "info_element_%s_%s" % ( str( library_one_template.id ), str( element_ids[0] ) )
         ele_1_contents = 'hello'
-        ele_2_field_name = "info_element_%s_%s" % ( str( library_one_template.id ), str( last_library_item_info_element_id + 2 ) )
+        ele_2_field_name = "info_element_%s_%s" % ( str( library_one_template.id ), str( element_ids[1] ) )
         ele_2_contents = 'world'
-        self.edit_library_info( str( library_one.id ), library_one.name, ele_1_field_name, ele_1_contents, ele_2_field_name, ele_2_contents )
+        self.edit_library_info( str( library_one.id ), library_one.name,
+                                ele_1_field_name, ele_1_contents,
+                                ele_2_field_name, ele_2_contents )
         self.home()
         self.visit_url( '%s/admin/library?id=%s&information=True' % ( self.url, str( library_one.id ) ) )
         self.check_page_for_string( ele_1_contents )
@@ -536,11 +549,17 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.check_page_for_string( ele_2_contents )
         # Edit the template
         new_name = 'Library Template 1 renamed'
+        new_ele_name_1_field = "element_name_%s" % element_ids[0]
         new_ele_name_1 = 'wind'
+        new_ele_desc_1_field = "element_description_%s" % element_ids[0]
         ele_desc_1 = 'This is the wind component'
+        new_ele_name_2_field = "element_name_%s" % element_ids[1]
         new_ele_name_2 = 'bag'
+        new_ele_desc_2_field = "element_description_%s" % element_ids[1]
         ele_desc_2 = 'This is the bag component'
-        self.edit_library_info_template( str( library_one.id ), library_one_template.id, new_name, new_ele_name_1, ele_desc_1, new_ele_name_2, ele_desc_2 )
+        self.edit_library_info_template( str( library_one.id ), library_one_template.id, new_name,
+                                         new_ele_name_1_field, new_ele_name_1, new_ele_desc_1_field, ele_desc_1,
+                                         new_ele_name_2_field, new_ele_name_2, new_ele_desc_2_field, ele_desc_2 )
         self.home()
         self.visit_url( '%s/admin/library?id=%s&information=True' % ( self.url, str( library_one.id ) ) )
         self.check_page_for_string( new_ele_name_1 )
@@ -692,20 +711,34 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.home()
     def test_105_add_template_element( self ):
         """Testing adding a new element to an existing library template"""
+        library_one_template.refresh()
+        element_ids = []
+        for ele in library_one_template.elements:
+            element_ids.append( ele.id )
+        element_ids.sort()
+
         name = 'Library Template 1 renamed'
+        ele_field_name_1 = "element_name_%s" % element_ids[0]
         ele_name_1 = 'wind'
+        ele_field_desc_1 = "element_description_%s" % element_ids[0]
         ele_desc_1 = 'This is the wind component'
+        ele_field_name_2 = "element_name_%s" % element_ids[1]
         ele_name_2 = 'bag'
+        ele_field_desc_2 = "element_description_%s" % element_ids[1]
         ele_desc_2 = 'This is the bag component'
         new_ele_name = 'Fubar'
         new_ele_desc = 'This is the Fubar component'
-        library_one_template.refresh()
+        
         self.add_library_info_template_element( str( library_one.id ),
                                                 str( library_one_template.id ),
                                                 library_one_template.name,
+                                                ele_field_name_1,
                                                 ele_name_1,
+                                                ele_field_desc_1,
                                                 ele_desc_1,
+                                                ele_field_name_2,
                                                 ele_name_2,
+                                                ele_field_desc_2,
                                                 ele_desc_2,
                                                 new_ele_name=new_ele_name,
                                                 new_ele_desc=new_ele_desc )
@@ -1601,11 +1634,13 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.undelete_role( str( role_two.id ), role_two.name )
     def test_270_purge_library( self ):
         """Testing purging a library"""
+        self.home()
+        self.delete_library_item( str( library_one.id ), str( library_one.id ), library_one.name, library_item_type='library' )
         self.purge_library( str( library_one.id ), library_one.name )
         # Make sure the library was purged
         library_one.refresh()
-        if not library_one.purged:
-            raise AssertionError( 'The library id %s named "%s" has not been marked as purged.' % ( str( library_one.id ), library_one.name ) )
+        if not ( library_one.deleted and library_one.purged ):
+            raise AssertionError( 'The library id %s named "%s" has not been marked as deleted and purged.' % ( str( library_one.id ), library_one.name ) )
         def check_folder( library_folder ):
             for folder in library_folder.folders:
                 folder.refresh()
@@ -1635,15 +1670,6 @@ class TestSecurityAndLibraries( TwillTestCase ):
         check_folder( library_one.root_folder )
     def test_275_reset_data_for_later_test_runs( self ):
         """Reseting data to enable later test runs to pass"""
-        ##################
-        # Eliminate all templates and info associations
-        ##################
-        for lia in library_one.library_info_associations:
-            lia.delete()
-            lia.flush()
-        for lita in library_one.library_info_template_associations:
-            lita.delete()
-            lita.flush()
         ##################
         # Eliminate all non-private roles
         ##################

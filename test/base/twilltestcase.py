@@ -855,9 +855,14 @@ class TwillTestCase( unittest.TestCase ):
         tc.fv( '1', 'new_element_name_0', ele_name_0 )
         tc.fv( '1', 'new_element_name_1', ele_name_1 )
         tc.submit( 'new_info_template_button' )
+        self.check_page_for_string( 'The new information template has been created.' )
         self.home()
-    def add_library_info_template_element( self, library_id, template_id, template_name, ele_name_1, ele_desc_1, 
-                                           ele_name_2, ele_desc_2, new_ele_name='Fubar', new_ele_desc='This is the Fubar compnent' ):
+    def add_library_info_template_element( self, library_id, template_id, template_name,
+                                           ele_field_name_1, ele_name_1,
+                                           ele_field_desc_1, ele_desc_1,
+                                           ele_field_name_2, ele_name_2,
+                                           ele_field_desc_2, ele_desc_2,
+                                           new_ele_name='Fubar', new_ele_desc='This is the Fubar compnent' ):
         """Add a new element to an existing library info template"""
         self.home()
         url = "%s/admin/info_template?library_id=%s&id=%s&edit_template=True&num_fields=1&edit_info_template_button=Save" % \
@@ -868,10 +873,10 @@ class TwillTestCase( unittest.TestCase ):
         tc.fv( '1', 'id', template_id )
         tc.fv( '1', 'set_num_fields', '0' )
         tc.fv( '1', 'name', template_name )
-        tc.fv( '1', 'element_name_1', ele_name_1 )
-        tc.fv( '1', 'element_description_1', ele_desc_1 )
-        tc.fv( '1', 'element_name_2', ele_name_2 )
-        tc.fv( '1', 'element_description_2', ele_desc_2 )
+        tc.fv( '1', ele_field_name_1, ele_name_1 )
+        tc.fv( '1', ele_field_desc_1, ele_desc_1 )
+        tc.fv( '1', ele_field_name_2, ele_name_2 )
+        tc.fv( '1', ele_field_desc_2, ele_desc_2 )
         tc.fv( '1', 'new_element_name_0', new_ele_name )
         tc.fv( '1', 'new_element_description_0', new_ele_desc )
         tc.submit( 'edit_info_template_button' )
@@ -888,7 +893,8 @@ class TwillTestCase( unittest.TestCase ):
         tc.fv( '2', ele_2_field_name, ele_2_contents )
         tc.submit( 'create_new_info_button' )
         self.home()
-    def edit_library_info_template( self, library_id, id, name, name_1, desc_1, name_2, desc_2 ):
+    def edit_library_info_template( self, library_id, id, name, ele_name_1, name_1,
+                                    ele_desc_1, desc_1, ele_name_2, name_2, ele_desc_2, desc_2 ):
         """Edit an existing library info template"""
         self.home()
         url = "%s/admin/info_template?library_id=%s&id=%s&edit_template=True" % ( self.url, library_id, id )
@@ -897,10 +903,10 @@ class TwillTestCase( unittest.TestCase ):
         tc.fv( '1', 'id', id )
         tc.fv( '1', 'set_num_fields', '0' )
         tc.fv( '1', 'name', name )
-        tc.fv( '1', 'element_name_1', name_1 )
-        tc.fv( '1', 'element_description_1', desc_1 )
-        tc.fv( '1', 'element_name_2', name_2 )
-        tc.fv( '1', 'element_description_2', desc_2 )
+        tc.fv( '1', ele_name_1, name_1 )
+        tc.fv( '1', ele_desc_1, desc_1 )
+        tc.fv( '1', ele_name_2, name_2 )
+        tc.fv( '1', ele_desc_2, desc_2 )
         tc.submit( 'edit_info_template_button' )
         check_str = "Information template '%s' has been updated" % name
         self.check_page_for_string( check_str )
@@ -988,7 +994,6 @@ class TwillTestCase( unittest.TestCase ):
         for pi in permissions_in:
             key = '%s_in' % pi
             url ="%s&%s=%s" % ( url, key, str( role_id ) )
-        print url
         self.home()
         self.visit_url( "%s/%s" % ( self.url, url ) )
         check_str = "Permissions updated for dataset '%s'" % ldda_name
@@ -1046,12 +1051,7 @@ class TwillTestCase( unittest.TestCase ):
                                     dbkey='hg18', message='', check_template_str1='', check_template_str2='', check_template_str3='' ):
         """Upload new version(s) of a dataset"""
         self.home()
-        filename = self.get_filename( filename )
-        
-        url = "%s/admin/library_dataset_dataset_association?upload_option=upload_file&library_id=%s&folder_id=%s&replace_id=%s&message=%s" % \
-                        ( self.url, library_id, folder_id, library_dataset_id, message )
-        print "####url: ", url
-        
+        filename = self.get_filename( filename )      
         self.visit_url( "%s/admin/library_dataset_dataset_association?upload_option=upload_file&library_id=%s&folder_id=%s&replace_id=%s&message=%s" % \
                         ( self.url, library_id, folder_id, library_dataset_id, message ) )
         self.check_page_for_string( 'Upload files' )

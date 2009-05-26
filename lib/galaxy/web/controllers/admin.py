@@ -875,14 +875,21 @@ class Admin( BaseController ):
             library_folder.deleted = True
             library_folder.purged = True
             library_folder.flush()
-        purge_folder( library.root_folder )
-        library.purged = True
-        library.flush()
-        msg = "Library '%s' and all of its contents have been purged, datasets will be removed from disk via the cleanup_datasets script" % library.name
-        return trans.response.send_redirect( web.url_for( controller='admin',
-                                                          action='deleted_libraries',
-                                                          msg=util.sanitize_text( msg ),
-                                                          messagetype='done' ) )
+        if not library.deleted:
+            msg = "Library '%s' has not been marked deleted, so it cannot be purged" % ( library.name )
+            return trans.response.send_redirect( web.url_for( controller='admin',
+                                                              action='browse_libraries',
+                                                              msg=util.sanitize_text( msg ),
+                                                              messagetype='error' ) )
+        else:
+            purge_folder( library.root_folder )
+            library.purged = True
+            library.flush()
+            msg = "Library '%s' and all of its contents have been purged, datasets will be removed from disk via the cleanup_datasets script" % library.name
+            return trans.response.send_redirect( web.url_for( controller='admin',
+                                                              action='deleted_libraries',
+                                                              msg=util.sanitize_text( msg ),
+                                                              messagetype='done' ) )
     @web.expose
     @web.require_admin
     def folder( self, trans, id, library_id, **kwd ):
@@ -1545,7 +1552,7 @@ class Admin( BaseController ):
                                             messagetype=messagetype )
     @web.expose
     @web.require_admin
-    def info_template( self, trans, library_id, id=None, num_fields=0, folder_id=None, ldda_id=None, library_dataset_id=None, **kwd ): 
+    def info_template( self, trans, library_id, id=None, num_fields=0, folder_id=None, ldda_id=None, library_dataset_id=None, **kwd ):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
