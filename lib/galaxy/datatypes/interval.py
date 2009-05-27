@@ -223,6 +223,12 @@ class Interval( Tabular ):
                 stop = viewport_tuple[2]
                 for site_name, site_url in util.get_ucsc_by_build(dataset.dbkey):
                     if site_name in app.config.ucsc_display_sites:
+                        # HACK: UCSC doesn't support https, so force http even
+                        # if our URL scheme is https.  Making this work
+                        # requires additional hackery in your upstream proxy.
+                        # If UCSC ever supports https, remove this hack.
+                        if base_url.startswith( 'https://' ):
+                            base_url = base_url.replace( 'https', 'http', 1 )
                         display_url = urllib.quote_plus( "%s%s/display_as?id=%i&display_app=%s" % (base_url, url_for( controller='root' ), dataset.id, type) )
                         link = "%sdb=%s&position=%s:%s-%s&hgt.customText=%s" % (site_url, dataset.dbkey, chrom, start, stop, display_url )
                         ret_val.append( (site_name, link) )
