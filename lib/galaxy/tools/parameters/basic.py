@@ -947,7 +947,10 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
     def from_html( self, value, trans=None, other_values={} ):
         if self.need_late_validation( trans, other_values ):
             if self.multiple:
-                value = value.split( "\n" )
+                if value == '': #No option selected
+                    value = None
+                else:
+                    value = value.split( "\n" )
             return UnvalidatedValue( value )
         if not value: return None
         if not isinstance( value, list ):
