@@ -264,8 +264,13 @@ def _purge_dataset( dataset, remove_from_disk, info_only = False ):
                         if dataset.extra_files_path and os.path.exists( dataset.extra_files_path ):
                             shutil.rmtree( dataset.extra_files_path ) #we need to delete the directory and its contents; os.unlink would always fail on a directory
                     dataset.purged = True
+                    dataset.flush()
             else:
                 print "# This dataset (%i) is not purgable, the file (%s) will not be removed.\n" % ( dataset.id, dataset.file_name )
+        except OSError, exc:
+            print "# Error, file has already been removed: %s" % str( exc )
+            dataset.purged = True
+            dataset.flush()
         except Exception, exc:
             print "# Error, exception: %s caught attempting to purge %s\n" %( str( exc ), dataset.file_name )
     else:
