@@ -59,7 +59,7 @@ class RootController( BaseController ):
             return trans.fill_template( '/no_access.mako', message = 'Please log in to access Galaxy histories.' )
         if as_xml:
             trans.response.set_content_type('text/xml')
-            return trans.fill_template_mako( "root/history_as_xml.mako", history=history )
+            return trans.fill_template_mako( "root/history_as_xml.mako", history=history, show_deleted=util.string_as_bool( show_deleted ) )
         else:
             template = "root/history.mako"
             return trans.fill_template( "root/history.mako", history = history, show_deleted = util.string_as_bool( show_deleted ) )

@@ -98,6 +98,7 @@ class TwillTestCase( unittest.TestCase ):
     # Functions associated with histories
     def check_history_for_errors( self ):
         """Raises an exception if there are errors in a history"""
+        self.home()
         self.visit_page( "history" )
         page = self.last_page()
         if page.find( 'error' ) > -1:
@@ -105,6 +106,7 @@ class TwillTestCase( unittest.TestCase ):
 
     def check_history_for_string( self, patt ):
         """Looks for 'string' in history page"""
+        self.home()
         self.visit_page( "history" )
         for subpatt in patt.split():
             tc.find(subpatt)
@@ -130,16 +132,16 @@ class TwillTestCase( unittest.TestCase ):
         data_list = [ elem for elem in tree.findall("data") ]
         return data_list
 
-    def get_history( self ):
+    def get_history( self, show_deleted=False ):
         """Returns a history"""
-        tree = self.history_as_xml_tree()
+        tree = self.history_as_xml_tree( show_deleted=show_deleted )
         data_list = [ elem for elem in tree.findall("data") ]
         return data_list
 
-    def history_as_xml_tree( self ):
+    def history_as_xml_tree( self, show_deleted=False ):
         """Returns a parsed xml object of a history"""
         self.home()
-        self.visit_page( 'history?as_xml=True' )
+        self.visit_page( 'history?as_xml=True&show_deleted=%s' % show_deleted )
         xml = self.last_page()
         tree = ElementTree.fromstring(xml)
         return tree
@@ -201,6 +203,7 @@ class TwillTestCase( unittest.TestCase ):
         name = elem.get( 'name' )
         self.assertTrue( name )
         self.visit_url( "%s/history/share?id=%s&email=%s&history_share_btn=Submit" % ( self.url, id, email ) )
+        self.check_page_for_string( 'History (%s) has been shared with: %s' % ( name, email ) )
         return id, name, email
     def share_history_containing_private_datasets( self, history_id, email='test@bx.psu.edu' ):
         """Attempt to share a history containing private datasets with a different user"""
@@ -237,8 +240,10 @@ class TwillTestCase( unittest.TestCase ):
         self.assertEqual(len(elems), 1)
         self.visit_page( "history/list?operation=switch&id=%s" % elems[0].get('id') )
 
-    def view_stored_histories( self ):
+    def view_stored_histories( self, check_str='' ):
         self.visit_page( "history/list" )
+        if check_str:
+            self.check_page_for_string( check_str )
 
     # Functions associated with datasets (history items) and meta data
     def get_job_stderr( self, id ):
@@ -264,16 +269,36 @@ class TwillTestCase( unittest.TestCase ):
         self.visit_page( "edit?hid=%d" % hid )
         for subpatt in patt.split():
             tc.find(subpatt)
-
-    def delete_history_item( self, hid ):
+    def delete_history_item( self, hid, check_str='' ):
         """Deletes an item from a history"""
+        try:
+            hid = int( hid )
+        except:
+            raise AssertionError, "Invalid hid '%s' - must be int" % hid
         hid = str(hid)
         data_list = self.get_history()
         self.assertTrue( data_list )
-        elems = [ elem for elem in data_list if elem.get('hid') == hid ]
-        self.assertEqual(len(elems), 1)
-        self.visit_page( "delete?id=%s" % elems[0].get('id') )
-
+        elems = [ elem for elem in data_list if elem.get( 'hid' ) == hid ]
+        self.assertEqual( len( elems ), 1 )
+        self.home()
+        self.visit_page( "delete?id=%s" % elems[0].get( 'id' ) )
+        if check_str:
+            self.check_page_for_string( check_str )
+    def undelete_history_item( self, hid, show_deleted=False, check_str='' ):
+        """Un-deletes a deleted item in a history"""
+        try:
+            hid = int( hid )
+        except:
+            raise AssertionError, "Invalid hid '%s' - must be int" % hid
+        hid = str( hid )
+        data_list = self.get_history( show_deleted=show_deleted )
+        self.assertTrue( data_list )
+        elems = [ elem for elem in data_list if elem.get( 'hid' ) == hid ]
+        self.assertEqual( len( elems ), 1 )
+        self.home()
+        self.visit_url( "%s/dataset/undelete?id=%s" % ( self.url, elems[0].get( 'id' ) ) )
+        if check_str:
+            self.check_page_for_string( check_str )
     def edit_metadata( self, hid=None, form_no=0, **kwd ):
         """
         Edits the metadata associated with a history item."""
