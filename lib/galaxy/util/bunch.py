@@ -22,3 +22,6 @@ class Bunch( object ):
 
     def __nonzero__(self):
         return bool(self.__dict__)
+
+    def __setitem__(self, k, v):
+        self.__dict__.__setitem__(k, v)

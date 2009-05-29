@@ -171,6 +171,11 @@ job_scheduler_policy = galaxy.jobs.schedulingpolicy.roundrobin:UserRoundRobin
 # Job queue cleanup interval in minutes. Currently only used by RoundRobin
 job_queue_cleanup_interval = 30
 
+# Jobs can be killed after a certain amount of execution time.  Format is in
+# hh:mm:ss.  Currently only implemented for PBS.  Leave commented for
+# unlimited.
+#job_walltime = 10:00:00
+
 # Clustering Galaxy is not a straightforward process and requires a lot of
 # pre-configuration.  See the ClusteringGalaxy Wiki before attempting to set
 # any of these options:

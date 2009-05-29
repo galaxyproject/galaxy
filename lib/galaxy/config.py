@@ -55,6 +55,7 @@ class Configuration( object ):
         self.job_working_directory = resolve_path( kwargs.get( "job_working_directory", "database/job_working_directory" ), self.root )
         self.outputs_to_working_directory = string_as_bool( kwargs.get( 'outputs_to_working_directory', False ) )
         self.output_size_limit = int( kwargs.get( 'output_size_limit', 0 ) )
+        self.job_walltime = kwargs.get( 'job_walltime', None )
         self.admin_users = kwargs.get( "admin_users", "" )
         self.sendmail_path = kwargs.get('sendmail_path',"/usr/sbin/sendmail")
         self.mailing_join_addr = kwargs.get('mailing_join_addr',"galaxy-user-join@bx.psu.edu")
@@ -123,7 +124,7 @@ class Configuration( object ):
         """
         admin_users = self.get( "admin_users", "" ).split( "," )
         return ( user is not None and user.email in admin_users )
-            
+
 def get_database_engine_options( kwargs ):
     """
     Allow options for the SQLAlchemy database engine to be passed by using
