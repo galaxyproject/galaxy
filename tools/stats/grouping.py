@@ -149,9 +149,15 @@ def main():
                                 rout = eval( rfunc )( rout )
                             if op in ['c', 'cuniq']:
                                 if op == 'c':
-                                    out_str += "\t" + ','.join(rout)
+                                    if type(rout) == type([]):
+                                        out_str += "\t" + ','.join(rout)
+                                    else:
+                                        out_str += "\t" + str(rout)
                                 else:
-                                    out_str += "\t" + ','.join(list(set(rout)))
+                                    if type(rout) == type([]):
+                                        out_str += "\t" + ','.join(list(set(rout)))
+                                    else:
+                                        out_str += "\t" + str(rout)
                             else:
                                 out_str += "\t" + str(rout)
                                 
@@ -211,9 +217,15 @@ def main():
                 rout = eval( rfunc )( rout )  
             if op in ['c','cuniq']:
                 if op == 'c':
-                    out_str += "\t" + ','.join(rout)
+                    if type(rout) == type([]):
+                        out_str += "\t" + ','.join(rout)
+                    else:
+                        out_str += "\t" + str(rout)
                 else:
-                    out_str += "\t" + ','.join(list(set(rout)))
+                    if type(rout) == type([]):
+                        out_str += "\t" + ','.join(list(set(rout)))
+                    else:
+                        out_str += "\t" + str(rout)
             else:
                 out_str += "\t" + str( rout )
         except:

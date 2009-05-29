@@ -32,7 +32,7 @@ def main():
     skipped_lines = 0
     first_invalid_line = 0
     invalid_value = ''
-
+    i = 0
     for i, line in enumerate( file( in_fname ) ):
         valid = True
         line = line.rstrip('\r\n')
@@ -79,7 +79,10 @@ def main():
         except Exception, exc:
             stop_err( "%s" %str( exc ) )
     else:
-        stop_err( "All values in column %s are non-numeric." %sys.argv[3] )
+        if i == 0:
+            stop_err("Input dataset is empty.")
+        else:
+            stop_err( "All values in column %s are non-numeric." %sys.argv[3] )
 
     print "Histogram of column %s. " %sys.argv[3]
     if skipped_lines > 0:

@@ -1,4 +1,4 @@
-<tool id="liftOver1" name="Convert genome coordinates">
+<tool id="liftOver1" name="Convert genome coordinates" version="1.0.1">
   <description> between assemblies and genomes</description>
   <command interpreter="python">liftOver_wrapper.py $input "$out_file1" "$out_file2" $dbkey $to_dbkey $minMatch</command>
   <inputs>

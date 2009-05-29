@@ -29,7 +29,7 @@ except:
 if in_dbkey == "?": 
     stop_err( "Input dataset genome build unspecified, click the pencil icon in the history item to specify it." )
 
-cmd_line = "liftOver -minMatch=" + minMatch + " " + infile + " " + mapfilepath + " " + outfile1 + " " + outfile2 + "  > /dev/null 2>&1"
+cmd_line = "liftOver -minMatch=" + str(minMatch) + " " + infile + " " + mapfilepath + " " + outfile1 + " " + outfile2 + "  > /dev/null 2>&1"
 
 if not os.path.isfile( mapfilepath ):
     stop_err( "%s mapping is not currently available."  % ( mapfilepath.split('/')[-1].split('.')[0] ) )
