@@ -1,0 +1,32 @@
+<!--
+    If the value of 'URL_method' is 'get', the request will consist of the value of 'URL' coming back in
+    the initial response.  If value of 'URL_method' is 'post', any additional params coming back in the
+    initial response ( in addition to 'URL' ) will be encoded and appended to URL and a post will be performed.
+-->
+<tool name="EuPathDB" id="eupathdb" tool_type="data_source" url_method="post">
+    <description>server</description>
+    <command interpreter="python">data_source.py $output</command>
+    <inputs action="http://galaxy.eupathdb.org/eupathdb.galaxy/queries_tools.jsp" check_values="false" method="post"> 
+        <display>go to EuPathDB server $GALAXY_URL</display>
+        <param name="GALAXY_URL" type="baseurl" value="/tool_runner?tool_id=eupathdb" />
+    </inputs>
+    <request_param_translation>
+        <request_param galaxy_name="URL" remote_name="URL" missing="">
+            <add_to_url>
+                <param_from_source name="dbkey" missing="?" />
+                <param_from_source name="wdk_history_id" missing="" />
+                <param_from_source name="wdkReportFormat" missing="tabular" />
+                <param_from_source name="selectedFields" missing="" />
+                <param_from_source name="includeHeader" missing="yes" />
+                <param_from_source name="downloadType" missing="plain" />
+            </add_to_url>
+        </request_param>
+        <request_param galaxy_name="format" remote_name="wdkReportFormat" missing="tabular" />
+        <request_param galaxy_name="dbkey" remote_name="dbkey" missing="?" />
+    </request_param_translation>
+    <uihints minwidth="800"/>
+    <outputs>
+        <data name="output" format="txt" />
+    </outputs>
+    <options sanitize="False" refresh="True"/>
+</tool>
