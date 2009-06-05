@@ -24,9 +24,9 @@ class TestHistory( TwillTestCase ):
         global regular_user3
         regular_user3 = galaxy.model.User.filter( galaxy.model.User.table.c.email=='test3@bx.psu.edu' ).first()
         assert regular_user3 is not None, 'Problem retrieving user with email "test3@bx.psu.edu" from the database'
-        self.logout()
     def test_005_deleting_histories( self ):
         """Testing deleting histories"""
+        self.logout()
         self.login( email='test@bx.psu.edu' )
         global admin_user
         admin_user = galaxy.model.User.filter( galaxy.model.User.table.c.email=='test@bx.psu.edu' ).first()
@@ -104,20 +104,18 @@ class TestHistory( TwillTestCase ):
         check_str = "You can't send histories to yourself."
         self.share_history( str( history3.id ), 'test@bx.psu.edu', check_str )
         # Share a history with 1 valid user
-        name = history3.name
-        email = 'test1@bx.psu.edu'
-        check_str = 'Histories (%s) have been shared with: %s' % ( name, email )
-        self.share_history( str( history3.id ), email, check_str )
+        check_str = 'Histories (%s) have been shared with: %s' % ( history3.name, regular_user1.email )
+        self.share_history( str( history3.id ), regular_user1.email, check_str )
         # We need to keep track of all shared histories so they can later be deleted
         global history3_copy1
         history3_copy1 = galaxy.model.History.query().order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
         assert history3_copy1 is not None, "Problem retrieving history3_copy1 from database"
         self.logout()
-        self.login( email='test1@bx.psu.edu' )
-        check_str = '%s from test@bx.psu.edu' % history3.name
+        self.login( email=regular_user1.email )
+        check_str = '%s from %s' % ( history3.name, admin_user.email )
         self.view_stored_active_histories( check_str=check_str )
         self.logout()
-        self.login( email='test@bx.psu.edu' )
+        self.login( email=admin_user.email )
         # Need to delete history3_copy1
         history3_copy1.deleted = True
         history3_copy1.flush()
@@ -135,7 +133,7 @@ class TestHistory( TwillTestCase ):
         self.upload_file( '2.bed', dbkey='hg18' )
         id = '%s,%s' % ( str( history3.id ), str( history4.id ) )
         name = '%s,%s' % ( history3.name, history4.name )
-        email = 'test2@bx.psu.edu,test3@bx.psu.edu'
+        email = '%s,%s' % ( regular_user2.email, regular_user3.email )
         check_str = 'Histories (%s) have been shared with: %s' % ( name, email )
         self.share_history( id, email, check_str )
         # We need to keep track of all shared histories so they can later be deleted
@@ -158,19 +156,19 @@ class TestHistory( TwillTestCase ):
         history4_copy1 = history4_copyies[0]
         history4_copy2 = history4_copyies[1]
         self.logout()
-        self.login( email='test2@bx.psu.edu' )
+        self.login( email=regular_user2.email )
         check_str = '%s from %s' % ( history3.name, admin_user.email )
         self.view_stored_active_histories( check_str=check_str )
         check_str = '%s from %s' % ( history4.name, admin_user.email )
         self.view_stored_active_histories( check_str=check_str )
         self.logout()
-        self.login( email='test3@bx.psu.edu' )
+        self.login( email=regular_user3.email )
         check_str = '%s from %s' % ( history3.name, admin_user.email )
         self.view_stored_active_histories( check_str=check_str )
         check_str = '%s from %s' % ( history4.name, admin_user.email )
         self.view_stored_active_histories( check_str=check_str )
         self.logout()
-        self.login( email='test@bx.psu.edu' )
+        self.login( email=admin_user.email )
         # Need to delete the copied histories, so later test runs are valid
         history3_copy2.deleted = True
         history3_copy2.flush()
@@ -213,6 +211,7 @@ class TestHistory( TwillTestCase ):
             raise AssertionError, "The 'access' permission is not set for history5_dataset1.actions"
     def test_035_sharing_history_by_making_datasets_public( self ):
         """Testing sharing a restricted history by making the datasets public"""
+        # We're still logged in as admin_user.email
         check_str = 'The following datasets can be shared with %s by updating their permissions' % regular_user1.email
         action_check_str = 'Histories (%s) have been shared with: %s' % ( history5.name, regular_user1.email )
         self.share_history( str( history5.id ), regular_user1.email, check_str, action='public', action_check_str=action_check_str )
@@ -248,7 +247,13 @@ class TestHistory( TwillTestCase ):
         global sharing_role
         role_name = 'Sharing role for: %s, %s' % ( admin_user.email, regular_user1.email )
         sharing_role = galaxy.model.Role.filter( galaxy.model.Role.table.c.name==role_name ).first()
-        assert sharing_role is not None, "Problem retrieving sharing_role from the database"
+        if not sharing_role:
+            # May have created a sharing role in a previous functional test suite from the opposite direction.
+            role_name = 'Sharing role for: %s, %s' % ( regular_user1.email, admin_user.email )
+            sharing_role = galaxy.model.Role.filter( and_( galaxy.model.Role.table.c.type==role_type,
+                                                           galaxy.model.Role.table.c.name==role_name ) ).first()
+        if not sharing_role:
+            raise AssertionError( "Privately sharing a dataset did not properly create a sharing role" )
         self.logout()
         self.login( email=regular_user1.email )
         self.visit_url( "%s/history/list" % self.url )
@@ -275,10 +280,10 @@ class TestHistory( TwillTestCase ):
         # Need to delete history5_copy2 on the history list page for regular_user1
         history5_copy2.deleted = True
         history5_copy2.flush()
-        self.logout()
-        self.login( email=admin_user.email )
     def test_045_sharing_private_history_with_multiple_users_by_changing_no_permissions( self ):
         """Testing sharing a restricted history with multiple users, making no permission changes"""
+        self.logout()
+        self.login( email=admin_user.email )
         # History5 can be shared with any user, since it contains a public dataset.  However, only
         # regular_user1 should be able to access history5's 2.bed dataset since it is associated with a
         # sharing role, and regular_user2 should be able to access history5's 1.bed, but not 2.bed even
@@ -307,17 +312,26 @@ class TestHistory( TwillTestCase ):
         history5_copy4 = history5_copies[1]
         assert history5_copy4 is not None, "Problem retrieving history5_copy4 from database"
         # Make sure test1@bx.psu.edu received a copy of history5 with both datasets accessible
+        if history5_copy3.user_id == regular_user1.id:
+            history_to_use_for_regular_user_1 = history5_copy3
+            history_to_use_for_regular_user_2 = history5_copy4
+        elif history5_copy4.user_id == regular_user1.id:
+            history_to_use_for_regular_user_1 = history5_copy4
+            history_to_use_for_regular_user_2 = history5_copy3
+        else:
+            raise AssertionError, "Copies of history5 were not correctly associated with users"
+        self.logout()
         self.login( email=regular_user1.email )
         check_str = '%s from %s' % ( history5.name, admin_user.email )
         self.view_stored_active_histories( check_str=check_str )
-        self.switch_history( id=str( history5_copy3.id ), name=history5_copy3.name )
+        self.switch_history( id=str( history_to_use_for_regular_user_1.id ), name=history_to_use_for_regular_user_1.name )
         self.check_history_for_string( '1.bed' )
         self.check_history_for_string( '2.bed' )
         self.logout()
         # Make sure test2@bx.psu.edu received a copy of history5, with only 1.bed accessible
         self.login( email=regular_user2.email )
         self.view_stored_active_histories( check_str=check_str )
-        self.switch_history( id=str( history5_copy4.id ), name=history5_copy4.name )
+        self.switch_history( id=str( history_to_use_for_regular_user_2.id ), name=history_to_use_for_regular_user_2.name )
         self.check_history_for_string( '1.bed' )
         self.check_history_for_string( '2.bed' )
         # Get both new hdas from the db that were created for the shared history
@@ -340,18 +354,15 @@ class TestHistory( TwillTestCase ):
         except:
             pass
         self.check_history_for_string( 'You do not have permission to view this dataset' )
-        self.logout()
-        self.login( email='test@bx.psu.edu' )
         # Need to delete the copied histories, so later test runs are valid
         history5_copy3.deleted = True
         history5_copy3.flush()
         history5_copy4.deleted = True
         history5_copy4.flush()
-
- 
-
     def test_050_sharing_private_history_by_choosing_to_not_share( self ):
         """Testing sharing a restricted history with multiple users by choosing not to share"""
+        self.logout()
+        self.login( email=admin_user.email )
         self.switch_history( id=str( history5.id ), name=history5.name )
         email = '%s,%s' % ( regular_user1.email, regular_user2.email )
         check_str = 'The following datasets can be shared with %s with no changes' % email

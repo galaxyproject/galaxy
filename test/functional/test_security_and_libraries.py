@@ -171,6 +171,11 @@ class TestSecurityAndLibraries( TwillTestCase ):
         sharing_role = galaxy.model.Role.filter( and_( galaxy.model.Role.table.c.type==role_type,
                                                        galaxy.model.Role.table.c.name==role_name ) ).first()
         if not sharing_role:
+            # May have created a sharing role in a previous functional test suite from the opposite direction.
+            role_name = 'Sharing role for: %s, %s' % ( admin_user.email, regular_user1.email )
+            sharing_role = galaxy.model.Role.filter( and_( galaxy.model.Role.table.c.type==role_type,
+                                                           galaxy.model.Role.table.c.name==role_name ) ).first()
+        if not sharing_role:
             raise AssertionError( "Privately sharing a dataset did not properly create a sharing role" )
         if len( sharing_role.users ) != 2:
             raise AssertionError( "sharing_role not correctly associated with 2 users" )
