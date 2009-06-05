@@ -103,41 +103,42 @@ class TwillTestCase( unittest.TestCase ):
         page = self.last_page()
         if page.find( 'error' ) > -1:
             raise AssertionError('Errors in the history for user %s' % self.user )
-
     def check_history_for_string( self, patt ):
         """Looks for 'string' in history page"""
         self.home()
         self.visit_page( "history" )
         for subpatt in patt.split():
             tc.find(subpatt)
-
+        self.home()
     def clear_history( self ):
         """Empties a history of all datasets"""
         self.visit_page( "clear_history" )
         self.check_history_for_string( 'Your history is empty' )
-
-    def delete_history( self, id=None ):
-        """Deletes a history"""
+        self.home()
+    def delete_history( self, id='' ):
+        """Deletes one or more histories"""
         history_list = self.get_histories()
         self.assertTrue( history_list )
-        if id is None:
+        num_deleted = 1
+        if not id:
             history = history_list[0]
             id = history.get( 'id' )
-        id = str( id )
-        self.visit_page( "history/list?operation=delete&id=%s" %(id) )
-
+        else:
+            num_deleted = len( id.split( ',' ) )
+        self.visit_page( "history/list?operation=delete&id=%s" % ( id ) )
+        check_str = 'Deleted %d histories' % num_deleted
+        self.check_page_for_string( check_str )
+        self.home()
     def get_histories( self ):
         """Returns all histories"""
         tree = self.histories_as_xml_tree()
         data_list = [ elem for elem in tree.findall("data") ]
         return data_list
-
     def get_history( self, show_deleted=False ):
         """Returns a history"""
         tree = self.history_as_xml_tree( show_deleted=show_deleted )
         data_list = [ elem for elem in tree.findall("data") ]
         return data_list
-
     def history_as_xml_tree( self, show_deleted=False ):
         """Returns a parsed xml object of a history"""
         self.home()
@@ -145,7 +146,6 @@ class TwillTestCase( unittest.TestCase ):
         xml = self.last_page()
         tree = ElementTree.fromstring(xml)
         return tree
-
     def histories_as_xml_tree( self ):
         """Returns a parsed xml object of all histories"""
         self.home()
@@ -153,97 +153,96 @@ class TwillTestCase( unittest.TestCase ):
         xml = self.last_page()
         tree = ElementTree.fromstring(xml)
         return tree
-    
-    def history_options( self ):
+    def history_options( self, check_str='', upload=False ):
         """Mimics user clicking on history options link"""
         self.visit_page( "history_options" )
-
-    def new_history( self ):
-        """Creates a new, empty history"""
-        self.visit_page( "history_new" )
-        self.check_history_for_string('Your history is empty')
-
-    def rename_history( self, id=None, name='NewTestHistory' ):
-        """Rename an existing history"""
-        history_list = self.get_histories()
-        self.assertTrue( history_list )
-        if id is None: # take last id
-            elem = history_list[-1]
+        if check_str:
+            self.check_page_for_string( check_str )
         else:
-            i = history_list.index( id )
-            self.assertTrue( i )
-            elem = history_list[i]
-        id = elem.get( 'id' )
-        self.assertTrue( id )
-        old_name = elem.get( 'name' )
-        self.assertTrue( old_name )
-        id = str( id )
-        self.visit_page( "history/rename?id=%s&name=%s" %(id, name) )
-        return id, old_name, name
-
+            self.check_page_for_string( 'Rename</a> current history' )
+            self.check_page_for_string( 'List</a> previously stored histories' )
+            self.check_page_for_string( 'Construct workflow</a> from the current history' )
+            self.check_page_for_string( 'Share</a> current history' )
+            # Tests for changing default history permissions are done in test_security_and_libraries.py
+            self.check_page_for_string( 'Change default permissions</a> for the current history' )
+            self.check_page_for_string( 'Show deleted</a> datasets in history' )
+            self.check_page_for_string( 'Delete</a> current history' )
+            # Need to add a history item in order to create a new empty history
+            try:
+                self.check_page_for_string( 'Create</a> a new empty history' )
+                raise AssertionError, "Incorrectly able to create a new empty history when the current history is empty."
+            except:
+                pass
+            if upload:
+                self.upload_file( '1.bed', dbkey='hg18' )
+                self.home()
+                self.visit_page( "history_options" )
+                self.check_page_for_string( 'Create</a> a new empty history' )
+        self.home()
+    def new_history( self, name=None ):
+        """Creates a new, empty history"""
+        if name:
+            self.visit_url( "%s/history_new?name=%s" % ( self.url, str( name ) ) )
+        else:
+            self.visit_url( "%s/history_new" % self.url )
+        self.check_history_for_string('Your history is empty')
+        self.home()
+    def rename_history( self, id, old_name, new_name ):
+        """Rename an existing history"""
+        self.home()
+        self.visit_page( "history/rename?id=%s&name=%s" %( id, new_name ) )
+        check_str = 'History: %s renamed to: %s' % ( old_name, new_name )
+        self.check_page_for_string( check_str )
+        self.home()
     def set_history( self ):
         """Sets the history (stores the cookies for this run)"""
         if self.history_id:
             self.visit_page( "history?id=%s" % self.history_id )
         else:
             self.new_history()
-    def share_history( self, id=None, email='test2@bx.psu.edu' ):
-        """Share a history with a different user"""
-        history_list = self.get_histories()
-        self.assertTrue( history_list )
-        if id is None: # take last id
-            elem = history_list[-1]
-        else:
-            i = history_list.index( id )
-            self.assertTrue( i )
-            elem = history_list[i]
-        id = elem.get( 'id' )
-        self.assertTrue( id )
-        id = str( id )
-        name = elem.get( 'name' )
-        self.assertTrue( name )
+        self.home()
+    def share_history( self, id, email, check_str, check_str2='', action=None, action_check_str=None ):
+        """Share a history different users"""
         self.visit_url( "%s/history/share?id=%s&email=%s&history_share_btn=Submit" % ( self.url, id, email ) )
-        self.check_page_for_string( 'History (%s) has been shared with: %s' % ( name, email ) )
-        return id, name, email
-    def share_history_containing_private_datasets( self, history_id, email='test@bx.psu.edu' ):
-        """Attempt to share a history containing private datasets with a different user"""
-        self.visit_url( "%s/history/share?id=%s&email=%s&history_share_btn=Submit" % ( self.url, history_id, email ) )
-        self.last_page()
-        self.check_page_for_string( "The history or histories you've chosen to share contain datasets" )
-        self.check_page_for_string( "How would you like to proceed?" )
-        self.home()
-    def make_datasets_public( self, history_id, email='test@bx.psu.edu' ):
-        """Make private datasets public in order to share a history with a different user"""
-        self.visit_url( "%s/history/share?id=%s&email=%s&action=public&submit=Ok" % ( self.url, history_id, email ) )
-        self.last_page()
-        check_str = "History (Unnamed history) has been shared with: %s" % email
         self.check_page_for_string( check_str )
+        if check_str2:
+            self.check_page_for_string( check_str2 )
+        if action:
+            # If we have an action, then we are sharing datasets with users that do not have access permissions on them
+            tc.fv( '1', 'action', action )
+            tc.submit( "share_proceed_button" )
+            if action_check_str:
+                self.check_page_for_string( action_check_str )
         self.home()
-    def privately_share_dataset( self, history_id, email='test@bx.psu.edu' ):
-        """Make private datasets public in order to share a history with a different user"""
-        self.visit_url( "%s/history/share?id=%s&email=%s&action=private&submit=Ok" % ( self.url, history_id, email ) )
-        self.last_page()
-        check_str = "History (Unnamed history) has been shared with: %s" % email
-        self.check_page_for_string( check_str )
-        self.home()
-    def switch_history( self, hid=None ):
+    def switch_history( self, id='', name='' ):
         """Switches to a history in the current list of histories"""
         data_list = self.get_histories()
         self.assertTrue( data_list )
-        if hid is None: # take last hid
-            elem = data_list[-1]
-            hid = elem.get('hid')
-        if hid < 0:
-            hid = len(data_list) + hid + 1
-        hid = str(hid)
-        elems = [ elem for elem in data_list if elem.get('hid') == hid ]
-        self.assertEqual(len(elems), 1)
-        self.visit_page( "history/list?operation=switch&id=%s" % elems[0].get('id') )
-
-    def view_stored_histories( self, check_str='' ):
+        if not id:
+            history = history_list[0]
+            id = history.get( 'id' )
+        self.visit_url( "%s/history/list?operation=switch&id=%s" % ( self.url, id ) )
+        if name:
+            self.check_history_for_string( name )
+        self.home()
+    def view_stored_active_histories( self, check_str='' ):
         self.visit_page( "history/list" )
+        self.check_page_for_string( 'Stored histories' )
+        self.check_page_for_string( '<input type="checkbox" name="id" value=' )
+        self.check_page_for_string( 'operation=Rename&id' )
+        self.check_page_for_string( 'operation=Switch&id' )
+        self.check_page_for_string( 'operation=Delete&id' )
         if check_str:
             self.check_page_for_string( check_str )
+        self.home()
+    def view_stored_deleted_histories( self, check_str='' ):
+        self.visit_page( "history/list?f-deleted=True" )
+        self.check_page_for_string( 'Stored histories' )
+        self.check_page_for_string( '<input type="checkbox" name="id" value=' )
+        self.check_page_for_string( 'operation=Undelete&id' )
+        if check_str:
+            self.check_page_for_string( check_str )
+        self.home()
 
     # Functions associated with datasets (history items) and meta data
     def get_job_stderr( self, id ):
@@ -299,9 +298,14 @@ class TwillTestCase( unittest.TestCase ):
         self.visit_url( "%s/dataset/undelete?id=%s" % ( self.url, elems[0].get( 'id' ) ) )
         if check_str:
             self.check_page_for_string( check_str )
+    def display_history_item( self, id, check_str='' ):
+        """Displays a history item - simulates eye icon click"""
+        self.visit_url( '%s/datasets/%s/display/index' % ( self.url, id ) )
+        if check_str:
+            self.check_page_for_string( check_str )
+        self.home()
     def edit_metadata( self, hid=None, form_no=0, **kwd ):
-        """
-        Edits the metadata associated with a history item."""
+        """Edits the metadata associated with a history item."""
         # There are currently 4 forms on the edit page:
         # 0. name="edit_attributes"
         # 1. name="auto_detect"
@@ -324,7 +328,6 @@ class TwillTestCase( unittest.TestCase ):
             button = "change"       #Change data type form
         if kwd:
             self.submit_form( form_no=form_no, button=button, **kwd)
-
     def get_dataset_ids_in_history( self ):
         """Returns the ids of datasets in a history"""
         data_list = self.get_history()

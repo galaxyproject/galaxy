@@ -432,13 +432,15 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
             self.galaxy_session.current_history = history
         self.sa_session.flush( [ self.galaxy_session ] )
     history = property( get_history, set_history )
-    def new_history( self ):
+    def new_history( self, name=None ):
         """
         Create a new history and associate it with the current session and
         its associated user (if set).
         """
         # Create new history
         history = self.app.model.History()
+        if name:
+            history.name = name
         # Associate with session
         history.add_galaxy_session( self.galaxy_session )
         # Make it the session's current history

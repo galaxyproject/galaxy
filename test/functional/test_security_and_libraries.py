@@ -40,7 +40,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         global admin_user
         admin_user = galaxy.model.User.filter( galaxy.model.User.table.c.email=='test@bx.psu.edu' ).first()
         assert admin_user is not None, 'Problem retrieving user with email "test@bx.psu.edu" from the database'
-        # Get the admin user's privat role for later use
+        # Get the admin user's private role for later use
         global admin_user_private_role
         admin_user_private_role = None
         for role in admin_user.all_roles():
@@ -136,7 +136,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
             dps.append( dp.action )
         # Sort actions for later comparison
         dps.sort()
-        # Compare DatasetPermissionss with permissions_in - should be the same
+        # Compare DatasetPermissions with permissions_in - should be the same
         if dps != actions_in:
             raise AssertionError( 'DatasetPermissionss "%s" for dataset id %d differ from changed default permissions "%s"' \
                                       % ( str( dps ), latest_dataset.id, str( actions_in ) ) )
@@ -145,14 +145,26 @@ class TestSecurityAndLibraries( TwillTestCase ):
                 raise AssertionError( 'DatasetPermissionss "%s" for dataset id %d differ from DefaultHistoryPermissions "%s" for history id %d' \
                                       % ( str( dps ), latest_dataset.id, str( dhps ), latest_history.id ) )
         # Since the dataset in the history is now private, we can test sharing with another user
-        self.share_history_containing_private_datasets( str( latest_history.id ), email=admin_user.email )
         # Test making the dataset in the history public
-        self.make_datasets_public( str( latest_history.id ), email=admin_user.email )
+        check_str = 'The following datasets can be shared with %s by updating their permissions' % admin_user.email
+        action_check_str = 'Histories (%s) have been shared with: %s' % ( latest_history.name, admin_user.email )
+        self.share_history( str( latest_history.id ),
+                            admin_user.email,
+                            check_str,
+                            action='public',
+                            action_check_str=action_check_str )
         # Add another dataset to the history, it should be private since that is now our default
         self.upload_file( '2.bed' )
-        self.share_history_containing_private_datasets( str( latest_history.id ), email=admin_user.email )
-        # Test creating a new sharing role for sharing the private datasets
-        self.privately_share_dataset( str( latest_history.id ), email=admin_user.email )
+        # Test creating a new sharing role for the private dataset
+        check_str = 'The following datasets can be shared with %s with no changes' % admin_user.email
+        check_str2 = 'The following datasets can be shared with %s by updating their permissions' % admin_user.email
+        action_check_str = 'Histories (%s) have been shared with: %s' % ( latest_history.name, admin_user.email )
+        self.share_history( str( latest_history.id ),
+                            admin_user.email,
+                            check_str,
+                            check_str2=check_str2,
+                            action='private',
+                            action_check_str=action_check_str )
         role_type = 'sharing'
         role_name = 'Sharing role for: %s, %s' % ( regular_user1.email, admin_user.email )
         global sharing_role

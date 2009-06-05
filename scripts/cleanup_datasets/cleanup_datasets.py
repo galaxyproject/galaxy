@@ -123,6 +123,11 @@ def purge_histories( app, cutoff_time, remove_from_disk, info_only = False ):
         for dataset_assoc in history.datasets:
             _purge_dataset_instance( dataset_assoc, app, remove_from_disk, info_only = info_only ) #mark a DatasetInstance as deleted, clear associated files, and mark the Dataset as deleted if it is deletable
         if not info_only:
+            # TODO: should the Delete DefaultHistoryPermissions be deleted here?  This was incorrectly
+            # done in the _list_delete() method of the history controller, so copied it here.  Not sure 
+            # if we should ever delete info like this from the db though, so commented out for now...
+            #for dhp in history.default_permissions:
+            #    dhp.delete()
             history.purged = True
         print "%d" % history.id
         history_count += 1
@@ -226,7 +231,6 @@ def _delete_dataset( dataset, app, remove_from_disk, info_only = False ):
         print "# This Dataset (%i) is not deletable, associated Metadata Files will not be removed.\n" % ( dataset.id )
     else:
         # Mark all associated MetadataFiles as deleted and purged and remove them from disk
-        print "The following metadata files attached to associations of Dataset '%s' have been purged:" % dataset.id
         metadata_files = []
         #lets create a list of metadata files, then perform actions on them
         for hda in dataset.history_associations:
@@ -236,6 +240,7 @@ def _delete_dataset( dataset, app, remove_from_disk, info_only = False ):
             for metadata_file in app.model.MetadataFile.filter( app.model.MetadataFile.table.c.lda_id==lda.id ).all():
                 metadata_files.append( metadata_file )
         for metadata_file in metadata_files:
+            print "# The following metadata files attached to associations of Dataset '%s' have been purged:" % dataset.id
             if not info_only:
                 if remove_from_disk:
                     try:
@@ -248,7 +253,6 @@ def _delete_dataset( dataset, app, remove_from_disk, info_only = False ):
             print "%s" % metadata_file.file_name
         print
         dataset.deleted = True
-        #dataset.flush()
         app.model.flush()
 
 def _purge_dataset( dataset, remove_from_disk, info_only = False ):
@@ -259,6 +263,7 @@ def _purge_dataset( dataset, remove_from_disk, info_only = False ):
                 if not info_only:
                     # Remove files from disk and update the database
                     if remove_from_disk:
+                        # TODO: should permissions on the dataset be deleted here?
                         os.unlink( dataset.file_name )
                         # Remove associated extra files from disk if they exist
                         if dataset.extra_files_path and os.path.exists( dataset.extra_files_path ):
@@ -286,6 +291,7 @@ def _purge_folder( folder, app, remove_from_disk, info_only = False ):
     for sub_folder in folder.folders:
         _purge_folder( sub_folder, app, remove_from_disk, info_only = info_only )
     if not info_only:
+        # TODO: should the folder permissions be deleted here?
         folder.purged = True
         folder.flush()
 

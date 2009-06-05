@@ -2,117 +2,173 @@
 <%inherit file="/base.mako"/>
 <%def name="title()">Share histories</%def>
 
-%if not can_change and not cannot_change:
-    <div class="toolForm">
-        <div class="toolFormTitle">${_('Share histories')}</div>
-        <table>
+<div class="toolForm">
+    <div class="toolFormTitle">Share ${len( histories)} histories</div>
+    <div class="toolFormBody">
+        %if not can_change and not cannot_change:
             <form action="${h.url_for( controller="history", action='share' )}" method="post" >
-                <tr><th>${_('History Name:')}</td><th>${_('Number of Datasets:')}</th><th>${_('Share Link')}</th></tr>
                 %for history in histories:
-                    <tr>
-                        <td align="center">${history.name}<input type="hidden" name="id" value="${history.id}"></td>
-                        <td align="center">
-                            %if len( history.datasets ) < 1:
-                                <div class="warningmark">${_('This history contains no data.')}</div>
-                            %else:
-                                ${len(history.datasets)}
-                            %endif
-                        </td>
-                        <td align="center"><a href="${h.url_for( controller='history', action='imp', id=trans.security.encode_id(history.id) )}">${_('copy link to share')}</a></td>
-                    </tr>
+                    <div class="toolForm">
+                        <div class="form-row">
+                            <label>${_('History Name:')}</label>
+                            <div style="float: left; width: 250px; margin-right: 10px;">
+                                ${history.name}<input type="hidden" name="id" value="${history.id}">
+                            </div>
+                        </div>
+                        <div style="clear: both"></div>
+                        <div class="form-row">
+                            <label>${_('Number of Datasets:')}</label>
+                            <div style="float: left; width: 250px; margin-right: 10px;">
+                                %if len( history.datasets ) < 1:
+                                    <div class="warningmark">${_('This history contains no data.')}</div>
+                                %else:
+                                    ${len(history.datasets)}
+                                %endif
+                                </td>
+                            </div>
+                        </div>
+                        ## TODO: this feature is not currently working
+                        ##<div style="clear: both"></div>
+                        ##<div class="form-row">
+                        ##    <label>${_('Share Link')}</label>
+                        ##    <div style="float: left; width: 250px; margin-right: 10px;">
+                        ##        <a href="${h.url_for( controller='history', action='imp', id=trans.security.encode_id(history.id) )}">${_('copy link to share')}</a>
+                        ##    </div>
+                        ##</div>
+                        ##<div style="clear: both"></div>
+                        <p/>
+                    </div>
                 %endfor
-                <tr><td>${_('Email of User to share with:')}</td><td><input type="text" name="email" value="${email}" size="40"></td></tr>
+                <p/>
+                <div style="clear: both"></div>
+                <div class="form-row">
+                    <label>Galaxy user emails with which to share histories</label>
+                    <div style="float: left; width: 250px; margin-right: 10px;">
+                        <input type="text" name="email" value="${email}" size="40">
+                    </div>
+                    <div class="toolParamHelp" style="clear: both;">
+                        Enter a Galaxy user email address or a comma-separated list of addresses if sharing with multiple users
+                    </div>
+                </div>
                 %if send_to_err:
-                    <tr><td colspan="100%"><div class="errormessage">${send_to_err}</div></td></tr>
+                    <div style="clear: both"></div>
+                    <div class="form-row">
+                        <div class="errormessage">${send_to_err}</div>
+                    </div>
                 %endif
-                <tr><td colspan="2" align="right"><input type="submit" name="history_share_btn" value="Submit"></td></tr>
+                <div style="clear: both"></div>
+                <div class="form-row">
+                    <input type="submit" name="history_share_btn" value="Submit">
+                </div>
             </form>
-        </table>
+        %else:
+            <form action="${h.url_for( controller='history', action='share' )}" method="post">
+                %for history in histories:
+                    <input type="hidden" name="id" value="${history.id}">
+                %endfor
+                <input type="hidden" name="email" value="${email}">
+                %if no_change_needed:
+                    <div style="clear: both"></div>
+                    <div class="form-row">
+                        <div class="donemessage">
+                            The following datasets can be shared with ${email} with no changes
+                        </div>
+                    </div>
+                    %for history, hdas in no_change_needed.items():
+                        <div class="form-row">
+                            <label>History</label>
+                            ${history.name}
+                        </div>
+                        <div style="clear: both"></div>
+                        <div class="form-row">
+                            <label>Datasets</label>
+                        </div>
+                        %for hda in hdas:
+                            <div class="form-row">
+                                ${hda.name}
+                            </div>
+                        %endfor
+                    %endfor
+                %endif
+                %if can_change:
+                    <div style="clear: both"></div>
+                    <div class="form-row">
+                        <div class="warningmessage">
+                            The following datasets can be shared with ${email} by updating their permissions
+                        </div>
+                    </div>
+                    %for history, hdas in can_change.items():
+                        <div class="form-row">
+                            <label>History</label>
+                            ${history.name}
+                        </div>
+                        <div style="clear: both"></div>
+                        <div class="form-row">
+                            <label>Datasets</label>
+                        </div>
+                        %for hda in hdas:
+                            <div class="form-row">
+                                ${hda.name}
+                            </div>
+                        %endfor
+                    %endfor
+                %endif
+                %if cannot_change:
+                    <div style="clear: both"></div>
+                    <div class="form-row">
+                        <div class="errormessage">
+                            The following datasets cannot be shared with ${email} because you are not authorized to 
+                            change the permissions on them
+                        </div>
+                    </div>
+                    %for history, hdas in cannot_change.items():
+                        <div class="form-row">
+                            <label>History</label>
+                            ${history.name}
+                        </div>
+                        <div style="clear: both"></div>
+                        <div class="form-row">
+                            <label>Datasets</label>
+                        </div>
+                        %for hda in hdas:
+                            <div class="form-row">
+                                ${hda.name}
+                            </div>
+                        %endfor
+                    %endfor
+                %endif
+                <div class="form-row">
+                    <label>How would you like to proceed?</label>
+                </div>
+                %if can_change:
+                    <div class="form-row">
+                        <input type="radio" name="action" value="public"> Make datasets public so anyone can access them 
+                        %if cannot_change:
+                            (where possible)
+                        %endif
+                    </div>
+                    <div class="form-row">
+                        <input type="radio" name="action" value="private"> Make datasets private to me and the user(s) with whom I am sharing
+                        %if cannot_change:
+                            (where possible)
+                        %endif
+                    </div>
+                %endif
+                %if no_change_needed:
+                    <div class="form-row">
+                        <input type="radio" name="action" value="share"> Share anyway
+                        %if can_change:
+                            (don't change any permissions)
+                        %endif
+                    </div>
+                %endif
+                <div class="form-row">
+                    <input type="radio" name="action" value="no_share"> Don't share
+                </div>
+                <div class="form-row">
+                    <input type="submit" name="share_proceed_button" value="Go"><br/>
+                </div>
+            </form>
+        %endif
     </div>
-%else:
-    <style type="text/css">
-        th
-        {
-            text-align: left;
-        }
-        td
-        {
-            vertical-align: top;
-        }
-    </style>
-    <form action="${h.url_for( controller='history', action='share' )}" method="post">
-        %for history in histories:
-            <input type="hidden" name="id" value="${history.id}">
-        %endfor
-        <input type="hidden" name="email" value="${email}">
-            <div class="warningmessage">
-                The history or histories you've chosen to share contain datasets that the user with which you're sharing does not have permission to access.  
-                These datasets are shown below.  Datasets that the user has permission to access are not shown.
-            </div>
-            <p/>
-            %if can_change:
-                <div class="donemessage">
-                    The following datasets can be shared with ${email} by updating their permissions:
-                    <p/>
-                    <table cellpadding="0" cellspacing="8" border="0">
-                        <tr><th>Histories</th><th>Datasets</th></tr>
-                        %for history, datasets in can_change.items():
-                            <tr>
-                                <td>${history.name}</td>
-                                <td>
-                                    %for dataset in datasets:
-                                        ${dataset.name}<br/>
-                                    %endfor
-                                </td>
-                            </tr>
-                        %endfor
-                    </table>
-                </div>
-                <p/>
-            %endif
-            %if cannot_change:
-                <div class="errormessage">
-                    The following datasets cannot be shared with ${email} because you are not authorized to change the permissions on them.
-                    <p/>
-                    <table cellpadding="0" cellspacing="8" border="0">
-                        <tr><th>Histories</th><th>Datasets</th></tr>
-                        %for history, datasets in cannot_change.items():
-                            <tr>
-                                <td>${history.name}</td>
-                                <td>
-                                    %for dataset in datasets:
-                                        ${dataset.name}<br/>
-                                    %endfor
-                                </td>
-                            </tr>
-                        %endfor
-                    </table>
-                </div>
-                <p/>
-            %endif
-        <div>
-            <b>How would you like to proceed?</b>
-            <p/>
-            %if can_change:
-                <input type="radio" name="action" value="public"> Set datasets above to public access
-                %if cannot_change:
-                    (where possible)
-                %endif
-                <br/>
-                <input type="radio" name="action" value="private"> Set datasets above to private access for me and the user(s) with whom I am sharing
-                %if cannot_change:
-                    (where possible)
-                %endif
-                <br/>
-            %endif
-            <input type="radio" name="action" value="share"> Share anyway
-            %if can_change:
-                (don't change any permissions)
-            %endif
-            <br/>
-            <input type="radio" name="action" value="no_share"> Don't share<br/>
-            <br/>
-            <input type="submit" name="submit" value="Ok"><br/>
-        </div>
-    </form>
-%endif
+</div>

@@ -245,12 +245,14 @@ class UploadToolAction( object ):
                         parts = file_name.split( "." )
                         if len( parts ) > 1:
                             ext = parts[1].strip().lower()
-                            if not( ext == 'ab1' or ext == 'scf' ):
+                            if not( ext == 'ab1' or ext == 'scf' or ext == 'novoindex' ):
                                 raise BadFileException( "you attempted to upload an inappropriate file." )
                             if ext == 'ab1' and file_type != 'ab1':
                                 raise BadFileException( "you must manually set the 'File Format' to 'Ab1' when uploading ab1 files." )
                             elif ext == 'scf' and file_type != 'scf':
                                 raise BadFileException( "you must manually set the 'File Format' to 'Scf' when uploading scf files." )
+                            elif ext == 'novoindex' and file_type != 'novoindex':
+                                raise BadFileException( "you must manually set the 'File Format' to 'NovoIndex' when uploading novoindex files." )
                         data_type = 'binary'
                 if not data_type:
                     # We must have a text file
@@ -336,7 +338,7 @@ class UploadToolAction( object ):
             return ( False, False, None )
         zip_file = zipfile.ZipFile( temp_name, "r" )
         # Make sure the archive consists of valid files.  The current rules are:
-        # 1. Archives can only include .ab1, .scf or .txt files
+        # 1. Archives can only include .ab1, .scf, or .txt files
         # 2. All file extensions within an archive must be the same
         name = zip_file.namelist()[0]
         test_ext = name.split( "." )[1].strip().lower()

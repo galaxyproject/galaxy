@@ -349,14 +349,12 @@ class RootController( BaseController ):
         """Displays a list of history related actions"""            
         return trans.fill_template( "/history/options.mako",
                                     user = trans.get_user(), history = trans.get_history() )
-        
     @web.expose
     def history_delete( self, trans, id ):
         """
         Backward compatibility with check_galaxy script.
         """
         return trans.webapp.controllers['history'].list( trans, id, operation='delete' )
-    
     @web.expose
     def clear_history( self, trans ):
         """Clears the history for a user"""
@@ -367,7 +365,6 @@ class RootController( BaseController ):
         self.app.model.flush()
         trans.log_event( "History id %s cleared" % (str(history.id)) )
         trans.response.send_redirect( url_for("/index" ) )
-        
     @web.expose
     def history_import( self, trans, id=None, confirm=False, **kwd ):
         msg = ""
@@ -417,13 +414,11 @@ class RootController( BaseController ):
             Warning! If you import this history, you will lose your current
             history. Click <a href="%s">here</a> to confirm.
             """ % web.url_for( id=id, confirm=True ) )
-                
     @web.expose
-    def history_new( self, trans ):
-        trans.new_history()
+    def history_new( self, trans, name=None ):
+        trans.new_history( name=name )
         trans.log_event( "Created new History, id: %s." % str(trans.get_history().id) )
         return trans.show_message( "New history created", refresh_frames = ['history'] )
-
     @web.expose
     def history_add_to( self, trans, history_id=None, file_data=None, name="Data Added to History",info=None,ext="txt",dbkey="?",copy_access_from=None,**kwd ):
         """Adds a POSTed file to a History"""
@@ -455,13 +450,22 @@ class RootController( BaseController ):
         except Exception, e:
             trans.log_event( "Failed to add dataset to history: %s" % ( e ) )
             return trans.show_error_message("Adding File to History has Failed")
-
     @web.expose
-    def history_set_default_permissions( self, trans, **kwd ):
-        """Sets the user's default permissions for the current history"""
+    def history_set_default_permissions( self, trans, id=None, **kwd ):
+        """Sets the permissions on a history"""
         if trans.user:
             if 'update_roles_button' in kwd:
-                history = trans.get_history()
+                history = None
+                if id:
+                    try:
+                        id = int( id )
+                    except:
+                        id = None
+                    if id:
+                        history = trans.app.model.History.get( id )
+                if not history:
+                    # If we haven't retrieved a history, use the current one
+                    history = trans.get_history()
                 p = util.Params( kwd )
                 permissions = {}
                 for k, v in trans.app.model.Dataset.permitted_actions.items():
@@ -478,7 +482,6 @@ class RootController( BaseController ):
         else:
             #user not logged in, history group must be only public
             return trans.show_error_message( "You must be logged in to change a history's default permissions." )
-
     @web.expose
     def dataset_make_primary( self, trans, id=None):
         """Copies a dataset and makes primary"""

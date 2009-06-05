@@ -52,6 +52,8 @@ class RBACAgent:
         raise "Unimplemented Method"
     def set_all_library_permissions( self, dataset, permissions ):
         raise "Unimplemented Method"
+    def dataset_is_public( self, dataset ):
+        raise "Unimplemented Method"
     def make_dataset_public( self, dataset ):
         raise "Unimplemented Method"
     def get_component_associations( self, **kwd ):
@@ -296,6 +298,10 @@ class GalaxyRBACAgent( RBACAgent ):
             # Add the new specific permission on the dataset
             for dp in [ self.model.DatasetPermissions( action, dataset, role ) for role in roles ]:
                 dp.flush()
+    def dataset_is_public( self, dataset ):
+        # A dataset is considered public if there are no "access" actions associated with it.  Any
+        # other actions ( 'manage permissions', 'edit metadata' ) are irrelevant.
+        return self.permitted_actions.DATASET_ACCESS.action not in [ a.action for a in dataset.actions ]
     def make_dataset_public( self, dataset ):
         # A dataset is considered public if there are no "access" actions associated with it.  Any
         # other actions ( 'manage permissions', 'edit metadata' ) are irrelevant.
