@@ -535,9 +535,10 @@ class SelectToolParameter( ToolParameter ):
     def from_html( self, value, trans=None, context={} ):
         if self.need_late_validation( trans, context ):
             if self.multiple:
-                #While it is generally allowed that a select value can be '', 
-                #we do not allow this to be the case in a dynamically generated multiple select list being set in workflow building mode
-                #we instead treat '' as 'No option Selected' (None)
+                # While it is generally allowed that a select value can be '', 
+                # we do not allow this to be the case in a dynamically
+                # generated multiple select list being set in workflow building
+                # mode we instead treat '' as 'No option Selected' (None)
                 if value == '':
                     value = None
                 else:
@@ -565,9 +566,9 @@ class SelectToolParameter( ToolParameter ):
         if isinstance( value, list ):
             if not(self.repeat):
                 assert self.multiple, "Multiple values provided but parameter is not expecting multiple values"
-            return self.separator.join( value )
+            return self.separator.join( map( str, value ) )
         else:
-            return value
+            return str(value)
     def value_to_basic( self, value, app ):
         if isinstance( value, UnvalidatedValue ):
             return { "__class__": "UnvalidatedValue", "value": value.value }
@@ -1331,6 +1332,8 @@ class UnvalidatedValue( object ):
     """
     def __init__( self, value ):
         self.value = value
+    def __str__( self ):
+        return str( self.value )
         
 class RuntimeValue( object ):
     """
