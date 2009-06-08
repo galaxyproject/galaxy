@@ -20,7 +20,7 @@ def visit_input_values( inputs, input_values, callback, name_prefix="", label_pr
            be nice to unify all the places that recursively visit inputs.
     """    
     for input in inputs.itervalues():
-        if isinstance( input, Repeat ):  
+        if isinstance( input, Repeat ) or isinstance( input, UploadDataset ):
             for i, d in enumerate( input_values[ input.name ] ):
                 index = d['__index__']
                 new_name_prefix = name_prefix + "%s_%d|" % ( input.name, index )

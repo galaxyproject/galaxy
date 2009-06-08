@@ -78,17 +78,21 @@ class FileField(BaseField):
     
     >>> print FileField( "foo" ).get_html()
     <input type="file" name="foo">
-    >>> print FileField( "foo", True ).get_html()
+    >>> print FileField( "foo", ajax = True ).get_html()
     <input type="file" name="foo" galaxy-ajax-upload="true">
     """
-    def __init__( self, name, ajax=False ):
+    def __init__( self, name, value = None, ajax=False ):
         self.name = name
         self.ajax = ajax
+        self.value = value
     def get_html( self, prefix="" ):
+        value_text = ""
+        if self.value:
+            value_text = ' value="%s"' % self.value
+        ajax_text = ""
         if self.ajax:
-            return '<input type="file" name="%s%s" galaxy-ajax-upload="true">' % ( prefix, self.name )
-        else:
-            return '<input type="file" name="%s%s">' % ( prefix, self.name )
+            ajax_text = ' galaxy-ajax-upload="true"'
+        return '<input type="file" name="%s%s"%s%s>' % ( prefix, self.name, ajax_text, value_text )
 
 class HiddenField(BaseField):
     """
@@ -120,7 +124,7 @@ class SelectField(BaseField):
     >>> t.add_option( "automatic", 3 )
     >>> t.add_option( "bazooty", 4, selected=True )
     >>> print t.get_html()
-    <select name="bar">
+    <select name="bar" last_selected_value="4">
     <option value="3">automatic</option>
     <option value="4" selected>bazooty</option>
     </select>
@@ -140,7 +144,7 @@ class SelectField(BaseField):
     <div><input type="checkbox" name="bar" value="3">automatic</div>
     <div><input type="checkbox" name="bar" value="4" checked>bazooty</div>
     """
-    def __init__( self, name, multiple=None, display=None, refresh_on_change=False ):
+    def __init__( self, name, multiple=None, display=None, refresh_on_change = False, refresh_on_change_values = [] ):
         self.name = name
         self.multiple = multiple or False
         self.options = list()
@@ -152,8 +156,11 @@ class SelectField(BaseField):
             raise Exception, "Unknown display type: %s" % display
         self.display = display
         self.refresh_on_change = refresh_on_change
+        self.refresh_on_change_values = refresh_on_change_values
         if self.refresh_on_change: 
             self.refresh_on_change_text = ' refresh_on_change="true"'
+            if self.refresh_on_change_values:
+                self.refresh_on_change_text = '%s refresh_on_change_values="%s"' % ( self.refresh_on_change_text, ",".join( self.refresh_on_change_values ) )
         else:
             self.refresh_on_change_text = ''
     def add_option( self, text, value, selected = False ):
@@ -195,11 +202,17 @@ class SelectField(BaseField):
     def get_html_default( self, prefix="" ):
         if self.multiple: multiple = " multiple"
         else: multiple = ""
-        rval = [ '<select name="%s%s"%s%s>' % ( prefix, self.name, multiple, self.refresh_on_change_text ) ]
+        rval = []
+        last_selected_value = ""
         for text, value, selected in self.options:
-            if selected: selected_text = " selected"
+            if selected:
+                selected_text = " selected"
+                last_selected_value = value
             else: selected_text = ""
             rval.append( '<option value="%s"%s>%s</option>' % ( value, selected_text, text ) )
+        if last_selected_value:
+            last_selected_value = ' last_selected_value="%s"' % last_selected_value
+        rval.insert( 0, '<select name="%s%s"%s%s%s>' % ( prefix, self.name, multiple, self.refresh_on_change_text, last_selected_value ) )
         rval.append( '</select>' )
         return "\n".join( rval )
 
@@ -253,7 +266,7 @@ class DrillDownField( BaseField ):
     </li>
     </ul></div>
     """
-    def __init__( self, name, multiple=None, display=None, refresh_on_change=False, options = [], value = [] ):
+    def __init__( self, name, multiple=None, display=None, refresh_on_change=False, options = [], value = [], refresh_on_change_values = [] ):
         self.name = name
         self.multiple = multiple or False
         self.options = options
@@ -270,8 +283,11 @@ class DrillDownField( BaseField ):
             raise Exception, "Unknown display type: %s" % display
         self.display = display
         self.refresh_on_change = refresh_on_change
+        self.refresh_on_change_values = refresh_on_change_values
         if self.refresh_on_change: 
             self.refresh_on_change_text = ' refresh_on_change="true"'
+            if self.refresh_on_change_values:
+                self.refresh_on_change_text = '%s refresh_on_change_values="%s"' % ( self.refresh_on_change_text, ",".join( self.refresh_on_change_values ) )
         else:
             self.refresh_on_change_text = ''
     def get_html( self, prefix="" ):
@@ -307,6 +323,7 @@ class DrillDownField( BaseField ):
         recurse_options( rval, self.options, expanded_options )
         rval.append( '</ul></div>' )
         return '\n'.join( rval )
+
 
 def get_suite():
     """Get unittest suite for this module"""

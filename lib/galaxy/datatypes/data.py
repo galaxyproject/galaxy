@@ -1,5 +1,7 @@
 import logging, os, sys, time, sets, tempfile
 from galaxy import util
+from galaxy.util.odict import odict
+from galaxy.util.bunch import Bunch
 from cgi import escape
 import metadata
 from metadata import MetadataElement #import directly to maintain ease of use in Datatype class definitions
@@ -48,10 +50,16 @@ class Data( object ):
     """If False, the peek is regenerated whenever a dataset of this type is copied"""
     copy_safe_peek = True
     
+    #Composite datatypes
+    composite_type = None
+    composite_files = odict()
+    primary_file_name = 'index'
+    
     def __init__(self, **kwd):
         """Initialize the datatype"""
         object.__init__(self, **kwd)
         self.supported_display_apps = self.supported_display_apps.copy()
+        self.composite_files = self.composite_files.copy()
     def write_from_stream(self, dataset, stream):
         """Writes data from a stream"""
         fd = open(dataset.file_name, 'wb')
@@ -242,7 +250,49 @@ class Data( object ):
     def after_edit( self, dataset ):
         """This function is called on the dataset after metadata is edited."""
         dataset.clear_associated_files( metadata_safe = True )
-
+    def __new_composite_file( self, optional = False, mimetype = None, description = None, substitute_name_with_metadata = None, **kwds ):
+        kwds[ 'optional' ] = optional
+        kwds[ 'mimetype' ] = mimetype
+        kwds[ 'description' ] = description
+        kwds[ 'substitute_name_with_metadata' ] = substitute_name_with_metadata
+        return Bunch( **kwds )
+    def add_composite_file( self, name, **kwds ):
+        #self.composite_files = self.composite_files.copy()
+        self.composite_files[ name ] = self.__new_composite_file( **kwds )
+        
+    
+    def __substitute_composite_key( self, key, composite_file, dataset = None ):
+        if composite_file.substitute_name_with_metadata:
+            if dataset:
+                meta_value = str( dataset.metadata.get( composite_file.substitute_name_with_metadata ) )
+            else:
+                meta_value = self.spec[composite_file.substitute_name_with_metadata].default
+            return key % meta_value
+        return key
+    @property
+    def writable_files( self, dataset = None ):
+        files = odict()
+        if self.composite_type != 'auto_primary_file':
+            files[ self.primary_file_name ] = self.__new_composite_file()
+        for key, value in self.get_composite_files( dataset = dataset ).iteritems():
+            files[ key ] = value
+        return files
+    def get_composite_files( self, dataset = None ):
+        def substitute_composite_key( key, composite_file ):
+            if composite_file.substitute_name_with_metadata:
+                if dataset:
+                    meta_value = str( dataset.metadata.get( composite_file.substitute_name_with_metadata ) )
+                else:
+                    meta_value = self.metadata_spec[ composite_file.substitute_name_with_metadata ].default
+                return key % meta_value
+            return key
+        files = odict()
+        for key, value in self.composite_files.iteritems():
+            files[ substitute_composite_key( key, value ) ] = value
+        return files
+    def generate_auto_primary_file( self, dataset = None ):
+        raise Exception( "generate_auto_primary_file is not implemented for this datatype." )
+    
     @property
     def has_resolution(self):
         return False

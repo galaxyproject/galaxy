@@ -23,6 +23,7 @@ class ToolParameter( object ):
     def __init__( self, tool, param, context=None ):
         self.tool = tool
         self.refresh_on_change = False
+        self.refresh_on_change_values = []
         self.name = param.get("name")
         self.type = param.get("type")
         self.label = util.xml_text(param, "label")
@@ -301,7 +302,7 @@ class FileToolParameter( ToolParameter ):
         self.name = elem.get( 'name' )
         self.ajax = str_bool( elem.get( 'ajax-upload' ) )
     def get_html_field( self, trans=None, value=None, other_values={}  ):
-        return form_builder.FileField( self.name, self.ajax )
+        return form_builder.FileField( self.name, ajax = self.ajax, value = value )
     def from_html( self, value, trans=None, other_values={} ):
         # Middleware or proxies may encode files in special ways (TODO: this
         # should be pluggable)
@@ -325,10 +326,11 @@ class FileToolParameter( ToolParameter ):
         """
         return "multipart/form-data"
     def to_string( self, value, app ):
-        if value is None:
+        if value in [ None, '' ]:
             return None
-        else:
-            raise Exception( "FileToolParameter cannot be persisted" )
+        elif isinstance( value, unicode ) or isinstance( value, str ):
+            return value
+        raise Exception( "FileToolParameter cannot be persisted" )
     def to_python( self, value, app ):
         if value is None:
             return None
@@ -401,13 +403,13 @@ class SelectToolParameter( ToolParameter ):
     >>> print p.name
     blah
     >>> print p.get_html()
-    <select name="blah">
+    <select name="blah" last_selected_value="y">
     <option value="x">I am X</option>
     <option value="y" selected>I am Y</option>
     <option value="z">I am Z</option>
     </select>
     >>> print p.get_html( value="z" )
-    <select name="blah">
+    <select name="blah" last_selected_value="z">
     <option value="x">I am X</option>
     <option value="y">I am Y</option>
     <option value="z" selected>I am Z</option>
@@ -426,13 +428,13 @@ class SelectToolParameter( ToolParameter ):
     >>> print p.name
     blah
     >>> print p.get_html()
-    <select name="blah" multiple>
+    <select name="blah" multiple last_selected_value="z">
     <option value="x">I am X</option>
     <option value="y" selected>I am Y</option>
     <option value="z" selected>I am Z</option>
     </select>
     >>> print p.get_html( value=["x","y"])
-    <select name="blah" multiple>
+    <select name="blah" multiple last_selected_value="y">
     <option value="x" selected>I am X</option>
     <option value="y" selected>I am Y</option>
     <option value="z">I am Z</option>
@@ -520,7 +522,7 @@ class SelectToolParameter( ToolParameter ):
                 return form_builder.TextField( self.name, value=(value or "") )
         if value is not None:
             if not isinstance( value, list ): value = [ value ]
-        field = form_builder.SelectField( self.name, self.multiple, self.display, self.refresh_on_change )
+        field = form_builder.SelectField( self.name, self.multiple, self.display, self.refresh_on_change, refresh_on_change_values = self.refresh_on_change_values )
         options = self.get_options( trans, context )
         for text, optval, selected in options:
             if isinstance( optval, UnvalidatedValue ):
@@ -676,7 +678,7 @@ class GenomeBuildParameter( SelectToolParameter ):
     
     >>> # hg17 should be selected by default
     >>> print p.get_html( trans ) # doctest: +ELLIPSIS
-    <select name="blah">
+    <select name="blah" last_selected_value="hg17">
     <option value="?">unspecified (?)</option>
     ...
     <option value="hg18">Human Mar. 2006 (hg18)</option>
@@ -687,7 +689,7 @@ class GenomeBuildParameter( SelectToolParameter ):
     >>> # If the user selected something else already, that should be used
     >>> # instead
     >>> print p.get_html( trans, value='hg18' ) # doctest: +ELLIPSIS
-    <select name="blah">
+    <select name="blah" last_selected_value="hg18">
     <option value="?">unspecified (?)</option>
     ...
     <option value="hg18" selected>Human Mar. 2006 (hg18)</option>
@@ -942,7 +944,7 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
                 return form_builder.TextArea( self.name, value=value )
             else:
                 return form_builder.TextField( self.name, value=(value or "") )
-        return form_builder.DrillDownField( self.name, self.multiple, self.display, self.refresh_on_change, self.get_options( trans, value, other_values ), value )
+        return form_builder.DrillDownField( self.name, self.multiple, self.display, self.refresh_on_change, self.get_options( trans, value, other_values ), value, refresh_on_change_values = self.refresh_on_change_values )
     
     def from_html( self, value, trans=None, other_values={} ):
         if self.need_late_validation( trans, other_values ):
@@ -1108,7 +1110,7 @@ class DataToolParameter( ToolParameter ):
         if value is not None:
             if type( value ) != list:
                 value = [ value ]
-        field = form_builder.SelectField( self.name, self.multiple, None, self.refresh_on_change )
+        field = form_builder.SelectField( self.name, self.multiple, None, self.refresh_on_change, refresh_on_change_values = self.refresh_on_change_values )
         # CRUCIAL: the dataset_collector function needs to be local to DataToolParameter.get_html_field()
         def dataset_collector( hdas, parent_hid ):
             for i, hda in enumerate( hdas ):

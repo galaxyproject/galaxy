@@ -67,6 +67,15 @@ class Registry( object ):
                             indexer_config = indexer.get( 'file', None )
                             if indexer_config:
                                 self.indexers.append( (indexer_config, extension) )
+                        for composite_file in elem.findall( 'composite_file' ):
+                            # add composite files
+                            name = composite_file.get( 'name', None )
+                            if name is None:
+                                log.warning( "You must provide a name for your composite_file (%s)." % composite_file )
+                            optional = composite_file.get( 'optional', False )
+                            mimetype = composite_file.get( 'mimetype', None )
+                            self.datatypes_by_extension[extension].add_composite_file( name, optional=optional, mimetype=mimetype )
+                            
                 except Exception, e:
                     self.log.warning( 'Error loading datatype "%s", problem: %s' % ( extension, str( e ) ) )
             # Load datatype sniffers from the config
@@ -294,3 +303,7 @@ class Registry( object ):
                     ret_data = None
                 return ( convert_ext, ret_data )
         return ( None, None )
+    
+    def get_composite_extensions( self ):
+        return [ ext for ( ext, d_type ) in self.datatypes_by_extension.iteritems() if d_type.composite_type is not None ]
+

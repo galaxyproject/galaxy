@@ -3,6 +3,8 @@ Upload class
 """
 
 from galaxy.web.base.controller import *
+from galaxy.util.bunch import Bunch
+from galaxy.tools import DefaultToolState
 
 import logging
 log = logging.getLogger( __name__ )
@@ -75,32 +77,51 @@ class ToolRunner( BaseController ):
         tool = self.get_toolbox().tools_by_id.get( tool_id, None )
         if not tool:
             return False # bad tool_id
-        params = util.Params( kwd, sanitize=tool.options.sanitize, tool=tool )
+        #params = util.Params( kwd, sanitize=tool.options.sanitize, tool=tool )
+        if "tool_state" in kwd:
+            encoded_state = util.string_to_object( kwd["tool_state"] )
+            tool_state = DefaultToolState()
+            tool_state.decode( encoded_state, tool, trans.app )
+        else:
+            tool_state = tool.new_state( trans )
+        errors = tool.update_state( trans, tool.inputs, tool_state.inputs, kwd, update_only = True )
         datasets = []
-        if params.file_data not in [ None, "" ]:
-            name = params.file_data
-            if name.count('/'):
-                name = name.rsplit('/',1)[1]
-            if name.count('\\'):
-                name = name.rsplit('\\',1)[1]
-            datasets.append( create_dataset( name, trans.history ) )
-        if params.url_paste not in [ None, "" ]:
-            url_paste = params.url_paste.replace( '\r', '' ).split( '\n' )
-            url = False
-            for line in url_paste:
-                line = line.rstrip( '\r\n' ).strip()
-                if not line:
-                    continue
-                elif line.lower().startswith( 'http://' ) or line.lower().startswith( 'ftp://' ):
-                    url = True
-                    datasets.append( create_dataset( line, trans.history ) )
-                else:
-                    if url:
-                        continue # non-url when we've already processed some urls
-                    else:
-                        # pasted data
-                        datasets.append( create_dataset( 'Pasted Entry', trans.history ) )
-                        break
+        dataset_upload_inputs = []
+        for input_name, input in tool.inputs.iteritems():
+            if input.type == "upload_dataset":
+                dataset_upload_inputs.append( input )
+        assert dataset_upload_inputs, Exception( "No dataset upload groups were found." )
+        for dataset_upload_input in dataset_upload_inputs:
+            d_type = dataset_upload_input.get_datatype( trans, kwd )
+            
+            if d_type.composite_type is not None:
+                datasets.append( create_dataset( 'Uploaded Composite Dataset (%s)' % dataset_upload_input.get_datatype_ext( trans, kwd ), trans.history ) )
+            else:
+                params = Bunch( ** tool_state.inputs[dataset_upload_input.name][0] )
+                if params.file_data not in [ None, "" ]:
+                    name = params.file_data
+                    if name.count('/'):
+                        name = name.rsplit('/',1)[1]
+                    if name.count('\\'):
+                        name = name.rsplit('\\',1)[1]
+                    datasets.append( create_dataset( name, trans.history ) )
+                if params.url_paste not in [ None, "" ]:
+                    url_paste = params.url_paste.replace( '\r', '' ).split( '\n' )
+                    url = False
+                    for line in url_paste:
+                        line = line.rstrip( '\r\n' ).strip()
+                        if not line:
+                            continue
+                        elif line.lower().startswith( 'http://' ) or line.lower().startswith( 'ftp://' ):
+                            url = True
+                            datasets.append( create_dataset( line, trans.history ) )
+                        else:
+                            if url:
+                                continue # non-url when we've already processed some urls
+                            else:
+                                # pasted data
+                                datasets.append( create_dataset( 'Pasted Entry', trans.history ) )
+                                break
         if datasets:
             trans.model.flush()
         return [ d.id for d in datasets ]

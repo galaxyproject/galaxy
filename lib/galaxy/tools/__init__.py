@@ -591,7 +591,7 @@ class Tool:
                 group = Repeat()
                 group.name = elem.get( "name" )
                 group.title = elem.get( "title" ) 
-                group.inputs = self.parse_input_elem( elem, enctypes, context )  
+                group.inputs = self.parse_input_elem( elem, enctypes, context )
                 rval[group.name] = group
             elif elem.tag == "conditional":
                 group = Conditional()
@@ -609,6 +609,16 @@ class Tool:
                     case.inputs = self.parse_input_elem( case_elem, enctypes, context )
                     group.cases.append( case )
                 rval[group.name] = group
+            elif elem.tag == "upload_dataset":
+                group = UploadDataset()
+                group.name = elem.get( "name" )
+                group.title = elem.get( "title" ) 
+                group.file_type_name = elem.get( 'file_type_name', group.file_type_name )
+                group.default_file_type = elem.get( 'default_file_type', group.default_file_type )
+                rval[ group.file_type_name ].refresh_on_change = True
+                rval[ group.file_type_name ].refresh_on_change_values = self.app.datatypes_registry.get_composite_extensions()
+                group.inputs = self.parse_input_elem( elem, enctypes, context )
+                rval[ group.name ] = group
             elif elem.tag == "param":
                 param = self.parse_param_elem( elem, enctypes, context )
                 rval[param.name] = param
@@ -951,6 +961,56 @@ class Tool:
                 group_state['__current_case__'] = current_case
                 # Store the value of the test element
                 group_state[ input.test_param.name ] = value
+            elif isinstance( input, UploadDataset ):
+                group_state = state[input.name]
+                group_errors = []
+                group_old_errors = old_errors.get( input.name, None )
+                any_group_errors = False
+                d_type = input.get_datatype( trans, context )
+                writable_files = d_type.writable_files
+                #remove extra files
+                while len( group_state ) > len( writable_files ):
+                    del group_state[-1]
+                    if group_old_errors:
+                        del group_old_errors[-1]
+                # Update state
+                max_index = -1
+                for i, rep_state in enumerate( group_state ):
+                    rep_index = rep_state['__index__']
+                    max_index = max( max_index, rep_index )
+                    rep_prefix = "%s_%d|" % ( key, rep_index )
+                    if group_old_errors:
+                        rep_old_errors = group_old_errors[i]
+                    else:
+                        rep_old_errors = {}
+                    rep_errors = self.update_state( trans,
+                                                    input.inputs, 
+                                                    rep_state, 
+                                                    incoming, 
+                                                    prefix=rep_prefix,
+                                                    context=context,
+                                                    update_only=update_only,
+                                                    old_errors=rep_old_errors,
+                                                    changed_dependencies=changed_dependencies,
+                                                    item_callback=item_callback )
+                    if rep_errors:
+                        any_group_errors = True
+                        group_errors.append( rep_errors )
+                    else:
+                        group_errors.append( {} )
+                #add new fileupload as needed
+                offset = 1
+                while len( writable_files ) > len( group_state ):
+                    new_state = {}
+                    new_state['__index__'] = max_index + offset
+                    offset += 1
+                    self.fill_in_new_state( trans, input.inputs, new_state, context )
+                    group_state.append( new_state )
+                    if any_group_errors:
+                        group_errors.append( {} )
+                # Were there *any* errors for any repetition?
+                if any_group_errors:
+                    errors[input.name] = group_errors
             else:
                 if key not in incoming \
                    and "__force_update__" + key not in incoming \

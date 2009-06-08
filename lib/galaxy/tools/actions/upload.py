@@ -19,19 +19,15 @@ class UploadToolAction( object ):
         except:
             log.exception( 'failure removing temporary file: %s' % filename )
     def execute( self, tool, trans, incoming={}, set_output_hid = True ):
-        data_file = incoming['file_data']
-        file_type = incoming['file_type']
-        dbkey = incoming['dbkey']
-        url_paste = incoming['url_paste']
-        is_multi_byte = False
-        space_to_tab = False 
-        if 'space_to_tab' in incoming:
-            if incoming['space_to_tab'] not in ["None", None]:
-                space_to_tab = True
+        dataset_upload_inputs = []
+        for input_name, input in tool.inputs.iteritems():
+            if input.type == "upload_dataset":
+                dataset_upload_inputs.append( input )
+        assert dataset_upload_inputs, Exception( "No dataset upload groups were found." )
         # Get any precreated datasets (when using asynchronous uploads)
         async_datasets = []
         self.precreated_datasets = []
-        if incoming['async_datasets'] not in ["None", "", None]:
+        if incoming.get( 'async_datasets', None ) not in ["None", "", None]:
             async_datasets = incoming['async_datasets'].split(',')
         for id in async_datasets:
             try:
@@ -45,8 +41,39 @@ class UploadToolAction( object ):
                log.error( 'Got a precreated dataset (%s) but it does not belong to current user (%s)' % ( data.id, trans.user.id ) )
             else:
                 self.precreated_datasets.append( data )
-        temp_name = ""
         data_list = []
+        for dataset_upload_input in dataset_upload_inputs:
+            uploaded_datasets = dataset_upload_input.get_uploaded_datasets( trans, incoming )
+            for uploaded_dataset in uploaded_datasets:
+                precreated_dataset = self.get_precreated_dataset( uploaded_dataset.precreated_name )
+                dataset = self.add_file( trans, uploaded_dataset.primary_file, uploaded_dataset.name, uploaded_dataset.file_type, uploaded_dataset.is_multi_byte, uploaded_dataset.dbkey, space_to_tab = uploaded_dataset.space_to_tab, info = uploaded_dataset.info, precreated_dataset = precreated_dataset )
+                if uploaded_dataset.composite_files:
+                    os.mkdir( dataset.extra_files_path ) #make extra files path
+                    for name, value in uploaded_dataset.composite_files.iteritems():
+                        #what about binary files here, need to skip converting newlines
+                        if value is None and not dataset.datatype.writable_files[ name ].optional:
+                            dataset.info = "A required composite data file was not provided (%s)" % name
+                            dataset.state = dataset.states.ERROR
+                            break
+                        elif value is not None:
+                            if value.space_to_tab:
+                                sniff.convert_newlines_sep2tabs( value.filename )
+                            else:
+                                sniff.convert_newlines( value.filename )
+                            shutil.move( value.filename, os.path.join( dataset.extra_files_path, name ) )
+                data_list.append( dataset )
+                #clean up extra temp names
+                uploaded_dataset.clean_up_temp_files()
+        
+        #cleanup unclaimed precreated datasets:
+        for data in self.precreated_datasets:
+            log.info( 'Cleaned up unclaimed precreated dataset (%s).' % ( data.id ) )
+            data.state = data.states.ERROR
+            data.info = 'No file contents were available.'
+        
+        if data_list:
+            trans.app.model.flush()
+        
         # Create the job object
         job = trans.app.model.Job()
         job.session_id = trans.get_galaxy_session().id
@@ -56,104 +83,14 @@ class UploadToolAction( object ):
             # For backward compatibility, some tools may not have versions yet.
             job.tool_version = tool.version
         except:
-            job.tool_version = "1.0.0"
+            job.tool_version = "1.0.1"
         job.state = trans.app.model.Job.states.UPLOAD
         job.flush()
         log.info( 'tool %s created job id %d' % ( tool.id, job.id ) )
         trans.log_event( 'created job id %d' % job.id, tool_id=tool.id )
-        if 'local_filename' in dir( data_file ):
-            # Use the existing file
-            file_name = data_file.filename
-            file_name = file_name.split( '\\' )[-1]
-            file_name = file_name.split( '/' )[-1]
-            precreated_dataset = self.get_precreated_dataset( file_name )
-            try:
-                data_list.append( self.add_file( trans, data_file.local_filename, file_name, file_type, is_multi_byte,  dbkey, space_to_tab=space_to_tab, precreated_dataset=precreated_dataset ) )
-            except Exception, e:
-                log.exception( 'exception in add_file using datafile.local_filename %s: %s' % ( data_file.local_filename, str( e ) ) )
-                self.remove_tempfile( data_file.local_filename )
-                return self.upload_empty( trans, job, "Error:", str( e ), precreated_dataset=precreated_dataset )
-        elif 'filename' in dir( data_file ):
-            file_name = data_file.filename
-            file_name = file_name.split( '\\' )[-1]
-            file_name = file_name.split( '/' )[-1]
-            precreated_dataset = self.get_precreated_dataset( file_name )
-            try:
-                temp_name, is_multi_byte = sniff.stream_to_file( data_file.file, prefix='upload' )
-            except Exception, e:
-                log.exception( 'exception in sniff.stream_to_file using file %s: %s' % ( data_file.filename, str( e ) ) )
-                self.remove_tempfile( temp_name )
-                return self.upload_empty( trans, job, "Error:", str( e ), precreated_dataset=precreated_dataset )
-            try:
-                data_list.append( self.add_file( trans, temp_name, file_name, file_type, is_multi_byte,  dbkey, space_to_tab=space_to_tab, precreated_dataset=precreated_dataset ) )
-            except Exception, e:
-                log.exception( 'exception in add_file using file temp_name %s: %s' % ( str( temp_name ), str( e ) ) )
-                self.remove_tempfile( temp_name )
-                return self.upload_empty( trans, job, "Error:", str( e ), precreated_dataset=precreated_dataset )
-        if url_paste not in [ None, "" ]:
-            if url_paste.lstrip().lower().startswith( 'http://' ) or url_paste.lstrip().lower().startswith( 'ftp://' ):
-                # If we were sent a DATA_URL from an external application in a post, NAME and INFO
-                # values should be in the request
-                if 'NAME' in incoming and incoming[ 'NAME' ] not in [ "None", None ]:
-                    NAME = incoming[ 'NAME' ]
-                else:
-                    NAME = ''
-                if 'INFO' in incoming and incoming[ 'INFO' ] not in [ "None", None ]:
-                    INFO = incoming[ 'INFO' ]
-                else:
-                    INFO = "uploaded url"
-                url_paste = url_paste.replace( '\r', '' ).split( '\n' )
-                name_set_from_line = False #if we are setting the name from the line, it needs to be the line that creates that dataset
-                for line in url_paste:
-                    line = line.strip()
-                    if line:
-                        if not line.lower().startswith( 'http://' ) and not line.lower().startswith( 'ftp://' ):
-                            continue # non-url line, ignore
-                        if not NAME or name_set_from_line:
-                            NAME = line
-                            name_set_from_line = True
-                        precreated_dataset = self.get_precreated_dataset( NAME )
-                        try:
-                            temp_name, is_multi_byte = sniff.stream_to_file( urllib.urlopen( line ), prefix='url_paste' )
-                        except Exception, e:
-                            log.exception( 'exception in sniff.stream_to_file using url_paste %s: %s' % ( url_paste, str( e ) ) )
-                            self.remove_tempfile( temp_name )
-                            return self.upload_empty( trans, job, "Error:", str( e ), precreated_dataset=precreated_dataset )
-                        try:
-                            data_list.append( self.add_file( trans, temp_name, NAME, file_type, is_multi_byte,  dbkey, info="uploaded url", space_to_tab=space_to_tab, precreated_dataset=precreated_dataset ) )
-                        except Exception, e:
-                            log.exception( 'exception in add_file using url_paste temp_name %s: %s' % ( str( temp_name ), str( e ) ) )
-                            self.remove_tempfile( temp_name )
-                            return self.upload_empty( trans, job, "Error:", str( e ), precreated_dataset=precreated_dataset )
-            else:
-                precreated_dataset = self.get_precreated_dataset( 'Pasted Entry' )
-                is_valid = False
-                for line in url_paste:
-                    line = line.rstrip( '\r\n' )
-                    if line:
-                        is_valid = True
-                        break
-                if is_valid:
-                    try:
-                        temp_name, is_multi_byte = sniff.stream_to_file( StringIO.StringIO( url_paste ), prefix='strio_url_paste' )
-                    except Exception, e:
-                        log.exception( 'exception in sniff.stream_to_file using StringIO.StringIO( url_paste ) %s: %s' % ( url_paste, str( e ) ) )
-                        self.remove_tempfile( temp_name )
-                        return self.upload_empty( trans, job, "Error:", str( e ), precreated_dataset=precreated_dataset )
-                    try:
-                        data_list.append( self.add_file( trans, temp_name, 'Pasted Entry', file_type, is_multi_byte,  dbkey, info="pasted entry", space_to_tab=space_to_tab, precreated_dataset=precreated_dataset ) )
-                    except Exception, e:
-                        log.exception( 'exception in add_file using StringIO.StringIO( url_paste ) temp_name %s: %s' % ( str( temp_name ), str( e ) ) )
-                        self.remove_tempfile( temp_name )
-                        return self.upload_empty( trans, job, "Error:", str( e ), precreated_dataset=precreated_dataset )
-                else:
-                    return self.upload_empty( trans, job, "No data error:", "you pasted no data.", precreated_dataset=precreated_dataset )
-        if self.empty:
-            return self.upload_empty( trans, job, "Empty file error:", "you attempted to upload an empty file." )
-        elif len( data_list ) < 1:
-            return self.upload_empty( trans, job, "No data error:", "either you pasted no data, the url you specified is invalid, or you have not specified a file." )
+        
         #if we could make a 'real' job here, then metadata could be set before job.finish() is called
-        hda = data_list[0] #only our first hda is being added as input for the job, why?
+        hda = data_list[0] #only our first hda is being added as output for the job, why?
         job.state = trans.app.model.Job.states.OK
         file_size_str = datatypes.data.nice_size( hda.dataset.file_size )
         job.info = "%s, size: %s" % ( hda.info, file_size_str )
@@ -162,7 +99,7 @@ class UploadToolAction( object ):
         log.info( 'job id %d ended ok, file size: %s' % ( job.id, file_size_str ) )
         trans.log_event( 'job id %d ended ok, file size: %s' % ( job.id, file_size_str ), tool_id=tool.id )
         return dict( output=hda )
-
+        
     def upload_empty(self, trans, job, err_code, err_msg, precreated_dataset = None):
         if precreated_dataset is not None:
             data = precreated_dataset
@@ -188,7 +125,7 @@ class UploadToolAction( object ):
         trans.log_event( 'job id %d ended with errors, err_msg: %s' % ( job.id, err_msg ), tool_id=job.tool_id )
         return dict( output=data )
 
-    def add_file( self, trans, temp_name, file_name, file_type, is_multi_byte,  dbkey, info=None, space_to_tab=False, precreated_dataset=None ):
+    def add_file( self, trans, temp_name, file_name, file_type, is_multi_byte, dbkey, info=None, space_to_tab=False, precreated_dataset=None ):
         data_type = None
         # See if we have an empty file
         if not os.path.getsize( temp_name ) > 0:
@@ -254,7 +191,7 @@ class UploadToolAction( object ):
                         data_type = 'binary'
                 if not data_type:
                     # We must have a text file
-                    if self.check_html( temp_name ):
+                    if trans.app.datatypes_registry.get_datatype_by_extension( file_type ).composite_type != 'auto_primary_file' and self.check_html( temp_name ):
                         raise BadFileException( "you attempted to upload an inappropriate file." )
                 if data_type != 'binary' and data_type != 'zip':
                     if space_to_tab:
@@ -404,7 +341,7 @@ class UploadToolAction( object ):
             return self.precreated_datasets.pop( names.index( name ) )
         else:
             return None
-        
+
 class BadFileException( Exception ):
     pass
 

@@ -72,14 +72,18 @@ class ExpressionValidator( Validator ):
     """
     @classmethod
     def from_element( cls, param, elem ):
-        return cls( elem.get( 'message' ), elem.text )
-    def __init__( self, message, expression ):
+        return cls( elem.get( 'message' ), elem.text, elem.get( 'substitute_value_in_message' ) )
+    def __init__( self, message, expression, substitute_value_in_message ):
         self.message = message
+        self.substitute_value_in_message = substitute_value_in_message
         # Save compiled expression, code objects are thread safe (right?)
-        self.expression = compile( expression, '<string>', 'eval' )    
+        self.expression = compile( expression, '<string>', 'eval' )
     def validate( self, value, history=None ):
         if not( eval( self.expression, dict( value=value ) ) ):
-            raise ValueError( self.message )
+            message = self.message
+            if self.substitute_value_in_message:
+                message = message % value
+            raise ValueError( message )
         
 class InRangeValidator( Validator ):
     """

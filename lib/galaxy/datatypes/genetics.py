@@ -117,15 +117,26 @@ class Rgenetics(Html):
     """class to use for rgenetics"""
     """Add metadata elements"""
 
-    MetadataElement( name="base_name", desc="base name for all transformed versions of this genetic dataset", readonly=True)
+    MetadataElement( name="base_name", desc="base name for all transformed versions of this genetic dataset", default="galaxy", readonly=True)
     file_ext="html"
-
+    composite_type = 'auto_primary_file'
+    
     def missing_meta( self, dataset ):
         """Checks for empty meta values"""
         for key, value in dataset.metadata.items():
             if not value:
                 return True
         return False
+
+    def generate_primary_file( self, dataset = None ):
+        rval = ['<html><head><title>Files for Composite Dataset (%s)</title></head><p/>This composite dataset is composed of the following files:<p/><ul>' % ( self.file_ext ) ]
+        for composite_name, composite_file in self.get_composite_files( dataset = dataset ).iteritems():
+            opt_text = ''
+            if composite_file.optional:
+                opt_text = ' (optional)'
+            rval.append( '<li><a href="%s">%s</a>%s' % ( composite_name, composite_name, opt_text ) )
+        rval.append( '</ul></html>' )
+        return "\n".join( rval )
 
 class SNPMatrix(Rgenetics):
     """fake class to distinguish different species of Rgenetics data collections
@@ -148,6 +159,12 @@ class Lped(Rgenetics):
     """fake class to distinguish different species of Rgenetics data collections
     """
     file_ext="lped"
+    
+    def __init__( self, **kwd ):
+        Rgenetics.__init__( self, **kwd )
+        self.add_composite_file( '%s.ped', description = 'Pedigree File', substitute_name_with_metadata = 'base_name' )
+        self.add_composite_file( '%s.map', description = 'Map File', substitute_name_with_metadata = 'base_name' )
+
 
 class Pphe(Rgenetics):
     """fake class to distinguish different species of Rgenetics data collections
@@ -180,11 +197,33 @@ class Pbed(Rgenetics):
     """fake class to distinguish different species of Rgenetics data collections
     """
     file_ext="pbed"
+    
+    def __init__( self, **kwd ):
+        Rgenetics.__init__( self, **kwd )
+        self.add_composite_file( '%s.bim', substitute_name_with_metadata = 'base_name' )
+        self.add_composite_file( '%s.bed', substitute_name_with_metadata = 'base_name' )
+        self.add_composite_file( '%s.fam', substitute_name_with_metadata = 'base_name' )
+        self.add_composite_file( '%s.map', substitute_name_with_metadata = 'base_name' )
+
 
 class Eigenstratgeno(Rgenetics):
     """fake class to distinguish different species of Rgenetics data collections
     """
     file_ext="eigenstratgeno"
+    
+    def __init__( self, **kwd ):
+        Rgenetics.__init__( self, **kwd )
+        self.add_composite_file( '%s.eigenstratgeno', substitute_name_with_metadata = 'base_name' )
+        self.add_composite_file( '%s.ind', substitute_name_with_metadata = 'base_name' )
+        self.add_composite_file( '%s.map', substitute_name_with_metadata = 'base_name' )
+        self.add_composite_file( '%s_fo.eigenstratgeno', substitute_name_with_metadata = 'base_name', optional = 'True' )
+        self.add_composite_file( '%s_fo.ind', substitute_name_with_metadata = 'base_name', optional = 'True' )
+        self.add_composite_file( '%s_fo.map', substitute_name_with_metadata = 'base_name', optional = 'True' )
+        self.add_composite_file( '%s_oo.eigenstratgeno', substitute_name_with_metadata = 'base_name', optional = 'True' )
+        self.add_composite_file( '%s_oo.ind', substitute_name_with_metadata = 'base_name', optional = 'True' )
+        self.add_composite_file( '%s_oo.map', substitute_name_with_metadata = 'base_name', optional = 'True' )
+        
+
 
 class Eigenstratpca(Rgenetics):
     """fake class to distinguish different species of Rgenetics data collections

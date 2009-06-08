@@ -15,7 +15,39 @@ from galaxy.util.expressions import ExpressionContext
 <script type="text/javascript">
 $( function() {
     $( "select[refresh_on_change='true']").change( function() {
-        $( "#tool_form" ).submit();
+        var refresh = false;
+        var refresh_on_change_values = $( this )[0].attributes.getNamedItem( 'refresh_on_change_values' )
+        if ( refresh_on_change_values ) {
+            refresh_on_change_values = refresh_on_change_values.value.split( ',' );
+            var last_selected_value = $( this )[0].attributes.getNamedItem( 'last_selected_value' );
+            for( i= 0; i < refresh_on_change_values.length; i++ ) {
+                if ( $( this )[0].value == refresh_on_change_values[i] || ( last_selected_value && last_selected_value.value == refresh_on_change_values[i] ) ){
+                    refresh = true;
+                    break;
+                }
+            }
+        }
+        else {
+            refresh = true;
+        }
+        if ( refresh ){
+            $( ':file' ).each( function() {
+                var file_value = $( this )[0].value;
+                if ( file_value ) {
+                    //disable file input, since we don't want to upload the file on refresh
+                    var file_name = $( this )[0].name;
+                    $( this )[0].name = 'replaced_file_input_' + file_name
+                    $( this )[0].disable = true;
+                    //create a new hidden field which stores the filename and has the original name of the file input
+                    var new_file_input = document.createElement( 'input' );
+                    new_file_input.type = 'hidden';
+                    new_file_input.value = file_value;
+                    new_file_input.name = file_name;
+                    document.getElementById( 'tool_form' ).appendChild( new_file_input );
+                }
+            } );
+            $( "#tool_form" ).submit();
+        }
     });
 });
 %if not add_frame.debug:
@@ -72,6 +104,38 @@ function checkUncheckAll( name, check )
             %>
             ${row_for_param( group_prefix, input.test_param, group_state, group_errors, other_values )}
             ${do_inputs( input.cases[current_case].inputs, group_state, group_errors, group_prefix, other_values )}
+        %elif input.type == "upload_dataset":
+            %if input.get_datatype( trans, other_values ).composite_type is None: #have non-composite upload appear as before
+                <%
+                if input.name in errors:
+                    rep_errors = errors[input.name][0]
+                else:
+                    rep_errors = dict()
+                %>
+              ${do_inputs( input.inputs, tool_state[input.name][0], rep_errors, prefix + input.name + "_" + str( 0 ) + "|", other_values )}
+            %else:
+                <div class="repeat-group">
+                    <div class="form-title-row"><b>${input.group_title( other_values )}</b></div>
+                    <% 
+                    repeat_state = tool_state[input.name] 
+                    %>
+                    %for i in range( len( repeat_state ) ):
+                      <div class="repeat-group-item">
+                      <%
+                      if input.name in errors:
+                          rep_errors = errors[input.name][i]
+                      else:
+                          rep_errors = dict()
+                      index = repeat_state[i]['__index__']
+                      %>
+                      <div class="form-title-row"><b>File Contents for ${input.title_by_index( trans, i, other_values )}</b></div>
+                      ${do_inputs( input.inputs, repeat_state[i], rep_errors, prefix + input.name + "_" + str(index) + "|", other_values )}
+                      ##<div class="form-row"><input type="submit" name="${prefix}${input.name}_${index}_remove" value="Remove ${input.title} ${i+1}"></div>
+                      </div>
+                    %endfor
+                    ##<div class="form-row"><input type="submit" name="${prefix}${input.name}_add" value="Add new ${input.title}"></div>
+                </div>
+            %endif
         %else:
             ${row_for_param( prefix, input, tool_state, errors, other_values )}
         %endif
@@ -127,7 +191,7 @@ function checkUncheckAll( name, check )
     <br/>
 %endif
 
-<div class="toolForm" id="$tool.id">
+<div class="toolForm" id="${tool.id}">
   %if tool.has_multiple_pages:
   <div class="toolFormTitle">${tool.name} (step ${tool_state.page+1} of ${tool.npages})</div>
   %else:

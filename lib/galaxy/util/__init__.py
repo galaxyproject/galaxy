@@ -146,6 +146,7 @@ def sanitize_param(value):
     elif isinstance( value, list ):
         return map(sanitize_text, value)
     else:
+        print value
         raise Exception, 'Unknown parameter type (%s)' % ( type( value ) )
 
 class Params:
@@ -222,7 +223,7 @@ class Params:
                                 pass
                         if not value and not new_value:
                             new_value = tool.param_trans_dict[ key ][1]
-                if key not in self.NEVER_SANITIZE and sanitize:
+                if sanitize and not ( key in self.NEVER_SANITIZE or True in [ key.endswith( "|%s" % nonsanitize_parameter ) for nonsanitize_parameter in self.NEVER_SANITIZE ] ): #sanitize check both ungrouped and grouped parameters by name
                     self.__dict__[ new_key ] = sanitize_param( new_value )
                 else:
                     self.__dict__[ new_key ] = new_value
