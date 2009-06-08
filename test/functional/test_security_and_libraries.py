@@ -1668,16 +1668,8 @@ class TestSecurityAndLibraries( TwillTestCase ):
             history.refresh()
             if not history.deleted:
                 raise AssertionError( 'User %s has active history id %d after their account was marked as purged.' % ( regular_user3.email, hda.id ) )
-            # Make sure HistoryDatasetAssociation deleted
-            for hda in history.datasets:
-                hda.refresh()
-                if not hda.deleted:
-                    raise AssertionError( 'HistoryDatasetAssociation id %d was not deleted.' % hda.id )
-                # Make sure Dataset deleted
-                d = galaxy.model.Dataset.filter( galaxy.model.Dataset.table.c.id==hda.dataset_id ).first()
-                d.refresh()
-                if not d.deleted:
-                    raise AssertionError( 'Dataset id %d was not deleted.' % d.id )
+            # NOTE: Not all hdas / datasets will be deleted at the time a history is deleted - the cleanup_datasets.py script
+            # is responsible for this.
         # Make sure UserGroupAssociations deleted
         if regular_user3.groups:
             raise AssertionError( 'User %s has active group id %d after their account was marked as purged.' % ( regular_user3.email, uga.id ) )

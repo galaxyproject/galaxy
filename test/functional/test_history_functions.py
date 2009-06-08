@@ -114,11 +114,10 @@ class TestHistory( TwillTestCase ):
         self.login( email=regular_user1.email )
         check_str = '%s from %s' % ( history3.name, admin_user.email )
         self.view_stored_active_histories( check_str=check_str )
+        # Need to delete history3_copy1
+        self.delete_history( id=str( history3_copy1.id ) )
         self.logout()
         self.login( email=admin_user.email )
-        # Need to delete history3_copy1
-        history3_copy1.deleted = True
-        history3_copy1.flush()
         # Test sharing a history with an invalid user
         email = 'jack@jill.com'
         check_str = '%s is not a valid Galaxy user.' % email
@@ -138,48 +137,55 @@ class TestHistory( TwillTestCase ):
         self.share_history( id, email, check_str )
         # We need to keep track of all shared histories so they can later be deleted
         history3_copy_name = "%s from %s" % ( history3.name, admin_user.email )
-        history3_copies = galaxy.model.History \
+        history3_to_use_for_regular_user2 = galaxy.model.History \
             .filter( and_( galaxy.model.History.table.c.name==history3_copy_name,
+                           galaxy.model.History.table.c.user_id==regular_user2.id,
                            galaxy.model.History.table.c.deleted==False ) ) \
             .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
-            .limit( 2 ) \
-            .all()
-        history3_copy2 = history3_copies[0]
-        history3_copy3 = history3_copies[1]
+            .first()
+        assert history3_to_use_for_regular_user2 is not None, "Problem retrieving history3_to_use_for_regular_user2 from database" 
+        history3_to_use_for_regular_user3 = galaxy.model.History \
+            .filter( and_( galaxy.model.History.table.c.name==history3_copy_name,
+                           galaxy.model.History.table.c.user_id==regular_user3.id,
+                           galaxy.model.History.table.c.deleted==False ) ) \
+            .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
+            .first()
+        assert history3_to_use_for_regular_user3 is not None, "Problem retrieving history3_to_use_for_regular_user3 from database"           
         history4_copy_name = "%s from %s" % ( history4.name, admin_user.email )
-        history4_copyies = galaxy.model.History \
+        history4_to_use_for_regular_user2 = galaxy.model.History \
             .filter( and_( galaxy.model.History.table.c.name==history4_copy_name,
+                           galaxy.model.History.table.c.user_id==regular_user2.id,
                            galaxy.model.History.table.c.deleted==False ) ) \
             .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
-            .limit( 2 ) \
-            .all()
-        history4_copy1 = history4_copyies[0]
-        history4_copy2 = history4_copyies[1]
+            .first()
+        assert history4_to_use_for_regular_user2 is not None, "Problem retrieving history4_to_use_for_regular_user2 from database" 
+        history4_to_use_for_regular_user3 = galaxy.model.History \
+            .filter( and_( galaxy.model.History.table.c.name==history4_copy_name,
+                           galaxy.model.History.table.c.user_id==regular_user3.id,
+                           galaxy.model.History.table.c.deleted==False ) ) \
+            .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
+            .first()
+        assert history4_to_use_for_regular_user3 is not None, "Problem retrieving history4_to_use_for_regular_user3 from database" 
         self.logout()
         self.login( email=regular_user2.email )
         check_str = '%s from %s' % ( history3.name, admin_user.email )
         self.view_stored_active_histories( check_str=check_str )
         check_str = '%s from %s' % ( history4.name, admin_user.email )
         self.view_stored_active_histories( check_str=check_str )
+        # Need to delete the copied histories, so later test runs are valid
+        self.delete_history( id=str( history3_to_use_for_regular_user2.id ) )
+        self.delete_history( id=str( history4_to_use_for_regular_user2.id ) )
         self.logout()
         self.login( email=regular_user3.email )
         check_str = '%s from %s' % ( history3.name, admin_user.email )
         self.view_stored_active_histories( check_str=check_str )
         check_str = '%s from %s' % ( history4.name, admin_user.email )
         self.view_stored_active_histories( check_str=check_str )
+        # Need to delete the copied histories, so later test runs are valid
+        self.delete_history( id=str( history3_to_use_for_regular_user3.id ) )
+        self.delete_history( id=str( history4_to_use_for_regular_user3.id ) )
         self.logout()
         self.login( email=admin_user.email )
-        # Need to delete the copied histories, so later test runs are valid
-        history3_copy2.deleted = True
-        history3_copy2.flush()
-        history3_copy3.deleted = True
-        history3_copy3.flush()
-        history4_copy1.deleted = True
-        history4_copy1.flush()
-        history4_copy1.deleted = True
-        history4_copy1.flush()
-        history4_copy2.deleted = True
-        history4_copy2.flush()
     def test_030_change_permissions_on_current_history( self ):
         """Testing changing permissions on the current history"""
         global history5
@@ -222,8 +228,7 @@ class TestHistory( TwillTestCase ):
         self.visit_url( "%s/history/list" % self.url )
         self.check_page_for_string( history5_copy1.name )
         # Need to delete history5_copy1 on the history list page for regular_user1
-        history5_copy1.deleted = True
-        history5_copy1.flush()
+        self.delete_history( id=str( history5_copy1.id ) )
         self.logout()
         self.login( email=admin_user.email )
     def test_040_sharing_history_by_making_new_sharing_role( self ):
@@ -278,8 +283,7 @@ class TestHistory( TwillTestCase ):
         # Make sure 2.bed is accessible since it is associated with a sharing role
         self.display_history_item( str( hda_2_bed.id ), check_str='chr1' )
         # Need to delete history5_copy2 on the history list page for regular_user1
-        history5_copy2.deleted = True
-        history5_copy2.flush()
+        self.delete_history( id=str( history5_copy2.id ) )
     def test_045_sharing_private_history_with_multiple_users_by_changing_no_permissions( self ):
         """Testing sharing a restricted history with multiple users, making no permission changes"""
         self.logout()
@@ -301,47 +305,44 @@ class TestHistory( TwillTestCase ):
                             action_check_str=action_check_str )
         # We need to keep track of all shared histories so they can later be deleted
         history5_copy_name = "%s from %s" % ( history5.name, admin_user.email )
-        history5_copies = galaxy.model.History \
+        history5_to_use_for_regular_user1 = galaxy.model.History \
             .filter( and_( galaxy.model.History.table.c.name==history5_copy_name,
+                           galaxy.model.History.table.c.user_id==regular_user1.id,
                            galaxy.model.History.table.c.deleted==False ) ) \
             .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
-            .limit( 2 ) \
-            .all()
-        history5_copy3 = history5_copies[0]
-        assert history5_copy3 is not None, "Problem retrieving history5_copy3 from database"
-        history5_copy4 = history5_copies[1]
-        assert history5_copy4 is not None, "Problem retrieving history5_copy4 from database"
-        # Make sure test1@bx.psu.edu received a copy of history5 with both datasets accessible
-        if history5_copy3.user_id == regular_user1.id:
-            history_to_use_for_regular_user_1 = history5_copy3
-            history_to_use_for_regular_user_2 = history5_copy4
-        elif history5_copy4.user_id == regular_user1.id:
-            history_to_use_for_regular_user_1 = history5_copy4
-            history_to_use_for_regular_user_2 = history5_copy3
-        else:
-            raise AssertionError, "Copies of history5 were not correctly associated with users"
+            .first()
+        assert history5_to_use_for_regular_user1 is not None, "Problem retrieving history5_to_use_for_regular_user1 from database" 
+        history5_to_use_for_regular_user2 = galaxy.model.History \
+            .filter( and_( galaxy.model.History.table.c.name==history5_copy_name,
+                           galaxy.model.History.table.c.user_id==regular_user2.id,
+                           galaxy.model.History.table.c.deleted==False ) ) \
+            .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
+            .first()
+        assert history5_to_use_for_regular_user2 is not None, "Problem retrieving history5_to_use_for_regular_user2 from database" 
         self.logout()
         self.login( email=regular_user1.email )
         check_str = '%s from %s' % ( history5.name, admin_user.email )
         self.view_stored_active_histories( check_str=check_str )
-        self.switch_history( id=str( history_to_use_for_regular_user_1.id ), name=history_to_use_for_regular_user_1.name )
+        self.switch_history( id=str( history5_to_use_for_regular_user1.id ), name=history5_to_use_for_regular_user1.name )
         self.check_history_for_string( '1.bed' )
         self.check_history_for_string( '2.bed' )
+        # Need to delete the copied histories, so later test runs are valid
+        self.delete_history( id=str( history5_to_use_for_regular_user1.id ) )
         self.logout()
         # Make sure test2@bx.psu.edu received a copy of history5, with only 1.bed accessible
         self.login( email=regular_user2.email )
         self.view_stored_active_histories( check_str=check_str )
-        self.switch_history( id=str( history_to_use_for_regular_user_2.id ), name=history_to_use_for_regular_user_2.name )
+        self.switch_history( id=str( history5_to_use_for_regular_user2.id ), name=history5_to_use_for_regular_user2.name )
         self.check_history_for_string( '1.bed' )
         self.check_history_for_string( '2.bed' )
         # Get both new hdas from the db that were created for the shared history
         hda_1_bed = galaxy.model.HistoryDatasetAssociation \
-            .filter( and_( galaxy.model.HistoryDatasetAssociation.table.c.history_id==history5_copy4.id,
+            .filter( and_( galaxy.model.HistoryDatasetAssociation.table.c.history_id==history5_to_use_for_regular_user1.id,
                            galaxy.model.HistoryDatasetAssociation.table.c.name=='1.bed' ) ) \
             .first()
         assert hda_1_bed is not None, "Problem retrieving hda_1_bed from database"
         hda_2_bed = galaxy.model.HistoryDatasetAssociation \
-            .filter( and_( galaxy.model.HistoryDatasetAssociation.table.c.history_id==history5_copy4.id,
+            .filter( and_( galaxy.model.HistoryDatasetAssociation.table.c.history_id==history5_to_use_for_regular_user1.id,
                            galaxy.model.HistoryDatasetAssociation.table.c.name=='2.bed' ) ) \
             .first()
         assert hda_2_bed is not None, "Problem retrieving hda_2_bed from database"
@@ -355,10 +356,7 @@ class TestHistory( TwillTestCase ):
             pass
         self.check_history_for_string( 'You do not have permission to view this dataset' )
         # Need to delete the copied histories, so later test runs are valid
-        history5_copy3.deleted = True
-        history5_copy3.flush()
-        history5_copy4.deleted = True
-        history5_copy4.flush()
+        self.delete_history( id=str( history5_to_use_for_regular_user2.id ) )
     def test_050_sharing_private_history_by_choosing_to_not_share( self ):
         """Testing sharing a restricted history with multiple users by choosing not to share"""
         self.logout()
