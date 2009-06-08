@@ -548,22 +548,11 @@ class TwillTestCase( unittest.TestCase ):
                 # Check for refresh_on_change attribute, submit a change if required
                 if 'refresh_on_change' in control.attrs.keys():
                     changed = False
-                    for elem in kwd[control.name]:
-                        # For DataToolParameter, control.value is the index of the DataToolParameter select list, 
-                        # but elem is the filename.  The following loop gets the filename of that index.
-                        param_text = ''
-                        for param in tc.show().split('<select'):
-                            param = ('<select' + param.split('select>')[0] + 'select>').replace('selected', 'selected="yes"')
-                            if param.find('on_chang') != -1 and param.find('name="%s"' % control.name) != -1:
-                                tree = ElementTree.fromstring(param)
-                                for option in tree.findall('option'): 
-                                    if option.get('value') in control.value:
-                                        param_text = option.text.strip()
-                                        break
-                                break
-                        if elem not in control.value and param_text.find(elem) == -1 :
+                    item_labels = [ item.attrs[ 'label' ] for item in control.get_items() if item.selected ] #For DataToolParameter, control.value is the HDA id, but kwd contains the filename.  This loop gets the filename/label for the selected values.
+                    for value in kwd[ control.name ]:
+                        if value not in control.value and True not in [ value in item_label for item_label in item_labels ]:
                             changed = True
-                            break
+                            break                    
                     if changed:
                         # Clear Control and set to proper value
                         control.clear()
