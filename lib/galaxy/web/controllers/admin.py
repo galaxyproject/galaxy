@@ -553,9 +553,7 @@ class Admin( BaseController ):
         # with the user's private role in case we want the ability to unpurge the user 
         # some time in the future.
         # Purging a deleted User deletes all of the following:
-        # - DefaultUserPermissions where user_id == User.id EXCEPT FOR THE PRIVATE ROLE
         # - History where user_id = User.id
-        #    - DefaultHistoryPermissions where history_id == History.id EXCEPT FOR THE PRIVATE ROLE
         #    - HistoryDatasetAssociation where history_id = History.id
         #    - Dataset where HistoryDatasetAssociation.dataset_id = Dataset.id
         # - UserGroupAssociation where user_id == User.id
@@ -568,19 +566,9 @@ class Admin( BaseController ):
             msg = "User '%s' has not been deleted, so it cannot be purged." % user.email
             trans.response.send_redirect( web.url_for( action='users', msg=util.sanitize_text( msg ), messagetype='error' ) )
         private_role = trans.app.security_agent.get_private_user_role( user )
-        # Delete DefaultUserPermissions EXCEPT FOR THE PRIVATE ROLE
-        for dup in user.default_permissions:
-            if dup.role_id != private_role.id:
-                dup.delete()
-                dup.flush()
         # Delete History
         for h in user.active_histories:
             h.refresh()
-            # Delete DefaultHistoryPermissions EXCEPT FOR THE PRIVATE ROLE
-            for dp in h.default_permissions:
-                if dp.role_id != private_role.id:
-                    dp.delete()
-                    dp.flush()
             for hda in h.active_datasets:
                 # Delete HistoryDatasetAssociation
                 d = trans.app.model.Dataset.get( hda.dataset_id )

@@ -112,13 +112,14 @@ def name_sorted( l ):
                     <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', library_id=library_id, folder_id=folder.id )}">Add datasets to this folder</a>
                     <a class="action-button" href="${h.url_for( controller='admin', action='folder', new=True, id=folder.id, library_id=library_id )}">Create a new sub-folder in this folder</a>
                     <a class="action-button" href="${h.url_for( controller='admin', action='folder', information=True, id=folder.id, library_id=library_id )}">Edit this folder's information</a>
-                    %if folder.library_folder_info_template_associations:
-                        <% template = folder.get_library_item_info_templates( template_list=[], restrict=True )[0] %>
-                        <a class="action-button" href="${h.url_for( controller='admin', action='info_template', library_id=library_id, id=template.id, edit_template=True )}">Edit this folder's information template</a>
-                    %elif not folder.library_folder_info_associations:
-                        ## Only allow adding a new template to the folder if a previously inherited template has not already been used
-                        <a class="action-button" href="${h.url_for( controller='admin', action='info_template', library_id=library_id, folder_id=folder.id, new_template=True )}">Add an information template to this folder</a>
-                    %endif
+                    ## TODO: temporarily eliminating templates until we have the new forms features done
+                    ##%if folder.library_folder_info_template_associations:
+                    ##    <% template = folder.get_library_item_info_templates( template_list=[], restrict=True )[0] %>
+                    ##    <a class="action-button" href="${h.url_for( controller='admin', action='info_template', library_id=library_id, id=template.id, edit_template=True )}">Edit this folder's information template</a>
+                    ##%elif not folder.library_folder_info_associations:
+                    ##    ## Only allow adding a new template to the folder if a previously inherited template has not already been used
+                    ##    <a class="action-button" href="${h.url_for( controller='admin', action='info_template', library_id=library_id, folder_id=folder.id, new_template=True )}">Add an information template to this folder</a>
+                    ##%endif
                     <a class="action-button" href="${h.url_for( controller='admin', action='folder', permissions=True, id=folder.id, library_id=library_id )}">Edit this folder's permissions</a>
                     <a class="action-button" confirm="Click OK to delete the folder '${folder.name}.'" href="${h.url_for( controller='admin', action='delete_library_item', library_id=library_id, library_item_id=folder.id, library_item_type='folder' )}">Delete this folder and its contents</a>
                 </div>
@@ -199,21 +200,21 @@ def name_sorted( l ):
                                 library_item_ids = {}
                                 library_item_ids[ 'library' ] = library.id
                             %>
-                            
-                                <a class="action-button" href="${h.url_for( controller='admin', action='library', id=library.id, information=True )}">Edit this library's information</a>
-                                %if library.library_info_template_associations:
-                                    <% template = library.get_library_item_info_templates( template_list=[], restrict=False )[0] %>
-                                    <a class="action-button" href="${h.url_for( controller='admin', action='info_template', library_id=library.id, id=template.id, edit_template=True )}">Edit this library's information template</a>
-                                %else:
-                                    <a class="action-button" href="${h.url_for( controller='admin', action='info_template', library_id=library.id, new_template=True )}">Add an information template to this library</a>
-                                %endif
-                                <a class="action-button" href="${h.url_for( controller='admin', action='library', id=library.id, permissions=True )}">Edit this library's permissions</a>
-                                <a class="action-button" confirm="Click OK to delete the library named '${library.name}'." href="${h.url_for( controller='admin', action='delete_library_item', library_id=library.id, library_item_id=library.id, library_item_type='library' )}">Delete this library and its contents</a>
-                                %if show_deleted:
-                                	<a class="action-button" href="${h.url_for( controller='admin', action='browse_library', id=library.id, show_deleted=False )}">Hide deleted library items</a>
-                                %else:
-                                	<a class="action-button" href="${h.url_for( controller='admin', action='browse_library', id=library.id, show_deleted=True )}">Show deleted library items</a>
-                                %endif
+                            ## TODO: temporarily eliminating templates until we have the new forms features done
+                            ##<a class="action-button" href="${h.url_for( controller='admin', action='library', id=library.id, information=True )}">Edit this library's information</a>
+                            ##%if library.library_info_template_associations:
+                            ##    <% template = library.get_library_item_info_templates( template_list=[], restrict=False )[0] %>
+                            ##    <a class="action-button" href="${h.url_for( controller='admin', action='info_template', library_id=library.id, id=template.id, edit_template=True )}">Edit this library's information template</a>
+                            ##%else:
+                            ##    <a class="action-button" href="${h.url_for( controller='admin', action='info_template', library_id=library.id, new_template=True )}">Add an information template to this library</a>
+                            ##%endif
+                            <a class="action-button" href="${h.url_for( controller='admin', action='library', id=library.id, permissions=True )}">Edit this library's permissions</a>
+                            <a class="action-button" confirm="Click OK to delete the library named '${library.name}'." href="${h.url_for( controller='admin', action='delete_library_item', library_id=library.id, library_item_id=library.id, library_item_type='library' )}">Delete this library and its contents</a>
+                            %if show_deleted:
+                            	<a class="action-button" href="${h.url_for( controller='admin', action='browse_library', id=library.id, show_deleted=False )}">Hide deleted library items</a>
+                            %else:
+                            	<a class="action-button" href="${h.url_for( controller='admin', action='browse_library', id=library.id, show_deleted=True )}">Show deleted library items</a>
+                            %endif
                         %elif not library.purged:
                               <a class="action-button" href="${h.url_for( controller='admin', action='undelete_library_item', library_id=library.id, library_item_id=library.id, library_item_type='library' )}">Undelete this library</a>
                         %endif

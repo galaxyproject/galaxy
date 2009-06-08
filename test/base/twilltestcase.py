@@ -304,30 +304,49 @@ class TwillTestCase( unittest.TestCase ):
         if check_str:
             self.check_page_for_string( check_str )
         self.home()
-    def edit_metadata( self, hid=None, form_no=0, **kwd ):
-        """Edits the metadata associated with a history item."""
-        # There are currently 4 forms on the edit page:
-        # 0. name="edit_attributes"
-        # 1. name="auto_detect"
-        # 2. name="convert_data"
-        # 3. name="change_datatype"
-        data_list = self.get_history()
-        self.assertTrue( data_list )
-        if hid is None: # take last hid
-            elem = data_list[-1]
-            hid = int( elem.get('hid') )
-        self.assertTrue( hid )
-        self.visit_page( 'edit?hid=%d' % hid )
-        if form_no == 0:
-            button = "save"           #Edit Attributes form
-        elif form_no == 1:
-            button = "detect"       #Auto-detect Metadata Attributes
-        elif form_no == 2:
-            button = "convert_data" #Convert to new format form
-        elif form_no == 3:
-            button = "change"       #Change data type form
-        if kwd:
-            self.submit_form( form_no=form_no, button=button, **kwd)
+    def edit_hda_attribute_info( self, hda_id, new_name='', new_info='', new_dbkey='', new_startcol='' ):
+        """Edit history_dataset_association attribute information"""
+        self.home()
+        self.visit_url( "%s/root/edit?id=%s" % ( self.url, hda_id ) )
+        self.check_page_for_string( 'Edit Attributes' )
+        if new_name:
+            tc.fv( 'edit_attributes', 'name', new_name )
+        if new_info:
+            tc.fv( 'edit_attributes', 'info', new_info )
+        if new_dbkey:
+            tc.fv( 'edit_attributes', 'dbkey', new_dbkey )
+        if new_startcol:
+            tc.fv( 'edit_attributes', 'startCol', new_startcol )
+        tc.submit( 'save' )
+        self.check_page_for_string( 'Attributes updated' )
+        self.home()
+    def auto_detect_metadata( self, hda_id ):
+        """Auto-detect history_dataset_association metadata"""
+        self.home()
+        self.visit_url( "%s/root/edit?id=%s" % ( self.url, hda_id ) )
+        self.check_page_for_string( 'This will inspect the dataset and attempt' )
+        tc.fv( 'auto_detect', 'id', hda_id )
+        tc.submit( 'detect' )
+        self.check_page_for_string( 'Attributes updated' )
+        self.home()
+    def convert_format( self, hda_id, target_type ):
+        """Auto-detect history_dataset_association metadata"""
+        self.home()
+        self.visit_url( "%s/root/edit?id=%s" % ( self.url, hda_id ) )
+        self.check_page_for_string( 'This will inspect the dataset and attempt' )
+        tc.fv( 'convert_data', 'target_type', target_type )
+        tc.submit( 'convert_data' )
+        self.check_page_for_string( 'The file conversion of Convert BED to GFF on data' )
+        self.home()
+    def change_datatype( self, hda_id, datatype ):
+        """Auto-detect history_dataset_association metadata"""
+        self.home()
+        self.visit_url( "%s/root/edit?id=%s" % ( self.url, hda_id ) )
+        self.check_page_for_string( 'This will change the datatype of the existing dataset but' )
+        tc.fv( 'change_datatype', 'datatype', datatype )
+        tc.submit( 'change' )
+        self.check_page_for_string( 'Edit Attributes' )
+        self.home()
     def get_dataset_ids_in_history( self ):
         """Returns the ids of datasets in a history"""
         data_list = self.get_history()

@@ -150,17 +150,18 @@ def name_sorted( l ):
                     %else:
                         <a class="action-button" href="${h.url_for( controller='library', action='folder', information=True, id=folder.id, library_id=library_id )}">View this folder's information</a>
                     %endif
-                    %if folder.library_folder_info_template_associations:
-                        %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=folder ):
-                            <% template = folder.get_library_item_info_templates( template_list=[], restrict=True )[0] %>
-                            <a class="action-button" href="${h.url_for( controller='library', action='info_template', library_id=library.id, id=template.id, edit_template=True )}">Edit this folder's information template</a>
-                        %endif
-                    %elif not folder.library_folder_info_associations:
-                        ## Only allow adding a new template to the folder if a previously inherited template has not already been used
-                        %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=folder ):
-                            <a class="action-button" href="${h.url_for( controller='library', action='info_template', library_id=library.id, folder_id=folder.id, new_template=True )}">Add an information template to this folder</a>
-                        %endif
-                    %endif
+                    ## TODO: temporarily eliminating templates until we have the new forms features done
+                    ##%if folder.library_folder_info_template_associations:
+                    ##    %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=folder ):
+                    ##        <% template = folder.get_library_item_info_templates( template_list=[], restrict=True )[0] %>
+                    ##        <a class="action-button" href="${h.url_for( controller='library', action='info_template', library_id=library.id, id=template.id, edit_template=True )}">Edit this folder's information template</a>
+                    ##    %endif
+                    ##%elif not folder.library_folder_info_associations:
+                    ##    ## Only allow adding a new template to the folder if a previously inherited template has not already been used
+                    ##    %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=folder ):
+                    ##        <a class="action-button" href="${h.url_for( controller='library', action='info_template', library_id=library.id, folder_id=folder.id, new_template=True )}">Add an information template to this folder</a>
+                    ##    %endif
+                    ##%endif
                     %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MANAGE, library_item=folder ):
                         <a class="action-button" href="${h.url_for( controller='library', action='folder', permissions=True, id=folder.id, library_id=library_id )}">Edit this folder's permissions</a>
                     %endif
@@ -229,17 +230,17 @@ def name_sorted( l ):
                                     %else:
                                         <a class="action-button" href="${h.url_for( controller='library', action='library', information=True, id=library.id )}">View this library's information</a>
                                     %endif
-
-                                    %if library.library_info_template_associations:
-                                        <% template = library.get_library_item_info_templates( template_list=[], restrict=False )[0] %>
-                                        %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=template ):
-                                            <a class="action-button" href="${h.url_for( controller='library', action='info_template', library_id=library.id, id=template.id, edit_template=True )}">Edit this library's information template</a>
-                                        %endif
-                                    %else:
-                                        %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=library ):
-                                            <a class="action-button" href="${h.url_for( controller='library', action='info_template', library_id=library.id, new_template=True )}">Add an information template to this library</a>
-                                        %endif
-                                    %endif
+                                    ## TODO: temporarily eliminating templates until we have the new forms features done
+                                    ##%if library.library_info_template_associations:
+                                    ##    <% template = library.get_library_item_info_templates( template_list=[], restrict=False )[0] %>
+                                    ##    %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=template ):
+                                    ##        <a class="action-button" href="${h.url_for( controller='library', action='info_template', library_id=library.id, id=template.id, edit_template=True )}">Edit this library's information template</a>
+                                    ##    %endif
+                                    ##%else:
+                                    ##    %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=library ):
+                                    ##        <a class="action-button" href="${h.url_for( controller='library', action='info_template', library_id=library.id, new_template=True )}">Add an information template to this library</a>
+                                    ##    %endif
+                                    ##%endif
                                     %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MANAGE, library_item=library ):
                                         <a class="action-button" href="${h.url_for( controller='library', action='library', permissions=True, id=library.id )}">Edit this library's permissions</a>
                                     %endif

@@ -51,7 +51,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
             raise AssertionError( "Private role not found for user '%s'" % admin_user.email )
         # Make sure DefaultUserPermissions are correct
         if len( admin_user.default_permissions ) > 1:
-            raise AssertionError( '%d DefaultUserPermissions were created for %s when their account was created ( should have been 1 )' \
+            raise AssertionError( '%d DefaultUserPermissions associated with user %s ( should be 1 )' \
                                   % ( len( admin_user.default_permissions ), admin_user.email ) )
         dup =  galaxy.model.DefaultUserPermissions.filter( galaxy.model.DefaultUserPermissions.table.c.user_id==admin_user.id ).first()
         if not dup.action == galaxy.model.Dataset.permitted_actions.DATASET_MANAGE_PERMISSIONS.action:
@@ -72,6 +72,8 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.logout()
     def test_010_login_as_regular_user1( self ):
         """Testing logging in as regular user test1@bx.psu.edu - tests private role creation, changing DefaultHistoryPermissions for new histories, and sharing histories with another user"""
+        # Some of the history related tests here are similar to some tests in the
+        # test_history_functions.py script, so we could potentially eliminate 1 or 2 of them.
         self.login( email='test1@bx.psu.edu' ) # test1@bx.psu.edu is not an admin user
         global regular_user1
         regular_user1 = galaxy.model.User.filter( galaxy.model.User.table.c.email=='test1@bx.psu.edu' ).first()
@@ -93,7 +95,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         latest_dataset = galaxy.model.Dataset.query().order_by( desc( galaxy.model.Dataset.table.c.create_time ) ).first()
         # Make sure DatasetPermissions is correct - default is 'manage permissions'
         if len( latest_dataset.actions ) > 1:
-            raise AssertionError( '%d DatasetPermissionss were created for dataset id %d when it was created ( should have been 1 )' \
+            raise AssertionError( '%d DatasetPermissions were created for dataset id %d when it was created ( should have been 1 )' \
                                   % ( len( latest_dataset.actions ), latest_dataset.id ) )
         dp = galaxy.model.DatasetPermissions.filter( galaxy.model.DatasetPermissions.table.c.dataset_id==latest_dataset.id ).first()
         if not dp.action == galaxy.model.Dataset.permitted_actions.DATASET_MANAGE_PERMISSIONS.action:
@@ -494,97 +496,100 @@ class TestSecurityAndLibraries( TwillTestCase ):
         library_one.refresh()
         self.rename_library( str( library_one.id ), library_one.name, name=name, description=description )
         library_one.refresh()
-    def test_075_library_template_features( self ):
-        """Testing adding a template to a library, along with template features on the admin side"""
-        actions = [ v.action for k, v in galaxy.model.Library.permitted_actions.items() ]
-        actions.sort()
-        # Add a new information template to the library
-        template_name = 'Library Template 1'
-        ele_name_0 = 'Foo'
-        ele_name_1 = 'Doh'
-        self.add_library_info_template( library_one.id, library_one.name, name=template_name, num_fields='2', ele_name_0=ele_name_0, ele_name_1=ele_name_1 )
-        self.home()
-        self.visit_url( '%s/admin/library?id=%s&information=True' % ( self.url, str( library_one.id ) ) )
-        self.check_page_for_string( ele_name_0 )
-        self.check_page_for_string( ele_name_1 )
-        self.home()
-        # Get the template for later testing
-        global library_one_template
-        library_one_template = galaxy.model.LibraryItemInfoTemplate.query().order_by( desc( galaxy.model.LibraryItemInfoTemplate.table.c.id ) ).first()
-        assert library_one_template is not None, 'Problem retrieving LibraryItemInfoTemplate for library named "%s" from the database' % str( library_one.name )
-        # Make sure the library permissions were inherited by the template
-        template_permissions = galaxy.model.LibraryItemInfoTemplatePermissions \
-            .query() \
-            .filter( galaxy.model.LibraryItemInfoTemplatePermissions.table.c.library_item_info_template_id == library_one_template.id ) \
-            .order_by( desc( galaxy.model.LibraryItemInfoTemplatePermissions.table.c.id ) ) \
-            .limit( 3 ) \
-            .all()
-        template_permissions = [ litp_obj.action for litp_obj in template_permissions ]
-        template_permissions.sort()
-        assert actions == template_permissions, "Template permissions for template %s not correctly inherited from library %s" \
-                                                % ( library_one_template.name, library_one.name )
-        # Make sure that the library permissions were inherited by each of the template elements
-        for library_item_info in library_one_template.library_item_infos:
-            info_permissions = galaxy.model.LibraryItemInfoPermissions \
-                .filter( galaxy.model.LibraryItemInfoPermissions.table.c.library_item_info_id == library_item_info.id ) \
+        """
+        ## TODO: temporarily eliminating templates until we have the new forms features done
+        def test_075_library_template_features( self ):
+            Testing adding a template to a library, along with template features on the admin side
+            actions = [ v.action for k, v in galaxy.model.Library.permitted_actions.items() ]
+            actions.sort()
+            # Add a new information template to the library
+            template_name = 'Library Template 1'
+            ele_name_0 = 'Foo'
+            ele_name_1 = 'Doh'
+            self.add_library_info_template( library_one.id, library_one.name, name=template_name, num_fields='2', ele_name_0=ele_name_0, ele_name_1=ele_name_1 )
+            self.home()
+            self.visit_url( '%s/admin/library?id=%s&information=True' % ( self.url, str( library_one.id ) ) )
+            self.check_page_for_string( ele_name_0 )
+            self.check_page_for_string( ele_name_1 )
+            self.home()
+            # Get the template for later testing
+            global library_one_template
+            library_one_template = galaxy.model.LibraryItemInfoTemplate.query().order_by( desc( galaxy.model.LibraryItemInfoTemplate.table.c.id ) ).first()
+            assert library_one_template is not None, 'Problem retrieving LibraryItemInfoTemplate for library named "%s" from the database' % str( library_one.name )
+            # Make sure the library permissions were inherited by the template
+            template_permissions = galaxy.model.LibraryItemInfoTemplatePermissions \
+                .query() \
+                .filter( galaxy.model.LibraryItemInfoTemplatePermissions.table.c.library_item_info_template_id == library_one_template.id ) \
+                .order_by( desc( galaxy.model.LibraryItemInfoTemplatePermissions.table.c.id ) ) \
+                .limit( 3 ) \
                 .all()
-            info_permissions = [ liip_obj.action for liip_obj in info_permissions ]
-            info_permissions.sort()
-            assert actions == info_permissions, "Permissions for library_item_info id %s not correctly inherited from library %s" \
-                                % ( library_item_info.id, library_one.name )
-        element_ids = []
-        if library_one.library_info_associations:
-            # We have a set of LibraryItemInfoElements
-            last_library_item_info_element = galaxy.model.LibraryItemInfoElement.query() \
-                .order_by( desc( galaxy.model.LibraryItemInfoElement.table.c.id ) ).first()
-            if not last_library_item_info_element:
-                element_ids.append( 0 )
-                element_ids.append( 1 )
+            template_permissions = [ litp_obj.action for litp_obj in template_permissions ]
+            template_permissions.sort()
+            assert actions == template_permissions, "Template permissions for template %s not correctly inherited from library %s" \
+                                                    % ( library_one_template.name, library_one.name )
+            # Make sure that the library permissions were inherited by each of the template elements
+            for library_item_info in library_one_template.library_item_infos:
+                info_permissions = galaxy.model.LibraryItemInfoPermissions \
+                    .filter( galaxy.model.LibraryItemInfoPermissions.table.c.library_item_info_id == library_item_info.id ) \
+                    .all()
+                info_permissions = [ liip_obj.action for liip_obj in info_permissions ]
+                info_permissions.sort()
+                assert actions == info_permissions, "Permissions for library_item_info id %s not correctly inherited from library %s" \
+                                    % ( library_item_info.id, library_one.name )
+            element_ids = []
+            if library_one.library_info_associations:
+                # We have a set of LibraryItemInfoElements
+                last_library_item_info_element = galaxy.model.LibraryItemInfoElement.query() \
+                    .order_by( desc( galaxy.model.LibraryItemInfoElement.table.c.id ) ).first()
+                if not last_library_item_info_element:
+                    element_ids.append( 0 )
+                    element_ids.append( 1 )
+                else:
+                    element_ids.append( last_library_item_info_element.id + 1 )
+                    element_ids.append( last_library_item_info_element.id + 2 )
             else:
-                element_ids.append( last_library_item_info_element.id + 1 )
-                element_ids.append( last_library_item_info_element.id + 2 )
-        else:
-            # We only have a set of LibraryItemInfoTemplateElements
-            for ele in library_one_template.elements:
-                element_ids.append( ele.id )
-            element_ids.sort()
-        # Add information to the library using the template
-        ele_1_field_name = "info_element_%s_%s" % ( str( library_one_template.id ), str( element_ids[0] ) )
-        ele_1_contents = 'hello'
-        ele_2_field_name = "info_element_%s_%s" % ( str( library_one_template.id ), str( element_ids[1] ) )
-        ele_2_contents = 'world'
-        self.edit_library_info( str( library_one.id ), library_one.name,
-                                ele_1_field_name, ele_1_contents,
-                                ele_2_field_name, ele_2_contents )
-        self.home()
-        self.visit_url( '%s/admin/library?id=%s&information=True' % ( self.url, str( library_one.id ) ) )
-        self.check_page_for_string( ele_1_contents )
-        self.check_page_for_string( ele_2_contents )
-        self.home()
-        self.visit_url( '%s/admin/library?id=%s&information=True' % ( self.url, str( library_one.id ) ) )
-        self.check_page_for_string( ele_1_contents )
-        self.check_page_for_string( ele_2_contents )
-        # Edit the template
-        new_name = 'Library Template 1 renamed'
-        new_ele_name_1_field = "element_name_%s" % element_ids[0]
-        new_ele_name_1 = 'wind'
-        new_ele_desc_1_field = "element_description_%s" % element_ids[0]
-        ele_desc_1 = 'This is the wind component'
-        new_ele_name_2_field = "element_name_%s" % element_ids[1]
-        new_ele_name_2 = 'bag'
-        new_ele_desc_2_field = "element_description_%s" % element_ids[1]
-        ele_desc_2 = 'This is the bag component'
-        self.edit_library_info_template( str( library_one.id ), library_one_template.id, new_name,
-                                         new_ele_name_1_field, new_ele_name_1, new_ele_desc_1_field, ele_desc_1,
-                                         new_ele_name_2_field, new_ele_name_2, new_ele_desc_2_field, ele_desc_2 )
-        self.home()
-        self.visit_url( '%s/admin/library?id=%s&information=True' % ( self.url, str( library_one.id ) ) )
-        self.check_page_for_string( new_ele_name_1 )
-        self.check_page_for_string( ele_desc_1 )
-        self.check_page_for_string( ele_1_contents )
-        self.check_page_for_string( new_ele_name_2 )
-        self.check_page_for_string( ele_desc_2 )
-        self.check_page_for_string( ele_2_contents )
+                # We only have a set of LibraryItemInfoTemplateElements
+                for ele in library_one_template.elements:
+                    element_ids.append( ele.id )
+                element_ids.sort()
+            # Add information to the library using the template
+            ele_1_field_name = "info_element_%s_%s" % ( str( library_one_template.id ), str( element_ids[0] ) )
+            ele_1_contents = 'hello'
+            ele_2_field_name = "info_element_%s_%s" % ( str( library_one_template.id ), str( element_ids[1] ) )
+            ele_2_contents = 'world'
+            self.edit_library_info( str( library_one.id ), library_one.name,
+                                    ele_1_field_name, ele_1_contents,
+                                    ele_2_field_name, ele_2_contents )
+            self.home()
+            self.visit_url( '%s/admin/library?id=%s&information=True' % ( self.url, str( library_one.id ) ) )
+            self.check_page_for_string( ele_1_contents )
+            self.check_page_for_string( ele_2_contents )
+            self.home()
+            self.visit_url( '%s/admin/library?id=%s&information=True' % ( self.url, str( library_one.id ) ) )
+            self.check_page_for_string( ele_1_contents )
+            self.check_page_for_string( ele_2_contents )
+            # Edit the template
+            new_name = 'Library Template 1 renamed'
+            new_ele_name_1_field = "element_name_%s" % element_ids[0]
+            new_ele_name_1 = 'wind'
+            new_ele_desc_1_field = "element_description_%s" % element_ids[0]
+            ele_desc_1 = 'This is the wind component'
+            new_ele_name_2_field = "element_name_%s" % element_ids[1]
+            new_ele_name_2 = 'bag'
+            new_ele_desc_2_field = "element_description_%s" % element_ids[1]
+            ele_desc_2 = 'This is the bag component'
+            self.edit_library_info_template( str( library_one.id ), library_one_template.id, new_name,
+                                             new_ele_name_1_field, new_ele_name_1, new_ele_desc_1_field, ele_desc_1,
+                                             new_ele_name_2_field, new_ele_name_2, new_ele_desc_2_field, ele_desc_2 )
+            self.home()
+            self.visit_url( '%s/admin/library?id=%s&information=True' % ( self.url, str( library_one.id ) ) )
+            self.check_page_for_string( new_ele_name_1 )
+            self.check_page_for_string( ele_desc_1 )
+            self.check_page_for_string( ele_1_contents )
+            self.check_page_for_string( new_ele_name_2 )
+            self.check_page_for_string( ele_desc_2 )
+            self.check_page_for_string( ele_2_contents )
+        """
     def test_080_add_public_dataset_to_root_folder( self ):
         """Testing adding a public dataset to the root folder"""
         actions = [ v.action for k, v in galaxy.model.Library.permitted_actions.items() ]
@@ -623,7 +628,9 @@ class TestSecurityAndLibraries( TwillTestCase ):
         if not dp.action == galaxy.model.Dataset.permitted_actions.DATASET_MANAGE_PERMISSIONS.action:
             raise AssertionError( 'The DatasetPermissions.action for dataset id %d is "%s", but it should be "manage permissions"' \
                                   % ( ldda_one.dataset.id, dp.action ) )
+        ## TODO: temporarily eliminating templates until we have the new forms features done
         # Make sure the library template was inherited by the ldda
+        """
         self.home()
         self.visit_url( "%s/admin/library_dataset_dataset_association?edit_info=True&library_id=%s&folder_id=%s&id=%s" % \
                         ( self.url, str( library_one.id ), str( library_one.root_folder.id ), str( ldda_one.id ) ) )
@@ -631,6 +638,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.check_page_for_string( 'This is the wind component' )
         self.check_page_for_string( 'bag' )
         self.check_page_for_string( 'This is the bag component' )
+        """
         # Make sure other users can access the dataset from the Libraries view
         self.logout()
         self.login( email=regular_user2.email )
@@ -640,20 +648,23 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.logout()
         self.login( email=admin_user.email )
         self.home()
-    def test_085_editing_dataset_information( self ):
-        """Testing editing dataset template element information"""
-        # Need the current library_item_info_element.id
-        last_library_item_info_element = galaxy.model.LibraryItemInfoElement.query() \
-            .order_by( desc( galaxy.model.LibraryItemInfoElement.table.c.id ) ).first()
-        global ldda_one_ele_2_field_name
-        ldda_one_ele_2_field_name = "info_element_%s" % str( last_library_item_info_element.id )
-        ele_2_contents = 'pipe'
-        global ldda_one_ele_1_field_name
-        ldda_one_ele_1_field_name = "info_element_%s" % ( str( last_library_item_info_element.id - 1 ) )
-        ele_1_contents = 'blown'
-        self.edit_ldda_template_element_info( str( library_one.id ), str( library_one.root_folder.id ), str( ldda_one.id ),
-            ldda_one.name, ldda_one_ele_1_field_name, ele_1_contents, ldda_one_ele_2_field_name, ele_2_contents )
-        self.home()
+        """
+        ## TODO: temporarily eliminating templates until we have the new forms features done
+        def test_085_editing_dataset_information( self ):
+            Testing editing dataset template element information
+            # Need the current library_item_info_element.id
+            last_library_item_info_element = galaxy.model.LibraryItemInfoElement.query() \
+                .order_by( desc( galaxy.model.LibraryItemInfoElement.table.c.id ) ).first()
+            global ldda_one_ele_2_field_name
+            ldda_one_ele_2_field_name = "info_element_%s" % str( last_library_item_info_element.id )
+            ele_2_contents = 'pipe'
+            global ldda_one_ele_1_field_name
+            ldda_one_ele_1_field_name = "info_element_%s" % ( str( last_library_item_info_element.id - 1 ) )
+            ele_1_contents = 'blown'
+            self.edit_ldda_template_element_info( str( library_one.id ), str( library_one.root_folder.id ), str( ldda_one.id ),
+                ldda_one.name, ldda_one_ele_1_field_name, ele_1_contents, ldda_one_ele_2_field_name, ele_2_contents )
+            self.home()
+        """
     def test_090_add_new_folder_to_root_folder( self ):
         """Testing adding a folder to a library root folder"""
         root_folder = library_one.root_folder
@@ -669,35 +680,41 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.visit_url( '%s/admin/browse_library?id=%s' % ( self.url, str( library_one.id ) ) )
         self.check_page_for_string( name )
         self.check_page_for_string( description )
+        ## TODO: temporarily eliminating templates until we have the new forms features done
         # Make sure the library template is inherited
+        """
         self.home()
         self.visit_url( '%s/admin/folder?id=%s&library_id=%s&information=True' % ( self.url, str( folder_one.id ), str( library_one.id ) ) )
         self.check_page_for_string( 'wind' )
         self.check_page_for_string( 'This is the wind component' )
         self.check_page_for_string( 'bag' )
         self.check_page_for_string( 'This is the bag component' )
+        """
         self.home()
-    def test_095_add_folder_template( self ):
-        """Testing adding a new folder template to a folder"""
-        # Add a new information template to the folder
-        template_name = 'Folder Template 1'
-        ele_name_0 = 'Fu'
-        ele_help_0 = 'This is the Fu component'.replace( ' ', '+' )
-        ele_name_1 = 'Bar'
-        ele_help_1 = 'This is the Bar component'.replace( ' ', '+' )
-        self.home()
-        self.add_folder_info_template( str( library_one.id ), library_one.name, str( folder_one.id ), folder_one.name,
-                                       name=template_name, num_fields='2', ele_name_0=ele_name_0, ele_help_0=ele_help_0,
-                                       ele_name_1=ele_name_1, ele_help_1=ele_help_1 )
-        self.home()
-        self.visit_url( '%s/admin/folder?id=%s&library_id=%s&information=True' % ( self.url, str( folder_one.id ), str( library_one.id ) ) )
-        self.check_page_for_string( ele_name_0 )
-        check_str = ele_help_0.replace( '+', ' ' )
-        self.check_page_for_string( check_str )
-        self.check_page_for_string( ele_name_1 )
-        check_str = ele_help_1.replace( '+', ' ' )
-        self.check_page_for_string( check_str )
-        self.home()
+        """
+        ## TODO: temporarily eliminating templates until we have the new forms features done
+        def test_095_add_folder_template( self ):
+            Testing adding a new folder template to a folder
+            # Add a new information template to the folder
+            template_name = 'Folder Template 1'
+            ele_name_0 = 'Fu'
+            ele_help_0 = 'This is the Fu component'.replace( ' ', '+' )
+            ele_name_1 = 'Bar'
+            ele_help_1 = 'This is the Bar component'.replace( ' ', '+' )
+            self.home()
+            self.add_folder_info_template( str( library_one.id ), library_one.name, str( folder_one.id ), folder_one.name,
+                                           name=template_name, num_fields='2', ele_name_0=ele_name_0, ele_help_0=ele_help_0,
+                                           ele_name_1=ele_name_1, ele_help_1=ele_help_1 )
+            self.home()
+            self.visit_url( '%s/admin/folder?id=%s&library_id=%s&information=True' % ( self.url, str( folder_one.id ), str( library_one.id ) ) )
+            self.check_page_for_string( ele_name_0 )
+            check_str = ele_help_0.replace( '+', ' ' )
+            self.check_page_for_string( check_str )
+            self.check_page_for_string( ele_name_1 )
+            check_str = ele_help_1.replace( '+', ' ' )
+            self.check_page_for_string( check_str )
+            self.home()
+        """
     def test_100_add_subfolder_to_folder( self ):
         """Testing adding a folder to a library folder"""
         name = "Folder One's Subfolder"
@@ -712,8 +729,10 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.visit_url( '%s/admin/browse_library?id=%s' % ( self.url, str( library_one.id ) ) )
         self.check_page_for_string( name )
         self.check_page_for_string( description )
+        ## TODO: temporarily eliminating templates until we have the new forms features done
         # Make sure the parent folder's template is inherited
         self.home()
+        """
         self.visit_url( '%s/admin/folder?id=%s&library_id=%s&information=True' % ( self.url, str( folder_one.id ), str( library_one.id ) ) )
         self.check_page_for_string( 'Fu' )
         self.check_page_for_string( 'This is the Fu component' )
@@ -726,81 +745,84 @@ class TestSecurityAndLibraries( TwillTestCase ):
         except:
             pass
         self.home()
-    def test_105_add_template_element( self ):
-        """Testing adding a new element to an existing library template"""
-        library_one_template.refresh()
-        element_ids = []
-        for ele in library_one_template.elements:
-            element_ids.append( ele.id )
-        element_ids.sort()
-
-        name = 'Library Template 1 renamed'
-        ele_field_name_1 = "element_name_%s" % element_ids[0]
-        ele_name_1 = 'wind'
-        ele_field_desc_1 = "element_description_%s" % element_ids[0]
-        ele_desc_1 = 'This is the wind component'
-        ele_field_name_2 = "element_name_%s" % element_ids[1]
-        ele_name_2 = 'bag'
-        ele_field_desc_2 = "element_description_%s" % element_ids[1]
-        ele_desc_2 = 'This is the bag component'
-        new_ele_name = 'Fubar'
-        new_ele_desc = 'This is the Fubar component'
-        
-        self.add_library_info_template_element( str( library_one.id ),
-                                                str( library_one_template.id ),
-                                                library_one_template.name,
-                                                ele_field_name_1,
-                                                ele_name_1,
-                                                ele_field_desc_1,
-                                                ele_desc_1,
-                                                ele_field_name_2,
-                                                ele_name_2,
-                                                ele_field_desc_2,
-                                                ele_desc_2,
-                                                new_ele_name=new_ele_name,
-                                                new_ele_desc=new_ele_desc )
-        # Make sure the new template element shows up on the existing library info page
-        self.home()
-        self.visit_url( '%s/admin/library?id=%s&information=True' % ( self.url, str( library_one.id ) ) )
-        self.check_page_for_string( library_one.name )
-        self.check_page_for_string( library_one.description )
-        self.check_page_for_string( 'wind' )
-        self.check_page_for_string( 'hello' )
-        self.check_page_for_string( 'This is the wind component' )
-        self.check_page_for_string( 'bag' )
-        self.check_page_for_string( 'world' )
-        self.check_page_for_string( 'This is the bag component' )
-        self.check_page_for_string( 'Fubar' )
-        self.check_page_for_string( 'This is the Fubar component' )
-        # Make sure the new template element does not show up on existing info pages for folder_one since it has its own template
-        self.home()
-        self.visit_url( '%s/admin/folder?id=%s&library_id=%s&information=True' % ( self.url, str( folder_one.id ), str( library_one.id ) ) )
-        self.check_page_for_string( 'Fu' )
-        self.check_page_for_string( 'This is the Fu component' )
-        self.check_page_for_string( 'Bar' )
-        self.check_page_for_string( 'This is the Bar component' )
-        try:
+        """
+        ## TODO: temporarily eliminating templates until we have the new forms features done
+        """
+        def test_105_add_template_element( self ):
+            Testing adding a new element to an existing library template
+            library_one_template.refresh()
+            element_ids = []
+            for ele in library_one_template.elements:
+                element_ids.append( ele.id )
+            element_ids.sort()
+    
+            name = 'Library Template 1 renamed'
+            ele_field_name_1 = "element_name_%s" % element_ids[0]
+            ele_name_1 = 'wind'
+            ele_field_desc_1 = "element_description_%s" % element_ids[0]
+            ele_desc_1 = 'This is the wind component'
+            ele_field_name_2 = "element_name_%s" % element_ids[1]
+            ele_name_2 = 'bag'
+            ele_field_desc_2 = "element_description_%s" % element_ids[1]
+            ele_desc_2 = 'This is the bag component'
+            new_ele_name = 'Fubar'
+            new_ele_desc = 'This is the Fubar component'
+            self.add_library_info_template_element( str( library_one.id ),
+                                                    str( library_one_template.id ),
+                                                    library_one_template.name,
+                                                    ele_field_name_1,
+                                                    ele_name_1,
+                                                    ele_field_desc_1,
+                                                    ele_desc_1,
+                                                    ele_field_name_2,
+                                                    ele_name_2,
+                                                    ele_field_desc_2,
+                                                    ele_desc_2,
+                                                    new_ele_name=new_ele_name,
+                                                    new_ele_desc=new_ele_desc )
+            # Make sure the new template element shows up on the existing library info page
+            self.home()
+            self.visit_url( '%s/admin/library?id=%s&information=True' % ( self.url, str( library_one.id ) ) )
+            self.check_page_for_string( library_one.name )
+            self.check_page_for_string( library_one.description )
+            self.check_page_for_string( 'wind' )
+            self.check_page_for_string( 'hello' )
+            self.check_page_for_string( 'This is the wind component' )
+            self.check_page_for_string( 'bag' )
+            self.check_page_for_string( 'world' )
+            self.check_page_for_string( 'This is the bag component' )
             self.check_page_for_string( 'Fubar' )
-            raise AssertionError( 'Changed library template inherited by folder "%s" when folder had an associated template of its own' )
-        except:
-            pass
-        # Make sure the new template element shows up on existing info pages for ldda_one since it is contained in the root folder
-        self.home()
-        self.visit_url( "%s/admin/library_dataset_dataset_association?edit_info=True&library_id=%s&folder_id=%s&id=%s" % \
-                        ( self.url, str( library_one.id ), str( folder_one.id ), str( ldda_one.id ) ) )
-        # Visiting the above page will have resulted in the creation of a new LibraryItemInfoElement, so we'll retrieve it
-        # for later use
-        last_library_item_info_element = galaxy.model.LibraryItemInfoElement.query() \
-            .order_by( desc( galaxy.model.LibraryItemInfoElement.table.c.id ) ).first()
-        global ldda_one_ele_3_field_name
-        ldda_one_ele_3_field_name = "info_element_%s" % str( last_library_item_info_element.id )
-        self.check_page_for_string( 'wind' )
-        self.check_page_for_string( 'This is the wind component' )
-        self.check_page_for_string( 'bag' )
-        self.check_page_for_string( 'This is the bag component' )
-        self.check_page_for_string( 'Fubar' )
-        self.check_page_for_string( 'This is the Fubar component' )
-        self.home()
+            self.check_page_for_string( 'This is the Fubar component' )
+            # Make sure the new template element does not show up on existing info pages for folder_one since it has its own template
+            self.home()
+            self.visit_url( '%s/admin/folder?id=%s&library_id=%s&information=True' % ( self.url, str( folder_one.id ), str( library_one.id ) ) )
+            self.check_page_for_string( 'Fu' )
+            self.check_page_for_string( 'This is the Fu component' )
+            self.check_page_for_string( 'Bar' )
+            self.check_page_for_string( 'This is the Bar component' )
+            try:
+                self.check_page_for_string( 'Fubar' )
+                raise AssertionError( 'Changed library template inherited by folder "%s" when folder had an associated template of its own' )
+            except:
+                pass
+            # Make sure the new template element shows up on existing info pages for ldda_one since it is contained in the root folder
+            self.home()
+            self.visit_url( "%s/admin/library_dataset_dataset_association?edit_info=True&library_id=%s&folder_id=%s&id=%s" % \
+                            ( self.url, str( library_one.id ), str( folder_one.id ), str( ldda_one.id ) ) )
+            # Visiting the above page will have resulted in the creation of a new LibraryItemInfoElement, so we'll retrieve it
+            # for later use
+            last_library_item_info_element = galaxy.model.LibraryItemInfoElement.query() \
+                .order_by( desc( galaxy.model.LibraryItemInfoElement.table.c.id ) ).first()
+            global ldda_one_ele_3_field_name
+            ldda_one_ele_3_field_name = "info_element_%s" % str( last_library_item_info_element.id )
+            self.check_page_for_string( 'wind' )
+            self.check_page_for_string( 'This is the wind component' )
+            self.check_page_for_string( 'bag' )
+            self.check_page_for_string( 'This is the bag component' )
+            self.check_page_for_string( 'Fubar' )
+            self.check_page_for_string( 'This is the Fubar component' )
+            self.home()
+        """
     def test_110_add_2nd_new_folder_to_root_folder( self ):
         """Testing adding a 2nd folder to a library root folder"""
         root_folder = library_one.root_folder
@@ -816,7 +838,9 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.visit_url( '%s/admin/browse_library?id=%s' % ( self.url, str( library_one.id ) ) )
         self.check_page_for_string( name )
         self.check_page_for_string( description )
+        ## TODO: temporarily eliminating templates until we have the new forms features done
         # Make sure the changed library template is inherited to the new folder
+        """
         self.home()
         self.visit_url( '%s/admin/folder?id=%s&library_id=%s&information=True' % ( self.url, str( folder_two.id ), str( library_one.id ) ) )
         self.check_page_for_string( 'wind' )
@@ -825,6 +849,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.check_page_for_string( 'This is the bag component' )
         self.check_page_for_string( 'Fubar' )
         self.check_page_for_string( 'This is the Fubar component' )
+        """
         self.home()
     def test_115_add_public_dataset_to_root_folders_2nd_subfolder( self ):
         """Testing adding a public dataset to the root folder's 2nd sub-folder"""
@@ -848,56 +873,59 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.check_page_for_string( "2.bed" )
         self.check_page_for_string( message )
         self.check_page_for_string( admin_user.email )
-    def test_120_add_template_to_root_folders_2nd_subfolder( self ):
-        """Testing adding a template to the root folder's 2nd sub-folder"""
-        # Before adding the folder template, the inherited library template should be displayed
-        self.home()
-        self.visit_url( "%s/admin/library_dataset_dataset_association?edit_info=True&library_id=%s&folder_id=%s&id=%s" % \
-                        ( self.url, str( library_one.id ), str( folder_two.id ), str( ldda_two.id ) ) )
-        self.check_page_for_string( 'wind' )
-        self.check_page_for_string( 'This is the wind component' )
-        self.check_page_for_string( 'bag' )
-        self.check_page_for_string( 'This is the bag component' )
-        self.check_page_for_string( 'Fubar' )
-        self.check_page_for_string( 'This is the Fubar component' )
-        self.home()
-        # Add a new folde template
-        template_name = 'Folder 2 Template'
-        ele_name_0 = 'kill'
-        ele_help_0 = 'This is the kill component'.replace( ' ', '+' )
-        ele_name_1 = 'bill'
-        ele_help_1 = 'This is the bill component'.replace( ' ', '+' )
-        self.home()
-        self.add_folder_info_template( str( library_one.id ), library_one.name, str( folder_two.id ), folder_two.name,
-                                       name=template_name, num_fields='2', ele_name_0=ele_name_0, ele_help_0=ele_help_0,
-                                       ele_name_1=ele_name_1, ele_help_1=ele_help_1 )
-        # Make sure the new template id displayed on the folder information page
-        self.home()
-        self.visit_url( '%s/admin/folder?id=%s&library_id=%s&information=True' % ( self.url, str( folder_two.id ), str( library_one.id ) ) )
-        self.check_page_for_string( ele_name_0 )
-        check_str = ele_help_0.replace( '+', ' ' )
-        self.check_page_for_string( check_str )
-        self.check_page_for_string( ele_name_1 )
-        check_str = ele_help_1.replace( '+', ' ' )
-        self.check_page_for_string( check_str )
-        # The library dataset ldda_two had previously inherited the library template prior to the new folder template
-        # being introduced, so the library template should still be displayed on the ldda information page
-        self.home()
-        self.visit_url( "%s/admin/library_dataset_dataset_association?edit_info=True&library_id=%s&folder_id=%s&id=%s" % \
-                        ( self.url, str( library_one.id ), str( folder_two.id ), str( ldda_two.id ) ) )
-        self.check_page_for_string( 'wind' )
-        self.check_page_for_string( 'This is the wind component' )
-        self.check_page_for_string( 'bag' )
-        self.check_page_for_string( 'This is the bag component' )
-        self.check_page_for_string( 'Fubar' )
-        self.check_page_for_string( 'This is the Fubar component' )
-        # Make sure the new folder template is not displayed
-        try:
-            self.check_page_for_string( 'kill' )
-            raise AssertionError( 'New folder template elements incorrectly included in information page for ldda "%s"' % ldda_two.name )
-        except:
-            pass
-        self.home()
+        ## TODO: temporarily eliminating templates until we have the new forms features done
+        """
+        def test_120_add_template_to_root_folders_2nd_subfolder( self ):
+            Testing adding a template to the root folder's 2nd sub-folder
+            # Before adding the folder template, the inherited library template should be displayed
+            self.home()
+            self.visit_url( "%s/admin/library_dataset_dataset_association?edit_info=True&library_id=%s&folder_id=%s&id=%s" % \
+                            ( self.url, str( library_one.id ), str( folder_two.id ), str( ldda_two.id ) ) )
+            self.check_page_for_string( 'wind' )
+            self.check_page_for_string( 'This is the wind component' )
+            self.check_page_for_string( 'bag' )
+            self.check_page_for_string( 'This is the bag component' )
+            self.check_page_for_string( 'Fubar' )
+            self.check_page_for_string( 'This is the Fubar component' )
+            self.home()
+            # Add a new folde template
+            template_name = 'Folder 2 Template'
+            ele_name_0 = 'kill'
+            ele_help_0 = 'This is the kill component'.replace( ' ', '+' )
+            ele_name_1 = 'bill'
+            ele_help_1 = 'This is the bill component'.replace( ' ', '+' )
+            self.home()
+            self.add_folder_info_template( str( library_one.id ), library_one.name, str( folder_two.id ), folder_two.name,
+                                           name=template_name, num_fields='2', ele_name_0=ele_name_0, ele_help_0=ele_help_0,
+                                           ele_name_1=ele_name_1, ele_help_1=ele_help_1 )
+            # Make sure the new template id displayed on the folder information page
+            self.home()
+            self.visit_url( '%s/admin/folder?id=%s&library_id=%s&information=True' % ( self.url, str( folder_two.id ), str( library_one.id ) ) )
+            self.check_page_for_string( ele_name_0 )
+            check_str = ele_help_0.replace( '+', ' ' )
+            self.check_page_for_string( check_str )
+            self.check_page_for_string( ele_name_1 )
+            check_str = ele_help_1.replace( '+', ' ' )
+            self.check_page_for_string( check_str )
+            # The library dataset ldda_two had previously inherited the library template prior to the new folder template
+            # being introduced, so the library template should still be displayed on the ldda information page
+            self.home()
+            self.visit_url( "%s/admin/library_dataset_dataset_association?edit_info=True&library_id=%s&folder_id=%s&id=%s" % \
+                            ( self.url, str( library_one.id ), str( folder_two.id ), str( ldda_two.id ) ) )
+            self.check_page_for_string( 'wind' )
+            self.check_page_for_string( 'This is the wind component' )
+            self.check_page_for_string( 'bag' )
+            self.check_page_for_string( 'This is the bag component' )
+            self.check_page_for_string( 'Fubar' )
+            self.check_page_for_string( 'This is the Fubar component' )
+            # Make sure the new folder template is not displayed
+            try:
+                self.check_page_for_string( 'kill' )
+                raise AssertionError( 'New folder template elements incorrectly included in information page for ldda "%s"' % ldda_two.name )
+            except:
+                pass
+            self.home()
+        """
     def test_125_add_2nd_public_dataset_to_root_folders_2nd_subfolder( self ):
         """Testing adding a 2nd public dataset to the root folder's 2nd sub-folder"""
         actions = [ v.action for k, v in galaxy.model.Library.permitted_actions.items() ]
@@ -920,22 +948,25 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.check_page_for_string( "3.bed" )
         self.check_page_for_string( message )
         self.check_page_for_string( admin_user.email )
-    def test_130_editing_dataset_information_with_new_folder_template( self ):
-        """Testing editing dataset template element information with new inherited folder template"""
-        # Need the current library_item_info_element.id
-        last_library_item_info_element = galaxy.model.LibraryItemInfoElement.query() \
-            .order_by( desc( galaxy.model.LibraryItemInfoElement.table.c.id ) ).first()
-        # Make sure the changed inherited template is included in the ldda information
-        ele_2_field_name = "info_element_%s" % str( last_library_item_info_element.id )
-        ele_2_contents = 'II'
-        ele_2_help = 'This is the bill component'
-        ele_1_field_name = "info_element_%s" % ( str( last_library_item_info_element.id - 1 ) )
-        ele_1_contents = 'Volume'
-        ele_1_help = 'This is the kill component'
-        self.edit_ldda_template_element_info( str( library_one.id ), str( folder_two.id ), str( ldda_three.id ),
-            ldda_three.name, ele_1_field_name, ele_1_contents, ele_2_field_name, ele_2_contents,
-            ele_1_help=ele_1_help, ele_2_help=ele_2_help )
-        self.home()
+        ## TODO: temporarily eliminating templates until we have the new forms features done
+        """
+        def test_130_editing_dataset_information_with_new_folder_template( self ):
+            Testing editing dataset template element information with new inherited folder template
+            # Need the current library_item_info_element.id
+            last_library_item_info_element = galaxy.model.LibraryItemInfoElement.query() \
+                .order_by( desc( galaxy.model.LibraryItemInfoElement.table.c.id ) ).first()
+            # Make sure the changed inherited template is included in the ldda information
+            ele_2_field_name = "info_element_%s" % str( last_library_item_info_element.id )
+            ele_2_contents = 'II'
+            ele_2_help = 'This is the bill component'
+            ele_1_field_name = "info_element_%s" % ( str( last_library_item_info_element.id - 1 ) )
+            ele_1_contents = 'Volume'
+            ele_1_help = 'This is the kill component'
+            self.edit_ldda_template_element_info( str( library_one.id ), str( folder_two.id ), str( ldda_three.id ),
+                ldda_three.name, ele_1_field_name, ele_1_contents, ele_2_field_name, ele_2_contents,
+                ele_1_help=ele_1_help, ele_2_help=ele_2_help )
+            self.home()
+        """
     def test_135_add_dataset_with_private_role_restriction_to_folder( self ):
         """Testing adding a dataset with a private role restriction to a folder"""
         # Add a dataset restricted by the following:
@@ -954,6 +985,8 @@ class TestSecurityAndLibraries( TwillTestCase ):
         message ='This is a test of the fourth dataset uploaded'
         ele_name_0 = 'Fu'
         ele_name_1 = 'Bar'
+        ## TODO: temporarily eliminating templates until we have the new forms features done
+        """
         self.add_library_dataset( '4.bed',
                                   str( library_one.id ),
                                   str( folder_one.id ),
@@ -965,6 +998,16 @@ class TestSecurityAndLibraries( TwillTestCase ):
                                   root=False,
                                   check_template_str1=ele_name_0,
                                   check_template_str2=ele_name_1 )
+        """
+        self.add_library_dataset( '4.bed',
+                                  str( library_one.id ),
+                                  str( folder_one.id ),
+                                  folder_one.name,
+                                  file_format='bed',
+                                  dbkey='hg18',
+                                  roles=[ str( regular_user1_private_role.id ) ],
+                                  message=message.replace( ' ', '+' ),
+                                  root=False )
         global ldda_four
         ldda_four = galaxy.model.LibraryDatasetDatasetAssociation.query() \
             .order_by( desc( galaxy.model.LibraryDatasetDatasetAssociation.table.c.create_time ) ).first()
@@ -1047,27 +1090,30 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.visit_url( '%s/library/browse_library?id=%s' % ( self.url, str( library_one.id ) ) )
         self.check_page_for_string( ldda_four.name )
         self.home()
-    def test_150_editing_restricted_datasets_information( self ):
-        """Testing editing a restricted library dataset's template element information"""
-        ele_1_contents = ''
-        ele_2_contents = ''
-        ele_3_contents = 'Adding Fubar text'
-        self.edit_ldda_template_element_info( str( library_one.id ), str( library_one.root_folder.id ), str( ldda_one.id ),
-            ldda_one.name, ldda_one_ele_1_field_name, ele_1_contents, ldda_one_ele_2_field_name, ele_2_contents,
-            ele_1_help='This is the wind component'.replace( ' ', '+' ),
-            ele_2_help='This is the bag component'.replace( ' ', '+' ),
-            ele_3_field_name=ldda_one_ele_3_field_name, ele_3_contents=ele_3_contents.replace( ' ', '+'  ) )
-        # Check the updated information from the libraries view
-        self.home()
-        self.visit_url( '%s/library/library_dataset_dataset_association?info=True&library_id=%s&folder_id=%s&id=%s' \
-                        % ( self.url, str( library_one.id ), str( library_one.root_folder.id ), str( ldda_one.id ) ) )
-        self.check_page_for_string( ele_3_contents )
-        try:
-            self.check_page_for_string( 'blown' )
-            raise AssertionError( 'Element contents were not correctly eliminated when the information was edited for ldda %s' % ldda_one.name)
-        except:
-            pass
-        self.home()
+        ## TODO: temporarily eliminating templates until we have the new forms features done
+        """
+        def test_150_editing_restricted_datasets_information( self ):
+            Testing editing a restricted library dataset's template element information
+            ele_1_contents = ''
+            ele_2_contents = ''
+            ele_3_contents = 'Adding Fubar text'
+            self.edit_ldda_template_element_info( str( library_one.id ), str( library_one.root_folder.id ), str( ldda_one.id ),
+                ldda_one.name, ldda_one_ele_1_field_name, ele_1_contents, ldda_one_ele_2_field_name, ele_2_contents,
+                ele_1_help='This is the wind component'.replace( ' ', '+' ),
+                ele_2_help='This is the bag component'.replace( ' ', '+' ),
+                ele_3_field_name=ldda_one_ele_3_field_name, ele_3_contents=ele_3_contents.replace( ' ', '+'  ) )
+            # Check the updated information from the libraries view
+            self.home()
+            self.visit_url( '%s/library/library_dataset_dataset_association?info=True&library_id=%s&folder_id=%s&id=%s' \
+                            % ( self.url, str( library_one.id ), str( library_one.root_folder.id ), str( ldda_one.id ) ) )
+            self.check_page_for_string( ele_3_contents )
+            try:
+                self.check_page_for_string( 'blown' )
+                raise AssertionError( 'Element contents were not correctly eliminated when the information was edited for ldda %s' % ldda_one.name)
+            except:
+                pass
+            self.home()
+        """
     def test_155_add_dataset_with_role_associated_with_group_and_users( self ):
         """Testing adding a dataset with a role that is associated with a group and users"""
         self.login( email='test@bx.psu.edu' )
@@ -1077,6 +1123,8 @@ class TestSecurityAndLibraries( TwillTestCase ):
         message = 'Testing adding a dataset with a role that is associated with a group and users'
         ele_name_0 = 'Fu'
         ele_name_1 = 'Bar'
+        ## TODO: temporarily eliminating templates until we have the new forms features done
+        """
         self.add_library_dataset( '5.bed',
                                   str( library_one.id ),
                                   str( folder_one.id ),
@@ -1088,6 +1136,16 @@ class TestSecurityAndLibraries( TwillTestCase ):
                                   root=False,
                                   check_template_str1=ele_name_0,
                                   check_template_str2=ele_name_1 )
+        """
+        self.add_library_dataset( '5.bed',
+                                  str( library_one.id ),
+                                  str( folder_one.id ),
+                                  folder_one.name,
+                                  file_format='bed',
+                                  dbkey='hg17',
+                                  roles=[ str( role_two.id ) ],
+                                  message=message.replace( ' ', '+' ),
+                                  root=False )
         global ldda_five
         ldda_five = galaxy.model.LibraryDatasetDatasetAssociation.query() \
             .order_by( desc( galaxy.model.LibraryDatasetDatasetAssociation.table.c.create_time ) ).first()
@@ -1194,13 +1252,16 @@ class TestSecurityAndLibraries( TwillTestCase ):
             .order_by( desc( galaxy.model.LibraryDatasetDatasetAssociation.table.c.create_time ) ).first()
         assert ldda_six is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda_six from the database'
         # Make sure the correct template was inherited
+        ## TODO: temporarily eliminating templates until we have the new forms features done
         self.home()
+        """
         self.visit_url( "%s/admin/library_dataset_dataset_association?edit_info=True&library_id=%s&folder_id=%s&id=%s" % \
                         ( self.url, str( library_one.id ), str( subfolder_one.id ), str( ldda_six.id ) ) )
         self.check_page_for_string( 'Fu' )
         self.check_page_for_string( 'This is the Fu component' )
         self.check_page_for_string( 'Bar' )
         self.check_page_for_string( 'This is the Bar component' )
+        """
     def test_170_editing_dataset_attribute_info( self ):
         """Testing editing a datasets attribute information"""
         new_ldda_name = '6.bed ( version 1 )'
@@ -1213,6 +1274,8 @@ class TestSecurityAndLibraries( TwillTestCase ):
     def test_175_uploading_new_dataset_version( self ):
         """Testing uploading a new version of a dataset"""
         message = 'Testing uploading a new version of a dataset'
+        ## TODO: temporarily eliminating templates until we have the new forms features done
+        """
         self.upload_new_dataset_version( '6.bed',
                                          str( library_one.id ),
                                          str( subfolder_one.id ),
@@ -1224,6 +1287,16 @@ class TestSecurityAndLibraries( TwillTestCase ):
                                          message=message.replace( ' ', '+' ),
                                          check_template_str1='Fu',
                                          check_template_str2='Bar' )
+        """
+        self.upload_new_dataset_version( '6.bed',
+                                         str( library_one.id ),
+                                         str( subfolder_one.id ),
+                                         str( subfolder_one.name ),
+                                         str( ldda_six.library_dataset.id ),
+                                         ldda_six.name,
+                                         file_format='auto',
+                                         dbkey='hg18',
+                                         message=message.replace( ' ', '+' ) )
         global ldda_six_version_two
         ldda_six_version_two = galaxy.model.LibraryDatasetDatasetAssociation.query() \
             .order_by( desc( galaxy.model.LibraryDatasetDatasetAssociation.table.c.create_time ) ).first()
@@ -1233,6 +1306,8 @@ class TestSecurityAndLibraries( TwillTestCase ):
                         ( self.url, str( library_one.id ), str( subfolder_one.id ), str( ldda_six_version_two.id ) ) )
         self.check_page_for_string( 'This is the latest version of this library dataset' )
         # Make sure the correct template was inherited
+        ## TODO: temporarily eliminating templates until we have the new forms features done
+        """
         self.check_page_for_string( 'Fu' )
         self.check_page_for_string( 'This is the Fu component' )
         self.check_page_for_string( 'Bar' )
@@ -1240,6 +1315,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         check_str = 'Expired versions of %s' % ldda_six_version_two.name
         self.check_page_for_string( check_str )
         self.check_page_for_string( ldda_six.name )
+        """
         self.home()
         # Make sure th permissions are the same
         ldda_six.refresh()
@@ -1262,6 +1338,8 @@ class TestSecurityAndLibraries( TwillTestCase ):
         """Testing uploading new versions of a dataset using a directory of files"""
         message = 'Testing uploading new versions of a dataset using a directory of files'
         ldda_six_version_two.refresh()
+        ## TODO: temporarily eliminating templates until we have the new forms features done
+        """
         self.upload_new_dataset_versions( str( library_one.id ),
                                           str( subfolder_one.id ),
                                           str( subfolder_one.name ),
@@ -1272,6 +1350,15 @@ class TestSecurityAndLibraries( TwillTestCase ):
                                           message=message.replace( ' ', '+' ),
                                           check_template_str1='Fu',
                                           check_template_str2='Bar' )
+        """
+        self.upload_new_dataset_versions( str( library_one.id ),
+                                          str( subfolder_one.id ),
+                                          str( subfolder_one.name ),
+                                          str( ldda_six_version_two.library_dataset.id ),
+                                          ldda_six_version_two.name,
+                                          file_format='auto',
+                                          dbkey='hg18',
+                                          message=message.replace( ' ', '+' ) )
         global ldda_six_version_five
         ldda_six_version_five = galaxy.model.LibraryDatasetDatasetAssociation.query() \
             .order_by( desc( galaxy.model.LibraryDatasetDatasetAssociation.table.c.create_time ) ).first()
@@ -1281,10 +1368,13 @@ class TestSecurityAndLibraries( TwillTestCase ):
                         ( self.url, str( library_one.id ), str( subfolder_one.id ), str( ldda_six_version_five.id ) ) )
         self.check_page_for_string( 'This is the latest version of this library dataset' )
         # Make sure the correct template was inherited
+        ## TODO: temporarily eliminating templates until we have the new forms features done
+        """
         self.check_page_for_string( 'Fu' )
         self.check_page_for_string( 'This is the Fu component' )
         self.check_page_for_string( 'Bar' )
         self.check_page_for_string( 'This is the Bar component' )
+        """
         check_str = 'Expired versions of %s' % ldda_six_version_five.name
         self.check_page_for_string( check_str )
         self.check_page_for_string( ldda_six.name )
@@ -1309,7 +1399,9 @@ class TestSecurityAndLibraries( TwillTestCase ):
     def test_185_upload_datasets_from_library_dir( self ):
         """Testing uploading 3 datasets from a library directory to a root folder"""
         message = 'This is a test for uploading a directory of files'
-        roles_tuple = [ ( str( role_one.id ), role_one.name ) ] 
+        roles_tuple = [ ( str( role_one.id ), role_one.name ) ]
+        ## TODO: temporarily eliminating templates until we have the new forms features done
+        """
         self.add_datasets_from_library_dir( str( library_one.id ),
                                             str( library_one.root_folder.id ),
                                             library_one.root_folder.name,
@@ -1319,6 +1411,13 @@ class TestSecurityAndLibraries( TwillTestCase ):
                                             check_template_str1='wind',
                                             check_template_str2='bag',
                                             check_template_str3='Fubar' )
+        """
+        self.add_datasets_from_library_dir( str( library_one.id ),
+                                            str( library_one.root_folder.id ),
+                                            library_one.root_folder.name,
+                                            roles_tuple=roles_tuple,
+                                            message=message.replace( '+', ' ' ),
+                                            root=True )
         self.home()
         self.visit_page( 'admin/browse_library?id=%s' % ( str( library_one.id ) ) )
         self.check_page_for_string( admin_user.email )
@@ -1552,6 +1651,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
     def test_245_purge_user( self ):
         """Testing purging a user account"""
         self.mark_user_deleted( user_id=regular_user3.id, email=regular_user3.email )
+        regular_user3.refresh()
         self.purge_user( str( regular_user3.id ), regular_user3.email )
         regular_user3.refresh()
         if not regular_user3.purged:
@@ -1565,15 +1665,9 @@ class TestSecurityAndLibraries( TwillTestCase ):
                 raise AssertionError( 'DefaultUserPermissions for user %s are not related with the private role.' % regular_user3.email )
         # Make sure History deleted
         for history in regular_user3.histories:
+            history.refresh()
             if not history.deleted:
                 raise AssertionError( 'User %s has active history id %d after their account was marked as purged.' % ( regular_user3.email, hda.id ) )
-            # Make sure DefaultHistoryPermissions deleted EXCEPT FOR THE PRIVATE ROLE
-            if len( history.default_permissions ) != 1:
-                raise AssertionError( 'DefaultHistoryPermissions for history id %d were not deleted.' % history.id )
-            for dhp in history.default_permissions:
-                role = galaxy.model.Role.get( dhp.role_id )
-                if role.type != 'private':
-                    raise AssertionError( 'DefaultHistoryPermissions for history id %d are not related with the private role.' % history.id )
             # Make sure HistoryDatasetAssociation deleted
             for hda in history.datasets:
                 hda.refresh()
