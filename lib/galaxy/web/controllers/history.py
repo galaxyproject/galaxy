@@ -79,6 +79,7 @@ class HistoryController( BaseController ):
     @web.require_login( "work with multiple histories" )
     def list( self, trans, **kwargs ):
         """List all available histories"""
+        current_history = trans.history
         status = message = None
         if 'operation' in kwargs:
             operation = kwargs['operation'].lower()
@@ -104,12 +105,14 @@ class HistoryController( BaseController ):
             if histories:            
                 if operation == "switch":
                     status, message = self._list_switch( trans, histories )
+                    # Current history changed, refresh history frame
+                    trans.template_context['refresh_frames'] = ['history']
                 elif operation == "delete":
                     status, message = self._list_delete( trans, histories )
+                    if current_history in histories:
+                        trans.template_context['refresh_frames'] = ['history']
                 elif operation == "undelete":
                     status, message = self._list_undelete( trans, histories )
-                # Current history may have changed, refresh history frame
-                trans.template_context['refresh_frames'] = ['history']
                 trans.sa_session.flush()
         # Render the list view
         return self.list_grid( trans, status=status, message=message, **kwargs )

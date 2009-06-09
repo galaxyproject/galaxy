@@ -3,7 +3,7 @@ from galaxy.model.orm import *
 from base.twilltestcase import TwillTestCase
 
 class SniffingAndMetaDataSettings( TwillTestCase ):
-    def test_00_axt_datatype( self ):
+    def test_000_axt_datatype( self ):
         """Testing correctly sniffing axt data type upon upload"""
         self.logout()
         self.login( email='test@bx.psu.edu' )
@@ -15,7 +15,12 @@ class SniffingAndMetaDataSettings( TwillTestCase ):
         self.verify_dataset_correctness( '1.axt' )
         self.check_history_for_string( '1.axt format: <span class="axt">axt</span>, database: \? Info: uploaded file' )
         self.check_metadata_for_string( 'value="1.axt" value="\?" Change data type selected value="axt" selected="yes"' )
-    def test_05_bed_datatype( self ):
+        latest_hda = galaxy.model.HistoryDatasetAssociation.query() \
+            .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ).first()
+        assert latest_hda is not None, "Problem retrieving axt hda from the database"
+        if not latest_hda.name == '1.axt' and not latest_hda.extension == 'axt':
+            raise AssertionError, "axt data type was not correctly sniffed."
+    def test_005_bed_datatype( self ):
         """Testing correctly sniffing bed data type upon upload"""
         self.upload_file( '1.bed' )
         self.verify_dataset_correctness( '1.bed' )
@@ -25,24 +30,64 @@ class SniffingAndMetaDataSettings( TwillTestCase ):
         self.check_metadata_for_string( 'End column: <option value="3" selected> Strand column <option value="6" selected>' )
         self.check_metadata_for_string( 'Convert to new format <option value="bed">Genomic Intervals To BED <option value="gff">BED to GFF' )
         self.check_metadata_for_string( 'Change data type selected value="bed" selected="yes"' )
-    def test_10_customtrack_datatype( self ):
+        latest_hda = galaxy.model.HistoryDatasetAssociation.query() \
+            .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ).first()
+        assert latest_hda is not None, "Problem retrieving bed hda from the database"
+        if not latest_hda.name == '1.bed' and not latest_hda.extension == 'bed':
+            raise AssertionError, "bed data type was not correctly sniffed."
+    def test_010_blastxml_datatype( self ):
+        """Testing correctly sniffing blastxml data type upon upload"""
+        self.upload_file( 'megablast_xml_parser_test1.gz' )
+        self.check_history_for_string( 'NCBI Blast XML data format: <span class="blastxml">blastxml</span>' )
+        latest_hda = galaxy.model.HistoryDatasetAssociation.query() \
+            .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ).first()
+        assert latest_hda is not None, "Problem retrieving blastxml hda from the database"
+        if not latest_hda.name == 'megablast_xml_parser_test1' and not latest_hda.extension == 'blastxml':
+            raise AssertionError, "blastxml data type was not correctly sniffed."
+    def test_015_csfasta_datatype( self ):
+        """Testing correctly sniffing csfasta data type upon upload"""
+        self.upload_file( 'shrimp_cs_test1.csfasta' )
+        self.verify_dataset_correctness( 'shrimp_cs_test1.csfasta' )
+        self.check_history_for_string( '162.6 Kb, format: <span class="csfasta">csfasta</span>, <td>&gt;2_14_26_F3,-1282216.0</td>' )
+        self.check_metadata_for_string( 'value="shrimp_cs_test1.csfasta" value="\?" Change data type value="csfasta" selected="yes"' )
+        latest_hda = galaxy.model.HistoryDatasetAssociation.query() \
+            .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ).first()
+        assert latest_hda is not None, "Problem retrieving csfasta hda from the database"
+        if not latest_hda.name == 'shrimp_cs_test1.csfasta' and not latest_hda.extension == 'csfasta':
+            raise AssertionError, "csfasta data type was not correctly sniffed."
+    def test_020_customtrack_datatype( self ):
         """Testing correctly sniffing customtrack data type upon upload"""
         self.upload_file( '1.customtrack' )
         self.verify_dataset_correctness( '1.customtrack' )
         self.check_history_for_string( '1.customtrack format: <span class="customtrack">customtrack</span>, database: \? Info: uploaded file' )
         self.check_metadata_for_string( 'value="1.customtrack" value="\?" Change data type selected value="customtrack" selected="yes"' )
-    def test_15_fasta_datatype( self ):
+        latest_hda = galaxy.model.HistoryDatasetAssociation.query() \
+            .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ).first()
+        assert latest_hda is not None, "Problem retrieving customtrack hda from the database"
+        if not latest_hda.name == '1.customtrack' and not latest_hda.extension == 'customtrack':
+            raise AssertionError, "customtrack data type was not correctly sniffed."
+    def test_025_fasta_datatype( self ):
         """Testing correctly sniffing fasta data type upon upload"""
         self.upload_file( '1.fasta' )
         self.verify_dataset_correctness( '1.fasta' )
         self.check_history_for_string( '1.fasta format: <span class="fasta">fasta</span>, database: \? Info: uploaded file' )
         self.check_metadata_for_string( 'value="1.fasta" value="\?" Change data type selected value="fasta" selected="yes"' )
-    def test_18_fastqsolexa_datatype( self ):
+        latest_hda = galaxy.model.HistoryDatasetAssociation.query() \
+            .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ).first()
+        assert latest_hda is not None, "Problem retrieving fasta hda from the database"
+        if not latest_hda.name == '1.fasta' and not latest_hda.extension == 'fasta':
+            raise AssertionError, "fasta data type was not correctly sniffed."
+    def test_030_fastqsolexa_datatype( self ):
         """Testing correctly sniffing fastqsolexa ( the Solexa variant ) data type upon upload"""
         self.upload_file( '1.fastqsolexa' )
         self.verify_dataset_correctness( '1.fastqsolexa' )
         self.check_history_for_string( '1.fastqsolexa format: <span class="fastqsolexa">fastqsolexa</span>, database: \? Info: uploaded fastqsolexa file' )
-    def test_20_gff_datatype( self ):
+        latest_hda = galaxy.model.HistoryDatasetAssociation.query() \
+            .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ).first()
+        assert latest_hda is not None, "Problem retrieving fastqsolexa hda from the database"
+        if not latest_hda.name == '1.fastqsolexa' and not latest_hda.extension == 'fastqsolexa':
+            raise AssertionError, "fastqsolexa data type was not correctly sniffed."
+    def test_035_gff_datatype( self ):
         """Testing correctly sniffing gff data type upon upload"""
         self.upload_file( '5.gff' )
         self.verify_dataset_correctness( '5.gff' )
@@ -50,7 +95,12 @@ class SniffingAndMetaDataSettings( TwillTestCase ):
         self.check_metadata_for_string( 'value="5.gff" value="\?"' )
         self.check_metadata_for_string( 'Convert to new format <option value="bed">GFF to BED' )
         self.check_metadata_for_string( 'Change data type selected value="gff" selected="yes"' )
-    def test_25_gff3_datatype( self ):
+        latest_hda = galaxy.model.HistoryDatasetAssociation.query() \
+            .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ).first()
+        assert latest_hda is not None, "Problem retrieving gff hda from the database"
+        if not latest_hda.name == '5.gff' and not latest_hda.extension == 'gff':
+            raise AssertionError, "gff data type was not correctly sniffed."
+    def test_040_gff3_datatype( self ):
         """Testing correctly sniffing gff3 data type upon upload"""
         self.upload_file( '5.gff3' )
         self.verify_dataset_correctness( '5.gff3' )
@@ -58,7 +108,21 @@ class SniffingAndMetaDataSettings( TwillTestCase ):
         self.check_metadata_for_string( 'value="5.gff3" value="\?"' )
         self.check_metadata_for_string( 'Convert to new format <option value="bed">GFF to BED' )
         self.check_metadata_for_string( 'Change data type selected value="gff3" selected="yes"' )
-    def test_30_interval_datatype( self ):
+        latest_hda = galaxy.model.HistoryDatasetAssociation.query() \
+            .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ).first()
+        assert latest_hda is not None, "Problem retrieving gff3 hda from the database"
+        if not latest_hda.name == '5.gff3' and not latest_hda.extension == 'gff3':
+            raise AssertionError, "gff3 data type was not correctly sniffed."
+    def test_045_html_datatype( self ):
+        """Testing correctly sniffing html data type upon upload"""
+        self.upload_file( 'html_file.txt' )
+        self.check_history_for_string( 'An error occurred running this job: No data: you attempted to upload an inappropriate file.' )
+        latest_hda = galaxy.model.HistoryDatasetAssociation.query() \
+            .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ).first()
+        assert latest_hda is not None, "Problem retrieving html hda from the database"
+        if not latest_hda.name == 'html_file.txt' and not latest_hda.extension == 'data':
+            raise AssertionError, "html data type was not correctly sniffed."
+    def test_050_interval_datatype( self ):
         """Testing correctly sniffing interval data type upon upload"""
         self.upload_file( '1.interval' )
         self.verify_dataset_correctness( '1.interval' )
@@ -68,14 +132,24 @@ class SniffingAndMetaDataSettings( TwillTestCase ):
         self.check_metadata_for_string( 'End column: <option value="3" selected> Strand column <option value="6" selected>' )
         self.check_metadata_for_string( 'Convert to new format <option value="bed">Genomic Intervals To BED' )
         self.check_metadata_for_string( 'Change data type selected value="interval" selected="yes"' )
-    def test_35_lav_datatype( self ):
+        latest_hda = galaxy.model.HistoryDatasetAssociation.query() \
+            .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ).first()
+        assert latest_hda is not None, "Problem retrieving interval hda from the database"
+        if not latest_hda.name == '1.interval' and not latest_hda.extension == 'interval':
+            raise AssertionError, "interval data type was not correctly sniffed."
+    def test_055_lav_datatype( self ):
         """Testing correctly sniffing lav data type upon upload"""
         self.upload_file( '1.lav' )
         self.verify_dataset_correctness( '1.lav' )
         self.check_history_for_string( '1.lav format: <span class="lav">lav</span>, database: \? Info: uploaded file' )
         self.check_metadata_for_string( 'value="1.lav" value="\?"' )
         self.check_metadata_for_string( 'Change data type selected value="lav" selected="yes"' )
-    def test_40_maf_datatype( self ):
+        latest_hda = galaxy.model.HistoryDatasetAssociation.query() \
+            .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ).first()
+        assert latest_hda is not None, "Problem retrieving lav hda from the database"
+        if not latest_hda.name == '1.lav' and not latest_hda.extension == 'lav':
+            raise AssertionError, "lav data type was not correctly sniffed."
+    def test_060_maf_datatype( self ):
         """Testing correctly sniffing maf data type upon upload"""
         self.upload_file( '3.maf' )
         self.verify_dataset_correctness( '3.maf' )
@@ -83,40 +157,57 @@ class SniffingAndMetaDataSettings( TwillTestCase ):
         self.check_metadata_for_string( 'value="3.maf" value="\?"' )
         self.check_metadata_for_string( 'Convert to new format <option value="interval">MAF to Genomic Intervals <option value="fasta">MAF to Fasta' )
         self.check_metadata_for_string( 'Change data type selected value="maf" selected="yes"' )
-    def test_45_tabular_datatype( self ):
+        latest_hda = galaxy.model.HistoryDatasetAssociation.query() \
+            .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ).first()
+        assert latest_hda is not None, "Problem retrieving maf hda from the database"
+        if not latest_hda.name == '3.maf' and not latest_hda.extension == 'maf':
+            raise AssertionError, "maf data type was not correctly sniffed."
+    def test_065_qual454_datatype( self ):
+        """Testing correctly sniffing qual454 data type upon upload"""
+        self.upload_file( 'qualscores.qual454' )        
+        self.verify_dataset_correctness( 'qualscores.qual454' )
+        self.check_history_for_string( '5.6 Kb, format: <span class="qual454">qual454</span>, database: \?' )
+        self.check_metadata_for_string( 'Change data type value="qual454" selected="yes">qual454' )
+        latest_hda = galaxy.model.HistoryDatasetAssociation.query() \
+            .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ).first()
+        assert latest_hda is not None, "Problem retrieving qual454 hda from the database"
+        if not latest_hda.name == 'qualscores.qual454' and not latest_hda.extension == 'qual454':
+            raise AssertionError, "qual454 data type was not correctly sniffed."
+    def test_070_qualsolid_datatype( self ):
+        """Testing correctly sniffing qualsolid data type upon upload"""
+        self.upload_file( 'qualscores.qualsolid' )        
+        self.verify_dataset_correctness('qualscores.qualsolid' )
+        self.check_history_for_string('2.5 Kb, format: <span class="qualsolid">qualsolid</span>, database: \? Info: uploaded file' )
+        self.check_metadata_for_string( 'Change data type value="qualsolid" selected="yes">qualsolid' )
+        latest_hda = galaxy.model.HistoryDatasetAssociation.query() \
+            .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ).first()
+        assert latest_hda is not None, "Problem retrieving qualsolid hda from the database"
+        if not latest_hda.name == 'qualscores.qualsolid' and not latest_hda.extension == 'qualsolid':
+            raise AssertionError, "qualsolid data type was not correctly sniffed."
+    def test_075_tabular_datatype( self ):
         """Testing correctly sniffing tabular data type upon upload"""
         self.upload_file( '1.tabular' )
         self.verify_dataset_correctness( '1.tabular' )
         self.check_history_for_string( '1.tabular format: <span class="tabular">tabular</span>, database: \? Info: uploaded file' )
         self.check_metadata_for_string( 'value="1.tabular" value="\?"' )
         self.check_metadata_for_string( 'Change data type selected value="tabular" selected="yes"' )
-    def test_50_wig_datatype( self ):
+        latest_hda = galaxy.model.HistoryDatasetAssociation.query() \
+            .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ).first()
+        assert latest_hda is not None, "Problem retrieving tabular hda from the database"
+        if not latest_hda.name == '1.tabular' and not latest_hda.extension == 'tabular':
+            raise AssertionError, "tabular data type was not correctly sniffed."
+    def test_080_wig_datatype( self ):
         """Testing correctly sniffing wig data type upon upload"""
         self.upload_file( '1.wig' )
         self.verify_dataset_correctness( '1.wig' )
         self.check_history_for_string( '1.wig format: <span class="wig">wig</span>, database: \? Info: uploaded file' )
         self.check_metadata_for_string( 'value="1.wig" value="\?"' )
         self.check_metadata_for_string( 'Change data type selected value="wig" selected="yes"' )
-    def test_55_blastxml_datatype( self ):
-        """Testing correctly sniffing blastxml data type upon upload"""
-        self.upload_file( 'megablast_xml_parser_test1.gz' )
-        self.check_history_for_string( 'NCBI Blast XML data' )
-        self.check_history_for_string( 'format: <span class="blastxml">blastxml</span>' )
-        """
-        TODO: It is currently not even possible to set the following format on upload.  They
-        should be included in the File Format select list on the upload form if they are to
-        be tested here...
-        def test_60_qualsolid_datatype( self ):
-            Testing correctly sniffing qualsolid data type upon upload
-            self.upload_file( 'qualscores.qualsolid' )        
-            self.verify_dataset_correctness('qualscores.qualsolid' )
-            self.check_history_for_string('2.5 Kb, format: <span class="fasta">fasta</span>, database: \? Info: uploaded file' )
-        def test_65_qual454_datatype( self ):
-            Testing correctly sniffing qual454 data type upon upload
-            self.upload_file( 'qualscores.qual454' )        
-            self.verify_dataset_correctness( 'qualscores.qual454' )
-            self.check_history_for_string( '5.6 Kb, format: <span class="qual454">qual454</span>, database: \? Info: uploaded qual454 file' )
-        """
+        latest_hda = galaxy.model.HistoryDatasetAssociation.query() \
+            .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ).first()
+        assert latest_hda is not None, "Problem retrieving wig hda from the database"
+        if not latest_hda.name == '1.wig' and not latest_hda.extension == 'wig':
+            raise AssertionError, "wig data type was not correctly sniffed."
     def test_9999_clean_up( self ):
         self.delete_history( id=str( history1.id ) )
         self.logout()

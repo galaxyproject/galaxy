@@ -47,6 +47,8 @@ class TestHistory( TwillTestCase ):
         latest_history.refresh()
         if not latest_history.deleted:
             raise AssertionError, "Problem deleting history id %d" % latest_history.id
+        # Since we deleted the current history, make sure the history frame was refreshed
+        self.check_history_for_string( 'Your history is empty.' )
         # We'll now test deleting a list of histories
         # After deleting the current history, a new one should have been created
         global history1
@@ -60,6 +62,8 @@ class TestHistory( TwillTestCase ):
         self.upload_file( '2.bed', dbkey='hg18' )
         ids = '%s,%s' % ( str( history1.id ), str( history2.id ) )
         self.delete_history( ids )
+        # Since we deleted the current history, make sure the history frame was refreshed
+        self.check_history_for_string( 'Your history is empty.' )
         try:
             self.view_stored_active_histories( check_str=history1.name )
             raise AssertionError, "History %s is displayed in the active history list after it was deleted" % history1.name
