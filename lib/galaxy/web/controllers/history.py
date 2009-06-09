@@ -104,12 +104,12 @@ class HistoryController( BaseController ):
             if histories:            
                 if operation == "switch":
                     status, message = self._list_switch( trans, histories )
-                    # Current history changed, refresh history frame
-                    trans.template_context['refresh_frames'] = ['history']
                 elif operation == "delete":
                     status, message = self._list_delete( trans, histories )
                 elif operation == "undelete":
                     status, message = self._list_undelete( trans, histories )
+                # Current history may have changed, refresh history frame
+                trans.template_context['refresh_frames'] = ['history']
                 trans.sa_session.flush()
         # Render the list view
         return self.list_grid( trans, status=status, message=message, **kwargs )
@@ -189,7 +189,7 @@ class HistoryController( BaseController ):
         # Regardless of whether it was previously deleted, we make a new
         # history active 
         trans.new_history()
-        return trans.show_ok_message( "History deleted, a new history is active" )
+        return trans.show_ok_message( "History deleted, a new history is active", refresh_frames=['history'] )
     @web.expose
     def rename_async( self, trans, id=None, new_name=None ):
         history = model.History.get( id )
