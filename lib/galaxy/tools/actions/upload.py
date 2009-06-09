@@ -137,7 +137,7 @@ class UploadToolAction( object ):
         if precreated_dataset is not None:
             data = precreated_dataset
         else:
-            data = trans.app.model.HistoryDatasetAssociation( history = trans.history, extension = ext, create_dataset = True )
+            data = trans.app.model.HistoryDatasetAssociation( history = trans.history, create_dataset = True )
         trans.app.security_agent.set_all_dataset_permissions( data.dataset, trans.app.security_agent.history_get_default_permissions( trans.history ) )
         
         # See if we have an empty file
