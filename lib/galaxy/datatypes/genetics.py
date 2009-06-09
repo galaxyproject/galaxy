@@ -17,6 +17,7 @@ import data
 from galaxy import util
 from cgi import escape
 import urllib
+from galaxy.web import url_for
 from galaxy.datatypes import metadata
 from galaxy.datatypes.metadata import MetadataElement
 #from galaxy.datatypes.data import Text
@@ -80,7 +81,7 @@ class GenomeGraphs( Tabular ):
               for site_name, site_url in util.get_ucsc_by_build(dataset.dbkey):
                     if site_name in app.config.ucsc_display_sites:
                         site_url = site_url.replace('/hgTracks?','/hgGenome?') # for genome graphs
-                        display_url = urllib.quote_plus( "%s/display_as?id=%i&display_app=%s" % (base_url, dataset.id, type) )
+                        display_url = urllib.quote_plus( "%s%s/display_as?id=%i&display_app=%s" % (base_url, url_for( controller='root' ), dataset.id, type))
                         sl = ["%sdb=%s" % (site_url,dataset.dbkey ),]
                         sl.append("&hgGenome_dataSetName=%s&hgGenome_dataSetDescription=%s" % (dataset.name, 'GalaxyGG_data'))
                         sl.append("&hgGenome_formatType=best%20guess&hgGenome_markerType=best%20guess")
@@ -116,8 +117,8 @@ class GenomeGraphs( Tabular ):
 class Rgenetics(Html):      
     """class to use for rgenetics"""
     """Add metadata elements"""
-
     MetadataElement( name="base_name", desc="base name for all transformed versions of this genetic dataset", default="galaxy", readonly=True)
+    
     file_ext="html"
     composite_type = 'auto_primary_file'
     
@@ -234,7 +235,128 @@ class Snptest(Rgenetics):
     """fake class to distinguish different species of Rgenetics data collections
     """
     file_ext="snptest"
+    
+class RexpBase( Html ):
+    """base class for BioC data structures in Galaxy 
+    must be constructed with the pheno data in place since that
+    goes into the metadata for each instance"""
 
+    """Add metadata elements"""
+    MetadataElement( name="columns", default=0, desc="Number of columns", readonly=True, visible=False )
+    MetadataElement( name="column_names", default=[], desc="Column names", readonly=True,visible=True )
+    MetadataElement( name="base_name", 
+    desc="base name for all transformed versions of this genetic dataset", readonly=True)
+    MetadataElement( name="pheno_path", 
+    desc="Path to phenotype data for this experiment", readonly=True)
+    MetadataElement( name="pheno", 
+    desc="Phenotype data for this experiment", readonly=True)
+    
+    file_ext = None 
+    
+    def set_peek( self, dataset ):
+        """expects a .pheno file in the extra_files_dir - ugh
+        note that R is wierd and does not include the row.name in
+        the header. why?"""
+        p = file(dataset.metadata.pheno_path,'r').readlines()
+        head = p[0].strip().split('\t')
+        head.insert(0,'ChipFileName') # fix R write.table b0rken-ness
+        p[0] = '\t'.join(head)
+        p = '\n'.join(p)
+        dataset.peek = p
+        dataset.metadata.pheno = p
+        dataset.blurb = 'R loadable BioC expression object for the Rexpression Galaxy toolkit'
+
+    # stolen from Tabular
+    # class Tabular( data.Text ):
+    """Tab delimited data"""
+
+    """Add metadata elements"""
+    def init_meta( self, dataset, copy_from=None ):
+        if copy_from:
+            dataset.metadata = copy_from.metadata
+            
+
+    #def set_readonly_meta( self, dataset, skip=0, **kwd ):
+    #    """Resets the values of readonly metadata elements."""
+    #    RexpBase.set_meta( self, dataset, skip=skip )
+
+    def set_readonly_meta( self, dataset, **kwd ):        
+        """Resets the values of readonly metadata elements."""
+        RexpBase.set_meta( self, dataset )           
+
+    #def set_meta( self, dataset, skip=0, **kwd ):
+    def set_meta( self, dataset, **kwd ):         
+
+        """
+        NOTE we apply the tabular machinary to the phenodata extracted
+        from a BioC eSet or affybatch.
+
+        """
+        if not dataset.peek:
+            dataset.set_peek()
+        pk = dataset.peek # use the peek which is the pheno data insead of dataset (!)
+        if pk:
+            p = pk.split('\n')
+            h = p[0].strip().split('\t') # hope is header
+            h = [escape(x) for x in h]
+            dataset.metadata.column_names = h
+            dataset.metadata.columns = len(h)
+        else:
+            dataset.metadata.column_names = []
+            dataset.metadata.columns = 0
+            
+    def make_html_table( self, dataset):
+        """Create HTML table, used for displaying peek"""
+        out = ['<table cellspacing="0" cellpadding="3">',]
+        try:
+            # Generate column header
+            pk = dataset.peek
+            p = pk.split('\n')
+            for i,row in enumerate(p):
+                lrow = row.strip().split('\t')
+                if i == 0:                
+                    orow = ['<th>%s</th>' % escape(x) for x in lrow]
+                    orow.insert(0,'<tr>')
+                    orow.append('</tr>')
+                else:            
+                    orow = ['<td>%s</td>' % escape(x) for x in lrow]
+                    orow.insert(0,'<tr>')
+                    orow.append('</tr>')
+                out.append(''.join(orow))
+            out.append( '</table>' )
+            out = "\n".join( out )
+        except Exception, exc:
+            out = "Can't create peek %s" % str( exc )
+        return out
+    
+    def display_peek( self, dataset ):
+        """Returns formatted html of peek"""
+        if not dataset.peek:
+            dataset.set_peek()
+        return self.make_html_table( dataset )
+    
+    def get_mime(self):
+        """Returns the mime type of the datatype"""
+        return 'application/gzip'
+    
+    def sniff(self):
+        """ can we be bothered looking for the signature or loading via rpy?
+        """
+        return true
+
+class AffyBatch( RexpBase ):
+    """derived class for BioC data structures in Galaxy """
+    file_ext = "affybatch"
+
+    
+class ESet( RexpBase ):
+    """derived class for BioC data structures in Galaxy """
+    file_ext = "eset"
+
+
+class MAList( RexpBase ):
+    """derived class for BioC data structures in Galaxy """
+    file_ext = "malist"    
 
 
 if __name__ == '__main__':
