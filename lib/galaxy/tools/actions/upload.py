@@ -126,10 +126,24 @@ class UploadToolAction( object ):
         return dict( output=data )
 
     def add_file( self, trans, temp_name, file_name, file_type, is_multi_byte, dbkey, info=None, space_to_tab=False, precreated_dataset=None ):
+        def dataset_no_data_error( data, message = 'there was an error uploading your file' ):
+            data.info = "No data: %s." % message
+            data.state = data.states.ERROR
+            if data.extension is None:
+                data.extension = 'data'
+            return data
         data_type = None
+        
+        if precreated_dataset is not None:
+            data = precreated_dataset
+        else:
+            data = trans.app.model.HistoryDatasetAssociation( history = trans.history, extension = ext, create_dataset = True )
+        trans.app.security_agent.set_all_dataset_permissions( data.dataset, trans.app.security_agent.history_get_default_permissions( trans.history ) )
+        
         # See if we have an empty file
         if not os.path.getsize( temp_name ) > 0:
-            raise BadFileException( "you attempted to upload an empty file." )
+            return dataset_no_data_error( data, message = 'you attempted to upload an empty file' )
+            #raise BadFileException( "you attempted to upload an empty file." )
         if is_multi_byte:
             ext = sniff.guess_ext( temp_name, is_multi_byte=True )
         else:
@@ -138,7 +152,8 @@ class UploadToolAction( object ):
                 # we'll decompress on the fly.
                 is_gzipped, is_valid = self.check_gzip( temp_name )
                 if is_gzipped and not is_valid:
-                    raise BadFileException( "you attempted to upload an inappropriate file." )
+                    return dataset_no_data_error( data, message = 'you attempted to upload an inappropriate file' )
+                    #raise BadFileException( "you attempted to upload an inappropriate file." )
                 elif is_gzipped and is_valid:
                     # We need to uncompress the temp_name file
                     CHUNK_SIZE = 2**20 # 1Mb   
@@ -150,7 +165,8 @@ class UploadToolAction( object ):
                         except IOError:
                             os.close( fd )
                             os.remove( uncompressed )
-                            raise BadFileException( 'problem decompressing gzipped data.' )
+                            return dataset_no_data_error( data, message = 'problem decompressing gzipped data' )
+                            #raise BadFileException( 'problem decompressing gzipped data.' )
                         if not chunk:
                             break
                         os.write( fd, chunk )
@@ -165,16 +181,20 @@ class UploadToolAction( object ):
                     # See if we have a zip archive
                     is_zipped, is_valid, test_ext = self.check_zip( temp_name )
                     if is_zipped and not is_valid:
-                        raise BadFileException( "you attempted to upload an inappropriate file." )
+                        return dataset_no_data_error( data, message = 'you attempted to upload an inappropriate file' )
+                        #raise BadFileException( "you attempted to upload an inappropriate file." )
                     elif is_zipped and is_valid:
                         # Currently, we force specific tools to handle this case.  We also require the user
                         # to manually set the incoming file_type
                         if ( test_ext == 'ab1' or test_ext == 'scf' ) and file_type != 'binseq.zip':
-                            raise BadFileException( "Invalid 'File Format' for archive consisting of binary files - use 'Binseq.zip'." )
+                            return dataset_no_data_error( data, message = "Invalid 'File Format' for archive consisting of binary files - use 'Binseq.zip'" )
+                            #raise BadFileException( "Invalid 'File Format' for archive consisting of binary files - use 'Binseq.zip'." )
                         elif test_ext == 'txt' and file_type != 'txtseq.zip':
-                            raise BadFileException( "Invalid 'File Format' for archive consisting of text files - use 'Txtseq.zip'." )
+                            return dataset_no_data_error( data, message = "Invalid 'File Format' for archive consisting of text files - use 'Txtseq.zip'" )
+                            #raise BadFileException( "Invalid 'File Format' for archive consisting of text files - use 'Txtseq.zip'." )
                         if not ( file_type == 'binseq.zip' or file_type == 'txtseq.zip' ):
-                            raise BadFileException( "you must manually set the 'File Format' to either 'Binseq.zip' or 'Txtseq.zip' when uploading zip files." )
+                            return dataset_no_data_error( data, message = "you must manually set the 'File Format' to either 'Binseq.zip' or 'Txtseq.zip' when uploading zip files" )
+                            #raise BadFileException( "you must manually set the 'File Format' to either 'Binseq.zip' or 'Txtseq.zip' when uploading zip files." )
                         data_type = 'zip'
                         ext = file_type
                 if not data_type:
@@ -183,16 +203,20 @@ class UploadToolAction( object ):
                         if len( parts ) > 1:
                             ext = parts[1].strip().lower()
                             if not( ext == 'ab1' or ext == 'scf' ):
-                                raise BadFileException( "you attempted to upload an inappropriate file." )
+                                return dataset_no_data_error( data, message = "you attempted to upload an inappropriate file" )
+                                #raise BadFileException( "you attempted to upload an inappropriate file." )
                             if ext == 'ab1' and file_type != 'ab1':
-                                raise BadFileException( "you must manually set the 'File Format' to 'Ab1' when uploading ab1 files." )
+                                return dataset_no_data_error( data, message = "you must manually set the 'File Format' to 'Ab1' when uploading ab1 files" )
+                                #raise BadFileException( "you must manually set the 'File Format' to 'Ab1' when uploading ab1 files." )
                             elif ext == 'scf' and file_type != 'scf':
-                                raise BadFileException( "you must manually set the 'File Format' to 'Scf' when uploading scf files." )
+                                return dataset_no_data_error( data, message = "you must manually set the 'File Format' to 'Scf' when uploading scf files" )
+                                #raise BadFileException( "you must manually set the 'File Format' to 'Scf' when uploading scf files." )
                         data_type = 'binary'
                 if not data_type:
                     # We must have a text file
                     if trans.app.datatypes_registry.get_datatype_by_extension( file_type ).composite_type != 'auto_primary_file' and self.check_html( temp_name ):
-                        raise BadFileException( "you attempted to upload an inappropriate file." )
+                        return dataset_no_data_error( data, message = "you attempted to upload an inappropriate file" )
+                        #raise BadFileException( "you attempted to upload an inappropriate file." )
                 if data_type != 'binary' and data_type != 'zip':
                     if space_to_tab:
                         self.line_count = sniff.convert_newlines_sep2tabs( temp_name )
@@ -205,12 +229,7 @@ class UploadToolAction( object ):
                     data_type = ext
         if info is None:
             info = 'uploaded %s file' %data_type
-        if precreated_dataset is not None:
-            data = precreated_dataset
-            data.extension = ext
-        else:
-            data = trans.app.model.HistoryDatasetAssociation( history = trans.history, extension = ext, create_dataset = True )
-        trans.app.security_agent.set_all_dataset_permissions( data.dataset, trans.app.security_agent.history_get_default_permissions( trans.history ) )
+        data.extension = ext
         data.name = file_name
         data.dbkey = dbkey
         data.info = info

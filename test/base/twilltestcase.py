@@ -552,7 +552,7 @@ class TwillTestCase( unittest.TestCase ):
                     for value in kwd[ control.name ]:
                         if value not in control.value and True not in [ value in item_label for item_label in item_labels ]:
                             changed = True
-                            break                    
+                            break
                     if changed:
                         # Clear Control and set to proper value
                         control.clear()
