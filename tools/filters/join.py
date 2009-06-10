@@ -288,12 +288,14 @@ def join_files( filename1, column1, filename2, column2, out_filename, split = No
             if not written and keep_unmatched:
                 out.write( fill_empty_columns( line1.rstrip( '\r\n' ), split, fill_options.file1_columns ) )
                 if fill_options:
-                    out.write( fill_empty_columns( "", split, fill_options.file2_columns ) )
+                    if fill_options.file2_columns:
+                        out.write( "%s%s" % ( split,  fill_empty_columns( "", split, fill_options.file2_columns ) ) )
                 out.write( "\n" )
         elif keep_partial:
             out.write( fill_empty_columns( line1.rstrip( '\r\n' ), split, fill_options.file1_columns ) )
             if fill_options:
-                out.write( fill_empty_columns( "", split, fill_options.file2_columns ) )
+                if fill_options.file2_columns:
+                    out.write( "%s%s" % ( split,  fill_empty_columns( "", split, fill_options.file2_columns ) ) )
             out.write( "\n" )
     out.close()
 
