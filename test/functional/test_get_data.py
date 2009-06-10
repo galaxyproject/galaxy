@@ -1,87 +1,74 @@
+import galaxy.model
+from galaxy.model.orm import *
 from base.twilltestcase import TwillTestCase
 
-""" Tests are executed in order, sorted by name"""
-
 class UploadData( TwillTestCase ):
-    def test_00_multi_upload( self ):
-        """test_get_data.test_multi_upload: Testing multiple uploads"""
-        self.login()
-        self.upload_file('1.bed')
-        self.verify_dataset_correctness('1.bed')
-        self.upload_file('2.bed', dbkey='hg17')
-        self.verify_dataset_correctness('2.bed')
-        self.upload_file('3.bed', dbkey='hg17', ftype='bed')
-        self.verify_dataset_correctness('3.bed')
-        self.upload_file('4.bed.gz', dbkey='hg17', ftype='bed')
-        self.verify_dataset_correctness('4.bed')
-        self.upload_file('1.scf', ftype='scf')
-        self.verify_dataset_correctness('1.scf')
-        self.upload_file('1.scf.zip', ftype='binseq.zip')
-        self.verify_dataset_correctness('1.scf.zip')
+    def test_000_upload_files_from_disk( self ):
+        """Test uploading data files from disk"""
+        self.logout()
+        self.login( email='tst@bx.psu.edu' )
+        history1 = galaxy.model.History.query().order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
+        self.upload_file( '1.bed' )
+        hda1 = galaxy.model.HistoryDatasetAssociation.query() \
+            .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ).first()
+        assert hda1 is not None, "Problem retrieving hda1 from database"
+        self.verify_dataset_correctness( '1.bed', hid=str( hda1.hid ) )
+        self.upload_file( '2.bed', dbkey='hg17' )
+        hda2 = galaxy.model.HistoryDatasetAssociation.query() \
+            .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ).first()
+        assert hda2 is not None, "Problem retrieving hda2 from database"
+        self.verify_dataset_correctness( '2.bed', hid=str( hda2.hid ) )
+        self.upload_file( '3.bed', dbkey='hg17', ftype='bed' )
+        hda3 = galaxy.model.HistoryDatasetAssociation.query() \
+            .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ).first()
+        assert hda3 is not None, "Problem retrieving hda3 from database"
+        self.verify_dataset_correctness( '3.bed', hid=str( hda3.hid ) )
+        self.upload_file( '4.bed.gz', dbkey='hg17', ftype='bed' )
+        hda4 = galaxy.model.HistoryDatasetAssociation.query() \
+            .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ).first()
+        assert hda4 is not None, "Problem retrieving hda4 from database"
+        self.verify_dataset_correctness( '4.bed', hid=str( hda4.hid ) )
+        self.upload_file( '1.scf', ftype='scf' )
+        hda5 = galaxy.model.HistoryDatasetAssociation.query() \
+            .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ).first()
+        assert hda5 is not None, "Problem retrieving hda5 from database"
+        self.verify_dataset_correctness( '1.scf', hid=str( hda5.hid ) )
+        self.upload_file( '1.scf.zip', ftype='binseq.zip' )
+        hda6 = galaxy.model.HistoryDatasetAssociation.query() \
+            .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ).first()
+        assert hda6 is not None, "Problem retrieving hda6 from database"
+        self.verify_dataset_correctness( '1.scf.zip', hid=str( hda6.hid ) )
+        self.delete_history( id=str( history1.id ) )
+    def test_005_url_paste( self ):
+        """Test url paste behavior"""
+        # Deleting the current history should have created a new history
+        self.check_history_for_string( 'Your history is empty' )
+        history2 = galaxy.model.History.query().order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
         self.upload_url_paste( 'hello world' )
         self.check_history_for_string( 'Pasted Entry' )
         self.check_history_for_string( 'hello world' )
-        self.delete_history_item( 1 )
-        self.delete_history_item( 2 )
-        self.delete_history_item( 3 )
-        self.delete_history_item( 4 )
-        self.delete_history_item( 5 )
-        self.delete_history_item( 6 )
-        self.delete_history_item( 7 )
         self.upload_url_paste( u'hello world' )
         self.check_history_for_string( 'Pasted Entry' )
         self.check_history_for_string( 'hello world' )
-        self.delete_history_item( 8 )
-    def test_9999_clean_up( self ):
-        self.delete_history()
-        self.logout()
-
-class GetEncodeData( TwillTestCase ):
-    
-    def test_00_get_encode_data( self ):
-        """test_get_data.test_get_encode_data"""
-        self.login()
-        self.run_tool('encode_import_chromatin_and_chromosomes1', hg17=['cc.EarlyRepSeg.20051216.bed'] )
-        #hg17=[ "cc.EarlyRepSeg.20051216.bed", "cc.EarlyRepSeg.20051216.gencode_partitioned.bed", "cc.LateRepSeg.20051216.bed", "cc.LateRepSeg.20051216.gencode_partitioned.bed", "cc.MidRepSeg.20051216.bed", "cc.MidRepSeg.20051216.gencode_partitioned.bed" ] )
+        self.delete_history( id=str( history2.id ) )
+    def test_010_upload_encode_data( self ):
+        """Test uploading encode data"""
+        # Deleting the current history should have created a new history
+        self.check_history_for_string( 'Your history is empty' )
+        history3 = galaxy.model.History.query().order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
+        self.run_tool( 'encode_import_chromatin_and_chromosomes1', hg17=['cc.EarlyRepSeg.20051216.bed'] )
         self.wait()
-        self.verify_dataset_correctness('cc.EarlyRepSeg.20051216.bed', hid=1)
-        #self.verify_dataset_correctness('cc.EarlyRepSeg.20051216.gencode_partitioned.bed', hid=2)
-        #self.verify_dataset_correctness('cc.LateRepSeg.20051216.bed', hid=3)
-        #self.verify_dataset_correctness('cc.LateRepSeg.20051216.gencode_partitioned.bed', hid=4)
-        #self.verify_dataset_correctness('cc.MidRepSeg.20051216.bed', hid=5)
-        #self.verify_dataset_correctness('cc.MidRepSeg.20051216.gencode_partitioned.bed', hid=6)
+        hda7 = galaxy.model.HistoryDatasetAssociation.query() \
+            .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ).first()
+        assert hda7 is not None, "Problem retrieving hda7 from database"
+        self.verify_dataset_correctness( 'cc.EarlyRepSeg.20051216.bed', hid=str( hda7.hid ) )
         self.run_tool('encode_import_gencode1', hg17=['gencode.CDS.20051206.bed'])
         self.wait()
-        self.verify_dataset_correctness('sc_3D_cds.bed', hid=2)
-        self.delete_history_item( 1 )
-        self.delete_history_item( 2 )
-    def test_9999_clean_up( self ):
-        self.delete_history()
+        hda8 = galaxy.model.HistoryDatasetAssociation.query() \
+            .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ).first()
+        assert hda8 is not None, "Problem retrieving hda8 from database"
+        self.verify_dataset_correctness( 'sc_3D_cds.bed', hid=str( hda8.hid ) )
+        self.delete_history( id=str( history3.id ) )
+    def test_015_reset_data_for_later_test_runs( self ):
+        """Reseting data to enable later test runs to pass"""
         self.logout()
-
-class DataSources( TwillTestCase ):
-
-    #def test_hbvar(self):
-    #    """Getting hybrid gene mutations from HbVar"""
-    #    #self.load_cookies("hbvar_cookie.txt")
-    #    self.clear_history()
-    #    self.run_tool('hbvar')
-    #    params = dict(
-    #        htyp="any hybrid gene",
-    #    )
-    #    self.submit_form(form=1, button="Submit Query", **params)
-    #    params = dict(
-    #        display_format="galaxy",
-    #    )
-    #    self.submit_form(form=1, button="Go", **params)
-    #    params = dict(
-    #        build="hg17",
-    #    )
-    #    self.submit_form(form=1, button="ok", **params);
-    #    """
-    #    TODO: Currently fails when using sqlite, although successful when
-    #    using Postgres.  Upgrading our version of sqlite may fix this, but
-    #    confirmation is required.
-    #    """
-    #    self.verify_dataset_correctness('hbvar_hybrid_genes.dat')
-    pass
