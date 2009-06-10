@@ -268,7 +268,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
                     invalidate_existing_session = True
                     user_for_new_session = self.__get_or_create_remote_user( remote_user_email )
                     log.warning( "User logged in as '%s' externally, but has a cookie as '%s' invalidating session",
-                                 remote_user_email, prev_galaxy_session.user.email )
+                                 remote_user_email, galaxy_session.user.email )
             else:
                 # No session exists, get/create user for new session
                 user_for_new_session = self.__get_or_create_remote_user( remote_user_email )
