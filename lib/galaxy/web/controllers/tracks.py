@@ -1,113 +1,96 @@
+"""
+Support for constructing and viewing custom "track" browsers within Galaxy.
+
+Track browsers are currently transient -- nothing is stored to the database
+when a browser is created. Building a browser consists of selecting a set
+of datasets associated with the same dbkey to display. Once selected, jobs
+are started to create any neccesary indexes in the background, and the user
+is redirected to the browser interface, which loads the appropriate datasets.
+
+Problems
+--------
+ - Assumes that the only indexing type in Galaxy is for this particular
+   application. Thus, datatypes can only have one indexer, and the presence
+   of an indexer results in assuming that datatype can be displayed as a track.
+
+"""
+
 import math
 
-import mimeparse
 from galaxy.tracks import messages
 from galaxy.util.json import to_json_string
 from galaxy.web.base.controller import *
 from galaxy.web.framework import simplejson
 
-
-class MultiResponse(object):
+class TracksController( BaseController ):
     """
-    Shamelessly ripped off of a django snippet.
+    Controller for track browser interface. Handles building a new browser from
+    datasets in the current history, and display of the resulting browser.
     """
-    def __init__(self, handlers):
-        self.handlers = handlers
-
-    def __call__(self, view_func):
-        def wrapper(that, trans, *args, **kwargs):
-            data_resource = view_func(that, trans, *args, **kwargs)
-            content_type = mimeparse.best_match(self.handlers.keys(),
-                                                trans.request.environ['HTTP_ACCEPT'])
-            response = self.handlers[content_type](data_resource, trans)
-            trans.response.headers['Content-Type'] = "%s" % content_type
-            return response
-        return wrapper
-
-    @classmethod
-    def JSON( cls, data_resource, trans ):
-        return simplejson.dumps( data_resource )
-    
-    class XML( object ):
-        def __call__(self, data_resource, trans ):
-            raise NotImplementedError( "XML MultiResponse handler is not implemented." )
-
-    class AMF( object ):
-        def __call__(self, data_resource, trans ):
-            raise NotImplementedError( "XML MultiResponse handler is not implemented." )
-
-    class HTML( object ):
-        def __init__(self, template ):
-            self.template = template
-
-        def __call__(self, data_resource, trans ):
-            return trans.fill_template( self.template, data_resource=data_resource, trans=trans )
-
-class WebRoot( BaseController ):
-
-    @web.expose
-    @MultiResponse( {'text/html': MultiResponse.HTML( "tracks/dbkeys.mako"),
-                    'text/javascript':MultiResponse.JSON} )
-    def dbkeys(self, trans ):
-        return list(set([x.metadata.dbkey for x in trans.get_history().datasets if not x.deleted]))
     
     @web.expose
-    @MultiResponse( {'text/html':MultiResponse.HTML( "tracks/chroms.mako" ),
-                    'text/javascript':MultiResponse.JSON} )
-    def chroms(self, trans, dbkey=None):
-        return self.chroms_handler( trans, dbkey )
-
-    @web.expose
-    @MultiResponse( {'text/html':MultiResponse.HTML( "tracks/datasets.mako" ),
-                    'text/javascript':MultiResponse.JSON} )
-    def list(self, trans, dbkey=None ):
-        trans.session["track_dbkey"] = dbkey
-        trans.session.save()
-        datasets = trans.app.model.HistoryDatasetAssociation.filter_by(deleted=False, history_id=trans.history.id).all()
-        dataset_list = {}
-        for dataset in datasets:
-            if dataset.metadata.dbkey == dbkey and trans.app.datatypes_registry.get_indexers_by_datatype( dataset.extension ):
-                dataset_list[dataset.id] = dataset.name
-        return dataset_list
-
-    @web.expose
-    @MultiResponse( {'text/html':MultiResponse.JSON,
-                    'text/javascript':MultiResponse.JSON} )
-    def data(self, trans, dataset_id=None, chr="", low="", high=""):
-        return self.data_handler( trans, dataset_id, chrom=chr, low=low, high=high )
-
-    @web.expose
-    def build( self, trans, **kwargs ):
-        trans.session["track_sets"] = list(kwargs.keys())
-        trans.session.save()
-        #waiting = False
-        #for id, value in kwargs.items():
-        #    status = self.data_handler( trans, id )
-        #    if status == messages.PENDING:
-        #        waiting = True
-        #if not waiting:
-        return trans.response.send_redirect( web.url_for( controller='tracks/', action='index', chrom="" ) )
-        #return trans.fill_template( 'tracks/build.mako' )
+    def index( self, trans ):
+        return trans.fill_template( "tracks/index.mako" )
         
     @web.expose
-    def index(self, trans, **kwargs):
+    def new_browser( self, trans, dbkey=None, dataset_ids=None, browse=None ):
+        """
+        Build a new browser from datasets in the current history. Redirects
+        to 'index' once datasets to browse have been selected.
+        """
+        session = trans.sa_session
+        # If the user clicked the submit button explicately, try to build the browser
+        if browse and dataset_ids:
+            dataset_ids = ",".join( map( str, dataset_ids ) )
+            trans.response.send_redirect( web.url_for( controller='tracks', action='browser', chrom="", dataset_ids=dataset_ids ) )
+            return
+        # Determine the set of all dbkeys that are used in the current history
+        dbkeys = [ d.metadata.dbkey for d in trans.get_history().datasets if not d.deleted ]
+        dbkey_set = set( dbkeys )
+        # If a dbkey argument was not provided, or is no longer valid, default
+        # to the first one
+        if dbkey is None or dbkey not in dbkey_set:
+            dbkey = dbkeys[0]
+        # Find all datasets in the current history that are of that dbkey and
+        # have an indexer.
+        datasets = {}
+        for dataset in session.query( model.HistoryDatasetAssociation ).filter_by( deleted=False, history_id=trans.history.id ):
+            if dataset.metadata.dbkey == dbkey and trans.app.datatypes_registry.get_indexers_by_datatype( dataset.extension ):
+                datasets[dataset.id] = dataset.name
+        # Render the template
+        return trans.fill_template( "tracks/new_browser.mako", dbkey=dbkey, dbkey_set=dbkey_set, datasets=datasets )
+
+    @web.expose
+    def browser(self, trans, dataset_ids, chrom=""):
+        """
+        Display browser for the datasets listed in `dataset_ids`.
+        """
         tracks = []
         dbkey = ""
-        for track in trans.session["track_sets"]:
-            dataset = trans.app.model.HistoryDatasetAssociation.get( track )
-            tracks.append({
-                    "type": dataset.datatype.get_track_type(),
-                    "name": dataset.name,
-                    "id": dataset.id
-                    })
+        for dataset_id in dataset_ids.split( "," ):
+            dataset = trans.app.model.HistoryDatasetAssociation.get( dataset_id )
+            tracks.append( {
+                "type": dataset.datatype.get_track_type(),
+                "name": dataset.name,
+                "id": dataset.id
+            } )
             dbkey = dataset.dbkey
-        chrom = kwargs.get("chrom","")
-        LEN = self.chroms_handler(trans, trans.session["track_dbkey"]).get(chrom,0)
-        return trans.fill_template( 'tracks/index.mako', 
-                                    tracks=tracks, chrom=chrom, dbkey=dbkey,
+        LEN = self._chroms(trans, dbkey ).get(chrom,0)
+        return trans.fill_template( 'tracks/browser.mako', 
+                                    dataset_ids=dataset_ids,
+                                    tracks=tracks,
+                                    chrom=chrom,
+                                    dbkey=dbkey,
                                     LEN=LEN )
-
-    def chroms_handler(self, trans, dbkey ):
+    
+    @web.json
+    def chroms(self, trans, dbkey=None ):
+        return self._chroms( trans, dbkey )
+        
+    def _chroms( self, trans, dbkey ):
+        """
+        Called by the browser to get a list of valid chromosomes and lengths
+        """
         db_manifest = trans.db_dataset_for( dbkey )
         if not db_manifest:
             db_manifest = os.path.join( trans.app.config.tool_data_path, 'shared','ucsc','chrom', "%s.len" % dbkey )
@@ -134,7 +117,11 @@ class WebRoot( BaseController ):
                         pass
         return manifest
 
-    def data_handler( self, trans, dataset_id, chrom="", low="", high="" ):
+    @web.json
+    def data( self, trans, dataset_id, chrom="", low="", high="" ):
+        """
+        Called by the browser to request a block of data
+        """
         dataset = trans.app.model.HistoryDatasetAssociation.get( dataset_id )
         if not dataset: return messages.NO_DATA
         if dataset.state == trans.app.model.Job.states.ERROR:

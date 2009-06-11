@@ -148,13 +148,22 @@
         <span class="${cls}" style="${style}"><a target="${target}" href="${href}">${display}</a></span>
     </%def>
     
-    ## ${tab( "tracks", "View Data", h.url_for( controller='tracks', action='dbkeys' ), target="galaxy_main")}
-
     ${tab( "analysis", "Analyze Data", h.url_for( controller='root', action='index' ))}
 
     ${tab( "workflow", "Workflow", h.url_for( controller='workflow', action='index' ))}
 
-        ${tab( "libraries", "Libraries", h.url_for( controller='library', action='index' ))}
+    ${tab( "libraries", "Libraries", h.url_for( controller='library', action='index' ))}
+
+    %if app.config.get_bool( 'enable_tracks', False ):
+    <span class="tab">
+        Visualization
+        <div class="submenu">
+        <ul>
+            <li><a href="${h.url_for( controller='tracks', action='index' )}">Build track browser</a></li>
+        </ul>
+        </div>
+    </span>
+    %endif
 
     ${tab( "admin", "Admin", h.url_for( controller='admin', action='index' ), extra_class="admin-only", visible=( trans.user and app.config.is_admin_user( trans.user ) ) )}
     

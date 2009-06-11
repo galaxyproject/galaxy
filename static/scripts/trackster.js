@@ -155,7 +155,7 @@ $.extend( DataCache.prototype, {
 	    // use closure to preserve this and parameters for getJSON
 	    var fetcher = function (ref) {
 	      return function () {
-		$.getJSON( "data" + ref.type, { chr: ref.view.chr, low: low, high: high, dataset_id: ref.track.dataset_id }, function ( data ) {
+		$.getJSON( TRACKSTER_DATA_URL + ref.type, { chrom: ref.view.chr, low: low, high: high, dataset_id: ref.track.dataset_id }, function ( data ) {
 		  if( data == "pending" ) {
 		    setTimeout( fetcher, 5000 );
 		  } else {
@@ -218,6 +218,7 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
             var y1 = data[i][1];
             var x2 = data[i+1][0] - tile_low;
             var y2 = data[i+1][1];
+	    console.log( x1, y1, x2, y2 );
             // Missing data causes us to stop drawing
             if ( isNaN( y1 ) || isNaN( y2 ) ) {
                 in_path = false;
