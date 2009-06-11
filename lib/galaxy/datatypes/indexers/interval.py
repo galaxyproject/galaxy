@@ -29,13 +29,11 @@ def divide( intervals, out_path ):
         manifest[chrom] = max(manifest.get(chrom,0),line.end)
         if not lastchrom == chrom:
             if current_file:
-                current_file.flush()
                 current_file.close()
             current_file = open( os.path.join( out_path, "%s" % chrom), "a" )
         print >> current_file, "\t".join(line)
         lastchrom = chrom
     if current_file:
-        current_file.flush()
         current_file.close()
     return manifest
 

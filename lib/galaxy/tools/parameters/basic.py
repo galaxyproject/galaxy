@@ -668,7 +668,7 @@ class GenomeBuildParameter( SelectToolParameter ):
     
     >>> # Create a mock transcation with 'hg17' as the current build
     >>> from galaxy.util.bunch import Bunch
-    >>> trans = Bunch( history=Bunch( genome_build='hg17' ) )
+    >>> trans = Bunch( history=Bunch( genome_build='hg17' ), db_builds=util.dbnames )
     
     >>> p = GenomeBuildParameter( None, XML( 
     ... '''
@@ -703,10 +703,10 @@ class GenomeBuildParameter( SelectToolParameter ):
     """
     def get_options( self, trans, other_values ):
         last_used_build = trans.history.genome_build
-        for dbkey, build_name in util.dbnames:
+        for dbkey, build_name in trans.db_builds:
             yield build_name, dbkey, ( dbkey == last_used_build )
     def get_legal_values( self, trans, other_values ):
-        return set( dbkey for dbkey, _ in util.dbnames )
+        return set( dbkey for dbkey, _ in trans.db_builds )
 
 class ColumnListParameter( SelectToolParameter ):
     """

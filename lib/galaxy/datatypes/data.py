@@ -42,7 +42,7 @@ class Data( object ):
     __metaclass__ = DataMeta
     
     """Add metadata elements"""
-    MetadataElement( name="dbkey", desc="Database/Build", default="?", param=metadata.SelectParameter, multiple=False, values=util.dbnames, no_value="?" )
+    MetadataElement( name="dbkey", desc="Database/Build", default="?", param=metadata.DBKeyParameter, multiple=False, no_value="?" )
     
     """Stores the set of display applications, and viewing methods, supported by this datatype """
     supported_display_apps = {}

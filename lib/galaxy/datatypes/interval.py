@@ -798,7 +798,7 @@ class Wiggle( Tabular ):
         # Determine appropriate resolution to plot ~1000 points
         resolution = ( 10 ** math.ceil( math.log10( range / 1000 ) ) )
         # Restrict to valid range
-        resolution = min( resolution, 10000 )
+        resolution = min( resolution, 100000 )
         resolution = max( resolution, 1 )
         # Memory map the array (don't load all the data)
         data = numpy.load( data )
@@ -815,7 +815,7 @@ class Wiggle( Tabular ):
         # Determine appropriate resolution to plot ~1000 points
         resolution = math.ceil( 10 ** math.ceil( math.log10( range / 1000 ) ) )
         # Restrict to valid range
-        resolution = min( resolution, 10000 )
+        resolution = min( resolution, 100000 )
         resolution = max( resolution, 1 )
         return resolution
 

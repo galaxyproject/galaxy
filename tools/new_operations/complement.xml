@@ -1,6 +1,6 @@
 <tool id="gops_complement_1" name="Complement">
   <description>intervals of a query</description>
-  <command interpreter="python">gops_complement.py $input1 $output -1 ${input1.metadata.chromCol},${input1.metadata.startCol},${input1.metadata.endCol},${input1.metadata.strandCol} -l ${GALAXY_DATA_INDEX_DIR}/shared/ucsc/chrom/${dbkey}.len $allchroms</command>
+  <command interpreter="python">gops_complement.py $input1 $output -1 ${input1.metadata.chromCol},${input1.metadata.startCol},${input1.metadata.endCol},${input1.metadata.strandCol} -l ${chromInfo} $allchroms</command>
   <inputs>
     <param format="interval" name="input1" type="data">
       <label>Complement regions of</label>

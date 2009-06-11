@@ -46,7 +46,7 @@
                             ${spec.desc}:
                         </label>
                         <div style="float: left; width: 250px; margin-right: 10px;">
-                            ${data.metadata.get_html_by_name( name )}
+                            ${data.metadata.get_html_by_name( name, trans=trans )}
                         </div>
                         <div style="clear: both"></div>
                     </div>

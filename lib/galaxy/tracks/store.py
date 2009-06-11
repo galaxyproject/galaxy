@@ -1,5 +1,17 @@
 import os
+import re
 from string import Template
+from galaxy.util import sanitize_text
+
+# extra mappings/escape to keep users from traversing around the
+# filesystem and wreaking havoc
+extra_mappings = { r"/": "__fs__", r"^manifest.tab$": "__manifest.tab__" }
+
+def sanitize_name( name ):
+    name = sanitize_text( name )
+    for key, value in extra_mappings.items():
+        name = re.sub( key, value, name )
+    return name
 
 class TemplateSubber( object ):
     def __init__(self, obj):
@@ -56,7 +68,7 @@ class TrackStore( object ):
         fd.close()
         
     def _get_object_path( self, chrom, resolution ):
-        object_name = chrom
+        object_name = sanitize_name(chrom)
         if resolution: object_name += "_%d" % resolution
         return os.path.join( self.path, object_name )
 

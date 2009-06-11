@@ -549,6 +549,31 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         template = Template( source=template_string,
                              searchList=[context or kwargs, dict(caller=self)] )
         return str(template)
+
+    @property
+    def db_builds( self ):
+        """
+        Returns the builds defined by galaxy and the builds defined by
+        the user (chromInfo in history).
+        """
+        dbnames = list()
+        datasets = self.app.model.HistoryDatasetAssociation.filter_by(deleted=False, history_id=self.history.id, extension="len").all()
+        if len(datasets) > 0:
+            dbnames.append( (util.dbnames.default_value, '--------- User Defined Builds ----------') )
+        for dataset in datasets:
+            dbnames.append( (dataset.dbkey, dataset.name) )
+        dbnames.extend( util.dbnames )
+        return dbnames
+        
+    def db_dataset_for( self, dbkey ):
+        """
+        Returns the db_file dataset associated/needed by `dataset`, or `None`.
+        """
+        datasets = self.app.model.HistoryDatasetAssociation.filter_by(deleted=False, history_id=self.history.id, extension="len").all()
+        for ds in datasets:
+            if dbkey == ds.dbkey:
+                return ds
+        return None
         
 class FormBuilder( object ):
     """

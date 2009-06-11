@@ -85,7 +85,7 @@ $.extend( TiledTrack.prototype, Track.prototype, {
 
         var resolution = Math.pow( 10, Math.ceil( Math.log( range / DENSITY ) / Math.log( 10 ) ) );
         resolution = Math.max( resolution, 1 );
-        resolution = Math.min( resolution, 10000 );
+        resolution = Math.min( resolution, 100000 );
 
 	var parent_element = $("<div style='position: relative;'></div>");
         this.content_div.children( ":first" ).remove();
@@ -152,10 +152,20 @@ $.extend( DataCache.prototype, {
             var low = position * DENSITY * resolution;
             var high = ( position + 1 ) * DENSITY * resolution;
             cache[resolution][position] = { state: "loading" };
-            $.getJSON( "data" + this.type, { chr: this.view.chr, low: low, high: high, dataset_id: this.track.dataset_id }, function ( data ) {
-                cache[resolution][position] = { state: "loaded", values: data };
-                $(document).trigger( "redraw" );
-            });
+	    // use closure to preserve this and parameters for getJSON
+	    var fetcher = function (ref) {
+	      return function () {
+		$.getJSON( "data" + ref.type, { chr: ref.view.chr, low: low, high: high, dataset_id: ref.track.dataset_id }, function ( data ) {
+		  if( data == "pending" ) {
+		    setTimeout( fetcher, 5000 );
+		  } else {
+		    cache[resolution][position] = { state: "loaded", values: data };
+		  }
+		  $(document).trigger( "redraw" );
+		});
+	      };
+	    }(this);
+	    fetcher();
         }
 	return cache[resolution][position];
     }
@@ -288,8 +298,11 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
 
         var chunk = this.cache.get( resolution, tile_index );
         if ( chunk.state == "loading" ) {
-            return null;
-        }
+	  parent_element.addClass("loading");
+          return null;
+        } else {
+	  parent_element.removeClass("loading");
+	}
         var values = chunk.values;
 
         for ( var index in values ) {

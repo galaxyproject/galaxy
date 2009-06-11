@@ -236,11 +236,15 @@ class RootController( BaseController ):
                     if spec.get("readonly"):
                         continue
                     optional = params.get("is_"+name, None)
+                    other = params.get("or_"+name, None)
                     if optional and optional == 'true':
                         # optional element... == 'true' actually means it is NOT checked (and therefore omitted)
                         setattr(data.metadata, name, None)
                     else:
-                        setattr( data.metadata, name, spec.unwrap( params.get (name, None) ) )
+                        if other:
+                            setattr( data.metadata, name, other )
+                        else:
+                            setattr( data.metadata, name, spec.unwrap( params.get (name, None) ) )
 
                 data.datatype.after_edit( data )
                 trans.app.model.flush()
