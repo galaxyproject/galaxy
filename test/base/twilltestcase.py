@@ -181,8 +181,9 @@ class TwillTestCase( unittest.TestCase ):
         self.home()
     def new_history( self, name=None ):
         """Creates a new, empty history"""
+        self.home()
         if name:
-            self.visit_url( "%s/history_new?name=%s" % ( self.url, str( name ) ) )
+            self.visit_url( "%s/history_new?name=%s" % ( self.url, name ) )
         else:
             self.visit_url( "%s/history_new" % self.url )
         self.check_history_for_string('Your history is empty')
@@ -191,7 +192,7 @@ class TwillTestCase( unittest.TestCase ):
         """Rename an existing history"""
         self.home()
         self.visit_page( "history/rename?id=%s&name=%s" %( id, new_name ) )
-        check_str = 'History: %s renamed to: %s' % ( old_name, new_name )
+        check_str = 'History: %s renamed to: %s' % ( old_name, urllib.unquote( new_name ) )
         self.check_page_for_string( check_str )
         self.home()
     def set_history( self ):
@@ -330,7 +331,7 @@ class TwillTestCase( unittest.TestCase ):
         self.check_page_for_string( 'Attributes updated' )
         self.home()
     def convert_format( self, hda_id, target_type ):
-        """Auto-detect history_dataset_association metadata"""
+        """Convert format of history_dataset_association"""
         self.home()
         self.visit_url( "%s/root/edit?id=%s" % ( self.url, hda_id ) )
         self.check_page_for_string( 'This will inspect the dataset and attempt' )
@@ -339,13 +340,36 @@ class TwillTestCase( unittest.TestCase ):
         self.check_page_for_string( 'The file conversion of Convert BED to GFF on data' )
         self.home()
     def change_datatype( self, hda_id, datatype ):
-        """Auto-detect history_dataset_association metadata"""
+        """Change format of history_dataset_association"""
         self.home()
         self.visit_url( "%s/root/edit?id=%s" % ( self.url, hda_id ) )
         self.check_page_for_string( 'This will change the datatype of the existing dataset but' )
         tc.fv( 'change_datatype', 'datatype', datatype )
         tc.submit( 'change' )
         self.check_page_for_string( 'Edit Attributes' )
+        self.home()
+    def copy_history_item( self, source_dataset_ids='', target_history_ids=[], all_target_history_ids=[], deleted_history_ids=[] ):
+        """Copy 1 or more history_dataset_associations to 1 or more histories"""
+        self.home()
+        self.visit_url( "%s/dataset/copy_datasets?source_dataset_ids=%s" % ( self.url, source_dataset_ids ) )
+        self.check_page_for_string( 'Source History Items' )
+        # Make sure all of users active histories are displayed
+        for id in all_target_history_ids:
+            self.check_page_for_string( id )
+        # Make sure only active histories are displayed
+        for id in deleted_history_ids:
+            try:
+                self.check_page_for_string( id )
+                raise AssertionError, "deleted history id %d displayed in list of target histories" % id
+            except:
+                pass
+        # Check each history to which we want to copy the item
+        for id in target_history_ids:
+            tc.fv( '1', 'target_history_ids', id )
+        tc.submit( 'do_copy' )
+        no_source_ids = len( source_dataset_ids.split( ',' ) )
+        check_str = '%d datasets copied to %d histories.' % ( no_source_ids, len( target_history_ids ) )
+        self.check_page_for_string( check_str )
         self.home()
     def get_dataset_ids_in_history( self ):
         """Returns the ids of datasets in a history"""

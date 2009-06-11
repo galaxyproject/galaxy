@@ -1,3 +1,4 @@
+import urllib
 import galaxy.model
 from galaxy.model.orm import *
 from base.twilltestcase import *
@@ -55,7 +56,7 @@ class TestHistory( TwillTestCase ):
         history1 = galaxy.model.History.query().order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
         assert history1 is not None, "Problem retrieving history1 from database"
         self.upload_file( '1.bed', dbkey='hg18' )
-        self.new_history( name='history2' )
+        self.new_history( name=urllib.quote( 'history2' ) )
         global history2
         history2 = galaxy.model.History.query().order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
         assert history2 is not None, "Problem retrieving history2 from database"
@@ -96,7 +97,7 @@ class TestHistory( TwillTestCase ):
         assert history3 is not None, "Problem retrieving history3 from database"
         if history3.deleted:
             raise AssertionError, "History id %d deleted when it should not be" % latest_history.id
-        self.rename_history( str( history3.id ), history3.name, new_name='history3' )
+        self.rename_history( str( history3.id ), history3.name, new_name=urllib.quote( 'history 3' ) )
     def test_020_history_list( self ):
         """Testing viewing previously stored histories"""
         self.view_stored_active_histories()
@@ -131,7 +132,7 @@ class TestHistory( TwillTestCase ):
         global history4
         history4 = galaxy.model.History.query().order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
         assert history4 is not None, "Problem retrieving history4 from database"
-        self.rename_history( str( history4.id ), history4.name, new_name='history4' )
+        self.rename_history( str( history4.id ), history4.name, new_name=urllib.quote( 'history 4' ) )
         history4.refresh()
         self.upload_file( '2.bed', dbkey='hg18' )
         id = '%s,%s' % ( str( history3.id ), str( history4.id ) )
@@ -195,7 +196,7 @@ class TestHistory( TwillTestCase ):
         global history5
         history5 = galaxy.model.History.query().order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
         assert history5 is not None, "Problem retrieving history5 from database"
-        self.rename_history( str( history5.id ), history5.name, new_name='history5' )
+        self.rename_history( str( history5.id ), history5.name, new_name=urllib.quote( 'history5' ) )
         history5.refresh()
         # Due to the limitations of twill ( not functional with the permissions forms ), we're forced
         # to do this manually.  At this point, we just want to restrict the access permission on history5
@@ -377,7 +378,7 @@ class TestHistory( TwillTestCase ):
                             action='no_share' )
     def test_055_history_show_and_hide_deleted_datasets( self ):
         """Testing displaying deleted history items"""
-        self.new_history( name='temp_history1' )
+        self.new_history( name=urllib.quote( 'show hide deleted datasets' ) )
         self.upload_file('1.bed', dbkey='hg18')
         latest_hda = galaxy.model.HistoryDatasetAssociation.query() \
             .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ).first()
@@ -393,7 +394,7 @@ class TestHistory( TwillTestCase ):
         self.check_page_for_string( 'Your history is empty' )
     def test_060_deleting_and_undeleting_history_items( self ):
         """Testing deleting and un-deleting history items"""
-        self.new_history( name='temp_history2' )
+        self.new_history( name=urllib.quote( 'delete undelete history items' ) )
         # Add a new history item
         self.upload_file( '1.bed', dbkey='hg15' )
         self.home()
@@ -416,8 +417,54 @@ class TestHistory( TwillTestCase ):
         self.visit_url( "%s/history/?show_deleted=False" % self.url )
         self.check_page_for_string( '1.bed' )
         self.check_page_for_string( 'hg15' )
-    def test_065_reset_data_for_later_test_runs( self ):
+    def test_065_copying_history_items_between_histories( self ):
+        """Testing copying history items between histories"""
+        self.new_history( name=urllib.quote( 'copy history items' ) )
+        global history6
+        history6 = galaxy.model.History.query().order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
+        assert history6 is not None, "Problem retrieving history6 from database"
+        self.upload_file( '1.bed', dbkey='hg18' )
+        hda1 = galaxy.model.HistoryDatasetAssociation.query() \
+            .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ).first()
+        assert hda1 is not None, "Problem retrieving hda1 from database"
+        # We'll just test copying 1 hda
+        source_dataset_ids=str( hda1.id )
+        # The valid list of target histories is only the user's active histories
+        all_target_history_ids = [ str( hda.id ) for hda in admin_user.active_histories ]
+        # Since history1 and history2 have been deleted, they should not be displayed in the list of target histories
+        # on the copy_view.mako form
+        deleted_history_ids = [ str( history1.id ), str( history2.id ) ]
+        # Test copying to the current history
+        target_history_ids=[ str( history6.id ) ]
+        self.copy_history_item( source_dataset_ids=source_dataset_ids,
+                                target_history_ids=target_history_ids,
+                                all_target_history_ids=all_target_history_ids,
+                                deleted_history_ids=deleted_history_ids )
+        history6.refresh()
+        if len( history6.datasets ) != 2:
+            raise AssertionError, "Copying hda1 to the current history failed"
+        # Test copying 1 hda to another history
+        self.new_history( name=urllib.quote( 'copy history items - 2' ) )
+        global history7
+        history7 = galaxy.model.History.query().order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
+        assert history7 is not None, "Problem retrieving history7 from database"
+        # Switch back to our history from which we want to copy
+        self.switch_history( id=str( history6.id ), name=history6.name )
+        target_history_ids=[ str( history7.id ) ]
+        all_target_history_ids = [ str( hda.id ) for hda in admin_user.active_histories ]
+        # Test copying to the a history that is not the current history
+        target_history_ids=[ str( history7.id ) ]
+        self.copy_history_item( source_dataset_ids=source_dataset_ids,
+                                target_history_ids=target_history_ids,
+                                all_target_history_ids=all_target_history_ids,
+                                deleted_history_ids=deleted_history_ids )
+        # Switch to the history to which we copied
+        self.switch_history( id=str( history7.id ), name=history7.name )
+        self.check_history_for_string( hda1.name )
+    def test_070_reset_data_for_later_test_runs( self ):
         """Reseting data to enable later test runs to pass"""
         self.delete_history( id=str( history3.id ) )
         self.delete_history( id=str( history4.id ) )
         self.delete_history( id=str( history5.id ) )
+        self.delete_history( id=str( history6.id ) )
+        self.delete_history( id=str( history7.id ) )

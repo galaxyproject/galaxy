@@ -159,7 +159,8 @@ class DatasetInterface( BaseController ):
         raise "Error undeleting"
     
     @web.expose
-    def copy_datasets( self, trans, source_dataset_ids = "", target_history_ids = "", new_history_name="", do_copy = False ):
+    def copy_datasets( self, trans, source_dataset_ids="", target_history_ids="", new_history_name="", do_copy=False, **kwd ):
+        params = util.Params( kwd )
         user = trans.get_user()
         history = trans.get_history()
         create_new_history = False
@@ -202,7 +203,7 @@ class DatasetInterface( BaseController ):
                     error_msg = error_msg + "You do not have permission to add datasets to %i requested histories.  " % ( len( target_history_ids ) - len( target_histories ) )
                 for data in map( trans.app.model.HistoryDatasetAssociation.get, source_dataset_ids ):
                     if data is None:
-                        error_msg = error_msg + "You tried to copy a non-existant dataset.  "
+                        error_msg = error_msg + "You tried to copy a dataset that does not exist.  "
                         invalid_datasets += 1
                     elif data.history != history:
                         error_msg = error_msg + "You tried to copy a dataset which is not in your current history.  "
@@ -220,8 +221,7 @@ class DatasetInterface( BaseController ):
         source_datasets = history.active_datasets
         target_histories = [history]
         if user:
-           target_histories = user.histories 
-        
+           target_histories = user.active_histories 
         return trans.fill_template( "/dataset/copy_view.mako",
                                     source_dataset_ids = source_dataset_ids,
                                     target_history_ids = target_history_ids,
