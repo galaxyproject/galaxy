@@ -295,13 +295,14 @@ class DBKeyParameter( SelectParameter ):
     def get_html_field( self, value=None, context={}, other_values={}, values=None, **kwd):
         try:
             values = kwd['trans'].db_builds
-        except AttributeError: pass
+        except KeyError:
+            pass
         return super(DBKeyParameter, self).get_html_field( value, context, other_values, values, **kwd)
-
     def get_html( self, value=None, context={}, other_values={}, values=None, **kwd):
         try:
             values = kwd['trans'].db_builds
-        except AttributeError: pass
+        except KeyError:
+            pass
         return super(DBKeyParameter, self).get_html( value, context, other_values, values, **kwd)
 
 
