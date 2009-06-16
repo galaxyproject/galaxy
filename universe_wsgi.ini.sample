@@ -55,9 +55,13 @@ session_secret = changethisinproduction
 # Galaxy session security
 id_secret = changethisinproductiontoo
 
-# Files in directories under this directory can be directly imported through
-# the library admin's "add dataset" tool
+# Directories of files contained in the following directory can be uploaded to a library from the Admin view
 #library_import_dir = /var/opt/galaxy/import
+# The following can be configured to allow non-admin users to upload a directory of files.  The
+# configured directory must contain sub-directories named the same as the non-admin user's Galaxy
+# login ( email ).  The non-admin user is restricted to uploading files or sub-directories of files
+# contained in their directory.
+# user_library_import_dir = /var/opt/galaxy/import/users
 
 # path to sendmail
 sendmail_path = /usr/sbin/sendmail

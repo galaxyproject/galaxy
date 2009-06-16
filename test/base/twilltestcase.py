@@ -1150,7 +1150,6 @@ class TwillTestCase( unittest.TestCase ):
         tc.fv( "1", "file_format", file_format )
         tc.fv( "1", "dbkey", dbkey )
         tc.fv( "1", "message", message.replace( '+', ' ' ) )
-        library_dir = "%s" % self.file_dir
         tc.fv( "1", "server_dir", "library" )
         tc.submit( "new_dataset_button" )
         check_str = "Added 3 dataset versions to the library dataset '%s' in the folder '%s'." % ( ldda_name, folder_name )
@@ -1167,34 +1166,55 @@ class TwillTestCase( unittest.TestCase ):
             check_str = "Added 1 datasets to the folder '%s' ( each is selected )." % folder_name
         self.check_page_for_string( check_str )
         self.home()
-    def add_datasets_from_library_dir( self, library_id, folder_id, folder_name, file_format='auto', dbkey='hg18', roles_tuple=[],
-                                       message='', root=False, check_template_str1='', check_template_str2='', check_template_str3='' ):
+    def add_dir_of_files_from_admin_view( self, library_id, folder_id, file_format='auto', dbkey='hg18', roles_tuple=[],
+                                          message='', check_str_after_submit='', check_str1='', check_str2='', check_str3='' ):
         """Add a directory of datasets to a folder"""
         # roles is a list of tuples: [ ( role_id, role_description ) ]
         self.home()
         self.visit_url( "%s/admin/library_dataset_dataset_association?upload_option=upload_directory&library_id=%s&folder_id=%s" % ( self.url, library_id, folder_id ) )
         self.check_page_for_string( 'Upload a directory of files' )
         # If we've been sent some template labels, make sure they are included in the upload form
-        if check_template_str1:
-            self.check_page_for_string( check_template_str1 )
-        if check_template_str2:
-            self.check_page_for_string( check_template_str2 )
-        if check_template_str3:
-            self.check_page_for_string( check_template_str3 )
+        if check_str1:
+            self.check_page_for_string( check_str1 )
+        if check_str2:
+            self.check_page_for_string( check_str2 )
+        if check_str3:
+            self.check_page_for_string( check_str3 )
         tc.fv( "1", "folder_id", folder_id )
         tc.fv( "1", "file_format", file_format )
         tc.fv( "1", "dbkey", dbkey )
         tc.fv( "1", "message", message.replace( '+', ' ' ) )
-        library_dir = "%s" % self.file_dir
         tc.fv( "1", "server_dir", "library" )
         for role_tuple in roles_tuple:
             tc.fv( "1", "roles", role_tuple[1] ) # role_tuple[1] is the role name
         tc.submit( "new_dataset_button" )
-        if root:
-            check_str = "Added 3 datasets to the library '%s' ( each is selected )." % folder_name
-        else:
-            check_str = "Added 3 datasets to the folder '%s' ( each is selected )." % folder_name
-        self.check_page_for_string( check_str )
+        if check_str_after_submit:
+            self.check_page_for_string( check_str_after_submit )
+        self.home()
+    def add_dir_of_files_from_libraries_view( self, library_id, folder_id, selected_dir, file_format='auto', dbkey='hg18', roles_tuple=[],
+                                              message='', check_str_after_submit='', check_str1='', check_str2='', check_str3='' ):
+        """Add a directory of datasets to a folder"""
+        # roles is a list of tuples: [ ( role_id, role_description ) ]
+        self.home()
+        self.visit_url( "%s/library/library_dataset_dataset_association?upload_option=upload_directory&library_id=%s&folder_id=%s" % ( self.url, library_id, folder_id ) )
+        self.check_page_for_string( 'Upload a directory of files' )
+        # If we've been sent some template labels, make sure they are included in the upload form
+        if check_str1:
+            self.check_page_for_string( check_str1 )
+        if check_str2:
+            self.check_page_for_string( check_str2 )
+        if check_str3:
+            self.check_page_for_string( check_str3 )
+        tc.fv( "1", "folder_id", folder_id )
+        tc.fv( "1", "file_format", file_format )
+        tc.fv( "1", "dbkey", dbkey )
+        tc.fv( "1", "message", message.replace( '+', ' ' ) )
+        tc.fv( "1", "server_dir", selected_dir )
+        for role_tuple in roles_tuple:
+            tc.fv( "1", "roles", role_tuple[1] ) # role_tuple[1] is the role name
+        tc.submit( "new_dataset_button" )
+        if check_str_after_submit:
+            self.check_page_for_string( check_str_after_submit )
         self.home()
     def delete_library_item( self, library_id, library_item_id, library_item_name, library_item_type='library_dataset' ):
         """Mark a library item as deleted"""

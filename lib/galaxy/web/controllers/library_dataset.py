@@ -1,4 +1,4 @@
-import os, shutil, urllib, StringIO, re, gzip, tempfile, shutil, zipfile
+import os, os.path, shutil, urllib, StringIO, re, gzip, tempfile, shutil, zipfile
 from galaxy.web.base.controller import *
 from galaxy import util, jobs
 from galaxy.datatypes import sniff
@@ -193,7 +193,7 @@ class UploadLibraryDataset( BaseController ):
         file_format = params.get( 'file_format', 'auto' )
         data_file = params.get( 'file_data', '' )
         url_paste = params.get( 'url_paste', '' )
-        server_dir = params.get( 'server_dir', None )
+        server_dir = util.restore_text( params.get( 'server_dir', '' ) )
         if replace_dataset is not None:
             replace_id = replace_dataset.id
         else:
@@ -222,10 +222,17 @@ class UploadLibraryDataset( BaseController ):
         elif upload_option == 'upload_directory':
             if server_dir in [ None, 'None', '' ]:
                 err_redirect = True
-                if trans.app.config.library_import_dir:
-                    msg = 'Select a server directory'
-                else:
-                    msg = '"library_import_dir" is not defined in the Galaxy configuration file'
+            # See if our request is from the Admin view or the Libraries view
+            if trans.request.browser_url.find( 'admin' ) >= 0:
+                import_dir = trans.app.config.library_import_dir
+                import_dir_desc = 'library_import_dir'
+            else:
+                import_dir = trans.app.config.user_library_import_dir
+                import_dir_desc = 'user_library_import_dir'
+            if import_dir:
+                msg = 'Select a directory'
+            else:
+                msg = '"%s" is not defined in the Galaxy configuration file' % import_dir_desc
         if err_redirect:
             trans.response.send_redirect( web.url_for( controller=controller,
                                                        action='library_dataset_dataset_association',
@@ -264,7 +271,7 @@ class UploadLibraryDataset( BaseController ):
                 created_ldda_ids = str( created_ldda.id )
             except Exception, e:
                 log.exception( 'exception in upload_dataset using file_name %s: %s' % ( str( file_name ), str( e ) ) )
-                return self.upload_empty( trans, controller, library_id, "Error:", str( e ) )
+                return self.upload_empty( trans, controller, library_id, folder_id, "Error:", str( e ) )
         elif url_paste not in [ None, "" ]:
             if url_paste.lower().find( 'http://' ) >= 0 or url_paste.lower().find( 'ftp://' ) >= 0:
                 url_paste = url_paste.replace( '\r', '' ).split( '\n' )
@@ -292,7 +299,7 @@ class UploadLibraryDataset( BaseController ):
                             created_ldda_ids = '%s,%s' % ( created_ldda_ids, str( created_ldda.id ) )
                         except Exception, e:
                             log.exception( 'exception in upload_dataset using url_paste %s' % str( e ) )
-                            return self.upload_empty( trans, controller, library_id, "Error:", str( e ) )
+                            return self.upload_empty( trans, controller, library_id, folder_id, "Error:", str( e ) )
             else:
                 is_valid = False
                 for line in url_paste:
@@ -318,13 +325,36 @@ class UploadLibraryDataset( BaseController ):
                         created_ldda_ids = '%s,%s' % ( created_ldda_ids, str( created_ldda.id ) )
                     except Exception, e:
                         log.exception( 'exception in add_file using StringIO.StringIO( url_paste ) %s' % str( e ) )
-                        return self.upload_empty( trans, controller, library_id, "Error:", str( e ) )
+                        return self.upload_empty( trans, controller, library_id, folder_id, "Error:", str( e ) )
         elif server_dir not in [ None, "", "None" ]:
-            full_dir = os.path.join( trans.app.config.library_import_dir, server_dir )
+            # See if our request is from the Admin view or the Libraries view
+            if trans.request.browser_url.find( 'admin' ) >= 0:
+                import_dir = trans.app.config.library_import_dir
+                import_dir_desc = 'library_import_dir'
+                full_dir = os.path.join( import_dir, server_dir )
+            else:
+                imrport_dir = trans.app.config.user_library_import_dir
+                import_dir_desc = 'user_library_import_dir'
+                # From the Libraries view, users are restricted to the directory named the same as
+                # their email within the configured user_library_import_dir.  If this directory contains
+                # sub-directories, server_dir will be the name of the selected sub-directory.  Otherwise
+                # server_dir will be the user's email address.
+                if server_dir == trans.user.email:
+                    full_dir = os.path.join( import_dir, server_dir )
+                else:
+                    full_dir = os.path.join( import_dir, trans.user.email, server_dir )
+            files = []
             try:
-                files = os.listdir( full_dir )
-            except:
-                log.debug( "Unable to get file list for configured library_import_dir %s" % full_dir )
+                for entry in os.listdir( full_dir ):
+                    # Only import regular files
+                    if os.path.isfile( os.path.join( full_dir, entry ) ):
+                        files.append( entry )
+            except Exception, e:
+                msg = "Unable to get file list for configured %s, error: %s" % ( import_dir_desc, str( e ) )
+                return self.upload_empty( trans, controller, library_id, folder_id, "Error:", msg )
+            if not files:
+                msg = "The directory '%s' contains no valid files" % full_dir
+                return self.upload_empty( trans, controller, library_id, folder_id, "Error:", msg )
             for file in files:
                 full_file = os.path.join( full_dir, file )
                 if not os.path.isfile( full_file ):
@@ -346,7 +376,7 @@ class UploadLibraryDataset( BaseController ):
                     created_ldda_ids = '%s,%s' % ( created_ldda_ids, str( created_ldda.id ) )
                 except Exception, e:
                     log.exception( 'exception in add_file using server_dir %s' % str( e ) )
-                    return self.upload_empty( trans, controller, library_id, "Error:", str( e ) )
+                    return self.upload_empty( trans, controller, library_id, folder_id, "Error:", str( e ) )
         if created_ldda_ids:
             created_ldda_ids = created_ldda_ids.lstrip( ',' )
             return created_ldda_ids
@@ -425,11 +455,12 @@ class UploadLibraryDataset( BaseController ):
         if chunk is None:
             temp.close()
         return False
-    def upload_empty( self, trans, controller, library_id, err_code, err_msg ):
+    def upload_empty( self, trans, controller, library_id, folder_id, err_code, err_msg ):
         msg = err_code + err_msg
         return trans.response.send_redirect( web.url_for( controller=controller,
-                                                          action='browse_library',
-                                                          id=library_id,
+                                                          action='library_dataset_dataset_association',
+                                                          library_id=library_id,
+                                                          folder_id=folder_id,
                                                           msg=util.sanitize_text( msg ),
                                                           messagetype='error' ) )
 class BadFileException( Exception ):

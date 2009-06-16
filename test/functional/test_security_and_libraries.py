@@ -1396,28 +1396,26 @@ class TestSecurityAndLibraries( TwillTestCase ):
                         ( self.url, str( library_one.id ), str( subfolder_one.id ), str( ldda_six_version_two.id ) ) )
         self.check_page_for_string( 'This is an expired version of this library dataset' )
         self.home()
-    def test_185_upload_datasets_from_library_dir( self ):
-        """Testing uploading 3 datasets from a library directory to a root folder"""
+    def test_185_upload_directory_of_files_from_admin_view( self ):
+        """Testing uploading a directory of files to a root folder from the Admin view"""
         message = 'This is a test for uploading a directory of files'
         roles_tuple = [ ( str( role_one.id ), role_one.name ) ]
+        check_str = "Added 3 datasets to the library '%s' ( each is selected )." % library_one.root_folder.name
         ## TODO: temporarily eliminating templates until we have the new forms features done
         """
-        self.add_datasets_from_library_dir( str( library_one.id ),
+        self.add_dir_of_files_from_admin_view( str( library_one.id ),
                                             str( library_one.root_folder.id ),
-                                            library_one.root_folder.name,
                                             roles_tuple=roles_tuple,
                                             message=message.replace( '+', ' ' ),
-                                            root=True,
+                                            check_str=check_str,
                                             check_template_str1='wind',
                                             check_template_str2='bag',
                                             check_template_str3='Fubar' )
         """
-        self.add_datasets_from_library_dir( str( library_one.id ),
-                                            str( library_one.root_folder.id ),
-                                            library_one.root_folder.name,
-                                            roles_tuple=roles_tuple,
-                                            message=message.replace( '+', ' ' ),
-                                            root=True )
+        self.add_dir_of_files_from_admin_view( str( library_one.id ),
+                                               str( library_one.root_folder.id ),
+                                               roles_tuple=roles_tuple,
+                                               message=message.replace( '+', ' ' ) )
         self.home()
         self.visit_page( 'admin/browse_library?id=%s' % ( str( library_one.id ) ) )
         self.check_page_for_string( admin_user.email )
@@ -1531,7 +1529,48 @@ class TestSecurityAndLibraries( TwillTestCase ):
                     pass
         check_edit_page2( latest_3_lddas )
         self.home()
-    def test_195_mark_group_deleted( self ):
+    def test_195_upload_directory_of_files_from_libraries_view( self ):
+        """Testing uploading a directory of files to a root folder from the Libraries view"""
+        # admin_user will not have the option sto upload a directory of files from the
+        # Libraries view since a sub-directory named the same as their email is not contained
+        # in the configured user_library_import_dir.  However, since members of role_one have
+        # the LIBRARY_ADD permission, we can test this feature as regular_user1 or regular_user3
+        self.logout()
+        self.login( email=regular_user1.email )
+        message = 'Uploaded all files in test-data/users/test1...'
+        # Since regular_user1 does not have any sub-directories contained within her configured
+        # user_library_import_dir, the only option in her server_dir select list will be the
+        # directory named the same as her email
+        check_str_after_submit = "Added 1 datasets to the library '%s' ( each is selected )." % library_one.root_folder.name
+        self.add_dir_of_files_from_libraries_view( str( library_one.id ),
+                                                   str( library_one.root_folder.id ),
+                                                   regular_user1.email,
+                                                   check_str_after_submit=check_str_after_submit,
+                                                   message=message.replace( '+', ' ' ) )
+        self.home()
+        self.visit_page( 'library/browse_library?id=%s' % ( str( library_one.id ) ) )
+        self.check_page_for_string( regular_user1.email )
+        self.check_page_for_string( message )
+        self.logout()
+        self.login( regular_user3.email )
+        message = 'Uploaded all files in test-data/users/test3.../run1'
+        # Since regular_user2 has a subdirectory contained within her configured user_library_import_dir,
+        # she will have a "None" option in her server_dir select list
+        check_str1 = '<option>None</option>'
+        self.add_dir_of_files_from_libraries_view( str( library_one.id ),
+                                                   str( library_one.root_folder.id ),
+                                                   'run1',
+                                                   check_str_after_submit=check_str_after_submit,
+                                                   check_str1=check_str1,
+                                                   message=message.replace( '+', ' ' ) )
+        self.home()
+        self.visit_page( 'library/browse_library?id=%s' % ( str( library_one.id ) ) )
+        self.check_page_for_string( regular_user3.email )
+        self.check_page_for_string( message )
+        self.home()
+        self.logout()
+        self.login( email=admin_user.email )
+    def test_200_mark_group_deleted( self ):
         """Testing marking a group as deleted"""
         self.home()
         self.visit_url( '%s/admin/groups' % self.url )
@@ -1545,13 +1584,13 @@ class TestSecurityAndLibraries( TwillTestCase ):
             raise AssertionError( '%s incorrectly lost all members when it was marked as deleted.' % group_two.name )
         if not group_two.roles:
             raise AssertionError( '%s incorrectly lost all role associations when it was marked as deleted.' % group_two.name )
-    def test_200_undelete_group( self ):
+    def test_205_undelete_group( self ):
         """Testing undeleting a deleted group"""
         self.undelete_group( str( group_two.id ), group_two.name )
         group_two.refresh()
         if group_two.deleted:
             raise AssertionError( '%s was not correctly marked as not deleted.' % group_two.name )
-    def test_205_mark_role_deleted( self ):
+    def test_210_mark_role_deleted( self ):
         """Testing marking a role as deleted"""
         self.home()
         self.visit_url( '%s/admin/roles' % self.url )
@@ -1565,10 +1604,10 @@ class TestSecurityAndLibraries( TwillTestCase ):
             raise AssertionError( '%s incorrectly lost all user associations when it was marked as deleted.' % role_two.name )
         if not role_two.groups:
             raise AssertionError( '%s incorrectly lost all group associations when it was marked as deleted.' % role_two.name )
-    def test_210_undelete_role( self ):
+    def test_215_undelete_role( self ):
         """Testing undeleting a deleted role"""
         self.undelete_role( str( role_two.id ), role_two.name )
-    def test_215_mark_dataset_deleted( self ):
+    def test_220_mark_dataset_deleted( self ):
         """Testing marking a library dataset as deleted"""
         self.home()
         self.delete_library_item( str( library_one.id ), str( ldda_two.library_dataset.id ), ldda_two.name, library_item_type='library_dataset' )
@@ -1581,13 +1620,13 @@ class TestSecurityAndLibraries( TwillTestCase ):
         except:
             pass
         self.home()
-    def test_220_display_deleted_dataset( self ):
+    def test_225_display_deleted_dataset( self ):
         """Testing displaying deleted dataset"""
         self.home()
         self.visit_url( "%s/admin/browse_library?id=%s&show_deleted=True" % ( self.url, str( library_one.id ) ) )
         self.check_page_for_string( ldda_two.name )
         self.home()
-    def test_225_hide_deleted_dataset( self ):
+    def test_230_hide_deleted_dataset( self ):
         """Testing hiding deleted dataset"""
         self.home()
         self.visit_url( "%s/admin/browse_library?id=%s&show_deleted=False" % ( self.url, str( library_one.id ) ) )
@@ -1597,7 +1636,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         except:
             pass
         self.home()
-    def test_230_mark_folder_deleted( self ):
+    def test_235_mark_folder_deleted( self ):
         """Testing marking a library folder as deleted"""
         self.home()
         self.delete_library_item( str( library_one.id ), str( folder_two.id ), folder_two.name, library_item_type='folder' )
@@ -1609,7 +1648,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         except:
             pass
         self.home()
-    def test_230_mark_folder_undeleted( self ):
+    def test_240_mark_folder_undeleted( self ):
         """Testing marking a library folder as undeleted"""
         self.home()
         self.undelete_library_item( str( library_one.id ), str( folder_two.id ), folder_two.name, library_item_type='folder' )
@@ -1624,7 +1663,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         except:
             pass
         self.home()
-    def test_235_mark_library_deleted( self ):
+    def test_245_mark_library_deleted( self ):
         """Testing marking a library as deleted"""
         self.home()
         # First mark folder_two as deleted to further test state saving when we undelete the library
@@ -1648,7 +1687,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         except:
             pass
         self.home()
-    def test_245_purge_user( self ):
+    def test_250_purge_user( self ):
         """Testing purging a user account"""
         self.mark_user_deleted( user_id=regular_user3.id, email=regular_user3.email )
         regular_user3.refresh()
@@ -1680,7 +1719,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
             role = galaxy.model.Role.get( ura.role_id )
             if role.type != 'private':
                 raise AssertionError( 'UserRoleAssociations for user %s are not related with the private role.' % regular_user3.email )
-    def test_250_manually_unpurge_user( self ):
+    def test_255_manually_unpurge_user( self ):
         """Testing manually un-purging a user account"""
         # Reset the user for later test runs.  The user's private Role and DefaultUserPermissions for that role
         # should have been preserved, so all we need to do is reset purged and deleted.
@@ -1688,7 +1727,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         regular_user3.purged = False
         regular_user3.deleted = False
         regular_user3.flush()
-    def test_255_purge_group( self ):
+    def test_260_purge_group( self ):
         """Testing purging a group"""
         group_id = str( group_two.id )
         self.mark_group_deleted( group_id, group_two.name )
@@ -1703,7 +1742,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
             raise AssertionError( "Purging the group did not delete the GroupRoleAssociations for group_id '%s'" % group_id )
         # Undelete the group for later test runs
         self.undelete_group( group_id, group_two.name )
-    def test_260_purge_role( self ):
+    def test_265_purge_role( self ):
         """Testing purging a role"""
         role_id = str( role_two.id )
         self.mark_role_deleted( role_id, role_two.name )
@@ -1728,14 +1767,14 @@ class TestSecurityAndLibraries( TwillTestCase ):
         dp = galaxy.model.DatasetPermissions.filter( galaxy.model.DatasetPermissions.table.c.role_id == role_id ).all()
         if dp:
             raise AssertionError( "Purging the role did not delete the DatasetPermissionss for role_id '%s'" % role_id )
-    def test_265_manually_unpurge_role( self ):
+    def test_270_manually_unpurge_role( self ):
         """Testing manually un-purging a role"""
         # Manually unpurge, then undelete the role for later test runs
         # TODO: If we decide to implement the GUI feature for un-purging a role, replace this with a method call
         role_two.purged = False
         role_two.flush()
         self.undelete_role( str( role_two.id ), role_two.name )
-    def test_270_purge_library( self ):
+    def test_275_purge_library( self ):
         """Testing purging a library"""
         self.home()
         self.delete_library_item( str( library_one.id ), str( library_one.id ), library_one.name, library_item_type='library' )
@@ -1771,7 +1810,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
                     raise AssertionError( 'The library_dataset id %s named "%s" has not been marked as deleted.' % \
                                           ( str( library_dataset.id ), library_dataset.name ) )
         check_folder( library_one.root_folder )
-    def test_275_reset_data_for_later_test_runs( self ):
+    def test_280_reset_data_for_later_test_runs( self ):
         """Reseting data to enable later test runs to pass"""
         ##################
         # Eliminate all non-private roles

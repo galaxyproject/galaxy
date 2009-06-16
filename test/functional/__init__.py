@@ -80,6 +80,7 @@ def setup():
                                    allow_user_deletion = True,
                                    admin_users = 'test@bx.psu.edu',
                                    library_import_dir = galaxy_test_file_dir,
+                                   user_library_import_dir = os.path.join( galaxy_test_file_dir, 'users' ),
                                    global_conf = { "__file__": "universe_wsgi.ini.sample" } )
                                    
         log.info( "Embedded Universe application started" )

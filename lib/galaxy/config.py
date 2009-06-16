@@ -81,6 +81,9 @@ class Configuration( object ):
         self.library_import_dir = kwargs.get( 'library_import_dir', None )
         if self.library_import_dir is not None and not os.path.exists( self.library_import_dir ):
             raise ConfigurationError( "library_import_dir specified in config (%s) does not exist" % self.library_import_dir )
+        self.user_library_import_dir = kwargs.get( 'user_library_import_dir', None )
+        if self.user_library_import_dir is not None and not os.path.exists( self.user_library_import_dir ):
+            raise ConfigurationError( "user_library_import_dir specified in config (%s) does not exist" % self.user_library_import_dir )
         # Configuration options for taking advantage of nginx features
         self.nginx_x_accel_redirect_base = kwargs.get( 'nginx_x_accel_redirect_base', False )
         self.nginx_upload_location = kwargs.get( 'nginx_upload_store', False )
