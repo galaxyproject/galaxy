@@ -16,7 +16,10 @@ error_report_template = """
 GALAXY TOOL ERROR REPORT
 ------------------------
 
-This error report is in reference to output dataset ${dataset_id}.
+This error report was sent from the Galaxy instance hosted on the server
+"${remote_hostname}"
+-----------------------------------------------------------------------------
+This is in reference to output dataset ${dataset_id}.
 -----------------------------------------------------------------------------
 The user '${email}' provided the following information:
 ${message}
@@ -51,7 +54,7 @@ class DatasetInterface( BaseController ):
         return job.stderr
 
     @web.expose
-    def report_error( self, trans, id, email="no email provided", message="" ):
+    def report_error( self, trans, id, email='', message="" ):
         smtp_server = trans.app.config.smtp_server
         if smtp_server is None:
             return trans.show_error_message( "Sorry, mail is not configured for this galaxy instance" )
@@ -61,9 +64,12 @@ class DatasetInterface( BaseController ):
         # Get the dataset and associated job
         dataset = model.HistoryDatasetAssociation.get( id )
         job = dataset.creating_job_associations[0].job
+        # Get the name of the server hosting the Galaxy instance from which this report originated
+        remote_hostname = trans.request.remote_hostname
         # Build the email message
         msg = MIMEText( string.Template( error_report_template )
-            .safe_substitute( dataset_id=dataset.id,
+            .safe_substitute( remote_hostname=remote_hostname,
+                              dataset_id=dataset.id,
                               email=email, 
                               message=message,
                               job_id=job.id,

@@ -230,6 +230,12 @@ class Request( webob.Request ):
         except socket.error:
             return self.remote_addr
     @lazy_property
+    def remote_hostname( self ):
+        try:
+            return socket.gethostbyaddr( self.remote_addr )[0]
+        except socket.error:
+            return self.remote_addr
+    @lazy_property
     def cookies( self ):
         return get_cookies( self.environ )
     @lazy_property
