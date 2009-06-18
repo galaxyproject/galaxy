@@ -121,8 +121,8 @@ class Tabular( data.Text ):
                     #"column_types": ["int", "int", "str", "list"]
                     first_line_column_types = column_types
                     column_types = [ None for col in first_line_column_types ]
-                elif ( column_types and None not in column_types ) or i > num_check_lines:
-                    #found and set all known columns, or we exceeded our max check lines
+                elif i > num_check_lines:
+                    # We exceeded our max check lines
                     break
         
         #we error on the larger number of columns
