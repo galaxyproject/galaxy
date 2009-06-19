@@ -628,7 +628,7 @@ class HistoryDatasetAssociation( DatasetInstance ):
             hda.set_peek()
         hda.flush()
         return hda
-    def to_library_dataset_dataset_association( self, target_folder, replace_dataset=None, parent_id=None ):
+    def to_library_dataset_dataset_association( self, target_folder, replace_dataset=None, parent_id=None, user=None ):
         if replace_dataset:
             # The replace_dataset param ( when not None ) refers to a LibraryDataset that is being replaced with a new version.
             library_dataset = replace_dataset
@@ -637,6 +637,8 @@ class HistoryDatasetAssociation( DatasetInstance ):
             # LibraryDataset, and the current user's DefaultUserPermissions will be applied to the associated Dataset.
             library_dataset = LibraryDataset( folder=target_folder, name=self.name, info=self.info )
             library_dataset.flush()
+        if not user:
+            user = self.history.user
         ldda = LibraryDatasetDatasetAssociation( name=self.name, 
                                                  info=self.info,
                                                  blurb=self.blurb, 
@@ -649,7 +651,7 @@ class HistoryDatasetAssociation( DatasetInstance ):
                                                  deleted=self.deleted, 
                                                  parent_id=parent_id,
                                                  copied_from_history_dataset_association=self,
-                                                 user=self.history.user )
+                                                 user=user )
         ldda.flush()
         # Permissions must be the same on the LibraryDatasetDatasetAssociation and the associated LibraryDataset
         # Must set metadata after ldda flushed, as MetadataFiles require ldda.id
@@ -660,7 +662,10 @@ class HistoryDatasetAssociation( DatasetInstance ):
         library_dataset.library_dataset_dataset_association_id = ldda.id
         library_dataset.flush()
         for child in self.children:
-            child_copy = child.to_library_dataset_dataset_association( target_folder=target_folder, replace_dataset=replace_dataset, parent_id=ldda.id )
+            child_copy = child.to_library_dataset_dataset_association( target_folder=target_folder,
+                                                                       replace_dataset=replace_dataset,
+                                                                       parent_id=ldda.id,
+                                                                       user=ldda.user )
         if not self.datatype.copy_safe_peek:
             # In some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
             ldda.set_peek()
