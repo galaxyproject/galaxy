@@ -4,7 +4,7 @@ usage: %prog $input $out_file1
     -1, --cols=N,N,N,N: Columns for start, end, strand in input file
     -d, --dbkey=N: Genome build of input file
     -o, --output_format=N: the data type of the output file
-    -g, --GALAXY_DATA_INDEX_DIR=N: the directory containing alignseq.loc and twobit.loc
+    -g, --GALAXY_DATA_INDEX_DIR=N: the directory containing alignseq.loc
 """
 from galaxy import eggs
 import pkg_resources
@@ -29,33 +29,20 @@ def reverse_complement( s ):
     reversed_s.reverse()
     return "".join( reversed_s )
 
-def check_nib_file( dbkey, GALAXY_DATA_INDEX_DIR ):
-    nib_file = "%s/alignseq.loc" % GALAXY_DATA_INDEX_DIR
-    nib_path = ''
-    for line in open( nib_file ):
+def check_seq_file( dbkey, GALAXY_DATA_INDEX_DIR ):
+    seq_file = "%s/alignseq.loc" % GALAXY_DATA_INDEX_DIR
+    seq_path = ''
+    for line in open( seq_file ):
         line = line.rstrip( '\r\n' )
         if line and not line.startswith( "#" ) and line.startswith( 'seq' ):
             fields = line.split( '\t' )
             if len( fields ) < 3:
                 continue
             if fields[1] == dbkey:
-                nib_path = fields[2].strip()
+                seq_path = fields[2].strip()
                 break
-    return nib_path
+    return seq_path
 
-def check_twobit_file( dbkey, GALAXY_DATA_INDEX_DIR ):
-    twobit_file = "%s/twobit.loc" % GALAXY_DATA_INDEX_DIR
-    twobit_path = ''
-    for line in open( twobit_file ):
-        line = line.rstrip( '\r\n' )
-        if line and not line.startswith( "#" ): 
-            fields = line.split( '\t' )
-            if len( fields ) < 2:
-                continue
-            if fields[0] == dbkey:
-                twobit_path = fields[1].strip()
-                break
-    return twobit_path
         
 def __main__():
     options, args = doc_optparse.parse( __doc__ )
@@ -72,9 +59,8 @@ def __main__():
     strand = None
     nibs = {}
     twobits = {}
-    nib_path = check_nib_file( dbkey, GALAXY_DATA_INDEX_DIR )
-    twobit_path = check_twobit_file( dbkey, GALAXY_DATA_INDEX_DIR )
-    if not os.path.exists( nib_path ) and not os.path.exists( twobit_path ):
+    seq_path = check_seq_file( dbkey, GALAXY_DATA_INDEX_DIR )
+    if not os.path.exists( seq_path ):
         # If this occurs, we need to fix the metadata validator.
         stop_err( "No sequences are available for '%s', request them by reporting this error." % dbkey )
 
@@ -116,11 +102,11 @@ def __main__():
                 strand = '+'
             sequence = ''
 
-            if nib_path and os.path.exists( "%s/%s.nib" % ( nib_path, chrom ) ):
+            if seq_path and os.path.exists( "%s/%s.nib" % ( seq_path, chrom ) ):
                 if chrom in nibs:
                     nib = nibs[chrom]
                 else:
-                    nibs[chrom] = nib = bx.seq.nib.NibFile( file( "%s/%s.nib" % ( nib_path, chrom ) ) )
+                    nibs[chrom] = nib = bx.seq.nib.NibFile( file( "%s/%s.nib" % ( seq_path, chrom ) ) )
                 try:
                     sequence = nib.get( start, end-start )
                 except:
@@ -131,11 +117,11 @@ def __main__():
                         first_invalid_line = i + 1
                         invalid_line = line
                     continue
-            elif twobit_path and os.path.exists( twobit_path ):
+            elif seq_path and os.path.exists( seq_path ):
                 if chrom in twobits:
                     t = twobits[chrom]
                 else:
-                    twobits[chrom] = t = bx.seq.twobit.TwoBitFile( file( twobit_path ) )
+                    twobits[chrom] = t = bx.seq.twobit.TwoBitFile( file( seq_path ) )
                 try:
                     sequence = t[chrom][start:end]
                 except:
