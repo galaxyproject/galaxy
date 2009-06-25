@@ -103,7 +103,7 @@ def main():
     # Launch sort.
     
     environ['LC_ALL'] = 'POSIX'
-    commandline = "sort -f"+style+"-k "+str(column)+" -o "+outputfile+" "+inputfile+order
+    commandline = "sort -f"+style+"-k "+str(column)+" -t $'\t' -o "+outputfile+" "+inputfile+order
 
     errorcode, stdout = commands.getstatusoutput(commandline)
 

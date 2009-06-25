@@ -1,4 +1,4 @@
-<tool id="sort1" name="Sort">
+<tool id="sort1" name="Sort" version="1.0.1">
   <description>data in ascending or descending order</description>
   <command interpreter="python">sorter.py -i $input -o $out_file1 -cols $column -order $order -style $style</command>
   <inputs>
