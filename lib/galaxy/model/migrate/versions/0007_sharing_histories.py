@@ -1,11 +1,15 @@
 from sqlalchemy import *
+from sqlalchemy.orm import *
 from migrate import *
+import sys, logging
 
-import datetime
-now = datetime.datetime.utcnow
-
-# Need our custom types, but don't import anything else from model
-from galaxy.model.custom_types import *
+log = logging.getLogger( __name__ )
+log.setLevel(logging.DEBUG)
+handler = logging.StreamHandler( sys.stdout )
+format = "%(name)s %(levelname)s %(asctime)s %(message)s"
+formatter = logging.Formatter( format )
+handler.setFormatter( formatter )
+log.addHandler( handler )
 
 metadata = MetaData( migrate_engine )
 
