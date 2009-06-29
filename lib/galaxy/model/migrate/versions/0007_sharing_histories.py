@@ -1,6 +1,7 @@
 from sqlalchemy import *
 from sqlalchemy.orm import *
 from migrate import *
+from migrate.changeset import *
 import sys, logging
 
 log = logging.getLogger( __name__ )
