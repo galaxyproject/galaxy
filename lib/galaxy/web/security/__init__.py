@@ -30,9 +30,7 @@ else:
         random_pool.stir()
         return str( number.getRandomNumber( nbits, random_pool.get_bytes ) )
 
-
 class SecurityHelper( object ):
-    # TODO: checking if histories/datasets are owned by the current user) will be moved here.
     def __init__( self, **config ):
         self.id_secret = config['id_secret']
         self.id_cipher = Blowfish.new( self.id_secret )

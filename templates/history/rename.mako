@@ -11,7 +11,7 @@
                     <tr>
                         <td>
                             <div class="form-row">
-                                <input type="hidden" name="id" value="${history.id}">
+                                <input type="hidden" name="id" value="${trans.security.encode_id( history.id )}">
                                 <label>${_('Current Name')}</label>
                                 <div style="float: left; width: 250px; margin-right: 10px;">
                                     ${history.name}

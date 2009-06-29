@@ -275,6 +275,8 @@ class GalaxyRBACAgent( RBACAgent ):
     def set_all_dataset_permissions( self, dataset, permissions={} ):
         # Set new permissions on a dataset, eliminating all current permissions        
         # Delete all of the current permissions on the dataset
+        # TODO: If setting ACCESS permission, at least 1 user must have every role associated with this dataset,
+        # or the dataset is inaccessible.  See admin/library_dataset_dataset_association()
         for dp in dataset.actions:
             dp.delete()
             dp.flush()
@@ -285,8 +287,9 @@ class GalaxyRBACAgent( RBACAgent ):
             for dp in [ self.model.DatasetPermissions( action, dataset, role ) for role in roles ]:
                 dp.flush()
     def set_dataset_permission( self, dataset, permission={} ):
-        # TODO: is this method needed - see above method
         # Set a specific permission on a dataset, leaving all other current permissions on the dataset alone
+        # TODO: If setting ACCESS permission, at least 1 user must have every role associated with this dataset,
+        # or the dataset is inaccessible.  See admin/library_dataset_dataset_association()
         for action, roles in permission.items():
             if isinstance( action, Action ):
                 action = action.action

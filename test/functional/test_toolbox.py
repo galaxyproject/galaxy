@@ -2,6 +2,8 @@ import sys, new
 from galaxy.tools.parameters import grouping
 from galaxy.tools.parameters import basic
 from base.twilltestcase import TwillTestCase
+import galaxy.model
+from galaxy.model.orm import *
 
 toolbox = None
 
@@ -15,8 +17,15 @@ class ToolTestCase( TwillTestCase ):
             else:
                 raise Exception( "Test parse failure" )
         # Start with a new history
-        self.login()
-        if len(self.get_history()) > 0:
+        self.logout()
+        self.login( email='test@bx.psu.edu' )
+        admin_user = galaxy.model.User.filter( galaxy.model.User.table.c.email=='test@bx.psu.edu' ).one()
+        self.new_history()
+        latest_history = galaxy.model.History.filter( and_( galaxy.model.History.table.c.deleted==False,
+                                                            galaxy.model.History.table.c.user_id==admin_user.id ) ) \
+            .order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
+        assert latest_history is not None, "Problem retrieving latest_history from database"
+        if len( self.get_history_as_data_list() ) > 0:
             raise AssertionError("ToolTestCase.do_it failed")
         # Upload any needed files
         for fname, extra in self.testdef.required_files:
@@ -52,9 +61,7 @@ class ToolTestCase( TwillTestCase ):
         assert len( self.testdef.outputs ) == 1, "ToolTestCase does not deal with multiple outputs properly yet."
         for name, file in self.testdef.outputs:
             self.verify_dataset_correctness( file )
-        #Clean up
-        self.delete_history()
-        self.logout()
+        self.delete_history( id=self.security.encode_id( latest_history.id ) )
     def shortDescription( self ):
         return self.name
 

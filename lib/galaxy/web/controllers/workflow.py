@@ -129,7 +129,7 @@ class WorkflowController( BaseController ):
         if stored.importable == False:
             error( "The owner of this workflow has disabled imports via this link" )
         elif stored.user == trans.user:
-            error( "You are already the ownder of this workflow, can't import" )
+            error( "You are already the owner of this workflow, can't import" )
         elif stored.deleted:
             error( "This workflow has been deleted, can't import" )
         elif session.query( model.StoredWorkflowUserShareAssociation ) \

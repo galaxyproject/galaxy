@@ -180,7 +180,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
             except:
                 event.message = message
             try:
-                event.history = self.history
+                event.history = self.get_history()
             except:
                 event.history = None
             try:
@@ -337,11 +337,11 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
             remote_host = self.request.remote_host,
             remote_addr = self.request.remote_addr,
             referer = self.request.headers.get( 'Referer', None ) )
-        # Invalidated an existing sesssion for some reason, keep track
         if prev_galaxy_session:
+            # Invalidated an existing session for some reason, keep track
             galaxy_session.prev_session_id = prev_galaxy_session.id
-        # The new session should be immediately associated with a user
         if user_for_new_session:
+            # The new session should be associated with the user
             galaxy_session.user = user_for_new_session
         return galaxy_session
     def __get_or_create_remote_user( self, remote_user_email ):
@@ -350,12 +350,23 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         """
         # remote_user middleware ensures HTTP_REMOTE_USER exists
         user = self.app.model.User.filter( self.app.model.User.table.c.email==remote_user_email ).first()
-        if user is None:
+        if user:
+            # GVK: June 29, 2009 - This is to correct the behavior of a previous bug where a private
+            # role and default user / history permissions were not set for remote users.  When a
+            # remote user authenticates, we'll look for this information, and if missing, create it.
+            if not self.app.security_agent.get_private_user_role( user ):
+                self.app.security_agent.create_private_user_role( user )
+            if not user.default_permissions:
+                self.app.security_agent.user_set_default_permissions( user, history=True, dataset=True )
+        elif user is None:
             random.seed()
             user = self.app.model.User( email=remote_user_email )
             user.set_password_cleartext( ''.join( random.sample( string.letters + string.digits, 12 ) ) )
             user.external = True
             user.flush()
+            self.app.security_agent.create_private_user_role( user )
+            # We set default user permissions, before we log in and set the default history permissions
+            self.app.security_agent.user_set_default_permissions( user )
             #self.log_event( "Automatically created account '%s'", user.email )
         elif user.deleted:
             return self.show_error_message( "Your account is no longer valid, contact your Galaxy administrator to activate your account." )
@@ -365,7 +376,6 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         Update the session cookie to match the current session.
         """
         self.set_cookie( self.security.encode_session_key( self.galaxy_session.session_key ), name=name )
-            
     def handle_user_login( self, user ):
         """
         Login a new user (possibly newly created)
@@ -374,24 +384,39 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
            - if old session had a history and it was not associated with a user, associate it with the new session, 
              otherwise associate the current session's history with the user
         """
+        # Set the previous session
         prev_galaxy_session = self.galaxy_session
         prev_galaxy_session.is_valid = False
+        # Define a new current_session
         self.galaxy_session = self.__create_new_session( prev_galaxy_session, user )
-        # If the session already had a history, we associate it with the new
-        # session, but only if it does not belong to a different user.
-        if prev_galaxy_session.current_history and \
-            ( prev_galaxy_session.current_history.user == user or prev_galaxy_session.user is None ):
-            history = prev_galaxy_session.current_history
-        elif self.galaxy_session.current_history:
-            history = self.galaxy_session.current_history
-        else:
-            history = self.history
+        # Associated the current user's last accessed history (if exists) with their new session
+        history = None
+        try:
+            users_last_session = user.galaxy_sessions[0]
+            last_accessed = True
+        except:
+            users_last_session = None
+            last_accessed = False
+        if users_last_session and users_last_session.current_history:
+            history = users_last_session.current_history
+        if not history:
+            if prev_galaxy_session.current_history:
+                if prev_galaxy_session.current_history.user is None or prev_galaxy_session.current_history.user == user:
+                    # If the previous galaxy session had a history, associate it with the new
+                    # session, but only if it didn't belong to a different user.
+                    history = prev_galaxy_session.current_history
+            elif self.galaxy_session.current_history:
+                history = self.galaxy_session.current_history
+            else:
+                history = self.get_history( create=True )
         if history not in self.galaxy_session.histories:
             self.galaxy_session.add_history( history )
         if history.user is None:
             history.user = user
         self.galaxy_session.current_history = history
-        self.app.security_agent.history_set_default_permissions( history, dataset=True, bypass_manage_permission=True )
+        if not last_accessed:
+            # Only set default history permissions if current history is not from a previous session
+            self.app.security_agent.history_set_default_permissions( history, dataset=True, bypass_manage_permission=True )
         self.sa_session.flush( [ prev_galaxy_session, self.galaxy_session, history ] )
         # This method is not called from the Galaxy reports, so the cookie will always be galaxysession
         self.__update_session_cookie( name='galaxysession' )
@@ -403,7 +428,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         """
         prev_galaxy_session = self.galaxy_session
         prev_galaxy_session.is_valid = False
-        self.galaxy_session = self.__create_new_session( prev_galaxy_session, None )
+        self.galaxy_session = self.__create_new_session( prev_galaxy_session )
         self.sa_session.flush( [ prev_galaxy_session, self.galaxy_session ] )
         # This method is not called from the Galaxy reports, so the cookie will always be galaxysession
         self.__update_session_cookie( name='galaxysession' )
@@ -416,16 +441,15 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
 
     def get_history( self, create=False ):
         """
-        Load the current history.
-        
-        NOTE: It looks like create was being ignored for a long time, so this
-              will currently *always* create a new history. This is wasteful
-              though, and we should verify that callers are using the create
-              flag correctly and fix.
+        Load the current history, creating a new one only if there is not 
+        current history and we're told to create"
         """
         history = self.galaxy_session.current_history
-        if history is None:
-            history = self.new_history()
+        if not history:
+            if util.string_as_bool( create ):
+                history = self.new_history()
+            else:
+                raise "get_history() returning None"
         return history
     def set_history( self, history ):
         if history and not history.deleted:
@@ -557,7 +581,8 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         the user (chromInfo in history).
         """
         dbnames = list()
-        datasets = self.app.model.HistoryDatasetAssociation.filter_by(deleted=False, history_id=self.history.id, extension="len").all()
+        datasets = self.app.model.HistoryDatasetAssociation \
+            .filter_by(deleted=False, history_id=self.history.id, extension="len").all()
         if len(datasets) > 0:
             dbnames.append( (util.dbnames.default_value, '--------- User Defined Builds ----------') )
         for dataset in datasets:
@@ -569,7 +594,8 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         """
         Returns the db_file dataset associated/needed by `dataset`, or `None`.
         """
-        datasets = self.app.model.HistoryDatasetAssociation.filter_by(deleted=False, history_id=self.history.id, extension="len").all()
+        datasets = self.app.model.HistoryDatasetAssociation \
+            .filter_by(deleted=False, history_id=self.history.id, extension="len").all()
         for ds in datasets:
             if dbkey == ds.dbkey:
                 return ds

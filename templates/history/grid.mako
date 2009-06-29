@@ -25,7 +25,6 @@
                 })
             });
         });
-
         ## Can this be moved into base.mako?
         %if refresh_frames:
             %if 'masthead' in refresh_frames:            
@@ -73,7 +72,6 @@
     </style>
 </%def>
 
-
 <div class="grid-header">
     <h2>${grid.title}</h2>
     <span class="title">Filter:</span>
@@ -86,7 +84,6 @@
 </div>
 
 <form name="history_actions" action="${url()}" method="post" >
-    
     <table class="grid">
         <thead>
             <tr>
@@ -107,7 +104,7 @@
                                 else:
                                     href = url( sort=column.key )
                         %>
-                        <th \
+                        <th\
                         %if column.ncells > 1:
                             colspan="${column.ncells}"
                         %endif
@@ -122,77 +119,63 @@
                     %endif
                 %endfor
                 <th></th>
-
             </tr>
         </thead>
-        
         <tbody>
-            
             %for i, item in enumerate( query ):
-                
-                
                 <tr \
                 %if current_item == item:
                     class="current" \
                 %endif
-                >
-                    
-                ## Item selection column
-                <td style="width: 1.5em;"><input type="checkbox" name="id" value=${item.id} class="grid-row-select-checkbox"></input></td>
-                
-                ## Data columns
-                %for column in grid.columns:
-                    %if column.visible:
-                        <%
-                            # Link
-                            if column.link and column.link( item ):
-                                href = url( **column.link( item ) )
-                            else:
-                                href = None
-                            # Value (coerced to list so we can loop)
-                            value = column.get_value( trans, grid, item )
-                            if column.ncells == 1:
-                                value = [ value ]
-                        %>
-                            
-                        %for cellnum, v in enumerate( value ):
+                > 
+                    ## Item selection column
+                    <td style="width: 1.5em;">
+                        <input type="checkbox" name="id" value=${trans.security.encode_id( item.id )} class="grid-row-select-checkbox" />
+                    </td>
+                    ## Data columns
+                    %for column in grid.columns:
+                        %if column.visible:
                             <%
-                                # Attach popup menu?
-                                if column.attach_popup and cellnum == 0:
-                                    extra = '<a id="grid-%d-popup" class="popup-arrow" style="display: none;">&#9660;</a>' % i
+                                # Link
+                                if column.link and column.link( item ):
+                                    href = url( **column.link( item ) )
                                 else:
-                                    extra = ""
+                                    href = None
+                                # Value (coerced to list so we can loop)
+                                value = column.get_value( trans, grid, item )
+                                if column.ncells == 1:
+                                    value = [ value ]
                             %>
-                        
-                            %if href:                    
-                                <td><a href="${href}">${v}</a>&nbsp;${extra}</td>
-                            %else:
-                                <td >${v}${extra}</td>
-                            %endif    
-                            </td>
-                        %endfor
-                    %endif
-                %endfor
-                
-                ## Actions column
-                <td>
-                    <div popupmenu="grid-${i}-popup">
-                        
-                        %for operation in grid.operations:
-                            %if operation.allowed( item ):
-                                <a class="action-button" href="${url( operation=operation.label, id=item.id )}">${operation.label}</a>
-                            %endif
-                        %endfor
-      
-                    </div>
-                </td>
-
+                            %for cellnum, v in enumerate( value ):
+                                <%
+                                    # Attach popup menu?
+                                    if column.attach_popup and cellnum == 0:
+                                        extra = '<a id="grid-%d-popup" class="popup-arrow" style="display: none;">&#9660;</a>' % i
+                                    else:
+                                        extra = ""
+                                %>
+                                %if href:                    
+                                    <td><a href="${href}">${v}</a>&nbsp;${extra}</td>
+                                %else:
+                                    <td >${v}${extra}</td>
+                                %endif    
+                                </td>
+                            %endfor
+                        %endif
+                    %endfor
+                    ## Actions column
+                    <td>
+                        <div popupmenu="grid-${i}-popup">
+                            %for operation in grid.operations:
+                                %if operation.allowed( item ):
+                                    <a class="action-button" href="${url( operation=operation.label, id=trans.security.encode_id( item.id ) )}">${operation.label}</a>
+                                %endif
+                            %endfor
+                        </div>
+                    </td>
                 </tr>
-                                
             %endfor
-        
         </tbody>
-    
         <tfoot>
             <tr>
                 <td></td>
@@ -203,14 +186,8 @@
                             <input type="submit" name="operation" value="${operation.label}" class="action-button">
                         %endif
                     %endfor
-
                 </td>
             </tr>
         </tfoot>
-        
     </table>
-
-  </form>
-
-
-
+</form>

@@ -56,7 +56,14 @@ History.table = Table( "history", metadata,
     Column( "hid_counter", Integer, default=1 ),
     Column( "deleted", Boolean, index=True, default=False ),
     Column( "purged", Boolean, index=True, default=False ),
-    Column( "genome_build", TrimmedString( 40 ) ) )
+    Column( "genome_build", TrimmedString( 40 ) ),
+    Column( "importable", Boolean, default=False ) )
+
+HistoryUserShareAssociation.table = Table( "history_user_share_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "history_id", Integer, ForeignKey( "history.id" ), index=True ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True )
+    )
 
 HistoryDatasetAssociation.table = Table( "history_dataset_association", metadata, 
     Column( "id", Integer, primary_key=True ),
@@ -574,6 +581,11 @@ assign_mapper( context, History, History.table,
                      datasets=relation( HistoryDatasetAssociation, backref="history", order_by=asc(HistoryDatasetAssociation.table.c.hid) ),
                      active_datasets=relation( HistoryDatasetAssociation, primaryjoin=( ( HistoryDatasetAssociation.table.c.history_id == History.table.c.id ) & ( not_( HistoryDatasetAssociation.table.c.deleted ) ) ), order_by=asc( HistoryDatasetAssociation.table.c.hid ), lazy=False, viewonly=True )
                       ) )
+
+assign_mapper( context, HistoryUserShareAssociation, HistoryUserShareAssociation.table,
+    properties=dict( user=relation( User, backref='histories_shared_by_others' ),
+                     history=relation( History, backref='users_shared_with' )
+                   ) )
 
 assign_mapper( context, User, User.table, 
     properties=dict( histories=relation( History, backref="user",

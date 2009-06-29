@@ -58,7 +58,10 @@ class TestSecurityAndLibraries( TwillTestCase ):
             raise AssertionError( 'The DefaultUserPermission.action for user "%s" is "%s", but it should be "%s"' \
                                   % ( admin_user.email, dup.action, galaxy.model.Dataset.permitted_actions.DATASET_MANAGE_PERMISSIONS.action ) )
         # Make sure DefaultHistoryPermissions are correct
-        latest_history = galaxy.model.History.query().order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
+        # Logged in as admin_user
+        latest_history = galaxy.model.History.filter( and_( galaxy.model.History.table.c.deleted==False,
+                                                      galaxy.model.History.table.c.user_id==admin_user.id ) ) \
+            .order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
         if len( latest_history.default_permissions ) > 1:
             raise AssertionError( '%d DefaultHistoryPermissions were created for history id %d when it was created ( should have been 1 )' \
                                   % ( len( latest_history.default_permissions ), latest_history.id ) )
@@ -71,7 +74,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.check_page_for_string( admin_user.email )
         self.logout()
     def test_010_login_as_regular_user1( self ):
-        """Testing logging in as regular user test1@bx.psu.edu - tests private role creation, changing DefaultHistoryPermissions for new histories, and sharing histories with another user"""
+        """Testing logging in as regular user test1@bx.psu.edu - tests private role creation and changing DefaultHistoryPermissions for new histories"""
         # Some of the history related tests here are similar to some tests in the
         # test_history_functions.py script, so we could potentially eliminate 1 or 2 of them.
         self.login( email='test1@bx.psu.edu' ) # test1@bx.psu.edu is not an admin user
@@ -114,7 +117,10 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.user_set_default_permissions( permissions_in=permissions_in, role_id=role_id )
         # Make sure the default permissions are changed for new histories
         self.new_history()
-        latest_history = galaxy.model.History.query().order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
+        # logged in as regular_user1
+        latest_history = galaxy.model.History.filter( and_( galaxy.model.History.table.c.deleted==False,
+                                                      galaxy.model.History.table.c.user_id==regular_user1.id ) ) \
+            .order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
         if len( latest_history.default_permissions ) != len( galaxy.model.Dataset.permitted_actions.items() ):
             raise AssertionError( '%d DefaultHistoryPermissions were created for history id %d, should have been %d' % \
                                   ( len( latest_history.default_permissions ), latest_history.id, len( galaxy.model.Dataset.permitted_actions.items() ) ) )
@@ -146,41 +152,6 @@ class TestSecurityAndLibraries( TwillTestCase ):
         if dps != dhps:
                 raise AssertionError( 'DatasetPermissionss "%s" for dataset id %d differ from DefaultHistoryPermissions "%s" for history id %d' \
                                       % ( str( dps ), latest_dataset.id, str( dhps ), latest_history.id ) )
-        # Since the dataset in the history is now private, we can test sharing with another user
-        # Test making the dataset in the history public
-        check_str = 'The following datasets can be shared with %s by updating their permissions' % admin_user.email
-        action_check_str = 'Histories (%s) have been shared with: %s' % ( latest_history.name, admin_user.email )
-        self.share_history( str( latest_history.id ),
-                            admin_user.email,
-                            check_str,
-                            action='public',
-                            action_check_str=action_check_str )
-        # Add another dataset to the history, it should be private since that is now our default
-        self.upload_file( '2.bed' )
-        # Test creating a new sharing role for the private dataset
-        check_str = 'The following datasets can be shared with %s with no changes' % admin_user.email
-        check_str2 = 'The following datasets can be shared with %s by updating their permissions' % admin_user.email
-        action_check_str = 'Histories (%s) have been shared with: %s' % ( latest_history.name, admin_user.email )
-        self.share_history( str( latest_history.id ),
-                            admin_user.email,
-                            check_str,
-                            check_str2=check_str2,
-                            action='private',
-                            action_check_str=action_check_str )
-        role_type = 'sharing'
-        role_name = 'Sharing role for: %s, %s' % ( regular_user1.email, admin_user.email )
-        global sharing_role
-        sharing_role = galaxy.model.Role.filter( and_( galaxy.model.Role.table.c.type==role_type,
-                                                       galaxy.model.Role.table.c.name==role_name ) ).first()
-        if not sharing_role:
-            # May have created a sharing role in a previous functional test suite from the opposite direction.
-            role_name = 'Sharing role for: %s, %s' % ( admin_user.email, regular_user1.email )
-            sharing_role = galaxy.model.Role.filter( and_( galaxy.model.Role.table.c.type==role_type,
-                                                           galaxy.model.Role.table.c.name==role_name ) ).first()
-        if not sharing_role:
-            raise AssertionError( "Privately sharing a dataset did not properly create a sharing role" )
-        if len( sharing_role.users ) != 2:
-            raise AssertionError( "sharing_role not correctly associated with 2 users" )
         self.logout()
     def test_015_login_as_regular_user2( self ):
         """Testing logging in as regular user test2@bx.psu.edu - tests changing DefaultHistoryPermissions for the current history"""
@@ -188,7 +159,10 @@ class TestSecurityAndLibraries( TwillTestCase ):
         global regular_user2
         regular_user2 = galaxy.model.User.filter( galaxy.model.User.table.c.email=='test2@bx.psu.edu' ).first()
         assert regular_user2 is not None, 'Problem retrieving user with email "test2@bx.psu.edu" from the database'
-        latest_history = galaxy.model.History.query().order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
+        # Logged in as regular_user2
+        latest_history = galaxy.model.History.filter( and_( galaxy.model.History.table.c.deleted==False,
+                                                      galaxy.model.History.table.c.user_id==regular_user2.id ) ) \
+            .order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
         self.upload_file( '1.bed' )
         latest_dataset = galaxy.model.Dataset.query().order_by( desc( galaxy.model.Dataset.table.c.create_time ) ).first()
         permissions_in = [ 'DATASET_MANAGE_PERMISSIONS' ]
@@ -275,7 +249,10 @@ class TestSecurityAndLibraries( TwillTestCase ):
         """Testing logging in after an admin reset a password - tests DefaultHistoryPermissions for accounts created by an admin"""
         self.login( email='test3@bx.psu.edu', password='testreset' )
         # Make sure a History and HistoryDefaultPermissions exist for the user
-        latest_history = galaxy.model.History.query().order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
+        # Logged in as regular_user3
+        latest_history = galaxy.model.History.filter( and_( galaxy.model.History.table.c.deleted==False,
+                                                      galaxy.model.History.table.c.user_id==regular_user3.id ) ) \
+            .order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
         if not latest_history.user_id == regular_user3.id:
             raise AssertionError( 'A history was not created for user %s when he logged in' % email )
         if not latest_history.default_permissions:
@@ -325,14 +302,8 @@ class TestSecurityAndLibraries( TwillTestCase ):
         if len( role_one.users ) != len( user_ids ):
             raise AssertionError( '%d UserRoleAssociations were created for role id %d when it was created ( should have been %d )' \
                                   % ( len( role_one.users ), role_one.id, len( user_ids ) ) )
-        # Each of the following users should now have 3 role associations, their private role, role_one and sharing_role
-        for user in [ admin_user, regular_user1 ]:
-            user.refresh()
-            if len( user.roles ) != 3:
-                raise AssertionError( '%d UserRoleAssociations are associated with user %s ( should be 3 )' \
-                                      % ( len( user.roles ), user.email ) )
         # Each of the following users should now have 2 role associations, their private role and role_one
-        for user in [ regular_user3 ]:
+        for user in [ admin_user, regular_user1, regular_user3 ]:
             user.refresh()
             if len( user.roles ) != 2:
                 raise AssertionError( '%d UserRoleAssociations are associated with user %s ( should be 2 )' \
@@ -424,10 +395,10 @@ class TestSecurityAndLibraries( TwillTestCase ):
         if len( role_two.users ) != len( user_ids ):
             raise AssertionError( '%d UserRoleAssociations were created for role id %d when it was created with %d members' \
                                   % ( len( role_two.users ), role_two.id, len( user_ids ) ) )
-        # admin_user should now have 4 role associations, private role, role_one, role_two and sharing_role
+        # admin_user should now have 3 role associations, private role, role_one, role_two
         admin_user.refresh()
-        if len( admin_user.roles ) != 4:
-            raise AssertionError( '%d UserRoleAssociations are associated with user %s ( should be 4 )' % ( len( admin_user.roles ), admin_user.email ) )
+        if len( admin_user.roles ) != 3:
+            raise AssertionError( '%d UserRoleAssociations are associated with user %s ( should be 3 )' % ( len( admin_user.roles ), admin_user.email ) )
         # Make sure GroupRoleAssociations are correct
         role_two.refresh()
         if len( role_two.groups ) != len( group_ids ):
@@ -461,9 +432,9 @@ class TestSecurityAndLibraries( TwillTestCase ):
             group_ids.append( str( uga.group_id ) )
         self.associate_roles_and_groups_with_user( str( admin_user.id ), str( admin_user.email ), role_ids=role_ids, group_ids=group_ids )
         admin_user.refresh()
-        # admin_user should now be associated with 5 roles: private, role_one, role_two, role_three and sharing_role
-        if len( admin_user.roles ) != 5:
-            raise AssertionError( '%d UserRoleAssociations are associated with %s ( should be 5 )' % ( len( admin_user.roles ), admin_user.email ) )
+        # admin_user should now be associated with 4 roles: private, role_one, role_two, role_three
+        if len( admin_user.roles ) != 4:
+            raise AssertionError( '%d UserRoleAssociations are associated with %s ( should be 4 )' % ( len( admin_user.roles ), admin_user.email ) )
     def test_070_create_library( self ):
         """Testing creating a new library, then renaming it"""
         name = "Library One's Name"
@@ -1815,7 +1786,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         ##################
         # Eliminate all non-private roles
         ##################
-        for role in [ role_one, role_two, role_three, sharing_role ]:
+        for role in [ role_one, role_two, role_three ]:
             self.mark_role_deleted( str( role.id ), role.name )
             self.purge_role( str( role.id ), role.name )
             # Manually delete the role from the database

@@ -214,22 +214,29 @@ class History( object ):
         if genome_build not in [None, '?']:
             self.genome_build = genome_build
         self.datasets.append( dataset )
-    def copy( self, target_user = None ):
+    def copy( self, name=None, target_user=None ):
+        if not name:
+            name = self.name
         if not target_user:
             target_user = self.user
-        des = History( user = target_user )
-        des.flush()
-        des.name = self.name
+        new_history = History( name=name, user=target_user )
+        new_history.flush()
         for data in self.datasets:
-            new_data = data.copy( copy_children = True, target_history = des )
-            des.add_dataset( new_data, set_hid = False )
+            new_data = data.copy( copy_children=True, target_history=new_history )
+            new_history.add_dataset( new_data, set_hid = False )
             new_data.flush()
-        des.hid_counter = self.hid_counter
-        des.flush()
-        return des
+        new_history.hid_counter = self.hid_counter
+        new_history.flush()
+        return new_history
     @property
     def activatable_datasets( self ):
-        return [ hda for hda in self.datasets if not hda.dataset.deleted ] #this needs to be a list
+        # This needs to be a list
+        return [ hda for hda in self.datasets if not hda.dataset.deleted ]
+
+class HistoryUserShareAssociation( object ):
+    def __init__( self ):
+        self.history = None
+        self.user = None
 
 class UserRoleAssociation( object ):
     def __init__( self, user, role ):
@@ -988,7 +995,7 @@ class GalaxySession( object ):
                   remote_host=None, 
                   remote_addr=None, 
                   referer=None, 
-                  current_history_id=None, 
+                  current_history=None, 
                   session_key=None, 
                   is_valid=False, 
                   prev_session_id=None ):
@@ -997,12 +1004,11 @@ class GalaxySession( object ):
         self.remote_host = remote_host
         self.remote_addr = remote_addr
         self.referer = referer
-        self.current_history_id = current_history_id
+        self.current_history = current_history
         self.session_key = session_key
         self.is_valid = is_valid
         self.prev_session_id = prev_session_id
         self.histories = []
-
     def add_history( self, history, association=None ):
         if association is None:
             self.histories.append( GalaxySessionToHistoryAssociation( self, history ) )

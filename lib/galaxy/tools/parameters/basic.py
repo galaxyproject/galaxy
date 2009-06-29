@@ -1106,7 +1106,7 @@ class DataToolParameter( ToolParameter ):
             except IndexError:
                 pass #no valid options
         assert trans is not None, "DataToolParameter requires a trans"
-        history = trans.history
+        history = trans.get_history()
         assert history is not None, "DataToolParameter requires a history"
         if value is not None:
             if type( value ) != list:
@@ -1170,11 +1170,10 @@ class DataToolParameter( ToolParameter ):
         if trans.workflow_building_mode:
             return DummyDataset()
         assert trans is not None, "DataToolParameter requires a trans"
-        history = trans.history
+        history = trans.get_history()
         assert history is not None, "DataToolParameter requires a history"
         if self.optional:
             return None
-        history = trans.history
         most_recent_dataset = [None]
         filter_value = None
         if self.options:

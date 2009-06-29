@@ -3,7 +3,9 @@ from galaxy.model.orm import *
 
 from galaxy.web import url_for
 
-import sys
+import sys, logging
+
+log = logging.getLogger( __name__ )
 
 class Grid( object ):
     """
@@ -12,6 +14,7 @@ class Grid( object ):
     title = ""
     exposed = True
     model_class = None
+    template = None
     columns = []
     standard_filters = []
     default_filter = None
@@ -22,6 +25,7 @@ class Grid( object ):
     def __call__( self, trans, **kwargs ):
         status = kwargs.get( 'status', None )
         message = kwargs.get( 'message', None )
+        template = kwargs.get( 'template', None )
         session = trans.sa_session
         # Build initial query
         query = self.build_initial_query( session )
@@ -70,8 +74,15 @@ class Grid( object ):
             if len(args) > 0:
                 new_kwargs.update( args[0] )
             new_kwargs.update( kwargs )
+            # We need to encode item ids
+            if 'id' in new_kwargs:
+                id = new_kwargs[ 'id' ]
+                if isinstance( id, list ):
+                    new_args[ 'id' ] = [ trans.security.encode_id( i ) for i in id ]
+                else:
+                    new_kwargs[ 'id' ] = trans.security.encode_id( id )
             return url_for( **new_kwargs )
-        return trans.fill_template( "grid.mako",
+        return trans.fill_template( template,
                                     grid=self,
                                     query=query,
                                     sort_key=sort_key,

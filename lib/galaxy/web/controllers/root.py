@@ -50,19 +50,18 @@ class RootController( BaseController ):
     @web.expose
     def history( self, trans, as_xml=False, show_deleted=False ):
         """
-        Display the current history, creating a new history if neccesary.
-        
+        Display the current history, creating a new history if necessary.
         NOTE: No longer accepts "id" or "template" options for security reasons.
         """
-        history = trans.get_history()
         if trans.app.config.require_login and not trans.user:
             return trans.fill_template( '/no_access.mako', message = 'Please log in to access Galaxy histories.' )
+        history = trans.get_history( create=True )
         if as_xml:
             trans.response.set_content_type('text/xml')
             return trans.fill_template_mako( "root/history_as_xml.mako", history=history, show_deleted=util.string_as_bool( show_deleted ) )
         else:
             template = "root/history.mako"
-            return trans.fill_template( "root/history.mako", history = history, show_deleted = util.string_as_bool( show_deleted ) )
+            return trans.fill_template( "root/history.mako", history=history, show_deleted=util.string_as_bool( show_deleted ) )
 
     @web.expose
     def dataset_state ( self, trans, id=None, stamp=None ):
@@ -350,9 +349,10 @@ class RootController( BaseController ):
 
     @web.expose
     def history_options( self, trans ):
-        """Displays a list of history related actions"""            
+        """Displays a list of history related actions"""
         return trans.fill_template( "/history/options.mako",
-                                    user = trans.get_user(), history = trans.get_history() )
+                                    user=trans.get_user(),
+                                    history=trans.get_history( create=True ) )
     @web.expose
     def history_delete( self, trans, id ):
         """
@@ -421,7 +421,7 @@ class RootController( BaseController ):
     @web.expose
     def history_new( self, trans, name=None ):
         trans.new_history( name=name )
-        trans.log_event( "Created new History, id: %s." % str(trans.get_history().id) )
+        trans.log_event( "Created new History, id: %s." % str(trans.history.id) )
         return trans.show_message( "New history created", refresh_frames = ['history'] )
     @web.expose
     def history_add_to( self, trans, history_id=None, file_data=None, name="Data Added to History",info=None,ext="txt",dbkey="?",copy_access_from=None,**kwd ):

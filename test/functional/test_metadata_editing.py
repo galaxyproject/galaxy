@@ -8,9 +8,10 @@ class TestMetadataEdit( TwillTestCase ):
         """test_metadata_edit: Testing metadata editing"""
         self.logout()
         self.login( email='test@bx.psu.edu' )
+        admin_user = galaxy.model.User.filter( galaxy.model.User.table.c.email=='test@bx.psu.edu' ).one()
         self.new_history( name='Test Metadata Edit' )
-        global history1
-        history1 = galaxy.model.History.query() \
+        history1 = galaxy.model.History.filter( and_( galaxy.model.History.table.c.deleted==False,
+                                                      galaxy.model.History.table.c.user_id==admin_user.id ) ) \
             .order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
         self.upload_file( '1.bed' )
         latest_hda = galaxy.model.HistoryDatasetAssociation.query() \
@@ -41,5 +42,5 @@ class TestMetadataEdit( TwillTestCase ):
         """test changing data type"""
         self.change_datatype( hda_id=str( latest_hda.id ), datatype='gff3' )
         self.check_metadata_for_string( 'gff3', hid=1 )
-        self.delete_history( id=str( history1.id ) )
+        self.delete_history( id=self.security.encode_id( history1.id ) )
         self.logout()

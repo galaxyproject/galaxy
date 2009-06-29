@@ -6,10 +6,12 @@ from base.twilltestcase import TwillTestCase
 
 class AnalysisDNAseHSSFlankedGenes( TwillTestCase ):
     def test_get_DNAseHSS_flanked_genes( self ):
-        self.login()
-        self.new_history()
-        global history1
-        history1 = galaxy.model.History.query() \
+        self.logout()
+        self.login( email='test@bx.psu.edu' )
+        admin_user = galaxy.model.User.filter( galaxy.model.User.table.c.email=='test@bx.psu.edu' ).one()
+        self.new_history( name='DNAseHSS_flanked_genes' )
+        history1 = galaxy.model.History.filter( and_( galaxy.model.History.table.c.deleted==False,
+                                                      galaxy.model.History.table.c.user_id==admin_user.id ) ) \
             .order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
         track_params = dict(
             db="hg17",
@@ -85,5 +87,5 @@ class AnalysisDNAseHSSFlankedGenes( TwillTestCase ):
         self.run_tool( 'Filter1', input="4", cond="c17==1000"  )
         self.wait()
         self.verify_dataset_correctness( 'filteredJoinedFlanksDNAse.dat' )
-        self.delete_history()
+        self.delete_history( self.security.encode_id( history1.id ) )
         self.logout()

@@ -9,7 +9,8 @@ import twill.commands as tc
 from twill.other_packages._mechanize_dist import ClientForm
 pkg_resources.require( "elementtree" )
 from elementtree import ElementTree
-  
+from galaxy.web import security
+
 buffer = StringIO.StringIO()
 
 #Force twill to log to a buffer -- FIXME: Should this go to stdout and be captured by nose?
@@ -23,13 +24,15 @@ log = logging.getLogger( __name__ )
 class TwillTestCase( unittest.TestCase ):
 
     def setUp( self ):
+        # Security helper
+        self.security = security.SecurityHelper( id_secret='changethisinproductiontoo' )
         self.history_id = os.environ.get( 'GALAXY_TEST_HISTORY_ID', None )
         self.host = os.environ.get( 'GALAXY_TEST_HOST' )
         self.port = os.environ.get( 'GALAXY_TEST_PORT' )
         self.url = "http://%s:%s" % ( self.host, self.port )
         self.file_dir = os.environ.get( 'GALAXY_TEST_FILE_DIR' )
         self.home()
-        self.set_history()
+        #self.set_history()
 
     # Functions associated with files
     def files_diff( self, file1, file2 ):
@@ -71,6 +74,7 @@ class TwillTestCase( unittest.TestCase ):
     def upload_file( self, filename, ftype='auto', dbkey='unspecified (?)' ):
         """Uploads a file"""
         filename = self.get_filename(filename)
+        self.home()
         self.visit_page( "tool_runner/index?tool_id=upload1" )
         try: 
             tc.fv("1","file_type", ftype)
@@ -79,9 +83,16 @@ class TwillTestCase( unittest.TestCase ):
             tc.submit("runtool_btn")
             self.home()
         except AssertionError, err:
-            errmsg = 'The file doesn\'t exsit. Please check' % file
+            errmsg = "The file (%s) doesn't exist." % filename
             errmsg += str( err )
             raise AssertionError( errmsg )
+        # Make sure every history item has a valid hid
+        hids = self.get_hids_in_history()
+        for hid in hids:
+            try:
+                valid_hid = int( hid )
+            except:
+                raise AssertionError, "Invalid hid (%s) created when uploading file %s" % ( hid, filename )
     def upload_url_paste( self, url_paste, ftype='auto', dbkey='unspecified (?)' ):
         """Pasted data in the upload utility"""
         self.visit_page( "tool_runner/index?tool_id=upload1" )
@@ -94,6 +105,13 @@ class TwillTestCase( unittest.TestCase ):
         except Exception, e:
             errmsg = "Problem executing upload utility using url_paste: %s" % str( e )
             raise AssertionError( e )
+        # Make sure every history item has a valid hid
+        hids = self.get_hids_in_history()
+        for hid in hids:
+            try:
+                valid_hid = int( hid )
+            except:
+                raise AssertionError, "Invalid hid (%s) created when pasting %s" % ( hid, url_paste )
 
     # Functions associated with histories
     def check_history_for_errors( self ):
@@ -115,27 +133,30 @@ class TwillTestCase( unittest.TestCase ):
         self.visit_page( "clear_history" )
         self.check_history_for_string( 'Your history is empty' )
         self.home()
-    def delete_history( self, id='' ):
+    def delete_history( self, id ):
         """Deletes one or more histories"""
-        history_list = self.get_histories()
+        history_list = self.get_histories_as_data_list()
         self.assertTrue( history_list )
-        num_deleted = 1
-        if not id:
-            history = history_list[0]
-            id = history.get( 'id' )
-        else:
-            num_deleted = len( id.split( ',' ) )
+        num_deleted = len( id.split( ',' ) )
+        self.home()
         self.visit_page( "history/list?operation=delete&id=%s" % ( id ) )
         check_str = 'Deleted %d histories' % num_deleted
         self.check_page_for_string( check_str )
         self.home()
-    def get_histories( self ):
-        """Returns all histories"""
+    def delete_current_history( self, check_str='' ):
+        """Deletes the current history"""
+        self.home()
+        self.visit_page( "history/delete_current" )
+        if check_str:
+            self.check_page_for_string( check_str )
+        self.home()
+    def get_histories_as_data_list( self ):
+        """Returns the data elements of all histories"""
         tree = self.histories_as_xml_tree()
         data_list = [ elem for elem in tree.findall("data") ]
         return data_list
-    def get_history( self, show_deleted=False ):
-        """Returns a history"""
+    def get_history_as_data_list( self, show_deleted=False ):
+        """Returns the data elements of a history"""
         tree = self.history_as_xml_tree( show_deleted=show_deleted )
         data_list = [ elem for elem in tree.findall("data") ]
         return data_list
@@ -153,31 +174,24 @@ class TwillTestCase( unittest.TestCase ):
         xml = self.last_page()
         tree = ElementTree.fromstring(xml)
         return tree
-    def history_options( self, check_str='', upload=False ):
+    def history_options( self, user=False, active_datasets=False, activatable_datasets=False, histories_shared_by_others=False ):
         """Mimics user clicking on history options link"""
-        self.visit_page( "history_options" )
-        if check_str:
-            self.check_page_for_string( check_str )
-        else:
-            self.check_page_for_string( 'Rename</a> current history' )
+        self.home()
+        self.visit_page( "root/history_options" )
+        if user:
             self.check_page_for_string( 'List</a> previously stored histories' )
-            self.check_page_for_string( 'Construct workflow</a> from the current history' )
+            if active_datasets:
+                self.check_page_for_string( 'Create</a> a new empty history' )
+                self.check_page_for_string( 'Construct workflow</a> from current history' )
+                self.check_page_for_string( 'Clone</a> current history' ) 
             self.check_page_for_string( 'Share</a> current history' )
-            # Tests for changing default history permissions are done in test_security_and_libraries.py
-            self.check_page_for_string( 'Change default permissions</a> for the current history' )
-            self.check_page_for_string( 'Show deleted</a> datasets in history' )
-            self.check_page_for_string( 'Delete</a> current history' )
-            # Need to add a history item in order to create a new empty history
-            try:
-                self.check_page_for_string( 'Create</a> a new empty history' )
-                raise AssertionError, "Incorrectly able to create a new empty history when the current history is empty."
-            except:
-                pass
-            if upload:
-                self.upload_file( '1.bed', dbkey='hg18' )
-                self.home()
-                self.visit_page( "history_options" )
-                self.check_page_for_string( 'Create</a> a new empty history' )
+            self.check_page_for_string( 'Change default permissions</a> for current history' )
+            if histories_shared_by_others:
+                self.check_page_for_string( 'List</a> histories shared with you by others' )
+        if activatable_datasets:
+            self.check_page_for_string( 'Show deleted</a> datasets in current history' )
+        self.check_page_for_string( 'Rename</a> current history' )
+        self.check_page_for_string( 'Delete</a> current history' )
         self.home()
     def new_history( self, name=None ):
         """Creates a new, empty history"""
@@ -198,26 +212,63 @@ class TwillTestCase( unittest.TestCase ):
     def set_history( self ):
         """Sets the history (stores the cookies for this run)"""
         if self.history_id:
+            self.home()
             self.visit_page( "history?id=%s" % self.history_id )
         else:
             self.new_history()
         self.home()
-    def share_history( self, id, email, check_str, check_str2='', action=None, action_check_str=None ):
-        """Share a history different users"""
-        self.visit_url( "%s/history/share?id=%s&email=%s&history_share_btn=Submit" % ( self.url, id, email ) )
-        self.check_page_for_string( check_str )
-        if check_str2:
-            self.check_page_for_string( check_str2 )
+    def share_current_history( self, email, check_str='', check_str_after_submit='', check_str_after_submit2='',
+                               action='', action_check_str='', action_check_str_after_submit='' ):
+        """Share the current history with different users"""
+        self.visit_url( "%s/history/share" % self.url )
+        if check_str:
+            self.check_page_for_string( check_str )
+        tc.fv( 'share', 'email', email )
+        tc.submit( 'share_button' )
+        if check_str_after_submit:
+            self.check_page_for_string( check_str_after_submit )
+        if check_str_after_submit2:
+            self.check_page_for_string( check_str_after_submit2 )
         if action:
             # If we have an action, then we are sharing datasets with users that do not have access permissions on them
-            tc.fv( '1', 'action', action )
-            tc.submit( "share_proceed_button" )
+            if action_check_str:
+                self.check_page_for_string( action_check_str )
+            tc.fv( 'share_restricted', 'action', action )
+            tc.submit( "share_restricted_button" )
+            if action_check_str_after_submit:
+                self.check_page_for_string( action_check_str_after_submit )
+        self.home()
+    def share_histories_with_users( self, ids, emails, check_str1='', check_str2='',
+                                    check_str_after_submit='', action=None, action_check_str=None ):
+        """Share one or more histories with one or more different users"""
+        self.visit_url( "%s/history/list?id=%s&operation=Share" % ( self.url, ids ) )
+        if check_str1:
+            self.check_page_for_string( check_str1 )
+        if check_str2:
+            self.check_page_for_string( check_str2 )
+        tc.fv( 'share', 'email', emails )
+        tc.submit( 'share_button' )
+        if check_str_after_submit:
+            self.check_page_for_string( check_str_after_submit )
+        if action:
+            # If we have an action, then we are sharing datasets with users that do not have access permissions on them
+            tc.fv( 'share_restricted', 'action', action )
+            tc.submit( "share_restricted_button" )
             if action_check_str:
                 self.check_page_for_string( action_check_str )
         self.home()
+    def unshare_history( self, history_id, user_id, check_str1='', check_str2='', check_str_after_submit='' ):
+        """Unshare a history that has been shared with another user"""
+        self.visit_url( "%s/history/list?id=%s&operation=sharing" % ( self.url, history_id ) )
+        if check_str1:
+            self.check_page_for_string( check_str1 )
+        if check_str2:
+            self.check_page_for_string( check_str2 )
+        self.visit_url( "%s/history/sharing?unshare_user=%s&id=%s" % ( self.url, user_id, history_id ) )
+        self.home()
     def switch_history( self, id='', name='' ):
         """Switches to a history in the current list of histories"""
-        data_list = self.get_histories()
+        data_list = self.get_histories_as_data_list()
         self.assertTrue( data_list )
         if not id:
             history = history_list[0]
@@ -227,6 +278,7 @@ class TwillTestCase( unittest.TestCase ):
             self.check_history_for_string( name )
         self.home()
     def view_stored_active_histories( self, check_str='' ):
+        self.home()
         self.visit_page( "history/list" )
         self.check_page_for_string( 'Stored histories' )
         self.check_page_for_string( '<input type="checkbox" name="id" value=' )
@@ -237,12 +289,57 @@ class TwillTestCase( unittest.TestCase ):
             self.check_page_for_string( check_str )
         self.home()
     def view_stored_deleted_histories( self, check_str='' ):
+        self.home()
         self.visit_page( "history/list?f-deleted=True" )
         self.check_page_for_string( 'Stored histories' )
         self.check_page_for_string( '<input type="checkbox" name="id" value=' )
         self.check_page_for_string( 'operation=Undelete&id' )
         if check_str:
             self.check_page_for_string( check_str )
+        self.home()
+    def view_shared_histories( self, check_str='', check_str2='' ):
+        self.home()
+        self.visit_page( "history/list_shared" )
+        if check_str:
+            self.check_page_for_string( check_str )
+        if check_str2:
+            self.check_page_for_string( check_str2 )
+        self.home()
+    def clone_history( self, history_id, check_str1='' ):
+        self.home()
+        self.visit_page( "history/clone?id=%s" % history_id )
+        if check_str1:
+            self.check_page_for_string( check_str1 )
+        self.home()
+    def enable_import_via_link( self, history_id, check_str='', check_str_after_submit='' ):
+        self.home()
+        self.visit_page( "history/list?operation=sharing&id=%s" % history_id )
+        if check_str:
+            self.check_page_for_string( check_str )
+        # twill barfs on this form, possibly because it contains no fields, but not sure.
+        # In any case, we have to mimic the form submission
+        self.home()
+        self.visit_page( 'history/sharing?id=%s&enable_import_via_link=True' % history_id )
+        if check_str_after_submit:
+            self.check_page_for_string( check_str_after_submit )
+        self.home()
+    def disable_import_via_link( self, history_id, check_str='', check_str_after_submit='' ):
+        self.home()
+        self.visit_page( "history/list?operation=sharing&id=%s" % history_id )
+        if check_str:
+            self.check_page_for_string( check_str )
+        # twill barfs on this form, possibly because it contains no fields, but not sure.
+        # In any case, we have to mimic the form submission
+        self.home()
+        self.visit_page( 'history/sharing?id=%s&disable_import_via_link=True' % history_id )
+        if check_str_after_submit:
+            self.check_page_for_string( check_str_after_submit )
+        self.home()
+    def import_history_via_url( self, history_id, email, check_str_after_submit='' ):
+        self.home()
+        self.visit_page( "history/imp?&id=%s" % history_id )
+        if check_str_after_submit:
+            self.check_page_for_string( check_str_after_submit )
         self.home()
 
     # Functions associated with datasets (history items) and meta data
@@ -260,7 +357,7 @@ class TwillTestCase( unittest.TestCase ):
 
     def check_metadata_for_string( self, patt, hid=None ):
         """Looks for 'patt' in the edit page when editing a dataset"""
-        data_list = self.get_history()
+        data_list = self.get_history_as_data_list()
         self.assertTrue( data_list )
         if hid is None: # take last hid
             elem = data_list[-1]
@@ -276,7 +373,7 @@ class TwillTestCase( unittest.TestCase ):
         except:
             raise AssertionError, "Invalid hid '%s' - must be int" % hid
         hid = str(hid)
-        data_list = self.get_history()
+        data_list = self.get_history_as_data_list()
         self.assertTrue( data_list )
         elems = [ elem for elem in data_list if elem.get( 'hid' ) == hid ]
         self.assertEqual( len( elems ), 1 )
@@ -291,7 +388,7 @@ class TwillTestCase( unittest.TestCase ):
         except:
             raise AssertionError, "Invalid hid '%s' - must be int" % hid
         hid = str( hid )
-        data_list = self.get_history( show_deleted=show_deleted )
+        data_list = self.get_history_as_data_list( show_deleted=show_deleted )
         self.assertTrue( data_list )
         elems = [ elem for elem in data_list if elem.get( 'hid' ) == hid ]
         self.assertEqual( len( elems ), 1 )
@@ -348,7 +445,8 @@ class TwillTestCase( unittest.TestCase ):
         tc.submit( 'change' )
         self.check_page_for_string( 'Edit Attributes' )
         self.home()
-    def copy_history_item( self, source_dataset_ids='', target_history_ids=[], all_target_history_ids=[], deleted_history_ids=[] ):
+    def copy_history_item( self, source_dataset_ids='', target_history_ids=[], all_target_history_ids=[],
+                           deleted_history_ids=[] ):
         """Copy 1 or more history_dataset_associations to 1 or more histories"""
         self.home()
         self.visit_url( "%s/dataset/copy_datasets?source_dataset_ids=%s" % ( self.url, source_dataset_ids ) )
@@ -371,31 +469,28 @@ class TwillTestCase( unittest.TestCase ):
         check_str = '%d datasets copied to %d histories.' % ( no_source_ids, len( target_history_ids ) )
         self.check_page_for_string( check_str )
         self.home()
-    def get_dataset_ids_in_history( self ):
-        """Returns the ids of datasets in a history"""
-        data_list = self.get_history()
+    def get_hids_in_history( self ):
+        """Returns the list of hid values for items in a history"""
+        data_list = self.get_history_as_data_list()
         hids = []
         for elem in data_list:
             hid = elem.get('hid')
             hids.append(hid)
         return hids
-
-    def get_dataset_ids_in_histories( self ):
-        """Returns the ids of datasets in all histories"""
-        data_list = self.get_histories()
+    def get_hids_in_histories( self ):
+        """Returns the list of hids values for items in all histories"""
+        data_list = self.get_histories_as_data_list()
         hids = []
         for elem in data_list:
             hid = elem.get('hid')
             hids.append(hid)
         return hids
-
     def verify_dataset_correctness( self, filename, hid=None, wait=True ):
         """Verifies that the attributes and contents of a history item meet expectations"""
-        if wait: self.wait() #wait for job to finish
-
-        data_list = self.get_history()
+        if wait:
+            self.wait() #wait for job to finish
+        data_list = self.get_history_as_data_list()
         self.assertTrue( data_list )
-
         if hid is None: # take last hid
             elem = data_list[-1]
             hid = str( elem.get('hid') )
@@ -404,10 +499,8 @@ class TwillTestCase( unittest.TestCase ):
             elems = [ elem for elem in data_list if elem.get('hid') == hid ]
             self.assertTrue( len(elems) == 1 )
             elem = elems[0]
-
         self.assertTrue( hid )
         self._assert_dataset_state( elem, 'ok' )
-
         if self.is_zipped( filename ):
             errmsg = 'History item %s is a zip archive which includes invalid files:\n' % hid
             zip_file = zipfile.ZipFile( filename, "r" )
@@ -422,6 +515,7 @@ class TwillTestCase( unittest.TestCase ):
         else:
             local_name = self.get_filename( filename )
             temp_name = self.get_filename( 'temp_%s' % filename )
+            self.home()
             self.visit_page( "display?hid=" + hid )
             data = self.last_page()
             file( temp_name, 'wb' ).write(data)
@@ -455,7 +549,7 @@ class TwillTestCase( unittest.TestCase ):
 
     def verify_genome_build( self, dbkey='hg17' ):
         """Verifies that the last used genome_build at history id 'hid' is as expected"""
-        data_list = self.get_history()
+        data_list = self.get_history_as_data_list()
         self.assertTrue( data_list )
         elems = [ elem for elem in data_list ]
         elem = elems[-1]

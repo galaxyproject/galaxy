@@ -5,12 +5,11 @@ from base.twilltestcase import *
 
 class TestHistory( TwillTestCase ):
 
-    def test_000_history_options_when_not_logged_in( self ):
-        """Testing history options when not logged in"""
+    def test_000_history_behavior_between_logout_login( self ):
+        """Testing history behavior between logout and login"""
         self.logout()
-        check_str = 'logged in</a> to store or switch histories.'
-        self.history_options( check_str=check_str )
-         # Make sure we have created the following accounts
+        self.history_options()
+         # Make sure we have created the following 4 accounts
         self.login( email='test1@bx.psu.edu' )
         global regular_user1
         regular_user1 = galaxy.model.User.filter( galaxy.model.User.table.c.email=='test1@bx.psu.edu' ).first()
@@ -25,14 +24,12 @@ class TestHistory( TwillTestCase ):
         global regular_user3
         regular_user3 = galaxy.model.User.filter( galaxy.model.User.table.c.email=='test3@bx.psu.edu' ).first()
         assert regular_user3 is not None, 'Problem retrieving user with email "test3@bx.psu.edu" from the database'
-    def test_005_deleting_histories( self ):
-        """Testing deleting histories"""
         self.logout()
         self.login( email='test@bx.psu.edu' )
         global admin_user
-        admin_user = galaxy.model.User.filter( galaxy.model.User.table.c.email=='test@bx.psu.edu' ).first()
+        admin_user = galaxy.model.User.filter( galaxy.model.User.table.c.email=='test@bx.psu.edu' ).one()
         assert admin_user is not None, 'Problem retrieving user with email "test@bx.psu.edu" from the database'
-        # Get the admin_user private role
+        # Get the admin_user private role for later use
         global admin_user_private_role
         admin_user_private_role = None
         for role in admin_user.all_roles():
@@ -41,27 +38,48 @@ class TestHistory( TwillTestCase ):
                 break
         if not admin_user_private_role:
             raise AssertionError( "Private role not found for user '%s'" % admin_user.email )
-        latest_history = galaxy.model.History.query().order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
-        assert latest_history is not None, "Problem retrieving latest history from database"
-        assert not latest_history.deleted, "After login, associated history is deleted"
-        self.delete_history( str( latest_history.id ) )
-        latest_history.refresh()
-        if not latest_history.deleted:
-            raise AssertionError, "Problem deleting history id %d" % latest_history.id
+        historyA = galaxy.model.History.filter( and_( galaxy.model.History.table.c.deleted==False,
+                                                      galaxy.model.History.table.c.user_id==admin_user.id ) ) \
+            .order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
+        assert historyA is not None, "Problem retrieving historyA from database"
+        assert not historyA.deleted, "After login, historyA is deleted"
+        # Make sure the last used history is set for the next session after login
+        self.logout()
+        self.login( email=admin_user.email )
+        historyB = galaxy.model.History.filter( and_( galaxy.model.History.table.c.deleted==False,
+                                                      galaxy.model.History.table.c.user_id==admin_user.id ) ) \
+            .order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
+        assert historyB is not None, "Problem retrieving historyB from database"
+        assert historyA.id == historyB.id, "After the same user logged out and back in, their last used history was not associated with their new session"
+    def test_005_deleting_histories( self ):
+        """Testing deleting histories"""
+        # Logged in as admin_user
+        historyB = galaxy.model.History.filter( and_( galaxy.model.History.table.c.deleted==False,
+                                                      galaxy.model.History.table.c.user_id==admin_user.id ) ) \
+            .order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
+        assert historyB is not None, "Problem retrieving historyB from database"
+        self.delete_history( self.security.encode_id( historyB.id ) )
+        historyB.refresh()
+        if not historyB.deleted:
+            raise AssertionError, "Problem deleting history id %d" % historyB.id
         # Since we deleted the current history, make sure the history frame was refreshed
         self.check_history_for_string( 'Your history is empty.' )
         # We'll now test deleting a list of histories
         # After deleting the current history, a new one should have been created
         global history1
-        history1 = galaxy.model.History.query().order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
+        history1 = galaxy.model.History.filter( and_( galaxy.model.History.table.c.deleted==False,
+                                                      galaxy.model.History.table.c.user_id==admin_user.id ) ) \
+            .order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
         assert history1 is not None, "Problem retrieving history1 from database"
         self.upload_file( '1.bed', dbkey='hg18' )
         self.new_history( name=urllib.quote( 'history2' ) )
         global history2
-        history2 = galaxy.model.History.query().order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
+        history2 = galaxy.model.History.filter( and_( galaxy.model.History.table.c.deleted==False,
+                                                      galaxy.model.History.table.c.user_id==admin_user.id ) ) \
+            .order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
         assert history2 is not None, "Problem retrieving history2 from database"
         self.upload_file( '2.bed', dbkey='hg18' )
-        ids = '%s,%s' % ( str( history1.id ), str( history2.id ) )
+        ids = '%s,%s' % ( self.security.encode_id( history1.id ), self.security.encode_id( history2.id ) )
         self.delete_history( ids )
         # Since we deleted the current history, make sure the history frame was refreshed
         self.check_history_for_string( 'Your history is empty.' )
@@ -87,116 +105,153 @@ class TestHistory( TwillTestCase ):
             raise AssertionError, "Problem deleting history id %d" % history2.id
         if not history2.default_permissions:
             raise AssertionError, "Default permissions were incorrectly deleted from the db for history id %d when it was deleted" % history2.id
-    def test_010_history_options_when_logged_in( self ):
-        """Testing history options when logged in"""
-        self.history_options()
-    def test_015_history_rename( self ):
+        # Current history is empty
+        self.history_options( user=True )
+    def test_010_history_rename( self ):
         """Testing renaming a history"""
+        # Logged in as admin_user
         global history3
-        history3 = galaxy.model.History.query().order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
+        history3 = galaxy.model.History \
+            .filter( galaxy.model.History.table.c.deleted==False ) \
+            .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
+            .first()
         assert history3 is not None, "Problem retrieving history3 from database"
         if history3.deleted:
             raise AssertionError, "History id %d deleted when it should not be" % latest_history.id
-        self.rename_history( str( history3.id ), history3.name, new_name=urllib.quote( 'history 3' ) )
-    def test_020_history_list( self ):
-        """Testing viewing previously stored histories"""
-        self.view_stored_active_histories()
-    def test_025_history_share( self ):
-        """Testing sharing histories containing only public datasets"""
+        self.rename_history( self.security.encode_id( history3.id ), history3.name, new_name=urllib.quote( 'history 3' ) )
         history3.refresh()
+    def test_015_history_list( self ):
+        """Testing viewing previously stored active histories"""
+        # Logged in as admin_user
+        self.view_stored_active_histories()
+    def test_020_share_current_history( self ):
+        """Testing sharing the current history which contains only public datasets"""
+        # Logged in as admin_user
+        # Test sharing an empty history - current history is history3
+        self.share_current_history( regular_user1.email,
+                                    check_str=history3.name,
+                                    check_str_after_submit='You cannot share an empty history.' )
+        # Make history3 sharable by adding a dataset
         self.upload_file( '1.bed', dbkey='hg18' )
-        # Test sharing a history with yourself
-        check_str = "You can't send histories to yourself."
-        self.share_history( str( history3.id ), 'test@bx.psu.edu', check_str )
-        # Share a history with 1 valid user
-        check_str = 'Histories (%s) have been shared with: %s' % ( history3.name, regular_user1.email )
-        self.share_history( str( history3.id ), regular_user1.email, check_str )
-        # We need to keep track of all shared histories so they can later be deleted
-        global history3_copy1
-        history3_copy1 = galaxy.model.History.query().order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
-        assert history3_copy1 is not None, "Problem retrieving history3_copy1 from database"
+        # Current history is no longer empty
+        self.history_options( user=True, active_datasets=True, activatable_datasets=True )
+        # Test sharing history3 with yourself
+        self.share_current_history( admin_user.email,
+                                    check_str=history3.name,
+                                    check_str_after_submit='You cannot send histories to yourself.' )
+        # Share history3 with 1 valid user
+        self.share_current_history( regular_user1.email,
+                                    check_str=history3.name,
+                                    check_str_after_submit='History (%s) now shared with: 1 users' % history3.name )
+        # Check out list of histories to make sure history3 was shared
+        self.view_stored_active_histories( check_str='operation=sharing&id=%s">shared' % self.security.encode_id( history3.id ) )
+        # Enable importing history3 via a URL
+        self.enable_import_via_link( self.security.encode_id( history3.id ),
+                                     check_str='Unshare',
+                                     check_str_after_submit='Send the following URL to users' )
+        # Make sure history3 is now import-able
+        history3.refresh()
+        if not history3.importable:
+            raise AssertionError, "History 3 is not marked as importable after enable_import_via_link"
+        # Try importing history3
+        self.import_history_via_url( self.security.encode_id( history3.id ),
+                                     admin_user.email,
+                                     check_str_after_submit='You cannot import your own history.' )
+        # Disable the import link for history3
+        self.disable_import_via_link( self.security.encode_id( history3.id ),
+                                     check_str='Send the following URL to users',
+                                     check_str_after_submit='Enable import via link' )
+        # Try importing history3 after disabling the URL
+        self.import_history_via_url( self.security.encode_id( history3.id ),
+                                     admin_user.email,
+                                     check_str_after_submit='The owner of this history has disabled imports via this link.' )
+        # Test sharing history3 with an invalid user
+        self.share_current_history( 'jack@jill.com',
+                                    check_str_after_submit='jack@jill.com is not a valid Galaxy user.' )
+        
+        
+        
+        
+
+    def test_025_delete_shared_current_history( self ):
+        """Testing deleting the current history after it was shared"""
+        # Logged in as admin_user
+        self.delete_current_history( check_str="History (%s) has been shared with others, unshare it before deleting it." % history3.name )
+    def test_030_clone_shared_history( self ):
+        """Testing cloning a shared history"""
+        # logged in as admin user
         self.logout()
         self.login( email=regular_user1.email )
-        check_str = '%s from %s' % ( history3.name, admin_user.email )
+        # Shared history3 affects history options
+        self.history_options( user=True, histories_shared_by_others=True )
+        # Shared history3 should be in regular_user1's list of shared histories
+        self.view_shared_histories( check_str=history3.name, check_str2=admin_user.email )
+        self.clone_history( self.security.encode_id( history3.id ),
+                                   check_str1='is now included in your list of stored histories.' )
+        global history3_clone1
+        history3_clone1 = galaxy.model.History.filter( and_( galaxy.model.History.table.c.deleted==False,
+                                                             galaxy.model.History.table.c.user_id==regular_user1.id ) ) \
+            .order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
+        assert history3_clone1 is not None, "Problem retrieving history3_clone1 from database"
+        # Check list of histories to make sure shared history3 was cloned
+        check_str = "Clone of '%s' shared by '%s'" % ( history3.name, admin_user.email )
         self.view_stored_active_histories( check_str=check_str )
-        # Need to delete history3_copy1
-        self.delete_history( id=str( history3_copy1.id ) )
+    def test_035_clone_current_history( self ):
+        """Testing cloning the current history"""
+        # logged in as regular_user1
         self.logout()
         self.login( email=admin_user.email )
-        # Test sharing a history with an invalid user
-        email = 'jack@jill.com'
-        check_str = '%s is not a valid Galaxy user.' % email
-        self.share_history( str( history3.id ), email, check_str )
-        # Test sharing multiple histories with multiple users
+        self.clone_history( self.security.encode_id( history3.id ),
+                            check_str1='is now included in your list of stored histories.' )
+        global history3_clone2
+        history3_clone2 = galaxy.model.History.filter( and_( galaxy.model.History.table.c.deleted==False,
+                                                             galaxy.model.History.table.c.user_id==admin_user.id ) ) \
+            .order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
+        assert history3_clone2 is not None, "Problem retrieving history3_clone2 from database"
+        # Check list of histories to make sure shared history3 was cloned
+        self.view_stored_active_histories( check_str="Clone of '%s'" % history3.name )
+    def test_040_sharing_mulitple_histories_with_multiple_users( self ):
+        """Testing sharing multiple histories containing only public datasets with multiple users"""
+        # Logged in as admin_user
         self.new_history()
         global history4
-        history4 = galaxy.model.History.query().order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
+        history4 = galaxy.model.History.filter( and_( galaxy.model.History.table.c.deleted==False,
+                                                      galaxy.model.History.table.c.user_id==admin_user.id ) ) \
+            .order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
         assert history4 is not None, "Problem retrieving history4 from database"
-        self.rename_history( str( history4.id ), history4.name, new_name=urllib.quote( 'history 4' ) )
+        self.rename_history( self.security.encode_id( history4.id ), history4.name, new_name=urllib.quote( 'history 4' ) )
         history4.refresh()
         self.upload_file( '2.bed', dbkey='hg18' )
-        id = '%s,%s' % ( str( history3.id ), str( history4.id ) )
-        name = '%s,%s' % ( history3.name, history4.name )
-        email = '%s,%s' % ( regular_user2.email, regular_user3.email )
-        check_str = 'Histories (%s) have been shared with: %s' % ( name, email )
-        self.share_history( id, email, check_str )
-        # We need to keep track of all shared histories so they can later be deleted
-        history3_copy_name = "%s from %s" % ( history3.name, admin_user.email )
-        history3_to_use_for_regular_user2 = galaxy.model.History \
-            .filter( and_( galaxy.model.History.table.c.name==history3_copy_name,
-                           galaxy.model.History.table.c.user_id==regular_user2.id,
-                           galaxy.model.History.table.c.deleted==False ) ) \
-            .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
-            .first()
-        assert history3_to_use_for_regular_user2 is not None, "Problem retrieving history3_to_use_for_regular_user2 from database" 
-        history3_to_use_for_regular_user3 = galaxy.model.History \
-            .filter( and_( galaxy.model.History.table.c.name==history3_copy_name,
-                           galaxy.model.History.table.c.user_id==regular_user3.id,
-                           galaxy.model.History.table.c.deleted==False ) ) \
-            .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
-            .first()
-        assert history3_to_use_for_regular_user3 is not None, "Problem retrieving history3_to_use_for_regular_user3 from database"           
-        history4_copy_name = "%s from %s" % ( history4.name, admin_user.email )
-        history4_to_use_for_regular_user2 = galaxy.model.History \
-            .filter( and_( galaxy.model.History.table.c.name==history4_copy_name,
-                           galaxy.model.History.table.c.user_id==regular_user2.id,
-                           galaxy.model.History.table.c.deleted==False ) ) \
-            .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
-            .first()
-        assert history4_to_use_for_regular_user2 is not None, "Problem retrieving history4_to_use_for_regular_user2 from database" 
-        history4_to_use_for_regular_user3 = galaxy.model.History \
-            .filter( and_( galaxy.model.History.table.c.name==history4_copy_name,
-                           galaxy.model.History.table.c.user_id==regular_user3.id,
-                           galaxy.model.History.table.c.deleted==False ) ) \
-            .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
-            .first()
-        assert history4_to_use_for_regular_user3 is not None, "Problem retrieving history4_to_use_for_regular_user3 from database" 
+        ids = '%s,%s' % ( self.security.encode_id( history3.id ), self.security.encode_id( history4.id ) )
+        emails = '%s,%s' % ( regular_user2.email, regular_user3.email )
+        check_str_after_submit = 'History (%s) now shared with: 3 users.' % history3.name
+        self.share_histories_with_users( ids,
+                                         emails,
+                                         check_str1='Share 2 histories',
+                                         check_str2=history4.name,
+                                         check_str_after_submit=check_str_after_submit )
         self.logout()
         self.login( email=regular_user2.email )
-        check_str = '%s from %s' % ( history3.name, admin_user.email )
-        self.view_stored_active_histories( check_str=check_str )
-        check_str = '%s from %s' % ( history4.name, admin_user.email )
-        self.view_stored_active_histories( check_str=check_str )
-        # Need to delete the copied histories, so later test runs are valid
-        self.delete_history( id=str( history3_to_use_for_regular_user2.id ) )
-        self.delete_history( id=str( history4_to_use_for_regular_user2.id ) )
+        # Shared history3 should be in regular_user2's list of shared histories
+        self.view_shared_histories( check_str=history3.name, check_str2=admin_user.email )
         self.logout()
         self.login( email=regular_user3.email )
-        check_str = '%s from %s' % ( history3.name, admin_user.email )
-        self.view_stored_active_histories( check_str=check_str )
-        check_str = '%s from %s' % ( history4.name, admin_user.email )
-        self.view_stored_active_histories( check_str=check_str )
-        # Need to delete the copied histories, so later test runs are valid
-        self.delete_history( id=str( history3_to_use_for_regular_user3.id ) )
-        self.delete_history( id=str( history4_to_use_for_regular_user3.id ) )
+        # Shared history3 should be in regular_user3's list of shared histories
+        self.view_shared_histories( check_str=history3.name, check_str2=admin_user.email )
+    def test_045_change_permissions_on_current_history( self ):
+        """Testing changing permissions on the current history"""
+        # Logged in as regular_user3
         self.logout()
         self.login( email=admin_user.email )
-    def test_030_change_permissions_on_current_history( self ):
-        """Testing changing permissions on the current history"""
+        # Current history is history4
+        self.new_history()
         global history5
-        history5 = galaxy.model.History.query().order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
+        history5 = galaxy.model.History.filter( and_( galaxy.model.History.table.c.deleted==False,
+                                                      galaxy.model.History.table.c.user_id==admin_user.id ) ) \
+            .order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
         assert history5 is not None, "Problem retrieving history5 from database"
-        self.rename_history( str( history5.id ), history5.name, new_name=urllib.quote( 'history5' ) )
+        self.rename_history( self.security.encode_id( history5.id ), history5.name, new_name=urllib.quote( 'history 5' ) )
+        # Current history is hostory5
         history5.refresh()
         # Due to the limitations of twill ( not functional with the permissions forms ), we're forced
         # to do this manually.  At this point, we just want to restrict the access permission on history5
@@ -205,81 +260,126 @@ class TestHistory( TwillTestCase ):
         access_action = galaxy.model.Dataset.permitted_actions.DATASET_ACCESS.action
         dhp = galaxy.model.DefaultHistoryPermissions( history5, access_action, admin_user_private_role )
         dhp.flush()
+        history5.refresh()
+        global history5_default_permissions
+        history5_default_permissions = [ dhp.action for dhp in history5.default_permissions ]
+        # Sort for later comparison
+        history5_default_permissions.sort()
         self.upload_file( '1.bed', dbkey='hg18' )
         history5_dataset1 = None
         for hda in history5.datasets:
             if hda.name == '1.bed':
                 history5_dataset1 = hda.dataset
+                break
         assert history5_dataset1 is not None, "Problem retrieving history5_dataset1 from the database"
         # The permissions on the dataset should be restricted from sharing with anyone due to the 
         # inherited history permissions
-        restricted = False
-        for action in history5_dataset1.actions:
-            if action.action == access_action:
-                restricted = True
-                break
-        if not restricted:
-            raise AssertionError, "The 'access' permission is not set for history5_dataset1.actions"
-    def test_035_sharing_history_by_making_datasets_public( self ):
-        """Testing sharing a restricted history by making the datasets public"""
-        # We're still logged in as admin_user.email
-        check_str = 'The following datasets can be shared with %s by updating their permissions' % regular_user1.email
-        action_check_str = 'Histories (%s) have been shared with: %s' % ( history5.name, regular_user1.email )
-        self.share_history( str( history5.id ), regular_user1.email, check_str, action='public', action_check_str=action_check_str )
-        history5_copy1 = galaxy.model.History.query().order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
-        assert history5_copy1 is not None, "Problem retrieving history5_copy1 from database"
-        self.logout()
-        self.login( email=regular_user1.email )
-        self.visit_url( "%s/history/list" % self.url )
-        self.check_page_for_string( history5_copy1.name )
-        # Need to delete history5_copy1 on the history list page for regular_user1
-        self.delete_history( id=str( history5_copy1.id ) )
+        dataset_permissions = [ a.action for a in history5_dataset1.actions ]
+        dataset_permissions.sort()
+        if dataset_permissions != history5_default_permissions:
+            err_msg = "Dataset permissions for history5_dataset1 (%s) were not correctly inherited from history permissions (%s)" \
+                % ( str( dataset_permissions ), str( history5_default_permissions ) )
+            raise AssertionError, err_msg
+        # Make sure when we logout and login, the history default permissions are preserved
         self.logout()
         self.login( email=admin_user.email )
-    def test_040_sharing_history_by_making_new_sharing_role( self ):
+        history5.refresh()
+        current_history_permissions = [ dhp.action for dhp in history5.default_permissions ]
+        current_history_permissions.sort()
+        if current_history_permissions != history5_default_permissions:
+            raise AssertionError, "With logout and login, the history default permissions are not preserved"
+    def test_050_sharing_restricted_history_by_making_datasets_public( self ):
+        """Testing sharing a restricted history by making the datasets public"""
+        # Logged in as admin_user
+        action_check_str = 'The following datasets can be shared with %s by updating their permissions' % regular_user1.email
+        action_check_str_after_submit = 'History (%s) now shared with: 1 users.' % history5.name
+        # Current history is history5
+        self.share_current_history( regular_user1.email,
+                                    action='public',
+                                    action_check_str=action_check_str,
+                                    action_check_str_after_submit=action_check_str_after_submit )
+        self.logout()
+        self.login( email=regular_user1.email )
+        # Shared history5 should be in regular_user1's list of shared histories
+        self.view_shared_histories( check_str=history5.name, check_str2=admin_user.email )
+        # Clone restricted history5
+        self.clone_history( self.security.encode_id( history5.id ),
+                            check_str1='is now included in your list of stored histories.' )
+        global history5_clone1
+        history5_clone1 = galaxy.model.History.filter( and_( galaxy.model.History.table.c.deleted==False,
+                                                             galaxy.model.History.table.c.user_id==regular_user1.id ) ) \
+            .order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
+        assert history5_clone1 is not None, "Problem retrieving history5_clone1 from database"
+        # Check list of histories to make sure shared history5 was cloned
+        self.view_stored_active_histories( check_str="Clone of '%s'" % history5.name )
+        # Make sure the dataset is accessible
+        self.switch_history( id=self.security.encode_id( history5_clone1.id ), name=history5_clone1.name )
+        self.check_history_for_string( 'chr1' )
+        self.logout()
+        self.login( email=admin_user.email )
+    def test_055_sharing_restricted_history_by_making_new_sharing_role( self ):
         """Testing sharing a restricted history by associating a new sharing role with protected datasets"""
-        self.switch_history( id=str( history5.id ), name=history5.name )
         # At this point, history5 should have 1 item, 1.bed, which is public.  We'll add another
         # item which will be private to admin_user due to the permissions on history5
         self.upload_file( '2.bed', dbkey='hg18' )
-        check_str = 'The following datasets can be shared with %s with no changes' % regular_user1.email
-        check_str2 = 'The following datasets can be shared with %s by updating their permissions' % regular_user1.email
-        action_check_str = 'Histories (%s) have been shared with: %s' % ( history5.name, regular_user1.email )
-        self.share_history( str( history5.id ),
-                            regular_user1.email,
-                            check_str,
-                            check_str2=check_str2,
-                            action='private',
-                            action_check_str=action_check_str )
-        history5_copy2 = galaxy.model.History.query().order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
-        assert history5_copy2 is not None, "Problem retrieving history5_copy2 from database"
+        check_str_after_submit = 'The following datasets can be shared with %s with no changes' % regular_user2.email
+        check_str_after_submit2 = 'The following datasets can be shared with %s by updating their permissions' % regular_user2.email
+        action_check_str_after_submit = 'History (%s) now shared with: 2 users.' % history5.name
+        self.share_current_history( regular_user2.email,
+                                    check_str_after_submit=check_str_after_submit,
+                                    check_str_after_submit2=check_str_after_submit2,
+                                    action='private',
+                                    action_check_str_after_submit=action_check_str_after_submit )        
         # We should now have a new sharing role
         global sharing_role
-        role_name = 'Sharing role for: %s, %s' % ( admin_user.email, regular_user1.email )
+        role_name = 'Sharing role for: %s, %s' % ( admin_user.email, regular_user2.email )
         sharing_role = galaxy.model.Role.filter( galaxy.model.Role.table.c.name==role_name ).first()
         if not sharing_role:
             # May have created a sharing role in a previous functional test suite from the opposite direction.
-            role_name = 'Sharing role for: %s, %s' % ( regular_user1.email, admin_user.email )
+            role_name = 'Sharing role for: %s, %s' % ( regular_user2.email, admin_user.email )
             sharing_role = galaxy.model.Role.filter( and_( galaxy.model.Role.table.c.type==role_type,
                                                            galaxy.model.Role.table.c.name==role_name ) ).first()
         if not sharing_role:
             raise AssertionError( "Privately sharing a dataset did not properly create a sharing role" )
+        # The DATASET_ACCESS permission on 2.bed was originally associated with admin_user's private role.  
+        # Since we created a new sharing role for 2.bed, the original permission should have been eliminated,
+        # replaced with the sharing role.
+        history5_dataset2 = None
+        for hda in history5.datasets:
+            if hda.name == '2.bed':
+                history5_dataset2 = hda.dataset
+                break
+        assert history5_dataset2 is not None, "Problem retrieving history5_dataset2 from the database"
+        for dp in history5_dataset2.actions:
+            if dp.action == 'access':
+                assert dp.role == sharing_role, "Associating new sharing role with history5_dataset2 did not correctly eliminate original DATASET ACCESS permissions"
         self.logout()
-        self.login( email=regular_user1.email )
-        self.visit_url( "%s/history/list" % self.url )
-        self.check_page_for_string( history5_copy2.name )
-        self.switch_history( id=str( history5_copy2.id ), name=history5_copy2.name )
+        self.login( email=regular_user2.email )
+        # Shared history5 should be in regular_user2's list of shared histories
+        self.view_shared_histories( check_str=history5.name, check_str2=admin_user.email )
+        # Clone restricted history5
+        self.clone_history( self.security.encode_id( history5.id ),
+                            check_str1='is now included in your list of stored histories.' )
+        global history5_clone2
+        history5_clone2 = galaxy.model.History.filter( and_( galaxy.model.History.table.c.deleted==False,
+                                                             galaxy.model.History.table.c.user_id==regular_user2.id ) ) \
+            .order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
+        assert history5_clone2 is not None, "Problem retrieving history5_clone2 from database"
+        # Check list of histories to make sure shared history3 was cloned
+        self.view_stored_active_histories( check_str="Clone of '%s'" % history5.name )
+        # Make sure the dataset is accessible
+        self.switch_history( id=self.security.encode_id( history5_clone2.id ), name=history5_clone2.name )
        # Make sure both datasets are in the history
         self.check_history_for_string( '1.bed' )
         self.check_history_for_string( '2.bed' )
         # Get both new hdas from the db that were created for the shared history
         hda_1_bed = galaxy.model.HistoryDatasetAssociation \
-            .filter( and_( galaxy.model.HistoryDatasetAssociation.table.c.history_id==history5_copy2.id,
+            .filter( and_( galaxy.model.HistoryDatasetAssociation.table.c.history_id==history5_clone2.id,
                            galaxy.model.HistoryDatasetAssociation.table.c.name=='1.bed' ) ) \
             .first()
         assert hda_1_bed is not None, "Problem retrieving hda_1_bed from database"
         hda_2_bed = galaxy.model.HistoryDatasetAssociation \
-            .filter( and_( galaxy.model.HistoryDatasetAssociation.table.c.history_id==history5_copy2.id,
+            .filter( and_( galaxy.model.HistoryDatasetAssociation.table.c.history_id==history5_clone2.id,
                            galaxy.model.HistoryDatasetAssociation.table.c.name=='2.bed' ) ) \
             .first()
         assert hda_2_bed is not None, "Problem retrieving hda_2_bed from database"
@@ -287,67 +387,108 @@ class TestHistory( TwillTestCase ):
         self.display_history_item( str( hda_1_bed.id ), check_str='chr1' )
         # Make sure 2.bed is accessible since it is associated with a sharing role
         self.display_history_item( str( hda_2_bed.id ), check_str='chr1' )
-        # Need to delete history5_copy2 on the history list page for regular_user1
-        self.delete_history( id=str( history5_copy2.id ) )
-    def test_045_sharing_private_history_with_multiple_users_by_changing_no_permissions( self ):
+        # Delete the clone so the next test will be valid
+        self.delete_history( id=self.security.encode_id( history5_clone2.id ) )
+    def test_060_sharing_restricted_history_with_multiple_users_by_changing_no_permissions( self ):
         """Testing sharing a restricted history with multiple users, making no permission changes"""
+        # Logged in as regular_user2
         self.logout()
         self.login( email=admin_user.email )
-        # History5 can be shared with any user, since it contains a public dataset.  However, only
-        # regular_user1 should be able to access history5's 2.bed dataset since it is associated with a
-        # sharing role, and regular_user2 should be able to access history5's 1.bed, but not 2.bed even
+        # History5 can be shared with any user, since it contains a public dataset ( 1.bed ).  However, only
+        # regular_user2 should be able to access history5's 2.bed dataset since it is associated with a
+        # sharing role, and regular_user3 should be able to access history5's 1.bed, but not 2.bed even
         # though they can see it in their shared history.
-        self.switch_history( id=str( history5.id ), name=history5.name )
-        email = '%s,%s' % ( regular_user1.email, regular_user2.email )
-        check_str = 'The following datasets can be shared with %s with no changes' % email
-        check_str2 = 'The following datasets can be shared with %s by updating their permissions' % email
-        action_check_str = 'Histories (%s) have been shared with: %s' % ( history5.name, regular_user1.email )
-        self.share_history( str( history5.id ),
-                            email,
-                            check_str,
-                            check_str2=check_str2,
-                            action='share',
-                            action_check_str=action_check_str )
-        # We need to keep track of all shared histories so they can later be deleted
-        history5_copy_name = "%s from %s" % ( history5.name, admin_user.email )
-        history5_to_use_for_regular_user1 = galaxy.model.History \
-            .filter( and_( galaxy.model.History.table.c.name==history5_copy_name,
-                           galaxy.model.History.table.c.user_id==regular_user1.id,
-                           galaxy.model.History.table.c.deleted==False ) ) \
-            .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
-            .first()
-        assert history5_to_use_for_regular_user1 is not None, "Problem retrieving history5_to_use_for_regular_user1 from database" 
-        history5_to_use_for_regular_user2 = galaxy.model.History \
-            .filter( and_( galaxy.model.History.table.c.name==history5_copy_name,
-                           galaxy.model.History.table.c.user_id==regular_user2.id,
-                           galaxy.model.History.table.c.deleted==False ) ) \
-            .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
-            .first()
-        assert history5_to_use_for_regular_user2 is not None, "Problem retrieving history5_to_use_for_regular_user2 from database" 
+        # We first need to unshare history5 from regular_user2 so that we can re-share it.
+        self.unshare_history( self.security.encode_id( history5.id ),
+                              self.security.encode_id( regular_user2.id ),
+                              check_str1=regular_user1.email,
+                              check_str2=regular_user2.email )
+        # Make sure the history was unshared correctly
         self.logout()
-        self.login( email=regular_user1.email )
-        check_str = '%s from %s' % ( history5.name, admin_user.email )
-        self.view_stored_active_histories( check_str=check_str )
-        self.switch_history( id=str( history5_to_use_for_regular_user1.id ), name=history5_to_use_for_regular_user1.name )
-        self.check_history_for_string( '1.bed' )
-        self.check_history_for_string( '2.bed' )
-        # Need to delete the copied histories, so later test runs are valid
-        self.delete_history( id=str( history5_to_use_for_regular_user1.id ) )
-        self.logout()
-        # Make sure test2@bx.psu.edu received a copy of history5, with only 1.bed accessible
         self.login( email=regular_user2.email )
-        self.view_stored_active_histories( check_str=check_str )
-        self.switch_history( id=str( history5_to_use_for_regular_user2.id ), name=history5_to_use_for_regular_user2.name )
+        self.visit_page( "root/history_options" )
+        try:
+            self.check_page_for_string( 'List</a> histories shared with you by others' )
+            raise AssertionError, "history5 still shared with regular_user2 after unshaing it with that user."
+        except:
+            pass
+        self.logout()
+        self.login( admin_user.email )
+        email = '%s,%s' % ( regular_user2.email, regular_user3.email )
+        check_str_after_submit = 'The following datasets can be shared with %s with no changes' % email
+        check_str_after_submit2 = 'The following datasets can be shared with %s by updating their permissions' % email
+        # history5 will be shared with regular_user1, regular_user2 and regular_user3
+        action_check_str_after_submit = 'History (%s) now shared with: 3 users.' % history5.name
+        self.share_current_history( email,
+                                    check_str_after_submit=check_str_after_submit,
+                                    check_str_after_submit2=check_str_after_submit2,
+                                    action='share_anyway',
+                                    action_check_str_after_submit=action_check_str_after_submit )
+        # Check security on clone of history5 for regular_user2
+        self.logout()
+        self.login( email=regular_user2.email )
+        # Shared history5 should be in regular_user2's list of shared histories
+        self.view_shared_histories( check_str=history5.name, check_str2=admin_user.email )
+        # Clone restricted history5
+        self.clone_history( self.security.encode_id( history5.id ),
+                            check_str1='is now included in your list of stored histories.' )
+        global history5_clone3
+        history5_clone3 = galaxy.model.History.filter( and_( galaxy.model.History.table.c.deleted==False,
+                                                             galaxy.model.History.table.c.user_id==regular_user2.id ) ) \
+            .order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
+        assert history5_clone3 is not None, "Problem retrieving history5_clone3 from database"
+        # Check list of histories to make sure shared history3 was cloned
+        self.view_stored_active_histories( check_str="Clone of '%s'" % history5.name )
+        # Make sure the dataset is accessible
+        self.switch_history( id=self.security.encode_id( history5_clone3.id ), name=history5_clone3.name )
+       # Make sure both datasets are in the history
         self.check_history_for_string( '1.bed' )
         self.check_history_for_string( '2.bed' )
         # Get both new hdas from the db that were created for the shared history
         hda_1_bed = galaxy.model.HistoryDatasetAssociation \
-            .filter( and_( galaxy.model.HistoryDatasetAssociation.table.c.history_id==history5_to_use_for_regular_user1.id,
+            .filter( and_( galaxy.model.HistoryDatasetAssociation.table.c.history_id==history5_clone3.id,
                            galaxy.model.HistoryDatasetAssociation.table.c.name=='1.bed' ) ) \
             .first()
         assert hda_1_bed is not None, "Problem retrieving hda_1_bed from database"
         hda_2_bed = galaxy.model.HistoryDatasetAssociation \
-            .filter( and_( galaxy.model.HistoryDatasetAssociation.table.c.history_id==history5_to_use_for_regular_user1.id,
+            .filter( and_( galaxy.model.HistoryDatasetAssociation.table.c.history_id==history5_clone3.id,
+                           galaxy.model.HistoryDatasetAssociation.table.c.name=='2.bed' ) ) \
+            .first()
+        assert hda_2_bed is not None, "Problem retrieving hda_2_bed from database"
+        # Make sure 1.bed is accessible since it is public
+        self.display_history_item( str( hda_1_bed.id ), check_str='chr1' )
+        # Make sure 2.bed is accessible since it is associated with a sharing role
+        self.display_history_item( str( hda_2_bed.id ), check_str='chr1' )
+        # Delete the clone so the next test will be valid
+        self.delete_history( id=self.security.encode_id( history5_clone3.id ) )
+        # Check security on clone of history5 for regular_user3
+        self.logout()
+        self.login( email=regular_user3.email )
+        # Shared history5 should be in regular_user2's list of shared histories
+        self.view_shared_histories( check_str=history5.name, check_str2=admin_user.email )
+        # Clone restricted history5
+        self.clone_history( self.security.encode_id( history5.id ),
+                            check_str1='is now included in your list of stored histories.' )
+        global history5_clone4
+        history5_clone4 = galaxy.model.History.filter( and_( galaxy.model.History.table.c.deleted==False,
+                                                             galaxy.model.History.table.c.user_id==regular_user3.id ) ) \
+            .order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
+        assert history5_clone4 is not None, "Problem retrieving history5_clone4 from database"
+        # Check list of histories to make sure shared history3 was cloned
+        self.view_stored_active_histories( check_str="Clone of '%s'" % history5.name )
+        # Make sure the dataset is accessible
+        self.switch_history( id=self.security.encode_id( history5_clone4.id ), name=history5_clone4.name )
+       # Make sure both datasets are in the history
+        self.check_history_for_string( '1.bed' )
+        self.check_history_for_string( '2.bed' )
+        # Get both new hdas from the db that were created for the shared history
+        hda_1_bed = galaxy.model.HistoryDatasetAssociation \
+            .filter( and_( galaxy.model.HistoryDatasetAssociation.table.c.history_id==history5_clone4.id,
+                           galaxy.model.HistoryDatasetAssociation.table.c.name=='1.bed' ) ) \
+            .first()
+        assert hda_1_bed is not None, "Problem retrieving hda_1_bed from database"
+        hda_2_bed = galaxy.model.HistoryDatasetAssociation \
+            .filter( and_( galaxy.model.HistoryDatasetAssociation.table.c.history_id==history5_clone4.id,
                            galaxy.model.HistoryDatasetAssociation.table.c.name=='2.bed' ) ) \
             .first()
         assert hda_2_bed is not None, "Problem retrieving hda_2_bed from database"
@@ -356,29 +497,63 @@ class TestHistory( TwillTestCase ):
         # Make sure 2.bed is not accessible since it is protected
         try:
             self.display_history_item( str( hda_2_bed.id ), check_str='chr1' )
-            raise AssertionError, "History item 2.bed is accessible by user %s when is should not be" % regular_user2.email
+            raise AssertionError, "History item 2.bed is accessible by user %s when is should not be" % regular_user3.email
         except:
             pass
         self.check_history_for_string( 'You do not have permission to view this dataset' )
-        # Need to delete the copied histories, so later test runs are valid
-        self.delete_history( id=str( history5_to_use_for_regular_user2.id ) )
-    def test_050_sharing_private_history_by_choosing_to_not_share( self ):
+        # Delete the clone so the next test will be valid
+        self.delete_history( id=self.security.encode_id( history5_clone4.id ) )
+    def test_065_sharing_private_history_by_choosing_to_not_share( self ):
         """Testing sharing a restricted history with multiple users by choosing not to share"""
+        # Logged in as regular_user3
         self.logout()
         self.login( email=admin_user.email )
-        self.switch_history( id=str( history5.id ), name=history5.name )
-        email = '%s,%s' % ( regular_user1.email, regular_user2.email )
-        check_str = 'The following datasets can be shared with %s with no changes' % email
-        check_str2 = 'The following datasets can be shared with %s by updating their permissions' % email
-        action_check_str = 'History Options'
-        self.share_history( str( history5.id ),
-                            email,
-                            check_str,
-                            check_str2=check_str2,
-                            action='no_share' )
-    def test_055_history_show_and_hide_deleted_datasets( self ):
+        # Unshare history5 from regular_user2
+        self.unshare_history( self.security.encode_id( history5.id ),
+                              self.security.encode_id( regular_user2.id ),
+                              check_str1=regular_user1.email,
+                              check_str2=regular_user2.email )
+        # Unshare history5 from regular_user3
+        self.unshare_history( self.security.encode_id( history5.id ),
+                              self.security.encode_id( regular_user3.id ),
+                              check_str1=regular_user1.email,
+                              check_str2=regular_user3.email )
+        # Make sure the history was unshared correctly
+        self.logout()
+        self.login( email=regular_user2.email )
+        self.visit_page( "root/history_options" )
+        try:
+            self.check_page_for_string( 'List</a> histories shared with you by others' )
+            raise AssertionError, "history5 still shared with regular_user2 after unshaing it with that user."
+        except:
+            pass
+        self.logout()
+        self.login( email=regular_user3.email )
+        self.visit_page( "root/history_options" )
+        try:
+            self.check_page_for_string( 'List</a> histories shared with you by others' )
+            raise AssertionError, "history5 still shared with regular_user3 after unshaing it with that user."
+        except:
+            pass
+        self.logout()
+        self.login( email=admin_user.email )
+        email = '%s,%s' % ( regular_user2.email, regular_user3.email )
+        check_str_after_submit = 'The following datasets can be shared with %s with no changes' % email
+        check_str_after_submit2 = 'The following datasets can be shared with %s by updating their permissions' % email
+        action_check_str_after_submit = 'History Options'
+        self.share_current_history( email,
+                                    check_str_after_submit=check_str_after_submit,
+                                    check_str_after_submit2=check_str_after_submit2,
+                                    action='no_share',
+                                    action_check_str_after_submit=action_check_str_after_submit )
+    def test_070_history_show_and_hide_deleted_datasets( self ):
         """Testing displaying deleted history items"""
+        # Logged in as admin_user
         self.new_history( name=urllib.quote( 'show hide deleted datasets' ) )
+        latest_history = galaxy.model.History.filter( and_( galaxy.model.History.table.c.deleted==False,
+                                                            galaxy.model.History.table.c.user_id==admin_user.id ) ) \
+            .order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
+        assert latest_history is not None, "Problem retrieving latest_history from database"
         self.upload_file('1.bed', dbkey='hg18')
         latest_hda = galaxy.model.HistoryDatasetAssociation.query() \
             .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ).first()
@@ -392,19 +567,28 @@ class TestHistory( TwillTestCase ):
         self.home()
         self.visit_url( "%s/history/?show_deleted=False" % self.url )
         self.check_page_for_string( 'Your history is empty' )
-    def test_060_deleting_and_undeleting_history_items( self ):
+        self.delete_history( self.security.encode_id( latest_history.id ) )
+    def test_075_deleting_and_undeleting_history_items( self ):
         """Testing deleting and un-deleting history items"""
-        self.new_history( name=urllib.quote( 'delete undelete history items' ) )
+        # logged in as admin_user
+        # Deleting the current history in the last method created a new history
+        latest_history = galaxy.model.History.filter( and_( galaxy.model.History.table.c.deleted==False,
+                                                            galaxy.model.History.table.c.user_id==admin_user.id ) ) \
+            .order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
+        assert latest_history is not None, "Problem retrieving latest_history from database"
+        self.rename_history( self.security.encode_id( latest_history.id ), latest_history.name, new_name=urllib.quote( 'delete undelete history items' ) )
         # Add a new history item
         self.upload_file( '1.bed', dbkey='hg15' )
+        latest_hda = galaxy.model.HistoryDatasetAssociation.query() \
+            .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ).first()
         self.home()
         self.visit_url( "%s/history/?show_deleted=False" % self.url )
         self.check_page_for_string( '1.bed' )
         self.check_page_for_string( 'hg15' )
-        self.assertEqual ( len( self.get_history() ), 1 )
+        self.assertEqual ( len( self.get_history_as_data_list() ), 1 )
         # Delete the history item
-        self.delete_history_item( 1, check_str="Your history is empty" )
-        self.assertEqual ( len( self.get_history() ), 0 )
+        self.delete_history_item( latest_hda.hid, check_str="Your history is empty" )
+        self.assertEqual ( len( self.get_history_as_data_list() ), 0 )
         # Try deleting an invalid hid
         try:
             self.delete_history_item( 'XXX' )
@@ -412,16 +596,19 @@ class TestHistory( TwillTestCase ):
         except:
             pass
         # Undelete the history item
-        self.undelete_history_item( 1, show_deleted=True )
+        self.undelete_history_item( latest_hda.hid, show_deleted=True )
         self.home()
         self.visit_url( "%s/history/?show_deleted=False" % self.url )
         self.check_page_for_string( '1.bed' )
         self.check_page_for_string( 'hg15' )
-    def test_065_copying_history_items_between_histories( self ):
+        self.delete_history( self.security.encode_id( latest_history.id ) )
+    def test_080_copying_history_items_between_histories( self ):
         """Testing copying history items between histories"""
+        # logged in as admin_user
         self.new_history( name=urllib.quote( 'copy history items' ) )
-        global history6
-        history6 = galaxy.model.History.query().order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
+        history6 = galaxy.model.History.filter( and_( galaxy.model.History.table.c.deleted==False,
+                                                      galaxy.model.History.table.c.user_id==admin_user.id ) ) \
+            .order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
         assert history6 is not None, "Problem retrieving history6 from database"
         self.upload_file( '1.bed', dbkey='hg18' )
         hda1 = galaxy.model.HistoryDatasetAssociation.query() \
@@ -445,11 +632,12 @@ class TestHistory( TwillTestCase ):
             raise AssertionError, "Copying hda1 to the current history failed"
         # Test copying 1 hda to another history
         self.new_history( name=urllib.quote( 'copy history items - 2' ) )
-        global history7
-        history7 = galaxy.model.History.query().order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
+        history7 = galaxy.model.History.filter( and_( galaxy.model.History.table.c.deleted==False,
+                                                      galaxy.model.History.table.c.user_id==admin_user.id ) ) \
+            .order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
         assert history7 is not None, "Problem retrieving history7 from database"
         # Switch back to our history from which we want to copy
-        self.switch_history( id=str( history6.id ), name=history6.name )
+        self.switch_history( id=self.security.encode_id( history6.id ), name=history6.name )
         target_history_ids=[ str( history7.id ) ]
         all_target_history_ids = [ str( hda.id ) for hda in admin_user.active_histories ]
         # Test copying to the a history that is not the current history
@@ -459,12 +647,43 @@ class TestHistory( TwillTestCase ):
                                 all_target_history_ids=all_target_history_ids,
                                 deleted_history_ids=deleted_history_ids )
         # Switch to the history to which we copied
-        self.switch_history( id=str( history7.id ), name=history7.name )
+        self.switch_history( id=self.security.encode_id( history7.id ), name=history7.name )
         self.check_history_for_string( hda1.name )
-    def test_070_reset_data_for_later_test_runs( self ):
-        """Reseting data to enable later test runs to pass"""
-        self.delete_history( id=str( history3.id ) )
-        self.delete_history( id=str( history4.id ) )
-        self.delete_history( id=str( history5.id ) )
-        self.delete_history( id=str( history6.id ) )
-        self.delete_history( id=str( history7.id ) )
+        self.delete_history( self.security.encode_id( history6.id ) )
+        self.delete_history( self.security.encode_id( history7.id ) )
+    def test_085_reset_data_for_later_test_runs( self ):
+        """Reseting data to enable later test runs to to be valid"""
+        # logged in as admin_user
+        # Clean up admin_user
+        # Unshare history3 - shared with regular_user1, regular_user2, regular_user3
+        self.unshare_history( self.security.encode_id( history3.id ),
+                              self.security.encode_id( regular_user1.id ) )
+        self.unshare_history( self.security.encode_id( history3.id ),
+                              self.security.encode_id( regular_user2.id ) )
+        self.unshare_history( self.security.encode_id( history3.id ),
+                              self.security.encode_id( regular_user3.id ) )
+        # Unshare history4 - shared with regular_user2, regular_user3
+        self.unshare_history( self.security.encode_id( history4.id ),
+                              self.security.encode_id( regular_user2.id ) )
+        self.unshare_history( self.security.encode_id( history4.id ),
+                              self.security.encode_id( regular_user3.id ) )
+        # Unshare history5 - shared with regular_user1
+        self.unshare_history( self.security.encode_id( history5.id ),
+                              self.security.encode_id( regular_user1.id ) )
+        # Delete histories
+        self.delete_history( id=self.security.encode_id( history3.id ) )
+        self.delete_history( id=self.security.encode_id( history3_clone2.id ) )
+        self.delete_history( id=self.security.encode_id( history4.id ) )
+        self.delete_history( id=self.security.encode_id( history5.id ) )
+        # Eliminate Sharing role for: test@bx.psu.edu, test2@bx.psu.edu
+        self.mark_role_deleted( str( sharing_role.id ), sharing_role.name )
+        self.purge_role( str( sharing_role.id ), sharing_role.name )
+        # Manually delete the sharing role from the database
+        sharing_role.refresh()
+        sharing_role.delete()
+        sharing_role.flush()
+        # Clean up regular_user_1
+        self.logout()
+        self.login( email=regular_user1.email )
+        self.delete_history( id=self.security.encode_id( history3_clone1.id ) )
+        self.delete_history( id=self.security.encode_id( history5_clone1.id ) )

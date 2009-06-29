@@ -6,8 +6,12 @@ class UploadData( TwillTestCase ):
     def test_000_upload_files_from_disk( self ):
         """Test uploading data files from disk"""
         self.logout()
-        self.login( email='tst@bx.psu.edu' )
-        history1 = galaxy.model.History.query().order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
+        self.login( email='test@bx.psu.edu' )
+        global admin_user
+        admin_user = galaxy.model.User.filter( galaxy.model.User.table.c.email=='test@bx.psu.edu' ).one()
+        history1 = galaxy.model.History.filter( and_( galaxy.model.History.table.c.deleted==False,
+                                                      galaxy.model.History.table.c.user_id==admin_user.id ) ) \
+            .order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
         self.upload_file( '1.bed' )
         hda1 = galaxy.model.HistoryDatasetAssociation.query() \
             .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ).first()
@@ -38,24 +42,28 @@ class UploadData( TwillTestCase ):
             .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ).first()
         assert hda6 is not None, "Problem retrieving hda6 from database"
         self.verify_dataset_correctness( '1.scf.zip', hid=str( hda6.hid ) )
-        self.delete_history( id=str( history1.id ) )
+        self.delete_history( id=self.security.encode_id( history1.id ) )
     def test_005_url_paste( self ):
         """Test url paste behavior"""
         # Deleting the current history should have created a new history
         self.check_history_for_string( 'Your history is empty' )
-        history2 = galaxy.model.History.query().order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
+        history2 = galaxy.model.History.filter( and_( galaxy.model.History.table.c.deleted==False,
+                                                      galaxy.model.History.table.c.user_id==admin_user.id ) ) \
+            .order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
         self.upload_url_paste( 'hello world' )
         self.check_history_for_string( 'Pasted Entry' )
         self.check_history_for_string( 'hello world' )
         self.upload_url_paste( u'hello world' )
         self.check_history_for_string( 'Pasted Entry' )
         self.check_history_for_string( 'hello world' )
-        self.delete_history( id=str( history2.id ) )
+        self.delete_history( id=self.security.encode_id( history2.id ) )
     def test_010_upload_encode_data( self ):
         """Test uploading encode data"""
         # Deleting the current history should have created a new history
         self.check_history_for_string( 'Your history is empty' )
-        history3 = galaxy.model.History.query().order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
+        history3 = galaxy.model.History.filter( and_( galaxy.model.History.table.c.deleted==False,
+                                                      galaxy.model.History.table.c.user_id==admin_user.id ) ) \
+            .order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
         self.run_tool( 'encode_import_chromatin_and_chromosomes1', hg17=['cc.EarlyRepSeg.20051216.bed'] )
         self.wait()
         hda7 = galaxy.model.HistoryDatasetAssociation.query() \
@@ -68,7 +76,4 @@ class UploadData( TwillTestCase ):
             .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ).first()
         assert hda8 is not None, "Problem retrieving hda8 from database"
         self.verify_dataset_correctness( 'sc_3D_cds.bed', hid=str( hda8.hid ) )
-        self.delete_history( id=str( history3.id ) )
-    def test_015_reset_data_for_later_test_runs( self ):
-        """Reseting data to enable later test runs to pass"""
-        self.logout()
+        self.delete_history( id=self.security.encode_id( history3.id ) )

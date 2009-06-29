@@ -81,6 +81,7 @@ class User( BaseController ):
 
     @web.expose
     def login( self, trans, email='', password='' ):
+        log.debug( "###IN login, email:%s, password: %s" % ( email, password ))
         email_error = password_error = None
         # Attempt login
         if trans.app.config.require_login:

@@ -5,14 +5,16 @@
 <div class="toolForm">
     <div class="toolFormTitle">Share ${len( histories)} histories</div>
     <div class="toolFormBody">
-        %if not can_change and not cannot_change:
-            <form action="${h.url_for( controller="history", action='share' )}" method="post" >
+        %if not can_change and not cannot_change and not no_change_needed:
+            ## We are sharing histories that contain only public datasets
+            <form name='share' id='share' action="${h.url_for( controller="history", action='share' )}" method="post" >
                 %for history in histories:
+                    <input type="hidden" name="id" value="${trans.security.encode_id( history.id )}">
                     <div class="toolForm">
                         <div class="form-row">
                             <label>${_('History Name:')}</label>
                             <div style="float: left; width: 250px; margin-right: 10px;">
-                                ${history.name}<input type="hidden" name="id" value="${history.id}">
+                                ${history.name}
                             </div>
                         </div>
                         <div style="clear: both"></div>
@@ -27,15 +29,7 @@
                                 </td>
                             </div>
                         </div>
-                        ## TODO: this feature is not currently working
-                        ##<div style="clear: both"></div>
-                        ##<div class="form-row">
-                        ##    <label>${_('Share Link')}</label>
-                        ##    <div style="float: left; width: 250px; margin-right: 10px;">
-                        ##        <a href="${h.url_for( controller='history', action='imp', id=trans.security.encode_id(history.id) )}">${_('copy link to share')}</a>
-                        ##    </div>
-                        ##</div>
-                        ##<div style="clear: both"></div>
+                        <div style="clear: both"></div>
                         <p/>
                     </div>
                 %endfor
@@ -58,15 +52,17 @@
                 %endif
                 <div style="clear: both"></div>
                 <div class="form-row">
-                    <input type="submit" name="history_share_btn" value="Submit">
+                    <input type="submit" name="share_button" value="Submit">
                 </div>
             </form>
         %else:
-            <form action="${h.url_for( controller='history', action='share' )}" method="post">
+            ## We are sharing restricted histories
+            <form name='share_restricted' id=share_restricted' action="${h.url_for( controller='history', action='share_restricted' )}" method="post">
+                ## Needed for rebuilding dicts
+                <input type="hidden" name="email" value="${email}" size="40">
                 %for history in histories:
-                    <input type="hidden" name="id" value="${history.id}">
+                    <input type="hidden" name="id" value="${trans.security.encode_id( history.id )}">
                 %endfor
-                <input type="hidden" name="email" value="${email}">
                 %if no_change_needed:
                     <div style="clear: both"></div>
                     <div class="form-row">
@@ -74,7 +70,29 @@
                             The following datasets can be shared with ${email} with no changes
                         </div>
                     </div>
-                    %for history, hdas in no_change_needed.items():
+                    ## no_change_needed looks like:
+                    ## { userA: {historyX : [hda, hda], historyY : [hda]}, userB: {historyY : [hda]} }
+                    <%
+                        # TODO: move generation of these unique dictionaries to the history controller
+                        # Build the list of unique histories and datasets
+                        unique_stuff = {}
+                    %>
+                    %for user, history_dict in no_change_needed.items():
+                        %for history, hdas in history_dict.items():
+                            <%
+                                if history in unique_stuff:
+                                    for hda in hdas:
+                                        if hda not in unique_stuff[ history ]:
+                                            unique_stuff[ history ].append( hda )
+                                else:
+                                    unique_stuff[ history ] = []
+                                    for hda in hdas:
+                                        if hda not in unique_stuff[ history ]:
+                                            unique_stuff[ history ].append( hda )
+                            %>
+                        %endfor
+                    %endfor
+                    %for history, hdas in unique_stuff.items():
                         <div class="form-row">
                             <label>History</label>
                             ${history.name}
@@ -97,7 +115,29 @@
                             The following datasets can be shared with ${email} by updating their permissions
                         </div>
                     </div>
-                    %for history, hdas in can_change.items():
+                    ## can_change looks like:
+                    ## { userA: {historyX : [hda, hda], historyY : [hda]}, userB: {historyY : [hda]} }
+                    <%
+                        # TODO: move generation of these unique dictionaries to the history controller
+                        # Build the list of unique histories and datasets
+                        unique_stuff = {}
+                    %>
+                    %for user, history_dict in can_change.items():
+                        %for history, hdas in history_dict.items():
+                            <%
+                                if history in unique_stuff:
+                                    for hda in hdas:
+                                        if hda not in unique_stuff[ history ]:
+                                            unique_stuff[ history ].append( hda )
+                                else:
+                                    unique_stuff[ history ] = []
+                                    for hda in hdas:
+                                        if hda not in unique_stuff[ history ]:
+                                            unique_stuff[ history ].append( hda )
+                            %>
+                        %endfor
+                    %endfor
+                    %for history, hdas in unique_stuff.items():
                         <div class="form-row">
                             <label>History</label>
                             ${history.name}
@@ -121,7 +161,29 @@
                             change the permissions on them
                         </div>
                     </div>
-                    %for history, hdas in cannot_change.items():
+                    ## cannot_change looks like:
+                    ## { userA: {historyX : [hda, hda], historyY : [hda]}, userB: {historyY : [hda]} }
+                    <%
+                        # TODO: move generation of these unique dictionaries to the history controller
+                        # Build the list of unique histories and datasets
+                        unique_stuff = {}
+                    %>
+                    %for user, history_dict in can_change.items():
+                        %for history, hdas in history_dict.items():
+                            <%
+                                if history in unique_stuff:
+                                    for hda in hdas:
+                                        if hda not in unique_stuff[ history ]:
+                                            unique_stuff[ history ].append( hda )
+                                else:
+                                    unique_stuff[ history ] = []
+                                    for hda in hdas:
+                                        if hda not in unique_stuff[ history ]:
+                                            unique_stuff[ history ].append( hda )
+                            %>
+                        %endfor
+                    %endfor
+                    %for history, hdas in unique_stuff.items():
                         <div class="form-row">
                             <label>History</label>
                             ${history.name}
@@ -154,19 +216,17 @@
                         %endif
                     </div>
                 %endif
-                %if no_change_needed:
-                    <div class="form-row">
-                        <input type="radio" name="action" value="share"> Share anyway
-                        %if can_change:
-                            (don't change any permissions)
-                        %endif
-                    </div>
-                %endif
+                <div class="form-row">
+                    <input type="radio" name="action" value="share_anyway"> Share anyway
+                    %if can_change:
+                        (don't change any permissions)
+                    %endif
+                </div>
                 <div class="form-row">
                     <input type="radio" name="action" value="no_share"> Don't share
                 </div>
                 <div class="form-row">
-                    <input type="submit" name="share_proceed_button" value="Go"><br/>
+                    <input type="submit" name="share_restricted_button" value="Go"><br/>
                 </div>
             </form>
         %endif
