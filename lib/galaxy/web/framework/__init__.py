@@ -147,6 +147,9 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         self.workflow_building_mode = False
         # Always have a valid galaxy session
         self.__ensure_valid_session( session_cookie )
+        # Prevent deleted users from accessing Galaxy
+        if self.app.config.use_remote_user and self.galaxy_session.user.deleted:
+            self.response.send_redirect( url_for( '/static/user_disabled.html' ) )
         if self.app.config.require_login:
             self.__ensure_logged_in_user( environ )
     def setup_i18n( self ):
@@ -279,6 +282,9 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
                 invalidate_existing_session = True
                 log.warning( "User '%s' is an external user with an existing session, invalidating session since external auth is disabled",
                              galaxy_session.user.email )
+            elif galaxy_session is not None and galaxy_session.user is not None and galaxy_session.user.deleted:
+                invalidate_existing_session = True
+                log.warning( "User '%s' is marked deleted, invalidating session" % galaxy_session.user.email )
         # Do we need to invalidate the session for some reason?
         if invalidate_existing_session:
             prev_galaxy_session = galaxy_session
@@ -300,6 +306,9 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
             if prev_galaxy_session:
                 objects_to_flush.append( prev_galaxy_session )            
             sa_session.flush( objects_to_flush )
+        # If the old session was invalid, get a new history with our new session
+        if invalidate_existing_session:
+            self.new_history()
     def __ensure_logged_in_user( self, environ ):
         allowed_paths = (
             url_for( controller='root', action='index' ),
@@ -368,8 +377,6 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
             # We set default user permissions, before we log in and set the default history permissions
             self.app.security_agent.user_set_default_permissions( user )
             #self.log_event( "Automatically created account '%s'", user.email )
-        elif user.deleted:
-            return self.show_error_message( "Your account is no longer valid, contact your Galaxy administrator to activate your account." )
         return user
     def __update_session_cookie( self, name='galaxysession' ):
         """
