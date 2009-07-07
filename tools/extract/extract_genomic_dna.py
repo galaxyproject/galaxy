@@ -117,7 +117,7 @@ def __main__():
                         first_invalid_line = i + 1
                         invalid_line = line
                     continue
-            elif seq_path and os.path.exists( seq_path ):
+            elif seq_path and os.path.isfile( seq_path ):
                 if chrom in twobits:
                     t = twobits[chrom]
                 else:
@@ -133,7 +133,7 @@ def __main__():
                         invalid_line = line
                     continue
             else:
-                warning = "Chrom '%s' was not found for build '%s'. " % ( chrom, dbkey )
+                warning = "Chromosome by name '%s' was not found for build '%s'. " % ( chrom, dbkey )
                 warnings.append( warning )
                 skipped_lines += 1
                 if not invalid_line:
