@@ -816,16 +816,23 @@ class TwillTestCase( unittest.TestCase ):
         check_str = "User '%s' has been marked as purged." % email
         self.check_page_for_string( check_str )
         self.home()
-    def associate_roles_and_groups_with_user( self, user_id, email, role_ids=[], group_ids=[] ):
+    def associate_roles_and_groups_with_user( self, user_id, email,
+                                              in_role_ids=[], out_role_ids=[],
+                                              in_group_ids=[], out_group_ids=[],
+                                              check_str='' ):
         self.home()
         url = "%s/admin/user?user_id=%s&user_roles_groups_edit_button=Save" % ( self.url, user_id )
-        if role_ids:
-            url += "&in_roles=%s" % ','.join( role_ids )
-        if group_ids:
-            url += "&in_groups=%s" % ','.join( group_ids )
+        if in_role_ids:
+            url += "&in_roles=%s" % ','.join( in_role_ids )
+        if out_role_ids:
+            url += "&out_roles=%s" % ','.join( out_role_ids )
+        if in_group_ids:
+            url += "&in_groups=%s" % ','.join( in_group_ids )
+        if out_group_ids:
+            url += "&out_groups=%s" % ','.join( out_group_ids )
         self.visit_url( url )
-        check_str = "User '%s' has been updated with %d associated roles and %d associated groups" % ( email, len( role_ids ), len( group_ids ) )
-        self.check_page_for_string( check_str )
+        if check_str:
+            self.check_page_for_string( check_str )
         self.home()
 
     # Tests associated with roles

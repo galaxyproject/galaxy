@@ -72,6 +72,11 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.home()
         self.visit_url( "%s/admin/user?user_id=%s" % ( self.url, admin_user.id ) )
         self.check_page_for_string( admin_user.email )
+        # Try deleting the admin_user's private role
+        check_str = "You cannot eliminate a user's private role association."
+        self.associate_roles_and_groups_with_user( str( admin_user.id ), admin_user.email,
+                                                   out_role_ids=str( admin_user_private_role.id ),
+                                                   check_str=check_str )
         self.logout()
     def test_010_login_as_regular_user1( self ):
         """Testing logging in as regular user test1@bx.psu.edu - tests private role creation and changing DefaultHistoryPermissions for new histories"""
@@ -430,7 +435,9 @@ class TestSecurityAndLibraries( TwillTestCase ):
         group_ids = []
         for uga in admin_user.groups:
             group_ids.append( str( uga.group_id ) )
-        self.associate_roles_and_groups_with_user( str( admin_user.id ), str( admin_user.email ), role_ids=role_ids, group_ids=group_ids )
+        check_str = "User '%s' has been updated with %d associated roles and %d associated groups" % ( admin_user.email, len( role_ids ), len( group_ids ) )
+        self.associate_roles_and_groups_with_user( str( admin_user.id ), str( admin_user.email ),
+                                                   in_role_ids=role_ids, in_group_ids=group_ids, check_str=check_str )
         admin_user.refresh()
         # admin_user should now be associated with 4 roles: private, role_one, role_two, role_three
         if len( admin_user.roles ) != 4:

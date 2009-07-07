@@ -422,8 +422,11 @@ class GalaxyRBACAgent( RBACAgent ):
                 for a in user.non_private_roles + user.groups:
                     a.delete()
                     a.flush()
+            user.refresh()
             for role in roles:
-                self.associate_components( user=user, role=role )
+                # Make sure we are not creating an additional association with a PRIVATE role
+                if role not in user.roles:
+                    self.associate_components( user=user, role=role )
             for group in groups:
                 self.associate_components( user=user, group=group )
     def set_entity_group_associations( self, groups=[], users=[], roles=[], delete_existing_assocs=True ):

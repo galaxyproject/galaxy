@@ -624,7 +624,7 @@ assign_mapper( context, UserRoleAssociation, UserRoleAssociation.table,
         user=relation( User, backref="roles" ),
         non_private_roles=relation( User, 
                                     backref="non_private_roles",
-                                    primaryjoin=( ( User.table.c.id == UserRoleAssociation.table.c.user_id ) & ( UserRoleAssociation.table.c.role_id == Role.table.c.id ) & not_( Role.table.c.type == 'private' ) ) ),
+                                    primaryjoin=( ( User.table.c.id == UserRoleAssociation.table.c.user_id ) & ( UserRoleAssociation.table.c.role_id == Role.table.c.id ) & not_( Role.table.c.name == User.table.c.email & Role.table.c.type == 'private' ) ) ),
         role=relation( Role )
     )
 )

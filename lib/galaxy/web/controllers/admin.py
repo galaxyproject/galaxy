@@ -623,22 +623,35 @@ class Admin( BaseController ):
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
         user = trans.app.model.User.get( int( params.user_id ) )
+        private_role = trans.app.security_agent.get_private_user_role( user )
         if params.get( 'user_roles_groups_edit_button', False ):
+            # Make sure the user is not dis-associating himself from his private role
+            out_roles = [ trans.app.model.Role.get( x ) for x in util.listify( params.out_roles ) ]
+            if private_role in out_roles:
+                msg += "You cannot eliminate a user's private role association.  "
+                messagetype = 'error'
             in_roles = [ trans.app.model.Role.get( x ) for x in util.listify( params.in_roles ) ]
+            out_groups = [ trans.app.model.Group.get( x ) for x in util.listify( params.out_groups ) ]
             in_groups = [ trans.app.model.Group.get( x ) for x in util.listify( params.in_groups ) ]
-            trans.app.security_agent.set_entity_user_associations( users=[ user ], roles=in_roles, groups=in_groups )
-            user.refresh()
-            msg += "User '%s' has been updated with %d associated roles and %d associated groups (private roles are not displayed)" % \
-                ( user.email, len( in_roles ), len( in_groups ) )
-            trans.response.send_redirect( web.url_for( action='users', msg=util.sanitize_text( msg ), messagetype=messagetype ) )
+            if in_roles:
+                trans.app.security_agent.set_entity_user_associations( users=[ user ], roles=in_roles, groups=in_groups )
+                user.refresh()
+                msg += "User '%s' has been updated with %d associated roles and %d associated groups (private roles are not displayed)" % \
+                    ( user.email, len( in_roles ), len( in_groups ) )
+                trans.response.send_redirect( web.url_for( action='users', msg=util.sanitize_text( msg ), messagetype=messagetype ) )
         in_roles = []
         out_roles = []
         in_groups = []
         out_groups = []
-        for role in trans.app.model.Role.filter( trans.app.model.Role.table.c.deleted==False ).order_by( trans.app.model.Role.table.c.name ).all():
+        for role in trans.app.model.Role.filter( trans.app.model.Role.table.c.deleted==False ) \
+                                        .order_by( trans.app.model.Role.table.c.name ).all():
             if role in [ x.role for x in user.roles ]:
                 in_roles.append( ( role.id, role.name ) )
-            else:
+            elif role.type != trans.app.model.Role.types.PRIVATE:
+                # There is a 1 to 1 mapping between a user and a PRIVATE role, so private roles should
+                # not be listed in the roles form fields, except for the currently selected user's private
+                # role, which should always be in in_roles.  The check above is added as an additional
+                # precaution, since for a period of time we were including private roles in the form fields.
                 out_roles.append( ( role.id, role.name ) )
         for group in trans.app.model.Group.filter( trans.app.model.Group.table.c.deleted==False ).order_by( trans.app.model.Group.table.c.name ).all():
             if group in [ x.group for x in user.groups ]:
