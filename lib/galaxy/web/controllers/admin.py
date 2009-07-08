@@ -1937,10 +1937,11 @@ class Admin( BaseController ):
                     ldda = trans.app.model.LibraryDatasetDatasetAssociation.get( id )
                     ldda.deleted = True
                     ldda.flush()
-                    msg = "The selected datasets have been removed from this library"
+                msg = "The selected datasets have been removed from this library"
                 trans.response.send_redirect( web.url_for( controller='admin',
                                                            action='browse_library',
                                                            id=library_id,
+                                                           show_deleted=False,
                                                            msg=util.sanitize_text( msg ),
                                                            messagetype='done' ) )
             else:

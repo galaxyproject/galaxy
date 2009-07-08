@@ -734,11 +734,17 @@ class LibraryFolder( object ):
     def active_components( self ):
         return list( self.active_folders ) + list( self.active_datasets )
     @property
+    def active_datasets( self ):
+         # This needs to be a list
+        return [ ld for ld in self.datasets if not ld.library_dataset_dataset_association.deleted ]
+    @property
     def activatable_datasets( self ):
-        return [ ld for ld in self.datasets if not ld.library_dataset_dataset_association.dataset.deleted ] #this needs to be a list
+         # This needs to be a list
+        return [ ld for ld in self.datasets if not ld.library_dataset_dataset_association.dataset.deleted ]
     @property #make this a relation
     def activatable_folders( self ):
-        return [ folder for folder in self.folders if not folder.purged ] #this needs to be a list
+        # This needs to be a list
+        return [ folder for folder in self.folders if not folder.purged ]
 
 class LibraryDataset( object ):
     # This class acts as a proxy to the currently selected LDDA
