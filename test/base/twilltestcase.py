@@ -121,10 +121,13 @@ class TwillTestCase( unittest.TestCase ):
         page = self.last_page()
         if page.find( 'error' ) > -1:
             raise AssertionError('Errors in the history for user %s' % self.user )
-    def check_history_for_string( self, patt ):
+    def check_history_for_string( self, patt, show_deleted=False ):
         """Looks for 'string' in history page"""
         self.home()
-        self.visit_page( "history" )
+        if show_deleted:
+            self.visit_page( "history?show_deleted=True" )
+        else:
+            self.visit_page( "history" )
         for subpatt in patt.split():
             tc.find(subpatt)
         self.home()
@@ -268,11 +271,6 @@ class TwillTestCase( unittest.TestCase ):
         self.home()
     def switch_history( self, id='', name='' ):
         """Switches to a history in the current list of histories"""
-        data_list = self.get_histories_as_data_list()
-        self.assertTrue( data_list )
-        if not id:
-            history = history_list[0]
-            id = history.get( 'id' )
         self.visit_url( "%s/history/list?operation=switch&id=%s" % ( self.url, id ) )
         if name:
             self.check_history_for_string( name )
@@ -305,11 +303,15 @@ class TwillTestCase( unittest.TestCase ):
         if check_str2:
             self.check_page_for_string( check_str2 )
         self.home()
-    def clone_history( self, history_id, check_str1='' ):
+    def clone_history( self, history_id, clone_choice, check_str1='', check_str_after_submit='' ):
         self.home()
         self.visit_page( "history/clone?id=%s" % history_id )
         if check_str1:
             self.check_page_for_string( check_str1 )
+        tc.fv( '1', 'clone_choice', clone_choice )
+        tc.submit( 'clone_choice_button' )
+        if check_str_after_submit:
+            self.check_page_for_string( check_str_after_submit )
         self.home()
     def enable_import_via_link( self, history_id, check_str='', check_str_after_submit='' ):
         self.home()
@@ -366,34 +368,22 @@ class TwillTestCase( unittest.TestCase ):
         self.visit_page( "edit?hid=%d" % hid )
         for subpatt in patt.split():
             tc.find(subpatt)
-    def delete_history_item( self, hid, check_str='' ):
+    def delete_history_item( self, hda_id, check_str='' ):
         """Deletes an item from a history"""
         try:
-            hid = int( hid )
+            hda_id = int( hda_id )
         except:
-            raise AssertionError, "Invalid hid '%s' - must be int" % hid
-        hid = str(hid)
-        data_list = self.get_history_as_data_list()
-        self.assertTrue( data_list )
-        elems = [ elem for elem in data_list if elem.get( 'hid' ) == hid ]
-        self.assertEqual( len( elems ), 1 )
-        self.home()
-        self.visit_page( "delete?id=%s" % elems[0].get( 'id' ) )
+            raise AssertionError, "Invalid hda_id '%s' - must be int" % hda_id
+        self.visit_url( "%s/root/delete?show_deleted_on_refresh=False&id=%s" % ( self.url, hda_id ) )
         if check_str:
             self.check_page_for_string( check_str )
-    def undelete_history_item( self, hid, show_deleted=False, check_str='' ):
+    def undelete_history_item( self, hda_id, check_str='' ):
         """Un-deletes a deleted item in a history"""
         try:
-            hid = int( hid )
+            hda_id = int( hda_id )
         except:
-            raise AssertionError, "Invalid hid '%s' - must be int" % hid
-        hid = str( hid )
-        data_list = self.get_history_as_data_list( show_deleted=show_deleted )
-        self.assertTrue( data_list )
-        elems = [ elem for elem in data_list if elem.get( 'hid' ) == hid ]
-        self.assertEqual( len( elems ), 1 )
-        self.home()
-        self.visit_url( "%s/dataset/undelete?id=%s" % ( self.url, elems[0].get( 'id' ) ) )
+            raise AssertionError, "Invalid hda_id '%s' - must be int" % hda_id
+        self.visit_url( "%s/dataset/undelete?id=%s" % ( self.url, hda_id ) )
         if check_str:
             self.check_page_for_string( check_str )
     def display_history_item( self, id, check_str='' ):

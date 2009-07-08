@@ -168,11 +168,6 @@ class TestHistory( TwillTestCase ):
         # Test sharing history3 with an invalid user
         self.share_current_history( 'jack@jill.com',
                                     check_str_after_submit='jack@jill.com is not a valid Galaxy user.' )
-        
-        
-        
-        
-
     def test_025_delete_shared_current_history( self ):
         """Testing deleting the current history after it was shared"""
         # Logged in as admin_user
@@ -187,7 +182,8 @@ class TestHistory( TwillTestCase ):
         # Shared history3 should be in regular_user1's list of shared histories
         self.view_shared_histories( check_str=history3.name, check_str2=admin_user.email )
         self.clone_history( self.security.encode_id( history3.id ),
-                                   check_str1='is now included in your list of stored histories.' )
+                            'activatable',
+                            check_str_after_submit='is now included in your list of stored histories.' )
         global history3_clone1
         history3_clone1 = galaxy.model.History.filter( and_( galaxy.model.History.table.c.deleted==False,
                                                              galaxy.model.History.table.c.user_id==regular_user1.id ) ) \
@@ -201,8 +197,26 @@ class TestHistory( TwillTestCase ):
         # logged in as regular_user1
         self.logout()
         self.login( email=admin_user.email )
+        # Current history should be history3, add more datasets to history3, then delete them so we can
+        # test cloning activatable datasets as well as only the active datasets
+        self.upload_file( '2.bed', dbkey='hg18' )
+        hda_2_bed = galaxy.model.HistoryDatasetAssociation \
+            .filter( and_( galaxy.model.HistoryDatasetAssociation.table.c.history_id==history3.id,
+                           galaxy.model.HistoryDatasetAssociation.table.c.name=='2.bed' ) ) \
+            .first()
+        assert hda_2_bed is not None, "Problem retrieving hda_2_bed from database"
+        self.delete_history_item( str( hda_2_bed.id ) )
+        self.upload_file( '3.bed', dbkey='hg18' )
+        hda_3_bed = galaxy.model.HistoryDatasetAssociation \
+            .filter( and_( galaxy.model.HistoryDatasetAssociation.table.c.history_id==history3.id,
+                           galaxy.model.HistoryDatasetAssociation.table.c.name=='3.bed' ) ) \
+            .first()
+        assert hda_3_bed is not None, "Problem retrieving hda_3_bed from database"
+        self.delete_history_item( str( hda_3_bed.id ) )
+        # Test cloning activatable datasets
         self.clone_history( self.security.encode_id( history3.id ),
-                            check_str1='is now included in your list of stored histories.' )
+                            'activatable',
+                            check_str_after_submit='is now included in your list of stored histories.' )
         global history3_clone2
         history3_clone2 = galaxy.model.History.filter( and_( galaxy.model.History.table.c.deleted==False,
                                                              galaxy.model.History.table.c.user_id==admin_user.id ) ) \
@@ -210,6 +224,42 @@ class TestHistory( TwillTestCase ):
         assert history3_clone2 is not None, "Problem retrieving history3_clone2 from database"
         # Check list of histories to make sure shared history3 was cloned
         self.view_stored_active_histories( check_str="Clone of '%s'" % history3.name )
+        # Switch to the cloned history to make sure activatable datasets were cloned
+        self.switch_history( id=self.security.encode_id( history3_clone2.id ), name=history3_clone2.name )
+        hda_2_bed = galaxy.model.HistoryDatasetAssociation \
+            .filter( and_( galaxy.model.HistoryDatasetAssociation.table.c.history_id==history3_clone2.id,
+                           galaxy.model.HistoryDatasetAssociation.table.c.name=='2.bed' ) ) \
+            .first()
+        assert hda_2_bed is not None, "Problem retrieving hda_2_bed from database"
+        hda_3_bed = galaxy.model.HistoryDatasetAssociation \
+            .filter( and_( galaxy.model.HistoryDatasetAssociation.table.c.history_id==history3_clone2.id,
+                           galaxy.model.HistoryDatasetAssociation.table.c.name=='3.bed' ) ) \
+            .first()
+        assert hda_3_bed is not None, "Problem retrieving hda_3_bed from database"
+        # Make sure the deleted datasets are included in the cloned history
+        check_str = 'This dataset has been deleted. Click undelete id=%d"' % hda_2_bed.id
+        self.check_history_for_string( check_str, show_deleted=True )
+        check_str = 'This dataset has been deleted. Click undelete id=%d"' % hda_3_bed.id
+        self.check_history_for_string( check_str, show_deleted=True )
+        # Test cloning only active datasets
+        self.clone_history( self.security.encode_id( history3.id ),
+                            'active',
+                            check_str_after_submit='is now included in your list of stored histories.' )
+        global history3_clone3
+        history3_clone3 = galaxy.model.History.filter( and_( galaxy.model.History.table.c.deleted==False,
+                                                             galaxy.model.History.table.c.user_id==admin_user.id ) ) \
+            .order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
+        assert history3_clone3 is not None, "Problem retrieving history3_clone3 from database"
+        # Check list of histories to make sure shared history3 was cloned
+        self.view_stored_active_histories( check_str="Clone of '%s'" % history3.name )
+        # Switch to the cloned history to make sure activatable datasets were cloned
+        self.switch_history( id=self.security.encode_id( history3_clone3.id ), name=history3_clone3.name )
+        # Make sure the deleted datasets are NOT included in the cloned history
+        try:
+            self.check_history_for_string( 'This dataset has been deleted.', show_deleted=True )
+            raise AssertionError, "Deleted datasets incorrectly included in cloned history history3_clone3"
+        except:
+            pass
     def test_040_sharing_mulitple_histories_with_multiple_users( self ):
         """Testing sharing multiple histories containing only public datasets with multiple users"""
         # Logged in as admin_user
@@ -304,7 +354,8 @@ class TestHistory( TwillTestCase ):
         self.view_shared_histories( check_str=history5.name, check_str2=admin_user.email )
         # Clone restricted history5
         self.clone_history( self.security.encode_id( history5.id ),
-                            check_str1='is now included in your list of stored histories.' )
+                            'activatable',
+                            check_str_after_submit='is now included in your list of stored histories.' )
         global history5_clone1
         history5_clone1 = galaxy.model.History.filter( and_( galaxy.model.History.table.c.deleted==False,
                                                              galaxy.model.History.table.c.user_id==regular_user1.id ) ) \
@@ -359,7 +410,8 @@ class TestHistory( TwillTestCase ):
         self.view_shared_histories( check_str=history5.name, check_str2=admin_user.email )
         # Clone restricted history5
         self.clone_history( self.security.encode_id( history5.id ),
-                            check_str1='is now included in your list of stored histories.' )
+                            'activatable',
+                            check_str_after_submit='is now included in your list of stored histories.' )
         global history5_clone2
         history5_clone2 = galaxy.model.History.filter( and_( galaxy.model.History.table.c.deleted==False,
                                                              galaxy.model.History.table.c.user_id==regular_user2.id ) ) \
@@ -431,7 +483,8 @@ class TestHistory( TwillTestCase ):
         self.view_shared_histories( check_str=history5.name, check_str2=admin_user.email )
         # Clone restricted history5
         self.clone_history( self.security.encode_id( history5.id ),
-                            check_str1='is now included in your list of stored histories.' )
+                            'activatable',
+                            check_str_after_submit='is now included in your list of stored histories.' )
         global history5_clone3
         history5_clone3 = galaxy.model.History.filter( and_( galaxy.model.History.table.c.deleted==False,
                                                              galaxy.model.History.table.c.user_id==regular_user2.id ) ) \
@@ -468,7 +521,8 @@ class TestHistory( TwillTestCase ):
         self.view_shared_histories( check_str=history5.name, check_str2=admin_user.email )
         # Clone restricted history5
         self.clone_history( self.security.encode_id( history5.id ),
-                            check_str1='is now included in your list of stored histories.' )
+                            'activatable',
+                            check_str_after_submit='is now included in your list of stored histories.' )
         global history5_clone4
         history5_clone4 = galaxy.model.History.filter( and_( galaxy.model.History.table.c.deleted==False,
                                                              galaxy.model.History.table.c.user_id==regular_user3.id ) ) \
@@ -587,16 +641,16 @@ class TestHistory( TwillTestCase ):
         self.check_page_for_string( 'hg15' )
         self.assertEqual ( len( self.get_history_as_data_list() ), 1 )
         # Delete the history item
-        self.delete_history_item( latest_hda.hid, check_str="Your history is empty" )
+        self.delete_history_item( str( latest_hda.id ), check_str="Your history is empty" )
         self.assertEqual ( len( self.get_history_as_data_list() ), 0 )
         # Try deleting an invalid hid
         try:
             self.delete_history_item( 'XXX' )
-            raise AssertionError, "Inproperly able to delete hid 'XXX' which is not an integer"
+            raise AssertionError, "Inproperly able to delete hda_id 'XXX' which is not an integer"
         except:
             pass
         # Undelete the history item
-        self.undelete_history_item( latest_hda.hid, show_deleted=True )
+        self.undelete_history_item( str( latest_hda.id ) )
         self.home()
         self.visit_url( "%s/history/?show_deleted=False" % self.url )
         self.check_page_for_string( '1.bed' )
@@ -673,6 +727,7 @@ class TestHistory( TwillTestCase ):
         # Delete histories
         self.delete_history( id=self.security.encode_id( history3.id ) )
         self.delete_history( id=self.security.encode_id( history3_clone2.id ) )
+        self.delete_history( id=self.security.encode_id( history3_clone3.id ) )
         self.delete_history( id=self.security.encode_id( history4.id ) )
         self.delete_history( id=self.security.encode_id( history5.id ) )
         # Eliminate Sharing role for: test@bx.psu.edu, test2@bx.psu.edu

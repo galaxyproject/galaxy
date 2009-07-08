@@ -310,8 +310,8 @@ class HistoryController( BaseController ):
                                         email=email,
                                         send_to_err=send_to_err )
         if params.get( 'share_button', False ):
-            can_change, cannot_change, no_change_needed = \
-                self._populate_restricted( trans, user, histories, send_to_users, None )
+            can_change, cannot_change, no_change_needed, send_to_err = \
+                self._populate_restricted( trans, user, histories, send_to_users, None, send_to_err )
             if can_change or cannot_change:
                 return trans.fill_template( "/history/share.mako", 
                                             histories=histories, 
@@ -335,8 +335,8 @@ class HistoryController( BaseController ):
         user = trans.get_user()
         histories, send_to_users, send_to_err = self._get_histories_and_users( trans, user, id, email )
         send_to_err = ''
-        can_change, cannot_change, no_change_needed = \
-            self._populate_restricted( trans, user, histories, send_to_users, action )
+        can_change, cannot_change, no_change_needed, send_to_err = \
+            self._populate_restricted( trans, user, histories, send_to_users, action, send_to_err )
         # Now that we've populated the can_change, cannot_change, and no_change_needed dictionaries,
         # we'll populate the histories_for_sharing dictionary from each of them.
         histories_for_sharing = {}
@@ -430,7 +430,7 @@ class HistoryController( BaseController ):
                     elif history not in histories_for_sharing[ send_to_user ]:
                         histories_for_sharing[ send_to_user ].append( history )
         return histories_for_sharing, send_to_err
-    def _populate_restricted( self, trans, user, histories, send_to_users, action ):
+    def _populate_restricted( self, trans, user, histories, send_to_users, action, send_to_err ):
         # The user may be attempting to share histories whose datasets cannot all be accessed by other users.
         # If this is the case, the user sharing the histories can:
         # 1) action=='public': choose to make the datasets public if he is permitted to do so
@@ -494,7 +494,7 @@ class HistoryController( BaseController ):
                                     cannot_change[ send_to_user ][ history ] = [ hda ]
                                 else:
                                     cannot_change[ send_to_user ][ history ].append( hda )
-        return can_change, cannot_change, no_change_needed
+        return can_change, cannot_change, no_change_needed, send_to_err
     def _share_histories( self, trans, user, send_to_err, histories={} ):
         # histories looks like: { userA: [ historyX, historyY ], userB: [ historyY ] }
         msg = ""
@@ -585,8 +585,12 @@ class HistoryController( BaseController ):
         return trans.show_message( "<p>%s" % change_msg, refresh_frames=['history'] )
     @web.expose
     @web.require_login( "clone shared Galaxy history" )
-    def clone( self, trans, id ):
+    def clone( self, trans, id, **kwd ):
         history = get_history( trans, id, check_ownership=False )
+        params = util.Params( kwd )
+        clone_choice = params.get( 'clone_choice', None )
+        if not clone_choice:
+            return trans.fill_template( "/history/clone.mako", history=history )
         user = trans.get_user()
         if history.user == user:
             owner = True
@@ -598,7 +602,10 @@ class HistoryController( BaseController ):
         name = "Clone of '%s'" % history.name
         if not owner:
             name += " shared by '%s'" % history.user.email
-        new_history = history.copy( name=name, target_user=user )
+        if clone_choice == 'activatable':
+            new_history = history.copy( name=name, target_user=user, activatable=True )
+        elif clone_choice == 'active':
+            new_history = history.copy( name=name, target_user=user )
         # Render the list view
         return trans.show_ok_message( 'Clone with name "%s" is now included in your list of stored histories.' % new_history.name )
 

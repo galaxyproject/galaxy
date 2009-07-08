@@ -214,17 +214,21 @@ class History( object ):
         if genome_build not in [None, '?']:
             self.genome_build = genome_build
         self.datasets.append( dataset )
-    def copy( self, name=None, target_user=None ):
+    def copy( self, name=None, target_user=None, activatable=False ):
         if not name:
             name = self.name
         if not target_user:
             target_user = self.user
         new_history = History( name=name, user=target_user )
         new_history.flush()
-        for data in self.datasets:
-            new_data = data.copy( copy_children=True, target_history=new_history )
-            new_history.add_dataset( new_data, set_hid = False )
-            new_data.flush()
+        if activatable:
+            hdas = self.activatable_datasets
+        else:
+            hdas = self.active_datasets
+        for hda in hdas:
+            new_hda = hda.copy( copy_children=True, target_history=new_history )
+            new_history.add_dataset( new_hda, set_hid = False )
+            new_hda.flush()
         new_history.hid_counter = self.hid_counter
         new_history.flush()
         return new_history
