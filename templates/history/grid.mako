@@ -168,7 +168,7 @@
                         <div popupmenu="grid-${i}-popup">
                             %for operation in grid.operations:
                                 %if operation.allowed( item ):
-                                    <a class="action-button" href="${url( operation=operation.label, id=trans.security.encode_id( item.id ) )}">${operation.label}</a>
+                                    <a class="action-button" href="${url( operation=operation.label, id=item.id )}">${operation.label}</a>
                                 %endif
                             %endfor
                         </div>
