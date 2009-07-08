@@ -141,6 +141,9 @@ use_interactive = True
 # method just returns bare usernames, set a default mail domain
 #remote_user_maildomain = example.org
 
+# If use_remote_user is enabled, set a logout anchor href option
+#remote_user_logout_href = /logout
+
 # this should be a comma-separated list of valid Galaxy users
 #admin_users = user1@example.org,user2@example.org
 
