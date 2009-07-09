@@ -17,7 +17,7 @@ GALAXY TOOL ERROR REPORT
 ------------------------
 
 This error report was sent from the Galaxy instance hosted on the server
-"${remote_hostname}"
+"${host}"
 -----------------------------------------------------------------------------
 This is in reference to output dataset ${dataset_id}.
 -----------------------------------------------------------------------------
@@ -65,10 +65,10 @@ class DatasetInterface( BaseController ):
         dataset = model.HistoryDatasetAssociation.get( id )
         job = dataset.creating_job_associations[0].job
         # Get the name of the server hosting the Galaxy instance from which this report originated
-        remote_hostname = trans.request.remote_hostname
+        host = trans.request.host
         # Build the email message
         msg = MIMEText( string.Template( error_report_template )
-            .safe_substitute( remote_hostname=remote_hostname,
+            .safe_substitute( host=host,
                               dataset_id=dataset.id,
                               email=email, 
                               message=message,

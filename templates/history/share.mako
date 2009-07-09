@@ -64,35 +64,14 @@
                     <input type="hidden" name="id" value="${trans.security.encode_id( history.id )}">
                 %endfor
                 %if no_change_needed:
+                    ## no_change_needed looks like: {historyX : [hda, hda], historyY : [hda] }
                     <div style="clear: both"></div>
                     <div class="form-row">
                         <div class="donemessage">
                             The following datasets can be shared with ${email} with no changes
                         </div>
-                    </div>
-                    ## no_change_needed looks like:
-                    ## { userA: {historyX : [hda, hda], historyY : [hda]}, userB: {historyY : [hda]} }
-                    <%
-                        # TODO: move generation of these unique dictionaries to the history controller
-                        # Build the list of unique histories and datasets
-                        unique_stuff = {}
-                    %>
-                    %for user, history_dict in no_change_needed.items():
-                        %for history, hdas in history_dict.items():
-                            <%
-                                if history in unique_stuff:
-                                    for hda in hdas:
-                                        if hda not in unique_stuff[ history ]:
-                                            unique_stuff[ history ].append( hda )
-                                else:
-                                    unique_stuff[ history ] = []
-                                    for hda in hdas:
-                                        if hda not in unique_stuff[ history ]:
-                                            unique_stuff[ history ].append( hda )
-                            %>
-                        %endfor
-                    %endfor
-                    %for history, hdas in unique_stuff.items():
+                    </div>                        
+                    %for history, hdas in no_change_needed.items():
                         <div class="form-row">
                             <label>History</label>
                             ${history.name}
@@ -104,40 +83,22 @@
                         %for hda in hdas:
                             <div class="form-row">
                                 ${hda.name}
+                                %if hda.deleted:
+                                    (deleted)
+                                %endif
                             </div>
                         %endfor
                     %endfor
                 %endif
                 %if can_change:
+                    ## can_change looks like: {historyX : [hda, hda], historyY : [hda] }
                     <div style="clear: both"></div>
                     <div class="form-row">
                         <div class="warningmessage">
                             The following datasets can be shared with ${email} by updating their permissions
                         </div>
                     </div>
-                    ## can_change looks like:
-                    ## { userA: {historyX : [hda, hda], historyY : [hda]}, userB: {historyY : [hda]} }
-                    <%
-                        # TODO: move generation of these unique dictionaries to the history controller
-                        # Build the list of unique histories and datasets
-                        unique_stuff = {}
-                    %>
-                    %for user, history_dict in can_change.items():
-                        %for history, hdas in history_dict.items():
-                            <%
-                                if history in unique_stuff:
-                                    for hda in hdas:
-                                        if hda not in unique_stuff[ history ]:
-                                            unique_stuff[ history ].append( hda )
-                                else:
-                                    unique_stuff[ history ] = []
-                                    for hda in hdas:
-                                        if hda not in unique_stuff[ history ]:
-                                            unique_stuff[ history ].append( hda )
-                            %>
-                        %endfor
-                    %endfor
-                    %for history, hdas in unique_stuff.items():
+                    %for history, hdas in can_change.items():
                         <div class="form-row">
                             <label>History</label>
                             ${history.name}
@@ -149,11 +110,15 @@
                         %for hda in hdas:
                             <div class="form-row">
                                 ${hda.name}
+                                %if hda.deleted:
+                                    (deleted)
+                                %endif
                             </div>
                         %endfor
                     %endfor
                 %endif
                 %if cannot_change:
+                    ## cannot_change looks like: {historyX : [hda, hda], historyY : [hda] }
                     <div style="clear: both"></div>
                     <div class="form-row">
                         <div class="errormessage">
@@ -161,29 +126,7 @@
                             change the permissions on them
                         </div>
                     </div>
-                    ## cannot_change looks like:
-                    ## { userA: {historyX : [hda, hda], historyY : [hda]}, userB: {historyY : [hda]} }
-                    <%
-                        # TODO: move generation of these unique dictionaries to the history controller
-                        # Build the list of unique histories and datasets
-                        unique_stuff = {}
-                    %>
-                    %for user, history_dict in can_change.items():
-                        %for history, hdas in history_dict.items():
-                            <%
-                                if history in unique_stuff:
-                                    for hda in hdas:
-                                        if hda not in unique_stuff[ history ]:
-                                            unique_stuff[ history ].append( hda )
-                                else:
-                                    unique_stuff[ history ] = []
-                                    for hda in hdas:
-                                        if hda not in unique_stuff[ history ]:
-                                            unique_stuff[ history ].append( hda )
-                            %>
-                        %endfor
-                    %endfor
-                    %for history, hdas in unique_stuff.items():
+                    %for history, hdas in cannot_change.items():
                         <div class="form-row">
                             <label>History</label>
                             ${history.name}
@@ -195,10 +138,17 @@
                         %for hda in hdas:
                             <div class="form-row">
                                 ${hda.name}
+                                %if hda.deleted:
+                                    (deleted)
+                                %endif
                             </div>
                         %endfor
                     %endfor
                 %endif
+                <div class="toolFormTitle"></div>
+                <div class="form-row">
+                    Deleted items can be eliminated by the users with which you are sharing the history.
+                </div>
                 <div class="form-row">
                     <label>How would you like to proceed?</label>
                 </div>

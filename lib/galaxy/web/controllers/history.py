@@ -310,8 +310,9 @@ class HistoryController( BaseController ):
                                         email=email,
                                         send_to_err=send_to_err )
         if params.get( 'share_button', False ):
-            can_change, cannot_change, no_change_needed, send_to_err = \
-                self._populate_restricted( trans, user, histories, send_to_users, None, send_to_err )
+            # The user has not yet made a choice about how to share, so dictionaries will be built for display
+            can_change, cannot_change, no_change_needed, unique_no_change_needed, send_to_err = \
+                self._populate_restricted( trans, user, histories, send_to_users, None, send_to_err, unique=True )
             if can_change or cannot_change:
                 return trans.fill_template( "/history/share.mako", 
                                             histories=histories, 
@@ -319,7 +320,7 @@ class HistoryController( BaseController ):
                                             send_to_err=send_to_err, 
                                             can_change=can_change, 
                                             cannot_change=cannot_change,
-                                            no_change_needed=no_change_needed )
+                                            no_change_needed=unique_no_change_needed )
             if no_change_needed:
                 return self._share_histories( trans, user, send_to_err, histories=no_change_needed )
             elif not send_to_err:
@@ -335,7 +336,8 @@ class HistoryController( BaseController ):
         user = trans.get_user()
         histories, send_to_users, send_to_err = self._get_histories_and_users( trans, user, id, email )
         send_to_err = ''
-        can_change, cannot_change, no_change_needed, send_to_err = \
+        # The user has made a choice, so dictionaries will be built for sharing
+        can_change, cannot_change, no_change_needed, unique_no_change_needed, send_to_err = \
             self._populate_restricted( trans, user, histories, send_to_users, action, send_to_err )
         # Now that we've populated the can_change, cannot_change, and no_change_needed dictionaries,
         # we'll populate the histories_for_sharing dictionary from each of them.
@@ -408,13 +410,13 @@ class HistoryController( BaseController ):
                         send_to_err += "%s is not a valid Galaxy user.  " % email_address
         return histories, send_to_users, send_to_err
     def _populate( self, trans, histories_for_sharing, other, send_to_err ):
-        # this method will populate the histories_for_sharing dictionary with the users and
+        # This method will populate the histories_for_sharing dictionary with the users and
         # histories in other, eliminating histories that have already been shared with the
         # associated user.  No security checking on datasets is performed.
         # If not empty, the histories_for_sharing dictionary looks like:
         # { userA: [ historyX, historyY ], userB: [ historyY ] }
         # other looks like:
-        # ## { userA: {historyX : [hda, hda], historyY : [hda]}, userB: {historyY : [hda]} }
+        # { userA: {historyX : [hda, hda], historyY : [hda]}, userB: {historyY : [hda]} }
         for send_to_user, history_dict in other.items():
             for history in history_dict:
                 # Make sure the current history has not already been shared with the current send_to_user
@@ -430,20 +432,22 @@ class HistoryController( BaseController ):
                     elif history not in histories_for_sharing[ send_to_user ]:
                         histories_for_sharing[ send_to_user ].append( history )
         return histories_for_sharing, send_to_err
-    def _populate_restricted( self, trans, user, histories, send_to_users, action, send_to_err ):
+    def _populate_restricted( self, trans, user, histories, send_to_users, action, send_to_err, unique=False ):
         # The user may be attempting to share histories whose datasets cannot all be accessed by other users.
         # If this is the case, the user sharing the histories can:
         # 1) action=='public': choose to make the datasets public if he is permitted to do so
         # 2) action=='private': automatically create a new "sharing role" allowing protected 
         #    datasets to be accessed only by the desired users
-        # 3) action=='share_anyway': share only what can be shared when no permissions are changed
-        # 4) action=='no_share': Do not share anything
-        # In addition, the user may be sharing a history with a user with which the history was already shared
-        # and it will not be shared twice.
-        # This method will populate the can_change, cannot_change and no_change_needed dictionaries.
+        # This method will populate the can_change, cannot_change and no_change_needed dictionaries, which
+        # are used for either displaying to the user, letting them make 1 of the choices above, or sharing
+        # after the user has made a choice.  They will be used for display if 'unique' is True, and will look
+        # like: {historyX : [hda, hda], historyY : [hda] }
+        # For sharing, they will look like:
+        # { userA: {historyX : [hda, hda], historyY : [hda]}, userB: {historyY : [hda]} }
         can_change = {}
         cannot_change = {}
         no_change_needed = {}
+        unique_no_change_needed = {}
         for history in histories:
             for send_to_user in send_to_users:
                 # Make sure the current history has not already been shared with the current send_to_user
@@ -456,7 +460,15 @@ class HistoryController( BaseController ):
                     # Only deal with datasets that have not been purged
                     for hda in history.activatable_datasets:
                         if trans.app.security_agent.dataset_is_public( hda.dataset ):
-                            # Build the dict that will show the user what doesn't need to be changed
+                            # The no_change_needed dictionary is a special case.  If both of can_change
+                            # and cannot_change are empty, no_change_needed will used for sharing.  Otherwise
+                            # unique_no_change_needed will be used for displaying, so we need to populate both.
+                            # Build the dictionaries for display, containing unique histories only
+                            if history not in unique_no_change_needed:
+                                unique_no_change_needed[ history ] = [ hda ]
+                            else:
+                                unique_no_change_needed[ history ].append( hda )
+                            # Build the dictionaries for sharing
                             if send_to_user not in no_change_needed:
                                 no_change_needed[ send_to_user ] = {}
                             if history not in no_change_needed[ send_to_user ]:
@@ -473,28 +485,40 @@ class HistoryController( BaseController ):
                                 # The current user has authority to change permissions on the current dataset because
                                 # they have permission to manage permissions on the dataset and the dataset is not associated 
                                 # with a library.
-                                if send_to_user not in can_change:
-                                    # Build the set of histories / datasets on which the current user has authority
-                                    # to "manage permissions".
-                                    can_change[ send_to_user ] = {}
-                                if history not in can_change[ send_to_user ]:
-                                    can_change[ send_to_user ][ history ] = [ hda ]
+                                if unique:
+                                    # Build the dictionaries for display, containing unique histories only
+                                    if history not in can_change:
+                                        can_change[ history ] = [ hda ]
+                                    else:
+                                        can_change[ history ].append( hda )
                                 else:
-                                    can_change[ send_to_user ][ history ].append( hda )
+                                    # Build the dictionaries for sharing
+                                    if send_to_user not in can_change:
+                                        can_change[ send_to_user ] = {}
+                                    if history not in can_change[ send_to_user ]:
+                                        can_change[ send_to_user ][ history ] = [ hda ]
+                                    else:
+                                        can_change[ send_to_user ][ history ].append( hda )
                             else:
                                 if action in [ "private", "public" ]:
-                                    # Don't change stuff that the user doesn't have permission to change
+                                    # The user has made a choice, so 'unique' doesn't apply.  Don't change stuff
+                                    # that the user doesn't have permission to change
                                     continue
-                                #elif send_to_user not in cannot_change:
-                                if send_to_user not in cannot_change:
-                                    # Build the set of histories / datasets on which the current user does
-                                    # not have authority to "manage permissions".
-                                    cannot_change[ send_to_user ] = {}
-                                if history not in cannot_change[ send_to_user ]:
-                                    cannot_change[ send_to_user ][ history ] = [ hda ]
+                                if unique:
+                                    # Build the dictionaries for display, containing unique histories only
+                                    if history not in cannot_change:
+                                        cannot_change[ history ] = [ hda ]
+                                    else:
+                                        cannot_change[ history ].append( hda )
                                 else:
-                                    cannot_change[ send_to_user ][ history ].append( hda )
-        return can_change, cannot_change, no_change_needed, send_to_err
+                                    # Build the dictionaries for sharing
+                                    if send_to_user not in cannot_change:
+                                        cannot_change[ send_to_user ] = {}
+                                    if history not in cannot_change[ send_to_user ]:
+                                        cannot_change[ send_to_user ][ history ] = [ hda ]
+                                    else:
+                                        cannot_change[ send_to_user ][ history ].append( hda )
+        return can_change, cannot_change, no_change_needed, unique_no_change_needed, send_to_err
     def _share_histories( self, trans, user, send_to_err, histories={} ):
         # histories looks like: { userA: [ historyX, historyY ], userB: [ historyY ] }
         msg = ""
@@ -605,6 +629,7 @@ class HistoryController( BaseController ):
         if clone_choice == 'activatable':
             new_history = history.copy( name=name, target_user=user, activatable=True )
         elif clone_choice == 'active':
+            name += " (active items only)"
             new_history = history.copy( name=name, target_user=user )
         # Render the list view
         return trans.show_ok_message( 'Clone with name "%s" is now included in your list of stored histories.' % new_history.name )

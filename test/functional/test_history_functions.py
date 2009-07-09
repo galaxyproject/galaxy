@@ -253,7 +253,7 @@ class TestHistory( TwillTestCase ):
         # Check list of histories to make sure shared history3 was cloned
         self.view_stored_active_histories( check_str="Clone of '%s'" % history3.name )
         # Switch to the cloned history to make sure activatable datasets were cloned
-        self.switch_history( id=self.security.encode_id( history3_clone3.id ), name=history3_clone3.name )
+        self.switch_history( id=self.security.encode_id( history3_clone3.id ) )
         # Make sure the deleted datasets are NOT included in the cloned history
         try:
             self.check_history_for_string( 'This dataset has been deleted.', show_deleted=True )
