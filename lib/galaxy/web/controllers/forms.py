@@ -152,7 +152,7 @@ class Forms( BaseController ):
     def __get_field(self, params, index):
         name = util.restore_text( params.get( 'field_name_%i' % index, None ) )
         helptext = util.restore_text( params.get( 'field_helptext_%i' % index, None ) )
-        required = util.restore_text( params.get( 'field_required_%i' % index, False ) )
+        required =  params.get( 'field_required_%i' % index, False )
         field_type = util.restore_text( params.get( 'field_type_%i' % index, None ) )
         if field_type == 'SelectField':
             selectlist = self.__get_selectbox_options(params, index)
@@ -172,10 +172,10 @@ class Forms( BaseController ):
         ctr=0
         sb_options = []
         while True:
-            option = util.restore_text( params.get( 'field_'+str(index)+'_option_'+str(ctr), None ) )
+            option = params.get( 'field_'+str(index)+'_option_'+str(ctr), None ) 
             ctr = ctr+1
             if option:
-                sb_options.append(option)
+                sb_options.append(util.restore_text(option))
             else:
                 return sb_options
     def __get_saved_form(self, fd):
