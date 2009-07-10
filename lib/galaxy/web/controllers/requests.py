@@ -212,12 +212,12 @@ class Requests( BaseController ):
             request = trans.app.model.Request.get(request_id)
             form_values = trans.app.model.FormValues.get(request.form_values_id)
             request_form = trans.app.model.FormDefinition.get(form_values.request_form_id)
-        name = params.get('name', '')
-        desc = params.get('desc', '')
-        library_id = params.get('library', '')
+        name = util.restore_text(params.get('name', ''))
+        desc = util.restore_text(params.get('desc', ''))
+        library_id = util.restore_text(params.get('library', ''))
         values = {}
         for field in request_form.fields:
-            values[field['label']] = params.get(field['label'], '')
+            values[field['label']] = util.restore_text(params.get(field['label'], ''))
         if not request_id:
             form_values = trans.app.model.FormValues(request_form_id, values)
             form_values.flush()
@@ -348,11 +348,11 @@ class Requests( BaseController ):
             sample = trans.app.model.Sample.get(sample_id)
             form_data = trans.app.model.FormData.get(sample.form_data_id)
             form = trans.app.model.FormDefinition.get(form_data.form_definition_id)
-        name = params.get('name', '')
-        desc = params.get('desc', '')
+        name = util.restore_text(params.get('name', ''))
+        desc = util.restore_text(params.get('desc', ''))
         values = {}
         for field in sample_form.fields:
-            values[field['label']] = params.get(field['label'], '')
+            values[field['label']] = util.restore_text(params.get(field['label'], ''))
         if not sample_id:
             form_values = trans.app.model.FormValues(sample_form.id, values)
             form_values.flush()

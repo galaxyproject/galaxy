@@ -2188,10 +2188,10 @@ class Admin( BaseController ):
                                         msg=msg,
                                         messagetype=messagetype )
     def _save_request_type(self, trans, params, request_type_id):
-        num_states = int( params.get( 'num_states', 0 ) )
+        num_states = int( util.restore_text( params.get( 'num_states', 0 ) ))
         proceed = True
         for i in range( num_states ):
-            if not params.get( 'new_element_name_%i' % i, None ):
+            if not util.restore_text( params.get( 'new_element_name_%i' % i, None ) ):
                 proceed = False
                 break
         if not proceed:
@@ -2212,8 +2212,8 @@ class Admin( BaseController ):
             ss.delete()
             ss.flush()
         for i in range( num_states ):
-            name = params.get( 'new_element_name_%i' % i, None )
-            desc = params.get( 'new_element_description_%i' % i, None )
+            name = util.restore_text( params.get( 'new_element_name_%i' % i, None ))
+            desc = util.restore_text( params.get( 'new_element_description_%i' % i, None ))
             ss = trans.app.model.SampleState(name, desc, rt.id) 
             ss.flush()
         msg = "The new sample type named '%s' with %s state(s) has been created" % (rt.name, num_states)

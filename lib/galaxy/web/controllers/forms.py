@@ -150,10 +150,10 @@ class Forms( BaseController ):
                         'selectlist': '' }
         self.current_form['fields'].append(empty_field)
     def __get_field(self, params, index):
-        name = params.get( 'field_name_%i' % index, None )
-        helptext = params.get( 'field_helptext_%i' % index, None )
-        required = params.get( 'field_required_%i' % index, False )
-        field_type = params.get( 'field_type_%i' % index, None )
+        name = util.restore_text( params.get( 'field_name_%i' % index, None ) )
+        helptext = util.restore_text( params.get( 'field_helptext_%i' % index, None ) )
+        required = util.restore_text( params.get( 'field_required_%i' % index, False ) )
+        field_type = util.restore_text( params.get( 'field_type_%i' % index, None ) )
         if field_type == 'SelectField':
             selectlist = self.__get_selectbox_options(params, index)
         else:
@@ -172,7 +172,7 @@ class Forms( BaseController ):
         ctr=0
         sb_options = []
         while True:
-            option = params.get( 'field_'+str(index)+'_option_'+str(ctr), None )
+            option = util.restore_text( params.get( 'field_'+str(index)+'_option_'+str(ctr), None ) )
             ctr = ctr+1
             if option:
                 sb_options.append(option)
@@ -194,7 +194,7 @@ class Forms( BaseController ):
             return None, 'Form name must be filled.'
         # fields
         for i in range( len(self.current_form['fields']) ):
-            if not params.get( 'field_name_%i' % i, None ):
+            if not util.restore_text(params.get( 'field_name_%i' % i, None )):
                 return None, "All the field label(s) must be completed."
         return True, ''
     def __get_form(self, params):
