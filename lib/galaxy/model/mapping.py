@@ -535,7 +535,12 @@ FormDefinition.table = Table('form_definition', metadata,
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "name", TrimmedString( 255 ), nullable=False ),
     Column( "desc", TEXT ),
-    Column( "form_definition_current_id", Integer, ForeignKey( "form_definition_current.id" ), index=True ),
+    Column( "form_definition_current_id", 
+            Integer, 
+            ForeignKey( "form_definition_current.id", 
+                        name='for_def_form_def_current_id_fk',
+                        use_alter=True), 
+            index=True ),
     Column( "fields", JSONType()))
 
 RequestType.table = Table('request_type', metadata,
