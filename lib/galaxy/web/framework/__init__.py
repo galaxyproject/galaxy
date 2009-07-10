@@ -456,7 +456,9 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
             if util.string_as_bool( create ):
                 history = self.new_history()
             else:
-                raise "get_history() returning None"
+                # Perhaps a bot is running a tool without having logged in to get a history
+                log.debug( "Error: this request returned None from get_history(): %s" % self.request.browser_url )
+                return None
         return history
     def set_history( self, history ):
         if history and not history.deleted:

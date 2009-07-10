@@ -1115,6 +1115,10 @@ class DataToolParameter( ToolParameter ):
         # CRUCIAL: the dataset_collector function needs to be local to DataToolParameter.get_html_field()
         def dataset_collector( hdas, parent_hid ):
             for i, hda in enumerate( hdas ):
+                if len( hda.name ) > 30:
+                    hda_name = '%s..%s' % ( hda.name[:17], hda.name[-11:] )
+                else:
+                    hda_name = hda.name
                 if parent_hid is not None:
                     hid = "%s.%d" % ( parent_hid, i + 1 )
                 else:
@@ -1132,7 +1136,7 @@ class DataToolParameter( ToolParameter ):
                         continue
                     if isinstance( hda.datatype, self.formats):
                         selected = ( value and ( hda in value ) )
-                        field.add_option( "%s: %s" % ( hid, hda.name[:30] ), hda.id, selected )
+                        field.add_option( "%s: %s" % ( hid, hda_name ), hda.id, selected )
                     else:
                         target_ext, converted_dataset = hda.find_conversion_destination( self.formats, converter_safe = self.converter_safe( other_values, trans ) )
                         if target_ext:
@@ -1141,7 +1145,7 @@ class DataToolParameter( ToolParameter ):
                             if not trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.DATASET_ACCESS, dataset=hda.dataset ):
                                 continue
                             selected = ( value and ( hda in value ) )
-                            field.add_option( "%s: (as %s) %s" % ( hid, target_ext, hda.name[:30] ), hda.id, selected )
+                            field.add_option( "%s: (as %s) %s" % ( hid, target_ext, hda_name ), hda.id, selected )
                 # Also collect children via association object
                 dataset_collector( hda.children, hid )
         dataset_collector( history.active_datasets, None )

@@ -168,8 +168,8 @@ class User( BaseController ):
                     mail = os.popen("%s -t" % trans.app.config.sendmail_path, 'w')
                     mail.write("To: %s\nFrom: %s\nSubject: Join Mailing List\n\nJoin Mailing list." % (trans.app.config.mailing_join_addr,email) )
                     if mail.close():
-                        return trans.show_warn_message( "Now logged in as " + user.email+". However, subscribing to the mailing list has failed.", refresh_frames=['masthead', 'history'] )
-                return trans.show_ok_message( "Now logged in as " + user.email, refresh_frames=['masthead', 'history'] )
+                        return trans.show_warn_message( "Now logged in as " + user.email+". However, subscribing to the mailing list has failed.", refresh_frames=refresh_frames )
+                return trans.show_ok_message( "Now logged in as " + user.email, refresh_frames=refresh_frames )
         return trans.show_form( 
             web.FormBuilder( web.url_for(), "Create account", submit_text="Create" )
                 .add_text( "email", "Email address", value=email, error=email_error )
