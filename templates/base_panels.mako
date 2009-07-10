@@ -153,6 +153,8 @@
     ${tab( "workflow", "Workflow", h.url_for( controller='workflow', action='index' ))}
 
     ${tab( "libraries", "Libraries", h.url_for( controller='library', action='index' ))}
+        
+    ${tab( "requests", "Requests", h.url_for( controller='requests', action='index' ), visible = (trans.user and trans.request_types)) }
 
     %if app.config.get_bool( 'enable_tracks', False ):
     <span class="tab">

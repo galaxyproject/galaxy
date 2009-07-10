@@ -103,13 +103,35 @@
                     <div class="toolTitle"><a href="${h.url_for( controller='admin', action='jobs' )}" target="galaxy_main">Manage jobs</a></div>
                   </div>
                 </div>
+                <div class="toolSectionPad"></div>
+                <div class="toolSectionTitle">
+                  <span>Forms</span>
+                </div>
+                <div class="toolSectionBody">
+                  <div class="toolSectionBg">
+                    <div class="toolTitle"><a href="${h.url_for( controller='forms', action='manage' )}" target="galaxy_main">Manage forms</a></div>
+                  </div>
+                </div>
+                <div class="toolSectionPad"></div>
+                <div class="toolSectionTitle">
+                  <span>Requests</span>
+                </div>
+                <div class="toolSectionBody">
+                  <div class="toolSectionBg">
+                    <div class="toolTitle"><a href="${h.url_for( controller='admin', action='manage_request_types' )}" target="galaxy_main">Manage request types</a></div>
+                    <div class="toolTitle"><a href="${h.url_for( controller='requests_admin', action='list')}" target="galaxy_main">Manage requests</a></div>
+                  </div>
+                </div>
             </div>
         </div>    
     </div>
+    ##<iframe name="galaxy_admin" src="${h.url_for( controller='admin', action='index' )}" frameborder="0" style="position: absolute; margin: 0; border: 0 none; height: 100%; width: 100%;"> </iframe>
 </%def>
 
 <%def name="center_panel()">
-
-    <iframe name="galaxy_main" id="galaxy_main" frameborder="0" style="position: absolute; width: 100%; height: 100%;" src="${h.url_for( action='center' )}"> </iframe>
+    <%
+        center_url = h.url_for( action='center' )
+    %>
+    <iframe name="galaxy_main" id="galaxy_main" frameborder="0" style="position: absolute; width: 100%; height: 100%;" src="${center_url}"> </iframe>
 
 </%def>

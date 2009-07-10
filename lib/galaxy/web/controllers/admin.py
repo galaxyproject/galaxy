@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from galaxy import util, datatypes
 from galaxy.web.base.controller import *
 from galaxy.model.orm import *
+import sys
 
 import logging
 log = logging.getLogger( __name__ )
@@ -2097,4 +2098,123 @@ class Admin( BaseController ):
             else:
                 last_updated[job.id] = '%s minutes' % int( delta.seconds / 60 )
         return trans.fill_template( '/admin/jobs.mako', jobs = jobs, last_updated = last_updated, cutoff = cutoff, msg = msg, messagetype = messagetype )
-
+   
+    def _get_all_forms(self, trans, all_versions=False):
+        '''
+        This method returns all the latest forms from the 
+        form_definition_current table if all_versions is set to True. Otherwise
+        this method return all the versions of all the forms from form_definition
+        table
+        '''
+        if all_versions:
+            return trans.app.model.FormDefinition.query().all()
+        else:
+            fdc_list = trans.app.model.FormDefinitionCurrent.query().all()
+            return [fdc.latest_form for fdc in fdc_list]
+    @web.expose
+    @web.require_admin
+    def manage_request_types( self, trans, **kwd ):       
+        params = util.Params( kwd )
+        msg = util.restore_text( params.get( 'msg', ''  ) )
+        messagetype = params.get( 'messagetype', 'done' )
+        forms = self._get_all_forms(trans, all_versions=True)
+        return trans.fill_template( '/admin/requests/manage_request_types.mako', 
+                                    request_types=trans.app.model.RequestType.query().all(),
+                                    forms=forms,
+                                    deleted=False,
+                                    show_deleted=False,
+                                    msg=msg,
+                                    messagetype=messagetype )
+    @web.expose
+    @web.require_admin
+    def request_type( self, trans, **kwd ):
+        params = util.Params( kwd )
+        msg = util.restore_text( params.get( 'msg', ''  ) )
+        messagetype = params.get( 'messagetype', 'done' )   
+        if params.get('create', False) == 'True':
+            return trans.fill_template( '/admin/requests/create_request_type.mako', 
+                                        forms=self._get_all_forms(trans, all_versions=False),
+                                        msg=msg,
+                                        messagetype=messagetype)
+        elif params.get('add_states', False) == 'True':
+            return trans.fill_template( '/admin/requests/add_states.mako',
+                                        sample_type_name=util.restore_text( params.name ),
+                                        desc=util.restore_text( params.description ),
+                                        num_states=int(util.restore_text( params.num_states )),
+                                        request_form_id=int(util.restore_text( params.request_form_id )),
+                                        sample_form_id=int(util.restore_text( params.sample_form_id )),
+                                        msg=msg,
+                                        messagetype=messagetype)            
+        elif params.get('save_new', False) == 'True':
+            st, msg = self._save_request_type(trans, params, None)
+            if not st:
+                return trans.fill_template( '/admin/requests/create_request_type.mako', 
+                                            forms=self._get_all_forms(trans, all_versions=False),
+                                            msg=msg,
+                                            messagetype='error')
+            return trans.fill_template( '/admin/requests/manage_request_types.mako', 
+                                        request_types=trans.app.model.RequestType.query().all(),
+                                        forms=self._get_all_forms(trans, all_versions=True),
+                                        deleted=False,
+                                        show_deleted=False,
+                                        msg=msg,
+                                        messagetype=messagetype )
+        elif params.get('edit', False) == 'True':
+            rt = trans.app.model.RequestType.get(int(util.restore_text( params.id )))
+            ss_list = trans.app.model.SampleState.filter(trans.app.model.SampleState.table.c.request_type_id == rt.id).all()
+            return trans.fill_template( '/admin/requests/edit_request_type.mako', 
+                                        request_type=rt,
+                                        forms=self._get_all_forms(trans, all_versions=False),
+                                        states_list=ss_list,
+                                        deleted=False,
+                                        show_deleted=False,
+                                        msg=msg,
+                                        messagetype=messagetype )
+        elif params.get('save_changes', False) == 'True':
+            st = trans.app.model.SampleType.get(int(util.restore_text( params.id )))
+            st, msg = self._save_sample_type(trans, params, st.id)
+            if st:
+                msg = "The sample type '%s' has been updated with the changes." % st.name
+                messagetype = 'done'
+            else:
+                messagetype = 'error'
+            ss_list = trans.app.model.SampleState.filter(trans.app.model.SampleState.table.c.sample_type_id == st.id).all()
+            return trans.fill_template( '/admin/samples/edit_sample_type.mako', 
+                                        sample_type=st,
+                                        forms=self._get_all_forms(trans, all_versions=False),
+                                        states_list=ss_list,
+                                        deleted=False,
+                                        show_deleted=False,
+                                        msg=msg,
+                                        messagetype=messagetype )
+    def _save_request_type(self, trans, params, request_type_id):
+        num_states = int( params.get( 'num_states', 0 ) )
+        proceed = True
+        for i in range( num_states ):
+            if not params.get( 'new_element_name_%i' % i, None ):
+                proceed = False
+                break
+        if not proceed:
+            msg = "All the state name(s) must be completed."
+            return None, msg
+        if not request_type_id: # create a new sample type to save
+            rt = trans.app.model.RequestType() 
+        else:           # use the existing sample type to save changes
+            rt = trans.app.model.RequestType.get(request_type_id)
+        rt.name = util.restore_text( params.name ) 
+        rt.desc = util.restore_text( params.description ) or ""
+        rt.request_form_id = int(util.restore_text( params.request_form_id ))
+        rt.sample_form_id = int(util.restore_text( params.sample_form_id ))
+        rt.flush()
+        # set sample states
+        ss_list = trans.app.model.SampleState.filter(trans.app.model.SampleState.table.c.request_type_id == rt.id).all()
+        for ss in ss_list:
+            ss.delete()
+            ss.flush()
+        for i in range( num_states ):
+            name = params.get( 'new_element_name_%i' % i, None )
+            desc = params.get( 'new_element_description_%i' % i, None )
+            ss = trans.app.model.SampleState(name, desc, rt.id) 
+            ss.flush()
+        msg = "The new sample type named '%s' with %s state(s) has been created" % (rt.name, num_states)
+        return rt, msg

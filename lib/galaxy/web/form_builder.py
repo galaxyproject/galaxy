@@ -9,6 +9,11 @@ class BaseField(object):
     def get_html( self, prefix="" ):
         """Returns the html widget corresponding to the parameter"""
         raise TypeError( "Abstract Method" )
+    @staticmethod
+    def form_field_types():
+        return ['TextField', 'TextArea', 'SelectField', 'CheckboxField']
+        
+        
         
 class TextField(BaseField):
     """
@@ -26,6 +31,8 @@ class TextField(BaseField):
     def get_html( self, prefix="" ):
         return '<input type="text" name="%s%s" size="%d" value="%s">' \
             % ( prefix, self.name, self.size, self.value )
+    def set_size(self, size):
+        self.size = int( size )
 
 class TextArea(BaseField):
     """
@@ -45,6 +52,9 @@ class TextArea(BaseField):
     def get_html( self, prefix="" ):
         return '<textarea name="%s%s" rows="%d" cols="%d">%s</textarea>' \
             % ( prefix, self.name, self.rows, self.cols, self.value )
+    def set_size(self, rows, cols):
+        self.rows = rows
+        self.cols = cols
 
 class CheckboxField(BaseField):
     """
@@ -215,6 +225,17 @@ class SelectField(BaseField):
         rval.insert( 0, '<select name="%s%s"%s%s%s>' % ( prefix, self.name, multiple, self.refresh_on_change_text, last_selected_value ) )
         rval.append( '</select>' )
         return "\n".join( rval )
+    def get_selected(self):
+        '''
+        This method returns the currently selected option's text and value
+        '''
+        for text, value, selected in self.options:
+            if selected:
+                return text, value
+        if self.options:
+            return self.options[0]
+        return None
+            
 
 
 class DrillDownField( BaseField ):

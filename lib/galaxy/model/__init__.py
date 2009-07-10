@@ -15,6 +15,7 @@ import galaxy.datatypes.registry
 from galaxy.datatypes.metadata import MetadataCollection
 from galaxy.security import RBACAgent, get_permitted_actions
 
+
 import logging
 log = logging.getLogger( __name__ )
 
@@ -1095,6 +1096,58 @@ class MetadataFile( object ):
                 raise
         # Return filename inside hashed directory
         return os.path.abspath( os.path.join( path, "metadata_%d.dat" % self.id ) )
+    
+    
+class FormDefinition( object ):
+    def __init__(self, name=None, desc=None, fields=[], current_form_id=None):
+        self.name = name
+        self.desc = desc
+        self.fields = fields 
+        self.form_definition_current_id = current_form_id
+        
+class FormDefinitionCurrent( object ):
+    def __init__(self, form_definition_id=None):
+        self.latest_form_id = form_definition_id
+        
+class FormValues( object ):
+    def __init__(self, form_def_id=None, content=None):
+        self.form_definition_id = form_def_id
+        self.content = content
+        
+class Request( object ):
+    def __init__(self, name=None, desc=None, request_type_id=None, user_id=None, form_values_id=None, library_id=None):
+        self.name = name
+        self.desc = desc
+        self.request_type_id = request_type_id
+        self.form_values_id = form_values_id
+        self.user_id = user_id
+        self.library_id = library_id
+        
+class RequestType( object ):
+    def __init__(self, request_form_id=None, sample_form_id=None):
+        self.request_form_id = request_form_id
+        self.sample_form_id = sample_form_id
+    
+class Sample( object ):
+    def __init__(self, name=None, desc=None, request_id=None, form_values_id=None):
+        self.name = name
+        self.desc = desc
+        self.request_id = request_id
+        self.form_values_id = form_values_id
+    
+class SampleState( object ):
+    def __init__(self, name=None, desc=None, request_type_id=None):
+        self.name = name
+        self.desc = desc
+        self.request_type_id = request_type_id
+
+class SampleEvent( object ):
+    def __init__(self, sample_id=None, sample_state_id=None, comment=''):
+        self.sample_id = sample_id
+        self.sample_state_id = sample_state_id
+        self.comment = comment
+
+
 
 ## ---- Utility methods -------------------------------------------------------
 

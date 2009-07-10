@@ -520,8 +520,114 @@ MetadataFile.table = Table( "metadata_file", metadata,
     Column( "deleted", Boolean, index=True, default=False ),
     Column( "purged", Boolean, index=True, default=False ) )
 
+
+FormDefinitionCurrent.table = Table('form_definition_current', metadata,
+    Column( "id", Integer, primary_key=True),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "latest_form_id", Integer, ForeignKey( "form_definition.id" ), index=True ),
+    Column( "deleted", Boolean, index=True, default=False ))
+
+# new table to store all the forms which is created by the admin
+FormDefinition.table = Table('form_definition', metadata,
+    Column( "id", Integer, primary_key=True),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "name", TrimmedString( 255 ), nullable=False ),
+    Column( "desc", TEXT ),
+    Column( "form_definition_current_id", Integer, ForeignKey( "form_definition_current.id" ), index=True ),
+    Column( "fields", JSONType()))
+
+RequestType.table = Table('request_type', metadata,
+    Column( "id", Integer, primary_key=True),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "name", TrimmedString( 255 ), nullable=False ),
+    Column( "desc", TEXT ),
+    Column( "request_form_id", Integer, ForeignKey( "form_definition.id" ), index=True ),
+    Column( "sample_form_id", Integer, ForeignKey( "form_definition.id" ), index=True ) )
+
+FormValues.table = Table('form_values', metadata,
+    Column( "id", Integer, primary_key=True),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "form_definition_id", Integer, ForeignKey( "form_definition.id" ), index=True ),
+    Column( "content", JSONType()) )
+
+Request.table = Table('request', metadata,
+    Column( "id", Integer, primary_key=True),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "name", TrimmedString( 255 ), nullable=False ),
+    Column( "desc", TEXT ),
+    Column( "form_values_id", Integer, ForeignKey( "form_values.id" ), index=True ),
+    Column( "request_type_id", Integer, ForeignKey( "request_type.id" ), index=True ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+    Column( "library_id", Integer, ForeignKey( "library.id" ), index=True ),
+    Column( "deleted", Boolean, index=True, default=False ) )
+
+Sample.table = Table('sample', metadata,
+    Column( "id", Integer, primary_key=True),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "name", TrimmedString( 255 ), nullable=False ),
+    Column( "desc", TEXT ),
+    Column( "form_values_id", Integer, ForeignKey( "form_values.id" ), index=True ),
+    Column( "request_id", Integer, ForeignKey( "request.id" ), index=True ),
+    Column( "deleted", Boolean, index=True, default=False ) )
+
+# new table to store all the possible sample states and the sample type it
+# belongs to
+SampleState.table = Table('sample_state', metadata,
+    Column( "id", Integer, primary_key=True),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "name", TrimmedString( 255 ), nullable=False ),
+    Column( "desc", TEXT ),
+    Column( "request_type_id", Integer, ForeignKey( "request_type.id" ), index=True ) )
+
+SampleEvent.table = Table('sample_event', metadata,
+    Column( "id", Integer, primary_key=True),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "sample_id", Integer, ForeignKey( "sample.id" ), index=True ), 
+    Column( "sample_state_id", Integer, ForeignKey( "sample_state.id" ), index=True ), 
+    Column( "comment", TEXT ) )
+
+
+
 # With the tables defined we can define the mappers and setup the 
 # relationships between the model objects.
+
+assign_mapper( context, Sample, Sample.table,
+               properties=dict( events=relation( SampleEvent, backref="sample",
+                                                 order_by=desc(SampleEvent.table.c.update_time) ),
+                              ) )
+
+assign_mapper( context, FormValues, FormValues.table, properties=None)
+
+assign_mapper( context, Request, Request.table, properties=None)
+
+assign_mapper( context, RequestType, RequestType.table,               
+               properties=dict( states=relation( SampleState, backref="request_type",
+                                                 order_by=desc(SampleState.table.c.update_time) ),
+                              ) )
+
+assign_mapper( context, FormDefinition, FormDefinition.table, properties=None)
+
+assign_mapper( context, FormDefinitionCurrent, FormDefinitionCurrent.table,
+                properties=dict( forms=relation( FormDefinition, backref='form_definition_current',
+                                                 cascade="all, delete-orphan",
+                                                 primaryjoin=( FormDefinitionCurrent.table.c.id == FormDefinition.table.c.form_definition_current_id ) ),
+                                 latest_form=relation( FormDefinition, post_update=True,
+                                                       primaryjoin=( FormDefinitionCurrent.table.c.latest_form_id == FormDefinition.table.c.id ) )
+                               ) )
+
+assign_mapper( context, SampleEvent, SampleEvent.table, properties=None)
+
+assign_mapper( context, SampleState, SampleState.table,
+               properties=None #dict( sample=relation( Sample, backref="sample" ),
+             )# )
 
 assign_mapper( context, ValidationError, ValidationError.table )
 
@@ -590,6 +696,8 @@ assign_mapper( context, HistoryUserShareAssociation, HistoryUserShareAssociation
 assign_mapper( context, User, User.table, 
     properties=dict( histories=relation( History, backref="user",
                                          order_by=desc(History.table.c.update_time) ),
+                     requests=relation( Request, backref="user",
+                                         order_by=desc(Request.table.c.update_time) ),                    
                      active_histories=relation( History, primaryjoin=( ( History.table.c.user_id == User.table.c.id ) & ( not_( History.table.c.deleted ) ) ), order_by=desc( History.table.c.update_time ) ),
                      galaxy_sessions=relation( GalaxySession, order_by=desc( GalaxySession.table.c.update_time ) ),
                      stored_workflow_menu_entries=relation( StoredWorkflowMenuEntry, backref="user",

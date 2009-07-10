@@ -607,6 +607,11 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
             if dbkey == ds.dbkey:
                 return ds
         return None
+    
+    def request_types(self):
+        if self.app.model.RequestType.query().all():
+            return True
+        return False
         
 class FormBuilder( object ):
     """
