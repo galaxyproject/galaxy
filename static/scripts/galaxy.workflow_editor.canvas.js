@@ -2,7 +2,7 @@ function Terminal( element ) {
     this.element = element;
     this.connectors = [];
 }
-Terminal.prototype = {
+$.extend( Terminal.prototype, {
     connect: function ( connector ) {
         this.connectors.push( connector );
         if ( this.node ) {
@@ -25,26 +25,26 @@ Terminal.prototype = {
             c.destroy();
         });
     }
-}
+});
 
 function OutputTerminal( element, datatype ) {
     Terminal.call( this, element );
     this.datatype = datatype;
 }
 
-OutputTerminal.prototype = new Terminal;
+OutputTerminal.prototype = new Terminal();
 
 function InputTerminal( element, datatypes ) {
     Terminal.call( this, element );
     this.datatypes = datatypes;
 }
 
-InputTerminal.prototype = new Terminal;
+InputTerminal.prototype = new Terminal();
 
 $.extend( InputTerminal.prototype, {
     can_accept: function ( other ) {
         if ( this.connectors.length < 1 ) {
-            for ( t in this.datatypes ) {
+            for ( var t in this.datatypes ) {
                 // FIXME: No idea what to do about this case
                 if ( other.datatype == "input" ) { return true; }
                 if ( issubtype( other.datatype, this.datatypes[t] ) ) {
@@ -60,7 +60,7 @@ function Connector( handle1, handle2 ) {
     this.canvas = null;
     this.dragging = false;
     this.inner_color = "#FFFFFF";
-    this.outer_color = "#D8B365"
+    this.outer_color = "#D8B365";
     if ( handle1 && handle2 ) {
         this.connect( handle1, handle2 );
     }
@@ -90,10 +90,16 @@ $.extend( Connector.prototype, {
                 G_vmlCanvasManager.initElement( this.canvas );
             }
             canvas_container.append( $(this.canvas) );
-            if ( this.dragging ) { this.canvas.style.zIndex = "300" }
+            if ( this.dragging ) {
+                this.canvas.style.zIndex = "300";
+            }
         }
-        var relativeLeft = function( e ) { return $(e).offset().left - canvas_container.offset().left }
-        var relativeTop = function( e ) { return $(e).offset().top - canvas_container.offset().top }
+        var relativeLeft = function( e ) {
+            return $(e).offset().left - canvas_container.offset().left;
+        };
+        var relativeTop = function( e ) {
+            return $(e).offset().top - canvas_container.offset().top;
+        };
         // Find the position of each handle
         var start_x = relativeLeft( this.handle1.element ) + 5;
         var start_y = relativeTop( this.handle1.element ) + 5;
@@ -157,7 +163,7 @@ $.extend( Node.prototype, {
             }).bind( "dropend", function ( e ) {
                 e.dragProxy.terminal.connectors[0].inner_color = "#FFFFFF";
             }).bind( "drop", function( e ) {
-                new Connector( e.dragTarget.terminal, e.dropTarget.terminal ).redraw();
+                ( new Connector( e.dragTarget.terminal, e.dropTarget.terminal ) ).redraw();
             }).bind( "hover", function() {
                 // If connected, create a popup to allow disconnection
                 if ( terminal.connectors.length > 0 ) {
@@ -168,22 +174,24 @@ $.extend( Node.prototype, {
                         .append(
                             $("<div class='buttons'></div>").append(
                                 $("<img src='../images/delete_icon.png' />").click( function() {
-                                    $.each( terminal.connectors, function( _, x ) { x.destroy() } );
+                                    $.each( terminal.connectors, function( _, x ) {
+                                        x.destroy();
+                                    });
                                     t.remove();
                                 })))
                         .bind( "mouseleave", function() {
                             $(this).remove();
                         });
                     // Position it and show
-                    t.css( {
+                    t.css({
                             top: $(this).offset().top - 2,
                             left: $(this).offset().left - t.width(),
-                            'padding-right': $(this).width() }
-                        ).show();
+                            'padding-right': $(this).width()
+                        }).show();
                 }
             });
             node.input_terminals[name] = terminal;
-        })
+        });
     },
     enable_output_terminal : function( elements, name, type ) {
         var node = this;
@@ -213,7 +221,7 @@ $.extend( Node.prototype, {
                     e.dragProxy.terminal.redraw();
                     // FIXME: global
                     canvas_manager.update_viewport_overlay();
-                }
+                };
                 onmove();
                 $("#canvas-container").get(0).scroll_panel.test( e, onmove );
             }).bind( "dragend", function ( e ) {
@@ -226,8 +234,12 @@ $.extend( Node.prototype, {
         });
     },
     redraw : function () {
-        $.each( this.input_terminals, function( _, t ) { t.redraw() } );
-        $.each( this.output_terminals, function( _, t ) { t.redraw() } );
+        $.each( this.input_terminals, function( _, t ) {
+            t.redraw();
+        });
+        $.each( this.output_terminals, function( _, t ) {
+            t.redraw();
+        });
     },
     destroy : function () {
         $.each( this.input_terminals, function( k, t ) {
@@ -246,7 +258,7 @@ $.extend( Node.prototype, {
         // Keep inactive nodes stacked from most to least recently active
         // by moving element to the end of parent's node list
         var element = this.element.get(0);
-        (function(p) { p.removeChild( element ); p.appendChild( element ) })(element.parentNode);
+        (function(p) { p.removeChild( element ); p.appendChild( element ); })(element.parentNode);
         // Remove active class
         $(element).removeClass( "toolForm-active" );
     },
@@ -279,7 +291,7 @@ $.extend( Node.prototype, {
         $.each( data.data_outputs, function( i, output ) {
             var t = $( "<div class='terminal output-terminal'></div>" );
             node.enable_output_terminal( t, output.name, output.extension );
-            var label = output.name
+            var label = output.name;
             if ( output.extension != 'input' ) {
                 label = label + " (" + output.extension + ")";
             }
@@ -301,7 +313,7 @@ $.extend( Node.prototype, {
         // Update input rows
         var old_body = el.find( "div.inputs" );
         var new_body = $("<div class='inputs'></div>");
-        var old = old_body.find( "div.input-data-row")
+        var old = old_body.find( "div.input-data-row");
         $.each( data.data_inputs, function( i, input ) {
             var t = $("<div class='terminal input-terminal'></div>");
             node.enable_input_terminal( t, input.name, input.extensions );
@@ -323,7 +335,7 @@ $.extend( Node.prototype, {
         // Cleanup any leftover terminals
         old_body.find( "div.input-data-row > .terminal" ).each( function() {
             this.terminal.destroy();
-        })
+        });
         // If active, reactivate with new form_html
         this.changed();
         this.redraw();
@@ -344,7 +356,7 @@ $.extend( Node.prototype, {
 function Workflow( canvas_container ) {
     this.canvas_container = canvas_container;
     this.id_counter = 0;
-    this.nodes = {}
+    this.nodes = {};
     this.name = null;
     this.has_changes = false;
 }
@@ -372,9 +384,9 @@ $.extend( Workflow.prototype, {
         });
     },
     to_simple : function () {
-        var nodes = {}
+        var nodes = {};
         $.each( this.nodes, function ( i, node ) {
-            var input_connections = {}
+            var input_connections = {};
             $.each( node.input_terminals, function ( k, t ) {
                 input_connections[ t.name ] = null;
                 // There should only be 0 or 1 connectors, so this is
@@ -391,10 +403,10 @@ $.extend( Workflow.prototype, {
                 tool_errors : node.tool_errors,
                 input_connections : input_connections,
                 position : $(node.element).position()
-            }
+            };
             nodes[ node.id ] = node_data;
-        })
-        return { steps: nodes }
+        });
+        return { steps: nodes };
     },
     from_simple : function ( data ) {
         wf = this;
@@ -409,7 +421,7 @@ $.extend( Workflow.prototype, {
             }
             node.id = step.id;
             wf.nodes[ node.id ] = node;
-            max_id = Math.max( max_id, parseInt( id ) )
+            max_id = Math.max( max_id, parseInt( id ) );
         });
         wf.id_counter = max_id + 1;
         // Second pass, connections
@@ -423,7 +435,7 @@ $.extend( Workflow.prototype, {
                                node.input_terminals[ k ] );
                     c.redraw();
                 }
-            })
+            });
         });
     },
     clear_active_node : function() {
@@ -471,31 +483,32 @@ $.extend( Workflow.prototype, {
             });
         });
         // Assemble order, tracking levels
-        node_ids_by_level = []
+        node_ids_by_level = [];
         while ( true ) {
             // Everything without a predecessor
-            level_parents = []
-            $.each( n_pred, function( k, v ) {
-                if ( v == 0 ) {
-                    level_parents.push( k );
+            level_parents = [];
+            for ( var pred_k in n_pred ) {
+                if ( n_pred[ pred_k ] == 0 ) {
+                    level_parents.push( pred_k );
                 }
-            });            
+            }        
             if ( level_parents.length == 0 ) {
                 break;
             }
-            node_ids_by_level.push( level_parents )
+            node_ids_by_level.push( level_parents );
             // Remove the parents from this level, and decrement the number
             // of predecessors for each successor
-            $.each( level_parents, function( k, v ) {
+            for ( var k in level_parents ) {
+                var v = level_parents[k];
                 delete n_pred[v];
-                $.each( successors[v], function( sk, sv ) {
-                    n_pred[sv] -= 1;
-                });
-            });
+                for ( var sk in successors[v] ) {
+                    n_pred[ sucessors[v][sk] ] -= 1;
+                }
+            }
         }
         if ( n_pred.length ) {
             // ERROR: CYCLE! Currently we do nothing
-            return
+            return;
         }
         // Layout each level
         var all_nodes = this.nodes;
@@ -505,7 +518,7 @@ $.extend( Workflow.prototype, {
             // We keep nodes in the same order in a level to give the user
             // some control over ordering
             ids.sort( function( a, b ) {
-                return $(all_nodes[a].element).position().top - $(all_nodes[b].element).position().top
+                return $(all_nodes[a].element).position().top - $(all_nodes[b].element).position().top;
             });
             // Position each node
             var max_width = 0;
@@ -520,7 +533,7 @@ $.extend( Workflow.prototype, {
             left += max_width + h_pad;
         });
         // Need to redraw all connectors
-        $.each( all_nodes, function( _, node ) { node.redraw() } );
+        $.each( all_nodes, function( _, node ) { node.redraw(); } );
     },
     bounds_for_all_nodes: function() {
         var xmin = Infinity, xmax = -Infinity,
@@ -528,7 +541,7 @@ $.extend( Workflow.prototype, {
             p;
         $.each( this.nodes, function( id, node ) {
             e = $(node.element);
-            p = e.position()
+            p = e.position();
             xmin = Math.min( xmin, p.left );
             xmax = Math.max( xmax, p.left + e.width() );
             ymin = Math.min( ymin, p.top );
@@ -559,11 +572,11 @@ $.extend( Workflow.prototype, {
             left: left,
             top: top,
             width: width,
-            height: height,
+            height: height
         });
         // Move elements back if needed
         this.canvas_container.children().each( function() {
-            var p = $(this).position()
+            var p = $(this).position();
             $(this).css( "left", p.left + xmin_delta );
             $(this).css( "top", p.top + ymin_delta );
         });
@@ -585,26 +598,26 @@ function round_up( x, n ) {
 function prebuild_node( type, title_text, tool_id ) {
     var f = $("<div class='toolForm toolFormInCanvas'></div>");
     var node = new Node( f );
-    node.type = type
+    node.type = type;
     if ( type == 'tool' ) {
         node.tool_id = tool_id;
     }
-    var title = $("<div class='toolFormTitle unselectable'>" + title_text + "</div>" )
+    var title = $("<div class='toolFormTitle unselectable'>" + title_text + "</div>" );
     f.append( title );
     f.css( "left", $(window).scrollLeft() + 20 ); f.css( "top", $(window).scrollTop() + 20 );    
-    var b = $("<div class='toolFormBody'></div>")
+    var b = $("<div class='toolFormBody'></div>");
     var tmp = "<div><img height='16' align='middle' src='../images/loading_small_white_bg.gif'/> loading tool info...</div>";
     b.append( tmp );
     node.form_html = tmp;
-    f.append( b )
+    f.append( b );
     // Fix width to computed width
     // Now add floats
     var buttons = $("<div class='buttons' style='float: right;'></div>");
     buttons.append( $("<img src='../images/delete_icon.png' />").click( function( e ) {
         node.destroy();
     } ).hover( 
-        function() { $(this).attr( 'src', "../images/delete_icon_dark.png" ) },
-        function() { $(this).attr( 'src', "../images/delete_icon.png" ) }
+        function() { $(this).attr( 'src', "../images/delete_icon_dark.png" ); },
+        function() { $(this).attr( 'src', "../images/delete_icon.png" ); }
     ) );
     // Place inside container
     f.appendTo( "#canvas-container" );
@@ -647,12 +660,12 @@ function issubtype( child, parent ) {
     child = ext_to_type[child];
     parent = ext_to_type[parent];
     return ( type_to_type[child] ) && ( parent in type_to_type[child] );
-};
+}
 
 function populate_datatype_info( data ) {
     ext_to_type = data.ext_to_class_name;
     type_to_type = data.class_to_classes;
-};
+}
 
 // FIXME: merge scroll panel into CanvasManager, clean up hardcoded stuff.
 
@@ -663,14 +676,14 @@ $.extend( ScrollPanel.prototype, {
     test: function( e, onmove ) {
         clearTimeout( this.timeout );
         var x = e.pageX,
-            y = e.pageY;
+            y = e.pageY,
             // Panel size and position
             panel = $(this.panel),
             panel_pos = panel.position(),
             panel_w = panel.width(),
-            panel_h = panel.height()
+            panel_h = panel.height(),
             // Viewport size and offset
-            viewport = panel.parent();
+            viewport = panel.parent(),
             viewport_w = viewport.width(),
             viewport_h = viewport.height(),
             viewport_offset = viewport.offset(),
@@ -747,7 +760,7 @@ $.extend( CanvasManager.prototype, {
                 top: y
             });
             self.update_viewport_overlay();
-        }
+        };
         // Dragging within canvas background
         this.cc.each( function() {
             this.scroll_panel = new ScrollPanel( this );
@@ -766,13 +779,13 @@ $.extend( CanvasManager.prototype, {
         });
         // Dragging for overview pane
         this.ov.bind( "drag", function( e ) {
-            var in_w = self.cc.width();
-            var in_h = self.cc.height()
-            var o_w = self.oc.width();
-            var o_h = self.oc.height();
-            var p = $(this).offsetParent().offset();
-            var new_x_offset = e.offsetX - p.left;
-            var new_y_offset = e.offsetY - p.top;
+            var in_w = self.cc.width(),
+                in_h = self.cc.height(),
+                o_w = self.oc.width(),
+                o_h = self.oc.height(),
+                p = $(this).offsetParent().offset(),
+                new_x_offset = e.offsetX - p.left,
+                new_y_offset = e.offsetY - p.top;
             move( - ( new_x_offset / o_w * in_w ),
                   - ( new_y_offset / o_h * in_h ) );
         }).bind( "dragend", function() {
@@ -794,15 +807,15 @@ $.extend( CanvasManager.prototype, {
         
     },
     update_viewport_overlay: function() {
-        var cc = this.cc;
-        var cv = this.cv;
-        var oc = this.oc;
-        var ov = this.ov;
-        var in_w = cc.width();
-        var in_h = cc.height()
-        var o_w = oc.width();
-        var o_h = oc.height();
-        var cc_pos = cc.position()        
+        var cc = this.cc,
+            cv = this.cv,
+            oc = this.oc,
+            ov = this.ov,
+            in_w = cc.width(),
+            in_h = cc.height(),
+            o_w = oc.width(),
+            o_h = oc.height(),
+            cc_pos = cc.position();        
         ov.css( {
             left: - ( cc_pos.left / in_w * o_w ),
             top: - ( cc_pos.top / in_h * o_h ),
@@ -812,11 +825,11 @@ $.extend( CanvasManager.prototype, {
         });
     },
     draw_overview: function() {
-        var canvas_el = $("#overview-canvas");
-        var size = canvas_el.parent().parent().width()
-        var c = canvas_el.get(0).getContext("2d");
-        var in_w = $("#canvas-container").width();
-        var in_h = $("#canvas-container").height()
+        var canvas_el = $("#overview-canvas"),
+            size = canvas_el.parent().parent().width(),
+            c = canvas_el.get(0).getContext("2d"),
+            in_w = $("#canvas-container").width(),
+            in_h = $("#canvas-container").height();
         var o_h, shift_h, o_w, shift_w;
         // Fit canvas into overview area
         var cv_w = this.cv.width();
@@ -853,7 +866,7 @@ $.extend( CanvasManager.prototype, {
         c.strokeStyle = "#D8B365";
         c.lineWidth = 1;
         $.each( workflow.nodes, function( id, node ) {
-            var node_element = $(node.element);
+            var node_element = $(node.element),
                 position = node_element.position(),
                 x = position.left / in_w * o_w,
                 y = position.top / in_h * o_h,
@@ -864,4 +877,4 @@ $.extend( CanvasManager.prototype, {
         });
         this.update_viewport_overlay();
     }
-})
+});
