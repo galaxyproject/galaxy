@@ -216,8 +216,8 @@ function show_in_overlay( options ) {
 // Tab management
 	
 $(function() {
-    $("span.tab").each( function() {
-        var submenu = $(this).children( "div.submenu" );
+    $(".tab").each( function() {
+        var submenu = $(this).children( ".submenu" );
         if ( submenu.length > 0 ) {
             if ( $.browser.msie ) {
                 // Vile IE iframe hack -- even IE7 needs this

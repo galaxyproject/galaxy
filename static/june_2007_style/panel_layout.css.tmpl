@@ -36,7 +36,6 @@ body
     font-size: 90%;
 }
 
-
 #left, #left-border, #center, #right-border, #right
 {
     position: absolute; 
@@ -274,16 +273,23 @@ div.unified-panel-body {
     text-decoration: underline;
 }
 
-div.tab-group
+## Tabs
+
+.tab-group
 {
     margin: 0;
     padding: 0 10px;
     height: 100%;
     white-space: nowrap;
+    -moz-user-select: none;
+    -khtml-user-select: none;
+    user-select: none;
+    cursor: default;
 }
 
-div.tab-group span.tab
+.tab-group .tab
 {
+    background: ${masthead_bg}; 
     position: relative;
     display: block;
     float: left;
@@ -294,17 +300,17 @@ div.tab-group span.tab
     text-align: left;
 }
 
-div.tab-group > span.tab:hover > a
+.tab-group .tab:hover > a
 {
     color: gold !important;
 }
 
-div.tab-group > span.active
+.tab-group .active
 {
     background: rgb(1,1,1);
 }
 
-div.tab-group span.tab div.submenu {
+.tab-group .tab .submenu {
     display: none;
     position: absolute;
     z-index: 16000;
@@ -320,7 +326,8 @@ div.tab-group span.tab div.submenu {
     -webkit-border-bottom-left-radius: 1em;
 }
 
-div.tab-group span.tab div.submenu ul {
+.tab-group .tab .submenu ul
+{
     display: block;
     margin: 0;
     padding: 0;
@@ -328,7 +335,8 @@ div.tab-group span.tab div.submenu ul {
     background: ${masthead_bg};
 }
 
-div.tab-group span.tab div.submenu ul li {
+.tab-group .tab .submenu ul li
+{
     display: block;
     padding: 0 1em;
     white-space: nowrap;

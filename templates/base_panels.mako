@@ -131,8 +131,10 @@
         %endif
     </div>
     
-    <div style="position: absolute; left: 50%;">
-    <div class="tab-group" style="position: relative; left: -50%;">
+    <div style="position: absolute; left: 0; width: 100%; text-align: center;">
+
+    <table class="tab-group" border="0" cellspacing="0" style="margin: auto;">
+	<tr>
     
     <%def name="tab( id, display, href, target='_parent', visible=True, extra_class='' )">
         <%
@@ -145,31 +147,31 @@
         if not visible:
             style = "display: none;"
         %>
-        <span class="${cls}" style="${style}"><a target="${target}" href="${href}">${display}</a></span>
+        <td class="${cls}" style="${style}"><a target="${target}" href="${href}">${display}</a></td>
     </%def>
     
     ${tab( "analysis", "Analyze Data", h.url_for( controller='root', action='index' ))}
-
+    
     ${tab( "workflow", "Workflow", h.url_for( controller='workflow', action='index' ))}
-
+    
     ${tab( "libraries", "Libraries", h.url_for( controller='library', action='index' ))}
         
     ${tab( "requests", "Requests", h.url_for( controller='requests', action='index' ), visible = (trans.user and trans.request_types)) }
 
     %if app.config.get_bool( 'enable_tracks', False ):
-    <span class="tab">
+    <td class="tab">
         Visualization
         <div class="submenu">
         <ul>
             <li><a href="${h.url_for( controller='tracks', action='index' )}">Build track browser</a></li>
         </ul>
         </div>
-    </span>
+    </td>
     %endif
 
     ${tab( "admin", "Admin", h.url_for( controller='admin', action='index' ), extra_class="admin-only", visible=( trans.user and app.config.is_admin_user( trans.user ) ) )}
     
-    <span class="tab">
+    <td class="tab">
         <a>Help</a>
         <div class="submenu">
         <ul>            
@@ -178,9 +180,9 @@
             <li><a target="_blank" href="${app.config.get( "screencasts_url", "http://g2.trac.bx.psu.edu/wiki/ScreenCasts" )}">Video tutorials (screencasts)</a></li>
         </ul>
         </div>
-    </span>
+    </td>
     
-    <span class="tab">
+    <td class="tab">
         <a>User</a>
         <%
         if trans.user:
@@ -219,9 +221,11 @@
             %endif
         </ul>
         </div>
-    </span>
+    </td>
     
-    </div>
+    </tr>
+    </table>
+    
     </div>
     
 </%def>
