@@ -4,7 +4,7 @@
 #import pkg_resources
 #pkg_resources.require("Cheetah")
 
-import sys, string, os.path
+import sys, string, os.path, tempfile, subprocess
 #from galaxy import eggs
 import pkg_resources
 pkg_resources.require( "Cheetah" )
@@ -73,7 +73,18 @@ for line in open( vars ):
 
 for input, output in templates:
     print input ,"->", output
-    open( os.path.join( out_dir, output ), "w" ).write( str( Template( file=input, searchList=[context] ) ) )
+    out_fname = os.path.join( out_dir, output )
+    temp_file = tempfile.NamedTemporaryFile()
+    # Write processed template to temporary file
+    print "Processing template..."
+    temp_file.write( str( Template( file=input, searchList=[context] ) ) )
+    temp_file.flush()
+    # Compress CSS with YUI
+    print "Compressing..."
+    subprocess.call( 
+        "java -jar ../../scripts/yuicompressor.jar --type css %s -o %s" % ( temp_file.name, out_fname ),
+        shell = True )
+
   
 """
 for rule, output in images:

@@ -1,3 +1,11 @@
+#set $unselectable = """
+    user-select: none;
+    -moz-user-select: none;
+    -webkit-user-select: none;
+"""
+
+## Rules
+
 body, html
 {
     overflow: hidden;
@@ -124,9 +132,6 @@ body
     padding-left: 10px;
     color: #333;
     font-weight: bold;
-    user-select: none;
-    -moz-user-select: none;
-    -webkit-user-select: none;
 }
   
 .unified-panel-header-inner {
@@ -281,17 +286,14 @@ div.unified-panel-body {
     padding: 0 10px;
     height: 100%;
     white-space: nowrap;
-    -moz-user-select: none;
-    -khtml-user-select: none;
-    user-select: none;
     cursor: default;
+    ${unselectable}
 }
 
 .tab-group .tab
 {
-    background: ${masthead_bg}; 
+    background: ${masthead_bg};
     position: relative;
-    display: block;
     float: left;
     margin: 0;
     padding: 0 1em;
