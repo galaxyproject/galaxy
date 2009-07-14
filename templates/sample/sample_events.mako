@@ -14,17 +14,17 @@
     <thead>
         <tr>
             <th>State</th>
-            <th>Updated</th>
             <th>Description</th>
+            <th>Updated</th>
             <th>Comments</th>
         </tr>
     </thead>
     <tbody>
-        %for state, updated, desc, comments in events_list:    
+        %for state, desc, updated, comments in events_list:    
             <tr class="libraryRow libraryOrFolderRow" id="libraryRow">
                 <td><b><a>${state}</a></b></td>
-                <td><a>${updated}</a></td>
                 <td><a>${desc}</a></td>
+                <td><a>${updated}</a></td>
                 <td><a>${comments}</a></td>
             </tr>             
         %endfor

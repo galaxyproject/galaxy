@@ -607,19 +607,39 @@ SampleEvent.table = Table('sample_event', metadata,
 assign_mapper( context, Sample, Sample.table,
                properties=dict( events=relation( SampleEvent, backref="sample",
                                                  order_by=desc(SampleEvent.table.c.update_time) ),
+                                values=relation( FormValues,
+                                                 primaryjoin=( Sample.table.c.form_values_id == FormValues.table.c.id ) ),
+                                request=relation( Request,
+                                                  primaryjoin=( Sample.table.c.request_id == Request.table.c.id ) ),
                               ) )
 
 assign_mapper( context, FormValues, FormValues.table, properties=None)
 
-assign_mapper( context, Request, Request.table, properties=None)
+assign_mapper( context, Request, Request.table,
+               properties=dict( values=relation( FormValues,
+                                                 primaryjoin=( Request.table.c.form_values_id == FormValues.table.c.id ) ),
+                                type=relation( RequestType,
+                                               primaryjoin=( Request.table.c.request_type_id == RequestType.table.c.id ) ),
+                                user=relation( User,
+                                               primaryjoin=( Request.table.c.user_id == User.table.c.id ),
+                                               backref="requests" ),
+                                library=relation( Library,
+                                                  primaryjoin=( Request.table.c.library_id == Library.table.c.id ) ),                 
+                              ) )
 
 assign_mapper( context, RequestType, RequestType.table,               
                properties=dict( states=relation( SampleState, backref="request_type",
                                                  order_by=desc(SampleState.table.c.update_time) ),
+                                request_form=relation( FormDefinition,
+                                                       primaryjoin=( RequestType.table.c.request_form_id == FormDefinition.table.c.id ) ),
+                                sample_form=relation( FormDefinition,
+                                                      primaryjoin=( RequestType.table.c.sample_form_id == FormDefinition.table.c.id ) ),
                               ) )
 
-assign_mapper( context, FormDefinition, FormDefinition.table, properties=None)
-
+assign_mapper( context, FormDefinition, FormDefinition.table,
+               properties=dict( current=relation( FormDefinitionCurrent,
+                                                  primaryjoin=( FormDefinition.table.c.form_definition_current_id == FormDefinitionCurrent.table.c.id ) )
+                              ) )
 assign_mapper( context, FormDefinitionCurrent, FormDefinitionCurrent.table,
                 properties=dict( forms=relation( FormDefinition, backref='form_definition_current',
                                                  cascade="all, delete-orphan",
@@ -628,11 +648,14 @@ assign_mapper( context, FormDefinitionCurrent, FormDefinitionCurrent.table,
                                                        primaryjoin=( FormDefinitionCurrent.table.c.latest_form_id == FormDefinition.table.c.id ) )
                                ) )
 
-assign_mapper( context, SampleEvent, SampleEvent.table, properties=None)
+assign_mapper( context, SampleEvent, SampleEvent.table, 
+               properties=dict( state=relation( SampleState,
+                                                primaryjoin=( SampleEvent.table.c.sample_state_id == SampleState.table.c.id ) ),
 
+                                ) )
+                                
 assign_mapper( context, SampleState, SampleState.table,
-               properties=None #dict( sample=relation( Sample, backref="sample" ),
-             )# )
+               properties=None )
 
 assign_mapper( context, ValidationError, ValidationError.table )
 
@@ -701,8 +724,8 @@ assign_mapper( context, HistoryUserShareAssociation, HistoryUserShareAssociation
 assign_mapper( context, User, User.table, 
     properties=dict( histories=relation( History, backref="user",
                                          order_by=desc(History.table.c.update_time) ),
-                     requests=relation( Request, backref="user",
-                                         order_by=desc(Request.table.c.update_time) ),                    
+#                     requests=relation( Request, backref="user",
+#                                         order_by=desc(Request.table.c.update_time) ),                    
                      active_histories=relation( History, primaryjoin=( ( History.table.c.user_id == User.table.c.id ) & ( not_( History.table.c.deleted ) ) ), order_by=desc( History.table.c.update_time ) ),
                      galaxy_sessions=relation( GalaxySession, order_by=desc( GalaxySession.table.c.update_time ) ),
                      stored_workflow_menu_entries=relation( StoredWorkflowMenuEntry, backref="user",

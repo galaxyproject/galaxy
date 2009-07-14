@@ -1115,7 +1115,8 @@ class FormValues( object ):
         self.content = content
         
 class Request( object ):
-    def __init__(self, name=None, desc=None, request_type_id=None, user_id=None, form_values_id=None, library_id=None):
+    def __init__(self, name=None, desc=None, request_type_id=None, user_id=None, 
+                 form_values_id=None, library_id=None):
         self.name = name
         self.desc = desc
         self.request_type_id = request_type_id

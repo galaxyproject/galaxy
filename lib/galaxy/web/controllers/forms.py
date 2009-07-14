@@ -70,7 +70,7 @@ class Forms( BaseController ):
         elif params.get('create_form', False) == 'True':   
             if 'submitted' in params.new:
                 self.num_add_fields = 0
-                fd, msg = self.__save_form(trans, params)
+                fd, msg = self.__save_form(trans, fdc_id=None, **kwd)
                 self.__get_saved_form(fd)
                 return self._show_forms_list(trans, msg, messagetype)
     @web.expose
@@ -90,29 +90,34 @@ class Forms( BaseController ):
             # the following two dicts store the unsaved select box options
             self.del_options = {}
             self.add_options = {}
-            return self.__show(trans, params, fd)
+            return self.__show(trans=trans, form=fd, msg=msg, 
+                               messagetype=messagetype, **kwd)
         # DELETE FIELD
         elif params.get('remove_button', False):
-            self.__update_current_form(params)
+            self.__update_current_form(**kwd)
             index = int(params.get('remove_button', None).split(' ')[2])-1
             self.__remove_field(index)
-            return self.__show(trans, params, fd)            
+            return self.__show(trans=trans, form=fd, msg=msg, 
+                               messagetype=messagetype, **kwd)          
         # SAVE CHANGES
         elif params.get('save_changes_button', False) == 'Save':
-            self.__update_current_form(params)
-            fd_new, msg = self.__save_form(trans, params, fd.form_definition_current.id)
+            self.__update_current_form(**kwd)
+            fd_new, msg = self.__save_form(trans, fd.form_definition_current.id, **kwd)
             if not fd_new:
-                return self.__show(trans, params, fd, msg, 'error')
+                return self.__show(trans=trans, form=fd, msg=msg, 
+                                   messagetype='error', **kwd)
             else:
                 fd = fd_new
             msg = "The form '%s' has been updated with the changes." % fd.name
-            return self.__show(trans, params, fd, msg)
+            return self.__show(trans=trans, form=fd, msg=msg, 
+                               messagetype=messagetype, **kwd)
         #ADD A FIELD
         elif params.get('add_field_button', False) == 'Add field':
-            self.__update_current_form(params)
+            self.__update_current_form(**kwd)
             self.__add_field()
             # show the form again with one empty field
-            return self.__show(trans, params, fd)
+            return self.__show(trans=trans, form=fd, msg=msg, 
+                               messagetype=messagetype, **kwd)
         # SHOW FORM READ ONLY
         elif params.get('read_only', False):           
             return trans.fill_template( '/admin/forms/show_form_read_only.mako',
@@ -121,21 +126,24 @@ class Forms( BaseController ):
                                         messagetype=messagetype )
         # REFRESH PAGE, SelectField is selected/deselected as the type of a field
         elif params.get('refresh', False) == 'true':
-            self.__update_current_form(params)
-            return self.__show(trans, params, fd)
+            self.__update_current_form(**kwd)
+            return self.__show(trans=trans, form=fd, msg=msg, 
+                               messagetype=messagetype, **kwd)
         # REMOVE SelectField OPTION
         elif params.get('select_box_options', False) == 'remove':
-            #self.__update_current_form(params)
+            #self.__update_current_form(**kwd)
             index = int(params.get( 'field_index', None ))
             option = int(params.get( 'option_index', None ))
             del self.current_form['fields'][index]['selectlist'][option]
-            return self.__show(trans, params, fd)
+            return self.__show(trans=trans, form=fd, msg=msg, 
+                               messagetype=messagetype, **kwd)
         # ADD SelectField OPTION
         elif params.get('select_box_options', False) == 'add':
-            #self.__update_current_form(params)
+            #self.__update_current_form(**kwd)
             index = int(params.get( 'field_index', None ))
             self.current_form['fields'][index]['selectlist'].append('')
-            return self.__show(trans, params, fd)           
+            return self.__show(trans=trans, form=fd, msg=msg, 
+                               messagetype=messagetype, **kwd)           
     def __remove_field(self, index):
         del self.current_form['fields'][index]
     def __add_field(self):
@@ -149,26 +157,31 @@ class Forms( BaseController ):
                         'type': BaseField.form_field_types()[0],
                         'selectlist': '' }
         self.current_form['fields'].append(empty_field)
-    def __get_field(self, params, index):
+    def __get_field(self, index, **kwd):
+        params = util.Params( kwd )
         name = util.restore_text( params.get( 'field_name_%i' % index, None ) )
         helptext = util.restore_text( params.get( 'field_helptext_%i' % index, None ) )
         required =  params.get( 'field_required_%i' % index, False )
         field_type = util.restore_text( params.get( 'field_type_%i' % index, None ) )
         if field_type == 'SelectField':
-            selectlist = self.__get_selectbox_options(params, index)
-        else:
-            selectlist = None
+            selectlist = self.__get_selectbox_options(index, **kwd)
+            return {'label': name, 
+                    'helptext': helptext, 
+                    'visible': True,
+                    'required': required,
+                    'type': field_type,
+                    'selectlist': selectlist }
         return {'label': name, 
                 'helptext': helptext, 
                 'visible': True,
                 'required': required,
-                'type': field_type,
-                'selectlist': selectlist }
-    def __get_selectbox_options(self, params, index):
+                'type': field_type}
+    def __get_selectbox_options(self, index, **kwd):
         '''
         This method gets all the options entered by the user for field when
         the fieldtype is SelectField 
         '''
+        params = util.Params( kwd )
         ctr=0
         sb_options = []
         while True:
@@ -183,12 +196,13 @@ class Forms( BaseController ):
         self.current_form['name'] = fd.name
         self.current_form['desc'] = fd.desc
         self.current_form['fields'] = list(copy.deepcopy(fd.fields))
-    def __validate_form(self, params):
+    def __validate_form(self, **kwd):
         '''
         This method checks the following text inputs are filled out by the user
         - the name of form
         - name of all the fields
         '''
+        params = util.Params( kwd )
         # form name
         if not util.restore_text( params.name ):
             return None, 'Form name must be filled.'
@@ -197,32 +211,33 @@ class Forms( BaseController ):
             if not util.restore_text(params.get( 'field_name_%i' % i, None )):
                 return None, "All the field label(s) must be completed."
         return True, ''
-    def __get_form(self, params):
+    def __get_form(self, **kwd):
+        params = util.Params( kwd )
         name = util.restore_text( params.name ) 
         desc = util.restore_text( params.description ) or ""
         # set form fields
         fields = []
         for i in range( len(self.current_form['fields']) ):
-            fields.append(self.__get_field(params, i))
+            fields.append(self.__get_field(i, **kwd))
         fields = fields
         return name, desc, fields
-    def __update_current_form(self, params):
-        name, desc, fields = self.__get_form(params)
+    def __update_current_form(self, **kwd):
+        name, desc, fields = self.__get_form(**kwd)
         self.current_form = {}
         self.current_form['name'] = name
         self.current_form['desc'] = desc
         self.current_form['fields'] = fields
         
-    def __save_form(self, trans, params, fdc_id=None):
+    def __save_form(self, trans, fdc_id=None, **kwd):
         '''
         This method saves the current form 
         '''
         # check the form for invalid inputs
-        flag, msg = self.__validate_form(params)
+        flag, msg = self.__validate_form(**kwd)
         if not flag:
             return None, msg
         fd = trans.app.model.FormDefinition()
-        fd.name, fd.desc, fd.fields = self.__get_form(params)
+        fd.name, fd.desc, fd.fields = self.__get_form(**kwd)
         if fdc_id: # save changes to the existing form    
             # change the pointer in the form_definition_current table to point 
             # to this new record
@@ -302,10 +317,11 @@ class Forms( BaseController ):
         def label(self):
             return str(self.index)+'.'+self.label 
         
-    def __show(self, trans, params, form, msg=None, messagetype='done'):
+    def __show(self, trans, form, msg=None, messagetype='done', **kwd):
         '''
         This method displays the form and any of the changes made to it
         '''
+        params = util.Params( kwd )
         # name & description
         form_details = [ ( 'Name', TextField('name', 40, self.current_form['name']) ),
                          ( 'Description', TextField('description', 40, self.current_form['desc']) ) ]

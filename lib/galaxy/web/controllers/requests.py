@@ -6,11 +6,9 @@ from galaxy import util
 from galaxy.util.streamball import StreamBall
 import logging, tempfile, zipfile, tarfile, os, sys
 from galaxy.web.form_builder import * 
+from datetime import datetime, timedelta
 
 log = logging.getLogger( __name__ )
-
-# States for passing messages
-SUCCESS, INFO, WARNING, ERROR = "done", "info", "warning", "error"
 
 class RequestsListGrid( grids.Grid ):
     title = "Requests"
@@ -41,8 +39,7 @@ class RequestsListGrid( grids.Grid ):
     def get_current_item( self, trans ):
         return None
     def get_request_type(self, trans, request):
-        request_type = trans.app.model.RequestType.get(request.request_type_id)
-        return request_type.name
+        return request.type.name
     def apply_default_filter( self, trans, query ):
         return query.filter_by( user=trans.user )
     def number_of_samples(self, trans, request):
@@ -83,7 +80,7 @@ class SamplesListGrid( grids.Grid ):
         return query.filter_by( request_id=self.request.id )
     def get_status(self, trans, sample):
         all_states = trans.app.model.SampleEvent.filter(trans.app.model.SampleEvent.table.c.sample_id == sample.id).all()
-        curr_state = trans.app.model.SampleState.get(all_states[len(all_states)-1].sample_state_id)
+        curr_state = all_states[len(all_states)-1].state
         return curr_state.name
 
 class Requests( BaseController ):
@@ -92,6 +89,7 @@ class Requests( BaseController ):
     @web.expose
     def index( self, trans ):
         return trans.fill_template( "requests/index.mako" )
+    
     def get_authorized_libs(self, trans):
         all_libraries = trans.app.model.Library.filter(trans.app.model.Library.table.c.deleted == False).order_by(trans.app.model.Library.name).all()
         authorized_libraries = []
@@ -134,9 +132,6 @@ class Requests( BaseController ):
         Shows the request details
         '''
         request = trans.app.model.Request.get(id)
-        request_type = trans.app.model.RequestType.get(request.request_type_id)
-        request_form = trans.app.model.FormDefinition.get(request_type.request_form_id)
-        request_values = trans.app.model.FormValues.get(request.form_values_id)
         libraries = self.get_authorized_libs(trans)
         # list of widgets to be rendered on the request form
         request_details = []
@@ -148,7 +143,7 @@ class Requests( BaseController ):
                                     value=request.desc, 
                                     helptext=''))
         request_details.append(dict(label='Type', 
-                                    value=request_type.name, 
+                                    value=request.type.name, 
                                     helptext=''))
         request_details.append(dict(label='Date created', 
                                     value=request.create_time, 
@@ -157,26 +152,26 @@ class Requests( BaseController ):
                                     value=request.create_time, 
                                     helptext=''))
         request_details.append(dict(label='User', 
-                                    value=str(trans.user.email), 
+                                    value=str(request.user.email), 
                                     helptext=''))
         # library associated
         request_details.append(dict(label='Library', 
-                                    value=trans.app.model.Library.get(request.library_id).name, 
+                                    value=request.library.name, 
                                     helptext='Associated library where the resultant \
                                               dataset will be stored'))
         # form fields
-        for field in request_form.fields:
+        for index, field in enumerate(request.type.request_form.fields):
             if field['required']:
                 req = 'Required'
             else:
                 req = 'Optional'
             request_details.append(dict(label=field['label'],
-                                        value=request_values.content[field['label']],
+                                        value=request.values.content[index],
                                         helptext=field['helptext']+' ('+req+')'))
         return trans.fill_template( '/requests/view_request.mako',
-                                    request_form_id=request_form.id, 
+                                    request_form_id=request.type.request_form.id, 
                                     request_details=request_details,
-                                    request_type=request_type)    
+                                    request_type=request.type)    
     @web.expose
     def new(self, trans, **kwd):
         params = util.Params( kwd )
@@ -189,49 +184,74 @@ class Requests( BaseController ):
                                         msg=msg,
                                         messagetype=messagetype )
         elif params.get('create', False) == 'True':
-            request_type_id = int(util.restore_text( params.request_type_id ))
-            return self.__show_request_form(trans, params, request_type_id)
+            print >> sys.stderr, '###KWD', kwd
+            return self.__show_request_form(trans=trans,
+                                            request=None, **kwd)
         elif params.get('save', False) == 'True':
-            request = self.__save(trans, params)
+            request_type = trans.app.model.RequestType.get(int(params.request_type_id))
+            msg = self.__validate(trans, 
+                                  [('name','Name'), ('library_id','Library')], 
+                                  request_type.request_form.fields, 
+                                  **kwd)
+            if msg:
+                kwd['create'] = 'True'
+                return trans.response.send_redirect( web.url_for( controller='requests',
+                                                                  action='new',
+                                                                  msg=msg,
+                                                                  messagetype='error',
+                                                                  **kwd) )
+            request = self.__save_request(trans, None, **kwd)
             msg = 'The new request named %s has been created' % request.name
             request_type_id = int(util.restore_text( params.request_type_id ))
             return trans.response.send_redirect( web.url_for( controller='requests',
                                                               action='list',
                                                               msg=msg ,
                                                               messagetype='done') )
-            return self.__show_request_form(trans, params, request_type_id, request=request)
-    def __save(self, trans, params, request_id=None):
+    def __validate(self, trans, main_fields=[], form_fields=[], **kwd):
         '''
-        This method save a new request if request_id is None. 
+        Validates the request entered by the user 
         '''
+        params = util.Params( kwd )
+        for field, field_name in main_fields:
+            if not util.restore_text(params.get(field, None)):
+                return 'Please enter the <b>%s</b> of the request' % field_name
+        # check rest of the fields of the form
+        for index, field in enumerate(form_fields):
+            if not util.restore_text(params.get('field_%i' % index, None)) and field['required']:
+                return 'Please enter the <b>%s</b> field of the request' % field['label']
+        return None
+    def __save_request(self, trans, request_id=None, **kwd):
+        '''
+        This method saves a new request if request_id is None. 
+        '''
+        params = util.Params( kwd )
         if not request_id:
-            request_type_id = int(util.restore_text( params.request_type_id ))
-            request_form_id = trans.app.model.RequestType.get(request_type_id).request_form_id
-            request_form = trans.app.model.FormDefinition.get(request_form_id)
+            request_type = trans.app.model.RequestType.get(int(params.request_type_id ))
         else:
-            request = trans.app.model.Request.get(request_id)
-            form_values = trans.app.model.FormValues.get(request.form_values_id)
-            request_form = trans.app.model.FormDefinition.get(form_values.request_form_id)
+            # TODO editing
+            pass
         name = util.restore_text(params.get('name', ''))
         desc = util.restore_text(params.get('desc', ''))
-        library_id = util.restore_text(params.get('library', ''))
-        values = {}
-        for field in request_form.fields:
-            values[field['label']] = util.restore_text(params.get(field['label'], ''))
+        library_id = int(util.restore_text(params.get('library_id', 0)))
+        values = []
+        for index, field in enumerate(request_type.request_form.fields):
+            values.append(util.restore_text(params.get('field_%i' % index, '')))
         if not request_id:
-            form_values = trans.app.model.FormValues(request_form_id, values)
+            form_values = trans.app.model.FormValues(request_type.request_form.id, values)
             form_values.flush()
-            request = trans.app.model.Request(name, desc, request_type_id, 
+            request = trans.app.model.Request(name, desc, request_type.id, 
                                               trans.user.id, form_values.id,
                                               library_id)
             request.flush()
         else:
-            form_values.content = values
-            form_values.flush()
+            # TODO editing
+            pass
         return request
-    def __show_request_form(self, trans, params, request_type_id, request=None):
-        request_type = trans.app.model.RequestType.get(request_type_id)
-        request_form_id = request_type.request_form_id
+    def __show_request_form(self, trans, request=None, **kwd):
+        params = util.Params( kwd )
+        msg = util.restore_text( params.get( 'msg', ''  ) )
+        messagetype = params.get( 'messagetype', 'done' )
+        request_type = trans.app.model.RequestType.get(int(params.request_type_id))
         if request:
             form_values = trans.app.model.FormValues.get(request.form_values_id)
         else:
@@ -239,56 +259,63 @@ class Requests( BaseController ):
         # list of widgets to be rendered on the request form
         widgets = []
         widgets.append(dict(label='Name', 
-                            widget=TextField('name'), 
+                            widget=TextField('name', 40, 
+                                             util.restore_text( params.get( 'name', ''  ) )), 
                             helptext='(Required)'))
         widgets.append(dict(label='Description', 
-                            widget=TextField('desc'), 
+                            widget=TextField('desc', 40,
+                                             util.restore_text( params.get( 'desc', ''  ) )), 
                             helptext='(Optional)'))
-        widgets[0]['widget'].set_size(40)
-        widgets[1]['widget'].set_size(40)
         # libraries selectbox
+        value = int(params.get( 'library_id', 0  ))
         libraries = self.get_authorized_libs(trans)
-        lib_list = SelectField('library')
+        lib_list = SelectField('library_id')
         for lib in libraries:
-            lib_list.add_option(lib.name, lib.id)
+            if lib.id == value:
+                lib_list.add_option(lib.name, lib.id, selected=True)
+            else:
+                lib_list.add_option(lib.name, lib.id)
         widgets.append(dict(label='Library', 
                             widget=lib_list, 
                             helptext='Associated library where the resultant \
                                         dataset will be stored'))
-        widgets = self.__create_form(trans, params, request_form_id, widgets, form_values)
+        widgets = self.__create_form(trans, request_type.request_form_id, widgets, form_values, **kwd)
         title = 'Add a new request of type: %s' % request_type.name
         return trans.fill_template( '/requests/new_request.mako',
-                        request_form_id=request_form_id,
+                        request_form_id=request_type.request_form_id,
                         request_type=request_type,                                     
                         widgets=widgets,
-                        title=title)
+                        title=title,
+                        msg=msg,
+                        messagetype=messagetype)
         
-    def __create_form(self, trans, params, form_id, widgets=[], form_values=None):
+    def __create_form(self, trans, form_id, widgets=[], form_values=None, **kwd):
+        params = util.Params( kwd )
         form = trans.app.model.FormDefinition.get(form_id)
-        if not form_values:
-            values = {}
-            for field in form.fields:
-                if field['type'] in ['SelectField' or 'CheckBoxField']:
-                    values[field['label']] = False
-                else:
-                    values[field['label']] = ''
-        else:
-            values = form_values.content
         # form fields
-        for field in form.fields:
-            fw = eval(field['type'])(field['label'])
+        for index, field in enumerate(form.fields):
+            # value of the field 
+            if field['type'] == 'CheckboxField':
+                value = util.restore_text( params.get( 'field_%i' % index, False  ) )
+            else:
+                value = util.restore_text( params.get( 'field_%i' % index, ''  ) )
+            # create the field
+            fw = eval(field['type'])('field_%i' % index)
             if field['type'] == 'TextField':
                 fw.set_size(40)
-                fw.value = values[field['label']]
+                fw.value = value
             elif field['type'] == 'TextArea':
                 fw.set_size(3, 40)
-                fw.value = values[field['label']]
+                fw.value = value
             elif field['type'] == 'SelectField':
                 for option in field['selectlist']:
-                    fw.add_option(option, option, values[field['label']])
-            elif field['type'] == 'CheckBoxField':
-                fw.checked = values[field['label']]
-            
+                    if option == value:
+                        fw.add_option(option, option, selected=True)
+                    else:
+                        fw.add_option(option, option)
+            elif field['type'] == 'CheckboxField':
+                fw.checked = value
+            # require/optional
             if field['required']:
                 req = 'Required'
             else:
@@ -302,13 +329,13 @@ class Requests( BaseController ):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
-        request_id = int(util.restore_text( params.get( 'id', ''  ) ))
-        return self.__show_sample_form(trans, params, request_id)
+        return self.__show_sample_form(trans, sample=None, **kwd)
         
-    def __show_sample_form(self, trans, params, request_id, sample=None):
-        request = trans.app.model.Request.get(request_id)
-        request_type = trans.app.model.RequestType.get(request.request_type_id)
-        sample_form_id = request_type.sample_form_id
+    def __show_sample_form(self, trans, sample=None, **kwd):
+        params = util.Params( kwd )
+        msg = util.restore_text( params.get( 'msg', ''  ) )
+        messagetype = params.get( 'messagetype', 'done' )
+        request = trans.app.model.Request.get(int( params.request_id ))
         if sample:
             form_values = trans.app.model.FormValues.get(sample.form_values_id)
         else:
@@ -316,50 +343,63 @@ class Requests( BaseController ):
         # list of widgets to be rendered on the request form
         widgets = []
         widgets.append(dict(label='Name', 
-                            widget=TextField('name'), 
+                            widget=TextField('name', 40, 
+                                             util.restore_text( params.get( 'name', ''  ) )), 
                             helptext='(Required)'))
         widgets.append(dict(label='Description', 
-                            widget=TextField('desc'), 
+                            widget=TextField('desc', 40, 
+                                             util.restore_text( params.get( 'desc', ''  ) )), 
                             helptext='(Optional)'))
-        widgets[0]['widget'].set_size(40)
-        widgets[1]['widget'].set_size(40)
-        widgets = self.__create_form(trans, params, sample_form_id, widgets, form_values)
-        title = 'Add a new sample to request: %s of type: %s' % (request.name, request_type.name) 
+        widgets = self.__create_form(trans, request.type.sample_form_id, widgets, form_values, **kwd)
+        title = 'Add a new sample to request: %s of type: %s' % (request.name, request.type.name) 
         return trans.fill_template( '/sample/new_sample.mako',
-                        sample_form_id=sample_form_id,
+                        sample_form_id=request.type.sample_form_id,
                         request_id=request.id,                                     
                         widgets=widgets,
-                        title=title)
+                        title=title,
+                        msg=msg,
+                        messagetype=messagetype)
     @web.expose
     def samples(self, trans, **kwd):
         params = util.Params( kwd )
         if params.get('save', False) == 'True':
-            sample = self.__save_sample(trans, params)
+            request = trans.app.model.Request.get(int(params.request_id ))
+            msg = self.__validate(trans, 
+                                  [('name','Name')],
+                                  request.type.sample_form.fields, 
+                                  **kwd)
+            if msg:
+                return trans.response.send_redirect( web.url_for( controller='requests',
+                                                                  action='add_sample',
+                                                                  msg=msg,
+                                                                  messagetype='error',
+                                                                  **kwd) )
+            sample = self.__save_sample(trans, sample_id=None, **kwd)
+            msg = 'The new sample named %s has been created' % sample.name
             return trans.response.send_redirect( web.url_for( controller='requests',
                                                               action='list',
                                                               operation='samples',
-                                                              id=trans.security.encode_id(sample.request_id)) )
-    def __save_sample(self, trans, params, sample_id=None):
+                                                              id=trans.security.encode_id(sample.request_id),
+                                                              **kwd) )
+    def __save_sample(self, trans, sample_id=None, **kwd):
+        params = util.Params( kwd )
         if not sample_id:
-            request = trans.app.model.Request.get(int(util.restore_text( params.request_id )))
-            request_type = trans.app.model.RequestType.get(request.request_type_id)
-            sample_form = trans.app.model.FormDefinition.get(request_type.sample_form_id)
+            request = trans.app.model.Request.get(int(params.request_id))
         else:
-            sample = trans.app.model.Sample.get(sample_id)
-            form_data = trans.app.model.FormData.get(sample.form_data_id)
-            form = trans.app.model.FormDefinition.get(form_data.form_definition_id)
+            #TODO editing
+            pass
         name = util.restore_text(params.get('name', ''))
         desc = util.restore_text(params.get('desc', ''))
-        values = {}
-        for field in sample_form.fields:
-            values[field['label']] = util.restore_text(params.get(field['label'], ''))
+        values = []
+        for index, field in enumerate(request.type.sample_form.fields):
+            values.append(util.restore_text(params.get('field_%i' % index, '')))
         if not sample_id:
-            form_values = trans.app.model.FormValues(sample_form.id, values)
+            form_values = trans.app.model.FormValues(request.type.sample_form.id, values)
             form_values.flush()
             sample = trans.app.model.Sample(name, desc, request.id, form_values.id)
             sample.flush()
             # set the initial state            
-            state = trans.app.model.SampleState.filter(trans.app.model.SampleState.table.c.request_type_id == request_type.id).first()
+            state = trans.app.model.SampleState.filter(trans.app.model.SampleState.table.c.request_type_id == request.type.id).first()
             event = trans.app.model.SampleEvent(sample.id, state.id)
             event.flush()
         else:
@@ -371,10 +411,10 @@ class Requests( BaseController ):
         Shows the sample details
         '''
         sample = trans.app.model.Sample.get(sample_id)
-        request = trans.app.model.Request.get(sample.request_id)
-        request_type = trans.app.model.RequestType.get(request.request_type_id)
-        sample_form = trans.app.model.FormDefinition.get(request_type.sample_form_id)
-        sample_values = trans.app.model.FormValues.get(sample.form_values_id)
+        request = sample.request
+        request_type = sample.request.type
+        sample_form = sample.request.type.sample_form
+        sample_values = sample.values
         # list of widgets to be rendered on the request form
         sample_details = []
         # main details
@@ -398,31 +438,37 @@ class Requests( BaseController ):
                                     helptext='Name/ID of the request this sample belongs to.'))
         # get the current state of the sample
         all_states = trans.app.model.SampleEvent.filter(trans.app.model.SampleEvent.table.c.sample_id == sample_id).all()
-        curr_state = trans.app.model.SampleState.get(all_states[len(all_states)-1].sample_state_id)
+        curr_state = all_states[len(all_states)-1].state
         sample_details.append(dict(label='State', 
                                     value=curr_state.name, 
                                     helptext=curr_state.desc))
         # form fields
-        for field in sample_form.fields:
+        for index, field in enumerate(sample_form.fields):
             if field['required']:
                 req = 'Required'
             else:
                 req = 'Optional'
             sample_details.append(dict(label=field['label'],
-                                        value=sample_values.content[field['label']],
+                                        value=sample_values.content[index],
                                         helptext=field['helptext']+' ('+req+')'))
         return trans.fill_template( '/sample/view_sample.mako', 
                                     sample_details=sample_details)
     def show_events(self, trans, sample_id):
         sample = trans.app.model.Sample.get(sample_id)
         events_list = []
-        for event in trans.app.model.SampleEvent.filter(trans.app.model.SampleEvent.table.c.sample_id == sample_id).all():
-            state = trans.app.model.SampleState.get(event.sample_state_id)
-            events_list.append((state.name, event.update_time, state.desc, event.comment))
+        all_events = trans.app.model.SampleEvent.filter(trans.app.model.SampleEvent.table.c.sample_id == sample_id).all()
+        all_events.reverse()
+        for event in all_events:
+            delta = datetime.utcnow() - event.update_time
+            if delta > timedelta( minutes=60 ):
+                last_update = '%s hours' % int( delta.seconds / 60 / 60 )
+            else:
+                last_update = '%s minutes' % int( delta.seconds / 60 )
+            events_list.append((event.state.name, event.state.desc, last_update, event.comment))
         return trans.fill_template( '/sample/sample_events.mako', 
                                     events_list=events_list,
                                     sample_name=sample.name,
-                                    request=trans.app.model.Request.get(sample.request_id).name)
+                                    request=sample.request.name)
 
             
     

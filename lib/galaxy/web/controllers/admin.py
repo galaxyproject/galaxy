@@ -2146,7 +2146,7 @@ class Admin( BaseController ):
                                         msg=msg,
                                         messagetype=messagetype)            
         elif params.get('save_new', False) == 'True':
-            st, msg = self._save_request_type(trans, params, None)
+            st, msg = self._save_request_type(trans, **kwd)
             if not st:
                 return trans.fill_template( '/admin/requests/create_request_type.mako', 
                                             forms=self._get_all_forms(trans, all_versions=False),
@@ -2170,24 +2170,9 @@ class Admin( BaseController ):
                                         show_deleted=False,
                                         msg=msg,
                                         messagetype=messagetype )
-        elif params.get('save_changes', False) == 'True':
-            st = trans.app.model.SampleType.get(int(util.restore_text( params.id )))
-            st, msg = self._save_sample_type(trans, params, st.id)
-            if st:
-                msg = "The sample type '%s' has been updated with the changes." % st.name
-                messagetype = 'done'
-            else:
-                messagetype = 'error'
-            ss_list = trans.app.model.SampleState.filter(trans.app.model.SampleState.table.c.sample_type_id == st.id).all()
-            return trans.fill_template( '/admin/samples/edit_sample_type.mako', 
-                                        sample_type=st,
-                                        forms=self._get_all_forms(trans, all_versions=False),
-                                        states_list=ss_list,
-                                        deleted=False,
-                                        show_deleted=False,
-                                        msg=msg,
-                                        messagetype=messagetype )
-    def _save_request_type(self, trans, params, request_type_id):
+
+    def _save_request_type(self, trans, **kwd):
+        params = util.Params( kwd )
         num_states = int( util.restore_text( params.get( 'num_states', 0 ) ))
         proceed = True
         for i in range( num_states ):
@@ -2197,10 +2182,7 @@ class Admin( BaseController ):
         if not proceed:
             msg = "All the state name(s) must be completed."
             return None, msg
-        if not request_type_id: # create a new sample type to save
-            rt = trans.app.model.RequestType() 
-        else:           # use the existing sample type to save changes
-            rt = trans.app.model.RequestType.get(request_type_id)
+        rt = trans.app.model.RequestType() 
         rt.name = util.restore_text( params.name ) 
         rt.desc = util.restore_text( params.description ) or ""
         rt.request_form_id = int(util.restore_text( params.request_form_id ))

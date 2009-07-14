@@ -89,7 +89,7 @@
 
 <ul class="manage-table-actions">
     <li>
-        <a class="action-button" href="${h.url_for( controller='requests', action='add_sample', id=grid.request.id)}">
+        <a class="action-button" href="${h.url_for( controller='requests', action='add_sample', request_id=grid.request.id)}">
         <img src="${h.url_for('/static/images/silk/add.png')}" />
         <span>Add sample</span></a>
     </li>

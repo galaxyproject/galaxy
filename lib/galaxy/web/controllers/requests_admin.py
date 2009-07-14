@@ -146,9 +146,6 @@ class Requests( BaseController ):
         Shows the request details
         '''
         request = trans.app.model.Request.get(id)
-        request_type = trans.app.model.RequestType.get(request.request_type_id)
-        request_form = trans.app.model.FormDefinition.get(request_type.request_form_id)
-        request_values = trans.app.model.FormValues.get(request.form_values_id)
         libraries = self.get_authorized_libs(trans)
         # list of widgets to be rendered on the request form
         request_details = []
@@ -160,7 +157,7 @@ class Requests( BaseController ):
                                     value=request.desc, 
                                     helptext=''))
         request_details.append(dict(label='Type', 
-                                    value=request_type.name, 
+                                    value=request.type.name, 
                                     helptext=''))
         request_details.append(dict(label='Date created', 
                                     value=request.create_time, 
@@ -169,7 +166,7 @@ class Requests( BaseController ):
                                     value=request.create_time, 
                                     helptext=''))
         request_details.append(dict(label='User', 
-                                    value=str(trans.user.email), 
+                                    value=str(request.user.email), 
                                     helptext=''))
         # library associated
         request_details.append(dict(label='Library', 
@@ -177,18 +174,18 @@ class Requests( BaseController ):
                             helptext='Associated library where the resultant \
                                         dataset will be stored'))
         # form fields
-        for field in request_form.fields:
+        for index, field in enumerate(request.type.request_form.fields):
             if field['required']:
                 req = 'Required'
             else:
                 req = 'Optional'
             request_details.append(dict(label=field['label'],
-                                        value=request_values.content[field['label']],
+                                        value=request.values.content[index],
                                         helptext=field['helptext']+' ('+req+')'))
         return trans.fill_template( '/admin/requests/view_request.mako',
-                                    request_form_id=request_form.id, 
+                                    request_form_id=request.type.request_form.id, 
                                     request_details=request_details,
-                                    request_type=request_type)    
+                                    request_type=request.type)    
 
     @web.expose
     @web.require_admin
@@ -202,10 +199,10 @@ class Requests( BaseController ):
         Shows the sample details
         '''
         sample = trans.app.model.Sample.get(sample_id)
-        request = trans.app.model.Request.get(sample.request_id)
-        request_type = trans.app.model.RequestType.get(request.request_type_id)
-        sample_form = trans.app.model.FormDefinition.get(request_type.sample_form_id)
-        sample_values = trans.app.model.FormValues.get(sample.form_values_id)
+        request = sample.request
+        request_type = sample.request.type
+        sample_form = sample.request.type.sample_form
+        sample_values = sample.values
         # list of widgets to be rendered on the request form
         sample_details = []
         # main details
@@ -229,18 +226,18 @@ class Requests( BaseController ):
                                     helptext='Name/ID of the request this sample belongs to.'))
         # get the current state of the sample
         all_states = trans.app.model.SampleEvent.filter(trans.app.model.SampleEvent.table.c.sample_id == sample_id).all()
-        curr_state = trans.app.model.SampleState.get(all_states[len(all_states)-1].sample_state_id)
+        curr_state = all_states[len(all_states)-1].state
         sample_details.append(dict(label='State', 
                                     value=curr_state.name, 
                                     helptext=curr_state.desc))
         # form fields
-        for field in sample_form.fields:
+        for index, field in enumerate(sample_form.fields):
             if field['required']:
                 req = 'Required'
             else:
                 req = 'Optional'
             sample_details.append(dict(label=field['label'],
-                                        value=sample_values.content[field['label']],
+                                        value=sample_values.content[index],
                                         helptext=field['helptext']+' ('+req+')'))
         return trans.fill_template( '/admin/samples/view_sample.mako', 
                                     sample_details=sample_details)
@@ -300,7 +297,9 @@ class Requests( BaseController ):
         sample = trans.app.model.Sample.get(sample_id)
         request = trans.app.model.Request.get(sample.request_id)
         events_list = []
-        for event in trans.app.model.SampleEvent.filter(trans.app.model.SampleEvent.table.c.sample_id == sample_id).order_by(trans.app.model.SampleEvent.c.update_time.desc()).all():
+        all_events = trans.app.model.SampleEvent.filter(trans.app.model.SampleEvent.table.c.sample_id == sample_id).all()
+        all_events.reverse()
+        for event in all_events:         
             state = trans.app.model.SampleState.get(event.sample_state_id)
             delta = datetime.utcnow() - event.update_time
             if delta > timedelta( minutes=60 ):
