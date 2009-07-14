@@ -184,7 +184,6 @@ class Requests( BaseController ):
                                         msg=msg,
                                         messagetype=messagetype )
         elif params.get('create', False) == 'True':
-            print >> sys.stderr, '###KWD', kwd
             return self.__show_request_form(trans=trans,
                                             request=None, **kwd)
         elif params.get('save', False) == 'True':
