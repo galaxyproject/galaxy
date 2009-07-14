@@ -119,10 +119,17 @@ class JobQueue( object ):
         """
         model = self.app.model
         for job in model.Job.filter( model.Job.c.state==model.Job.states.NEW ).all():
-            log.debug( "no runner: %s is still in new state, adding to the jobs queue" %job.id )
-            self.queue.put( ( job.id, job.tool_id ) )
+            if job.tool_id not in self.app.toolbox.tools_by_id:
+                log.warning( "Tool '%s' removed from tool config, unable to recover job: %s" % ( job.tool_id, job.id ) )
+                JobWrapper( job, None, self ).fail( 'This tool was disabled before the job completed.  Please contact your Galaxy administrator, or' )
+            else:
+                log.debug( "no runner: %s is still in new state, adding to the jobs queue" %job.id )
+                self.queue.put( ( job.id, job.tool_id ) )
         for job in model.Job.filter( (model.Job.c.state == model.Job.states.RUNNING) | (model.Job.c.state == model.Job.states.QUEUED) ).all():
-            if job.job_runner_name is None:
+            if job.tool_id not in self.app.toolbox.tools_by_id:
+                log.warning( "Tool '%s' removed from tool config, unable to recover job: %s" % ( job.tool_id, job.id ) )
+                JobWrapper( job, None, self ).fail( 'This tool was disabled before the job completed.  Please contact your Galaxy administrator, or' )
+            elif job.job_runner_name is None:
                 log.debug( "no runner: %s is still in queued state, adding to the jobs queue" %job.id )
                 self.queue.put( ( job.id, job.tool_id ) )
             else:
