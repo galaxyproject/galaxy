@@ -117,7 +117,7 @@ class GenomeGraphs( Tabular ):
 class Rgenetics(Html):      
     """class to use for rgenetics"""
     """Add metadata elements"""
-    MetadataElement( name="base_name", desc="base name for all transformed versions of this genetic dataset", default="galaxy", readonly=True)
+    MetadataElement( name="base_name", desc="base name for all transformed versions of this genetic dataset", default="galaxy", readonly=True, set_in_upload=True)
     
     file_ext="html"
     composite_type = 'auto_primary_file'
@@ -151,10 +151,7 @@ class SNPMatrix(Rgenetics):
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
-    #def sniff( self, filename ):
-    #    """
-    #    """
-    #    return True
+
 
 class Lped(Rgenetics):
     """fake class to distinguish different species of Rgenetics data collections
@@ -245,7 +242,10 @@ class RexpBase( Html ):
     MetadataElement( name="columns", default=0, desc="Number of columns", readonly=True, visible=False )
     MetadataElement( name="column_names", default=[], desc="Column names", readonly=True,visible=True )
     MetadataElement( name="base_name", 
-    desc="base name for all transformed versions of this genetic dataset", readonly=True)
+    desc="base name for all transformed versions of this genetic dataset", readonly=True, default='galaxy', set_in_upload=True)
+    ### Do we really need these below? can we rely on dataset.extra_files_path: os.path.join( dataset.extra_files_path, '%s.phenodata' % dataset.metadata.base_name ) ?
+    ### Do these have a different purpose? Ross will need to clarify
+    ### Uploading these datatypes will not work until this is sorted out (set_peek fails)...
     MetadataElement( name="pheno_path", 
     desc="Path to phenotype data for this experiment", readonly=True)
     MetadataElement( name="pheno", 
@@ -253,11 +253,19 @@ class RexpBase( Html ):
     
     file_ext = None 
     
+    is_binary = True
+    
+    composite_type = 'basic'
+    
+    def __init__( self, **kwd ):
+        Html.__init__( self, **kwd )
+        self.add_composite_file( '%s.phenodata', substitute_name_with_metadata = 'base_name' )
+    
     def set_peek( self, dataset ):
         """expects a .pheno file in the extra_files_dir - ugh
         note that R is wierd and does not include the row.name in
         the header. why?"""
-        p = file(dataset.metadata.pheno_path,'r').readlines()
+        p = file(dataset.metadata.pheno_path,'r').readlines() #this fails
         head = p[0].strip().split('\t')
         head.insert(0,'ChipFileName') # fix R write.table b0rken-ness
         p[0] = '\t'.join(head)
@@ -295,6 +303,7 @@ class RexpBase( Html ):
         if not dataset.peek:
             dataset.set_peek()
         pk = dataset.peek # use the peek which is the pheno data insead of dataset (!)
+        ###this is probably not the best source, can we just access the raw data directly?
         if pk:
             p = pk.split('\n')
             h = p[0].strip().split('\t') # hope is header
@@ -339,10 +348,6 @@ class RexpBase( Html ):
         """Returns the mime type of the datatype"""
         return 'application/gzip'
     
-    def sniff(self):
-        """ can we be bothered looking for the signature or loading via rpy?
-        """
-        return true
 
 class AffyBatch( RexpBase ):
     """derived class for BioC data structures in Galaxy """

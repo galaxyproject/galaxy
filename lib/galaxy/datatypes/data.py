@@ -50,6 +50,8 @@ class Data( object ):
     """If False, the peek is regenerated whenever a dataset of this type is copied"""
     copy_safe_peek = True
     
+    is_binary = True #The dataset contains binary data --> do not space_to_tab or convert newlines, etc. Allow binary file uploads of this type when True.
+    
     #Composite datatypes
     composite_type = None
     composite_files = odict()
@@ -250,7 +252,8 @@ class Data( object ):
     def after_edit( self, dataset ):
         """This function is called on the dataset after metadata is edited."""
         dataset.clear_associated_files( metadata_safe = True )
-    def __new_composite_file( self, optional = False, mimetype = None, description = None, substitute_name_with_metadata = None, **kwds ):
+    def __new_composite_file( self, name, optional = False, mimetype = None, description = None, substitute_name_with_metadata = None, **kwds ):
+        kwds[ 'name' ] = name
         kwds[ 'optional' ] = optional
         kwds[ 'mimetype' ] = mimetype
         kwds[ 'description' ] = description
@@ -258,7 +261,7 @@ class Data( object ):
         return Bunch( **kwds )
     def add_composite_file( self, name, **kwds ):
         #self.composite_files = self.composite_files.copy()
-        self.composite_files[ name ] = self.__new_composite_file( **kwds )
+        self.composite_files[ name ] = self.__new_composite_file( name, **kwds )
         
     
     def __substitute_composite_key( self, key, composite_file, dataset = None ):
@@ -273,7 +276,7 @@ class Data( object ):
     def writable_files( self, dataset = None ):
         files = odict()
         if self.composite_type != 'auto_primary_file':
-            files[ self.primary_file_name ] = self.__new_composite_file()
+            files[ self.primary_file_name ] = self.__new_composite_file( self.primary_file_name )
         for key, value in self.get_composite_files( dataset = dataset ).iteritems():
             files[ key ] = value
         return files

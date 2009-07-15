@@ -308,3 +308,19 @@ class Registry( object ):
     def get_composite_extensions( self ):
         return [ ext for ( ext, d_type ) in self.datatypes_by_extension.iteritems() if d_type.composite_type is not None ]
 
+    def get_upload_metadata_params( self, context, group, tool ):
+        """Returns dict of case value:inputs for metadata conditional for upload tool"""
+        rval = {}
+        for ext, d_type in self.datatypes_by_extension.iteritems():
+            inputs = []
+            for meta_name, meta_spec in d_type.metadata_spec.iteritems():
+                if meta_spec.set_in_upload:
+                    help_txt = meta_spec.desc
+                    if not help_txt or help_txt == meta_name:
+                        help_txt = ""
+                    inputs.append( '<param type="text" name="%s" label="Set metadata value for &quot;%s&quot;" value="%s" help="%s"/>' % ( meta_name, meta_name, meta_spec.default, help_txt ) )
+            rval[ ext ] = "\n".join( inputs )
+        if 'auto' not in rval and 'txt' in rval: #need to manually add 'auto' datatype
+            rval[ 'auto' ] = rval[ 'txt' ]
+        return rval
+

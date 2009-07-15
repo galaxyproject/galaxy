@@ -596,18 +596,40 @@ class Tool:
             elif elem.tag == "conditional":
                 group = Conditional()
                 group.name = elem.get( "name" )
-                # Should have one child "input" which determines the case
-                input_elem = elem.find( "param" )
-                assert input_elem is not None, "<conditional> must have a child <param>"
-                group.test_param = self.parse_param_elem( input_elem, enctypes, context )
-                # Must refresh when test_param changes
-                group.test_param.refresh_on_change = True
-                # And a set of possible cases
-                for case_elem in elem.findall( "when" ):
-                    case = ConditionalWhen()
-                    case.value = case_elem.get( "value" )
-                    case.inputs = self.parse_input_elem( case_elem, enctypes, context )
-                    group.cases.append( case )
+                
+                group.name = elem.get( "name" )
+                
+                group.value_ref = elem.get( 'value_ref', None )
+                group.value_ref_in_group = util.string_as_bool( elem.get( 'value_ref_in_group', 'True' ) )
+                value_from = elem.get( "value_from" )
+                if value_from:
+                    value_from = value_from.split( ':' )
+                    group.value_from = locals().get( value_from[0] )
+                    group.test_param = rval[ group.value_ref ]
+                    group.test_param.refresh_on_change = True
+                    for attr in value_from[1].split( '.' ):
+                        group.value_from = getattr( group.value_from, attr )
+                    for case_value, case_inputs in group.value_from( context, group, self ).iteritems():
+                        case = ConditionalWhen()
+                        case.value = case_value
+                        if case_inputs:
+                            case.inputs = self.parse_input_elem( ElementTree.XML( "<when>%s</when>" % case_inputs ), enctypes, context )
+                        else:
+                            case.inputs = {}
+                        group.cases.append( case )
+                else:
+                    # Should have one child "input" which determines the case
+                    input_elem = elem.find( "param" )
+                    assert input_elem is not None, "<conditional> must have a child <param>"
+                    group.test_param = self.parse_param_elem( input_elem, enctypes, context )
+                    # Must refresh when test_param changes
+                    group.test_param.refresh_on_change = True
+                    # And a set of possible cases
+                    for case_elem in elem.findall( "when" ):
+                        case = ConditionalWhen()
+                        case.value = case_elem.get( "value" )
+                        case.inputs = self.parse_input_elem( case_elem, enctypes, context )
+                        group.cases.append( case )
                 rval[group.name] = group
             elif elem.tag == "upload_dataset":
                 group = UploadDataset()
@@ -615,6 +637,7 @@ class Tool:
                 group.title = elem.get( "title" ) 
                 group.file_type_name = elem.get( 'file_type_name', group.file_type_name )
                 group.default_file_type = elem.get( 'default_file_type', group.default_file_type )
+                group.metadata_ref = elem.get( 'metadata_ref', group.metadata_ref )
                 rval[ group.file_type_name ].refresh_on_change = True
                 rval[ group.file_type_name ].refresh_on_change_values = self.app.datatypes_registry.get_composite_extensions()
                 group.inputs = self.parse_input_elem( elem, enctypes, context )
@@ -917,7 +940,10 @@ class Tool:
                 old_current_case = group_state['__current_case__']
                 group_prefix = "%s|" % ( key )
                 # Deal with the 'test' element and see if it's value changed
-                test_param_key = group_prefix + input.test_param.name
+                if input.value_ref and not input.value_ref_in_group: #we are referencing an existant parameter, which is not part of this group
+                    test_param_key = prefix + input.test_param.name
+                else:
+                    test_param_key = group_prefix + input.test_param.name
                 test_param_error = None
                 test_incoming = get_incoming_value( incoming, test_param_key, None )
                 if test_param_key not in incoming \

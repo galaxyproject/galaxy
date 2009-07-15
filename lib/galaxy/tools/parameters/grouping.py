@@ -92,6 +92,7 @@ class UploadDataset( Group ):
         self.file_type_name = 'file_type'
         self.default_file_type = 'txt'
         self.file_type_to_ext = { 'auto':self.default_file_type }
+        self.metadata_ref = 'files_metadata'
     def get_file_type( self, context ):
         return context.get( self.file_type_name, self.default_file_type )
     def get_datatype_ext( self, trans, context ):
@@ -297,6 +298,7 @@ class UploadDataset( Group ):
                 self.composite_files = odict()
                 self.dbkey = None
                 self.warnings = []
+                self.metadata = {}
                 
                 self._temp_filenames = [] #store all created filenames here, delete on cleanup
             def register_temp_file( self, filename ):
@@ -333,6 +335,13 @@ class UploadDataset( Group ):
             dataset.datatype = d_type
             dataset.dbkey = dbkey
             
+            #load metadata
+            files_metadata = context.get( self.metadata_ref, {} )
+            for meta_name, meta_spec in d_type.metadata_spec.iteritems():
+                if meta_spec.set_in_upload:
+                    if meta_name in files_metadata:
+                        dataset.metadata[ meta_name ] = files_metadata[ meta_name ]
+            
             temp_name = None
             precreated_name = None
             is_multi_byte = False
@@ -359,10 +368,10 @@ class UploadDataset( Group ):
             dataset.warnings.extend( warnings )
             dataset.register_temp_file( temp_name )
             
-            keys = writable_files.keys()
+            keys = [ value.name for value in writable_files.values() ]
             for i, group_incoming in enumerate( groups_incoming[ writable_files_offset : ] ):
                 key = keys[ i + writable_files_offset ]
-                if group_incoming is None and not writable_files[ key ].optional:
+                if group_incoming is None and not writable_files[ writable_files.keys()[ keys.index( key ) ] ].optional:
                     dataset.warnings.append( "A required composite file (%s) was not specified." % ( key ) )
                     dataset.composite_files[ key ] = None
                 else:
@@ -372,7 +381,7 @@ class UploadDataset( Group ):
                         dataset.register_temp_file( temp_name )
                     else:
                         dataset.composite_files[ key ] = None
-                        if not writable_files[ key ].optional:
+                        if not writable_files[ writable_files.keys()[ keys.index( key ) ] ].optional:
                             dataset.warnings.append( "A required composite file (%s) was not specified." % ( key ) )
             return [ dataset ]
         else:
@@ -404,6 +413,8 @@ class Conditional( Group ):
         Group.__init__( self )
         self.test_param = None
         self.cases = []
+        self.value_ref = None
+        self.value_ref_in_group = True #When our test_param is not part of the conditional Group, this is False
     def get_current_case( self, value, trans ):
         # Convert value to user representation
         str_value = self.test_param.filter_value( value, trans )

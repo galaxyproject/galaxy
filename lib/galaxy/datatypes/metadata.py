@@ -212,12 +212,13 @@ class MetadataElementSpec( object ):
     is a MetadataSpecCollection) of datatype.
     """
 
-    def __init__( self, datatype, name=None, desc=None, param=MetadataParameter, default=None, no_value = None, visible=True, **kwargs ):
+    def __init__( self, datatype, name=None, desc=None, param=MetadataParameter, default=None, no_value = None, visible=True, set_in_upload = False, **kwargs ):
         self.name = name
         self.desc = desc or name
         self.default = default
         self.no_value = no_value
         self.visible = visible
+        self.set_in_upload = set_in_upload
         # Catch-all, allows for extra attributes to be set
         self.__dict__.update(kwargs)
         #set up param last, as it uses values set above

@@ -102,7 +102,9 @@ function checkUncheckAll( name, check )
             current_case = group_state['__current_case__']
             group_prefix = prefix + input.name + "|"
             %>
-            ${row_for_param( group_prefix, input.test_param, group_state, group_errors, other_values )}
+            %if input.value_ref_in_group:
+                ${row_for_param( group_prefix, input.test_param, group_state, group_errors, other_values )}
+            %endif
             ${do_inputs( input.cases[current_case].inputs, group_state, group_errors, group_prefix, other_values )}
         %elif input.type == "upload_dataset":
             %if input.get_datatype( trans, other_values ).composite_type is None: #have non-composite upload appear as before
