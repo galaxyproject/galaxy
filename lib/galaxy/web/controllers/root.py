@@ -68,7 +68,7 @@ class RootController( BaseController ):
                 .join( "dataset" ).filter( model.Dataset.purged == False ) \
                 .options( eagerload_all( "dataset.actions" ) )
             if not show_deleted:
-                query.filter_by( deleted=False )
+                query = query.filter( model.HistoryDatasetAssociation.deleted == False )
             return trans.stream_template_mako( "root/history.mako",
                                                history = history,
                                                datasets = query.all(),
