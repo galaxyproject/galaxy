@@ -73,9 +73,12 @@
 	});
         // Updater
         updater({
-            %for data in reversed( datasets ):
+            %for i, data in enumerate( reversed( datasets ) ):
                 %if data.visible and data.state not in [ "deleted", "empty", "error", "ok" ]:
-                    "${data.id}": "${data.state}";
+                    %if i > 0:
+                    ,
+                    %endif
+                    "${data.id}": "${data.state}"
                 %endif
             %endfor
         });
