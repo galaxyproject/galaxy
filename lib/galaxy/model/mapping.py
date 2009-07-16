@@ -613,7 +613,10 @@ assign_mapper( context, Sample, Sample.table,
                                                   primaryjoin=( Sample.table.c.request_id == Request.table.c.id ) ),
                               ) )
 
-assign_mapper( context, FormValues, FormValues.table, properties=None)
+assign_mapper( context, FormValues, FormValues.table,
+               properties=dict( form_definition=relation( FormDefinition,
+                                                          primaryjoin=( FormValues.table.c.form_definition_id == FormDefinition.table.c.id ) )
+                                                       ) )
 
 assign_mapper( context, Request, Request.table,
                properties=dict( values=relation( FormValues,
@@ -723,9 +726,7 @@ assign_mapper( context, HistoryUserShareAssociation, HistoryUserShareAssociation
 
 assign_mapper( context, User, User.table, 
     properties=dict( histories=relation( History, backref="user",
-                                         order_by=desc(History.table.c.update_time) ),
-#                     requests=relation( Request, backref="user",
-#                                         order_by=desc(Request.table.c.update_time) ),                    
+                                         order_by=desc(History.table.c.update_time) ),               
                      active_histories=relation( History, primaryjoin=( ( History.table.c.user_id == User.table.c.id ) & ( not_( History.table.c.deleted ) ) ), order_by=desc( History.table.c.update_time ) ),
                      galaxy_sessions=relation( GalaxySession, order_by=desc( GalaxySession.table.c.update_time ) ),
                      stored_workflow_menu_entries=relation( StoredWorkflowMenuEntry, backref="user",

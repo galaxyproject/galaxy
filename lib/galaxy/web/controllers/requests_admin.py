@@ -242,15 +242,13 @@ class Requests( BaseController ):
         return trans.fill_template( '/admin/samples/view_sample.mako', 
                                     sample_details=sample_details)
     def __get_all_states(self, trans, sample):
-        request = trans.app.model.Request.get(sample.request_id)
-        request_type = trans.app.model.RequestType.get(request.request_type_id)
         all_states = trans.app.model.SampleEvent.filter(trans.app.model.SampleEvent.table.c.sample_id == sample.id).all()
-        curr_state = trans.app.model.SampleState.get(all_states[len(all_states)-1].sample_state_id)
-        states_list = trans.app.model.SampleState.filter(trans.app.model.SampleState.table.c.request_type_id == request_type.id)
+        curr_state = all_states[len(all_states)-1].state
+        states_list = trans.app.model.SampleState.filter(trans.app.model.SampleState.table.c.request_type_id == sample.request.type.id)
         return states_list
     def __get_curr_state(self, trans, sample):
         all_states = trans.app.model.SampleEvent.filter(trans.app.model.SampleEvent.table.c.sample_id == sample.id).all()
-        curr_state = trans.app.model.SampleState.get(all_states[len(all_states)-1].sample_state_id)
+        curr_state = all_states[len(all_states)-1].state
         return curr_state
     def change_state(self, trans, sample_id_list):
         sample = trans.app.model.Sample.get(sample_id_list[0])
@@ -280,35 +278,33 @@ class Requests( BaseController ):
         sample_id_list = util.string_to_object(util.restore_text( params.sample_id_list ))
         comments = util.restore_text( params.comment )
         sample = trans.app.model.Sample.get(sample_id_list[0])
-        request = trans.app.model.Request.get(sample.request_id)
         selected_state = util.restore_text( params.select_state )
-        new_state = trans.app.model.SampleState.filter(trans.app.model.SampleState.table.c.request_type_id == request.request_type_id 
+        new_state = trans.app.model.SampleState.filter(trans.app.model.SampleState.table.c.request_type_id == sample.request.type.id 
                                                         and trans.app.model.SampleState.table.c.name == selected_state)[0]
-        for sample_id in sample_id_list:
-            event = trans.app.model.SampleEvent(sample_id, new_state.id, comments)
+        for id in sample_id_list:
+            s = trans.app.model.Sample.get(id)
+            event = trans.app.model.SampleEvent(s, new_state, comments)
             event.flush()
         return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                           action='list',
                                                           operation='samples',
-                                                          id=trans.security.encode_id(request.id)) )
+                                                          id=trans.security.encode_id(sample.request.id)) )
     @web.expose
     @web.require_admin
     def show_events(self, trans, sample_id):
         sample = trans.app.model.Sample.get(sample_id)
-        request = trans.app.model.Request.get(sample.request_id)
         events_list = []
         all_events = trans.app.model.SampleEvent.filter(trans.app.model.SampleEvent.table.c.sample_id == sample_id).all()
         all_events.reverse()
         for event in all_events:         
-            state = trans.app.model.SampleState.get(event.sample_state_id)
             delta = datetime.utcnow() - event.update_time
             if delta > timedelta( minutes=60 ):
                 last_update = '%s hours' % int( delta.seconds / 60 / 60 )
             else:
                 last_update = '%s minutes' % int( delta.seconds / 60 )
-            events_list.append((state.name, state.desc, last_update, event.comment))
+            events_list.append((event.state.name, event.state.desc, last_update, event.comment))
         return trans.fill_template( '/admin/samples/events.mako', 
                                     events_list=events_list,
-                                    sample_name=sample.name, user=trans.app.model.User.get(request.user_id),
-                                    request=request.name)
+                                    sample_name=sample.name, user=sample.request.user,
+                                    request=sample.request.name)
     

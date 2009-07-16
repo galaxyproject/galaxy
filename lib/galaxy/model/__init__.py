@@ -1099,53 +1099,55 @@ class MetadataFile( object ):
     
     
 class FormDefinition( object ):
-    def __init__(self, name=None, desc=None, fields=[], current_form_id=None):
+    def __init__(self, name=None, desc=None, fields=[], current_form=None):
         self.name = name
         self.desc = desc
         self.fields = fields 
-        self.form_definition_current_id = current_form_id
+        self.form_definition_current = current_form
         
 class FormDefinitionCurrent( object ):
-    def __init__(self, form_definition_id=None):
-        self.latest_form_id = form_definition_id
+    def __init__(self, form_definition=None):
+        self.latest_form = form_definition
         
 class FormValues( object ):
-    def __init__(self, form_def_id=None, content=None):
-        self.form_definition_id = form_def_id
+    def __init__(self, form_def=None, content=None):
+        self.form_definition = form_def
         self.content = content
         
 class Request( object ):
-    def __init__(self, name=None, desc=None, request_type_id=None, user_id=None, 
-                 form_values_id=None, library_id=None):
+    def __init__(self, name=None, desc=None, request_type=None, user=None, 
+                 form_values=None, library=None):
         self.name = name
         self.desc = desc
-        self.request_type_id = request_type_id
-        self.form_values_id = form_values_id
-        self.user_id = user_id
-        self.library_id = library_id
+        self.type = request_type
+        self.values = form_values
+        self.user = user
+        self.library = library
         
 class RequestType( object ):
-    def __init__(self, request_form_id=None, sample_form_id=None):
-        self.request_form_id = request_form_id
-        self.sample_form_id = sample_form_id
+    def __init__(self, request_form=None, sample_form=None):
+        self.request_form = request_form
+        self.sample_form = sample_form
     
 class Sample( object ):
-    def __init__(self, name=None, desc=None, request_id=None, form_values_id=None):
+    def __init__(self, name=None, desc=None, request=None, form_values=None):
         self.name = name
         self.desc = desc
-        self.request_id = request_id
-        self.form_values_id = form_values_id
+        self.request = request
+        self.values = form_values
+
+        
     
 class SampleState( object ):
-    def __init__(self, name=None, desc=None, request_type_id=None):
+    def __init__(self, name=None, desc=None, request_type=None):
         self.name = name
         self.desc = desc
-        self.request_type_id = request_type_id
+        self.request_type = request_type
 
 class SampleEvent( object ):
-    def __init__(self, sample_id=None, sample_state_id=None, comment=''):
-        self.sample_id = sample_id
-        self.sample_state_id = sample_state_id
+    def __init__(self, sample=None, sample_state=None, comment=''):
+        self.sample = sample
+        self.state = sample_state
         self.comment = comment
 
 

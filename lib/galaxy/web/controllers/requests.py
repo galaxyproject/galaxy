@@ -236,11 +236,11 @@ class Requests( BaseController ):
         for index, field in enumerate(request_type.request_form.fields):
             values.append(util.restore_text(params.get('field_%i' % index, '')))
         if not request_id:
-            form_values = trans.app.model.FormValues(request_type.request_form.id, values)
+            form_values = trans.app.model.FormValues(request_type.request_form, values)
             form_values.flush()
-            request = trans.app.model.Request(name, desc, request_type.id, 
-                                              trans.user.id, form_values.id,
-                                              library_id)
+            request = trans.app.model.Request(name, desc, request_type, 
+                                              trans.user, form_values,
+                                              trans.app.model.Library.get(library_id))
             request.flush()
         else:
             # TODO editing
@@ -252,7 +252,7 @@ class Requests( BaseController ):
         messagetype = params.get( 'messagetype', 'done' )
         request_type = trans.app.model.RequestType.get(int(params.request_type_id))
         if request:
-            form_values = trans.app.model.FormValues.get(request.form_values_id)
+            form_values = request.values
         else:
             form_values = None
         # list of widgets to be rendered on the request form
@@ -278,7 +278,8 @@ class Requests( BaseController ):
                             widget=lib_list, 
                             helptext='Associated library where the resultant \
                                         dataset will be stored'))
-        widgets = self.__create_form(trans, request_type.request_form_id, widgets, form_values, **kwd)
+        widgets = self.__create_form(trans, request_type.request_form_id, widgets, 
+                                     form_values, **kwd)
         title = 'Add a new request of type: %s' % request_type.name
         return trans.fill_template( '/requests/new_request.mako',
                         request_form_id=request_type.request_form_id,
@@ -336,7 +337,7 @@ class Requests( BaseController ):
         messagetype = params.get( 'messagetype', 'done' )
         request = trans.app.model.Request.get(int( params.request_id ))
         if sample:
-            form_values = trans.app.model.FormValues.get(sample.form_values_id)
+            form_values = sample.values
         else:
             form_values = None
         # list of widgets to be rendered on the request form
@@ -349,7 +350,8 @@ class Requests( BaseController ):
                             widget=TextField('desc', 40, 
                                              util.restore_text( params.get( 'desc', ''  ) )), 
                             helptext='(Optional)'))
-        widgets = self.__create_form(trans, request.type.sample_form_id, widgets, form_values, **kwd)
+        widgets = self.__create_form(trans, request.type.sample_form_id, widgets, 
+                                     form_values, **kwd)
         title = 'Add a new sample to request: %s of type: %s' % (request.name, request.type.name) 
         return trans.fill_template( '/sample/new_sample.mako',
                         sample_form_id=request.type.sample_form_id,
@@ -393,13 +395,13 @@ class Requests( BaseController ):
         for index, field in enumerate(request.type.sample_form.fields):
             values.append(util.restore_text(params.get('field_%i' % index, '')))
         if not sample_id:
-            form_values = trans.app.model.FormValues(request.type.sample_form.id, values)
+            form_values = trans.app.model.FormValues(request.type.sample_form, values)
             form_values.flush()
-            sample = trans.app.model.Sample(name, desc, request.id, form_values.id)
+            sample = trans.app.model.Sample(name, desc, request, form_values)
             sample.flush()
             # set the initial state            
             state = trans.app.model.SampleState.filter(trans.app.model.SampleState.table.c.request_type_id == request.type.id).first()
-            event = trans.app.model.SampleEvent(sample.id, state.id)
+            event = trans.app.model.SampleEvent(sample, state)
             event.flush()
         else:
             form_data.content = values

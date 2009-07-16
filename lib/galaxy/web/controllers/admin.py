@@ -2185,8 +2185,8 @@ class Admin( BaseController ):
         rt = trans.app.model.RequestType() 
         rt.name = util.restore_text( params.name ) 
         rt.desc = util.restore_text( params.description ) or ""
-        rt.request_form_id = int(util.restore_text( params.request_form_id ))
-        rt.sample_form_id = int(util.restore_text( params.sample_form_id ))
+        rt.request_form = trans.app.model.FormDefinition.get(int( params.request_form_id ))
+        rt.sample_form = trans.app.model.FormDefinition.get(int( params.sample_form_id ))
         rt.flush()
         # set sample states
         ss_list = trans.app.model.SampleState.filter(trans.app.model.SampleState.table.c.request_type_id == rt.id).all()
@@ -2196,7 +2196,7 @@ class Admin( BaseController ):
         for i in range( num_states ):
             name = util.restore_text( params.get( 'new_element_name_%i' % i, None ))
             desc = util.restore_text( params.get( 'new_element_description_%i' % i, None ))
-            ss = trans.app.model.SampleState(name, desc, rt.id) 
+            ss = trans.app.model.SampleState(name, desc, rt) 
             ss.flush()
         msg = "The new sample type named '%s' with %s state(s) has been created" % (rt.name, num_states)
         return rt, msg
