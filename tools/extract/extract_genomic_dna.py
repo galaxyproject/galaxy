@@ -70,7 +70,8 @@ def __main__():
     fout = open( output_filename, "w" )
     warnings = []
     warning = ''
-
+    twobitfile = None
+     
     for i, line in enumerate( open( input_filename ) ):
         line = line.rstrip( '\r\n' )
         if line and not line.startswith( "#" ):
@@ -118,12 +119,10 @@ def __main__():
                         invalid_line = line
                     continue
             elif seq_path and os.path.isfile( seq_path ):
-                if chrom in twobits:
-                    t = twobits[chrom]
-                else:
-                    twobits[chrom] = t = bx.seq.twobit.TwoBitFile( file( seq_path ) )
+                if not(twobitfile):
+                    twobitfile = bx.seq.twobit.TwoBitFile( file( seq_path ) )
                 try:
-                    sequence = t[chrom][start:end]
+                    sequence = twobitfile[chrom][start:end]
                 except:
                     warning = "Unable to fetch the sequence from '%d' to '%d' for build '%s'. " %( start, end-start, dbkey )
                     warnings.append( warning )
