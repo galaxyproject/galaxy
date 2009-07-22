@@ -1,6 +1,6 @@
 import sys, logging, copy, shutil, weakref, cPickle, tempfile, os
 
-from galaxy.util import string_as_bool, relpath, stringify_dictionary_keys
+from galaxy.util import string_as_bool, relpath, stringify_dictionary_keys, listify
 from galaxy.util.odict import odict
 from galaxy.web import form_builder
 import galaxy.model
@@ -138,7 +138,7 @@ class MetadataParameter( object ):
     def __init__( self, spec ):
         self.spec = spec
         
-    def get_html_field( self, value=None, context={}, other_values={}, **kwd ):
+    def get_html_field( self, value=None, context={}, other_values={}, **kwd ):        
         return form_builder.TextField( self.spec.name, value=value )
     
     def get_html( self, value, context={}, other_values={}, **kwd ):
@@ -256,9 +256,17 @@ class SelectParameter( MetadataParameter ):
             value = [value]
         return ",".join( map( str, value ) )
     
-    def get_html_field( self, value=None, context={}, other_values={}, values=None, **kwd ):
+    def get_html_field( self, value=None, context={}, other_values={}, values=None, **kwd ):        
         field = form_builder.SelectField( self.spec.name, multiple=self.multiple, display=self.spec.get("display") )
-        for val, label in self.values or values or [(val2, val2) for val2 in value]:
+        if self.values:
+            value_list = self.values
+        elif values:
+            value_list = values
+        elif value:
+            value_list = [ ( v, v ) for v in listify( value )]
+        else:
+            value_list = []
+        for val, label in value_list:
             try:
                 if ( self.multiple and val in value ) or ( not self.multiple and val == value ):
                     field.add_option( label, val, selected=True )
@@ -266,7 +274,6 @@ class SelectParameter( MetadataParameter ):
                     field.add_option( label, val, selected=False )
             except TypeError:
                 field.add_option( val, label, selected=False )
-
         return field
 
     def get_html( self, value, context={}, other_values={}, values=None, **kwd ):
@@ -299,13 +306,12 @@ class DBKeyParameter( SelectParameter ):
         except KeyError:
             pass
         return super(DBKeyParameter, self).get_html_field( value, context, other_values, values, **kwd)
-    def get_html( self, value=None, context={}, other_values={}, values=None, **kwd):
+    def get_html( self, value=None, context={}, other_values={}, values=None, **kwd):        
         try:
             values = kwd['trans'].db_builds
         except KeyError:
             pass
         return super(DBKeyParameter, self).get_html( value, context, other_values, values, **kwd)
-
 
 class RangeParameter( SelectParameter ):
     def __init__( self, spec ):

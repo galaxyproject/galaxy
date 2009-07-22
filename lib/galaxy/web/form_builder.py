@@ -12,9 +12,7 @@ class BaseField(object):
     @staticmethod
     def form_field_types():
         return ['TextField', 'TextArea', 'SelectField', 'CheckboxField']
-        
-        
-        
+
 class TextField(BaseField):
     """
     A standard text input box.
@@ -235,8 +233,6 @@ class SelectField(BaseField):
         if self.options:
             return self.options[0]
         return None
-            
-
 
 class DrillDownField( BaseField ):
     """
