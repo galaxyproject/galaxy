@@ -252,12 +252,14 @@ class Data( object ):
     def after_edit( self, dataset ):
         """This function is called on the dataset after metadata is edited."""
         dataset.clear_associated_files( metadata_safe = True )
-    def __new_composite_file( self, name, optional = False, mimetype = None, description = None, substitute_name_with_metadata = None, **kwds ):
+    def __new_composite_file( self, name, optional = False, mimetype = None, description = None, substitute_name_with_metadata = None, is_binary = False, space_to_tab = True, **kwds ):
         kwds[ 'name' ] = name
         kwds[ 'optional' ] = optional
         kwds[ 'mimetype' ] = mimetype
         kwds[ 'description' ] = description
         kwds[ 'substitute_name_with_metadata' ] = substitute_name_with_metadata
+        kwds[ 'is_binary' ] = is_binary
+        kwds[ 'space_to_tab' ] = space_to_tab
         return Bunch( **kwds )
     def add_composite_file( self, name, **kwds ):
         #self.composite_files = self.composite_files.copy()

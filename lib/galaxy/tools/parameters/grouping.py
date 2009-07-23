@@ -356,6 +356,8 @@ class UploadDataset( Group ):
                 precreated_name = dataset_name = 'Uploaded Composite Dataset (%s)' % ( file_type )
             else:
                 temp_name, precreated_name, is_multi_byte, space_to_tab, dataset_name, dataset_info, warnings = get_one_filename( groups_incoming[ 0 ] )
+                if dataset.datatype.composite_type:
+                    precreated_name = 'Uploaded Composite Dataset (%s)' % ( file_type )
                 writable_files_offset = 1
             if temp_name is None:#remove this before finish, this should create an empty dataset
                 raise Exception( 'No primary dataset file was available for composite upload' )

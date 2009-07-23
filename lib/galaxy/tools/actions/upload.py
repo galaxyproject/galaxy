@@ -46,26 +46,8 @@ class UploadToolAction( object ):
             uploaded_datasets = dataset_upload_input.get_uploaded_datasets( trans, incoming )
             for uploaded_dataset in uploaded_datasets:
                 precreated_dataset = self.get_precreated_dataset( uploaded_dataset.precreated_name )
-                dataset = self.add_file( trans, uploaded_dataset.primary_file, uploaded_dataset.name, uploaded_dataset.file_type, uploaded_dataset.is_multi_byte, uploaded_dataset.dbkey, space_to_tab = uploaded_dataset.space_to_tab, info = uploaded_dataset.info, precreated_dataset = precreated_dataset, metadata = uploaded_dataset.metadata )
-                composite_files = dataset.datatype.get_composite_files( dataset )
-                if composite_files:
-                    os.mkdir( dataset.extra_files_path ) #make extra files path
-                    for name, value in composite_files.iteritems():
-                        #what about binary files here, need to skip converting newlines
-                        if uploaded_dataset.composite_files[ value.name ] is None and not value.optional:
-                            dataset.info = "A required composite data file was not provided (%s)" % name
-                            dataset.state = dataset.states.ERROR
-                            break
-                        elif uploaded_dataset.composite_files[ value.name] is not None:
-                            if uploaded_dataset.composite_files[ value.name ].space_to_tab:
-                                sniff.convert_newlines_sep2tabs( uploaded_dataset.composite_files[ value.name ].filename )
-                            else:
-                                sniff.convert_newlines( uploaded_dataset.composite_files[ value.name ].filename )
-                            shutil.move( uploaded_dataset.composite_files[ value.name ].filename, os.path.join( dataset.extra_files_path, name ) )
-                if dataset.datatype.composite_type == 'auto_primary_file':
-                	#now that metadata is set, we should create the primary file as required
-                	open( dataset.file_name, 'wb+' ).write( dataset.datatype.generate_primary_file( dataset = dataset ) )
-                
+                dataset = self.add_file( trans, uploaded_dataset.primary_file, uploaded_dataset.name, uploaded_dataset.file_type, uploaded_dataset.is_multi_byte, uploaded_dataset.dbkey, space_to_tab = uploaded_dataset.space_to_tab, info = uploaded_dataset.info, precreated_dataset = precreated_dataset, metadata = uploaded_dataset.metadata, uploaded_dataset = uploaded_dataset )
+                #dataset state is now set, we should not do anything else to this dataset
                 data_list.append( dataset )
                 #clean up extra temp names
                 uploaded_dataset.clean_up_temp_files()
@@ -130,7 +112,7 @@ class UploadToolAction( object ):
         trans.log_event( 'job id %d ended with errors, err_msg: %s' % ( job.id, err_msg ), tool_id=job.tool_id )
         return dict( output=data )
 
-    def add_file( self, trans, temp_name, file_name, file_type, is_multi_byte, dbkey, info=None, space_to_tab=False, precreated_dataset=None, metadata = {} ):
+    def add_file( self, trans, temp_name, file_name, file_type, is_multi_byte, dbkey, info=None, space_to_tab=False, precreated_dataset=None, metadata = {}, uploaded_dataset = None ):
         def dataset_no_data_error( data, message = 'there was an error uploading your file' ):
             data.info = "No data: %s." % message
             data.state = data.states.ERROR
@@ -152,7 +134,7 @@ class UploadToolAction( object ):
         if is_multi_byte:
             ext = sniff.guess_ext( temp_name, is_multi_byte=True )
         else:
-            if not data_type:
+            if not data_type: #at this point data_type is always None (just initialized above), so this is always True...lots of cleanup needed here
                 # See if we have a gzipped file, which, if it passes our restrictions,
                 # we'll decompress on the fly.
                 is_gzipped, is_valid = self.check_gzip( temp_name )
@@ -204,19 +186,24 @@ class UploadToolAction( object ):
                         ext = file_type
                 if not data_type:
                     if self.check_binary( temp_name ):
-                        parts = file_name.split( "." )
-                        if len( parts ) > 1:
-                            ext = parts[1].strip().lower()
-                            if not( ext == 'ab1' or ext == 'scf' ):
-                                return dataset_no_data_error( data, message = "you attempted to upload an inappropriate file" )
-                                #raise BadFileException( "you attempted to upload an inappropriate file." )
-                            if ext == 'ab1' and file_type != 'ab1':
-                                return dataset_no_data_error( data, message = "you must manually set the 'File Format' to 'Ab1' when uploading ab1 files" )
-                                #raise BadFileException( "you must manually set the 'File Format' to 'Ab1' when uploading ab1 files." )
-                            elif ext == 'scf' and file_type != 'scf':
-                                return dataset_no_data_error( data, message = "you must manually set the 'File Format' to 'Scf' when uploading scf files" )
-                                #raise BadFileException( "you must manually set the 'File Format' to 'Scf' when uploading scf files." )
-                        data_type = 'binary'
+                        if uploaded_dataset and uploaded_dataset.datatype and uploaded_dataset.datatype.is_binary:
+                            #we need a more generalized way of checking if a binary upload is of the right format for a datatype...magic number, etc
+                            data_type = 'binary'
+                            ext = uploaded_dataset.file_type
+                        else:
+                            parts = file_name.split( "." )
+                            if len( parts ) > 1:
+                                ext = parts[1].strip().lower()
+                                if not( ext == 'ab1' or ext == 'scf' ):
+                                    return dataset_no_data_error( data, message = "you attempted to upload an inappropriate file" )
+                                    #raise BadFileException( "you attempted to upload an inappropriate file." )
+                                if ext == 'ab1' and file_type != 'ab1':
+                                    return dataset_no_data_error( data, message = "you must manually set the 'File Format' to 'Ab1' when uploading ab1 files" )
+                                    #raise BadFileException( "you must manually set the 'File Format' to 'Ab1' when uploading ab1 files." )
+                                elif ext == 'scf' and file_type != 'scf':
+                                    return dataset_no_data_error( data, message = "you must manually set the 'File Format' to 'Scf' when uploading scf files" )
+                                    #raise BadFileException( "you must manually set the 'File Format' to 'Scf' when uploading scf files." )
+                            data_type = 'binary'
                 if not data_type:
                     # We must have a text file
                     if trans.app.datatypes_registry.get_datatype_by_extension( file_type ).composite_type != 'auto_primary_file' and self.check_html( temp_name ):
@@ -241,9 +228,7 @@ class UploadToolAction( object ):
         data.info = info
         data.flush()
         shutil.move( temp_name, data.file_name )
-        ## FIXME
-        data.state = data.states.OK ##THIS SHOULD BE THE LAST THING DONE
-        #### its bad to set other things after this point, i.e. metadata and composite files...this creates a race condition where a dataset could be pushed into a job before its metadata, etc is set
+        dataset_state = data.states.OK #don't set actual state here, only set to OK when finished setting attributes of the dataset
         data.set_size()
         data.init_meta()
         #need to set metadata, has to be done after extention is set
@@ -280,6 +265,27 @@ class UploadToolAction( object ):
             trans.history.genome_build = dbkey_to_store
         else:
             trans.history.add_dataset( data, genome_build=dbkey_to_store )
+        #set up composite files
+        if uploaded_dataset is not None:
+            composite_files = data.datatype.get_composite_files( data )
+            if composite_files:
+                os.mkdir( data.extra_files_path ) #make extra files path
+                for name, value in composite_files.iteritems():
+                    if uploaded_dataset.composite_files[ value.name ] is None and not value.optional:
+                        data.info = "A required composite data file was not provided (%s)" % name
+                        dataset_state = data.states.ERROR
+                        break
+                    elif uploaded_dataset.composite_files[ value.name] is not None:
+                        if not value.is_binary:
+                            if uploaded_dataset.composite_files[ value.name ].space_to_tab:
+                                sniff.convert_newlines_sep2tabs( uploaded_dataset.composite_files[ value.name ].filename )
+                            else:
+                                sniff.convert_newlines( uploaded_dataset.composite_files[ value.name ].filename )
+                        shutil.move( uploaded_dataset.composite_files[ value.name ].filename, os.path.join( data.extra_files_path, name ) )
+            if data.datatype.composite_type == 'auto_primary_file':
+               #now that metadata was set above, we should create the primary file as required
+               open( data.file_name, 'wb+' ).write( data.datatype.generate_primary_file( dataset = data ) )
+        data.state = dataset_state #Always set dataset state LAST
         trans.app.model.flush()
         trans.log_event( "Added dataset %d to history %d" %( data.id, trans.history.id ), tool_id="upload" )
         return data

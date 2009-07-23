@@ -160,8 +160,8 @@ class Lped(Rgenetics):
     
     def __init__( self, **kwd ):
         Rgenetics.__init__( self, **kwd )
-        self.add_composite_file( '%s.ped', description = 'Pedigree File', substitute_name_with_metadata = 'base_name' )
-        self.add_composite_file( '%s.map', description = 'Map File', substitute_name_with_metadata = 'base_name' )
+        self.add_composite_file( '%s.ped', description = 'Pedigree File', substitute_name_with_metadata = 'base_name', is_binary = True )
+        self.add_composite_file( '%s.map', description = 'Map File', substitute_name_with_metadata = 'base_name', is_binary = True )
 
 
 class Pphe(Rgenetics):
@@ -198,10 +198,10 @@ class Pbed(Rgenetics):
     
     def __init__( self, **kwd ):
         Rgenetics.__init__( self, **kwd )
-        self.add_composite_file( '%s.bim', substitute_name_with_metadata = 'base_name' )
-        self.add_composite_file( '%s.bed', substitute_name_with_metadata = 'base_name' )
-        self.add_composite_file( '%s.fam', substitute_name_with_metadata = 'base_name' )
-        self.add_composite_file( '%s.map', substitute_name_with_metadata = 'base_name' )
+        self.add_composite_file( '%s.bim', substitute_name_with_metadata = 'base_name', is_binary = True )
+        self.add_composite_file( '%s.bed', substitute_name_with_metadata = 'base_name', is_binary = True )
+        self.add_composite_file( '%s.fam', substitute_name_with_metadata = 'base_name', is_binary = True )
+        self.add_composite_file( '%s.map', substitute_name_with_metadata = 'base_name', is_binary = True )
 
 
 class Eigenstratgeno(Rgenetics):
@@ -211,15 +211,15 @@ class Eigenstratgeno(Rgenetics):
     
     def __init__( self, **kwd ):
         Rgenetics.__init__( self, **kwd )
-        self.add_composite_file( '%s.eigenstratgeno', substitute_name_with_metadata = 'base_name' )
-        self.add_composite_file( '%s.ind', substitute_name_with_metadata = 'base_name' )
-        self.add_composite_file( '%s.map', substitute_name_with_metadata = 'base_name' )
-        self.add_composite_file( '%s_fo.eigenstratgeno', substitute_name_with_metadata = 'base_name', optional = 'True' )
-        self.add_composite_file( '%s_fo.ind', substitute_name_with_metadata = 'base_name', optional = 'True' )
-        self.add_composite_file( '%s_fo.map', substitute_name_with_metadata = 'base_name', optional = 'True' )
-        self.add_composite_file( '%s_oo.eigenstratgeno', substitute_name_with_metadata = 'base_name', optional = 'True' )
-        self.add_composite_file( '%s_oo.ind', substitute_name_with_metadata = 'base_name', optional = 'True' )
-        self.add_composite_file( '%s_oo.map', substitute_name_with_metadata = 'base_name', optional = 'True' )
+        self.add_composite_file( '%s.eigenstratgeno', substitute_name_with_metadata = 'base_name', is_binary = True )
+        self.add_composite_file( '%s.ind', substitute_name_with_metadata = 'base_name', is_binary = True )
+        self.add_composite_file( '%s.map', substitute_name_with_metadata = 'base_name', is_binary = True )
+        self.add_composite_file( '%s_fo.eigenstratgeno', substitute_name_with_metadata = 'base_name', optional = 'True', is_binary = True )
+        self.add_composite_file( '%s_fo.ind', substitute_name_with_metadata = 'base_name', optional = 'True', is_binary = True )
+        self.add_composite_file( '%s_fo.map', substitute_name_with_metadata = 'base_name', optional = 'True', is_binary = True )
+        self.add_composite_file( '%s_oo.eigenstratgeno', substitute_name_with_metadata = 'base_name', optional = 'True', is_binary = True )
+        self.add_composite_file( '%s_oo.ind', substitute_name_with_metadata = 'base_name', optional = 'True', is_binary = True )
+        self.add_composite_file( '%s_oo.map', substitute_name_with_metadata = 'base_name', optional = 'True', is_binary = True )
         
 
 
@@ -259,7 +259,7 @@ class RexpBase( Html ):
     
     def __init__( self, **kwd ):
         Html.__init__( self, **kwd )
-        self.add_composite_file( '%s.phenodata', substitute_name_with_metadata = 'base_name' )
+        self.add_composite_file( '%s.phenodata', substitute_name_with_metadata = 'base_name', is_binary = True )
     
     def set_peek( self, dataset ):
         """expects a .pheno file in the extra_files_dir - ugh
