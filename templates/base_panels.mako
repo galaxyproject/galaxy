@@ -156,7 +156,14 @@
     
     ${tab( "libraries", "Libraries", h.url_for( controller='library', action='index' ))}
         
-    ${tab( "requests", "Requests", h.url_for( controller='requests', action='index' ), visible = (trans.user and trans.request_types)) }
+    <td class="tab">
+        <a>Lab</a>
+        <div class="submenu">
+        <ul>            
+            <li><a target="requests" href="${h.url_for( controller='requests', action='index' )}">Sequencing Requests</a></li>
+        </ul>
+        </div>
+    </td>
 
     %if app.config.get_bool( 'enable_tracks', False ):
     <td class="tab">

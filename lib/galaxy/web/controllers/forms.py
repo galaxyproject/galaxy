@@ -62,7 +62,8 @@ class Forms( BaseController ):
             self.current_form['desc'] = ''
             self.current_form['fields'] = []
             inputs = [ ( 'Name', TextField('name', 40,self.current_form['name'] ) ),
-                       ( 'Description', TextField('description', 40, self.current_form['desc']) ) ]
+                       ( 'Description', TextField('description', 40, self.current_form['desc']) ),
+                       ( 'Import from csv file (Optional)', TextField('csv_file', 40, '') ) ]
             return trans.fill_template( '/admin/forms/create_form.mako', 
                                         inputs=inputs,
                                         msg=msg,
@@ -215,11 +216,16 @@ class Forms( BaseController ):
         params = util.Params( kwd )
         name = util.restore_text( params.name ) 
         desc = util.restore_text( params.description ) or ""
-        # set form fields
-        fields = []
-        for i in range( len(self.current_form['fields']) ):
-            fields.append(self.__get_field(i, **kwd))
-        fields = fields
+        if params.get( 'csv_file', None ):
+            csv_file = util.restore_text( params.get( 'csv_file', '' ) )
+            if csv_file:
+                fields = self.__import_fields(csv_file)
+        else:
+            # set form fields
+            fields = []
+            for i in range( len(self.current_form['fields']) ):
+                fields.append(self.__get_field(i, **kwd))
+            fields = fields
         return name, desc, fields
     def __update_current_form(self, **kwd):
         name, desc, fields = self.__get_form(**kwd)
@@ -228,6 +234,24 @@ class Forms( BaseController ):
         self.current_form['desc'] = desc
         self.current_form['fields'] = fields
         
+    def __import_fields(self, csv_file):
+        '''
+        "company","name of the company", "True", "required", "TextField",,
+        "due date","turnaround time", "True", "optional", "SelectField","24 hours, 1 week, 1 month"
+        '''
+        import csv
+        fields = []
+        reader = csv.reader(open(csv_file))
+        for row in reader:
+            options = row[5].split(',')
+            fields.append({'label': row[0], 
+                           'helptext': row[1], 
+                           'visible': row[2],
+                           'required': row[3],
+                           'type': row[4],
+                           'selectlist': options})
+        return fields
+
     def __save_form(self, trans, fdc_id=None, **kwd):
         '''
         This method saves the current form 
@@ -271,8 +295,8 @@ class Forms( BaseController ):
             for ft in BaseField.form_field_types():
                 self.fieldtype.add_option(ft, ft)
             self.required = SelectField('field_required_'+str(index), display='radio')
-            self.required.add_option('Required', 'true')
-            self.required.add_option('Optional', 'true', selected=True)
+            self.required.add_option('Required', 'required')
+            self.required.add_option('Optional', 'optional', selected=True)
             if field:
                 self.fill(field, field_type)
         def fill(self, field, field_type=None):
@@ -296,10 +320,10 @@ class Forms( BaseController ):
                 else:
                     self.fieldtype.add_option(ft, ft)
             # required/optional
-            if field['required']:
-                self.required = SelectField('required_'+str(self.index), display='radio')
-                self.required.add_option('Required', 'true', selected=True)
-                self.required.add_option('Optional', 'true')
+            if field['required'] == 'required':
+                self.required = SelectField('field_required_'+str(self.index), display='radio')
+                self.required.add_option('Required', 'required', selected=True)
+                self.required.add_option('Optional', 'optional')
         def selectbox_ui(self, field):
             self.selectbox_options = []
             if field['selectlist']:

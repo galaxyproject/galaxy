@@ -179,7 +179,11 @@
                         <div popupmenu="grid-${i}-popup">
                             %for operation in grid.operations:
                                 %if operation.allowed( item ):
-                                    <a class="action-button" href="${url( operation=operation.label, id=item.id )}">${operation.label}</a>
+                                    %if operation.label == 'Submit':
+                                        <a class="action-button" confirm="More samples cannot be added to this request once it is submitted. Click OK to submit." href="${url( operation=operation.label, id=item.id )}">${operation.label}</a>
+                                    %else:
+                                        <a class="action-button"  href="${url( operation=operation.label, id=item.id )}">${operation.label}</a>
+                                    %endif
                                 %endif
                             %endfor
                         </div>

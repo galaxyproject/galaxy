@@ -2162,7 +2162,7 @@ class Admin( BaseController ):
         elif params.get('edit', False) == 'True':
             rt = trans.app.model.RequestType.get(int(util.restore_text( params.id )))
             ss_list = trans.app.model.SampleState.filter(trans.app.model.SampleState.table.c.request_type_id == rt.id).all()
-            return trans.fill_template( '/admin/requests/edit_request_type.mako', 
+            return trans.fill_template( '/admin/requests/view_request_type.mako', 
                                         request_type=rt,
                                         forms=self._get_all_forms(trans, all_versions=False),
                                         states_list=ss_list,
@@ -2193,10 +2193,13 @@ class Admin( BaseController ):
         for ss in ss_list:
             ss.delete()
             ss.flush()
+        # unsubmitted state
+        ss = trans.app.model.SampleState('Unsubmitted', 'Sample not yet submitted', rt) 
+        ss.flush()
         for i in range( num_states ):
             name = util.restore_text( params.get( 'new_element_name_%i' % i, None ))
             desc = util.restore_text( params.get( 'new_element_description_%i' % i, None ))
             ss = trans.app.model.SampleState(name, desc, rt) 
             ss.flush()
-        msg = "The new sample type named '%s' with %s state(s) has been created" % (rt.name, num_states)
+        msg = "The new request type named '%s' with %s state(s) has been created" % (rt.name, num_states)
         return rt, msg

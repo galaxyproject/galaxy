@@ -71,8 +71,9 @@
                 </div>
               <div style="clear: both"></div>
             </div>
-
-            <input type="submit" name="edit_request_type_button" value="Save"/>
+            <div class="form-row">
+                <input type="submit" name="edit_request_type_button" value="Save"/>
+            </div>
         </form>
     </div>
 </div>

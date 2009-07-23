@@ -569,6 +569,7 @@ Request.table = Table('request', metadata,
     Column( "request_type_id", Integer, ForeignKey( "request_type.id" ), index=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "library_id", Integer, ForeignKey( "library.id" ), index=True ),
+    Column( "submitted", Boolean, index=True, default=False ),
     Column( "deleted", Boolean, index=True, default=False ) )
 
 Sample.table = Table('sample', metadata,
@@ -579,6 +580,7 @@ Sample.table = Table('sample', metadata,
     Column( "desc", TEXT ),
     Column( "form_values_id", Integer, ForeignKey( "form_values.id" ), index=True ),
     Column( "request_id", Integer, ForeignKey( "request.id" ), index=True ),
+    Column( "bar_code", TrimmedString( 255 ), index=True ),
     Column( "deleted", Boolean, index=True, default=False ) )
 
 # new table to store all the possible sample states and the sample type it
@@ -626,13 +628,17 @@ assign_mapper( context, Request, Request.table,
                                 user=relation( User,
                                                primaryjoin=( Request.table.c.user_id == User.table.c.id ),
                                                backref="requests" ),
+                                samples=relation( Sample,
+                                                  primaryjoin=( Request.table.c.id == Sample.table.c.request_id ) ),
                                 library=relation( Library,
                                                   primaryjoin=( Request.table.c.library_id == Library.table.c.id ) ),                 
                               ) )
 
 assign_mapper( context, RequestType, RequestType.table,               
-               properties=dict( states=relation( SampleState, backref="request_type",
-                                                 order_by=desc(SampleState.table.c.update_time) ),
+               properties=dict( states=relation( SampleState, 
+                                                 backref="request_type",
+                                                 primaryjoin=( RequestType.table.c.id == SampleState.table.c.request_type_id ),
+                                                 order_by=asc(SampleState.table.c.update_time) ),
                                 request_form=relation( FormDefinition,
                                                        primaryjoin=( RequestType.table.c.request_form_id == FormDefinition.table.c.id ) ),
                                 sample_form=relation( FormDefinition,

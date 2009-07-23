@@ -3,7 +3,7 @@
 
 <%def name="title()">Events for Sample ${sample_name}</%def>
 
-<h2>Events for Sample "${sample_name}" of Request: ${request}</h2>
+<h2>Events for Sample "${sample_name}" of Request: <a href="${h.url_for( controller='requests', action='list', operation='show_request', id=trans.security.encode_id(request.id))}">${request.name}</a></h2>
 
 %if msg:
     ${render_msg( msg, messagetype )}

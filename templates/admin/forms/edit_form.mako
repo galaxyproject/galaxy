@@ -37,20 +37,18 @@ $( function() {
         %if field_attr[1].get_selected()[0] == 'SelectField':
             <% options = field_attr[2] %>
             <div class="repeat-group-item">
+                <div class="form-row">
                 <label> Options</label>
                 %for i, option in enumerate(options):
                     <b> ${i+1}</b>
-                    ${option[1].get_html()}
-                    ##<input type="submit" name="remove_option_${index}" value="Remove option ${i+1}"/><br>
+                    ${option[1].get_html()}                    
                     <a class="action-button" href="${h.url_for( controller='forms', action='edit', form_id=form.id, select_box_options='remove', field_index=index, option_index=i )}">Remove</a><br>
                 %endfor
-           </div>
+                </div>
+            </div>
             <div class="form-row">
                 <a class="action-button" href="${h.url_for( controller='forms', action='edit', form_id=form.id, select_box_options='add', field_index=index )}">Add</a>
             </div>
-            ##<div class="form-row">
-            ##    <input type="submit" name="add_option_field_${index}" value="Add option"/>
-            ##</div>
         %endif
     %endif
 </%def>
@@ -99,7 +97,9 @@ $( function() {
             </div>
           <div style="clear: both"></div>
         </div>
-        <input type="submit" name="save_changes_button" value="Save"/>
+        <div class="form-row">
+            <input type="submit" name="save_changes_button" value="Save"/>
+        </div>
     </form>
     </div>
 </div>

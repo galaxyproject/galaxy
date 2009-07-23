@@ -1116,16 +1116,40 @@ class FormValues( object ):
         
 class Request( object ):
     def __init__(self, name=None, desc=None, request_type=None, user=None, 
-                 form_values=None, library=None):
+                 form_values=None, library=None, submitted=False):
         self.name = name
         self.desc = desc
         self.type = request_type
         self.values = form_values
         self.user = user
         self.library = library
+        self.submitted = submitted
+        self.samples_list = []
+    def add_sample(self, sample_name=None, sample_desc=None, sample_values=None):
+        # create a form_values row
+        values = trans.app.model.FormValues(self.type.sample_form, sample_values)
+        values.flush()   
+        sample = Sample(sample_name, sample_desc, self, values)
+        sample.flush()
+        # set the initial state            
+        state = self.type.states[0]
+        event = SampleEvent(sample, state)
+        event.flush()
+        # add this sample to the member array
+        self.samples_list.append(sample)
+        return sample
+    def delete_sample(self, sample_name):
+        pass
+    def has_sample(self, sample_name):
+        for s in self.samples:
+            if s.name == sample_name:
+                return s
+        return False
         
 class RequestType( object ):
-    def __init__(self, request_form=None, sample_form=None):
+    def __init__(self, name=None, desc=None, request_form=None, sample_form=None):
+        self.name = name
+        self.desc = desc
         self.request_form = request_form
         self.sample_form = sample_form
     
@@ -1135,9 +1159,10 @@ class Sample( object ):
         self.desc = desc
         self.request = request
         self.values = form_values
-
         
-    
+    def current_state(self):
+        return self.events[0].state
+
 class SampleState( object ):
     def __init__(self, name=None, desc=None, request_type=None):
         self.name = name

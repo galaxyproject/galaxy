@@ -25,7 +25,9 @@
                 </div>
               <div style="clear: both"></div>
             </div>
-            <input type="submit" name="save_form" value="Save"/>
+            <div class="form-row">
+                <input type="submit" name="save_form" value="Save"/>
+            </div>
         </form>
     </div>
 </div>
