@@ -72,7 +72,7 @@
                         <div class="form-row">
                             <label>${spec.desc}:</label>
                             <div style="float: left; width: 250px; margin-right: 10px;">
-                                ${ldda.metadata.get_html_by_name( name )}
+                                ${ldda.metadata.get_html_by_name( name, trans=trans )}
                             </div>
                             <div style="clear: both"></div>
                         </div>
