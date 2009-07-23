@@ -1,4 +1,4 @@
-<tool id="fasta_filter_by_length" name="Filter sequences by length">
+<tool id="fasta_filter_by_length" name="Filter sequences by length" version="1.1">
 	<description></description>
 	<command interpreter="python">fasta_filter_by_length.py $input $min_length $max_length $output </command>
 	<inputs>
