@@ -115,12 +115,14 @@ class Interval( Tabular ):
                                             dataset.metadata.endCol = 3
                                     except:
                                         pass # Metadata default will be used
-                                    if len( elems ) > 3:
-                                        try:
-                                            int( elems[3] )
-                                        except:
-                                            if overwrite or not dataset.metadata.element_is_set( 'nameCol' ):
-                                                dataset.metadata.nameCol = 4 
+                                    #we no longer want to guess that this column is the 'name', name must now be set manually for interval files
+                                    #we will still guess at the strand, as we can make a more educated guess
+                                    #if len( elems ) > 3:
+                                    #    try:
+                                    #        int( elems[3] )
+                                    #    except:
+                                    #        if overwrite or not dataset.metadata.element_is_set( 'nameCol' ):
+                                    #            dataset.metadata.nameCol = 4 
                                     if len( elems ) < 6 or elems[5] not in data.valid_strand:
                                         if overwrite or not dataset.metadata.element_is_set(  'strandCol' ):
                                             dataset.metadata.strandCol = 0
