@@ -75,6 +75,8 @@ class Interval( Tabular ):
         
         """Tries to guess from the line the location number of the column for the chromosome, region start-end and strand"""
         if dataset.has_data():
+            empty_line_count = 0
+            num_check_lines = 100 # only check up to this many non empty lines
             for i, line in enumerate( file( dataset.file_name ) ):
                 line = line.rstrip( '\r\n' )
                 if line:
@@ -131,8 +133,10 @@ class Interval( Tabular ):
                                             dataset.metadata.strandCol = 6
                                     metadata_is_set = True
                                     break
-                        if metadata_is_set:
-                            break # Our metadata is set, so break out of the outer loop
+                        if metadata_is_set or ( i - empty_line_count ) > num_check_lines:
+                            break # Our metadata is set or we examined 100 non-empty lines, so break out of the outer loop
+                else:
+                    empty_line_count += 1
     
     def get_estimated_display_viewport( self, dataset ):
         """Return a chrom, start, stop tuple for viewing a file."""
