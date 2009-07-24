@@ -84,11 +84,8 @@ ul.manage-table-actions li{display:block;float:left;margin-left:0.5em;}
 div.popupmenu{display:none;background:#eeeeee;color:#333;font-size:110%;font-weight:bold;font-style:normal;white-space:nowrap;position:absolute;z-index:20000;border:solid #aaaaaa 1px;padding:3px 0;-moz-border-radius:0.5em;-webkit-border-radius:0.5em;border-radius:0.5em;user-select:none;-moz-user-select:none;-webkit-user-select:none;}
 div.popupmenu-item{padding:3px 1em;cursor:pointer;}
 div.popupmenu-item:hover{background:#aaaaaa;}
-.popup-arrow{font-size:80%;cursor:pointer;text-decoration:none;color:#555
-}
-
-.popup-arrow:hover {
-    color: black;}
+.popup-arrow{font-size:80%;cursor:pointer;text-decoration:none;color:#555;}
+.popup-arrow:hover{color:black;}
 div.permissionContainer{padding-left:20px;}
 .grid-header{padding-bottom:1em;}
 .grid-header h2{margin:0;margin-bottom:0.5em;}

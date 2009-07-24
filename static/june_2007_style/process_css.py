@@ -11,7 +11,7 @@ CSS processor for Galaxy style sheets. Supports the following features:
 
 import sys, string, os.path
 from pyparsing import *
-from galaxy.util.odict import odict
+from odict import odict
 import Image
 
 def cross_lists(*sets):
