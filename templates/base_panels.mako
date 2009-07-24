@@ -20,8 +20,7 @@
 
 ## Default stylesheets
 <%def name="stylesheets()">
-    ## <link rel="stylesheet" type="text/css" href="${h.url_for('/static/style/reset.css')}" />
-    <link rel="stylesheet" type="text/css" href="${h.url_for('/static/style/panel_layout.css')}" />
+    ${h.css('panel_layout')}
     <style type="text/css">
     #center {
         %if not self.has_left_panel:
@@ -43,8 +42,7 @@
 ## Default javascripts
 <%def name="javascripts()">
     <!--[if lt IE 7]>
-    <script type='text/javascript' src="/static/scripts/IE7.js"> </script>
-    <script type='text/javascript' src="/static/scripts/ie7-recalc.js"> </script>
+    ${h.js( 'IE7', 'ie7-recalc' )}
     <![endif]-->
 </%def>
 
@@ -52,11 +50,7 @@
 <%def name="late_javascripts()">
     ## Scripts can be loaded later since they progressively add features to
     ## the panels, but do not change layout
-    <script type="text/javascript" src="${h.url_for('/static/scripts/jquery.js')}"></script>
-    <script type="text/javascript" src="${h.url_for('/static/scripts/jquery.event.drag.js')}"></script>
-    <script type="text/javascript" src="${h.url_for('/static/scripts/jquery.event.hover.js')}"></script>
-    <script type="text/javascript" src="${h.url_for('/static/scripts/jquery.form.js')}"></script>
-    <script type="text/javascript" src="${h.url_for('/static/scripts/galaxy.panels.js')}"></script>
+    ${h.js( 'jquery', 'jquery.event.drag', 'jquery.event.hover', 'jquery.form', 'galaxy.panels' )}
     <script type="text/javascript">
         
     ensure_dd_helper();

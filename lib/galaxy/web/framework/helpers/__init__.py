@@ -19,9 +19,12 @@ def iff( a, b, c ):
 def css( *args ):
     """
     Take a list of stylesheet names (no extension) and return appropriate string
-    of link tags. 
+    of link tags.
+    
+    TODO: This has a hardcoded "?v=1" to defeat caching. This should be done
+          in a better way.
     """
-    return "\n".join( [ stylesheet_link_tag( "/static/style/" + name + ".css" ) for name in args ] )
+    return "\n".join( [ stylesheet_link_tag( "/static/style/" + name + ".css?v=1" ) for name in args ] )
         
 def js( *args ):
     """

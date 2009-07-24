@@ -19,7 +19,7 @@ ${self.javascripts()}
 
 ## Default stylesheets
 <%def name="stylesheets()">
-    <link href="${h.url_for('/static/style/base.css')}" rel="stylesheet" type="text/css" />
+    ${h.css('base')}
 </%def>
 
 ## Default javascripts
