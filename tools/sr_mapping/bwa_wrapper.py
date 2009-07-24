@@ -17,7 +17,6 @@ def __main__():
     #Parse Command Line
     parser = optparse.OptionParser()
     parser.add_option('', '--ref', dest='ref', help='The reference genome to use or index')
-    parser.add_option('', '--indexingAlg', dest='indexingAlg', help='The algorithm to use while indexing')
     parser.add_option('', '--fastq', dest='fastq', help='The (forward) fastq file to use for the mapping')
     parser.add_option('', '--rfastq', dest='rfastq', help='The reverse fastq file to use for mapping if paired-end data')
     parser.add_option('', '--output', dest='output', help='The file to save the output (SAM format)')
@@ -53,10 +52,18 @@ def __main__():
             os.system('cp %s %s' % (options.ref, tmp_dir))
         except Exception, erf:
             stop_err('Error creating temp directory for indexing purposes\n' + str(erf))
+        try:
+            size = os.stat(options.ref).st_size
+            if size <= 2**30: 
+                indexingAlg = 'is'
+            else:
+                indexingAlg = 'bwtsw'
+        except:
+            indexingAlg = 'is'
         if options.fileType == 'solid':
-            indexing_cmds = '-c -a %s' % options.indexingAlg
+            indexing_cmds = '-c -a %s' % indexingAlg
         else:
-            indexing_cmds = '-a %s' % options.indexingAlg
+            indexing_cmds = '-a %s' % indexingAlg
         options.ref = os.path.join(tmp_dir,os.path.split(options.ref)[1])
         cmd1 = 'bwa index %s %s 2> /dev/null' % (indexing_cmds, options.ref)
         try:

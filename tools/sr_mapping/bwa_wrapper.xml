@@ -4,10 +4,8 @@
     bwa_wrapper.py 
     #if $solidOrSolexa.solidRefGenomeSource.refGenomeSource == "history":
      --ref=$solidOrSolexa.solidRefGenomeSource.ownFile
-     --indexingAlg=$solidOrSolexa.solidRefGenomeSource.algorithm
     #else:
      --ref=$solidOrSolexa.solidRefGenomeSource.indices.value
-     --indexingAlg="None"
     #end if
     --fastq=$paired.input1
     #if $paired.sPaired == "paired":
@@ -74,10 +72,6 @@
 	      </param>
 	      <when value="history">
 	        <param name="ownFile" type="data" label="Select a reference genome" />
-	        <param name="algorithm" type="select" label="Select an indexing algorithm" help="IS works on databses 2GB or less, and is linear-time. BWT-SW works on database 10MB and larger, and trades speed for memory.">
-	          <option value="is">IS</option>
-	          <option value="bwtsw">BWT-SW</option>
-	        </param>
 	      </when>
 	      <when value="indexed">
  	    	<param name="indices" type="select" label="Select a reference genome">
@@ -98,10 +92,6 @@
 	      </param>
 	      <when value="history">
 	        <param name="ownFile" type="data" label="Select a reference genome" />
-	        <param name="algorithm" type="select" label="Select an indexing algorithm" help="IS works on databses 2GB or less, and is linear-time. BWT-SW works on database 10MB and larger, and trades speed for memory.">
-	          <option value="is">IS</option>
-	          <option value="bwtsw">BWT-SW</option>
-	        </param>
 	      </when>
 	      <when value="indexed">
  	        <param name="indices" type="select" label="Select a reference genome">
@@ -177,7 +167,6 @@
       <param name="solidSolexa" value="solid" />
       <param name="refGenomeSource" value="history" />
       <param name="ownFile" value="phiX.fa" />
-      <param name="algorithm" value="is" />
       <param name="sPaired" value="single" />
       <param name="input1" value="bwa_phiX_sanger.fastq" />
       <param name="source_select" value="pre_set" />
