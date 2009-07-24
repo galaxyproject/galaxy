@@ -8,7 +8,7 @@
 
 
 <div class="grid-header">
-    <h2>Request: ${request.name}</h2>
+    <h2>Sequencing Request "${request.name}"</h2>
 </div>
 
 <ul class="manage-table-actions">
@@ -38,21 +38,26 @@
 
 <div class="toolForm">
     ##<div class="toolFormTitle">Request Details: '${request_details[0]['value']}'</div>
-        %for index, rd in enumerate(request_details):
-            <div class="form-row">
-                <label>${rd['label']}</label>
-                %if not rd['value']:
-                    <i>None</i>
-                %else:                      
-                    %if rd['label'] == 'Library':
-                        <a href="${h.url_for( controller='admin', action='browse_library', id=request.library.id )}">${rd['value']}</a>
-                    %else:
-                        ${rd['value']}     
+        <div class="form-row">
+        <a href="${h.url_for( controller='requests_admin', action='toggle_request_details', request_id=request.id )}">${details_state}</a>
+        </div>
+        %if details_state == "Hide request details":
+            %for index, rd in enumerate(request_details):
+                <div class="form-row">
+                    <label>${rd['label']}</label>
+                    %if not rd['value']:
+                        <i>None</i>
+                    %else:                      
+                        %if rd['label'] == 'Library':
+                            <a href="${h.url_for( controller='admin', action='browse_library', id=request.library.id )}">${rd['value']}</a>
+                        %else:
+                            ${rd['value']}     
+                        %endif
                     %endif
-                %endif
-            </div>
-            <div style="clear: both"></div>
-        %endfor
+                </div>
+                <div style="clear: both"></div>
+            %endfor
+        %endif
     </div>
 </div>
 

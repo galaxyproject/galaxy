@@ -97,17 +97,18 @@ class Requests( BaseController ):
         for s in request.samples:
             self.current_samples.append([s.name, s.values.content])
         if add_sample:
-            self.current_samples.append(['New Sample',['' for field in request.type.sample_form.fields]])
+            self.current_samples.append(['Sample_%i' % (len(self.current_samples)+1),['' for field in request.type.sample_form.fields]])
         # selectfield of all samples
         copy_list = SelectField('copy_sample')
         copy_list.add_option('None', -1, selected=True)
         for i, s in enumerate(self.current_samples):
-            copy_list.add_option(i+1, i)       
+            copy_list.add_option(i+1, i)
+        self.details_state = 'Show request details'
         return trans.fill_template( '/requests/show_request.mako',
                                     request=request,
                                     request_details=self.request_details(trans, id),
                                     current_samples = self.current_samples,
-                                    sample_copy=copy_list)
+                                    sample_copy=copy_list, details_state=self.details_state)
     def request_details(self, trans, id):
         '''
         Shows the request details
@@ -141,7 +142,20 @@ class Requests( BaseController ):
                                         value=request.values.content[index],
                                         helptext=field['helptext']+' ('+req+')'))
         return request_details   
-        
+    
+    def __update_samples(self, request, **kwd):
+        params = util.Params( kwd )
+        num_samples = len(self.current_samples)
+        self.current_samples = []
+        for s in request.samples:
+            self.current_samples.append([s.name, s.values.content])
+        for index in range(num_samples-len(request.samples)):
+            sample_index = index + len(request.samples)
+            sample_name = util.restore_text( params.get( 'sample_%i_name' % sample_index, ''  ) )
+            sample_values = []
+            for field_index in range(len(request.type.sample_form.fields)):
+                sample_values.append(util.restore_text( params.get( 'sample_%i_field_%i' % (sample_index, field_index), ''  ) ))
+            self.current_samples.append([sample_name, sample_values])
     @web.expose
     def show_request(self, trans, **kwd):
         params = util.Params( kwd )
@@ -157,26 +171,17 @@ class Requests( BaseController ):
                                                               **kwd) )
         if params.get('add_sample_button', False) == 'Add New':
             # save the all (saved+unsaved) sample info in 'current_samples'
-            num_samples = len(self.current_samples)
-            self.current_samples = []
-            for s in request.samples:
-                self.current_samples.append([s.name, s.values.content])
-            for index in range(num_samples-len(request.samples)):
-                sample_index = index + len(request.samples)
-                sample_name = util.restore_text( params.get( 'sample_%i_name' % sample_index, ''  ) )
-                sample_values = []
-                for field_index in range(len(request.type.sample_form.fields)):
-                    sample_values.append(util.restore_text( params.get( 'sample_%i_field_%i' % (sample_index, field_index), ''  ) ))
-                self.current_samples.append([sample_name, sample_values])
+            self.__update_samples(request, **kwd)
             # add an empty or filled sample
             # if the user has selected a sample no. to copy then copy the contents 
             # of the src sample to the new sample else an empty sample
             src_sample_index = int(params.get( 'copy_sample', -1  ))
             if src_sample_index == -1:
                 # empty sample
-                self.current_samples.append(['New Sample',['' for field in request.type.sample_form.fields]])
+                self.current_samples.append(['Sample_%i' % (len(self.current_samples)+1),['' for field in request.type.sample_form.fields]])
             else:
-                self.current_samples.append([self.current_samples[src_sample_index][0]+'_copy',[val for val in self.current_samples[src_sample_index][1]]])
+                self.current_samples.append([self.current_samples[src_sample_index][0]+'_%i' % (len(self.current_samples)+1),
+                                                                  [val for val in self.current_samples[src_sample_index][1]]])
             # selectfield of all samples
             copy_list = SelectField('copy_sample')
             copy_list.add_option('None', -1, selected=True)  
@@ -186,11 +191,38 @@ class Requests( BaseController ):
                                         request=request,
                                         request_details=self.request_details(trans, request.id),
                                         current_samples = self.current_samples,
-                                        sample_copy=copy_list)
+                                        sample_copy=copy_list, details_state=self.details_state)
         if params.get('save_samples_button', False) == 'Save':
-            num_samples = len(self.current_samples)
+            # update current_samples
+            self.__update_samples(request, **kwd)
+            # check for duplicate sample names
+            msg = ''
+            for index in range(len(self.current_samples)-len(request.samples)):
+                sample_index = index + len(request.samples)
+                sample_name = self.current_samples[sample_index][0]
+                if not sample_name.strip():
+                    msg = 'Please enter the name of sample number %i' % sample_index
+                    break
+                count = 0
+                for i in range(len(self.current_samples)):
+                    if sample_name == self.current_samples[i][0]:
+                        count = count + 1
+                if count > 1: 
+                    msg = "This request has <b>%i</b> samples with the name <b>%s</b>.\nSamples belonging to a request must have unique names." % (count, sample_name)
+                    break
+            if msg:
+                copy_list = SelectField('copy_sample')
+                copy_list.add_option('None', -1, selected=True)  
+                for i, s in enumerate(self.current_samples):
+                    copy_list.add_option(i+1, i)    
+                return trans.fill_template( '/requests/show_request.mako',
+                                            request=request,
+                                            request_details=self.request_details(trans, request.id),
+                                            current_samples = self.current_samples,
+                                            sample_copy=copy_list, details_state=self.details_state,
+                                            messagetype='error', msg=msg)
             # save all the new/unsaved samples entered by the user
-            for index in range(num_samples-len(request.samples)):
+            for index in range(len(self.current_samples)-len(request.samples)):
                 sample_index = index + len(request.samples)
                 sample_name = util.restore_text( params.get( 'sample_%i_name' % sample_index, ''  ) )
                 sample_values = []
@@ -208,7 +240,6 @@ class Requests( BaseController ):
                                                           action='list',
                                                           operation='show_request',
                                                           id=trans.security.encode_id(request.id)) )
-            
     @web.expose
     def delete_sample(self, trans, **kwd):
         params = util.Params( kwd )
@@ -221,6 +252,7 @@ class Requests( BaseController ):
         if s:
             s.delete()
             s.flush()
+            request.flush()
         del self.current_samples[sample_index]
         copy_list = SelectField('copy_sample')
         copy_list.add_option('None', -1, selected=True)  
@@ -230,7 +262,26 @@ class Requests( BaseController ):
                                     request=request,
                                     request_details=self.request_details(trans, request.id),
                                     current_samples = self.current_samples,
-                                    sample_copy=copy_list)
+                                    sample_copy=copy_list, details_state=self.details_state)
+    @web.expose
+    def toggle_request_details(self, trans, **kwd):
+        params = util.Params( kwd )
+        msg = util.restore_text( params.get( 'msg', ''  ) )
+        messagetype = params.get( 'messagetype', 'done' )
+        request = trans.app.model.Request.get(int(params.get('request_id', 0)))
+        if self.details_state == 'Show request details':
+             self.details_state = 'Hide request details'
+        elif self.details_state == 'Hide request details':
+             self.details_state = 'Show request details'
+        copy_list = SelectField('copy_sample')
+        copy_list.add_option('None', -1, selected=True)  
+        for i, s in enumerate(self.current_samples):
+            copy_list.add_option(i+1, i)    
+        return trans.fill_template( '/requests/show_request.mako',
+                                    request=request,
+                                    request_details=self.request_details(trans, request.id),
+                                    current_samples = self.current_samples,
+                                    sample_copy=copy_list, details_state=self.details_state)
     @web.expose
     def new(self, trans, **kwd):
         params = util.Params( kwd )
@@ -248,7 +299,7 @@ class Requests( BaseController ):
         elif params.get('save', False) == 'True':
             request_type = trans.app.model.RequestType.get(int(params.request_type_id))
             msg = self.__validate(trans, 
-                                  [('name','Name'), ('library_id','Library')], 
+                                  [('name','Name')], 
                                   request_type.request_form.fields, 
                                   **kwd)
             if msg:
@@ -283,7 +334,7 @@ class Requests( BaseController ):
         '''
         params = util.Params( kwd )
         for field, field_name in main_fields:
-            if not util.restore_text(params.get(field, None)):
+            if not util.restore_text(params.get(field, '')):
                 return 'Please enter the <b>%s</b> of the request' % field_name
         # check rest of the fields of the form
         for index, field in enumerate(form_fields):
@@ -303,7 +354,15 @@ class Requests( BaseController ):
             pass
         name = util.restore_text(params.get('name', ''))
         desc = util.restore_text(params.get('desc', ''))
-        library_id = int(util.restore_text(params.get('library_id', 0)))
+        try:
+            library_id = int(util.restore_text(params.get('library_id', None)))
+        except:
+            msg = "Sequencing request could not be saved. Invalid library"
+            return trans.response.send_redirect( web.url_for( controller='requests',
+                                                              action='list',
+                                                              status='error',
+                                                              message=msg,
+                                                              **kwd) )
         values = []
         for index, field in enumerate(request_type.request_form.fields):
             values.append(util.restore_text(params.get('field_%i' % index, '')))

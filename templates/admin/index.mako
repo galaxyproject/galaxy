@@ -114,7 +114,7 @@
                 </div>
                 <div class="toolSectionPad"></div>
                 <div class="toolSectionTitle">
-                  <span>Requests</span>
+                  <span>Sequencing Requests</span>
                 </div>
                 <div class="toolSectionBody">
                   <div class="toolSectionBg">

@@ -5,6 +5,14 @@
 %if msg:
     ${render_msg( msg, messagetype )}
 %endif
+<br/>
+<br/>
+<ul class="manage-table-actions">
+    <li>
+        <a class="action-button"  href="${h.url_for( controller='requests', action='list')}">
+        <span>Browse requests</span></a>
+    </li>
+</ul>
 
 <div class="toolForm">
     <div class="toolFormTitle">${title}</div>

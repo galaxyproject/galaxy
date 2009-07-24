@@ -76,9 +76,6 @@
 
 <div class="grid-header">
     <h2>${grid.title}</h2>
-    %if len(query.all()):
-        <h3>All Users</h3>
-    %endif
 ##    %if len(query.all()):
 ##        <span class="title">Filter:</span>
 ##        %for i, filter in enumerate( grid.standard_filters ):

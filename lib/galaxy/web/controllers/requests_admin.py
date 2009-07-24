@@ -92,10 +92,31 @@ class Requests( BaseController ):
         self.current_samples = []
         for s in request.samples:
             self.current_samples.append([s.name, s.values.content])
+        self.details_state = 'Show request details'
         return trans.fill_template( '/admin/requests/show_request.mako',
                                     request=request,
                                     request_details=self.request_details(trans, id),
-                                    current_samples = self.current_samples)
+                                    current_samples = self.current_samples, 
+                                    details_state=self.details_state)
+    @web.expose
+    def toggle_request_details(self, trans, **kwd):
+        params = util.Params( kwd )
+        msg = util.restore_text( params.get( 'msg', ''  ) )
+        messagetype = params.get( 'messagetype', 'done' )
+        request = trans.app.model.Request.get(int(params.get('request_id', 0)))
+        if self.details_state == 'Show request details':
+             self.details_state = 'Hide request details'
+        elif self.details_state == 'Hide request details':
+             self.details_state = 'Show request details'
+        copy_list = SelectField('copy_sample')
+        copy_list.add_option('None', -1, selected=True)  
+        for i, s in enumerate(self.current_samples):
+            copy_list.add_option(i+1, i)    
+        return trans.fill_template( '/admin/requests/show_request.mako',
+                                    request=request,
+                                    request_details=self.request_details(trans, request.id),
+                                    current_samples = self.current_samples,
+                                    sample_copy=copy_list, details_state=self.details_state)
     def request_details(self, trans, id):
         '''
         Shows the request details

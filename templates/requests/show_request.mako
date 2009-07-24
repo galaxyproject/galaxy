@@ -8,17 +8,23 @@
 
 
 <div class="grid-header">
-    <h2>Request: ${request.name}</h2>
+    <h2>Sequencing Request "${request.name}"</h2>
 </div>
 
-%if not request.submitted and request.samples:
+
 <ul class="manage-table-actions">
+    %if not request.submitted and request.samples:
+        <li>
+            <a class="action-button" confirm="More samples cannot be added to this request once it is submitted. Click OK to submit." href="${h.url_for( controller='requests', action='submit_request', id=request.id)}">
+            <span>Submit request</span></a>
+        </li>
+    %endif
     <li>
-        <a class="action-button" confirm="More samples cannot be added to this request once it is submitted. Click OK to submit." href="${h.url_for( controller='requests', action='submit_request', id=request.id)}">
-        <span>Submit request</span></a>
+        <a class="action-button"  href="${h.url_for( controller='requests', action='list')}">
+        <span>Browse requests</span></a>
     </li>
 </ul>
-%endif
+
 
 
 <%def name="render_sample_form( index, sample_name, sample_values )">
@@ -60,21 +66,26 @@
 
 <div class="toolForm">
     ##<div class="toolFormTitle">Request Details: '${request_details[0]['value']}'</div>
-        %for index, rd in enumerate(request_details):
-            <div class="form-row">
-                <label>${rd['label']}</label>
-                %if not rd['value']:
-                    <i>None</i>
-                %else:                      
-                    %if rd['label'] == 'Library':
-                        <a href="${h.url_for( controller='library', action='browse_library', id=request.library.id )}">${rd['value']}</a>
-                    %else:
-                        ${rd['value']}     
+        <div class="form-row">
+        <a href="${h.url_for( controller='requests', action='toggle_request_details', request_id=request.id )}">${details_state}</a>
+        </div>
+        %if details_state == "Hide request details":
+            %for index, rd in enumerate(request_details):
+                <div class="form-row">
+                    <label>${rd['label']}</label>
+                    %if not rd['value']:
+                        <i>None</i>
+                    %else:                      
+                        %if rd['label'] == 'Library':
+                            <a href="${h.url_for( controller='library', action='browse_library', id=request.library.id )}">${rd['value']}</a>
+                        %else:
+                            ${rd['value']}     
+                        %endif
                     %endif
-                %endif
-            </div>
-            <div style="clear: both"></div>
-        %endfor
+                </div>
+                <div style="clear: both"></div>
+            %endfor
+        %endif
     </div>
 </div>
 
@@ -101,10 +112,13 @@
                         </tr>
                     <thead>
                     <tbody>
+                    <%
+                    request.refresh()
+                    %>
                         %for sample_index, sample in enumerate(current_samples):
                             <tr>
                                 <td>${sample_index+1}</td>
-                                %if sample[0] in [s.name for s in request.samples]:
+                                %if sample_index in range(len(request.samples)):
                                     ${render_sample( sample_index, request.samples[sample_index] )}
                                 %else:                                                            
                                     ${render_sample_form( sample_index, sample[0], sample[1])}

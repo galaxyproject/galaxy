@@ -1,12 +1,19 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
 
-<h2>Bar codes for Samples of Request: ${request.name}</h2>
+<h2>Bar codes for Samples of Request "${request.name}"</h2>
 <h3>User: ${user.email}</h3>
 
 %if msg:
     ${render_msg( msg, messagetype )}
 %endif
+
+<ul class="manage-table-actions">
+    <li>
+        <a class="action-button" href="${h.url_for( controller='requests_admin', action='list', operation='show_request', id=trans.security.encode_id(request.id) )}">
+        <span>Browse this request</span></a>
+    </li>
+</ul>
 
 <div class="toolForm">
     <form name="bar_codes" action="${h.url_for( controller='requests_admin', action='save_bar_codes', request_id=request.id)}" method="post" >
