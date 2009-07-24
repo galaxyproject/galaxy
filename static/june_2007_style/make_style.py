@@ -57,33 +57,15 @@ shared_images = [
     # History icons
     ( "ok_small.png", "history_ok_bg", "data_ok.png" ),
     ( "error_small.png", "history_error_bg", "data_error.png" ),
-    ( "wait_small.png", "history_queued_bg", "data_queued.png" ) ]
+    ( "wait_small.png", "history_queued_bg", "data_queued.png" ),
+]
 
 
 vars, out_dir = sys.argv[1:]
 
-context = dict()
-for line in open( vars ):
-    if line.startswith( '#' ):
-        continue
-    key, value = line.rstrip("\r\n").split( '=' )
-    if value.startswith( '"' ) and value.endswith( '"' ):
-        value = value[1:-1]
-    context[key] = value
-
 for input, output in templates:
     print input ,"->", output
-    out_fname = os.path.join( out_dir, output )
-    temp_file = tempfile.NamedTemporaryFile()
-    # Write processed template to temporary file
-    print "Processing template..."
-    temp_file.write( str( Template( file=input, searchList=[context] ) ) )
-    temp_file.flush()
-    # Compress CSS with YUI
-    print "Compressing..."
-    subprocess.call( 
-        "java -jar ../../scripts/yuicompressor.jar --type css %s -o %s" % ( temp_file.name, out_fname ),
-        shell = True )
+    subprocess.call( "./process_css.py %s %s < %s > %s" % ( vars, out_dir, input, os.path.join( out_dir, output ) ), shell=True )
 
   
 """

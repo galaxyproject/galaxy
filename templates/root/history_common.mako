@@ -18,29 +18,21 @@
             <strong>This dataset has been deleted. Click <a href="${h.url_for( controller='dataset', action='undelete', id=data.id )}" class="historyItemUndelete" id="historyItemUndeleter-${data.id}" target="galaxy_history">here</a> to undelete.</strong>
         </div>
     %endif
+    
         ## Header row for history items (name, state, action buttons)
-	<div style="overflow: hidden;" class="historyItemTitleBar">
-	    <div style="float: left; padding-right: 3px;">
-		<div style='display: none;' id="progress-${data.id}">
-		    <img src="${h.url_for('/static/style/data_running.gif')}" border="0" align="middle" >
-		</div>
-		%if data_state == 'running':
-		    <div><img src="${h.url_for('/static/style/data_running.gif')}" border="0" align="middle"></div>
-                %elif data_state == 'upload':
-		    <div><img src="${h.url_for('/static/style/data_upload.gif')}" border="0" align="middle"></div>
-		%elif data_state != 'ok':
-		    <div><img src="${h.url_for( "/static/style/data_%s.png" % data_state )}" border="0" align="middle"></div>
-		%endif
-	    </div>			
-	    <div style="float: right;">
+	<div style="overflow: hidden;" class="historyItemTitleBar">		
+	    <div class="historyItemButtons">
             %if data_state == "upload":
-	        <img src="${h.url_for('/static/images/eye_icon_grey.png')}" width='16' height='16' alt='display data' title='display data' class='displayButton' border='0'>
-	        <img src="${h.url_for('/static/images/pencil_icon_grey.png')}" width='16' height='16' alt='edit attributes' title='edit attributes' class='editButton' border='0'>
+		## TODO: Make these CSS, just adding a "disabled" class to the normal
+		## links should be enough. However the number of datasets being uploaded
+		## at a time is usually small so the impact of these images is also small.
+	        <img src="${h.url_for('/static/images/eye_icon_grey.png')}" width='16' height='16' alt='display data' title='display data' class='button display' border='0'>
+	        <img src="${h.url_for('/static/images/pencil_icon_grey.png')}" width='16' height='16' alt='edit attributes' title='edit attributes' class='button edit' border='0'>
             %else:
-	        <a href="${h.url_for( controller='dataset', dataset_id=data.id, action='display', filename='index')}" target="galaxy_main"><img src="${h.url_for('/static/images/eye_icon.png')}" rollover="${h.url_for('/static/images/eye_icon_dark.png')}" width='16' height='16' alt='display data' title='display data' class='displayButton' border='0'></a>
-	        <a href="${h.url_for( controller='root', action='edit', id=data.id )}" target="galaxy_main"><img src="${h.url_for('/static/images/pencil_icon.png')}" rollover="${h.url_for('/static/images/pencil_icon_dark.png')}" width='16' height='16' alt='edit attributes' title='edit attributes' class='editButton' border='0'></a>
+	        <a class="icon-button display" title="display data" href="${h.url_for( controller='dataset', dataset_id=data.id, action='display', filename='index')}" target="galaxy_main"></a>
+	        <a class="icon-button edit" title="edit attributes" href="${h.url_for( controller='root', action='edit', id=data.id )}" target="galaxy_main"></a>
             %endif
-	    <a href="${h.url_for( action='delete', id=data.id, show_deleted_on_refresh=show_deleted_on_refresh )}" class="historyItemDelete" id="historyItemDeleter-${data.id}"><img src="${h.url_for('/static/images/delete_icon.png')}" rollover="${h.url_for('/static/images/delete_icon_dark.png')}" width='16' height='16' alt='delete' class='deleteButton' border='0'></a>
+	    <a class="icon-button delete" title="delete" href="${h.url_for( action='delete', id=data.id, show_deleted_on_refresh=show_deleted_on_refresh )}" id="historyItemDeleter-${data.id}"></a>
 	    </div>
 	    <span class="historyItemTitle"><b>${hid}: ${data.display_name()}</b></span>
 	</div>

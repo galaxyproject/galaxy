@@ -13,17 +13,10 @@
 
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <meta http-equiv="Pragma" content="no-cache">
-<link href="${h.url_for('/static/style/base.css')}" rel="stylesheet" type="text/css" />
-<link href="${h.url_for('/static/style/history.css')}" rel="stylesheet" type="text/css" />
 
-## <!--[if lt IE 7]>
-## <script defer type="text/javascript" src="/static/scripts/ie_pngfix.js"></script>
-## <![endif]-->
-
-<script type="text/javascript" src="${h.url_for('/static/scripts/jquery.js')}"></script>
-<script type="text/javascript" src="${h.url_for('/static/scripts/jquery.cookie.js')}"></script>
-<script type="text/javascript" src="${h.url_for('/static/scripts/cookie_set.js')}"></script>
-
+${h.css( "base", "history" )}
+${h.js( "jquery", "jquery.cookie", "cookie_set" )}
+  
 <script type="text/javascript">
     $( document ).ready( function() {
         initShowHide();
@@ -86,7 +79,7 @@
     //' Functionized so AJAX'd datasets can call them
     // Get shown/hidden state from cookie
     function initShowHide() {
-        $( "div.historyItemBody" ).hide();
+        // $( "div.historyItemBody" ).hide();
         // Load saved state and show as neccesary
         var state = new CookieSet( "galaxy.history.expand_state" );
 	for ( id in state.store ) {
@@ -128,10 +121,10 @@
                 return false;
             });
             // Delete link
-            $(this).find( "a.historyItemDelete" ).each( function() {
+            $(this).find( "div.historyItemButtons > .delete" ).each( function() {
                 var data_id = this.id.split( "-" )[1];
                 $(this).click( function() {
-                    $( '#progress-' + data_id ).show();
+                    $( '#historyItem-' + data_id + "> div.historyItemTitleBar" ).addClass( "spinner" );
                     $.ajax({
                         url: "${h.url_for( action='delete_async', id='XXX' )}".replace( 'XXX', data_id ),
                         error: function() { alert( "Delete failed" ) },
@@ -157,7 +150,7 @@
             $(this).find( "a.historyItemUndelete" ).each( function() {
                 var data_id = this.id.split( "-" )[1];
                 $(this).click( function() {
-                    $( '#progress-' + data_id ).show();
+                    $( '#historyItem-' + data_id + " > div.historyItemTitleBar" ).addClass( "spinner" );
                     $.ajax({
                         url: "${h.url_for( controller='dataset', action='undelete_async', id='XXX' )}".replace( 'XXX', data_id ),
                         error: function() { alert( "Undelete failed" ) },
@@ -228,24 +221,19 @@
     };
 </script>
 
-<![if gte IE 7]>
-<script type="text/javascript">
-    $( document ).ready( function() {
-        // Add rollover effect to any image with a 'rollover' attribute
-        preload_images = {}
-        $( "img[rollover]" ).each( function() {
-            var r = $(this).attr('rollover');
-            var s = $(this).attr('src');
-            preload_images[r] = true;
-            $(this).hover( 
-                function() { $(this).attr( 'src', r ) },
-                function() { $(this).attr( 'src', s ) }
-            )
-        })
-        for ( r in preload_images ) { $( "<img>" ).attr( "src", r ) }
-    })
-</script>
-<![endif]>
+<style>
+.historyItemBody {
+    display: none;
+}
+</style>
+
+<noscript>
+<style>
+.historyItemBody {
+    display: block;
+}
+</style>
+</noscript>
 
 </head>
 
@@ -259,7 +247,7 @@
 </div>
     
 <div id="history-name-area" class="historyLinks" style="color: gray; font-weight: bold;">
-    <div style="float: right"><a id="history-rename" target="galaxy_main" href="${h.url_for( controller='history', action='rename' )}"><img src="${h.url_for('/static/images/pencil_icon.png')}"></a></div>
+    <div style="float: right"><a id="history-rename" title="Rename" class="icon-button edit" target="galaxy_main" href="${h.url_for( controller='history', action='rename' )}"></a></div>
     <div id="history-name">${history.name}</div>
 </div>
 

@@ -14,8 +14,7 @@ from galaxy import util
 pkg_resources.require( "simplejson" )
 import simplejson
 
-pkg_resources.require( "WebHelpers" )
-import webhelpers
+import helpers
 
 pkg_resources.require( "PasteDeploy" )
 from paste.deploy.converters import asbool
@@ -567,19 +566,19 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
             return self.fill_template_mako( filename, **kwargs )
         else:
             template = Template( file=os.path.join(self.app.config.template_path, filename), 
-                                 searchList=[kwargs, self.template_context, dict(caller=self, t=self, h=webhelpers, util=util, request=self.request, response=self.response, app=self.app)] )
+                                 searchList=[kwargs, self.template_context, dict(caller=self, t=self, h=helpers, util=util, request=self.request, response=self.response, app=self.app)] )
             return str( template )
     def fill_template_mako( self, filename, **kwargs ):
         template = self.webapp.mako_template_lookup.get_template( filename )
         template.output_encoding = 'utf-8' 
-        data = dict( caller=self, t=self, trans=self, h=webhelpers, util=util, request=self.request, response=self.response, app=self.app )
+        data = dict( caller=self, t=self, trans=self, h=helpers, util=util, request=self.request, response=self.response, app=self.app )
         data.update( self.template_context )
         data.update( kwargs )
         return template.render( **data )
     def stream_template_mako( self, filename, **kwargs ):
         template = self.webapp.mako_template_lookup.get_template( filename )
         template.output_encoding = 'utf-8' 
-        data = dict( caller=self, t=self, trans=self, h=webhelpers, util=util, request=self.request, response=self.response, app=self.app )
+        data = dict( caller=self, t=self, trans=self, h=helpers, util=util, request=self.request, response=self.response, app=self.app )
         data.update( self.template_context )
         data.update( kwargs )
         ## return template.render( **data )

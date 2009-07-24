@@ -20,7 +20,7 @@
 
 ## Default stylesheets
 <%def name="stylesheets()">
-    <link rel="stylesheet" type="text/css" href="${h.url_for('/static/style/reset.css')}" />
+    ## <link rel="stylesheet" type="text/css" href="${h.url_for('/static/style/reset.css')}" />
     <link rel="stylesheet" type="text/css" href="${h.url_for('/static/style/panel_layout.css')}" />
     <style type="text/css">
     #center {
@@ -287,6 +287,7 @@
     </head>
     
     <body scroll="no" class="${self.body_class}">
+	<div id="everything" style="position: absolute; width: 100%; height: 100%; min-width: 960px; min-height: 400px;">
         ## Background displays first
         <div id="background"></div>
         ## Layer iframes over backgrounds
@@ -316,6 +317,7 @@
                 ${self.right_panel()}
             </div>
         %endif
+	</div>
         ## Allow other body level elements
     </body>
     ## Scripts can be loaded later since they progressively add features to

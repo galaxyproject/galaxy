@@ -1,5 +1,4 @@
-body
-{
+body {
     background: $menu_bg_over;
     color: $base_text;
     background-image: url(menu_bg.png);
@@ -10,108 +9,154 @@ body
     padding: 0;
 }
 
-a
-{
-    color: #base_text;
+a {
+    color: $base_text;
 }
 
-div.historyLinks
-{
+## Control links at top of history
+div.historyLinks {
     padding: 5px;
-    margin-top: 5px;
-    margin-bottom: 5px;
-    padding-right: 5px;
-    padding-left: 5px;
-    margin-bottom: 5px;
+    margin: 5px 0 5px 0;
 }
 
-div.historyItem
-{
-    margin-right: -5px;
-    margin-top: 5px;
-    margin-bottom: 5px;
-    padding: 5px;
-    padding-right: 11px;
-
+## Default history item appearend
+div.historyItem {
+    margin: 5px -5px 5px 0px;
+    padding: 5px 11px 5px 5px;
     border: solid $history_queued_border 1px;
     border-left: solid $history_queued_border 5px;
     border-right: none;
     background: $history_queued_bg;
-    background-image: url(gray_bg.png);
-    background-repeat: repeat-x;
-    background-position: top;
+    div.historyItemTitleBar {
+        padding-left: 20px;
+        background-position: 0 1px;
+        background-repeat: no-repeat;
+    }
 }
 
-div.historyItem div.historyItem
-{
+## Nested history items
+div.historyItem div.historyItem {
     margin-right: -11px;
 }
 
-div.historyItem-ok
-{
+## Change background/border color depending on state
+div.historyItem-ok {
     border-color: $history_ok_border;
     background: $history_ok_bg;
-    /*
-    background-image: url(ok_bg.png);
-    background-repeat: repeat-x;
-    background-position: top;
-    */
+    div.historyItemTitleBar {
+        padding-left: 0;
+    }
 }
-
-div.historyItem-error, div.historyItem-empty
-{
+div.historyItem-error {
     border-color: $history_error_border;
     background: $history_error_bg;
-    /*
-    background-image: url(error_bg.png);
-    background-repeat: repeat-x;
-    background-position: top;
-    */
+    div.historyItemTitleBar {
+        -sprite-group: history-states;
+        -sprite-image: data_error.png;
+    }
 }
 
-div.historyItem-running
-{
+div.historyItem-empty {
+    border-color: $history_error_border;
+    background: $history_error_bg;
+        div.historyItemTitleBar {
+        -sprite-group: history-states;
+        -sprite-image: data_empty.png;
+    }
+}
+
+div.historyItem-running {
     border-color: $history_running_border;
     background: $history_running_bg;
-    /*
-    background-image: url(warn_bg.png);
-    background-repeat: repeat-x;
-    background-position: top;
-    */
+    div.historyItemTitleBar {
+        background-image: url(data_running.gif);
+    }
 }
 
-div.historyItem-upload
-{
+div.historyItem-upload {
     border-color: $history_upload_border;
     background: $history_upload_bg;
+    div.historyItemTitleBar {
+        background-image: url(data_upload.gif);
+    }
 }
 
-div.historyItem-noPermission
-{
+div.historyItem-queued {
+    background: $history_queued_bg;
+    div.historyItemTitleBar {
+        -sprite-group: history-states;
+        -sprite-image: data_queued.png;
+    }
+}
+
+div.historyItem-noPermission {
     filter: alpha(opacity=60);
     -moz-opacity: .60;
     opacity: .60;
 }
 
-div.historyItem-queued
-{
+## Special case for showing the spinner but not changing the background
+div.historyItemTitleBar.spinner {
+    background: url(data_running.gif) 0 1px no-repeat !important;
+    padding-left: 20px !important;
 }
 
-div.historyItemBody div
-{
+## Buttons
+div.historyItemButtons {
+    float: right;
+}
+
+.icon-button  {
+    width: 16px;
+    height: 16px;
+    display: block;
+    float: left;
+    margin-left: 2px;
+    ## Allow alt text for screen readers
+    text-indent: 20px;
+}
+
+.icon-button.display {
+    -sprite-group: history-buttons;
+    -sprite-image: eye_icon.png;
+}
+
+.icon-button.display:hover {
+    -sprite-group: history-buttons;
+    -sprite-image: eye_icon_dark.png;
+}
+
+.icon-button.edit {
+    -sprite-group: history-buttons;
+    -sprite-image: pencil_icon.png;
+}
+
+.icon-button.edit:hover {
+    -sprite-group: history-buttons;
+    -sprite-image: pencil_icon_dark.png;
+}
+
+.icon-button.delete {
+    -sprite-group: history-buttons;
+    -sprite-image: delete_icon.png;
+}
+
+.icon-button.delete:hover {
+    -sprite-group: history-buttons;
+    -sprite-image: delete_icon_dark.png;
+}
+
+div.historyItemBody div {
     padding-top: 2px;
 }
 
-pre.peek
-{
+pre.peek {
     background: white;
     color: black;
     width: 100%; 
     overflow: auto;
-}
-
-pre.peek th
-{
-    color: white;
-    background: $peek_table_header;
+    th {
+        color: white;
+        background: $peek_table_header;
+    }
 }
