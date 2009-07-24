@@ -36,7 +36,9 @@
                 </div>
                 <div style="clear: both"></div>
             </div>
-            <input type="submit" name="new_folder_button" value="Create"/>
+            <div class="form-row">
+                <input type="submit" name="new_folder_button" value="Create"/>
+            </div>
         </form>
     </div>
 </div>

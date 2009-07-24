@@ -205,16 +205,17 @@ class Data( object ):
         return "This display type (%s) is not implemented for this datatype (%s)." % ( type, dataset.ext)
     def get_display_links(self, dataset, type, app, base_url, **kwd):
         """
-        Returns a list of tuples of (name, link) for a particular display type
-        as long as the dataset is not associated with a role restricting its access.
-        We determine this by sending None as the user to the allow_action method.
+        Returns a list of tuples of (name, link) for a particular display type.  No check on
+        'access' permissions is done here - if you can view the dataset, you can also save it
+        or send it to a destination outside of Galaxy, so Galaxy security restrictions do not
+        apply anyway.
         """
-        if app.security_agent.allow_action( None, dataset.permitted_actions.DATASET_ACCESS, dataset=dataset ):
-            try:
-                if type in self.get_display_types():
-                    return getattr (self, self.supported_display_apps[type]['links_function']) (dataset, type, app, base_url, **kwd)
-            except:
-                log.exception('Function %s is referred to in datatype %s for generating links for type %s, but is not accessible' % (self.supported_display_apps[type]['links_function'], self.__class__.__name__, type) )
+        try:
+            if type in self.get_display_types():
+                return getattr (self, self.supported_display_apps[type]['links_function']) (dataset, type, app, base_url, **kwd)
+        except:
+            log.exception( 'Function %s is referred to in datatype %s for generating links for type %s, but is not accessible' \
+                           % ( self.supported_display_apps[type]['links_function'], self.__class__.__name__, type ) )
         return []
     def get_converter_types(self, original_dataset, datatypes_registry):
         """Returns available converters by type for this dataset"""

@@ -58,6 +58,12 @@
         %else:
             ## We are sharing restricted histories
             <form name='share_restricted' id=share_restricted' action="${h.url_for( controller='history', action='share_restricted' )}" method="post">
+                %if send_to_err:
+                    <div style="clear: both"></div>
+                    <div class="form-row">
+                        <div class="errormessage">${send_to_err}</div>
+                    </div>
+                %endif
                 ## Needed for rebuilding dicts
                 <input type="hidden" name="email" value="${email}" size="40">
                 %for history in histories:
@@ -173,7 +179,7 @@
                     %endif
                 </div>
                 <div class="form-row">
-                    <input type="radio" name="action" value="no_share"> Don't share
+                    <input type="radio" name="action" value="no_share" checked> Don't share
                 </div>
                 <div class="form-row">
                     <input type="submit" name="share_restricted_button" value="Go"><br/>

@@ -288,12 +288,16 @@ class HistoryController( BaseController ):
         # in the cloned history
         params = util.Params( kwd )
         user = trans.get_user()
+        # TODO: we have too many error messages floating around in here - we need
+        # to incorporate the messaging system used by the libraries that will display
+        # a message on any page.
+        err_msg = util.restore_text( params.get( 'err_msg', '' ) )
         if not email:
             if not id:
                 # Default to the current history
                 id = trans.security.encode_id( trans.history.id )
             id = util.listify( id )
-            send_to_err = ""
+            send_to_err = err_msg
             histories = []
             for history_id in id:
                 histories.append( get_history( trans, history_id ) )
@@ -304,7 +308,7 @@ class HistoryController( BaseController ):
         histories, send_to_users, send_to_err = self._get_histories_and_users( trans, user, id, email )
         if not send_to_users:
             if not send_to_err:
-                send_to_err += "%s is not a valid Galaxy user.  " % email
+                send_to_err += "%s is not a valid Galaxy user.  %s" % ( email, err_msg )
             return trans.fill_template( "/history/share.mako",
                                         histories=histories,
                                         email=email,
@@ -313,6 +317,7 @@ class HistoryController( BaseController ):
             # The user has not yet made a choice about how to share, so dictionaries will be built for display
             can_change, cannot_change, no_change_needed, unique_no_change_needed, send_to_err = \
                 self._populate_restricted( trans, user, histories, send_to_users, None, send_to_err, unique=True )
+            send_to_err += err_msg
             if can_change or cannot_change:
                 return trans.fill_template( "/history/share.mako", 
                                             histories=histories, 
@@ -330,7 +335,16 @@ class HistoryController( BaseController ):
     @web.expose
     @web.require_login( "share restricted histories with other users" )
     def share_restricted( self, trans, id=None, email="", **kwd ):
-        action = kwd[ 'action' ]
+        if 'action' in kwd: 
+            action = kwd[ 'action' ]
+        else:
+            err_msg = "Select an action.  "
+            return trans.response.send_redirect( url_for( controller='history',
+                                                          action='share',
+                                                          id=id,
+                                                          email=email,
+                                                          err_msg=err_msg,
+                                                          share_button=True ) )
         if action == "no_share":
             trans.response.send_redirect( url_for( controller='root', action='history_options' ) )
         user = trans.get_user()

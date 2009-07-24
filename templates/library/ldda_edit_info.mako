@@ -83,12 +83,14 @@
                 </div>
             </form>
             <form name="auto_detect" action="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library_id, folder_id=ldda.library_dataset.folder.id, edit_info=True )}" method="post">
-                <input type="hidden" name="id" value="${ldda.id}"/>
-                <div style="float: left; width: 250px; margin-right: 10px;">
-                    <input type="submit" name="detect" value="Auto-detect"/>
-                </div>
-                <div class="toolParamHelp" style="clear: both;">
-                    This will inspect the dataset and attempt to correct the above column values if they are not accurate.
+                <div class="form-row">
+                    <input type="hidden" name="id" value="${ldda.id}"/>
+                    <div style="float: left; width: 250px; margin-right: 10px;">
+                        <input type="submit" name="detect" value="Auto-detect"/>
+                    </div>
+                    <div class="toolParamHelp" style="clear: both;">
+                        This will inspect the dataset and attempt to correct the above column values if they are not accurate.
+                    </div>
                 </div>
             </form>
         </div>
