@@ -27,10 +27,16 @@ div.historyItem {
     border-left: solid $history_queued_border 5px;
     border-right: none;
     background: $history_queued_bg;
-    div.historyItemTitleBar {
-        padding-left: 20px;
+    .state-icon {
+        display: inline-block;
+        vertical-align: middle;
+        width: 16px;
+        height: 16px;
         background-position: 0 1px;
         background-repeat: no-repeat;
+    }
+    .historyItemTitle {
+        line-height: 16px;
     }
 }
 
@@ -43,14 +49,14 @@ div.historyItem div.historyItem {
 div.historyItem-ok {
     border-color: $history_ok_border;
     background: $history_ok_bg;
-    div.historyItemTitleBar {
-        padding-left: 0;
+    .state-icon {
+        display: none;
     }
 }
 div.historyItem-error {
     border-color: $history_error_border;
     background: $history_error_bg;
-    div.historyItemTitleBar {
+    .state-icon {
         -sprite-group: history-states;
         -sprite-image: data_error.png;
     }
@@ -59,7 +65,7 @@ div.historyItem-error {
 div.historyItem-empty {
     border-color: $history_error_border;
     background: $history_error_bg;
-        div.historyItemTitleBar {
+    .state-icon {
         -sprite-group: history-states;
         -sprite-image: data_empty.png;
     }
@@ -68,7 +74,7 @@ div.historyItem-empty {
 div.historyItem-running {
     border-color: $history_running_border;
     background: $history_running_bg;
-    div.historyItemTitleBar {
+    .state-icon {
         background-image: url(data_running.gif);
     }
 }
@@ -76,14 +82,14 @@ div.historyItem-running {
 div.historyItem-upload {
     border-color: $history_upload_border;
     background: $history_upload_bg;
-    div.historyItemTitleBar {
+    .state-icon {
         background-image: url(data_upload.gif);
     }
 }
 
 div.historyItem-queued {
     background: $history_queued_bg;
-    div.historyItemTitleBar {
+    .state-icon {
         -sprite-group: history-states;
         -sprite-image: data_queued.png;
     }
@@ -96,9 +102,8 @@ div.historyItem-noPermission {
 }
 
 ## Special case for showing the spinner but not changing the background
-div.historyItemTitleBar.spinner {
+div.historyItemTitleBar.spinner .state-icon {
     background: url(data_running.gif) 0 1px no-repeat !important;
-    padding-left: 20px !important;
 }
 
 ## Buttons
