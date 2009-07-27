@@ -156,76 +156,83 @@ class DefaultToolAction( object ):
         parent_to_child_pairs = []
         child_dataset_names = set()
         for name, output in tool.outputs.items():
-            if output.parent:
-                parent_to_child_pairs.append( ( output.parent, name ) )
-                child_dataset_names.add( name )
-            ## What is the following hack for? Need to document under what 
-            ## conditions can the following occur? (james@bx.psu.edu)
-            # HACK: the output data has already been created
-            #      this happens i.e. as a result of the async controller
-            if name in incoming:
-                dataid = incoming[name]
-                data = trans.app.model.HistoryDatasetAssociation.get( dataid )
-                assert data != None
-                out_data[name] = data
-            else:
-                # the type should match the input
-                ext = output.format
-                if ext == "input":
-                    ext = input_ext
-                #process change_format tags
-                if output.change_format:
-                    for change_elem in output.change_format:
-                        for when_elem in change_elem.findall( 'when' ):
-                            check = incoming.get( when_elem.get( 'input' ), None )
-                            if check is not None:
-                                if check == when_elem.get( 'value', None ):
-                                    ext = when_elem.get( 'format', ext )
-                            else:
-                                check = when_elem.get( 'input_dataset', None )
+            for filter in output.filters:
+                try:
+                    if not eval( filter.text, globals(), incoming ):
+                        break #do not create this dataset
+                except Exception, e:
+                    log.debug( 'Dataset output filter failed: %s' % e )
+            else: #all filters passed
+                if output.parent:
+                    parent_to_child_pairs.append( ( output.parent, name ) )
+                    child_dataset_names.add( name )
+                ## What is the following hack for? Need to document under what 
+                ## conditions can the following occur? (james@bx.psu.edu)
+                # HACK: the output data has already been created
+                #      this happens i.e. as a result of the async controller
+                if name in incoming:
+                    dataid = incoming[name]
+                    data = trans.app.model.HistoryDatasetAssociation.get( dataid )
+                    assert data != None
+                    out_data[name] = data
+                else:
+                    # the type should match the input
+                    ext = output.format
+                    if ext == "input":
+                        ext = input_ext
+                    #process change_format tags
+                    if output.change_format:
+                        for change_elem in output.change_format:
+                            for when_elem in change_elem.findall( 'when' ):
+                                check = incoming.get( when_elem.get( 'input' ), None )
                                 if check is not None:
-                                    check = inp_data.get( check, None )
+                                    if check == when_elem.get( 'value', None ):
+                                        ext = when_elem.get( 'format', ext )
+                                else:
+                                    check = when_elem.get( 'input_dataset', None )
                                     if check is not None:
-                                        if str( getattr( check, when_elem.get( 'attribute' ) ) ) == when_elem.get( 'value', None ):
-                                            ext = when_elem.get( 'format', ext )
-                data = trans.app.model.HistoryDatasetAssociation( extension=ext, create_dataset=True )
-                # Commit the dataset immediately so it gets database assigned unique id
-                data.flush()
-                trans.app.security_agent.set_all_dataset_permissions( data.dataset, output_permissions )
-            # Create an empty file immediately
-            open( data.file_name, "w" ).close()
-            # This may not be neccesary with the new parent/child associations
-            data.designation = name
-            # Copy metadata from one of the inputs if requested. 
-            if output.metadata_source:
-                data.init_meta( copy_from=inp_data[output.metadata_source] )
-            else:
-                data.init_meta()
-            # Take dbkey from LAST input
-            data.dbkey = str(input_dbkey)
-            # Set state 
-            # FIXME: shouldn't this be NEW until the job runner changes it?
-            data.state = data.states.QUEUED
-            data.blurb = "queued"
-            # Set output label
-            if output.label:
-                params = make_dict_copy( incoming )
-                # wrapping the params allows the tool config to contain things like
-                # <outputs>
-                #     <data format="input" name="output" label="Blat on ${<input_param>.name}" />
-                # </outputs>
-                wrap_values( tool.inputs, params )
-                params['tool'] = tool
-                params['on_string'] = on_text
-                data.name = fill_template( output.label, context=params )
-            else:
-                data.name = tool.name 
-                if on_text:
-                    data.name += ( " on " + on_text )
-            # Store output 
-            out_data[ name ] = data
-            # Store all changes to database
-            trans.app.model.flush()
+                                        check = inp_data.get( check, None )
+                                        if check is not None:
+                                            if str( getattr( check, when_elem.get( 'attribute' ) ) ) == when_elem.get( 'value', None ):
+                                                ext = when_elem.get( 'format', ext )
+                    data = trans.app.model.HistoryDatasetAssociation( extension=ext, create_dataset=True )
+                    # Commit the dataset immediately so it gets database assigned unique id
+                    data.flush()
+                    trans.app.security_agent.set_all_dataset_permissions( data.dataset, output_permissions )
+                # Create an empty file immediately
+                open( data.file_name, "w" ).close()
+                # This may not be neccesary with the new parent/child associations
+                data.designation = name
+                # Copy metadata from one of the inputs if requested. 
+                if output.metadata_source:
+                    data.init_meta( copy_from=inp_data[output.metadata_source] )
+                else:
+                    data.init_meta()
+                # Take dbkey from LAST input
+                data.dbkey = str(input_dbkey)
+                # Set state 
+                # FIXME: shouldn't this be NEW until the job runner changes it?
+                data.state = data.states.QUEUED
+                data.blurb = "queued"
+                # Set output label
+                if output.label:
+                    params = make_dict_copy( incoming )
+                    # wrapping the params allows the tool config to contain things like
+                    # <outputs>
+                    #     <data format="input" name="output" label="Blat on ${<input_param>.name}" />
+                    # </outputs>
+                    wrap_values( tool.inputs, params )
+                    params['tool'] = tool
+                    params['on_string'] = on_text
+                    data.name = fill_template( output.label, context=params )
+                else:
+                    data.name = tool.name 
+                    if on_text:
+                        data.name += ( " on " + on_text )
+                # Store output 
+                out_data[ name ] = data
+                # Store all changes to database
+                trans.app.model.flush()
         # Add all the top-level (non-child) datasets to the history
         for name in out_data.keys():
             if name not in child_dataset_names and name not in incoming: #don't add children; or already existing datasets, i.e. async created

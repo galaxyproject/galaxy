@@ -235,12 +235,13 @@ class ToolOutput( object ):
       (format, metadata_source, parent)  
     """
     def __init__( self, name, format=None, metadata_source=None, 
-                  parent=None, label=None ):
+                  parent=None, label=None, filters = None ):
         self.name = name
         self.format = format
         self.metadata_source = metadata_source
         self.parent = parent
         self.label = label
+        self.filters = filters or []
 
     # Tuple emulation
 
@@ -413,6 +414,7 @@ class Tool:
                 output.metadata_source = data_elem.get("metadata_source", "")
                 output.parent = data_elem.get("parent", None)
                 output.label = util.xml_text( data_elem, "label" )
+                output.filters = data_elem.findall( 'filter' )
                 self.outputs[ output.name ] = output
         # Any extra generated config files for the tool
         self.config_files = []
@@ -1294,6 +1296,10 @@ class Tool:
             param_dict[name].files_path = os.path.abspath(os.path.join( job_working_directory, "dataset_%s_files" % (hda.dataset.id) ))
             for child in hda.children:
                 param_dict[ "_CHILD___%s___%s" % ( name, child.designation ) ] = DatasetFilenameWrapper( child )
+        for out_name, output in self.outputs.iteritems():
+            if out_name not in param_dict and output.filters:
+               #assume the reason we lack this output is because a filter failed to pass; for tool writing convienence, provide a NoneDataset
+               param_dict[ out_name ] = NoneDataset( datatypes_registry = self.app.datatypes_registry, ext = output.format )
         # We add access to app here, this allows access to app.config, etc
         param_dict['__app__'] = RawObjectWrapper( self.app )
         # More convienent access to app.config.new_file_path; we don't need to wrap a string
