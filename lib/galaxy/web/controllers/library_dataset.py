@@ -73,12 +73,19 @@ class UploadLibraryDataset( BaseController ):
                         ext = name.split( "." )[1].strip().lower()
                     except:
                         ext = ''
-                    if not( ext == 'ab1' or ext == 'scf' ):
-                        raise BadFileException( "you attempted to upload an inappropriate file." )
-                    if ext == 'ab1' and file_format != 'ab1':
-                        raise BadFileException( "you must manually set the 'File Format' to 'Ab1' when uploading ab1 files." )
-                    elif ext == 'scf' and file_format != 'scf':
-                        raise BadFileException( "you must manually set the 'File Format' to 'Scf' when uploading scf files." )
+                    try:
+                        is_pdf = open( temp_name ).read( len( '%PDF' ) ) == '%PDF'
+                    except:
+                        is_pdf = False #file failed to open or contents are smaller than pdf header
+                    if is_pdf:
+                        file_format = 'pdf' #allow the upload of PDFs to library via the admin interface.
+                    else:
+                        if not( ext == 'ab1' or ext == 'scf' ):
+                            raise BadFileException( "you attempted to upload an inappropriate file." )
+                        if ext == 'ab1' and file_format != 'ab1':
+                            raise BadFileException( "you must manually set the 'File Format' to 'Ab1' when uploading ab1 files." )
+                        elif ext == 'scf' and file_format != 'scf':
+                            raise BadFileException( "you must manually set the 'File Format' to 'Scf' when uploading scf files." )
                     data_type = 'binary'
             if not data_type:
                 # We must have a text file
