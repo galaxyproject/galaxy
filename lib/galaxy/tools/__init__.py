@@ -295,6 +295,8 @@ class Tool:
         self.is_multi_byte = util.string_as_bool( root.get( "is_multi_byte", False ) )
         # Type of tool
         self.tool_type = root.get( "tool_type", None )
+        #Force history to fully refresh after job execution for this tool. Useful i.e. when an indeterminate number of outputs are created by a tool.
+        self.force_history_refresh = util.string_as_bool( root.get( 'force_history_refresh', 'False' ) )
         # data_source tool
         if self.tool_type == "data_source":
             self.URL_method = root.get( "URL_method", "get" ) # get is the default

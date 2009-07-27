@@ -186,6 +186,7 @@ ${h.js( "jquery", "jquery.cookie", "cookie_set" )}
         // Build request data
         var ids = []
         var states = []
+        var force_history_refresh = false
         $.each( tracked_datasets, function ( id, state ) {
             ids.push( id );
             states.push( state );
@@ -205,13 +206,21 @@ ${h.js( "jquery", "jquery.cookie", "cookie_set" )}
                     initShowHide();
                     // If new state was terminal, stop tracking
                     if (( val.state == "ok") || ( val.state == "error") || ( val.state == "empty") || ( val.state == "deleted" ) || ( val.state == "discarded" )) {
+                        if ( val.force_history_refresh ){
+                            force_history_refresh = true;
+                        }
                         delete tracked_datasets[ parseInt(id) ];
                     } else {
                         tracked_datasets[ parseInt(id) ] = val.state;
                     }
                 });
-                // Keep going (if there are still any items to track)
-                updater( tracked_datasets );
+                if ( force_history_refresh ) {
+                    parent.frames.galaxy_history.location.reload();
+                }
+                else {
+                    // Keep going (if there are still any items to track)
+                    updater( tracked_datasets ); 
+                }
             },
             error: function() {
                 // Just retry, like the old method, should try to be smarter

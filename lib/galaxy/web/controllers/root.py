@@ -114,9 +114,16 @@ class RootController( BaseController ):
             for id, state in zip( ids, states ):
                 data = self.app.model.HistoryDatasetAssociation.get( id )
                 if data.state != state:
+                    job_hda = data
+                    while job_hda.copied_from_history_dataset_association:
+                        job_hda = job_hda.copied_from_history_dataset_association
+                    force_history_refresh = False
+                    if job_hda.creating_job_associations:
+                        force_history_refresh = trans.app.toolbox.tools_by_id[ job_hda.creating_job_associations[ 0 ].job.tool_id ].force_history_refresh
                     rval[id] = {
                         "state": data.state,
-                        "html": unicode( trans.fill_template( "root/history_item.mako", data=data, hid=data.hid ), 'utf-8' )
+                        "html": unicode( trans.fill_template( "root/history_item.mako", data=data, hid=data.hid ), 'utf-8' ),
+                        "force_history_refresh": force_history_refresh
                     }
         return rval
 
