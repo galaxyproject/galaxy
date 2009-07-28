@@ -1,4 +1,4 @@
-import logging, os, sets, string, shutil, re, socket, mimetypes, smtplib
+import logging, os, sets, string, shutil, re, socket, mimetypes, smtplib, urllib
 
 from galaxy.web.base.controller import *
 from galaxy import util, datatypes, jobs, web, model
@@ -132,6 +132,24 @@ class DatasetInterface( BaseController ):
         else:
             return trans.show_error_message( "You are not allowed to access this dataset" )
     
+    @web.expose
+    def display_at( self, trans, dataset_id, filename=None, **kwd ):
+        """Sets up a dataset permissions so it is viewable at an external site"""
+        site = filename
+        data = trans.app.model.HistoryDatasetAssociation.get( dataset_id )
+        if not data:
+            raise paste.httpexceptions.HTTPRequestRangeNotSatisfiable( "Invalid reference dataset id: %s." % str( dataset_id ) )
+        if 'display_url' not in kwd or 'redirect_url' not in kwd:
+            return trans.show_error_message( 'Invalid parameters specified for "display at" link, please contact a Galaxy administrator' )
+        redirect_url = kwd['redirect_url'] % urllib.quote_plus( kwd['display_url'] )
+        if trans.app.security_agent.allow_action( None, data.permitted_actions.DATASET_ACCESS, dataset = data ):
+            return trans.response.send_redirect( redirect_url ) # anon access already permitted by rbac
+        if trans.app.security_agent.allow_action( trans.user, data.permitted_actions.DATASET_MANAGE_PERMISSIONS, dataset = data ):
+            trans.app.host_security_agent.set_dataset_permissions( data, trans.user, site )
+            return trans.response.send_redirect( redirect_url )
+        else:
+            return trans.show_error_message( "You are not allowed to view this dataset at external sites.  Please contact your Galaxy administrator to acquire management permissions for this dataset." )
+
     def _undelete( self, trans, id ):
         try:
             id = int( id )

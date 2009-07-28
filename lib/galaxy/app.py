@@ -41,6 +41,7 @@ class UniverseApplication( object ):
         self.datatypes_registry.load_datatype_indexers( self.toolbox )
         #Load security policy
         self.security_agent = self.model.security_agent
+        self.host_security_agent = galaxy.security.HostAgent( model=self.security_agent.model, permitted_actions=self.security_agent.permitted_actions )
         # Heartbeat and memdump for thread / heap profiling
         self.heartbeat = None
         self.memdump = None

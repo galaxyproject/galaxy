@@ -197,13 +197,19 @@ class RootController( BaseController ):
     def display_as( self, trans, id=None, display_app=None, **kwd ):
         """Returns a file in a format that can successfully be displayed in display_app"""
         data = self.app.model.HistoryDatasetAssociation.get( id )
+        authz_method = 'rbac'
+        if 'authz_method' in kwd:
+            authz_method = kwd['authz_method']
         if data:
-            if trans.app.security_agent.allow_action( trans.user, data.permitted_actions.DATASET_ACCESS, dataset = data ):
+            if authz_method == 'rbac' and trans.app.security_agent.allow_action( trans.user, data.permitted_actions.DATASET_ACCESS, dataset = data ):
                 trans.response.set_content_type( data.get_mime() )
                 trans.log_event( "Formatted dataset id %s for display at %s" % ( str( id ), display_app ) )
                 return data.as_display_type( display_app, **kwd )
+            elif authz_method == 'display_at' and trans.app.host_security_agent.allow_action( trans.request.remote_addr, data.permitted_actions.DATASET_ACCESS, dataset = data ):
+                trans.response.set_content_type( data.get_mime() )
+                return data.as_display_type( display_app, **kwd )
             else:
-                return "You are not privileged to access this dataset."
+                return "You are not allowed to access this dataset."
         else:
             return "No data with id=%d" % id
 

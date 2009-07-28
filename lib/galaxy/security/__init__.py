@@ -2,7 +2,8 @@
 Galaxy Security
 
 """
-import logging
+import logging, socket
+from datetime import datetime, timedelta
 from galaxy.util.bunch import Bunch
 from galaxy.model.orm import *
 
@@ -483,6 +484,65 @@ class GalaxyRBACAgent( RBACAgent ):
             return self.allow_action( user, self.permitted_actions.DATASET_ACCESS, dataset=entry.dataset )
         else:
             raise 'Passed an illegal object to check_folder_contents: %s' % type( entry )
+
+class HostAgent( RBACAgent ):
+    """
+    A simple security agent which allows access to datasets based on host.
+    This exists so that externals sites such as UCSC can gain access to
+    datasets which have permissions which would normally prevent such access.
+    """
+    # TODO: Make sites user configurable
+    sites = Bunch(
+        ucsc_main = ( 'hgw1.cse.ucsc.edu', 'hgw2.cse.ucsc.edu', 'hgw3.cse.ucsc.edu', 'hgw4.cse.ucsc.edu',
+                      'hgw5.cse.ucsc.edu', 'hgw6.cse.ucsc.edu', 'hgw7.cse.ucsc.edu', 'hgw8.cse.ucsc.edu' ),
+        ucsc_test = ( 'hgwdev.cse.ucsc.edu', ),
+        ucsc_archaea = ( 'lowepub.cse.ucsc.edu', )
+    )
+    def __init__( self, model, permitted_actions=None ):
+        self.model = model
+        if permitted_actions:
+            self.permitted_actions = permitted_actions
+    def allow_action( self, addr, action, **kwd ):
+        if 'dataset' in kwd and action == self.permitted_actions.DATASET_ACCESS:
+            hda = kwd['dataset']
+            if action == self.permitted_actions.DATASET_ACCESS and action.action not in [ dp.action for dp in hda.dataset.actions ]:
+                log.debug( 'Allowing access to public dataset with hda: %i.' % hda.id )
+                return True # dataset has no roles associated with the access permission, thus is already public
+            hdadaa = self.model.HistoryDatasetAssociationDisplayAtAuthorization.filter_by( history_dataset_association_id = hda.id ).first()
+            if not hdadaa:
+                log.debug( 'Denying access to private dataset with hda: %i.  No hdadaa record for this dataset.' % hda.id )
+                return False # no auth
+            # We could just look up the reverse of addr, but then we'd also
+            # have to verify it with the forward address and special case any
+            # IPs (instead of hosts) in the server list.
+            #
+            # This would be improved by caching, but that's what the OS's name
+            # service cache daemon is for (you ARE running nscd, right?).
+            for server in HostAgent.sites.get( hdadaa.site, [] ):
+                # We're going to search in order, but if the remote site is load
+                # balancing their connections (as UCSC does), this is okay.
+                try:
+                    if socket.gethostbyname( server ) == addr:
+                        break # remote host is in the server list
+                except ( socket.error, socket.gaierror ):
+                    pass # can't resolve, try next
+            else:
+                log.debug( 'Denying access to private dataset with hda: %i.  Remote addr is not a valid server for site: %s.' % ( hda.id, hdadaa.site ) )
+                return False # remote addr is not in the server list
+            if ( datetime.utcnow() - hdadaa.update_time ) > timedelta( seconds=60 ):
+                log.debug( 'Denying access to private dataset with hda: %i.  Authorization was granted, but has expired.' % hda.id )
+                return False # not authz'd in the last 60 seconds
+            log.debug( 'Allowing access to private dataset with hda: %i.  Remote server is: %s.' % ( hda.id, server ) )
+            return True
+        else:
+            raise 'The dataset access permission is the only valid permission in the host security agent.'
+    def set_dataset_permissions( self, hda, user, site ):
+        hdadaa = self.model.HistoryDatasetAssociationDisplayAtAuthorization.filter_by( history_dataset_association_id = hda.id ).first()
+        if hdadaa:
+            hdadaa.update_time = datetime.utcnow()
+        else:
+            hdadaa = self.model.HistoryDatasetAssociationDisplayAtAuthorization( hda=hda, user=user, site=site )
+        hdadaa.flush()
 
 def get_permitted_actions( filter=None ):
     '''Utility method to return a subset of RBACAgent's permitted actions'''

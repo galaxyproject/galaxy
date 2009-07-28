@@ -86,9 +86,10 @@ class GenomeGraphs( Tabular ):
                         sl.append("&hgGenome_dataSetName=%s&hgGenome_dataSetDescription=%s" % (dataset.name, 'GalaxyGG_data'))
                         sl.append("&hgGenome_formatType=best%20guess&hgGenome_markerType=best%20guess")
                         sl.append("&hgGenome_columnLabels=first%20row&hgGenome_maxVal=&hgGenome_labelVals=")
-                        sl.append("&hgGenome_maxGapToFill=25000000&hgGenome_uploadFile=")
-                        s = ''.join(sl)
-                        link = "%s%s%s" % (s, display_url, ggtail )
+                        sl.append("&hgGenome_maxGapToFill=25000000&hgGenome_uploadFile=%%s")
+                        sl.append(ggtail)
+                        s = urllib.quote_plus( ''.join(sl) )
+                        link = '%s?redirect_url=%s&display_url=%s' % ( internal_url, s, display_url )
                         ret_val.append( (site_name, link) )
         return ret_val
 

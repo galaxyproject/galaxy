@@ -689,6 +689,12 @@ class HistoryDatasetAssociation( DatasetInstance ):
             if not metadata_safe or not assoc.metadata_safe:
                 assoc.clear( purge = purge )
 
+class HistoryDatasetAssociationDisplayAtAuthorization( object ):
+    def __init__( self, hda=None, user=None, site=None ):
+        self.history_dataset_association = hda
+        self.user = user
+        self.site = site
+
 class Library( object ):
     permitted_actions = get_permitted_actions( filter='LIBRARY' )
     def __init__( self, name = None, description = None, root_folder = None ):
