@@ -166,7 +166,7 @@ class HistoryController( BaseController ):
                     default_permissions[ default_action ] = [ private_user_role ]
                     trans.app.security_agent.history_set_default_permissions( history, default_permissions )
                 n_undeleted += 1
-                trans.log_event( "History (%s) %d marked as undeleted" % history.name )
+                trans.log_event( "History (%s) %d marked as undeleted" % ( history.name, history.id ) )
         status = SUCCESS
         message_parts = []
         if n_undeleted:
