@@ -247,8 +247,11 @@ class RootController( BaseController ):
             params = util.Params( kwd, safe=False )
             if params.change:
                 # The user clicked the Save button on the 'Change data type' form
-                trans.app.datatypes_registry.change_datatype( data, params.datatype )
-                trans.app.model.flush()
+                if data.datatype.allow_datatype_change and trans.app.datatypes_registry.get_datatype_by_extension( params.datatype ).allow_datatype_change:
+                    trans.app.datatypes_registry.change_datatype( data, params.datatype )
+                    trans.app.model.flush()
+                else:
+                    return trans.show_error_message( "You are unable to change datatypes in this manner. Changing %s to %s is not allowed." % ( data.extension, params.datatype ) )
             elif params.save:
                 # The user clicked the Save button on the 'Edit Attributes' form
                 data.name  = params.name
@@ -314,7 +317,7 @@ class RootController( BaseController ):
                 data.metadata.dbkey = data.dbkey
             # let's not overwrite the imported datatypes module with the variable datatypes?
             # the built-in 'id' is overwritten in lots of places as well
-            ldatatypes = [x for x in trans.app.datatypes_registry.datatypes_by_extension.iterkeys()]
+            ldatatypes = [ dtype_name for dtype_name, dtype_value in trans.app.datatypes_registry.datatypes_by_extension.iteritems() if dtype_value.allow_datatype_change ]
             ldatatypes.sort()
             trans.log_event( "Opened edit view on dataset %s" % str(id) )
             return trans.fill_template( "/dataset/edit_attributes.mako", data=data, datatypes=ldatatypes )

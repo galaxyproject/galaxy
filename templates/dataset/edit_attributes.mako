@@ -102,27 +102,34 @@
     </div>
     <p />
 %endif
+
 <div class="toolForm">
     <div class="toolFormTitle">${_('Change data type')}</div>
     <div class="toolFormBody">
-        <form name="change_datatype" action="${h.url_for( controller='root', action='edit' )}" method="post">
-            <input type="hidden" name="id" value="${data.id}"/>
-            <div class="form-row">
-                <label>
-                    ${_('New Type')}:
-                </label>
-                <div style="float: left; width: 250px; margin-right: 10px;">
-                    ${datatype( data, datatypes )}
+        %if data.datatype.allow_datatype_change:
+            <form name="change_datatype" action="${h.url_for( controller='root', action='edit' )}" method="post">
+                <input type="hidden" name="id" value="${data.id}"/>
+                <div class="form-row">
+                    <label>
+                        ${_('New Type')}:
+                    </label>
+                    <div style="float: left; width: 250px; margin-right: 10px;">
+                        ${datatype( data, datatypes )}
+                    </div>
+                    <div class="toolParamHelp" style="clear: both;">
+                        ${_('This will change the datatype of the existing dataset but <i>not</i> modify its contents. Use this if Galaxy has incorrectly guessed the type of your dataset.')}
+                    </div>
+                    <div style="clear: both"></div>
                 </div>
-                <div class="toolParamHelp" style="clear: both;">
-                    ${_('This will change the datatype of the existing dataset but <i>not</i> modify its contents. Use this if Galaxy has incorrectly guessed the type of your dataset.')}
+                <div class="form-row">
+                    <input type="submit" name="change" value="${_('Save')}"/>
                 </div>
-                <div style="clear: both"></div>
-            </div>
+            </form>
+        %else:
             <div class="form-row">
-                <input type="submit" name="change" value="${_('Save')}"/>
+                <div class="warningmessagesmall">${_('Changing the datatype of this dataset is not allowed.')}</div>
             </div>
-        </form>
+        %endif
     </div>
 </div>
 <p />

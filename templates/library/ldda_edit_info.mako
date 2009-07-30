@@ -99,24 +99,30 @@
     <div class="toolForm">
         <div class="toolFormTitle">Change data type</div>
         <div class="toolFormBody">
-            <form name="change_datatype" action="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library_id, folder_id=ldda.library_dataset.folder.id, edit_info=True )}" method="post">
-                <input type="hidden" name="id" value="${ldda.id}"/>
-                <div class="form-row">
-                    <label>New Type:</label>
-                    <div style="float: left; width: 250px; margin-right: 10px;">
-                        ${datatype( ldda, datatypes )}
+            %if ldda.datatype.allow_datatype_change:
+                <form name="change_datatype" action="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library_id, folder_id=ldda.library_dataset.folder.id, edit_info=True )}" method="post">
+                    <input type="hidden" name="id" value="${ldda.id}"/>
+                    <div class="form-row">
+                        <label>New Type:</label>
+                        <div style="float: left; width: 250px; margin-right: 10px;">
+                            ${datatype( ldda, datatypes )}
+                        </div>
+                        <div class="toolParamHelp" style="clear: both;">
+                            This will change the datatype of the existing dataset
+                            but <i>not</i> modify its contents. Use this if Galaxy
+                            has incorrectly guessed the type of your dataset.
+                        </div>
+                        <div style="clear: both"></div>
                     </div>
-                    <div class="toolParamHelp" style="clear: both;">
-                        This will change the datatype of the existing dataset
-                        but <i>not</i> modify its contents. Use this if Galaxy
-                        has incorrectly guessed the type of your dataset.
+                    <div class="form-row">
+                        <input type="submit" name="change" value="Save"/>
                     </div>
-                    <div style="clear: both"></div>
-                </div>
+                </form>
+            %else:
                 <div class="form-row">
-                    <input type="submit" name="change" value="Save"/>
+                    <div class="warningmessagesmall">${_('Changing the datatype of this dataset is not allowed.')}</div>
                 </div>
-            </form>
+            %endif
         </div>
     </div>
     <p/>

@@ -1094,7 +1094,7 @@ class Admin( BaseController ):
             replace_dataset = None
         # Let's not overwrite the imported datatypes module with the variable datatypes?
         # The built-in 'id' is overwritten in lots of places as well
-        ldatatypes = [ x for x in trans.app.datatypes_registry.datatypes_by_extension.iterkeys() ]
+        ldatatypes = [ dtype_name for dtype_name, dtype_value in trans.app.datatypes_registry.datatypes_by_extension.iteritems() if dtype_value.allow_datatype_change ]
         ldatatypes.sort()
         if params.get( 'new_dataset_button', False ):
             upload_option = params.get( 'upload_option', 'upload_file' )
@@ -1247,17 +1247,20 @@ class Admin( BaseController ):
             elif action == 'edit_info':
                 if params.get( 'change', False ):
                     # The user clicked the Save button on the 'Change data type' form
-                    trans.app.datatypes_registry.change_datatype( ldda, params.datatype )
-                    trans.app.model.flush()
-                    msg = "Data type changed for library dataset '%s'" % ldda.name
-                    return trans.fill_template( "/admin/library/ldda_edit_info.mako", 
-                                                ldda=ldda,
-                                                library_id=library_id,
-                                                datatypes=ldatatypes,
-                                                restrict=params.get( 'restrict', True ),
-                                                render_templates=params.get( 'render_templates', False ),
-                                                msg=msg,
-                                                messagetype=messagetype )
+                    if ldda.datatype.allow_datatype_change and trans.app.datatypes_registry.get_datatype_by_extension( params.datatype ).allow_datatype_change:
+                        trans.app.datatypes_registry.change_datatype( ldda, params.datatype )
+                        trans.app.model.flush()
+                        msg = "Data type changed for library dataset '%s'" % ldda.name
+                        return trans.fill_template( "/admin/library/ldda_edit_info.mako", 
+                                                    ldda=ldda,
+                                                    library_id=library_id,
+                                                    datatypes=ldatatypes,
+                                                    restrict=params.get( 'restrict', True ),
+                                                    render_templates=params.get( 'render_templates', False ),
+                                                    msg=msg,
+                                                    messagetype=messagetype )
+                    else:
+                        return trans.show_error_message( "You are unable to change datatypes in this manner. Changing %s to %s is not allowed." % ( ldda.extension, params.datatype ) )
                 elif params.get( 'save', False ):
                     # The user clicked the Save button on the 'Edit Attributes' form
                     old_name = ldda.name

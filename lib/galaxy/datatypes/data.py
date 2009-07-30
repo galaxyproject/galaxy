@@ -52,6 +52,8 @@ class Data( object ):
     
     is_binary = True #The dataset contains binary data --> do not space_to_tab or convert newlines, etc. Allow binary file uploads of this type when True.
     
+    allow_datatype_change = True #Allow user to change between this datatype and others. If False, this datatype cannot be changed from or into.
+    
     #Composite datatypes
     composite_type = None
     composite_files = odict()
