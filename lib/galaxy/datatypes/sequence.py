@@ -176,16 +176,139 @@ class FastqSolexa( Sequence ):
                 except:
                     qscore_int = False
                 
+                # check length and range of quality scores
                 if qscore_int:
                     if len( headers[3] ) != len( headers[1][0] ):
                         return False
+                    if not self.check_qual_values_within_range(headers[3], 'int'):
+                        return False
+                    try:
+                        if not self.check_qual_values_within_range(headers[7], 'int'):
+                            return False
+                        try:
+                            if not self.check_qual_values_within_range(headers[11], 'int'):
+                                return False
+                        except IndexError:
+                            pass
+                    except IndexError:
+                        pass
                 else:
                     if len( headers[3][0] ) != len( headers[1][0] ):
-                        return False                
+                        return False
+                    if not self.check_qual_values_within_range(headers[3][0], 'char'):
+                        return False
+                    try:
+                        if not self.check_qual_values_within_range(headers[7][0], 'char'):
+                            return False
+                        try:
+                            if not self.check_qual_values_within_range(headers[11][0], 'char'):
+                                return False
+                        except IndexError:
+                            pass
+                    except IndexError:
+                        pass
                 return True 
             return False
         except:
             return False
+    def check_qual_values_within_range( self, qual_seq, score_type ):
+        if score_type == 'char':
+            for val in qual_seq:
+                if ord(val) < 59 or ord(val) > 104:
+                    return False
+        elif score_type == 'int':
+            for val in qual_seq:
+                if int(val) < -5 or int(val) > 40:
+                    return False
+        return True
+        
+
+class FastqSanger( Sequence ):
+    """Class representing a FASTQ sequence ( the Sanger variant )"""
+    file_ext = "fastqsanger"
+
+    def set_peek( self, dataset ):
+        if not dataset.dataset.purged:
+            dataset.peek = data.get_file_peek( dataset.file_name )
+            dataset.blurb = data.nice_size( dataset.get_size() )
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def sniff( self, filename ):
+        """
+        Determines whether the file is in fastqsanger format (Sanger Variant)
+        For details, see http://maq.sourceforge.net/fastq.shtml
+
+        Note: There are two kinds of FASTQ files, known as "Sanger" (sometimes called "Standard") and Solexa
+              These differ in the representation of the quality scores
+
+        >>> fname = get_test_fname( '1.fastqsanger' )
+        >>> FastqSanger().sniff( fname )
+        True
+        >>> fname = get_test_fname( '2.fastqsanger' )
+        >>> FastqSanger().sniff( fname )
+        True
+        """
+        headers = get_headers( filename, None )
+        bases_regexp = re.compile( "^[NGTAC]*$" )
+        try:
+            if len( headers ) >= 4 and headers[0][0] and headers[0][0][0] == "@" and headers[2][0] and headers[2][0][0] == "+" and headers[1][0]:
+                # Check the sequence line, make sure it contains only G/C/A/T/N
+                if not bases_regexp.match( headers[1][0] ):
+                    return False
+                # Check quality score: integer or ascii char.
+                try:
+                    check = int(headers[3][0])
+                    qscore_int = True
+                except:
+                    qscore_int = False
+
+                # check length and range of quality scores
+                if qscore_int:
+                    if len( headers[3] ) != len( headers[1][0] ):
+                        return False
+                    if not self.check_qual_values_within_range(headers[3], 'int'):
+                        return False
+                    try:
+                        if not self.check_qual_values_within_range(headers[7], 'int'):
+                            return False
+                        try:
+                            if not self.check_qual_values_within_range(headers[11], 'int'):
+                                return False
+                        except IndexError:
+                            pass
+                    except IndexError:
+                        pass
+                else:
+                    if len( headers[3][0] ) != len( headers[1][0] ):
+                        return False
+                    if not self.check_qual_values_within_range(headers[3][0], 'char'):
+                        return False
+                    try:
+                        if not self.check_qual_values_within_range(headers[7][0], 'char'):
+                            return False
+                        try:
+                            if not self.check_qual_values_within_range(headers[11][0], 'char'):
+                                return False
+                        except IndexError:
+                            pass
+                    except IndexError:
+                        pass
+                return True 
+            return False
+        except:
+            return False
+    def check_qual_values_within_range( self, qual_seq, score_type ):
+        if score_type == 'char':
+            for val in qual_seq:
+                if ord(val) >= 33 and ord(val) <= 126:
+                    return True
+        elif score_type == 'int':
+            for val in qual_seq:
+                if int(val) >= 0 and int(val) <= 93:
+                    return True
+        return False
 
 try:
     from galaxy import eggs

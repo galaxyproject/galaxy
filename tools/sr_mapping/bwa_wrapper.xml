@@ -71,7 +71,7 @@
 	        <option value="history">Use one from the history</option>
 	      </param>
 	      <when value="history">
-	        <param name="ownFile" type="data" label="Select a reference genome" />
+	        <param name="ownFile" type="data" format="fasta" label="Select a reference genome" />
 	      </when>
 	      <when value="indexed">
  	    	<param name="indices" type="select" label="Select a reference genome">
@@ -91,7 +91,7 @@
 	        <option value="history">Use one from the history</option>
 	      </param>
 	      <when value="history">
-	        <param name="ownFile" type="data" label="Select a reference genome" />
+	        <param name="ownFile" type="data" format="fasta" label="Select a reference genome" />
 	      </when>
 	      <when value="indexed">
  	        <param name="indices" type="select" label="Select a reference genome">
@@ -111,11 +111,11 @@
 	    <option value="paired">Paired-end</option>
 	  </param>
 	  <when value="single">
-        <param name="input1" type="data" label="FASTQ file" />	
+        <param name="input1" type="data" format="fastqsanger" label="FASTQ file" />	
 	  </when>
 	  <when value="paired">
-	    <param name="input1" type="data" label="Forward FASTQ file" />
-	    <param name="input2" type="data" label="Reverse FASTQ file" />
+	    <param name="input1" type="data" format="fastqsanger" label="Forward FASTQ file" />
+	    <param name="input2" type="data" format="fastqsanger" label="Reverse FASTQ file" />
 	  </when>
     </conditional>
 	<conditional name="params">

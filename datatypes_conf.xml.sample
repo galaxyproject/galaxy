@@ -20,6 +20,7 @@
     <datatype extension="fasta" type="galaxy.datatypes.sequence:Fasta" display_in_upload="true">
       <converter file="fasta_to_tabular_converter.xml" target_datatype="tabular"/>
     </datatype>
+    <datatype extension="fastqsanger" type="galaxy.datatypes.sequence:FastqSanger" display_in_upload="true"/>
     <datatype extension="fastqsolexa" type="galaxy.datatypes.sequence:FastqSolexa" display_in_upload="true">
       <converter file="fastqsolexa_to_fasta_converter.xml" target_datatype="fasta"/>
       <converter file="fastqsolexa_to_qual_converter.xml" target_datatype="qualsolexa"/>
@@ -195,6 +196,7 @@
     <sniffer type="galaxy.datatypes.qualityscore:QualityScore454"/>
     <sniffer type="galaxy.datatypes.sequence:Fasta"/>
     <sniffer type="galaxy.datatypes.sequence:FastqSolexa"/>
+    <sniffer type="galaxy.datatypes.sequence:FastqSanger"/>
     <sniffer type="galaxy.datatypes.interval:Wiggle"/>
     <sniffer type="galaxy.datatypes.images:Html"/>
     <sniffer type="galaxy.datatypes.sequence:Axt"/>
