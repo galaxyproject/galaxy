@@ -144,7 +144,7 @@ class DatasetInterface( BaseController ):
         redirect_url = kwd['redirect_url'] % urllib.quote_plus( kwd['display_url'] )
         if trans.app.security_agent.allow_action( None, data.permitted_actions.DATASET_ACCESS, dataset = data ):
             return trans.response.send_redirect( redirect_url ) # anon access already permitted by rbac
-        if trans.app.security_agent.allow_action( trans.user, data.permitted_actions.DATASET_MANAGE_PERMISSIONS, dataset = data ):
+        if trans.app.security_agent.allow_action( trans.user, data.permitted_actions.DATASET_ACCESS, dataset = data ):
             trans.app.host_security_agent.set_dataset_permissions( data, trans.user, site )
             return trans.response.send_redirect( redirect_url )
         else:
