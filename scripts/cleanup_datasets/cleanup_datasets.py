@@ -24,6 +24,7 @@ def main():
     parser.add_option( "-d", "--days", dest="days", action="store", type="int", help="number of days (60)", default=60 )
     parser.add_option( "-r", "--remove_from_disk", action="store_true", dest="remove_from_disk", help="remove datasets from disk when purged", default=False )
     parser.add_option( "-i", "--info_only", action="store_true", dest="info_only", help="info about the requested action", default=False )
+    parser.add_option( "-f", "--force_retry", action="store_true", dest="force_retry", help="performs the requested actions, but ignores whether it might have been done before. Useful when -r wasn't used, but should have been", default=False )
     
     parser.add_option( "-1", "--delete_userless_histories", action="store_true", dest="delete_userless_histories", default=False, help="delete userless histories and datasets" )
     
@@ -73,28 +74,32 @@ def main():
         print "# Datasets will NOT be removed from disk.\n"
     
     if options.delete_userless_histories:
-        delete_userless_histories( app, cutoff_time, info_only = options.info_only )
+        delete_userless_histories( app, cutoff_time, info_only = options.info_only, force_retry = options.force_retry )
     elif options.purge_histories:
-        purge_histories( app, cutoff_time, options.remove_from_disk, info_only = options.info_only )
+        purge_histories( app, cutoff_time, options.remove_from_disk, info_only = options.info_only, force_retry = options.force_retry )
     elif options.purge_datasets:
-        purge_datasets( app, cutoff_time, options.remove_from_disk, info_only = options.info_only )
+        purge_datasets( app, cutoff_time, options.remove_from_disk, info_only = options.info_only, force_retry = options.force_retry )
     elif options.purge_libraries:
-        purge_libraries( app, cutoff_time, options.remove_from_disk, info_only = options.info_only )
+        purge_libraries( app, cutoff_time, options.remove_from_disk, info_only = options.info_only, force_retry = options.force_retry )
     elif options.purge_folders:
-        purge_folders( app, cutoff_time, options.remove_from_disk, info_only = options.info_only )
+        purge_folders( app, cutoff_time, options.remove_from_disk, info_only = options.info_only, force_retry = options.force_retry )
     
     sys.exit(0)
 
-def delete_userless_histories( app, cutoff_time, info_only = False ):
+def delete_userless_histories( app, cutoff_time, info_only = False, force_retry = False ):
     # Deletes userless histories whose update_time value is older than the cutoff_time.
     # The purge history script will handle marking DatasetInstances as deleted. 
     # Nothing is removed from disk yet.
     history_count = 0
     print '# The following datasets and associated userless histories have been deleted'
     start = time.clock()
-    histories = app.model.History.filter( and_( app.model.History.table.c.user_id==None,
-                                app.model.History.table.c.deleted==False,
-                                app.model.History.table.c.update_time < cutoff_time ) ).all()# \
+    if force_retry:
+        histories = app.model.History.filter( and_( app.model.History.table.c.user_id==None,
+                                    app.model.History.table.c.update_time < cutoff_time ) ).all()
+    else:
+        histories = app.model.History.filter( and_( app.model.History.table.c.user_id==None,
+                                    app.model.History.table.c.deleted==False,
+                                    app.model.History.table.c.update_time < cutoff_time ) ).all()
     for history in histories:
         if not info_only:
             history.deleted = True
@@ -106,7 +111,7 @@ def delete_userless_histories( app, cutoff_time, info_only = False ):
     print "Elapsed time: ", stop - start, "\n"
     
 
-def purge_histories( app, cutoff_time, remove_from_disk, info_only = False ):
+def purge_histories( app, cutoff_time, remove_from_disk, info_only = False, force_retry = False ):
     # Purges deleted histories whose update_time is older than the cutoff_time.
     # The dataset associations of each history are also marked as deleted.
     # The Purge Dataset method will purge each Dataset as necessary
@@ -115,10 +120,15 @@ def purge_histories( app, cutoff_time, remove_from_disk, info_only = False ):
     history_count = 0
     print '# The following datasets and associated deleted histories have been purged'
     start = time.clock()
-    histories = app.model.History.filter( and_( app.model.History.table.c.deleted==True,
-                                app.model.History.table.c.purged==False,
-                                app.model.History.table.c.update_time < cutoff_time ) ) \
-                 .options( eagerload( 'datasets' ) ).all()
+    if force_retry:
+        histories = app.model.History.filter( and_( app.model.History.table.c.deleted==True,
+                                    app.model.History.table.c.update_time < cutoff_time ) ) \
+                     .options( eagerload( 'datasets' ) ).all()
+    else:
+        histories = app.model.History.filter( and_( app.model.History.table.c.deleted==True,
+                                    app.model.History.table.c.purged==False,
+                                    app.model.History.table.c.update_time < cutoff_time ) ) \
+                     .options( eagerload( 'datasets' ) ).all()
     for history in histories:
         for dataset_assoc in history.datasets:
             _purge_dataset_instance( dataset_assoc, app, remove_from_disk, info_only = info_only ) #mark a DatasetInstance as deleted, clear associated files, and mark the Dataset as deleted if it is deletable
@@ -136,7 +146,7 @@ def purge_histories( app, cutoff_time, remove_from_disk, info_only = False ):
     print '# Purged %d histories.' % ( history_count ), '\n'
     print "Elapsed time: ", stop - start, "\n"
 
-def purge_libraries( app, cutoff_time, remove_from_disk, info_only = False ):
+def purge_libraries( app, cutoff_time, remove_from_disk, info_only = False, force_retry = False ):
     # Purges deleted libraries whose update_time is older than the cutoff_time.
     # The dataset associations of each library are also marked as deleted.
     # The Purge Dataset method will purge each Dataset as necessary
@@ -145,9 +155,13 @@ def purge_libraries( app, cutoff_time, remove_from_disk, info_only = False ):
     library_count = 0
     print '# The following libraries and associated folders have been purged'
     start = time.clock()
-    libraries = app.model.Library.filter( and_( app.model.Library.table.c.deleted==True,
-                                app.model.Library.table.c.purged==False,
-                                app.model.Library.table.c.update_time < cutoff_time ) ).all()
+    if force_retry:
+        libraries = app.model.Library.filter( and_( app.model.Library.table.c.deleted==True,
+                                    app.model.Library.table.c.update_time < cutoff_time ) ).all()
+    else:
+        libraries = app.model.Library.filter( and_( app.model.Library.table.c.deleted==True,
+                                    app.model.Library.table.c.purged==False,
+                                    app.model.Library.table.c.update_time < cutoff_time ) ).all()
     for library in libraries:
         _purge_folder( library.root_folder, app, remove_from_disk, info_only = info_only )
         if not info_only:
@@ -159,7 +173,7 @@ def purge_libraries( app, cutoff_time, remove_from_disk, info_only = False ):
     print '# Purged %d libraries .' % ( library_count ), '\n'
     print "Elapsed time: ", stop - start, "\n"
 
-def purge_folders( app, cutoff_time, remove_from_disk, info_only = False ):
+def purge_folders( app, cutoff_time, remove_from_disk, info_only = False, force_retry = False ):
     # Purges deleted folders whose update_time is older than the cutoff_time.
     # The dataset associations of each folder are also marked as deleted.
     # The Purge Dataset method will purge each Dataset as necessary
@@ -168,9 +182,13 @@ def purge_folders( app, cutoff_time, remove_from_disk, info_only = False ):
     folder_count = 0
     print '# The following folders have been purged'
     start = time.clock()
-    folders = app.model.LibraryFolder.filter( and_( app.model.LibraryFolder.table.c.deleted==True,
-                                app.model.LibraryFolder.table.c.purged==False,
-                                app.model.LibraryFolder.table.c.update_time < cutoff_time ) ).all()
+    if force_retry:
+        folders = app.model.LibraryFolder.filter( and_( app.model.LibraryFolder.table.c.deleted==True,
+                                    app.model.LibraryFolder.table.c.update_time < cutoff_time ) ).all()
+    else:
+        folders = app.model.LibraryFolder.filter( and_( app.model.LibraryFolder.table.c.deleted==True,
+                                    app.model.LibraryFolder.table.c.purged==False,
+                                    app.model.LibraryFolder.table.c.update_time < cutoff_time ) ).all()
     for folder in folders:
         _purge_folder( folder, app, remove_from_disk, info_only = info_only )
         print "%d" % folder.id
@@ -179,17 +197,22 @@ def purge_folders( app, cutoff_time, remove_from_disk, info_only = False ):
     print '# Purged %d folders.' % ( folder_count ), '\n'
     print "Elapsed time: ", stop - start, "\n"
 
-def purge_datasets( app, cutoff_time, remove_from_disk, info_only = False ):
+def purge_datasets( app, cutoff_time, remove_from_disk, info_only = False, repurge = False, force_retry = False ):
     # Purges deleted datasets whose update_time is older than cutoff_time.  Files may or may
     # not be removed from disk.
     dataset_count = 0
     disk_space = 0
     print '# The following deleted datasets have been purged'
     start = time.clock()
-    datasets = app.model.Dataset.filter( and_( app.model.Dataset.table.c.deleted==True,
-                               app.model.Dataset.table.c.purgable==True,
-                               app.model.Dataset.table.c.purged==False,
-                               app.model.Dataset.table.c.update_time < cutoff_time ) ).all()
+    if force_retry:
+        datasets = app.model.Dataset.filter( and_( app.model.Dataset.table.c.deleted==True,
+                                   app.model.Dataset.table.c.purgable==True,
+                                   app.model.Dataset.table.c.update_time < cutoff_time ) ).all()
+    else:
+        datasets = app.model.Dataset.filter( and_( app.model.Dataset.table.c.deleted==True,
+                                   app.model.Dataset.table.c.purgable==True,
+                                   app.model.Dataset.table.c.purged==False,
+                                   app.model.Dataset.table.c.update_time < cutoff_time ) ).all()
     for dataset in datasets:
         file_size = dataset.file_size
         _purge_dataset( dataset, remove_from_disk, info_only = info_only )
