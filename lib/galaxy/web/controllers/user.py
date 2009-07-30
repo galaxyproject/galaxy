@@ -157,7 +157,7 @@ class User( BaseController ):
                 user.flush()
                 trans.app.security_agent.create_private_user_role( user )
                 # We set default user permissions, before we log in and set the default history permissions
-                trans.app.security_agent.user_set_default_permissions( user )
+                trans.app.security_agent.user_set_default_permissions( user, default_access_private = trans.app.config.new_user_dataset_access_role_default_private )
                 # The handle_user_login() method has a call to the history_set_default_permissions() method
                 # (needed when logging in with a history), user needs to have default permissions set before logging in
                 trans.handle_user_login( user )

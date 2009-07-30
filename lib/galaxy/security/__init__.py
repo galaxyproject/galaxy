@@ -206,12 +206,16 @@ class GalaxyRBACAgent( RBACAgent ):
             else:
                 return None
         return role
-    def user_set_default_permissions( self, user, permissions={}, history=False, dataset=False, bypass_manage_permission=False ):
+    def user_set_default_permissions( self, user, permissions={}, history=False, dataset=False, bypass_manage_permission=False, default_access_private = False ):
         # bypass_manage_permission is used to change permissions of datasets in a userless history when logging in
         if user is None:
             return None
         if not permissions:
+            #default permissions
             permissions = { self.permitted_actions.DATASET_MANAGE_PERMISSIONS : [ self.get_private_user_role( user, auto_create=True ) ] }
+            #new_user_dataset_access_role_default_private is set as True in config file
+            if default_access_private:
+                permissions[ self.permitted_actions.DATASET_ACCESS ] = permissions.values()[ 0 ]
         # Delete all of the current default permissions for the user
         for dup in user.default_permissions:
             dup.delete()
