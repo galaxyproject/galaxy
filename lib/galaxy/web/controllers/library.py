@@ -430,7 +430,7 @@ class Library( BaseController ):
             replace_dataset = None
         # Let's not overwrite the imported datatypes module with the variable datatypes?
         # The built-in 'id' is overwritten in lots of places as well
-        ldatatypes = [ x for x in trans.app.datatypes_registry.datatypes_by_extension.iterkeys() ]
+        ldatatypes = [ dtype_name for dtype_name, dtype_value in trans.app.datatypes_registry.datatypes_by_extension.iteritems() if dtype_value.allow_datatype_change ]
         ldatatypes.sort()
         if id:
             if params.get( 'permissions', False ):
@@ -505,10 +505,14 @@ class Library( BaseController ):
                     if trans.app.security_agent.allow_action( trans.user,
                                                               trans.app.security_agent.permitted_actions.LIBRARY_MODIFY,
                                                               library_item=ldda ):
-                        trans.app.datatypes_registry.change_datatype( ldda, params.datatype )
-                        trans.app.model.flush()
-                        msg = "Data type changed for library dataset '%s'" % ldda.name
-                        messagetype = 'done'
+                        if ldda.datatype.allow_datatype_change and trans.app.datatypes_registry.get_datatype_by_extension( params.datatype ).allow_datatype_change:
+                            trans.app.datatypes_registry.change_datatype( ldda, params.datatype )
+                            trans.app.model.flush()
+                            msg = "Data type changed for library dataset '%s'" % ldda.name
+                            messagetype = 'done'
+                        else:
+                            msg = "You are unable to change datatypes in this manner. Changing %s to %s is not allowed." % ( ldda.extension, params.datatype )
+                            messagetype = 'error'
                     else:
                         msg = "You are not authorized to change the data type of dataset '%s'" % ldda.name
                         messagetype = 'error'

@@ -122,6 +122,7 @@ class Rgenetics(Html):
     
     file_ext="html"
     composite_type = 'auto_primary_file'
+    allow_datatype_change = False
     
     def missing_meta( self, dataset ):
         """Checks for empty meta values"""
@@ -255,6 +256,8 @@ class RexpBase( Html ):
     file_ext = None 
     
     is_binary = True
+    
+    allow_datatype_change = False
     
     composite_type = 'basic'
     
