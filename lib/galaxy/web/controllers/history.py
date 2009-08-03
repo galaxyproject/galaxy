@@ -47,8 +47,8 @@ class HistoryListGrid( grids.Grid ):
                           attach_popup=True ),
         DatasetsByStateColumn( "Datasets (by state)", ncells=4 ),
         StatusColumn( "Status", attach_popup=False ),
-        grids.GridColumn( "Age", key="create_time", format=time_ago ),
-        grids.GridColumn( "Last update", key="update_time", format=time_ago ),
+        grids.GridColumn( "Created", key="create_time", format=time_ago ),
+        grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
         # Valid for filtering but invisible
         grids.GridColumn( "Deleted", key="deleted", visible=False )
     ]

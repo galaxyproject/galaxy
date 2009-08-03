@@ -3,10 +3,16 @@ import pkg_resources
 pkg_resources.require( "WebHelpers" )
 from webhelpers import *
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
+# If the date is more than one week ago, then display the actual date instead of in words
 def time_ago( x ):
-    return date.distance_of_time_in_words( x, datetime.utcnow() )
+    delta = timedelta(weeks=1)
+    
+    if (datetime.utcnow() - x) > delta: # Greater than a week difference
+        return x.strftime("%b %d, %Y")
+    else:   
+        return date.distance_of_time_in_words( x, datetime.utcnow() ) + " ago"
     
 def iff( a, b, c ):
     if a:
