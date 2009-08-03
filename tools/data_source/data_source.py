@@ -21,6 +21,10 @@ def check_gzip( filename ):
 
 def __main__():
     filename = sys.argv[1]
+    try:
+        max_file_size = int( sys.argv[2] )
+    except:
+        max_file_size = 0
     params = {}
     for line in open( filename, 'r' ):
         try:
@@ -50,6 +54,10 @@ def __main__():
             page = urllib.urlopen( URL, urllib.urlencode( params ) )
     except Exception, e:
         stop_err( 'The remote data source application may be off line, please try again later. Error: %s' % str( e ) )
+    if max_file_size:
+        file_size = int( page.info().get( 'Content-Length', 0 ) )
+        if file_size > max_file_size:
+            stop_err( 'The size of the data (%d bytes) you have requested exceeds the maximum allowed (%d bytes) on this server.' % ( file_size, max_file_size ) )
     out = open( filename, 'w' )
     while 1:
         chunk = page.read( CHUNK_SIZE )

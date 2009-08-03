@@ -595,7 +595,7 @@ class JobWrapper( object ):
                 self.real_path = real_path
                 self.false_path = false_path
             def __str__( self ):
-                if false_path is None:
+                if self.false_path is None:
                     return self.real_path
                 else:
                     return self.false_path

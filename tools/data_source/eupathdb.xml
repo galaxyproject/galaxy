@@ -5,7 +5,7 @@
 -->
 <tool name="EuPathDB" id="eupathdb" tool_type="data_source" url_method="post">
     <description>server</description>
-    <command interpreter="python">data_source.py $output</command>
+    <command interpreter="python">data_source.py $output $__app__.config.output_size_limit</command>
     <inputs action="http://galaxy.eupathdb.org/eupathdb.galaxy/queries_tools.jsp" check_values="false" method="post"> 
         <display>go to EuPathDB server $GALAXY_URL</display>
         <param name="GALAXY_URL" type="baseurl" value="/tool_runner?tool_id=eupathdb" />
