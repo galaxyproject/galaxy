@@ -497,7 +497,7 @@ class JobExternalOutputMetadataWrapper( object ):
         return None
     def get_dataset_metadata_key( self, dataset ):
         return "%s_%d" % ( dataset.__class__.__name__, dataset.id ) #set meta can be called on library items and history items, need to make different keys for them, since ids can overlap
-    def setup_external_metadata( self, datasets, exec_dir = None, tmp_dir = None, dataset_files_path = None, output_fnames = None, kwds = {} ):
+    def setup_external_metadata( self, datasets, exec_dir = None, tmp_dir = None, dataset_files_path = None, output_fnames = None, config_root = None, datatypes_config = None, kwds = {} ):
         #fill in metadata_files_dict and return the command with args required to set metadata
         def __metadata_files_list_to_cmd_line( metadata_files ):
             def __get_filename_override():
@@ -515,6 +515,10 @@ class JobExternalOutputMetadataWrapper( object ):
             tmp_dir = MetadataTempFile.tmp_dir
         if dataset_files_path is None:
             dataset_files_path = galaxy.model.Dataset.file_path
+        if config_root is None:
+            config_root = os.path.abspath( os.getcwd() )
+        if datatypes_config is None:
+            datatypes_config = 'datatypes_conf.xml'
         metadata_files_list = []
         for dataset in datasets:
             key = self.get_dataset_metadata_key( dataset )
@@ -547,7 +551,7 @@ class JobExternalOutputMetadataWrapper( object ):
                 metadata_files.flush()
             metadata_files_list.append( metadata_files )
         #return command required to build
-        return "%s %s %s %s" % ( os.path.join( exec_dir, 'set_metadata.sh' ), dataset_files_path, tmp_dir, " ".join( map( __metadata_files_list_to_cmd_line, metadata_files_list ) ) )
+        return "%s %s %s %s %s %s" % ( os.path.join( exec_dir, 'set_metadata.sh' ), dataset_files_path, tmp_dir, config_root, datatypes_config, " ".join( map( __metadata_files_list_to_cmd_line, metadata_files_list ) ) )
     
     def external_metadata_set_successfully( self, dataset ):
         metadata_files = self.get_output_filenames_by_dataset( dataset )

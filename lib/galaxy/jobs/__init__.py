@@ -616,14 +616,18 @@ class JobWrapper( object ):
         for outfile in [ str( o ) for o in output_paths ]:
             sizes.append( ( outfile, os.stat( outfile ).st_size ) )
         return sizes
-    def setup_external_metadata( self, exec_dir = None, tmp_dir = None, dataset_files_path = None, **kwds ):
+    def setup_external_metadata( self, exec_dir = None, tmp_dir = None, dataset_files_path = None, config_root = None, datatypes_config = None, **kwds ):
         if tmp_dir is None:
             #this dir should should relative to the exec_dir
             tmp_dir = self.app.config.new_file_path
         if dataset_files_path is None:
             dataset_files_path = self.app.model.Dataset.file_path
+        if config_root is None:
+            config_root = self.app.config.root
+        if datatypes_config is None:
+            datatypes_config = self.app.config.datatypes_config
         job = model.Job.get( self.job_id )
-        return self.external_output_metadata.setup_external_metadata( [ output_dataset_assoc.dataset for output_dataset_assoc in job.output_datasets ], exec_dir = exec_dir, tmp_dir = tmp_dir, dataset_files_path = dataset_files_path, **kwds )
+        return self.external_output_metadata.setup_external_metadata( [ output_dataset_assoc.dataset for output_dataset_assoc in job.output_datasets ], exec_dir = exec_dir, tmp_dir = tmp_dir, dataset_files_path = dataset_files_path, config_root = config_root, datatypes_config = datatypes_config, **kwds )
 
 class DefaultJobDispatcher( object ):
     def __init__( self, app ):

@@ -6,6 +6,9 @@ top level directly.
 
 """
 
+import logging
+logging.basicConfig()
+
 import os, sys, cPickle
 assert sys.version_info[:2] >= ( 2, 4 )
 
@@ -27,6 +30,12 @@ def __main__():
     tmp_dir = sys.argv.pop( 1 )
     galaxy.model.Dataset.file_path = file_path
     galaxy.datatypes.metadata.MetadataTempFile.tmp_dir = tmp_dir
+    
+    # Set up datatypes registry
+    config_root = sys.argv.pop( 1 )
+    datatypes_config = sys.argv.pop( 1 )
+    galaxy.model.set_datatypes_registry( galaxy.datatypes.registry.Registry( config_root, datatypes_config ) )
+    
     for filenames in sys.argv[1:]:
         filename_in, filename_kwds, filename_out, filename_results_code, dataset_filename_override = filenames.split( ',' )
         try:
