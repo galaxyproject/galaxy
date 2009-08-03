@@ -27,27 +27,25 @@ def __main__():
     #Parse Command Line
     options, args = doc_optparse.parse( __doc__ )
     # if paired-end data (have reverse input files)
+    tmpf = tempfile.NamedTemporaryFile()    #forward reads
     if options.input3 != "None" and options.input4 != "None":
-        tmpf = tempfile.NamedTemporaryFile()    #forward reads
         tmpr = tempfile.NamedTemporaryFile()    #reverse reads
-
         cmd1 = "bwa_solid2fastq_modified.pl 'yes' %s %s %s %s %s %s %s 2>&1" %(tmpf.name,tmpr.name,None,options.input1,options.input2,options.input3,options.input4)
         try:
             os.system(cmd1)
             os.system('gunzip -c %s >> %s' %(tmpf.name,options.output1))
             os.system('gunzip -c %s >> %s' %(tmpr.name,options.output2))
-
         except Exception, eq:
             stop_err("Error converting data to fastq format.\n" + str(eq))
+        tmpr.close()
     # if single-end data
     else:
-        tmpf = tempfile.NamedTemporaryFile()   
         cmd1 = "bwa_solid2fastq_modified.pl 'no' %s %s %s %s %s %s %s 2>&1" % (tmpf.name, None, None, options.input1, options.input2, None, None)
         try:
             os.system(cmd1)
             os.system('gunzip -c %s >> %s' % (tmpf.name, options.output1))
-            tmpf.close()
         except Exception, eq:
-            stop_err("Error converting data to fastq format.\n" + str(eq))        
+            stop_err("Error converting data to fastq format.\n" + str(eq))
+    tmpf.close()
 
 if __name__=="__main__": __main__()

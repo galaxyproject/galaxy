@@ -44,12 +44,13 @@
     </data>    
   </outputs>
   <tests>
-    <test>
+<!--    <test>
       <param name="pairedSingle" value="single" />
       <param name="input1" value="s2fq_phiX.csfasta" ftype="csfasta" />
       <param name="input2" value="s2fq_phiX.qualsolid" ftype="qualsolid" />
       <output name="output1" file="s2fq_out1.tabular" />
     </test>
+-->
     <!-- testing framework does not deal with multiple outputs yet
     <test>
       <param name="pairedSingle" value="paired" />
