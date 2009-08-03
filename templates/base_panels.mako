@@ -125,7 +125,7 @@
         </a>
     </div>
     
-    <div style="position: absolute; left: 200px; width: 60%; text-align: center">
+    <div style="z-index: -1; position: absolute; left: 0px; width: 100%; text-align: center">
 
     <table class="tab-group" border="0" cellspacing="0" style="margin: auto;">
 	<tr>
