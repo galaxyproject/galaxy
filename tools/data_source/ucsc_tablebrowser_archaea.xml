@@ -6,7 +6,7 @@
 -->
 <tool name="UCSC Archaea" id="ucsc_table_direct_archaea1" tool_type="data_source" URL_method="post">
 	<description>table browser</description>
-	<command interpreter="python">data_source.py $output</command>
+	<command interpreter="python">data_source.py $output $__app__.config.output_size_limit</command>
 	<inputs action="http://archaea.ucsc.edu/cgi-bin/hgTables" check_values="false" method="get">
 		<display>go to UCSC Table Browser $GALAXY_URL</display>
 		<param name="GALAXY_URL" type="baseurl" value="/tool_runner" />

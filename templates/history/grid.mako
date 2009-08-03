@@ -137,8 +137,9 @@
                         %if column.visible:
                             <%
                                 # Link
-                                if column.link and column.link( item ):
-                                    href = url( **column.link( item ) )
+                                link = column.get_link( trans, grid, item )
+                                if link:
+                                    href = url( **link )
                                 else:
                                     href = None
                                 # Value (coerced to list so we can loop)

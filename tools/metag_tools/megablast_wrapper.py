@@ -81,6 +81,8 @@ def __main__():
         output.write( "%s\n" % new_line )
     output.close()
     
+    os.unlink( mega_temp_output ) #remove the tempfile that we just reformated the contents of
+    
     if invalid_lines:
         print "Unable to parse %d lines. Keep the default format." % invalid_lines
         

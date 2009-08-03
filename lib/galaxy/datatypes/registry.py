@@ -71,7 +71,7 @@ class Registry( object ):
                             # add composite files
                             name = composite_file.get( 'name', None )
                             if name is None:
-                                log.warning( "You must provide a name for your composite_file (%s)." % composite_file )
+                                self.log.warning( "You must provide a name for your composite_file (%s)." % composite_file )
                             optional = composite_file.get( 'optional', False )
                             mimetype = composite_file.get( 'mimetype', None )
                             self.datatypes_by_extension[extension].add_composite_file( name, optional=optional, mimetype=mimetype )

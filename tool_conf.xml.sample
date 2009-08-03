@@ -77,6 +77,8 @@
     <tool file="maf/maf_to_bed.xml" />
     <tool file="maf/maf_to_fasta.xml" />
     <tool file="fasta_tools/tabular_to_fasta.xml" />
+    <tool file="next_gen_conversion/solid_to_fastq.xml" />
+    <tool file="next_gen_conversion/fastq_conversions.xml" />
   </section>
   <section name="Extract Features" id="features">
     <tool file="filters/ucsc_gene_bed_to_exon_bed.xml" />

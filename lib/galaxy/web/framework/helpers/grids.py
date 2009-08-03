@@ -40,16 +40,9 @@ class Grid( object ):
             if column.key:
                 if "f-" + column.key in kwargs:
                     column_filter = kwargs.get( "f-" + column.key )
-                    if column_filter == "True":
-                        filter_args[column.key] = True
-                    elif column_filter == "False":
-                        filter_args[column.key] = False
-                    elif column_filter == "All":
-                        del filter_args[column.key]
+                    query = column.filter( query, column_filter, filter_args )
                     # Carry filter along to newly generated urls
                     extra_url_args[ "f-" + column.key ] = column_filter
-        if filter_args:
-            query = query.filter_by( **filter_args )
         # Process sort arguments
         sort_key = sort_order = None
         if 'sort' in kwargs:
@@ -143,6 +136,26 @@ class GridColumn( object ):
         if self.format:
             value = self.format( value )
         return value
+    def get_link( self, trans, grid, item ):
+        if self.link and self.link( item ):
+            return self.link( item )
+        return None
+    def filter( self, query, column_filter, filter_args ):
+        """
+        Must modify filter_args for carrying forward, and return query
+        (possibly filtered).
+        """
+        if column_filter == "True":
+            filter_args[self.key] = True
+            query = query.filter_by( **{ self.key: True } )
+        elif column_filter == "False":
+            filter_args[self.key] = False
+            query = query.filter_by( **{ self.key: False } )
+        elif column_filter == "All":
+            del filter_args[self.key]
+        return query
+        
+        
     
 class GridOperation( object ):
     def __init__( self, label, key=None, condition=None, allow_multiple=True ):

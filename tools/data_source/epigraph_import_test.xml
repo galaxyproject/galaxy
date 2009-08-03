@@ -6,7 +6,7 @@
 -->
 <tool name="EpiGRAPH" id="epigraph_import_test" tool_type="data_source" URL_method="get">
     <description> test server</description>
-    <command interpreter="python">data_source.py $output</command>
+    <command interpreter="python">data_source.py $output $__app__.config.output_size_limit</command>
     <inputs action="http://epigraph.mpi-inf.mpg.de/WebGRAPH_Public_Test/faces/Login.jsp" check_values="false" method="get">
         <display>go to EpiGRAPH server $GALAXY_URL</display>
         <param name="GALAXY_URL" type="baseurl" value="/tool_runner?tool_id=epigraph_import_test" />

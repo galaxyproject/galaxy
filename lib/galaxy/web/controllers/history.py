@@ -13,7 +13,31 @@ log = logging.getLogger( __name__ )
 # States for passing messages
 SUCCESS, INFO, WARNING, ERROR = "done", "info", "warning", "error"
 
+
 class HistoryListGrid( grids.Grid ):
+    # Custom column types
+    class DatasetsByStateColumn( grids.GridColumn ):
+        def get_value( self, trans, grid, history ):
+            rval = []
+            for state in ( 'ok', 'running', 'queued', 'error' ):
+                total = sum( 1 for d in history.active_datasets if d.state == state )
+                if total:
+                    rval.append( '<div class="count-box state-color-%s">%s</div>' % ( state, total ) )
+                else:
+                    rval.append( '' )
+            return rval
+    class StatusColumn( grids.GridColumn ):
+        def get_value( self, trans, grid, history ):
+            if history.deleted:
+                return "deleted"
+            elif history.users_shared_with:
+                return "shared"
+            return ""
+        def get_link( self, trans, grid, item ):
+            if item.users_shared_with:
+                return dict( operation="sharing", id=item.id )
+            return None
+    # Grid definition
     title = "Stored histories"
     model_class = model.History
     default_sort_key = "-create_time"
@@ -21,12 +45,8 @@ class HistoryListGrid( grids.Grid ):
         grids.GridColumn( "Name", key="name",
                           link=( lambda item: iff( item.deleted, None, dict( operation="switch", id=item.id ) ) ),
                           attach_popup=True ),
-        grids.GridColumn( "Datasets (by state)", method='_build_datasets_by_state', ncells=4 ),
-        grids.GridColumn( "Status", method='_build_status',
-                           link=( lambda item: iff( item.users_shared_with,
-                                                    dict( operation="sharing", id=item.id ),
-                                                    None ) ),
-                           attach_popup=False ),
+        DatasetsByStateColumn( "Datasets (by state)", ncells=4 ),
+        StatusColumn( "Status", attach_popup=False ),
         grids.GridColumn( "Age", key="create_time", format=time_ago ),
         grids.GridColumn( "Last update", key="update_time", format=time_ago ),
         # Valid for filtering but invisible
@@ -49,21 +69,6 @@ class HistoryListGrid( grids.Grid ):
         return trans.get_history()
     def apply_default_filter( self, trans, query ):
         return query.filter_by( user=trans.user, purged=False )
-    def _build_datasets_by_state( self, trans, history ):
-        rval = []
-        for state in ( 'ok', 'running', 'queued', 'error' ):
-            total = sum( 1 for d in history.active_datasets if d.state == state )
-            if total:
-                rval.append( '<div class="count-box state-color-%s">%s</div>' % ( state, total ) )
-            else:
-                rval.append( '' )
-        return rval
-    def _build_status( self, trans, history ):
-        if history.deleted:
-            return "deleted"
-        elif history.users_shared_with:
-            return "shared"
-        return ""
 
 class HistoryController( BaseController ):
     
