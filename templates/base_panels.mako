@@ -116,16 +116,16 @@
 <%def name="masthead()">
 
     <div class="title" style="float: left;">
-        <a target="_blank" href="${app.config.wiki_url}">
+        <a href="/">
         <img border="0" src="${h.url_for('/static/images/galaxyIcon_noText.png')}" style="width: 26px; vertical-align: top;">
-        </a>   
         Galaxy
         %if app.config.brand:
         <span class='brand'>/${app.config.brand}</span>
         %endif
+        </a>
     </div>
     
-    <div style="position: absolute; left: 0; width: 100%; text-align: center;">
+    <div style="position: absolute; left: 200px; width: 500px;">
 
     <table class="tab-group" border="0" cellspacing="0" style="margin: auto;">
 	<tr>
