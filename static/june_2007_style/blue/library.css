@@ -12,4 +12,6 @@ ul{list-style:none;}
 pre.peek{background:white;color:black;width:100%;overflow:auto;}
 pre.peek th{color:white;background:#023858;}
 a.expandLink{text-decoration:none;}
-span.expandLink{width:100%;height:100%;display:block;}
+span.expandLink{width:16px;height:16px;display:inline-block;vertical-align:middle;background:url(../images/silk/resultset_next.png);}
+.folderRow.expanded span.expandLink{background:url(../images/silk/resultset_bottom.png);}
+.folderRow span.rowIcon{width:16px;height:16px;display:inline-block;vertical-align:middle;background:url(../images/silk/folder.png);}
