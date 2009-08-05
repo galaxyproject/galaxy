@@ -65,52 +65,39 @@ class ToolTestCase( TwillTestCase ):
     def shortDescription( self ):
         return self.name
 
-    def __expand_grouping( self, tool_inputs, declared_inputs, repeat_index=0, repeat_sep='' ):
+    def __expand_grouping( self, tool_inputs, declared_inputs, prefix='' ):
         expanded_inputs = {}
         for key, value in tool_inputs.items():
-            if isinstance(value, grouping.Conditional):
-                for i, case in enumerate(value.cases):
-                    if declared_inputs[value.test_param.name] == case.value:
+            if isinstance( value, grouping.Conditional ):
+                if prefix:
+                    new_prefix = "%s|%s" % ( prefix, value.name )
+                else:
+                    new_prefix = value.name
+                for i, case in enumerate( value.cases ):
+                    if declared_inputs[ value.test_param.name ] == case.value:
                         if isinstance(case.value, str):
-                            if repeat_sep:
-                                cond_sep = "%s%s" % ( repeat_sep, value.test_param.name )
-                            else:
-                                cond_sep = "%s|%s" % ( value.name, value.test_param.name ) 
-                            expanded_inputs[ cond_sep ] = case.value.split( "," )
+                            expanded_inputs[ "%s|%s" % ( new_prefix, value.test_param.name ) ] = case.value.split( "," )
                         else:
-                            if repeat_sep:
-                                cond_sep = "%s%s" % ( repeat_sep, value.test_param.name )
-                            else:
-                                cond_sep = "%s|%s" % ( value.name, value.test_param.name )
-                            expanded_inputs[ cond_sep ] = case.value
+                            expanded_inputs[ "%s|%s" % ( new_prefix, value.test_param.name ) ] = case.value
                         for input_name, input_value in case.inputs.items():
-                            if isinstance(input_value, grouping.Conditional):
-                                expanded_inputs.update( self.__expand_grouping( { input_name:input_value }, declared_inputs, repeat_index=repeat_index, repeat_sep=repeat_sep ) )
-                            elif isinstance(declared_inputs[input_name], str):
-                                if repeat_sep:
-                                    cond_sep = "%s%s" % ( repeat_sep, input_name )
-                                else:
-                                    cond_sep = "%s|%s" % ( value.name, input_name )
-                                expanded_inputs.update( { cond_sep : declared_inputs[ input_name ].split( "," ) } )
-                            else:
-                                if repeat_sep:
-                                    cond_sep = "%s%s" % ( repeat_sep, input_name )
-                                else:
-                                    cond_sep = "%s|%s" % ( value.name, input_name )
-                                expanded_inputs.update( { cond_sep : declared_inputs[ input_name ] } )
+                            expanded_inputs.update( self.__expand_grouping( { input_name:input_value }, declared_inputs, prefix = new_prefix ) )
             elif isinstance( value, grouping.Repeat ):
-                for r_name, r_value in value.inputs.items():
-                    repeat_sep = "%s_%d|%s" % ( value.name, repeat_index, r_name )
-                    if isinstance( r_value, grouping.Conditional ):
-                        cond_sep = repeat_sep + "|"
-                        expanded_inputs.update( self.__expand_grouping( { r_name:r_value }, declared_inputs, repeat_index=repeat_index, repeat_sep=cond_sep ) )
-                    else:
-                        expanded_inputs.update( { repeat_sep : [ declared_inputs[ r_name ] ] } )
-                repeat_index += 1
+                for repeat_index in xrange( 0, 1 ): #need to allow for and figure out how many repeats we have
+                    for r_name, r_value in value.inputs.iteritems():
+	                    new_prefix = "%s_%d" % ( value.name, repeat_index )
+	                    if prefix:
+	                        new_prefix = "%s|%s" % ( prefix, new_prefix )
+	                    expanded_inputs.update( self.__expand_grouping( { new_prefix : r_value }, declared_inputs, prefix = new_prefix ) )
             elif isinstance(declared_inputs[value.name], str):
-                expanded_inputs[value.name] = declared_inputs[value.name].split(",")
+                if prefix:
+                    expanded_inputs["%s|%s" % ( prefix, value.name ) ] = declared_inputs[value.name].split(",")
+                else:
+                    expanded_inputs[value.name] = declared_inputs[value.name].split(",")
             else:
-                expanded_inputs[value.name] = declared_inputs[value.name]
+                if prefix:
+                    expanded_inputs["%s|%s" % ( prefix, value.name ) ] = declared_inputs[value.name]
+                else:
+                    expanded_inputs[value.name] = declared_inputs[value.name]
         return expanded_inputs
 
 def get_testcase( testdef, name ):
