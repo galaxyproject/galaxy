@@ -139,7 +139,7 @@ class CSSProcessor( object ):
         
         pad = 10
         
-        class SpriteGroup():
+        class SpriteGroup( object ):
             def __init__( self, name ):
                 self.name = name
                 self.offset = 0
@@ -152,7 +152,7 @@ class CSSProcessor( object ):
                     self.offset += sprite.image.size[1] + pad
                     return sprite
         
-        class Sprite():
+        class Sprite( object ):
             def __init__( self, fname, offset ):
                 self.fname = fname
                 self.image = Image.open( os.path.join( image_dir, fname ) )
