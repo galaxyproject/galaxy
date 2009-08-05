@@ -650,9 +650,17 @@ class TwillTestCase( unittest.TestCase ):
                 break
         # To help with debugging a tool, print out the form controls when the test fails
         print "form '%s' contains the following controls ( note the values )" % f.name
+        control_names = []
         for i, control in enumerate( f.controls ):
             print "control %d: %s" % ( i, str( control ) )
             try:
+                #check if a repeat element needs to be added
+                if control.name not in kwd and control.name.endswith( '_add' ):
+                    #control name doesn't exist, could be repeat
+                    repeat_startswith = control.name[0:-4]
+                    if repeat_startswith and not [ c_name for c_name in control_names if c_name.startswith( repeat_startswith ) ] and [ c_name for c_name in kwd.keys() if c_name.startswith( repeat_startswith ) ]:
+                        tc.submit( control.name )
+                        return self.submit_form( form_no=form_no, button=button, **kwd )
                 # Check for refresh_on_change attribute, submit a change if required
                 if 'refresh_on_change' in control.attrs.keys():
                     changed = False
@@ -677,6 +685,7 @@ class TwillTestCase( unittest.TestCase ):
             except Exception, e:
                 log.debug( "In submit_form, continuing, but caught exception: %s" % str( e ) )
                 continue
+            control_names.append( control.name )
         # No refresh_on_change attribute found in current form, so process as usual
         for control_name, control_value in kwd.items():
             if not isinstance( control_value, list ):
