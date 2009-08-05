@@ -149,15 +149,17 @@
     ${tab( "workflow", "Workflow", h.url_for( controller='workflow', action='index' ))}
     
     ${tab( "libraries", "Libraries", h.url_for( controller='library', action='index' ))}
-        
-    <td class="tab">
-        <a>Lab</a>
-        <div class="submenu">
-        <ul>            
-            <li><a target="requests" href="${h.url_for( controller='requests', action='index' )}">Sequencing Requests</a></li>
-        </ul>
-        </div>
-    </td>
+    
+    %if trans.request_types():
+        <td class="tab">
+            <a>Lab</a>
+            <div class="submenu">
+            <ul>            
+                <li><a target="requests" href="${h.url_for( controller='requests', action='index' )}">Sequencing Requests</a></li>
+            </ul>
+            </div>
+        </td>
+    %endif
 
     %if app.config.get_bool( 'enable_tracks', False ):
     <td class="tab">
