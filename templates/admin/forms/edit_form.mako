@@ -84,7 +84,7 @@ $( function() {
                 <div style="clear: both"></div>
             </div>
         %endfor
-        <div class="toolFormTitle">Sample fields (${len(form.fields)})</div>
+        <div class="toolFormTitle">Fields (${len(form.fields)})</div>
         %for ctr, field in enumerate(field_details):
             ${render_field( ctr, field )}
         %endfor

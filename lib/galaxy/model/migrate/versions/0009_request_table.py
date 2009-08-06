@@ -32,7 +32,7 @@ def upgrade():
             col.create( Request_table )
             assert col is Request_table.c.submitted
         except Exception, e:
-            log.debug( "Adding column 'submitted' to submitted table failed: %s" % ( str( e ) ) )
+            log.debug( "Adding column 'submitted' to request table failed: %s" % ( str( e ) ) )
             
     # Add 1 column to the sample table
     try:
@@ -46,7 +46,7 @@ def upgrade():
             col.create( Sample_table )
             assert col is Sample_table.c.bar_code
         except Exception, e:
-            log.debug( "Adding column 'bar_code' to submitted table failed: %s" % ( str( e ) ) )
+            log.debug( "Adding column 'bar_code' to sample table failed: %s" % ( str( e ) ) )
 
 def downgrade():
     pass

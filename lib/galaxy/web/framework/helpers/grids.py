@@ -43,6 +43,8 @@ class Grid( object ):
                     query = column.filter( query, column_filter, filter_args )
                     # Carry filter along to newly generated urls
                     extra_url_args[ "f-" + column.key ] = column_filter
+        if filter_args:
+            query = query.filter_by( **filter_args )
         # Process sort arguments
         sort_key = sort_order = None
         if 'sort' in kwargs:

@@ -1,12 +1,14 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
 
-<h2>Bar codes for Samples of Request "${request.name}"</h2>
-<h3>User: ${user.email}</h3>
 
 %if msg:
     ${render_msg( msg, messagetype )}
 %endif
+
+
+<h2>Bar codes for Samples of Request "${request.name}"</h2>
+<h3>User: ${user.email}</h3>
 
 <ul class="manage-table-actions">
     <li>
@@ -31,7 +33,7 @@
                         <td><b><a>${sample.name}</a></b></td>
                         <td><a>${sample.desc}</a></td>
                         <td>
-                            <input type="text" name="sample_${index}_bar_code" value=${sample.bar_code} size="40"/>
+                            ${widgets[index].get_html()}
                         </td>
                     </tr>             
                 %endfor
