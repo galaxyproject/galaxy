@@ -44,7 +44,7 @@ class DatasetInterface( BaseController ):
     @web.expose
     def errors( self, trans, id ):
         dataset = model.HistoryDatasetAssociation.get( id )
-        return trans.fill_template( "dataset/errors.tmpl", dataset=dataset )
+        return trans.fill_template( "dataset/errors.mako", dataset=dataset )
     
     @web.expose
     def stderr( self, trans, id ):

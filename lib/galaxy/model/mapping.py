@@ -46,7 +46,24 @@ User.table = Table( "galaxy_user", metadata,
     Column( "external", Boolean, default=False ),
     Column( "deleted", Boolean, index=True, default=False ),
     Column( "purged", Boolean, index=True, default=False ) )
-            
+
+UserAddress.table = Table( "user_address", metadata,
+    Column( "id", Integer, primary_key=True),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+    Column( "desc", TrimmedString( 255 )),    
+    Column( "name", TrimmedString( 255 ), nullable=False),
+    Column( "institution", TrimmedString( 255 )),
+    Column( "address", TrimmedString( 255 ), nullable=False),
+    Column( "city", TrimmedString( 255 ), nullable=False),
+    Column( "state", TrimmedString( 255 ), nullable=False),
+    Column( "postal_code", TrimmedString( 255 ), nullable=False),
+    Column( "country", TrimmedString( 255 ), nullable=False),
+    Column( "phone", TrimmedString( 255 )),
+    Column( "deleted", Boolean, index=True, default=False ),
+    Column( "purged", Boolean, index=True, default=False ) )
+
 History.table = Table( "history", metadata,
     Column( "id", Integer, primary_key=True),
     Column( "create_time", DateTime, default=now ),
@@ -558,7 +575,8 @@ RequestType.table = Table('request_type', metadata,
     Column( "name", TrimmedString( 255 ), nullable=False ),
     Column( "desc", TEXT ),
     Column( "request_form_id", Integer, ForeignKey( "form_definition.id" ), index=True ),
-    Column( "sample_form_id", Integer, ForeignKey( "form_definition.id" ), index=True ) )
+    Column( "sample_form_id", Integer, ForeignKey( "form_definition.id" ), index=True ),
+    Column( "deleted", Boolean, index=True, default=False ) )
 
 FormValues.table = Table('form_values', metadata,
     Column( "id", Integer, primary_key=True),
@@ -577,8 +595,15 @@ Request.table = Table('request', metadata,
     Column( "request_type_id", Integer, ForeignKey( "request_type.id" ), index=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "library_id", Integer, ForeignKey( "library.id" ), index=True ),
-    Column( "submitted", Boolean, index=True, default=False ),
+    Column( "state", TrimmedString( 255 ),  index=True ),
     Column( "deleted", Boolean, index=True, default=False ) )
+
+RequestState_table = Table('request_state', metadata,
+    Column( "id", Integer, primary_key=True),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "name", TrimmedString( 255 ), nullable=False ),
+    Column( "desc", TEXT ))
 
 Sample.table = Table('sample', metadata,
     Column( "id", Integer, primary_key=True),
@@ -615,13 +640,14 @@ SampleEvent.table = Table('sample_event', metadata,
 # relationships between the model objects.
 
 assign_mapper( context, Sample, Sample.table,
-               properties=dict( events=relation( SampleEvent, backref="sample",
-                                                 order_by=desc(SampleEvent.table.c.update_time) ),
-                                values=relation( FormValues,
-                                                 primaryjoin=( Sample.table.c.form_values_id == FormValues.table.c.id ) ),
-                                request=relation( Request,
-                                                  primaryjoin=( Sample.table.c.request_id == Request.table.c.id ) ),
-                              ) )
+               properties=dict( 
+                    events=relation( SampleEvent, backref="sample",
+                        order_by=desc(SampleEvent.table.c.update_time) ),
+                    values=relation( FormValues,
+                        primaryjoin=( Sample.table.c.form_values_id == FormValues.table.c.id ) ),
+                    request=relation( Request,
+                        primaryjoin=( Sample.table.c.request_id == Request.table.c.id ) ),
+            ) )
 
 assign_mapper( context, FormValues, FormValues.table,
                properties=dict( form_definition=relation( FormDefinition,
@@ -673,6 +699,15 @@ assign_mapper( context, SampleEvent, SampleEvent.table,
                                 
 assign_mapper( context, SampleState, SampleState.table,
                properties=None )
+
+assign_mapper( context, UserAddress, UserAddress.table,
+               properties=dict( 
+                    user=relation( User,
+                                   primaryjoin=( UserAddress.table.c.user_id == User.table.c.id ),
+                                   backref='addresses',
+                                   order_by=desc(UserAddress.table.c.update_time)), 
+                ) )
+
 
 assign_mapper( context, ValidationError, ValidationError.table )
 
@@ -749,7 +784,9 @@ assign_mapper( context, User, User.table,
                      galaxy_sessions=relation( GalaxySession, order_by=desc( GalaxySession.table.c.update_time ) ),
                      stored_workflow_menu_entries=relation( StoredWorkflowMenuEntry, backref="user",
                                                             cascade="all, delete-orphan",
-                                                            collection_class=ordering_list( 'order_index' ) )
+                                                            collection_class=ordering_list( 'order_index' ) ),
+#                     addresses=relation( UserAddress,
+#                                         primaryjoin=( User.table.c.id == UserAddress.table.c.user_id ) )
                      ) )
 
 assign_mapper( context, Group, Group.table,

@@ -1121,15 +1121,18 @@ class FormValues( object ):
         self.content = content
         
 class Request( object ):
+    states = Bunch( UNSUBMITTED = 'Unsubmitted',
+                    SUBMITTED = 'Submitted',
+                    COMPLETE = 'Complete')
     def __init__(self, name=None, desc=None, request_type=None, user=None, 
-                 form_values=None, library=None, submitted=False):
+                 form_values=None, library=None, state=False):
         self.name = name
         self.desc = desc
         self.type = request_type
         self.values = form_values
         self.user = user
         self.library = library
-        self.submitted = submitted
+        self.state = state
         self.samples_list = []
     def add_sample(self, sample_name=None, sample_desc=None, sample_values=None):
         # create a form_values row
@@ -1151,6 +1154,18 @@ class Request( object ):
             if s.name == sample_name:
                 return s
         return False
+    def submitted(self):
+        if self.state == self.states.SUBMITTED:
+            return True
+        return False
+    def unsubmitted(self):
+        if self.state == self.states.UNSUBMITTED:
+            return True
+        return False
+    def complete(self):
+        if self.state == self.states.COMPLETE:
+            return True
+        return False
         
 class RequestType( object ):
     def __init__(self, name=None, desc=None, request_form=None, sample_form=None):
@@ -1160,12 +1175,12 @@ class RequestType( object ):
         self.sample_form = sample_form
     
 class Sample( object ):
-    def __init__(self, name=None, desc=None, request=None, form_values=None):
+    def __init__(self, name=None, desc=None, request=None, form_values=None, bar_code=None):
         self.name = name
         self.desc = desc
         self.request = request
         self.values = form_values
-        
+        self.bar_code = bar_code
     def current_state(self):
         return self.events[0].state
 
@@ -1180,6 +1195,37 @@ class SampleEvent( object ):
         self.sample = sample
         self.state = sample_state
         self.comment = comment
+        
+class UserAddress( object ):
+    def __init__(self, user=None, desc=None, name=None, institution=None, 
+                 address=None, city=None, state=None, postal_code=None, 
+                 country=None, phone=None):
+        self.user = user
+        self.desc = desc
+        self.name = name
+        self.institution = institution
+        self.address = address
+        self.city = city
+        self.state = state
+        self.postal_code = postal_code
+        self.country = country
+        self.phone = phone
+    def display(self):
+        return  self.name+'<br/>'+ \
+                self.institution+'<br/>'+ \
+                self.address+'<br/>'+ \
+                self.city+' '+self.state+' '+self.postal_code+'<br/>'+ \
+                self.country+'<br/>'+ \
+                'Phone: '+self.phone
+    def get_html(self):
+        return  self.name+'<br/>'+ \
+                self.institution+'<br/>'+ \
+                self.address+'<br/>'+ \
+                self.city+' '+self.state+' '+self.postal_code+'<br/>'+ \
+                self.country+'<br/>'+ \
+                'Phone: '+self.phone
+                
+
 
 
 

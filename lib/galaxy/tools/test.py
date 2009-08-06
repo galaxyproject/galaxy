@@ -25,7 +25,7 @@ class ToolTestBuilder( object ):
                 for input_name, input_value in self.tool.inputs.items():
                     if isinstance( input_value, grouping.Conditional ) or isinstance( input_value, grouping.Repeat ):
                         self.__expand_grouping_for_data_input(name, value, extra, input_name, input_value)
-            elif isinstance( self.tool.inputs[name], parameters.DataToolParameter ):
+            elif isinstance( self.tool.inputs[name], parameters.DataToolParameter ) and ( value, extra ) not in self.required_files:
                 self.required_files.append( ( value, extra ) )
         except: pass
         self.inputs.append( ( name, value, extra ) )
@@ -37,7 +37,7 @@ class ToolTestBuilder( object ):
             if name != grouping_value.test_param.name:
                 for case in grouping_value.cases:
                     for case_input_name, case_input_value in case.inputs.items():
-                        if case_input_name == name and isinstance( case_input_value, basic.DataToolParameter ):
+                        if case_input_name == name and isinstance( case_input_value, basic.DataToolParameter ) and ( value, extra ) not in self.required_files:
                             self.required_files.append( ( value, extra ) )
                             return True
                         elif isinstance( case_input_value, grouping.Conditional ):
@@ -49,6 +49,6 @@ class ToolTestBuilder( object ):
             # with the same name ( "input2" ) is not yet supported in our test code ( the lat one added is the only
             # one used ).
             for input_name, input_value in grouping_value.inputs.items():
-                if input_name == name and isinstance( input_value, basic.DataToolParameter ):
+                if input_name == name and isinstance( input_value, basic.DataToolParameter ) and ( value, extra ) not in self.required_files:
                     self.required_files.append( ( value, extra ) )
                     return True

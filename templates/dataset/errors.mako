@@ -18,31 +18,31 @@
 
     <body>
         <h2>Dataset generation errors</h2>
-        <p><b>Dataset $dataset.hid: $dataset.display_name</b></p>
+        <p><b>Dataset ${dataset.hid}: ${dataset.display_name()}</b></p>
 
-        #if $dataset.creating_job_associations
-            #set job = $dataset.creating_job_associations[0].job
-            #if job.traceback
+        %if dataset.creating_job_associations:
+            <% job = dataset.creating_job_associations[0].job %>
+            %if job.traceback:
                 The Galaxy framework encountered the following error while attempting to run the tool:
                 <pre>${job.traceback}</pre>
-            #end if
-            #if $job.stderr or $job.info
+            %endif
+            %if job.stderr or job.info:
                 Tool execution generated the following error message:
-                #if $job.stderr
+                %if job.stderr:
                     <pre>${job.stderr}</pre>
-                #elif $job.info
+                %elif job.info:
                     <pre>${job.info}</pre>
-                #end if
-            #else
+                %endif
+            %else:
                 Tool execution did not generate any error messages.
-            #end if
-            #if $job.stdout
+            %endif
+            %if job.stdout:
                 The tool produced the following additional output:
                 <pre>${job.stdout}</pre>
-            #end if
-        #else
+            %endif
+        %else:
             The tool did not create any additional job / error info.
-        #end if
+        %endif
       
         <h2>Report this error to the Galaxy Team</h2>
         <p>
@@ -56,12 +56,15 @@
             <div class="toolFormTitle">Error Report</div>
             <div class="toolFormBody">
                 <form name="report_error" action="${h.url_for( action='report_error')}" method="post" >
-                    <input type="hidden" name="id" value="$dataset.id" />
-                    <table> 
-                        <tr valign="top"><td>Your Email:</td><td><input type="text" name="email" size="40" /></td></tr>
-                        <tr valign="top"><td>Message:</td><td><textarea name="message", rows="10" cols="40" /></textarea></td></tr>
-                        <tr><td></td><td><input type="submit" value="Report">
-                    </table>
+                    <input type="hidden" name="id" value="${dataset.id}" />
+                    <div class="form-row">
+                        <label>Your email</label>
+                        <input type="text" name="email" size="40" />
+                    </div>
+                    <div class="form-row">
+                        <label>Message</label>
+                        <textarea name="message", rows="10" cols="40" />
+                    </div>
                 </form>
             </div>
       </div>

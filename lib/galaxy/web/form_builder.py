@@ -11,7 +11,7 @@ class BaseField(object):
         raise TypeError( "Abstract Method" )
     @staticmethod
     def form_field_types():
-        return ['TextField', 'TextArea', 'SelectField', 'CheckboxField']
+        return ['TextField', 'TextArea', 'SelectField', 'CheckboxField', 'AddressField']
 
 class TextField(BaseField):
     """
@@ -340,6 +340,64 @@ class DrillDownField( BaseField ):
         recurse_options( rval, self.options, expanded_options )
         rval.append( '</ul></div>' )
         return '\n'.join( rval )
+    
+class AddressField(BaseField):
+    @staticmethod
+    def fields():
+        return   [  ( "short_desc", "Short address description"),
+                    ( "name", "Name" ),
+                    ( "institution", "Institution" ),
+                    ( "address1", "Address Line 1" ),
+                    ( "address2", "Address Line 2" ),
+                    ( "city", "City" ),
+                    ( "state", "State/Province/Region" ),
+                    ( "postal_code", "Postal Code" ),
+                    ( "country", "Country" ),
+                    ( "phone", "Phone" )  ]
+    def __init__(self, name, user=None, value=None, params=None):
+        self.name = name
+        self.user = user
+        self.value = value
+        self.select_address = None
+        self.params = params
+    def get_html(self):
+        from galaxy import util
+        address_html = ''
+        add_ids = ['none']
+        for a in self.user.addresses:
+            add_ids.append(str(a.id))
+        add_ids.append('new')
+        self.select_address = SelectField(self.name, 
+                                          refresh_on_change=True, 
+                                          refresh_on_change_values=add_ids)
+        if self.value == 'none':
+            self.select_address.add_option('Select one', 'none', selected=True)
+        else:
+            self.select_address.add_option('Select one', 'none')
+        for a in self.user.addresses:
+            if not a.deleted:
+                if self.value == str(a.id):
+                    self.select_address.add_option(a.desc, str(a.id), selected=True)
+                    # display this address
+                    address_html = '''<div class="form-row">
+                                      %s
+                                      </div>''' % a.get_html()
+                else:
+                    self.select_address.add_option(a.desc, str(a.id))
+        if self.value == 'new':
+            self.select_address.add_option('Add a new address', 'new', selected=True)
+            for field_name, label in self.fields():
+                add_field = TextField(self.name+'_'+field_name, 
+                                      40,
+                                      util.restore_text( self.params.get( self.name+'_'+field_name, ''  ) )) 
+                address_html += ''' <div class="form-row">
+                                        <label>%s</label>
+                                        %s
+                                    </div>
+                                ''' % (label, add_field.get_html())
+        else:
+            self.select_address.add_option('Add a new address', 'new')
+        return self.select_address.get_html()+address_html
 
 
 def get_suite():

@@ -24,7 +24,7 @@ $( function() {
             refresh = true;
         }
         if ( refresh ){
-            $( "#new_request" ).submit();
+            $( "#edit_request" ).submit();
         }
     });
 });
@@ -40,12 +40,12 @@ $( function() {
 </ul>
 
 <div class="toolForm">
-    <div class="toolFormTitle">Add a new request</div>
+    <div class="toolFormTitle">Edit request "${request.name}"</div>
     %if len(select_request_type.options) == 1:
         There are no request types created for a new request.
     %else:
         <div class="toolFormBody">
-            <form name="new_request" id="new_request" action="${h.url_for( controller='requests', action='new', create=True )}" method="post" >
+            <form name="edit_request" id="edit_request" action="${h.url_for( controller='requests', action='edit', request_id=request.id)}" method="post" >
                 <div class="form-row">
                     <label>
                         Select Request Type:
@@ -74,8 +74,8 @@ $( function() {
                       <div style="clear: both"></div>
                     </div>
                     <div class="form-row">
-                        <input type="submit" name="create_request_button" value="Save"/> 
-                        <input type="submit" name="create_request_samples_button" value="Add samples"/>
+                        <input type="submit" name="save_changes_request_button" value="Save changes"/> 
+                        ##<input type="submit" name="edit_samples_button" value="Edit samples"/>
                     </div>
                %endif
         </form>

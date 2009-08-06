@@ -21,7 +21,7 @@ require_login_nocreation_template = require_login_template % ""
 require_login_creation_template = require_login_template % "  If you don't already have an account, <a href='%s'>you may create one</a>."
 
 class User( BaseController ):
-    
+    edit_address_id = None
     @web.expose
     def index( self, trans, **kwd ):
         return trans.fill_template( '/user/index.mako', user=trans.get_user() )
@@ -224,3 +224,186 @@ class User( BaseController ):
         else:
             # User not logged in, history group must be only public
             return trans.show_error_message( "You must be logged in to change your default permitted actions." )
+        
+    @web.expose
+    def manage_addresses(self, trans, **kwd):
+        if trans.user:
+            params = util.Params( kwd )
+            show_filter = util.restore_text( params.get( 'show_filter', 'Active'  ) )
+            if show_filter == 'All':
+                addresses = [address for address in trans.user.addresses]
+            elif show_filter == 'Deleted':
+                addresses = [address for address in trans.user.addresses if address.deleted]
+            else:
+                addresses = [address for address in trans.user.addresses if not address.deleted]
+            return trans.fill_template( 'user/address.mako', 
+                                        addresses=addresses,
+                                        show_filter=show_filter)
+        else:
+            # User not logged in, history group must be only public
+            return trans.show_error_message( "You must be logged in to change your default permitted actions." )
+        
+    @web.expose
+    def new_address( self, trans, short_desc='', name='', institution='', address1='',  
+                     address2='', city='', state='', postal_code='', country='', phone='' ):
+        if trans.app.config.require_login:
+            refresh_frames = [ 'masthead', 'history', 'tools' ]
+        else:
+            refresh_frames = [ 'masthead', 'history' ]
+        if not trans.app.config.allow_user_creation and not trans.user_is_admin():
+            return trans.show_error_message( 'User registration is disabled.  Please contact your Galaxy administrator for an account.' )
+        short_desc_error = name_error = institution_error = address1_error = city_error = None
+        address2_error = state_error = postal_code_error = country_error = phone_error = None
+        if short_desc:
+            if not len( short_desc ):
+                short_desc_error = 'Enter a short description for this address'
+            elif not len( name ):
+                name_error = 'Enter the full name'
+            elif not len( institution ):
+                institution_error = 'Enter the institution associated with the user'
+            elif not len ( address1 ):
+                address1_error = 'Enter the address'
+            elif not len( city ):
+                city_error = 'Enter the city'
+            elif not len( state ):
+                state_error = 'Enter the state/province/region'
+            elif not len( postal_code ):
+                postal_code_error = 'Enter the postal code'
+            elif not len( country ):
+                country_error = 'Enter the country'
+            else:
+                user_address = trans.app.model.UserAddress( user=trans.user, desc=short_desc, 
+                                                            name=name, institution=institution, 
+                                                            address=address1+' '+address2, city=city, 
+                                                            state=state, postal_code=postal_code, 
+                                                            country=country, phone=phone)
+                user_address.flush()
+                return trans.response.send_redirect( web.url_for( controller='user',
+                                                                  action='manage_addresses',
+                                                                  msg='Address <b>%s</b> has been added' % user_address.desc,
+                                                                  messagetype='done') )
+        
+        return trans.show_form( 
+            web.FormBuilder( web.url_for(), "New address", submit_text="Save" )
+                .add_text( "short_desc", "Short address description", value=short_desc, error=short_desc_error )
+                .add_text( "name", "Name", value=name, error=name_error )
+                .add_text( "institution", "Institution", value=institution, error=institution_error )
+                .add_text( "address1", "Address Line 1", value=address1, error=address1_error )
+                .add_text( "address2", "Address Line 2", value=address2, error=address2_error )
+                .add_text( "city", "City", value=city, error=city_error )
+                .add_text( "state", "State/Province/Region", value=state, error=state_error )
+                .add_text( "postal_code", "Postal Code", value=postal_code, error=postal_code_error )
+                .add_text( "country", "Country", value=country, error=country_error )
+                .add_text( "phone", "Phone", value=phone, error=phone_error ) )
+
+
+    @web.expose
+    def edit_address( self, trans, address_id=None, short_desc='', name='', institution='', address1='',  
+                     address2='', city='', state='', postal_code='', country='', phone='' ):
+        import sys
+        
+        if trans.app.config.require_login:
+            refresh_frames = [ 'masthead', 'history', 'tools' ]
+        else:
+            refresh_frames = [ 'masthead', 'history' ]
+        if not trans.app.config.allow_user_creation and not trans.user_is_admin():
+            return trans.show_error_message( 'User registration is disabled.  Please contact your Galaxy administrator for an account.' )
+        short_desc_error = name_error = institution_error = address1_error = city_error = None
+        address2_error = state_error = postal_code_error = country_error = phone_error = None
+        if short_desc:
+            if not len( short_desc ):
+                short_desc_error = 'Enter a short description for this address'
+            elif not len( name ):
+                name_error = 'Enter the full name'
+            elif not len( institution ):
+                institution_error = 'Enter the institution associated with the user'
+            elif not len ( address1 ):
+                address1_error = 'Enter the address'
+            elif not len( city ):
+                city_error = 'Enter the city'
+            elif not len( state ):
+                state_error = 'Enter the state/province/region'
+            elif not len( postal_code ):
+                postal_code_error = 'Enter the postal code'
+            elif not len( country ):
+                country_error = 'Enter the country'
+            else:
+                if self.edit_address_id:
+                    try:
+                        user_address = trans.app.model.UserAddress.get(int(self.edit_address_id))
+                    except:
+                        return trans.response.send_redirect( web.url_for( controller='user',
+                                                                          action='manage_addresses',
+                                                                          msg='Invalid address ID',
+                                                                          messagetype='error') )
+                    user_address.desc = short_desc
+                    user_address.name = name
+                    user_address.institution = institution
+                    user_address.address = address1+' '+address2
+                    user_address.city = city
+                    user_address.state = state
+                    user_address.postal_code = postal_code
+                    user_address.country = country
+                    user_address.phone = phone
+                    user_address.flush()
+                    self.edit_address_id = None
+                    return trans.response.send_redirect( web.url_for( controller='user',
+                                                                      action='manage_addresses',
+                                                                      msg='Changes made to address <b>%s</b> are saved.' % user_address.desc,
+                                                                      messagetype='done') )
+                self.edit_address_id = address_id
+        return trans.show_form( 
+            web.FormBuilder( web.url_for(), "Edit address", submit_text="Save changes" )
+                .add_text( "short_desc", "Short address description", value=short_desc, error=short_desc_error )
+                .add_text( "name", "Name", value=name, error=name_error )
+                .add_text( "institution", "Institution", value=institution, error=institution_error )
+                .add_text( "address1", "Address Line 1", value=address1, error=address1_error )
+                .add_text( "address2", "Address Line 2", value=address2, error=address2_error )
+                .add_text( "city", "City", value=city, error=city_error )
+                .add_text( "state", "State/Province/Region", value=state, error=state_error )
+                .add_text( "postal_code", "Postal Code", value=postal_code, error=postal_code_error )
+                .add_text( "country", "Country", value=country, error=country_error )
+                .add_text( "phone", "Phone", value=phone, error=phone_error ) )
+        
+    @web.expose
+    def delete_address( self, trans, address_id=None):
+        if trans.app.config.require_login:
+            refresh_frames = [ 'masthead', 'history', 'tools' ]
+        else:
+            refresh_frames = [ 'masthead', 'history' ]
+        if not trans.app.config.allow_user_creation and not trans.user_is_admin():
+            return trans.show_error_message( 'User registration is disabled.  Please contact your Galaxy administrator for an account.' )
+        try:
+            user_address = trans.app.model.UserAddress.get(int(address_id))
+        except:
+            return trans.fill_template( 'user/address.mako',
+                                        msg='Invalid address ID',
+                                        messagetype='error' )
+        user_address.deleted = True
+        user_address.flush()
+        return trans.response.send_redirect( web.url_for( controller='user',
+                                                          action='manage_addresses',
+                                                          msg='Address <b>%s</b> deleted' % user_address.desc,
+                                                          messagetype='done') )
+        
+    @web.expose
+    def undelete_address( self, trans, address_id=None):
+        if trans.app.config.require_login:
+            refresh_frames = [ 'masthead', 'history', 'tools' ]
+        else:
+            refresh_frames = [ 'masthead', 'history' ]
+        if not trans.app.config.allow_user_creation and not trans.user_is_admin():
+            return trans.show_error_message( 'User registration is disabled.  Please contact your Galaxy administrator for an account.' )
+        try:
+            user_address = trans.app.model.UserAddress.get(int(address_id))
+        except:
+            return trans.fill_template( 'user/address.mako',
+                                        msg='Invalid address ID',
+                                        messagetype='error' )
+        user_address.deleted = False
+        user_address.flush()
+        return trans.response.send_redirect( web.url_for( controller='user',
+                                                          action='manage_addresses',
+                                                          msg='Address <b>%s</b> is restored' % user_address.desc,
+                                                          messagetype='done') )
+

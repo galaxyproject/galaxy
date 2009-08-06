@@ -2120,12 +2120,19 @@ class Admin( BaseController ):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
+        show_filter = util.restore_text( params.get( 'show_filter', 'Active'  ) )
         forms = self._get_all_forms(trans, all_versions=True)
+        request_types_list = trans.app.model.RequestType.query().all()
+        if show_filter == 'All':
+            request_types = request_types_list
+        elif show_filter == 'Deleted':
+            request_types = [rt for rt in request_types_list if rt.deleted]
+        else:
+            request_types = [rt for rt in request_types_list if not rt.deleted]
         return trans.fill_template( '/admin/requests/manage_request_types.mako', 
-                                    request_types=trans.app.model.RequestType.query().all(),
+                                    request_types=request_types,
                                     forms=forms,
-                                    deleted=False,
-                                    show_deleted=False,
+                                    show_filter=show_filter,
                                     msg=msg,
                                     messagetype=messagetype )
     @web.expose
@@ -2155,13 +2162,10 @@ class Admin( BaseController ):
                                             forms=self._get_all_forms(trans, all_versions=False),
                                             msg=msg,
                                             messagetype='error')
-            return trans.fill_template( '/admin/requests/manage_request_types.mako', 
-                                        request_types=trans.app.model.RequestType.query().all(),
-                                        forms=self._get_all_forms(trans, all_versions=True),
-                                        deleted=False,
-                                        show_deleted=False,
-                                        msg=msg,
-                                        messagetype=messagetype )
+            return trans.response.send_redirect( web.url_for( controller='admin',
+                                                              action='manage_request_types',
+                                                              msg='Request type <b>%s</b> has been created' % st.name,
+                                                              messagetype='done') )
         elif params.get('edit', False) == 'True':
             rt = trans.app.model.RequestType.get(int(util.restore_text( params.id )))
             ss_list = trans.app.model.SampleState.filter(trans.app.model.SampleState.table.c.request_type_id == rt.id).all()
@@ -2197,8 +2201,8 @@ class Admin( BaseController ):
             ss.delete()
             ss.flush()
         # unsubmitted state
-        ss = trans.app.model.SampleState('Unsubmitted', 'Sample not yet submitted', rt) 
-        ss.flush()
+        #ss = trans.app.model.SampleState('Unsubmitted', 'Sample not yet submitted', rt) 
+        ##ss.flush()
         for i in range( num_states ):
             name = util.restore_text( params.get( 'new_element_name_%i' % i, None ))
             desc = util.restore_text( params.get( 'new_element_description_%i' % i, None ))
@@ -2206,3 +2210,31 @@ class Admin( BaseController ):
             ss.flush()
         msg = "The new request type named '%s' with %s state(s) has been created" % (rt.name, num_states)
         return rt, msg
+
+    @web.expose
+    @web.require_admin
+    def delete_request_type( self, trans, **kwd ):
+        params = util.Params( kwd )
+        msg = util.restore_text( params.get( 'msg', ''  ) )
+        messagetype = params.get( 'messagetype', 'done' )
+        rt = trans.app.model.RequestType.get(int(util.restore_text( params.request_type_id )))
+        rt.deleted = True
+        rt.flush()
+        return trans.response.send_redirect( web.url_for( controller='admin',
+                                                          action='manage_request_types',
+                                                          msg='Request type <b>%s</b> has been deleted' % rt.name,
+                                                          messagetype='done') )
+        
+    @web.expose
+    @web.require_admin
+    def undelete_request_type( self, trans, **kwd ):
+        params = util.Params( kwd )
+        msg = util.restore_text( params.get( 'msg', ''  ) )
+        messagetype = params.get( 'messagetype', 'done' )
+        rt = trans.app.model.RequestType.get(int(util.restore_text( params.request_type_id )))
+        rt.deleted = False
+        rt.flush()
+        return trans.response.send_redirect( web.url_for( controller='admin',
+                                                          action='manage_request_types',
+                                                          msg='Request type <b>%s</b> has been deleted' % rt.name,
+                                                          messagetype='done') )

@@ -547,29 +547,29 @@ class RootController( BaseController ):
     #     return trans.fill_template( "/root/masthead.mako", brand=brand, wiki_url=wiki_url, 
     #       blog_url=blog_url,bugs_email=bugs_email, screencasts_url=screencasts_url, admin_user=admin_user, active_view=active_view )
 
-    @web.expose
-    def dataset_errors( self, trans, id=None, **kwd ):
-        """View/fix errors associated with dataset"""
-        data = trans.app.model.HistoryDatasetAssociation.get( id )
-        p = kwd
-        if p.get("fix_errors", None):
-            # launch tool to create new, (hopefully) error free dataset
-            tool_params = {}
-            tool_params["tool_id"] = 'fix_errors'
-            tool_params["runtool_btn"] = 'T'
-            tool_params["input"] = id
-            tool_params["ext"] = data.ext
-            # send methods selected
-            repair_methods = data.datatype.repair_methods( data )
-            methods = []
-            for method, description in repair_methods:
-                if method in p: methods.append(method)
-            tool_params["methods"] = ",".join(methods)
-            url = "/tool_runner/index?" + urllib.urlencode(tool_params)
-            trans.response.send_redirect(url)                
-        else:
-            history = trans.app.model.History.get( data.history_id )
-            return trans.fill_template('dataset/validation.tmpl', data=data, history=history)
+    # @web.expose
+    # def dataset_errors( self, trans, id=None, **kwd ):
+    #     """View/fix errors associated with dataset"""
+    #     data = trans.app.model.HistoryDatasetAssociation.get( id )
+    #     p = kwd
+    #     if p.get("fix_errors", None):
+    #         # launch tool to create new, (hopefully) error free dataset
+    #         tool_params = {}
+    #         tool_params["tool_id"] = 'fix_errors'
+    #         tool_params["runtool_btn"] = 'T'
+    #         tool_params["input"] = id
+    #         tool_params["ext"] = data.ext
+    #         # send methods selected
+    #         repair_methods = data.datatype.repair_methods( data )
+    #         methods = []
+    #         for method, description in repair_methods:
+    #             if method in p: methods.append(method)
+    #         tool_params["methods"] = ",".join(methods)
+    #         url = "/tool_runner/index?" + urllib.urlencode(tool_params)
+    #         trans.response.send_redirect(url)                
+    #     else:
+    #         history = trans.app.model.History.get( data.history_id )
+    #         return trans.fill_template('dataset/validation.tmpl', data=data, history=history)
 
     # ---- Debug methods ----------------------------------------------------
 

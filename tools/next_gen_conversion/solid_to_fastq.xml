@@ -38,17 +38,18 @@
   </inputs>
   <outputs>
     <!-- Variable number of outputs. Either one (for single-end) or two (for paired-end) -->
-    <data name="output1" format="tabular"/>
-    <data name="output2" format="tabular">
+    <data name="output1" format="fastqsanger"/>
+    <data name="output2" format="fastqsanger">
       <filter>paired['pairedSingle'] == 'paired'</filter>
     </data>    
   </outputs>
   <tests>
-<!--    <test>
+<!--
+    <test>
       <param name="pairedSingle" value="single" />
       <param name="input1" value="s2fq_phiX.csfasta" ftype="csfasta" />
       <param name="input2" value="s2fq_phiX.qualsolid" ftype="qualsolid" />
-      <output name="output1" file="s2fq_out1.tabular" />
+      <output name="output1" file="s2fq_out1.fastqsanger" />
     </test>
 -->
     <!-- testing framework does not deal with multiple outputs yet
@@ -58,8 +59,8 @@
       <param name="input2" value="s2fq_paired_F3_QV.qualsolid" ftype="qualsolid" />
       <param name="input3" value="s2fq_paired_R3.csfasta" ftype="csfasta" />
       <param name="input4" value="s2fq_paired_R3_QV.qualsolid" ftype="qualsolid" />
-      <output name="output1" file="s2fq_out2.tabular" />
-      <output name="output2" file="s2fq_out3.tabular" />
+      <output name="output1" file="s2fq_out2.fastqsanger" />
+      <output name="output2" file="s2fq_out3.fastqsanger" />
     </test>
     -->
   </tests>

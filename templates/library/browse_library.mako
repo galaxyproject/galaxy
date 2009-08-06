@@ -1,5 +1,5 @@
 <%inherit file="/base.mako"/>
-<%namespace file="common.mako" import="render_dataset" />
+## <%namespace file="common.mako" import="render_dataset" />
 <%namespace file="/message.mako" import="render_msg" />
 <% from galaxy import util %>
 
@@ -10,102 +10,144 @@
 </%def>
 
 <%
+
 def name_sorted( l ):
     return sorted( l, lambda a, b: cmp( a.name.lower(), b.name.lower() ) )
+
+class RowCounter( object ):
+    def __init__( self ):
+        self.count = 0
+    def increment( self ):
+        self.count += 1
+    def __str__( self ):
+        return str( self.count )
+
 %>
 
 <script type="text/javascript">
     $( document ).ready( function () {
-        // Check/uncheck boxes in subfolders.
-        $("input.folderCheckbox").click( function() {
-            if ( $(this).is(":checked") ) {
-                //$(this).parent().children().find("input[type=checkbox]").each( function() { this.checked = true; });
-                $(this).parent().next("ul").find("input[type=checkbox]").each( function() { this.checked = true; });
-            } else {
-                //$(this).parent().children().find("input[type=checkbox]").each( function() { this.checked = false; });
-                $(this).parent().next("ul").find("input[type=checkbox]").each( function() { this.checked = false; });
-            }
-        });
-        // If you uncheck a lower level checkbox, uncheck the boxes above it
-        // (since deselecting a child means the parent is not fully selected any
-        // more).
-        $("input[type=checkbox]").click( function() {
-            if ( ! $(this).is(":checked") ) {
-                //var folder_rows = $(this).parents("ul").next("li.folderRow");
-                //var folder_rows = $(this).parents("ul").children("li.folderRow");
-                var folder_rows = $(this).parents("ul").prev("li.folderRow");
-                //$(folder_rows).children("input[type=checkbox]").not(this).each( function() {
-                $(folder_rows).find("input[type=checkbox]").each( function() {
-                    this.checked = false;
+        $("#library-grid").each( function() {
+           // Recursively fill in children and descendents of each row
+           var process_row = function( q, parents ) {
+                // Find my index
+                var index = $(q).parent().children().index( $(q) );
+                // Find my immediate children
+                var children = $(q).siblings().filter( "[parent='" + index + "']" );
+                // Recursively handle them
+                var descendents = children;
+                children.each( function() {
+                    child_descendents = process_row( $(this), parents.add( q ) );
+                    descendents = descendents.add( child_descendents );
                 });
-            }
-        });
-        // Handle the hide/show triangles
-        $("span.expandLink").wrap( "<a href='#' class='expandLink'></a>" ).click( function() {
-            var contents = $(this).parents("li:first").next("ul");
-            if ( this.id == "libraryRow" ) {
-                var icon_open = "${h.url_for( '/static/images/silk/book_open.png' )}";
-                var icon_closed = "${h.url_for( '/static/images/silk/book.png' )}";
-            } else {
-                var icon_open = "${h.url_for( '/static/images/silk/folder_page.png' )}";
-                var icon_closed = "${h.url_for( '/static/images/silk/folder.png' )}";
-            }
-            if ( contents.is(":visible") ) {
-                contents.slideUp("fast");
-                $(this).find("img.expanderIcon").each( function() { this.src = "${h.url_for( '/static/images/silk/resultset_next.png' )}"; });
-                $(this).find("img.rowIcon").each( function() { this.src = icon_closed; });
-            } else {
-                contents.slideDown("fast");
-                $(this).find("img.expanderIcon").each( function() { this.src = "${h.url_for( '/static/images/silk/resultset_bottom.png' )}"; });
-                $(this).find("img.rowIcon").each( function() { this.src = icon_open; });
-            }
-        });
-        // Hide all dataset bodies
-        $("div.historyItemBody").hide();
-        // Handle the dataset body hide/show link.
-        $("div.historyItemWrapper").each( function() {
-            var id = this.id;
-            var li = $(this).parent();
-            var body = $(this).children( "div.historyItemBody" );
-            var peek = body.find( "pre.peek" )
-            $(this).children( ".historyItemTitleBar" ).find( ".historyItemTitle" ).wrap( "<a href='#'></a>" ).click( function() {
-                if ( body.is(":visible") ) {
-                    if ( $.browser.mozilla ) { peek.css( "overflow", "hidden" ) }
-                    body.slideUp( "fast" );
-                    li.removeClass( "datasetHighlighted" );
-                } 
-                else {
-                    body.slideDown( "fast", function() { 
-                        if ( $.browser.mozilla ) { peek.css( "overflow", "auto" ); } 
-                    });
-                    li.addClass( "datasetHighlighted" );
-                }
-                return false;
-            });
+                // Set up expand / hide link
+                $(q).find( "span.expandLink").wrap( "<a href='#' class='expandLink'></a>" ).click( function() {
+                    if ( children.is( ":visible" ) ) {
+                        descendents.hide();
+                        descendents.removeClass( "expanded" );
+                        q.removeClass( "expanded" );
+                        // expanded = false;
+                    } else {
+                        children.show();
+                        q.addClass( "expanded" );
+                        // expanded = true;
+                    }
+                });
+                // Check/uncheck boxes in subfolders.
+                q.children( "td" ).children( "input[type=checkbox]" ).click( function() {
+                    if ( $(this).is(":checked") ) {
+                        descendents.find( "input[type=checkbox]").attr( 'checked', true );
+                    } else {
+                        descendents.find( "input[type=checkbox]").attr( 'checked', false );
+                        // If you uncheck a lower level checkbox, uncheck the boxes above it
+                        // (since deselecting a child means the parent is not fully selected any
+                        // more).
+                        parents.children( "td" ).children( "input[type=checkbox]" ).attr( "checked", false );
+                    }
+                });
+                // return descendents for use by parent
+                return descendents;
+           }
+           $(this).find( "tbody tr" ).not( "[parent]").each( function() {
+                descendents = process_row( $(this), $([]) );
+                descendents.hide();
+           });
         });
     });
 </script>
 
-<![if gte IE 7]>
-<script type="text/javascript">
-    $( document ).ready( function() {
-        // Add rollover effect to any image with a 'rollover' attribute
-        preload_images = {}
-        $( "img[rollover]" ).each( function() {
-            var r = $(this).attr('rollover');
-            var s = $(this).attr('src');
-            preload_images[r] = true;
-            $(this).hover( 
-                function() { $(this).attr( 'src', r ) },
-                function() { $(this).attr( 'src', s ) }
-            )
-        })
-        for ( r in preload_images ) { $( "<img>" ).attr( "src", r ) }
-    })
-</script>
-<![endif]>
+<%def name="render_dataset( library_dataset, selected, library, pad, parent, row_conter )">
+    <%
+        ## The received data must always be a LibraryDataset object, but the object id passed to methods from the drop down menu
+        ## should be the underlying ldda id to prevent id collision ( which could happen when displaying children, which are always
+        ## lddas ).  We also need to make sure we're displaying the latest version of this library_dataset, so we display the attributes
+        ## from the ldda.
+        ldda = library_dataset.library_dataset_dataset_association
+        if ldda.user:
+            uploaded_by = ldda.user.email
+        else:
+            uploaded_by = 'anonymous'
+        if ldda == ldda.library_dataset.library_dataset_dataset_association:
+            current_version = True
+        else:
+            current_version = False
+    %>
 
-<%def name="render_folder( folder, folder_pad, created_ldda_ids, library_id )">
+    <tr class="datasetRow"
+    %if parent is not None:
+        parent="${parent}"
+        style="display: none;"
+    %endif
+    >
+        <td style="padding-left: ${pad+20}px;">
+            
+            
+            %if selected:
+                <input type="checkbox" name="ldda_ids" value="${ldda.id}" checked/>
+            %else:
+                <input type="checkbox" name="ldda_ids" value="${ldda.id}"/>
+            %endif
+            
+            <a href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library.id, folder_id=library_dataset.folder.id, id=ldda.id, info=True )}"><b>${ldda.name[:60]}</b></a>
+            <a id="dataset-${ldda.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
+            
+            <div popupmenu="dataset-${ldda.id}-popup">
+                %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=ldda.library_dataset ):
+                    <a class="action-button" href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library.id, folder_id=library_dataset.folder.id, id=ldda.id, edit_info=True )}">Edit this dataset's information</a>
+                %else:
+                    <a class="action-button" href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library.id, folder_id=library_dataset.folder.id, id=ldda.id, information=True )}">View this dataset's information</a>
+                %endif
+                ## We're disabling the ability to add templates at the LDDA and LibraryDataset level, but will leave this here for possible future use
+                ##%if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=ldda.library_dataset ):
+                ##    <a class="action-button" href="${h.url_for( controller='library', action='info_template', library_id=library.id, library_dataset_id=library_dataset.id, new_template=True )}">Add an information template to this dataset</a>
+                ##%endif
+                %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS, dataset=ldda.dataset ) and trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MANAGE, library_item=ldda.library_dataset ):
+                    <a class="action-button" href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library.id, folder_id=library_dataset.folder.id, id=ldda.id, permissions=True )}">Edit this dataset's permissions</a>
+                %if current_version and trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=ldda.library_dataset ):
+                    <a class="action-button" href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library.id, folder_id=library_dataset.folder.id, replace_id=library_dataset.id )}">Upload a new version of this dataset</a>
+                %endif
+                %endif
+                %if ldda.has_data:
+                    <a class="action-button" href="${h.url_for( controller='library', action='datasets', library_id=library.id, ldda_ids=str( ldda.id ), do_action='add' )}">Import this dataset into your current history</a>
+                    <a class="action-button" href="${h.url_for( controller='library', action='download_dataset_from_folder', id=ldda.id, library_id=library.id )}">Download this dataset</a>
+                %endif
+            </div>
+            
+        </td>
+        <td>${ldda.message}</td>
+        <td>${uploaded_by}</td>
+        <td>${ldda.create_time.strftime( "%Y-%m-%d" )}</td>
+    </tr>
+                
+    <%
+        my_row = row_counter.count
+        row_counter.increment()
+    %>
+                
+
+</%def>
+
+
+<%def name="render_folder( folder, folder_pad, created_ldda_ids, library_id, parent=None, row_counter=None )">
     <%
         def show_folder():
             if trans.app.security_agent.check_folder_contents( trans.user, folder ) or trans.app.security_agent.show_library_item( trans.user, folder ):
@@ -119,27 +161,36 @@ def name_sorted( l ):
         else:
             pad = folder_pad + 20
         if folder_pad == 0:
-            expander = "/static/images/silk/resultset_bottom.png"
-            folder_img = "/static/images/silk/folder_page.png"
             subfolder = False
         else:
-            expander = "/static/images/silk/resultset_next.png"
-            folder_img = "/static/images/silk/folder.png"
             subfolder = True
         created_ldda_id_list = util.listify( created_ldda_ids )
         if created_ldda_id_list:
            created_ldda_ids = [ int( ldda_id ) for ldda_id in created_ldda_id_list ]
+        my_row = None
     %>
     %if not root_folder:
-        <li class="folderRow libraryOrFolderRow" style="padding-left: ${pad}px;">
-            <input type="checkbox" class="folderCheckbox" style="float: left;"/>
-            <div class="rowTitle">
-                <span class="expandLink"><img src="${h.url_for( expander )}" class="expanderIcon"/><img src="${h.url_for( folder_img )}" class="rowIcon"/>
+        <tr class="folderRow libraryOrFolderRow"
+        %if parent is not None:
+            parent="${parent}"
+            style="display: none;"
+        %endif
+        >
+            <td style="padding-left: ${folder_pad}px;">
+
+                <span class="expandLink"></span>
+
+                <input type="checkbox" class="folderCheckbox"/>
+                
+                <span class="rowIcon"></span>
+                
                 ${folder.name}
                 %if folder.description:
                     <i>- ${folder.description}</i>
                 %endif
+                
                 <a id="folder_img-${folder.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
+                
                 <div popupmenu="folder_img-${folder.id}-popup">
                     %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=folder ):
                         <a class="action-button" href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library_id, folder_id=folder.id )}">Add datasets to this folder</a>
@@ -167,125 +218,135 @@ def name_sorted( l ):
                     %endif
                 </div>
             </div>
-        </li>
+            <td colspan="3"></td>
+        </tr>
+        <%
+            my_row = row_counter.count
+            row_counter.increment()
+        %>
     %endif
-    %if subfolder:
-        <ul id="subFolder" style="display: none;">
-    %else:
-        <ul>
-    %endif
-        %for child_folder in name_sorted( folder.active_folders ):
-            ${render_folder( child_folder, pad, created_ldda_ids, library_id )}
-        %endfor
-        %for library_dataset in name_sorted( folder.active_datasets ):
-            <%
-                selected = created_ldda_ids and library_dataset.library_dataset_dataset_association.id in created_ldda_ids
-            %>
-            %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.DATASET_ACCESS, dataset=library_dataset.library_dataset_dataset_association.dataset ):
-                <li class="datasetRow" style="padding-left: ${pad + 20}px;">${render_dataset( library_dataset, selected, library )}</li>
-            %endif
-        %endfor
-    </ul>
+
+    %for child_folder in name_sorted( folder.active_folders ):
+        ${render_folder( child_folder, pad, created_ldda_ids, library_id, my_row, row_counter )}
+    %endfor
+    %for library_dataset in name_sorted( folder.active_datasets ):
+        <%
+            selected = created_ldda_ids and library_dataset.library_dataset_dataset_association.id in created_ldda_ids
+        %>
+        %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.DATASET_ACCESS, dataset=library_dataset.library_dataset_dataset_association.dataset ):
+            ${render_dataset( library_dataset, selected, library, pad, my_row, row_counter )}
+        %endif
+    %endfor
 </%def>
 
-<h2>Library '${library.name}'</h2>
+<h2>Library &ldquo;${library.name}&rdquo;</h2>
 
-%if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=library ):
-    <ul class="manage-table-actions">
-        %if not deleted:
-            <li>
-                <a class="action-button" href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library.id, folder_id=library.root_folder.id )}"><span>Add datasets to this library</span></a>
-            </li>
-            <li>
-                <a class="action-button" href="${h.url_for( controller='library', action='folder', new=True, id=library.root_folder.id, library_id=library.id )}">Add a folder to this library</a>
-            </li>
-        %endif
-    </ul>
-%endif
+<ul class="manage-table-actions">
+    
+    %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=library ):
+            %if not deleted:
+                <li>
+                    <a class="action-button" href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library.id, folder_id=library.root_folder.id )}"><span>Add datasets to this library</span></a>
+                </li>
+                <li>
+                    <a class="action-button" href="${h.url_for( controller='library', action='folder', new=True, id=library.root_folder.id, library_id=library.id )}">Add a folder to this library</a>
+                </li>
+            %endif
+    %endif
+    
+    %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=library ):
+        <li><a class="action-button" href="${h.url_for( controller='library', action='library', information=True, id=library.id )}">Edit this library's information</a></li>
+    %else:
+        <li><a class="action-button" href="${h.url_for( controller='library', action='library', information=True, id=library.id )}">View this library's information</a></li>
+    %endif
+    ## TODO: temporarily eliminating templates until we have the new forms features done
+    ##%if library.library_info_template_associations:
+    ##    <% template = library.get_library_item_info_templates( template_list=[], restrict=False )[0] %>
+    ##    %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=template ):
+    ##        <a class="action-button" href="${h.url_for( controller='library', action='info_template', library_id=library.id, id=template.id, edit_template=True )}">Edit this library's information template</a>
+    ##    %endif
+    ##%else:
+    ##    %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=library ):
+    ##        <a class="action-button" href="${h.url_for( controller='library', action='info_template', library_id=library.id, new_template=True )}">Add an information template to this library</a>
+    ##    %endif
+    ##%endif
+    %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MANAGE, library_item=library ):
+        <li><a class="action-button" href="${h.url_for( controller='library', action='library', permissions=True, id=library.id )}">Edit this library's permissions</a></li>
+    %endif
+    
+</ul>
 
 %if msg:
     ${render_msg( msg, messagetype )}
 %endif
 
 <form name="import_from_library" action="${h.url_for( controller='library', action='datasets', library_id=library.id )}" method="post">
-    <ul>
-        <li class="libraryRow libraryOrFolderRow">
-            <div class="rowTitle">
-                <%
-                    library_item_ids = {}
-                    library_item_ids[ 'library' ] = library.id
-                %>
-                <table cellspacing="0" cellpadding="0" border="0" width="100%" class="libraryTitle">
-                    <tr>
-                        <th width="*">
-                            <span class="expandLink" id="libraryRow"><img src="${h.url_for( '/static/images/silk/resultset_bottom.png' )}" class="expanderIcon"/><img src="${h.url_for( '/static/images/silk/book_open.png' )}" class="rowIcon"/>
-                                ${library.name}
-                                %if library.description:
-                                    <i>- ${library.description}</i>
-                                %endif
-                                <a id="library-${library.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
-                                <div popupmenu="library-${library.id}-popup">
-                                    %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=library ):
-                                        <a class="action-button" href="${h.url_for( controller='library', action='library', information=True, id=library.id )}">Edit this library's information</a>
-                                    %else:
-                                        <a class="action-button" href="${h.url_for( controller='library', action='library', information=True, id=library.id )}">View this library's information</a>
-                                    %endif
-                                    ## TODO: temporarily eliminating templates until we have the new forms features done
-                                    ##%if library.library_info_template_associations:
-                                    ##    <% template = library.get_library_item_info_templates( template_list=[], restrict=False )[0] %>
-                                    ##    %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=template ):
-                                    ##        <a class="action-button" href="${h.url_for( controller='library', action='info_template', library_id=library.id, id=template.id, edit_template=True )}">Edit this library's information template</a>
-                                    ##    %endif
-                                    ##%else:
-                                    ##    %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=library ):
-                                    ##        <a class="action-button" href="${h.url_for( controller='library', action='info_template', library_id=library.id, new_template=True )}">Add an information template to this library</a>
-                                    ##    %endif
-                                    ##%endif
-                                    %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MANAGE, library_item=library ):
-                                        <a class="action-button" href="${h.url_for( controller='library', action='library', permissions=True, id=library.id )}">Edit this library's permissions</a>
-                                    %endif
-                                </div>
-                            </span>
-                        </th>
-                    <th width="500">Information</th>
-                    <th width="150">Uploaded By</th>
-                    <th width="60">Date</th>
-                    </tr>
-                </table>
-            </div>
-        </li>
-        <ul>
-            ${render_folder( library.root_folder, 0, created_ldda_ids, library.id )}
-        </ul>
-        <br/>
-    </ul>
-    <select name="do_action" id="action_on_datasets_select">
-        %if default_action == 'add':
-            <option value="add" selected>Import selected datasets into your current history</option>
-        %else:
-            <option value="add">Import selected datasets into your current history</option>
-        %endif
-        %if default_action == 'manage_permissions':
-            <option value="manage_permissions" selected>Edit selected datasets' permissions</option>
-            # This condition should not contain an else clause because the user is not authorized
-            # to manage dataset permissions unless the default action is 'manage_permissions'
-        %endif
-        %if 'bz2' in comptypes:
-            <option value="tbz"
-            %if default_action == 'download':
-                selected
-            %endif>
-            >Download selected datasets as a .tar.bz2 file</option>
-        %endif
-        %if 'gz' in comptypes:
-            <option value="tgz">Download selected datasets as a .tar.gz file</option>
-        %endif
-        %if 'zip' in comptypes:
-            <option value="zip">Download selected datasets as a .zip file</option>
-        %endif
-    </select>
-    <input type="submit" class="primary-button" name="action_on_datasets_button" id="action_on_datasets_button" value="Go"/>
+
+    <%
+        library_item_ids = {}
+        library_item_ids[ 'library' ] = library.id
+    %>
+    
+    <table cellspacing="0" cellpadding="0" border="0" width="100%" class="grid" id="library-grid">
+        <thead>
+            
+            <tr class="libraryTitle">
+                <th style="padding-left: 42px;">Name</th>
+                <th>Information</th>
+                <th>Uploaded By</th>
+                <th>Date</th>
+            </thead>
+        </tr>
+
+        <% row_counter = RowCounter() %>
+
+        ${render_folder( library.root_folder, 0, created_ldda_ids, library.id, Nonw, row_counter )}
+
+        <tfoot>
+        
+            <tr>
+                <td colspan="4" style="padding-left: 42px;">
+
+                    For selected items:
+
+                    <select name="do_action" id="action_on_datasets_select">
+                        %if default_action == 'add':
+                            <option value="add" selected>Import into your current history</option>
+                        %else:
+                            <option value="add">Import into your current history</option>
+                        %endif
+                        %if default_action == 'manage_permissions':
+                            <option value="manage_permissions" selected>Edit permissions</option>
+                            # This condition should not contain an else clause because the user is not authorized
+                            # to manage dataset permissions unless the default action is 'manage_permissions'
+                        %endif
+                        %if 'bz2' in comptypes:
+                            <option value="tbz"
+                            %if default_action == 'download':
+                                selected
+                            %endif>
+                            >Download as a .tar.bz2 file</option>
+                        %endif
+                        %if 'gz' in comptypes:
+                            <option value="tgz">Download  as a .tar.gz file</option>
+                        %endif
+                        %if 'zip' in comptypes:
+                            <option value="zip">Download as a .zip file</option>
+                        %endif
+                    </select>
+                    <input type="submit" class="primary-button" name="action_on_datasets_button" id="action_on_datasets_button" value="Go"/>
+    
+                </td>
+    
+            </tr>
+    
+        </tfoot>
+    
+    </table>
+    
 </form>
+
+## Help about compression types
 
 %if len( comptypes ) > 1:
     <div>

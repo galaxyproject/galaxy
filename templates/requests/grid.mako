@@ -76,15 +76,19 @@
 
 <div class="grid-header">
     <h2>${grid.title}</h2>
-##    %if len(query.all()):
-##        <span class="title">Filter:</span>
-##        %for i, filter in enumerate( grid.standard_filters ):
-##            %if i > 0:    
-##                <span>|</span>
-##            %endif
-##            <span class="filter"><a href="${url( filter.get_url_args() )}">${filter.label}</a></span>
-##        %endfor
-##    %endif
+    ##%if len(query.all()):
+        ##<span class="title">Filter:</span>
+        %for i, filter in enumerate( grid.standard_filters ):
+            %if i > 0:    
+                <span>|</span>
+            %endif
+            %if grid.show_filter == filter.label:
+                <span class="filter"><a href="${h.url_for( controller='requests', action='list', show_filter=filter.label )}"><b>${filter.label}</b></a></span>
+            %else:
+                <span class="filter"><a href="${h.url_for( controller='requests', action='list', show_filter=filter.label )}">${filter.label}</a></span>
+            %endif
+        %endfor
+    ##%endif
 </div>
 
 <ul class="manage-table-actions">
@@ -103,7 +107,7 @@
     <table class="grid">
         <thead>
             <tr>
-                <th></th>
+                ##<th></th>
                 %for column in grid.columns:
                     %if column.visible:
                         <%
@@ -145,9 +149,9 @@
                 %endif
                 > 
                     ## Item selection column
-                    <td style="width: 1.5em;">
-                        <input type="checkbox" name="id" value=${trans.security.encode_id( item.id )} class="grid-row-select-checkbox" />
-                    </td>
+                    ##<td style="width: 1.5em;">
+                    ##    <input type="checkbox" name="id" value=${trans.security.encode_id( item.id )} class="grid-row-select-checkbox" />
+                    ##</td>
                     ## Data columns
                     %for column in grid.columns:
                         %if column.visible:
@@ -196,7 +200,7 @@
                 </tr>
             %endfor
         </tbody>
-##        <tfoot>
+        <tfoot>
 ##            <tr>
 ##                <td></td>
 ##                <td colspan="100">
@@ -208,7 +212,7 @@
 ##                    %endfor
 ##                </td>
 ##            </tr>
-##        </tfoot>
+        </tfoot>
     </table>
 </form>
 %endif

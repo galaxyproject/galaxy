@@ -26,6 +26,7 @@ class RequestsListGrid( grids.Grid ):
                           link=( lambda item: iff( item.deleted, None, dict( operation="show_request", id=item.id ) ) ), ),
         grids.GridColumn( "Type", key="request_type_id", method='get_request_type'),
         grids.GridColumn( "Last update", key="update_time", format=time_ago ),
+        grids.GridColumn( "State", key='state'),
         grids.GridColumn( "User", key="user_id", method='get_user')
         
     ]
@@ -36,9 +37,10 @@ class RequestsListGrid( grids.Grid ):
 #        grids.GridOperation( "Undelete", condition=( lambda item: item.deleted ) ),    
     ]
     standard_filters = [
-        grids.GridColumnFilter( "Active", args=dict( deleted=False ) ),
-        grids.GridColumnFilter( "Deleted", args=dict( deleted=True ) ),
-        grids.GridColumnFilter( "All", args=dict( deleted='All' ) )
+        grids.GridColumnFilter( model.Request.states.SUBMITTED, 
+                                args=dict( state=model.Request.states.SUBMITTED, deleted=False ) ),
+        grids.GridColumnFilter( model.Request.states.COMPLETE, args=dict( state=model.Request.states.COMPLETE, deleted=False ) ),
+        grids.GridColumnFilter( "All", args=dict( deleted=False ) )
     ]
     def get_user(self, trans, request):
         return trans.app.model.User.get(request.user_id).email
@@ -48,7 +50,8 @@ class RequestsListGrid( grids.Grid ):
         request_type = trans.app.model.RequestType.get(request.request_type_id)
         return request_type.name
     def apply_default_filter( self, trans, query ):
-        return query.filter_by(submitted=True)
+        return query.filter(or_(self.model_class.state==self.model_class.states.SUBMITTED, 
+                                self.model_class.state==self.model_class.states.COMPLETE))
     def number_of_samples(self, trans, request):
         return str(len(request.samples))
     
@@ -59,13 +62,6 @@ class Requests( BaseController ):
     @web.require_admin
     def index( self, trans ):
         return trans.fill_template( "/admin/requests/index.mako" )
-    def get_authorized_libs(self, trans):
-        all_libraries = trans.app.model.Library.filter(trans.app.model.Library.table.c.deleted == False).order_by(trans.app.model.Library.name).all()
-        authorized_libraries = []
-        for library in all_libraries:
-            if trans.app.security_agent.allow_action(trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=library) or trans.app.security_agent.allow_action(trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=library) or trans.app.security_agent.allow_action(trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MANAGE, library_item=library) or trans.app.security_agent.check_folder_contents(trans.user, library) or trans.app.security_agent.show_library_item(trans.user, library):
-                authorized_libraries.append(library)
-        return authorized_libraries
     @web.expose
     @web.require_admin
     def list( self, trans, **kwargs ):
@@ -73,11 +69,19 @@ class Requests( BaseController ):
         List all request made by the current user
         '''
         status = message = None
+        self.request_grid.default_filter = dict(state=trans.app.model.Request.states.SUBMITTED, 
+                                                deleted=False)
         if 'operation' in kwargs:
             operation = kwargs['operation'].lower()
             if operation == "show_request":
                 id = trans.security.decode_id(kwargs['id'])
                 return self.__show_request(trans, id)
+
+        if 'show_filter' in kwargs.keys():
+            if kwargs['show_filter'] == 'All':
+                self.request_grid.default_filter = dict(deleted=False)
+            else:
+                self.request_grid.default_filter = dict(state=kwargs['show_filter'], deleted=False)
         # Render the list view
         return self.request_grid( trans, template='/admin/requests/grid.mako', **kwargs )
     def __show_request(self, trans, id):
@@ -122,7 +126,6 @@ class Requests( BaseController ):
         Shows the request details
         '''
         request = trans.app.model.Request.get(id)
-        libraries = self.get_authorized_libs(trans)
         # list of widgets to be rendered on the request form
         request_details = []
         # main details
@@ -152,55 +155,124 @@ class Requests( BaseController ):
                 req = 'Required'
             else:
                 req = 'Optional'
-            request_details.append(dict(label=field['label'],
-                                        value=request.values.content[index],
-                                        helptext=field['helptext']+' ('+req+')'))
+            if field['type'] == 'AddressField':
+                if request.values.content[index]:
+                    request_details.append(dict(label=field['label'],
+                                                value=trans.app.model.UserAddress.get(int(request.values.content[index])).get_html(),
+                                                helptext=field['helptext']+' ('+req+')'))
+                else:
+                    request_details.append(dict(label=field['label'],
+                                                value=None,
+                                                helptext=field['helptext']+' ('+req+')'))
+            else: 
+                request_details.append(dict(label=field['label'],
+                                            value=request.values.content[index],
+                                            helptext=field['helptext']+' ('+req+')'))
         return request_details
     @web.expose
     @web.require_admin
     def bar_codes(self, trans, **kwd):
         params = util.Params( kwd )
-        request_id = params.get('request_id', None)
-        if request_id:
-            request_id = int(request_id)
-            request = trans.app.model.Request.get(request_id)
-            return trans.fill_template( '/admin/samples/bar_codes.mako', 
-                                        samples_list=[s for s in request.samples],
-                                        user=request.user,
-                                        request=request)
+        try:
+            request = trans.app.model.Request.get(int(params.get('request_id', None)))
+        except:
+            return trans.response.send_redirect( web.url_for( controller='requests',
+                                                              action='list',
+                                                              status='error',
+                                                              message="Invalid request ID",
+                                                              **kwd) )
+        widgets = []
+        for index, sample in enumerate(request.samples):
+            if sample.bar_code:
+                bc = sample.bar_code
+            else:
+                bc = util.restore_text(params.get('sample_%i_bar_code' % index, ''))
+            widgets.append(TextField('sample_%i_bar_code' % index, 
+                                     40, 
+                                     bc))
+        return trans.fill_template( '/admin/samples/bar_codes.mako', 
+                                    samples_list=[s for s in request.samples],
+                                    user=request.user, request=request, widgets=widgets)
 
     @web.expose
     @web.require_admin
     def save_bar_codes(self, trans, **kwd):
         params = util.Params( kwd )
-        request_id = params.get('request_id', None)
-        if request_id:
-            request_id = int(request_id)
-            request = trans.app.model.Request.get(request_id)
-            # validate 
-            # bar codes need to be globally unique
-            unique = True
-            for index in range(len(request.samples)):
-                bar_code = util.restore_text(params.get('sample_%i_bar_code' % index, ''))
-                all_samples = trans.app.model.Sample.query.all()
-                for sample in all_samples:
-                    if bar_code == sample.bar_code:
-                        unique = False
-            if not unique:
-                return trans.fill_template( '/admin/samples/bar_codes.mako', 
-                                            samples_list=[s for s in request.samples],
-                                            user=request.user,
-                                            request=request,
-                                            messagetype='error',
-                                            msg='Samples cannot have same bar code.')
+        try:
+            request = trans.app.model.Request.get(int(params.get('request_id', None)))
+        except:
+            return trans.response.send_redirect( web.url_for( controller='requests',
+                                                              action='list',
+                                                              status='error',
+                                                              message="Invalid request ID",
+                                                              **kwd) )
+        # validate 
+        # bar codes need to be globally unique
+        msg = ''
+        for index in range(len(request.samples)):
+            bar_code = util.restore_text(params.get('sample_%i_bar_code' % index, ''))
+            # check for empty bar code
+            if not bar_code.strip():
+                msg = 'Please fill the bar code for sample <b>%s</b>.' % request.samples[index].name
+                break
+            # check all the unsaved bar codes
+            count = 0
+            for i in range(len(request.samples)):
+                if bar_code == util.restore_text(params.get('sample_%i_bar_code' % i, '')):
+                    count = count + 1
+            if count > 1:
+                msg = '''The bar code <b>%s</b> of sample <b>%s</b> already belongs
+                         another sample in this request. The sample bar codes must
+                         be unique throughout the system''' % \
+                         (bar_code, request.samples[index].name)
+                break
+            # check all the saved bar codes
+            all_samples = trans.app.model.Sample.query.all()
+            for sample in all_samples:
+                if bar_code == sample.bar_code:
+                    msg = '''The bar code <b>%s</b> of sample <b>%s</b> already 
+                             belongs another sample. The sample bar codes must be 
+                             unique throughout the system''' % \
+                             (bar_code, request.samples[index].name)
+                    break
+            if msg:
+                break
+        if msg:
+            widgets = []
             for index, sample in enumerate(request.samples):
-                bar_code = util.restore_text(params.get('sample_%i_bar_code' % index, ''))
-                sample.bar_code = bar_code
-                sample.flush()
+                if sample.bar_code:
+                    bc = sample.bar_code
+                else:
+                    bc = util.restore_text(params.get('sample_%i_bar_code' % index, ''))
+                widgets.append(TextField('sample_%i_bar_code' % index, 
+                                         40, 
+                                         util.restore_text(params.get('sample_%i_bar_code' % index, ''))))
+            return trans.fill_template( '/admin/samples/bar_codes.mako', 
+                                        samples_list=[s for s in request.samples],
+                                        user=request.user, request=request, widgets=widgets, messagetype='error',
+                                        msg=msg)
+        # now save the bar codes
+        for index, sample in enumerate(request.samples):
+            bar_code = util.restore_text(params.get('sample_%i_bar_code' % index, ''))
+            sample.bar_code = bar_code
+            sample.flush()
         return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                           action='list',
                                                           operation='show_request',
                                                           id=trans.security.encode_id(request.id)) )
+    def __set_request_state(self, request):
+        # check if all the samples of the current request are in the final state
+        complete = True 
+        for s in request.samples:
+            if s.current_state().id != request.type.states[-1].id:
+                complete = False
+        if complete:
+            request.state = request.states.COMPLETE
+        else:
+            request.state = request.states.SUBMITTED
+        request.flush()
+                
+        
     def change_state(self, trans, sample):
         possible_states = sample.request.type.states 
         curr_state = sample.current_state() 
@@ -236,6 +308,7 @@ class Requests( BaseController ):
                                                         and trans.app.model.SampleState.table.c.id == selected_state)[0]
         event = trans.app.model.SampleEvent(sample, new_state, comments)
         event.flush()
+        self.__set_request_state(sample.request)
         return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                           action='show_events',
                                                           sample_id=sample.id))

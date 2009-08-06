@@ -13,7 +13,7 @@
 
 
 <ul class="manage-table-actions">
-    %if not request.submitted and request.samples:
+    %if request.unsubmitted() and request.samples:
         <li>
             <a class="action-button" confirm="More samples cannot be added to this request once it is submitted. Click OK to submit." href="${h.url_for( controller='requests', action='submit_request', id=request.id)}">
             <span>Submit request</span></a>
@@ -29,7 +29,7 @@
 
 <%def name="render_sample_form( index, sample_name, sample_values )">
     <td>
-        <input type="text" name=sample_${index}_name value="${sample_name}" size="15"/>
+        <input type="text" name=sample_${index}_name value="${sample_name}" size="10"/>
         <div class="toolParamHelp" style="clear: both;">
             <i>${' (required)' }</i>
         </div>
@@ -38,7 +38,7 @@
     </td>
     %for field_index, field in enumerate(request.type.sample_form.fields):
         <td>
-            <input type="text" name=sample_${index}_field_${field_index} value="${sample_values[field_index]}" size="15"/>
+            <input type="text" name=sample_${index}_field_${field_index} value="${sample_values[field_index]}" size="7"/>
             <div class="toolParamHelp" style="clear: both;">
                 <i>${'('+field['required']+')' }</i>
             </div>
@@ -51,7 +51,11 @@
         ${sample.name}
     </td>
     <td>
-        <a href="${h.url_for( controller='requests', action='show_events', sample_id=sample.id)}">${sample.current_state().name}</a>
+        %if sample.request.unsubmitted():
+            Unsubmitted
+        %else:    
+            <a href="${h.url_for( controller='requests', action='show_events', sample_id=sample.id)}">${sample.current_state().name}</a>
+        %endif    
     </td>
     %for field_index, field in enumerate(request.type.sample_form.fields):
         <td>
@@ -77,7 +81,11 @@
                         <i>None</i>
                     %else:                      
                         %if rd['label'] == 'Library':
-                            <a href="${h.url_for( controller='library', action='browse_library', id=request.library.id )}">${rd['value']}</a>
+                            %if rd['value']:
+                                <a href="${h.url_for( controller='library', action='browse_library', id=request.library.id )}">${rd['value']}</a>
+                            %else:
+                                <i>None</i>
+                            %endif
                         %else:
                             ${rd['value']}     
                         %endif
@@ -85,13 +93,23 @@
                 </div>
                 <div style="clear: both"></div>
             %endfor
+            %if request.unsubmitted():
+                <div class="form-row">
+                <ul class="manage-table-actions">
+                    <li>
+                        <a class="action-button"  href="${h.url_for( controller='requests', action='edit', show=True, request_id=request.id)}">
+                        <span>Edit request details</span></a>
+                    </li>
+                </ul>
+                </div>
+            %endif
         %endif
     </div>
 </div>
 
 <div class="toolForm">
     ##<div class="toolFormTitle">Samples (${len(request.samples)})</div>
-    <form id="edit_form" name="edit_form" action="${h.url_for( controller='requests', action='show_request', request_id=request.id )}" method="post" >
+    <form id="edit_form" name="edit_form" action="${h.url_for( controller='requests', action='show_request' )}" method="post" >
         <div class="form-row">
             %if current_samples: 
                 <table class="grid">
@@ -116,46 +134,77 @@
                     request.refresh()
                     %>
                         %for sample_index, sample in enumerate(current_samples):
-                            <tr>
-                                <td>${sample_index+1}</td>
-                                %if sample_index in range(len(request.samples)):
-                                    ${render_sample( sample_index, request.samples[sample_index] )}
-                                %else:                                                            
+                            %if edit_mode:
+                                <tr>
+                                    <td>${sample_index+1}</td>
                                     ${render_sample_form( sample_index, sample[0], sample[1])}
-                                %endif
-                                <td>
-                                    %if not request.submitted:
-                                        <a class="action-button" href="${h.url_for( controller='requests', action='delete_sample', request_id=request.id, sample_id=sample_index)}">
-                                        <img src="${h.url_for('/static/images/delete_icon.png')}" />
-                                        <span></span></a>
+                                    <td>
+                                        %if request.unsubmitted():
+                                            <a class="action-button" href="${h.url_for( controller='requests', action='delete_sample', request_id=request.id, sample_id=sample_index)}">
+                                            <img src="${h.url_for('/static/images/delete_icon.png')}" />
+                                            <span></span></a>
+                                        %endif
+                                    </td>
+                                </tr>      
+                            %else:
+                                <tr>
+                                    <td>${sample_index+1}</td>
+                                    %if sample_index in range(len(request.samples)):
+                                        ${render_sample( sample_index, request.samples[sample_index] )}
+                                    %else:                                                            
+                                        ${render_sample_form( sample_index, sample[0], sample[1])}
                                     %endif
-                                </td>
-                            </tr>                            
+                                    <td>
+                                        %if request.unsubmitted():
+                                            <a class="action-button" href="${h.url_for( controller='requests', action='delete_sample', request_id=request.id, sample_id=sample_index)}">
+                                            <img src="${h.url_for('/static/images/delete_icon.png')}" />
+                                            <span></span></a>
+                                        %endif
+                                    </td>
+                                </tr>  
+                            %endif                         
                         %endfor
                     </tbody>
                 </table>
             %else:
-                <label>There are no samples.</label>
+                <div class="form-row">
+                    <label>There are no samples.</label>
+                </div>
             %endif
             
         </div>
-        %if not request.submitted:
-            <br/>
-            <br/>
-            <div class="form-row">            
-                <ul class="manage-table-actions">
-                    <li>
-                        %if current_samples:
-                            <a>Copy from sample no. </a>
-                            ${sample_copy.get_html()}
-                        %endif
-                        <input type="submit" name="add_sample_button" value="Add New"/>
-                        
-                    </li>
-                </ul>
-            </div>
+        %if request.unsubmitted() and not edit_mode:
+        <table class="grid">
+            <tbody>
+                <tr>
+                    <div class="form-row">
+                        <td>
+                            %if current_samples:                        
+                                <input type="submit" name="edit_samples_button" value="Edit samples"/>
+                            %endif
+                        </td>
+                        <td>
+                            ##<div class="form-row">
+                            <label>Import from csv file</label>           
+                            <input type="text" name="import_samples" value="" size="20"/>
+                            <input type="submit" name="import_samples_button" value="Import samples"/>
+                            ##</div>
+                        </td>
+                        <td>
+                            ##<div class="form-row">
+                            %if current_samples:
+                                <label>Copy from sample</label>
+                                ${sample_copy.get_html()}
+                            %endif
+                            <input type="submit" name="add_sample_button" value="Add New"/>
+                            ##</div>
+                        </td>
+                    </div>
+                </tr> 
+            </tbody>
+        </table>
         %endif
-        %if not request.submitted and (request.samples or current_samples): 
+        %if request.unsubmitted() and (request.samples or current_samples): 
             <div class="form-row">
                 <div style="float: left; width: 250px; margin-right: 10px;">
                     <input type="hidden" name="refresh" value="true" size="40"/>
@@ -164,8 +213,12 @@
             </div>
             <div class="form-row">
                 <input type="submit" name="save_samples_button" value="Save"/>
+                %if edit_mode:                    
+                    <input type="submit" name="cancel_changes_button" value="Cancel"/>
+                %endif
             </div>
         %endif
     ##</div>
+    <input type="hidden" name="request_id" value="${request.id}" />
     </form>
 </div>

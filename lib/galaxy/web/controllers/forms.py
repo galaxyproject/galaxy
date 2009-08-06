@@ -29,13 +29,19 @@ class Forms( BaseController ):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
-        return self._show_forms_list(trans, msg, messagetype)
-    def _show_forms_list(self, trans, msg, messagetype):
+        show_filter = params.get( 'show_filter', 'Active' )
+        return self._show_forms_list(trans, msg, messagetype, show_filter)
+    def _show_forms_list(self, trans, msg, messagetype, show_filter='Active'):
         fdc_list = trans.app.model.FormDefinitionCurrent.query().all()
+        if show_filter == 'All':
+            forms_list = fdc_list
+        elif show_filter == 'Deleted':
+            forms_list = [form for form in fdc_list if form.deleted]
+        else:
+            forms_list = [form for form in fdc_list if not form.deleted]
         return trans.fill_template( '/admin/forms/manage_forms.mako', 
-                                    fdc_list=fdc_list,
-                                    deleted=False,
-                                    show_deleted=False,
+                                    fdc_list=forms_list,
+                                    show_filter=show_filter,
                                     msg=msg,
                                     messagetype=messagetype )
     def _get_all_forms(self, trans, all_versions=False):
@@ -73,7 +79,34 @@ class Forms( BaseController ):
                 self.num_add_fields = 0
                 fd, msg = self.__save_form(trans, fdc_id=None, **kwd)
                 self.__get_saved_form(fd)
-                return self._show_forms_list(trans, msg, messagetype)
+                return trans.response.send_redirect( web.url_for( controller='forms',
+                                                                  action='edit',
+                                                                  form_id=fd.id,
+                                                                  show_form=True) )
+    @web.expose
+    @web.require_admin
+    def delete( self, trans, **kwd ):
+        params = util.Params( kwd )
+        msg = util.restore_text( params.get( 'msg', ''  ) )
+        messagetype = params.get( 'messagetype', 'done' )
+        fd = trans.app.model.FormDefinition.get(int(util.restore_text( params.form_id )))
+        fd.form_definition_current.deleted = True
+        fd.form_definition_current.flush()
+        return self._show_forms_list(trans, 
+                                     msg='The form definition named %s is deleted.' % fd.name, 
+                                     messagetype='done')
+    @web.expose
+    @web.require_admin
+    def undelete( self, trans, **kwd ):
+        params = util.Params( kwd )
+        msg = util.restore_text( params.get( 'msg', ''  ) )
+        messagetype = params.get( 'messagetype', 'done' )
+        fd = trans.app.model.FormDefinition.get(int(util.restore_text( params.form_id )))
+        fd.form_definition_current.deleted = False
+        fd.form_definition_current.flush()
+        return self._show_forms_list(trans, 
+                                     msg='The form definition named %s is undeleted.' % fd.name, 
+                                     messagetype='done')
     @web.expose
     @web.require_admin
     def edit( self, trans, **kwd ):
@@ -241,15 +274,22 @@ class Forms( BaseController ):
         '''
         import csv
         fields = []
-        reader = csv.reader(open(csv_file))
-        for row in reader:
-            options = row[5].split(',')
-            fields.append({'label': row[0], 
-                           'helptext': row[1], 
-                           'visible': row[2],
-                           'required': row[3],
-                           'type': row[4],
-                           'selectlist': options})
+        try:
+            reader = csv.reader(open(csv_file))
+            for row in reader:
+                options = row[5].split(',')
+                fields.append({'label': row[0], 
+                               'helptext': row[1], 
+                               'visible': row[2],
+                               'required': row[3],
+                               'type': row[4],
+                               'selectlist': options})
+        except:
+            return trans.response.send_redirect( web.url_for( controller='forms',
+                                                              action='new',
+                                                              status='error',
+                                                              message='Error in importing <b>%s</b> file' % csv_file,
+                                                              **kwd))
         return fields
 
     def __save_form(self, trans, fdc_id=None, **kwd):

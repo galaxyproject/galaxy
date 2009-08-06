@@ -4,6 +4,10 @@
 
 <%def name="title()">Manage Form Definitions</%def>
 
+%if msg:
+    ${render_msg( msg, messagetype )}
+%endif
+
 ## Render a row
 <%def name="render_row( form, ctr )">
     %if ctr % 2 == 1:
@@ -12,11 +16,18 @@
         <tr>
     %endif
         <td>
-            <b><a href="${h.url_for( controller='forms', action='edit', form_id=form.id, read_only=True )}">${form.name}</a></b>
+            <a href="${h.url_for( controller='forms', action='edit', form_id=form.id, read_only=True )}">${form.name}</a>
             <a id="form-${form.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
-            <div popupmenu="form-${form.id}-popup">
-                <a class="action-button" href="${h.url_for( action='edit', form_id=form.id, show_form=True )}">Edit form definition</a>
-            </div>
+            %if form.form_definition_current.deleted:
+                <div popupmenu="form-${form.id}-popup">
+                    <a class="action-button" href="${h.url_for( action='undelete', form_id=form.id )}">Undelete</a>
+                </div>
+            %else:
+                <div popupmenu="form-${form.id}-popup">
+                    <a class="action-button" href="${h.url_for( action='edit', form_id=form.id, show_form=True )}">Edit form definition</a>
+                    <a class="action-button" confirm="Click OK to delete the form ${form.name}." href="${h.url_for( action='delete', form_id=form.id )}">Delete</a>
+                </div>
+            %endif
         </td>
         <td><i>${form.desc}</i></td>
     </tr>
@@ -24,36 +35,33 @@
 
 
 <h2>
-    %if deleted:
-        Deleted 
-    %endif
     Forms
 </h2>
 
-
-
 <ul class="manage-table-actions">
-    %if not deleted:
-        <li>
-            <a class="action-button" href="${h.url_for( controller='forms', action='new', new=True )}">
-            <img src="${h.url_for('/static/images/silk/add.png')}" />
-            <span>Define a new form</span></a>
-        </li>
-    %endif
+    <li>
+        <a class="action-button" href="${h.url_for( controller='forms', action='new', new=True )}">
+        <img src="${h.url_for('/static/images/silk/add.png')}" />
+        <span>Define a new form</span></a>
+    </li>
 </ul>
 
 
-
-%if msg:
-    ${render_msg( msg, messagetype )}
-%endif
-
+<div class="grid-header">
+    ##<span class="title">Filter:</span>
+    %for i, filter in enumerate( ['Active', 'Deleted', 'All'] ):
+        %if i > 0:    
+            <span>|</span>
+        %endif
+        %if show_filter == filter:
+            <span class="filter"><a href="${h.url_for( controller='forms', action='manage', show_filter=filter )}"><b>${filter}</b></a></span>
+        %else:
+            <span class="filter"><a href="${h.url_for( controller='forms', action='manage', show_filter=filter )}">${filter}</a></span>
+        %endif
+    %endfor
+</div>
 %if not fdc_list:
-    %if deleted:
-        There are no deleted forms
-    %else:
-        There are no forms.
-    %endif
+    There are no forms.
 %else:
     <table class="grid">
         <thead>
