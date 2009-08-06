@@ -121,6 +121,19 @@
             canvas_manager.draw_overview();
         });
         
+        /* Lets the viewport be toggled visible and invisible, adjusting the arrows accordingly */
+        $("#close-viewport").click( function() {
+            if ( $("#overview-border").css("right") == "0px" ) {
+                $("#overview-border").css("right", "20000px");
+                $("#close-viewport").css("background-position", "12px 0px");
+                
+            } else {
+                $("#overview-border").css("right", "0px");
+                $("#close-viewport").css("background-position", "0px 0px");
+            }
+            
+        });
+        
         // Unload handler
         window.onbeforeunload = function() {
             if ( workflow && workflow.has_changes ) {
@@ -629,7 +642,7 @@
         <div id="canvas-viewport" style="width: 100%; height: 100%; position: absolute; overflow: hidden; background: #EEEEEE; background: white url(${h.url_for('/static/images/light_gray_grid.gif')}) repeat;">
             <div id="canvas-container" style="position: absolute; width: 100%; height: 100%;"></div>
         </div>
-        <div id="overview-border" style="position: absolute; width: 150px; height: 150px; right: 0; bottom: 0; border-top: solid gray 1px; border-left: solid grey 1px; padding: 7px 0 0 7px; background: #EEEEEE; z-index: 50000; overflow: hidden;">
+        <div id="overview-border" style="position: absolute; width: 150px; height: 150px; right: 0px; bottom: 0px; border-top: solid gray 1px; border-left: solid grey 1px; padding: 7px 0 0 7px; background: #EEEEEE no-repeat url(${h.url_for('/static/images/resizable.png')}); z-index: 20000; overflow: hidden; max-width: 300px; max-height: 300px; min-width: 50px; min-height: 50px">
             <div style="position: relative; overflow: hidden; width: 100%; height: 100%; border-top: solid gray 1px; border-left: solid grey 1px;">
                 <div id="overview" style="position: absolute;">
                     <canvas width="0" height="0" style="background: white; width: 100%; height: 100%;" id="overview-canvas"></canvas>
@@ -637,6 +650,7 @@
                 </div>
             </div>
         </div>
+        <div id="close-viewport" style="border-left: 1px solid #999; border-top: 1px solid #999; background: #ddd url(${h.url_for('/static/images/overview_arrows.png')}); position: absolute; right: 0px; bottom: 0px; width: 12px; height: 12px; z-index: 25000;"></div>
     </div>
 
 </%def>
