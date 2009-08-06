@@ -7,7 +7,9 @@
     <div class="toolFormBody">
         <form action="${h.url_for( controller='history', action='clone' )}" method="post" >
             <div class="form-row">
-                <input type="hidden" name="id" value="${trans.security.encode_id( history.id )}">
+                %if id_argument is not None:
+                  <input type="hidden" name="id" value="${trans.security.encode_id( id_argument )}">
+                %endif
                 You can clone the history such that the clone will include all items in the original
                 history, or you can eliminate the original history's deleted items from the clone.
             </div>

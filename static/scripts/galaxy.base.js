@@ -54,30 +54,52 @@ function ensure_popup_helper() {
 
 function make_popupmenu( button_element, options ) {
     ensure_popup_helper();
-    $(button_element).css( "position", "relative" );
-    var menu_element = $( "<div class='popupmenu' id='" + button_element.attr('id') + "-menu'></div>" )
-        .css( "position", "absolute" )
-        .appendTo( button_element );
+    var container_element = $(button_element);
+    // if ( container_element.parent().hasClass( "combo-button" ) ) {
+    //    container_element = container_element.parent();
+    // }
+    // ontainer_element).css( "position", "relative" );
+    var menu_element = $( "<ul id='" + button_element.attr('id') + "-menu'></div>" );
     $.each( options, function( k, v ) {
-        $( "<div class='popupmenu-item' />" ).html( k ).click( v ).appendTo( menu_element );
+        if ( v ) {
+            $( "<li/>" ).html( k ).click( v ).appendTo( menu_element );
+        } else {
+            $( "<li class='head'/>" ).html( k ).appendTo( menu_element );
+        }
     });
+    var wrapper = $( "<div class='popmenu-wrapper'>" );
+    wrapper.append( menu_element )
+           .append( "<div class='overlay-border'>" )
+           .css( "position", "absolute" )
+           .appendTo( "body" )
+           .hide();
+    attach_popupmenu( button_element, wrapper );
+};
+
+function attach_popupmenu( button_element, wrapper ) {
+    console.log( button_element, wrapper );
     var clean = function() {
-        $(menu_element).unbind().hide();
-        // $("#popup-helper").unbind().hide();
-        $(document).unbind( "click.popupmenu" ); 
+        wrapper.unbind().hide();
+        $("#popup-helper").unbind( "click.popupmenu" ).hide();
+        // $(document).unbind( "click.popupmenu" ); 
     };
     var click = function( e ) {
+        console.log( e );
         var o = $(button_element).offset();
-        // $("#popup-helper").mousedown( clean ).show();
-        $(document).bind( "click.popupmenu", clean );
+        $("#popup-helper").bind( "click.popupmenu", clean ).show();
+        // $(document).bind( "click.popupmenu", clean );
         // Show off screen to get size right
-        $( menu_element ).click( clean ).css( { left: 0, top: -1000 } ).show();
+        wrapper.click( clean ).css( { left: 0, top: -1000 } ).show();
         // console.log( e.pageX, $(document).scrollLeft() + $(window).width(), $(menu_element).width() );
-        // var x = Math.min( e.pageX - 2, $(document).scrollLeft() + $(window).width() - $(menu_element).width() - 5 );
+        var x = e.pageX - wrapper.width() / 2 
+        x = Math.min( x, $(document).scrollLeft() + $(window).width() - $(wrapper).width() - 20 );
+        x = Math.max( x, $(document).scrollLeft() + 20 );
         // console.log( e.pageX, $(document).scrollLeft() + $(window).width(), $(menu_element).width() );
-        $( menu_element ).css( {
-            top: 0, //e.pageY - 2,
-            left: 0 // x
+        
+        
+        wrapper.css( {
+            top: e.pageY - 5,
+            left: x
         } );
         return false;
     };

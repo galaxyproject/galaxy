@@ -677,9 +677,8 @@
 
     <div class="unified-panel-header" unselectable="on">
         <div class="unified-panel-header-inner" style="float: right">
-            <span class="panel-header-button-group">
             <a id="layout-button" class="panel-header-button">Layout</a>
-            </span>
+            &nbsp;&nbsp;
             <a id="save-button" class="panel-header-button">Save</a>
             <a id="close-button" class="panel-header-button">Close</a>
         </div>

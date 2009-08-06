@@ -144,13 +144,12 @@ div.unified-panel-body {
     display: inline-block;
     cursor: pointer;
     margin: -1px; padding: 1px;
-    border: 0px;
     padding-right: 0.5em;
     padding-left: 0.5em;
     -moz-border-radius: 0.5em;
     -webkit-border-radius: 0.5em;
     border-radius: 0.5em;
-    background: transparent;
+    background: #bbb;
 }
 
 .panel-header-button:hover {
@@ -230,8 +229,7 @@ div.unified-panel-body {
 
 ## Masthead
 
-#masthead 
-{
+#masthead {
     position:absolute; 
     top:0; 
     left:0; 
@@ -242,27 +240,20 @@ div.unified-panel-body {
     border-bottom: solid ${layout_masthead_border} 1px;
     z-index: 15000;
     padding: 0;
+
+    a {
+        color: ${masthead_link};
+        text-decoration: none;
+    }
+    
+    .title {
+        padding: 3px 10px;
+        font-size: 175%;
+        font-weight: bold;
+    }
 }
 
-#masthead a
-{
-    color: $masthead_link;
-}
-
-#masthead .title
-{
-    padding: 3px 10px;
-    font-size: 175%;
-    font-weight: bold;
-}
-
-#masthead a
-{
-    text-decoration: none;
-}
-
-#masthead a:hover
-{
+#masthead a:hover {
     text-decoration: underline;
 }
 

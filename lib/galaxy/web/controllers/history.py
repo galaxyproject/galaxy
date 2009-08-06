@@ -229,6 +229,7 @@ class HistoryController( BaseController ):
         # No message
         return None, None
     @web.expose
+    @web.require_login( "work with shared histories" )
     def list_shared( self, trans, **kwargs ):
         """List histories shared with current user by others"""
         msg = util.restore_text( kwargs.get( 'msg', '' ) )
@@ -617,6 +618,7 @@ class HistoryController( BaseController ):
         if send_to_err:
             msg += send_to_err
         return self.sharing( trans, histories=shared_histories, msg=msg )
+        
     @web.expose
     @web.require_login( "share histories with other users" )
     def sharing( self, trans, histories=[], id=None, **kwd ):
@@ -644,6 +646,7 @@ class HistoryController( BaseController ):
                 shared_msg = "History (%s) now shared with: %d users.  " % ( history.name, len( history.users_shared_with ) )
                 msg = '%s%s' % ( shared_msg, msg )
         return trans.fill_template( 'history/sharing.mako', histories=histories, msg=msg, messagetype='done' )
+
     @web.expose
     @web.require_login( "rename histories" )
     def rename( self, trans, id=None, name=None, **kwd ):
@@ -681,19 +684,26 @@ class HistoryController( BaseController ):
             else:
                 change_msg = change_msg + "<p>History: "+cur_names[i]+" does not appear to belong to you.</p>"
         return trans.show_message( "<p>%s" % change_msg, refresh_frames=['history'] )
+        
     @web.expose
     @web.require_login( "clone shared Galaxy history" )
-    def clone( self, trans, id, **kwd ):
+    def clone( self, trans, id=None, **kwd ):
         """Clone a list of histories"""
         params = util.Params( kwd )
-        ids = util.listify( id )
-        histories = []
-        for history_id in ids:
-            history = get_history( trans, history_id, check_ownership=False )
-            histories.append( history )
+        # If clone_choice was not specified, display form passing along id
+        # argument
         clone_choice = params.get( 'clone_choice', None )
         if not clone_choice:
-            return trans.fill_template( "/history/clone.mako", history=history )
+            return trans.fill_template( "/history/clone.mako", id_argument=id )
+        # Extract histories for id argument, defaulting to current
+        if id is None:
+            histories = [ trans.history ]
+        else:
+            ids = util.listify( id )
+            histories = []
+            for history_id in ids:
+                history = get_history( trans, history_id, check_ownership=False )
+                histories.append( history )
         user = trans.get_user()
         for history in histories:
             if history.user == user:

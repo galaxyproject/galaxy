@@ -2,6 +2,19 @@
 body{font:13px/1.231 verdana,arial,helvetica,clean,sans-serif;*font-size:small;*font:x-small;}select,input,button,textarea,button{font:99% verdana,arial,helvetica,clean,sans-serif;}table{font-size:inherit;font:100%;}pre,code,kbd,samp,tt{font-family:monospace;*font-size:108%;line-height:100%;}
 body{font-size:75%;}
 
+## Mixins
+.unselectable {
+    user-select: none;
+    -moz-user-select: none;
+    -webkit-user-select: none;
+}
+
+.shadow {
+    -moz-box-shadow: 0 3px 30px black;
+    -webkit-box-shadow: 0 3px 30px black;
+}
+
+## Real styles
 body 
 {
     background: $base_bg_bottom;
@@ -48,7 +61,7 @@ div.toolFormTitle
   padding-left: 10px;
   padding-right: 10px;
   background: $form_title_bg_bottom;
-  background-image: url(form_title_bg.png);
+  ## background-image: url(form_title_bg.png);
   background-repeat: repeat-x;
   background-position: top;
   border-bottom: solid $form_border 1px;
@@ -524,10 +537,11 @@ ul.manage-table-actions li {
 ## Button styles
 
 .action-button {
-    background: #eeeeee;
+    background: transparent;
+    line-height: 16px;
     color: #333;
     text-decoration: none;
-    font-size: 95%;
+    font-size: 100%;
     font-weight: bold;
     display: inline-block;
     cursor: pointer;
@@ -556,39 +570,139 @@ ul.manage-table-actions li {
     background: #aaaaaa;
 }
 
-## Popup menu styles
+## A menu button is a button that has an attached popup menu
 
-div.popupmenu {
-    display: none;
-    background: #eeeeee;
-    color: #333;
-    font-size: 110%;
-    font-weight: bold;
-    font-style: normal;
-    white-space: nowrap;
-    position: absolute;
-    z-index: 20000;
-    border: solid #aaaaaa 1px;
-    padding: 3px 0;
+.menubutton {
+    display: inline-block;
+    cursor: pointer;
+    position: relative;
+    .unselectable;
+    
+    border: solid transparent 1px;
     -moz-border-radius: 0.5em;
     -webkit-border-radius: 0.5em;
     border-radius: 0.5em;
-    user-select: none;
-    -moz-user-select: none;
-    -webkit-user-select: none;
+    
+    padding: 3px 0.5em;
+    margin: -3px -0.5em;
+    padding-right: 1.5em;
+    
+    .label, .arrow {
+        position: relative;
+        display: block;
+    }
+    
+    .label {
+        border-right: none;
+    }
+    
+    .arrow {
+        padding-left: 2px;
+        width: 1em;
+        position: absolute;
+        top: 0;
+        right: 5px;
+        height: 100%;
+    }
+    
+    .arrow > span {
+        display: inline-block;
+        padding-top: 3px;
+    }
+    
 }
 
-div.popupmenu-item {
-    padding: 3px 1em;
-    cursor: pointer;
+.menubutton:hover {
+    border-color: #aaaaaa;
+    ## background: #eeeeee;
+    ## color: #333;
 }
 
-div.popupmenu-item:hover {
-    background: #aaaaaa;
+## A split menu button, the main button has an action, the arrow causes the
+## popup menu to appear
+
+.menubutton.split {
+    padding-right: 2em;
+    .arrow {
+        border-left: solid transparent 1px;
+    }
+}
+
+.menubutton.split:hover {
+    .arrow {
+        border-left: solid #aaaaaa 1px;
+    }
+}
+
+## Popup menu styles
+
+.overlay-border {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 100%;
+    padding: 1em;
+    margin: -1em;
+    background-color: rgba(0,0,0,0.5);
+    -moz-border-radius: 1em;
+    -webkit-border-radius: 1em;
+    z-index: -1;
+}
+
+div.popmenu-wrapper {
+
+    position: absolute;
+    top: 100%;
+    z-index: 20000;
+
+    ul {
+        
+        display: block;
+        margin: 0;
+        padding: 0;
+        
+        background: white;
+        color: #333;
+        font-weight: bold;    
+        font-style: normal;
+        white-space: nowrap;
+        border: solid #aaaaaa 1px;
+        padding: 3px 0;
+        -moz-border-radius: 0.5em;
+        -webkit-border-radius: 0.5em;
+        border-radius: 0.5em;
+        ## margin: -3px -0.5em;
+        ## min-width: 100%;
+        
+        .unselectable;
+        
+        li {
+            display: block;
+            padding: 3px 1em;
+            cursor: pointer;
+            border-top: solid transparent 1px;
+            border-bottom: solid transparent 1px;
+        }
+        
+        li.head {
+            color: #999;
+            font-style: italic;
+        }
+    }
+}
+
+div.popmenu-wrapper ul li:hover {
+    background: #EEEEFF;
+    border-color: #aaa;
+}
+
+div.popmenu-wrapper ul li.head:hover {
+    background: inherit;
+    border-color: transparent;
 }
 
 .popup-arrow {
-    font-size: 80%;
     cursor: pointer;
     text-decoration: none;
     color: #555;
@@ -632,7 +746,7 @@ div.permissionContainer {
 }
 .grid thead th {
     background: $table_header_bg;
-    background-image: url(form_title_bg.png);
+    ## background-image: url(form_title_bg.png);
     background-repeat: repeat-x;
     background-position: top;
     border-top: solid $table_border 1px;

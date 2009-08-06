@@ -1,5 +1,47 @@
 <%inherit file="/base_panels.mako"/>
 
+<%def name="late_javascripts()">
+    ${parent.late_javascripts()}
+    <script type="text/javascript">
+    $(function(){
+        $("#history-options-button").css( "position", "relative" );
+        make_popupmenu( $("#history-options-button"), {
+            "List your histories": null,
+            "Stored by you": function() {
+                galaxy_main.location = "${h.url_for( controller='history', action='list')}";
+            },
+            "Shared with you": function() {
+                galaxy_main.location = "${h.url_for( controller='history', action='list_shared')}";
+            },
+            "Current History": null,
+            "Create new": function() {
+                galaxy_history.location = "${h.url_for( controller='root', action='history_new' )}";
+            },
+            "Clone": function() {
+                galaxy_main.location = "${h.url_for( controller='history', action='clone')}";
+            },
+            "Manage sharing": function() {
+                galaxy_main.location = "${h.url_for( controller='history', action='share' )}";
+            },
+            "Extract workflow": function() {
+                galaxy_main.location = "${h.url_for( controller='workflow', action='build_from_current_history' )}";
+            },
+            "Dataset security": function() {
+                galaxy_main.location = "${h.url_for( controller='root', action='history_set_default_permissions' )}";
+            },
+            "Show deleted datasets": function() {
+                galaxy_history.location = "${h.url_for( controller='root', action='history', show_deleted=True)}";
+            },
+            "Delete": function() {
+                if ( confirm( "Really delete the current history?" ) ) {
+                    galaxy_main.location = "${h.url_for( controller='history', action='delete_current' )}";
+                }
+            }
+        });
+    });
+    </script>
+</%def>
+
 <%def name="init()">
 <%
     self.has_left_panel=True
@@ -48,7 +90,7 @@
     <div class="unified-panel-header" unselectable="on">
         <div class="unified-panel-header-inner">
             <div style="float: right">
-                <a class='panel-header-button' href="${h.url_for( controller='root', action='history_options' )}" target="galaxy_main"><span>${_('Options')}</span></a>
+                <a id="history-options-button" class='panel-header-button' href="${h.url_for( controller='root', action='history_options' )}" target="galaxy_main"><span>${_('Options')}<span>&#9660;</span></span></a>
             </div>
             <div class="panel-header-text">${_('History')}</div>
         </div>

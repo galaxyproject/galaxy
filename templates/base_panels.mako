@@ -20,7 +20,7 @@
 
 ## Default stylesheets
 <%def name="stylesheets()">
-    ${h.css('panel_layout')}
+    ${h.css('base','panel_layout')}
     <style type="text/css">
     #center {
         %if not self.has_left_panel:
@@ -50,7 +50,7 @@
 <%def name="late_javascripts()">
     ## Scripts can be loaded later since they progressively add features to
     ## the panels, but do not change layout
-    ${h.js( 'jquery', 'jquery.event.drag', 'jquery.event.hover', 'jquery.form', 'galaxy.panels' )}
+    ${h.js( 'jquery', 'jquery.event.drag', 'jquery.event.hover', 'jquery.form', 'galaxy.base', 'galaxy.panels' )}
     <script type="text/javascript">
         
     ensure_dd_helper();

@@ -37,8 +37,10 @@
         %for i, workflow in enumerate( workflows ):
             <tr>
                 <td>
+                    <div class="menubutton">
+                    <a id="wf-${i}-popup" class="arrow" style="display: none;"><span>&#9660;</span></a>
                     ${workflow.name}
-                    <a id="wf-${i}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
+                    </div>
                 </td>
                 <td>${len(workflow.latest_workflow.steps)}</td>
                 ## <td>${str(workflow.update_time)[:19]}</td>
