@@ -598,13 +598,6 @@ Request.table = Table('request', metadata,
     Column( "state", TrimmedString( 255 ),  index=True ),
     Column( "deleted", Boolean, index=True, default=False ) )
 
-RequestState_table = Table('request_state', metadata,
-    Column( "id", Integer, primary_key=True),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "name", TrimmedString( 255 ), nullable=False ),
-    Column( "desc", TEXT ))
-
 Sample.table = Table('sample', metadata,
     Column( "id", Integer, primary_key=True),
     Column( "create_time", DateTime, default=now ),

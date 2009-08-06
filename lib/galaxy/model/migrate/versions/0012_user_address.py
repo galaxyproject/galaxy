@@ -40,13 +40,6 @@ UserAddress_table = Table( "user_address", metadata,
     Column( "deleted", Boolean, index=True, default=False ),
     Column( "purged", Boolean, index=True, default=False ) )
 
-#RequestState_table = Table('request_state', metadata,
-#    Column( "id", Integer, primary_key=True),
-#    Column( "create_time", DateTime, default=now ),
-#    Column( "update_time", DateTime, default=now, onupdate=now ),
-#    Column( "name", TrimmedString( 255 ), nullable=False ),
-#    Column( "desc", TEXT ))
-
 def upgrade():
     # Load existing tables
     metadata.reflect()
@@ -56,10 +49,6 @@ def upgrade():
         UserAddress_table.create()
     except Exception, e:
         log.debug( "Creating user_address table failed: %s" % str( e ) ) 
-#    try:
-#        RequestState_table.create()
-#    except Exception, e:
-#        log.debug( "Creating request_state table failed: %s" % str( e ) ) 
 
     # Add 1 column to the request_type table
     try:
@@ -92,25 +81,7 @@ def upgrade():
             assert col is Request_table.c.state
         except Exception, e:
             log.debug( "Adding column 'state' to request table failed: %s" % ( str( e ) ) )
-#
-#        # new column which points to the current state in the request_state table
-#        try:
-#            col = Column( "request_state_id", Integer, index=True  )
-#            col.create( Request_table )
-#            assert col is Request_table.c.request_state_id
-#        except Exception, e:
-#            log.debug( "Adding column 'request_state_id' to request table failed: %s" % ( str( e ) ) )
-#    # Add 1 foreign key constraint to the form_definition_current table
-#    if RequestState_table and Request_table:
-#        try:
-#            cons = ForeignKeyConstraint( [Request_table.c.request_state_id],
-#                                         [RequestState_table.c.id],
-#                                         name='request_request_state_id_fk' )
-#            # Create the constraint
-#            cons.create()
-#        except Exception, e:
-#            log.debug( "Adding foreign key constraint 'request_request_state_id_fk' to table 'request' failed: %s" % ( str( e ) ) )
- 
+
 
 def downgrade():
     pass
