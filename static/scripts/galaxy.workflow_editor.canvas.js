@@ -805,6 +805,8 @@ $.extend( CanvasManager.prototype, {
             self.draw_overview();
         });
         
+        $("#overview-border>*").bind("drag", function(e) { });
+        
     },
     update_viewport_overlay: function() {
         var cc = this.cc,
