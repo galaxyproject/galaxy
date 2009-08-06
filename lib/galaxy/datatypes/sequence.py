@@ -334,28 +334,37 @@ class Maf( Alignment ):
         """
         #these metadata values are not accessable by users, always overwrite
         
+        try:
+            maf_reader = bx.align.maf.Reader( open( dataset.file_name ) )
+        except:
+            return #not a maf file
         species = []
         species_chromosomes = {}
         indexes = bx.interval_index_file.Indexes()
-        try:
-            maf_reader = bx.align.maf.Reader( open( dataset.file_name ) )
-            while True:
-                pos = maf_reader.file.tell()
-                block = maf_reader.next()
-                if block is None: break
-                for c in block.components:
-                    spec = c.src
-                    chrom = None
-                    if "." in spec:
-                        spec, chrom = spec.split( ".", 1 )
-                    if spec not in species: 
-                        species.append(spec)
-                        species_chromosomes[spec] = []
-                    if chrom and chrom not in species_chromosomes[spec]:
-                        species_chromosomes[spec].append( chrom )
-                    indexes.add( c.src, c.forward_strand_start, c.forward_strand_end, pos, max=c.src_size )
-        except: #bad MAF file
-            pass
+        while True:
+            pos = maf_reader.file.tell()
+            block = maf_reader.next()
+            if block is None: break
+            for c in block.components:
+                spec = c.src
+                chrom = None
+                if "." in spec:
+                    spec, chrom = spec.split( ".", 1 )
+                if spec not in species: 
+                    species.append(spec)
+                    species_chromosomes[spec] = []
+                if chrom and chrom not in species_chromosomes[spec]:
+                    species_chromosomes[spec].append( chrom )
+                forward_strand_start = c.forward_strand_start
+                forward_strand_end = c.forward_strand_end
+                try:
+                    forward_strand_start = int( forward_strand_start )
+                    forward_strand_end = int( forward_strand_end )
+                except ValueError:
+                    continue #start and end are not integers, can't add component to index, goto next component
+                if forward_strand_end > forward_strand_start:
+                    #require positive length; i.e. certain lines have start = end = 0 and cannot be indexed
+                    indexes.add( c.src, forward_strand_start, forward_strand_end, pos, max=c.src_size )
         dataset.metadata.species = species
         #only overwrite the contents if our newly determined chromosomes don't match stored
         chrom_file = dataset.metadata.species_chromosomes
