@@ -425,6 +425,7 @@ class TwillTestCase( unittest.TestCase ):
         tc.fv( 'convert_data', 'target_type', target_type )
         tc.submit( 'convert_data' )
         self.check_page_for_string( 'The file conversion of Convert BED to GFF on data' )
+        self.wait() #wait for the format convert tool to finish before returning
         self.home()
     def change_datatype( self, hda_id, datatype ):
         """Change format of history_dataset_association"""
