@@ -1,7 +1,6 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
-<%namespace file="/admin/library/common.mako" import="render_available_templates" />
-<%namespace file="/admin/library/common.mako" import="render_library_item_info_for_edit" />
+<%namespace file="/admin/library/common.mako" import="render_template_info" />
 <% from galaxy import util %>
 
 %if ldda == ldda.library_dataset.library_dataset_dataset_association:
@@ -41,27 +40,21 @@
             <br/>
             <div class="form-row">
                 <label>Name:</label>
-                <div style="float: left; width: 250px; margin-right: 10px;">
-                    <input type="text" name="name" value="${ldda.name}" size="40"/>
-                </div>
+                <input type="text" name="name" value="${ldda.name}" size="40"/>
                 <div style="clear: both"></div>
             </div>
             <div class="form-row">
                 <label>Info:</label>
-                <div style="float: left; width: 250px; margin-right: 10px;">
-                    <input type="text" name="info" value="${ldda.info}" size="40"/>
-                </div>
+                <input type="text" name="info" value="${ldda.info}" size="40"/>
                 <div style="clear: both"></div>
             </div> 
             <div class="form-row">
                 <label>Message:</label>
-                <div style="float: left; width: 250px; margin-right: 10px;">
-                    %if ldda.message:
-                        <textarea name="message" rows="3" cols="35">${ldda.message}</textarea>
-                    %else:
-                        <textarea name="message" rows="3" cols="35"></textarea>
-                    %endif
-                </div>
+                %if ldda.message:
+                    <textarea name="message" rows="3" cols="35">${ldda.message}</textarea>
+                %else:
+                    <textarea name="message" rows="3" cols="35"></textarea>
+                %endif
                 <div class="toolParamHelp" style="clear: both;">
                     This information will be displayed in the library browser
                 </div>
@@ -71,9 +64,7 @@
                 %if spec.visible:
                     <div class="form-row">
                         <label>${spec.desc}:</label>
-                        <div style="float: left; width: 250px; margin-right: 10px;">
-                            ${ldda.metadata.get_html_by_name( name, trans=trans )}
-                        </div>
+                        ${ldda.metadata.get_html_by_name( name, trans=trans )}
                         <div style="clear: both"></div>
                     </div>
                 %endif
@@ -85,9 +76,7 @@
         <form name="auto_detect" action="${h.url_for( controller='admin', action='library_dataset_dataset_association', library_id=library_id, folder_id=ldda.library_dataset.folder.id, edit_info=True )}" method="post">
             <div class="form-row">
                 <input type="hidden" name="id" value="${ldda.id}"/>
-                <div style="float: left; width: 250px; margin-right: 10px;">
-                    <input type="submit" name="detect" value="Auto-detect"/>
-                </div>
+                <input type="submit" name="detect" value="Auto-detect"/>
                 <div class="toolParamHelp" style="clear: both;">
                     This will inspect the dataset and attempt to correct the above column values if they are not accurate.
                 </div>
@@ -104,9 +93,7 @@
                 <input type="hidden" name="id" value="${ldda.id}"/>
                 <div class="form-row">
                     <label>New Type:</label>
-                    <div style="float: left; width: 250px; margin-right: 10px;">
-                        ${datatype( ldda, datatypes )}
-                    </div>
+                    ${datatype( ldda, datatypes )}
                     <div class="toolParamHelp" style="clear: both;">
                         This will change the datatype of the existing dataset
                         but <i>not</i> modify its contents. Use this if Galaxy
@@ -126,13 +113,6 @@
     </div>
 </div>
 
-<% ldda.refresh() %>
-%if ldda.library_dataset_dataset_info_associations:
-    ${render_library_item_info_for_edit( ldda, library_id )}
-%elif ldda.library_dataset_dataset_info_template_associations:
-    ${render_available_templates( ldda, library_id, restrict=True )}
-%elif ldda.library_dataset.folder.library_folder_info_template_associations:
-    ${render_available_templates( ldda, library_id, restrict='folder' )}
-%else:
-    ${render_available_templates( ldda, library_id, restrict=False )}
+%if widgets:
+    ${render_template_info( ldda, library_id, widgets )}
 %endif

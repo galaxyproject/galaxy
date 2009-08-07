@@ -1,5 +1,4 @@
 <%inherit file="/base.mako"/>
-## <%namespace file="common.mako" import="render_dataset" />
 <%namespace file="/message.mako" import="render_msg" />
 <% from galaxy import util %>
 
@@ -21,7 +20,6 @@ class RowCounter( object ):
         self.count += 1
     def __str__( self ):
         return str( self.count )
-
 %>
 
 <script type="text/javascript">
@@ -99,27 +97,19 @@ class RowCounter( object ):
     %endif
     >
         <td style="padding-left: ${pad+20}px;">
-            
-            
             %if selected:
                 <input type="checkbox" name="ldda_ids" value="${ldda.id}" checked/>
             %else:
                 <input type="checkbox" name="ldda_ids" value="${ldda.id}"/>
             %endif
-            
             <a href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library.id, folder_id=library_dataset.folder.id, id=ldda.id, info=True )}"><b>${ldda.name[:60]}</b></a>
             <a id="dataset-${ldda.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
-            
             <div popupmenu="dataset-${ldda.id}-popup">
                 %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=ldda.library_dataset ):
                     <a class="action-button" href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library.id, folder_id=library_dataset.folder.id, id=ldda.id, edit_info=True )}">Edit this dataset's information</a>
                 %else:
                     <a class="action-button" href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library.id, folder_id=library_dataset.folder.id, id=ldda.id, information=True )}">View this dataset's information</a>
                 %endif
-                ## We're disabling the ability to add templates at the LDDA and LibraryDataset level, but will leave this here for possible future use
-                ##%if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=ldda.library_dataset ):
-                ##    <a class="action-button" href="${h.url_for( controller='library', action='info_template', library_id=library.id, library_dataset_id=library_dataset.id, new_template=True )}">Add an information template to this dataset</a>
-                ##%endif
                 %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS, dataset=ldda.dataset ) and trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MANAGE, library_item=ldda.library_dataset ):
                     <a class="action-button" href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library.id, folder_id=library_dataset.folder.id, id=ldda.id, permissions=True )}">Edit this dataset's permissions</a>
                 %if current_version and trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=ldda.library_dataset ):
@@ -142,8 +132,6 @@ class RowCounter( object ):
         my_row = row_counter.count
         row_counter.increment()
     %>
-                
-
 </%def>
 
 
@@ -177,20 +165,14 @@ class RowCounter( object ):
         %endif
         >
             <td style="padding-left: ${folder_pad}px;">
-
                 <span class="expandLink"></span>
-
                 <input type="checkbox" class="folderCheckbox"/>
-                
                 <span class="rowIcon"></span>
-                
                 ${folder.name}
                 %if folder.description:
                     <i>- ${folder.description}</i>
                 %endif
-                
                 <a id="folder_img-${folder.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
-                
                 <div popupmenu="folder_img-${folder.id}-popup">
                     %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=folder ):
                         <a class="action-button" href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library_id, folder_id=folder.id )}">Add datasets to this folder</a>
@@ -201,18 +183,11 @@ class RowCounter( object ):
                     %else:
                         <a class="action-button" href="${h.url_for( controller='library', action='folder', information=True, id=folder.id, library_id=library_id )}">View this folder's information</a>
                     %endif
-                    ## TODO: temporarily eliminating templates until we have the new forms features done
-                    ##%if folder.library_folder_info_template_associations:
-                    ##    %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=folder ):
-                    ##        <% template = folder.get_library_item_info_templates( template_list=[], restrict=True )[0] %>
-                    ##        <a class="action-button" href="${h.url_for( controller='library', action='info_template', library_id=library.id, id=template.id, edit_template=True )}">Edit this folder's information template</a>
-                    ##    %endif
-                    ##%elif not folder.library_folder_info_associations:
-                    ##    ## Only allow adding a new template to the folder if a previously inherited template has not already been used
-                    ##    %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=folder ):
-                    ##        <a class="action-button" href="${h.url_for( controller='library', action='info_template', library_id=library.id, folder_id=folder.id, new_template=True )}">Add an information template to this folder</a>
-                    ##    %endif
-                    ##%endif
+                    %if forms and not folder.info_association:
+                        %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=library ):
+                            <a class="action-button" href="${h.url_for( controller='library', action='info_template', library_id=library.id, add=True )}">Add an information template to this folder</a>
+                        %endif
+                    %endif
                     %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MANAGE, library_item=folder ):
                         <a class="action-button" href="${h.url_for( controller='library', action='folder', permissions=True, id=folder.id, library_id=library_id )}">Edit this folder's permissions</a>
                     %endif
@@ -225,7 +200,6 @@ class RowCounter( object ):
             row_counter.increment()
         %>
     %endif
-
     %for child_folder in name_sorted( folder.active_folders ):
         ${render_folder( child_folder, pad, created_ldda_ids, library_id, my_row, row_counter )}
     %endfor
@@ -242,7 +216,6 @@ class RowCounter( object ):
 <h2>Library &ldquo;${library.name}&rdquo;</h2>
 
 <ul class="manage-table-actions">
-    
     %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=library ):
             %if not deleted:
                 <li>
@@ -253,27 +226,19 @@ class RowCounter( object ):
                 </li>
             %endif
     %endif
-    
     %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=library ):
         <li><a class="action-button" href="${h.url_for( controller='library', action='library', information=True, id=library.id )}">Edit this library's information</a></li>
     %else:
         <li><a class="action-button" href="${h.url_for( controller='library', action='library', information=True, id=library.id )}">View this library's information</a></li>
     %endif
-    ## TODO: temporarily eliminating templates until we have the new forms features done
-    ##%if library.library_info_template_associations:
-    ##    <% template = library.get_library_item_info_templates( template_list=[], restrict=False )[0] %>
-    ##    %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=template ):
-    ##        <a class="action-button" href="${h.url_for( controller='library', action='info_template', library_id=library.id, id=template.id, edit_template=True )}">Edit this library's information template</a>
-    ##    %endif
-    ##%else:
-    ##    %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=library ):
-    ##        <a class="action-button" href="${h.url_for( controller='library', action='info_template', library_id=library.id, new_template=True )}">Add an information template to this library</a>
-    ##    %endif
-    ##%endif
+    %if forms and not library.info_association:
+        %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=library ):
+            <a class="action-button" href="${h.url_for( controller='library', action='info_template', library_id=library.id, add=True )}">Add an information template to this library</a>
+        %endif
+    %endif
     %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MANAGE, library_item=library ):
         <li><a class="action-button" href="${h.url_for( controller='library', action='library', permissions=True, id=library.id )}">Edit this library's permissions</a></li>
-    %endif
-    
+    %endif 
 </ul>
 
 %if msg:
@@ -281,15 +246,12 @@ class RowCounter( object ):
 %endif
 
 <form name="import_from_library" action="${h.url_for( controller='library', action='datasets', library_id=library.id )}" method="post">
-
     <%
         library_item_ids = {}
         library_item_ids[ 'library' ] = library.id
     %>
-    
     <table cellspacing="0" cellpadding="0" border="0" width="100%" class="grid" id="library-grid">
         <thead>
-            
             <tr class="libraryTitle">
                 <th style="padding-left: 42px;">Name</th>
                 <th>Information</th>
@@ -297,18 +259,12 @@ class RowCounter( object ):
                 <th>Date</th>
             </thead>
         </tr>
-
         <% row_counter = RowCounter() %>
-
         ${render_folder( library.root_folder, 0, created_ldda_ids, library.id, Nonw, row_counter )}
-
         <tfoot>
-        
             <tr>
                 <td colspan="4" style="padding-left: 42px;">
-
                     For selected items:
-
                     <select name="do_action" id="action_on_datasets_select">
                         %if default_action == 'add':
                             <option value="add" selected>Import into your current history</option>
@@ -335,15 +291,10 @@ class RowCounter( object ):
                         %endif
                     </select>
                     <input type="submit" class="primary-button" name="action_on_datasets_button" id="action_on_datasets_button" value="Go"/>
-    
                 </td>
-    
             </tr>
-    
         </tfoot>
-    
     </table>
-    
 </form>
 
 ## Help about compression types

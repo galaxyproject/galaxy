@@ -1,7 +1,6 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
 
-
 <%def name="title()">Manage Form Definitions</%def>
 
 %if msg:
@@ -33,36 +32,30 @@
     </tr>
 </%def>
 
-
-<h2>
-    Forms
-</h2>
+<h2>Forms</h2>
 
 <ul class="manage-table-actions">
     <li>
-        <a class="action-button" href="${h.url_for( controller='forms', action='new', new=True )}">
-        <img src="${h.url_for('/static/images/silk/add.png')}" />
-        <span>Define a new form</span></a>
+        <a class="action-button" href="${h.url_for( controller='forms', action='new' )}">
+        <span>Create a new form</span></a>
     </li>
 </ul>
 
-
-<div class="grid-header">
-    ##<span class="title">Filter:</span>
-    %for i, filter in enumerate( ['Active', 'Deleted', 'All'] ):
-        %if i > 0:    
-            <span>|</span>
-        %endif
-        %if show_filter == filter:
-            <span class="filter"><a href="${h.url_for( controller='forms', action='manage', show_filter=filter )}"><b>${filter}</b></a></span>
-        %else:
-            <span class="filter"><a href="${h.url_for( controller='forms', action='manage', show_filter=filter )}">${filter}</a></span>
-        %endif
-    %endfor
-</div>
 %if not fdc_list:
     There are no forms.
 %else:
+    <div class="grid-header">
+        %for i, filter in enumerate( ['Active', 'Deleted', 'All'] ):
+            %if i > 0:    
+                <span>|</span>
+            %endif
+            %if show_filter == filter:
+                <span class="filter"><a href="${h.url_for( controller='forms', action='manage', show_filter=filter )}"><b>${filter}</b></a></span>
+            %else:
+                <span class="filter"><a href="${h.url_for( controller='forms', action='manage', show_filter=filter )}">${filter}</a></span>
+            %endif
+        %endfor
+    </div>
     <table class="grid">
         <thead>
             <tr>

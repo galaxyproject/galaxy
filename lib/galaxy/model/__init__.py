@@ -310,30 +310,6 @@ class LibraryDatasetDatasetAssociationPermissions( object ):
             raise "Invalid LibraryDatasetDatasetAssociation specified: %s" % library_item.__class__.__name__
         self.role = role
 
-class LibraryItemInfoPermissions( object ):
-    def __init__( self, action, library_item, role ):
-        # LIBRARY_ADD -> Not Applicable
-        # LIBRARY_MODIFY -> Can modify LibraryItemInfoElement.contents
-        # LIBRARY_MANAGE -> Can change permissions on LibraryItemInfo
-        self.action = action
-        if isinstance( library_item, LibraryItemInfo ):
-            self.library_item_info = library_item
-        else:
-            raise "Invalid LibraryItemInfo specified: %s" % library_item.__class__.__name__
-        self.role = role
-
-class LibraryItemInfoTemplatePermissions( object ):
-    def __init__( self, action, library_item, role ):
-        # LIBRARY_ADD -> Not Applicable
-        # LIBRARY_MODIFY -> Can add or delete LibraryItemInfoTemplateElements
-        # LIBRARY_MANAGE -> Can change permissions on LibraryItemInfoTemplate
-        self.action = action
-        if isinstance( library_item, LibraryItemInfoTemplate ):
-            self.library_item_info_template = library_item
-        else:
-            raise "Invalid LibraryItemInfoTemplate specified: %s" % library_item.__class__.__name__
-        self.role = role
-
 class DefaultUserPermissions( object ):
     def __init__( self, user, action, role ):
         self.user = user
@@ -701,12 +677,10 @@ class Library( object ):
         self.name = name or "Unnamed library"
         self.description = description
         self.root_folder = root_folder
-    def get_library_item_info_templates( self, template_list=[], restrict=False ):
-        # We only want the next available template in the inheritable hierarchy, so we'll only extend
-        # template_list if it is empty
-        if not template_list and self.library_info_template_associations:
-            template_list.extend( [ lita.library_item_info_template for lita in self.library_info_template_associations if lita.library_item_info_template not in template_list ] )
-        return template_list
+    def get_info_association( self, restrict=False ):
+        if self.info_association:
+            return self.info_association[0]
+        return None
 
 class LibraryFolder( object ):
     def __init__( self, name=None, description=None, item_count=0, order_id=None ):
@@ -725,18 +699,19 @@ class LibraryFolder( object ):
         folder.parent_id = self.id
         folder.order_id = self.item_count
         self.item_count += 1
-    def get_library_item_info_templates( self, template_list=[], restrict=False ):
-        # If restrict is True, we'll return only those templates directly associated with this Folder
-        # We only want the next available template in the inheritable hierarchy, so we'll only extend
-        # template_list if it is empty
-        if not template_list and self.library_folder_info_template_associations:
-            template_list.extend( [ lfita.library_item_info_template for lfita in self.library_folder_info_template_associations if lfita.library_item_info_template not in template_list ] )
-        if not template_list and restrict not in [ 'True', True ] and self.parent:
-            self.parent.get_library_item_info_templates( template_list )
-        elif not template_list and restrict not in [ 'True', True, 'folder' ] and self.library_root:
-            for library_root in self.library_root:
-                library_root.get_library_item_info_templates( template_list )
-        return template_list
+    def get_info_association( self, restrict=False ):
+        # If restrict is True, we will return this folder's info_association whether it
+        # exists or not.  If restrict is False, we'll return the next available info_association
+        # in the inheritable hierarchy
+        if self.info_association:
+            return self.info_association[0]
+        if restrict:
+            return None
+        if self.parent:
+            return self.parent.get_info_association()
+        if self.library_root:
+            return self.library_root[0].get_info_association()
+        return None
     @property
     def active_components( self ):
         return list( self.active_folders ) + list( self.active_datasets )
@@ -796,15 +771,6 @@ class LibraryDataset( object ):
         if not purged and self.purged:
             raise Exception( "Cannot unpurge once purged" )
     purged = property( get_purged, set_purged )
-    def get_library_item_info_templates( self, template_list=[], restrict=False ):
-        # If restrict is True, we'll return only those templates directly associated with this LibraryDataset
-        # We only want the next available template in the inheritable hierarchy, so we'll only extend
-        # template_list if it is empty
-        if not template_list and self.library_dataset_info_template_associations:
-            template_list.extend( [ ldita.library_item_info_template for ldita in self.library_dataset_info_template_associations if ldita.library_item_info_template not in template_list ] )
-        if not template_list and restrict not in [ 'True', True ]:
-            self.folder.get_library_item_info_templates( template_list, restrict )
-        return template_list
 
 class LibraryDatasetDatasetAssociation( DatasetInstance ):
     def __init__( self,
@@ -867,105 +833,34 @@ class LibraryDatasetDatasetAssociation( DatasetInstance ):
         return ldda
     def clear_associated_files( self, metadata_safe = False, purge = False ):
         return
-    def get_library_item_info_templates( self, template_list=[], restrict=False ):
-        # If restrict is True, we'll return only those templates directly associated with this LibraryDatasetDatasetAssociation
-        # We only want the next available template in the inheritable hierarchy, so we'll only extend
-        # template_list if it is empty
-        if not template_list and self.library_dataset_dataset_info_template_associations:
-            template_list.extend( [ lddita.library_item_info_template for lddita in self.library_dataset_dataset_info_template_associations if lddita.library_item_info_template not in template_list ] )
-        if not template_list:
-            self.library_dataset.get_library_item_info_templates( template_list, restrict )
-        return template_list
-
-class LibraryInfoTemplateAssociation( object ):
-    pass
-
-class LibraryFolderInfoTemplateAssociation( object ):
-    pass
-
-class LibraryDatasetInfoTemplateAssociation( object ):
-    pass
-
-class LibraryDatasetDatasetInfoTemplateAssociation( object ):
-    pass
-
-class LibraryItemInfoTemplate( object ):
-    def add_element( self, element = None, name = None, description = None ):
-        if element:
-            raise "undefined"
-        else:
-            new_elem = LibraryItemInfoTemplateElement()
-            new_elem.name = name
-            new_elem.description = description
-            new_elem.order_id = self.item_count
-            self.item_count += 1
-            self.flush()
-            new_elem.library_item_info_template_id = self.id
-            new_elem.flush()
-            return new_elem
-    
-class LibraryItemInfoTemplateElement( object ):
-    pass
+    def get_info_association( self, restrict=False ):
+        # If restrict is True, we will return this ldda's info_association whether it
+        # exists or not.  If restrict is False, we'll return the next available info_association
+        # in the inheritable hierarchy
+        if self.info_association:
+            return self.info_association[0]
+        if restrict:
+            return None
+        return self.library_dataset.folder.get_info_association()
 
 class LibraryInfoAssociation( object ):
-    def __init__( self, user=None ):
-        self.user = user
-    def set_library_item( self, library_item ):
-        if isinstance( library_item, Library ):
-            self.library = library_item
-        else:
-            raise "Invalid Library specified: %s" % library_item.__class__.__name__
+    def __init__( self, library, form_definition, info ):
+        self.library = library
+        self.template = form_definition
+        self.info = info
 
 class LibraryFolderInfoAssociation( object ):
-    def __init__( self, user=None ):
-        self.user = user
-    def set_library_item( self, library_item ):
-        if isinstance( library_item, LibraryFolder ):
-            self.folder = library_item
-        else:
-            raise "Invalid Library specified: %s" % library_item.__class__.__name__
-
-class LibraryDatasetInfoAssociation( object ):
-    def __init__( self, user=None ):
-        self.user = user
-    def set_library_item( self, library_item ):
-        if isinstance( library_item, LibraryDataset ):
-            self.library_dataset = library_item
-        else:
-            raise "Invalid Library specified: %s" % library_item.__class__.__name__
+    def __init__( self, folder, form_definition, info ):
+        self.folder = folder
+        self.template = form_definition
+        self.info = info
 
 class LibraryDatasetDatasetInfoAssociation( object ):
-    def __init__( self, user=None ):
-        self.user = user
-    def set_library_item( self, library_item ):
-        if isinstance( library_item, LibraryDatasetDatasetAssociation ):
-            self.library_dataset_dataset_association = library_item
-        else:
-            raise "Invalid Library specified: %s" % library_item.__class__.__name__
+    def __init__( self, library_dataset_dataset_association, form_definition, info ):
+        self.library_dataset_dataset_association = library_dataset_dataset_association
+        self.template = form_definition
+        self.info = info
 
-class LibraryItemInfo( object ):
-    def __init__( self, user=None ):
-        self.user = user
-    def get_element_by_template_element( self, template_element, create_element=False ):
-        for element in self.elements:
-            if element.library_item_info_template_element == template_element:
-                return element
-        if create_element:
-            # Template elements may have been added to the template after the 
-            # library item initially inherited it, so we'll add the additional
-            # element to the library item
-            element = LibraryItemInfoElement()
-            element.library_item_info_template_element = template_element
-            element.library_item_info = self
-            element.flush()
-            self.elements.append( element )
-            return element
-        else:
-            return None
-
-class LibraryItemInfoElement( object ):
-    pass
-            
 class ValidationError( object ):
     def __init__( self, message=None, err_type=None, attributes=None ):
         self.message = message
@@ -1102,8 +997,7 @@ class MetadataFile( object ):
                 raise
         # Return filename inside hashed directory
         return os.path.abspath( os.path.join( path, "metadata_%d.dat" % self.id ) )
-    
-    
+
 class FormDefinition( object ):
     def __init__(self, name=None, desc=None, fields=[], current_form=None):
         self.name = name

@@ -12,9 +12,9 @@ class UploadLibraryDataset( BaseController ):
             os.unlink( filename )
         except:
             log.exception( 'failure removing temporary file: %s' % filename )
-    def add_file( self, trans, folder_id, file_obj, name, file_format, dbkey, roles, info='no info', space_to_tab=False,
-                  replace_dataset=None, library_item_info_template=None, template_elements={}, message=None ):
-        folder = trans.app.model.LibraryFolder.get( folder_id )
+    def add_file( self, trans, folder, file_obj, name, file_format, dbkey, roles,
+                  info='no info', space_to_tab=False, replace_dataset=None,
+                  template=None, template_field_contents=[], message=None ):
         data_type = None
         line_count = 0
         temp_name, is_multi_byte = sniff.stream_to_file( file_obj )
@@ -142,24 +142,17 @@ class UploadLibraryDataset( BaseController ):
             folder.flush()
         library_dataset.library_dataset_dataset_association_id = ldda.id
         library_dataset.flush()
-        # Handle any templates included in the upload form
-        if library_item_info_template:
-            user = trans.get_user()
-            library_item_info = trans.app.model.LibraryItemInfo( user=user )
-            library_item_info.library_item_info_template = library_item_info_template
-            library_item_info.flush()
-            trans.app.security_agent.copy_library_permissions( library_item_info_template, library_item_info )
-            for template_element in library_item_info_template.elements:
-                info_element_value = template_elements.get( "info_element_%s_%s" % ( library_item_info_template.id, template_element.id ), None )
-                info_element = trans.app.model.LibraryItemInfoElement()
-                info_element.contents = info_element_value
-                info_element.library_item_info_template_element = template_element
-                info_element.library_item_info = library_item_info
-                info_element.flush()
-            library_item_info_association = trans.app.model.LibraryDatasetDatasetInfoAssociation( user=user )
-            library_item_info_association.set_library_item( ldda )
-            library_item_info_association.library_item_info = library_item_info
-            library_item_info_association.flush()
+        # Handle template included in the upload form, if any
+        if template and template_field_contents:
+            # Since information templates are inherited, the template fields can be displayed on the upload form.
+            # If the user has added field contents, we'll need to create a new form_values and info_association
+            # for the new library_dataset_dataset_association object.
+            # Create a new FormValues object, using the template we previously retrieved
+            form_values = trans.app.model.FormValues( template, template_field_contents )
+            form_values.flush()
+            # Create a new info_association between the current ldda and form_values
+            info_association = trans.app.model.LibraryDatasetDatasetInfoAssociation( ldda, template, form_values )
+            info_association.flush()
         # If roles were selected upon upload, restrict access to the Dataset to those roles
         if roles:
             for role in roles:
@@ -207,22 +200,19 @@ class UploadLibraryDataset( BaseController ):
             replace_id = None
         message = params.get( 'message', '' )
         upload_option = params.get( 'upload_option', 'upload_file' )
-        # Handle any templates included in the upload form by building a dictionary of info elements to send to add_file
-        template_elements = {}
-        library_item_info_template = None
-        library_item_info_template_id = params.get( 'library_item_info_template_id', None )
-        if library_item_info_template_id:
-            library_item_info_template = trans.app.model.LibraryItemInfoTemplate.get( int( library_item_info_template_id ) )
-            for template_element in library_item_info_template.elements:
-                # Make sure at least 1 template field is filled in
-                # TODO: Eventually we'll enhance templates to allow for required and optional fields.
-                if params.get( "info_element_%s_%s" % ( library_item_info_template.id, template_element.id ), None ):
-                    for template_element in library_item_info_template.elements:
-                        key = "info_element_%s_%s" % ( library_item_info_template.id, template_element.id )
-                        value = params.get( key, None )
-                        if value:
-                            template_elements[ key ] = value
         err_redirect = False
+        # See if we have any template field contents
+        template_field_contents = []
+        template = None
+        folder = trans.app.model.LibraryFolder.get( folder_id )
+        info_association = folder.get_info_association()
+        if info_association:
+            template = info_association.template
+            for field_index in range( len( template.fields ) ):
+                field_name = 'field_%i' % field_index
+                if params.get( field_name, False ):
+                    field_value = util.restore_text( params.get( field_name, ''  ) )
+                    template_field_contents.append( field_value )
         if upload_option == 'upload_file' and data_file == '' and url_paste == '':
                 msg = 'Select a file, enter a URL or enter text'
                 err_redirect = True
@@ -263,7 +253,7 @@ class UploadLibraryDataset( BaseController ):
             file_name = file_name.split( '/' )[-1]
             try:
                 created_ldda = self.add_file( trans,
-                                              folder_id,
+                                              folder,
                                               data_file.file,
                                               file_name,
                                               file_format,
@@ -272,8 +262,8 @@ class UploadLibraryDataset( BaseController ):
                                               info="uploaded file",
                                               space_to_tab=space_to_tab,
                                               replace_dataset=replace_dataset,
-                                              library_item_info_template=library_item_info_template,
-                                              template_elements=template_elements,
+                                              template=template,
+                                              template_field_contents=template_field_contents,
                                               message=message )
                 created_ldda_ids = str( created_ldda.id )
             except Exception, e:
@@ -291,7 +281,7 @@ class UploadLibraryDataset( BaseController ):
                             name_set_from_line = True
                         try:
                             created_ldda = self.add_file( trans,
-                                                          folder_id,
+                                                          folder,
                                                           urllib.urlopen( line ),
                                                           line,
                                                           file_format,
@@ -300,8 +290,8 @@ class UploadLibraryDataset( BaseController ):
                                                           info="uploaded url",
                                                           space_to_tab=space_to_tab,
                                                           replace_dataset=replace_dataset,
-                                                          library_item_info_template=library_item_info_template,
-                                                          template_elements=template_elements,
+                                                          template=template,
+                                                          template_field_contents=template_field_contents,
                                                           message=message )
                             created_ldda_ids = '%s,%s' % ( created_ldda_ids, str( created_ldda.id ) )
                         except Exception, e:
@@ -317,7 +307,7 @@ class UploadLibraryDataset( BaseController ):
                 if is_valid:
                     try:
                         created_ldda = self.add_file( trans,
-                                                      folder_id,
+                                                      folder,
                                                       StringIO.StringIO( url_paste ),
                                                       'Pasted Entry',
                                                       file_format,
@@ -326,8 +316,8 @@ class UploadLibraryDataset( BaseController ):
                                                       info="pasted entry",
                                                       space_to_tab=space_to_tab,
                                                       replace_dataset=replace_dataset,
-                                                      library_item_info_template=library_item_info_template,
-                                                      template_elements=template_elements,
+                                                      template=template,
+                                                      template_field_contents=template_field_contents,
                                                       message=message )
                         created_ldda_ids = '%s,%s' % ( created_ldda_ids, str( created_ldda.id ) )
                     except Exception, e:
@@ -368,7 +358,7 @@ class UploadLibraryDataset( BaseController ):
                     continue
                 try:
                     created_ldda = self.add_file( trans,
-                                                  folder_id,
+                                                  folder,
                                                   open( full_file, 'rb' ),
                                                   file,
                                                   file_format,
@@ -377,8 +367,8 @@ class UploadLibraryDataset( BaseController ):
                                                   info="imported file",
                                                   space_to_tab=space_to_tab,
                                                   replace_dataset=replace_dataset,
-                                                  library_item_info_template=library_item_info_template,
-                                                  template_elements=template_elements,
+                                                  template=template,
+                                                  template_field_contents=template_field_contents,
                                                   message=message )
                     created_ldda_ids = '%s,%s' % ( created_ldda_ids, str( created_ldda.id ) )
                 except Exception, e:

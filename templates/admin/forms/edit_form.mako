@@ -1,8 +1,6 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
 
-
-
 %if msg:
     ${render_msg( msg, messagetype )}
 %endif
@@ -53,7 +51,6 @@ $( function() {
     %endif
 </%def>
 
-
 <%def name="render_field( index, field )">
     <div class="repeat-group-item">
         <div class="form-row">
@@ -101,5 +98,4 @@ $( function() {
             <input type="submit" name="save_changes_button" value="Save"/>
         </div>
     </form>
-    </div>
 </div>

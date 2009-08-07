@@ -60,7 +60,7 @@
                   <div style="clear: both"></div>
                 </div>
                 <div class="form-row">
-                <input type="submit" name="create_library_button" value="Define states"/>
+                <input type="submit" name="create_request_type_button" value="Define states"/>
                 </div>
             </form>
         </div>

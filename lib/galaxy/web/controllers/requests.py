@@ -508,6 +508,8 @@ class Requests( BaseController ):
             return [widget]
         
     def __create_form(self, trans, form_id, widgets=[], form_values=None, **kwd):
+        # TODO: RC - replace this method by importing as follows:
+        # from galaxy.web.controllers.forms import get_form_widgets
         params = util.Params( kwd )
         form = trans.app.model.FormDefinition.get(form_id)
         # form fields

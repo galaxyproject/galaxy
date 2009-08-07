@@ -19,7 +19,7 @@
             <li><a href="${h.url_for( controller='history', action='clone', id=trans.security.encode_id( history.id ) )}">Clone</a> current history</li>
         %endif
         <li><a href="${h.url_for( controller='history', action='share' )}" target="galaxy_main">Share</a> current history</div>
-        <li><a href="${h.url_for( action='history_set_default_permissions' )}">Change default permissions</a> for current history</li>
+        <li><a href="${h.url_for( controller='root', action='history_set_default_permissions' )}">Change default permissions</a> for current history</li>
     %endif
     %if len( history.activatable_datasets ) > 0:
         <li><a href="${h.url_for( controller='root', action='history', show_deleted=True)}" target="galaxy_history">Show deleted</a> datasets in current history</li>

@@ -1,3 +1,8 @@
+"""
+This migration script creates the new history_user_share_association table, and adds
+a new boolean type column to the history table.  This provides support for sharing
+histories in the same way that workflows are shared.
+"""
 from sqlalchemy import *
 from sqlalchemy.orm import *
 from migrate import *
@@ -14,6 +19,13 @@ log.addHandler( handler )
 
 metadata = MetaData( migrate_engine )
 
+def display_migration_details():
+    print "========================================"
+    print "This migration script creates the new history_user_share_association table, and adds"
+    print "a new boolean type column to the history table.  This provides support for sharing"
+    print "histories in the same way that workflows are shared."
+    print "========================================"
+
 HistoryUserShareAssociation_table = Table( "history_user_share_association", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "history_id", Integer, ForeignKey( "history.id" ), index=True ),
@@ -21,6 +33,7 @@ HistoryUserShareAssociation_table = Table( "history_user_share_association", met
     )
 
 def upgrade():
+    display_migration_details()
     # Load existing tables
     metadata.reflect()
     # Create the history_user_share_association table

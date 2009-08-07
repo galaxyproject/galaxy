@@ -1,7 +1,6 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
-<%namespace file="/admin/library/common.mako" import="render_available_templates" />
-<%namespace file="/admin/library/common.mako" import="render_library_item_info" />
+<%namespace file="/admin/library/common.mako" import="render_template_info" />
 <% from galaxy import util %>
 
 <%
@@ -61,37 +60,27 @@
     <div class="toolFormBody">
         <div class="form-row">
             <label>Message:</label>
-            <div style="float: left; width: 250px; margin-right: 10px;">
-                ${ldda.message}
-            </div>
+            ${ldda.message}
             <div style="clear: both"></div>
         </div>
         <div class="form-row">
             <label>Uploaded by:</label>
-            <div style="float: left; width: 250px; margin-right: 10px;">
-                ${uploaded_by}
-            </div>
+            ${uploaded_by}
             <div style="clear: both"></div>
         </div>
         <div class="form-row">
             <label>Date uploaded:</label>
-            <div style="float: left; width: 250px; margin-right: 10px;">
-                ${ldda.create_time.strftime( "%Y-%m-%d" )}
-            </div>
+            ${ldda.create_time.strftime( "%Y-%m-%d" )}
             <div style="clear: both"></div>
         </div>
         <div class="form-row">
             <label>Build:</label>
-            <div style="float: left; width: 250px; margin-right: 10px;">
-                ${ldda.dbkey}
-            </div>
+            ${ldda.dbkey}
             <div style="clear: both"></div>
         </div>
         <div class="form-row">
             <label>Miscellaneous information:</label>
-            <div style="float: left; width: 250px; margin-right: 10px;">
-                ${ldda.info}
-            </div>
+            ${ldda.info}
             <div style="clear: both"></div>
         </div>
         <div class="form-row">
@@ -118,8 +107,8 @@
             </div>
         </div>
     </div>
-    %if ldda.library_dataset_dataset_info_associations:
-        ${render_library_item_info( ldda, library_id )}
+    %if widgets:
+        ${render_template_info( ldda, library.id, widgets, editable=False )}
     %endif
     %if current_version:
         <% expired_lddas = [ e_ldda for e_ldda in ldda.library_dataset.expired_datasets ] %>

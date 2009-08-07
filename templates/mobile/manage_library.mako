@@ -1,8 +1,7 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
 <%namespace file="/dataset/security_common.mako" import="render_permission_form" />
-<%namespace file="/library/common.mako" import="render_available_templates" />
-<%namespace file="/library/common.mako" import="render_library_item_info_for_edit" />
+<%namespace file="/library/common.mako" import="render_template_info" />
 
 %if msg:
     ${render_msg( msg, messagetype )}
@@ -50,7 +49,7 @@
             </div>
         </div>
         <div class="toolForm">
-            ${render_library_item_info_for_edit( library, library.id )}
+            ${render_template_info( library, library.id )}
         </div>
     </div>
 %endif
@@ -61,6 +60,6 @@
     ${render_permission_form( library, library.name, h.url_for( controller='library', action='library', id=library.id, permissions=True ), roles )}
 %endif
 
-%if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=library ):
-    ${render_available_templates( library, library.id, restrict=restrict )}
+%if widgets:
+    ${render_template_info( library, library_id, widgets )}
 %endif

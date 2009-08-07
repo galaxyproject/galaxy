@@ -1,6 +1,6 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
-<%namespace file="/admin/library/common.mako" import="render_available_templates" />
+<%namespace file="/admin/library/common.mako" import="render_template_info" />
 
 <% import os, os.path %>
 
@@ -160,11 +160,18 @@
                     </div>
                 </div>
                 <div style="clear: both"></div>
-                <% folder = trans.app.model.LibraryFolder.get( folder_id ) %>
-                %if folder.library_folder_info_template_associations:
-                    ${render_available_templates( folder, library_id, restrict=True, upload=True )}
-                %else:
-                    ${render_available_templates( folder, library_id, restrict=False, upload=True )}
+                %if widgets:
+                    <p/>
+                    %for i, field in enumerate( widgets ):
+                        <div class="form-row">
+                            <label>${field[ 'label' ]}</label>
+                            ${field[ 'widget' ].get_html()}
+                            <div class="toolParamHelp" style="clear: both;">
+                                ${field[ 'helptext' ]}
+                            </div>
+                            <div style="clear: both"></div>
+                        </div>
+                    %endfor 
                 %endif
                 <div class="form-row">
                     <input type="submit" class="primary-button" name="new_dataset_button" value="Upload to library"/>

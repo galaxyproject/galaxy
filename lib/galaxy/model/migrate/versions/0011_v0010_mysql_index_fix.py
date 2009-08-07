@@ -1,3 +1,8 @@
+"""
+This script fixes a problem introduced in 0010_hda_display_at_atuhz_table.py.  MySQL has a 
+name length limit and thus the index "ix_hdadaa_history_dataset_association_id" has to be
+manually created.
+"""
 from sqlalchemy import *
 from sqlalchemy.orm import *
 from sqlalchemy.exceptions import *
@@ -22,6 +27,13 @@ from galaxy.model.custom_types import *
 metadata = MetaData( migrate_engine )
 db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, transactional=False ) )
 
+def display_migration_details():
+    print "========================================"
+    print "This script fixes a problem introduced in the previous migration script ( 9->10 ).  MySQL"
+    print "has a name length limit and thus the index 'ix_hdadaa_history_dataset_association_id' has"
+    print "to be manually created."
+    print "========================================"
+
 HistoryDatasetAssociationDisplayAtAuthorization_table = Table( "history_dataset_association_display_at_authorization", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
@@ -31,6 +43,7 @@ HistoryDatasetAssociationDisplayAtAuthorization_table = Table( "history_dataset_
     Column( "site", TrimmedString( 255 ) ) )
 
 def upgrade():
+    display_migration_details()
     if migrate_engine.name == 'mysql':
         # Load existing tables
         metadata.reflect()
@@ -39,7 +52,7 @@ def upgrade():
             i.create()
         except Exception, e:
             log.debug( "Adding index 'ix_hdadaa_history_dataset_association_id' to table 'history_dataset_association_display_at_authorization' table failed: %s" % str( e ) )  
-    
+
 def downgrade():
     if migrate_engine.name == 'mysql':
         # Load existing tables

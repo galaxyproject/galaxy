@@ -475,98 +475,41 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.rename_library( str( library_one.id ), library_one.name, name=name, description=description )
         library_one.refresh()
         """
-        ## TODO: temporarily eliminating templates until we have the new forms features done
         def test_075_library_template_features( self ):
-            Testing adding a template to a library, along with template features on the admin side
-            actions = [ v.action for k, v in galaxy.model.Library.permitted_actions.items() ]
-            actions.sort()
-            # Add a new information template to the library
-            template_name = 'Library Template 1'
-            ele_name_0 = 'Foo'
-            ele_name_1 = 'Doh'
-            self.add_library_info_template( library_one.id, library_one.name, name=template_name, num_fields='2', ele_name_0=ele_name_0, ele_name_1=ele_name_1 )
-            self.home()
-            self.visit_url( '%s/admin/library?id=%s&information=True' % ( self.url, str( library_one.id ) ) )
-            self.check_page_for_string( ele_name_0 )
-            self.check_page_for_string( ele_name_1 )
-            self.home()
-            # Get the template for later testing
-            global library_one_template
-            library_one_template = galaxy.model.LibraryItemInfoTemplate.query().order_by( desc( galaxy.model.LibraryItemInfoTemplate.table.c.id ) ).first()
-            assert library_one_template is not None, 'Problem retrieving LibraryItemInfoTemplate for library named "%s" from the database' % str( library_one.name )
-            # Make sure the library permissions were inherited by the template
-            template_permissions = galaxy.model.LibraryItemInfoTemplatePermissions \
-                .query() \
-                .filter( galaxy.model.LibraryItemInfoTemplatePermissions.table.c.library_item_info_template_id == library_one_template.id ) \
-                .order_by( desc( galaxy.model.LibraryItemInfoTemplatePermissions.table.c.id ) ) \
-                .limit( 3 ) \
-                .all()
-            template_permissions = [ litp_obj.action for litp_obj in template_permissions ]
-            template_permissions.sort()
-            assert actions == template_permissions, "Template permissions for template %s not correctly inherited from library %s" \
-                                                    % ( library_one_template.name, library_one.name )
-            # Make sure that the library permissions were inherited by each of the template elements
-            for library_item_info in library_one_template.library_item_infos:
-                info_permissions = galaxy.model.LibraryItemInfoPermissions \
-                    .filter( galaxy.model.LibraryItemInfoPermissions.table.c.library_item_info_id == library_item_info.id ) \
-                    .all()
-                info_permissions = [ liip_obj.action for liip_obj in info_permissions ]
-                info_permissions.sort()
-                assert actions == info_permissions, "Permissions for library_item_info id %s not correctly inherited from library %s" \
-                                    % ( library_item_info.id, library_one.name )
-            element_ids = []
-            if library_one.library_info_associations:
-                # We have a set of LibraryItemInfoElements
-                last_library_item_info_element = galaxy.model.LibraryItemInfoElement.query() \
-                    .order_by( desc( galaxy.model.LibraryItemInfoElement.table.c.id ) ).first()
-                if not last_library_item_info_element:
-                    element_ids.append( 0 )
-                    element_ids.append( 1 )
-                else:
-                    element_ids.append( last_library_item_info_element.id + 1 )
-                    element_ids.append( last_library_item_info_element.id + 2 )
-            else:
-                # We only have a set of LibraryItemInfoTemplateElements
-                for ele in library_one_template.elements:
-                    element_ids.append( ele.id )
-                element_ids.sort()
-            # Add information to the library using the template
-            ele_1_field_name = "info_element_%s_%s" % ( str( library_one_template.id ), str( element_ids[0] ) )
-            ele_1_contents = 'hello'
-            ele_2_field_name = "info_element_%s_%s" % ( str( library_one_template.id ), str( element_ids[1] ) )
-            ele_2_contents = 'world'
-            self.edit_library_info( str( library_one.id ), library_one.name,
-                                    ele_1_field_name, ele_1_contents,
-                                    ele_2_field_name, ele_2_contents )
-            self.home()
-            self.visit_url( '%s/admin/library?id=%s&information=True' % ( self.url, str( library_one.id ) ) )
-            self.check_page_for_string( ele_1_contents )
-            self.check_page_for_string( ele_2_contents )
-            self.home()
-            self.visit_url( '%s/admin/library?id=%s&information=True' % ( self.url, str( library_one.id ) ) )
-            self.check_page_for_string( ele_1_contents )
-            self.check_page_for_string( ele_2_contents )
-            # Edit the template
-            new_name = 'Library Template 1 renamed'
-            new_ele_name_1_field = "element_name_%s" % element_ids[0]
-            new_ele_name_1 = 'wind'
-            new_ele_desc_1_field = "element_description_%s" % element_ids[0]
-            ele_desc_1 = 'This is the wind component'
-            new_ele_name_2_field = "element_name_%s" % element_ids[1]
-            new_ele_name_2 = 'bag'
-            new_ele_desc_2_field = "element_description_%s" % element_ids[1]
-            ele_desc_2 = 'This is the bag component'
-            self.edit_library_info_template( str( library_one.id ), library_one_template.id, new_name,
-                                             new_ele_name_1_field, new_ele_name_1, new_ele_desc_1_field, ele_desc_1,
-                                             new_ele_name_2_field, new_ele_name_2, new_ele_desc_2_field, ele_desc_2 )
-            self.home()
-            self.visit_url( '%s/admin/library?id=%s&information=True' % ( self.url, str( library_one.id ) ) )
-            self.check_page_for_string( new_ele_name_1 )
-            self.check_page_for_string( ele_desc_1 )
-            self.check_page_for_string( ele_1_contents )
-            self.check_page_for_string( new_ele_name_2 )
-            self.check_page_for_string( ele_desc_2 )
-            self.check_page_for_string( ele_2_contents )
+        Testing adding a template to a library, along with template features on the admin side
+        # Make sure a form exists
+        self.create_form( name='Form One', description='This is Form One' )
+        current_form = galaxy.model.FormDefinitionCurrent.filter( galaxy.model.FormDefinitionCurrent.table.c.deleted==False ) \
+            .order_by( desc( galaxy.model.FormDefinitionCurrent.table.c.create_time ) ).first()
+        global form_one
+        form_one = current_form.latest_form
+        # Add a new information template to the library
+        template_name = 'Library Template 1'
+        self.add_library_info_template( str( library_one.id ),
+                                        library_one.name,
+                                        str( form_one.id ),
+                                        form_one.name )
+        # Make sure the template fields are displayed on the library information page
+        self.home()
+        self.visit_url( '%s/admin/library?id=%s&information=True' % ( self.url, str( library_one.id ) ) )
+        num_fields = len( form_one.fields )
+        for index in range( num_fields ):
+            label_check_str = form_one.fields[ index ][ 'label' ]
+            help_check_str = form_one.fields[ index ][ 'helptext' ]
+            required_check_str = form_one.fields[ index ][ 'required' ].capitalize()
+        self.check_page_for_string( label_check_str )
+        self.check_page_for_string( help_check_str )
+        self.check_page_for_string( required_check_str )
+        # Add information to the library using the template
+        for index in range( num_fields ):
+            field_name = 'field_%i' % index
+            contents = '%s contents' % form_one.fields[ index ][ 'label' ]
+            # There are 2 forms on this page and the template is the 2nd form
+            tc.fv( '2', field_name, contents )
+        tc.submit( 'edit_info_button' )
+        self.check_page_for_string ( 'The information has been updated.' )
+        self.home()
+        # TODO: add more testing for full feature coverage
         """
     def test_080_add_public_dataset_to_root_folder( self ):
         """Testing adding a public dataset to the root folder"""
