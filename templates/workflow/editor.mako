@@ -31,6 +31,9 @@
     <script type='text/javascript' src="${h.url_for('/static/scripts/jquery.event.hover.js')}"> </script>
     <script type='text/javascript' src="${h.url_for('/static/scripts/jquery.form.js')}"> </script>
     <script type='text/javascript' src="${h.url_for('/static/scripts/jquery.json.js')}"> </script>
+    <script type='text/javascript' src="${h.url_for('/static/scripts/jquery.cookie.js')}"> </script>
+    <script type='text/javascript' src="${h.url_for('/static/scripts/json2.js')}"> </script>
+    <script type='text/javascript' src="${h.url_for('/static/scripts/json_cookie.js')}"> </script>
 
     <script type='text/javascript' src="${h.url_for('/static/scripts/galaxy.base.js')}"> </script>
     <script type='text/javascript' src="${h.url_for('/static/scripts/galaxy.workflow_editor.canvas.js')}"> </script>
@@ -56,6 +59,10 @@
         }
         // Canvas overview management
         canvas_manager = new CanvasManager( $("#canvas-viewport"), $("#overview") );
+        
+        // Preferences cookie stored as JSON so that only one cookie is needed for multiple settings
+        var prefs_cookie = new JSONCookie("galaxy.workflow");
+        
         // Initialize workflow state
         reset();
         // Load the datatype info
@@ -121,17 +128,42 @@
             canvas_manager.draw_overview();
         });
         
-        /* Lets the viewport be toggled visible and invisible, adjusting the arrows accordingly */
-        $("#close-viewport").click( function() {
-            if ( $("#overview-border").css("right") == "0px" ) {
-                $("#overview-border").css("right", "20000px");
-                $("#close-viewport").css("background-position", "12px 0px");
+        // Stores the size of the overview in a cookie when it's resized
+        $("#overview-border").bind( "dragend", function( e ) {
+            var op = $(this).offsetParent();
+            var opo = op.offset();
+            var new_size = Math.max( op.width() - ( e.offsetX - opo.left ),
+                                     op.height() - ( e.offsetY - opo.top ) );
+            prefs_cookie.set("overview-size", new_size);
+        });
+        
+        // On load, set the size to the pref stored in cookie if it exists
+        overview_size = prefs_cookie.get("overview-size");
+        if (overview_size) {
+            $("#overview-border").css( {
+                width: overview_size,
+                height: overview_size
+            });
+        }
+        
+        function show_overview() {
+            prefs_cookie.unset("overview-off");
+            $("#overview-border").css("right", "0px");
+            $("#close-viewport").css("background-position", "0px 0px");
+        }
+        
+        function hide_overview() {
+            prefs_cookie.set("overview-off", true);
+            $("#overview-border").css("right", "20000px");
+            $("#close-viewport").css("background-position", "12px 0px");
+        }
+        
+        // Show viewport on load unless pref says it's off
+        prefs_cookie.get("overview-off") == true ? hide_overview() : show_overview() 
                 
-            } else {
-                $("#overview-border").css("right", "0px");
-                $("#close-viewport").css("background-position", "0px 0px");
-            }
-            
+        // Lets the overview be toggled visible and invisible, adjusting the arrows accordingly
+        $("#close-viewport").click( function() {
+            $("#overview-border").css("right") == "0px" ? hide_overview() : show_overview();
         });
         
         // Unload handler
@@ -642,7 +674,7 @@
         <div id="canvas-viewport" style="width: 100%; height: 100%; position: absolute; overflow: hidden; background: #EEEEEE; background: white url(${h.url_for('/static/images/light_gray_grid.gif')}) repeat;">
             <div id="canvas-container" style="position: absolute; width: 100%; height: 100%;"></div>
         </div>
-        <div id="overview-border" style="position: absolute; width: 150px; height: 150px; right: 0px; bottom: 0px; border-top: solid gray 1px; border-left: solid grey 1px; padding: 7px 0 0 7px; background: #EEEEEE no-repeat url(${h.url_for('/static/images/resizable.png')}); z-index: 20000; overflow: hidden; max-width: 300px; max-height: 300px; min-width: 50px; min-height: 50px">
+        <div id="overview-border" style="position: absolute; width: 150px; height: 150px; right: 20000px; bottom: 0px; border-top: solid gray 1px; border-left: solid grey 1px; padding: 7px 0 0 7px; background: #EEEEEE no-repeat url(${h.url_for('/static/images/resizable.png')}); z-index: 20000; overflow: hidden; max-width: 300px; max-height: 300px; min-width: 50px; min-height: 50px">
             <div style="position: relative; overflow: hidden; width: 100%; height: 100%; border-top: solid gray 1px; border-left: solid grey 1px;">
                 <div id="overview" style="position: absolute;">
                     <canvas width="0" height="0" style="background: white; width: 100%; height: 100%;" id="overview-canvas"></canvas>
@@ -650,7 +682,7 @@
                 </div>
             </div>
         </div>
-        <div id="close-viewport" style="border-left: 1px solid #999; border-top: 1px solid #999; background: #ddd url(${h.url_for('/static/images/overview_arrows.png')}); position: absolute; right: 0px; bottom: 0px; width: 12px; height: 12px; z-index: 25000;"></div>
+        <div id="close-viewport" style="border-left: 1px solid #999; border-top: 1px solid #999; background: #ddd url(${h.url_for('/static/images/overview_arrows.png')}) 12px 0px; position: absolute; right: 0px; bottom: 0px; width: 12px; height: 12px; z-index: 25000;"></div>
     </div>
 
 </%def>
