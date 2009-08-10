@@ -15,7 +15,7 @@
                     ${input.label}:
                 </label>
                 <div style="float: left; width: 250px; margin-right: 10px;">
-                    <input type="${input.type}" name="${input.name}" value="${input.value}" size="40">
+                    <input type="${input.type}" name="${input.name}" value="${input.value}" size="30">
                 </div>
                 %if input.error:
                 <div style="float: left; color: red; font-weight: bold; padding-top: 1px; padding-bottom: 3px;">
