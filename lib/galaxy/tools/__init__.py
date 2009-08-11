@@ -128,7 +128,7 @@ class ToolBox( object ):
         tree = util.parse_xml( config_file )
         root = tree.getroot()
         # Allow specifying a different tool subclass to instantiate
-        if root.find( "type" ):
+        if root.find( "type" ) is not None:
             type_elem = root.find( "type" )
             module = type_elem.get( 'module', 'galaxy.tools' )
             cls = type_elem.get( 'class' )
