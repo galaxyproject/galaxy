@@ -12,7 +12,7 @@
         Create a form definition first to create a new request type.
     %else:
         <div class="toolFormBody">
-            <form name="create_request_type" action="${h.url_for( controller='admin', action='request_type', add_states=True, create=False, edit=False  )}" method="post" >
+            <form name="create_request_type" action="${h.url_for( controller='admin', action='request_type')}" method="post" >
                 <div class="form-row">
                     <label>Name:</label>
                     <div style="float: left; width: 250px; margin-right: 10px;">
@@ -60,7 +60,7 @@
                   <div style="clear: both"></div>
                 </div>
                 <div class="form-row">
-                <input type="submit" name="create_request_type_button" value="Define states"/>
+                <input type="submit" name="define_states_button" value="Define states"/>
                 </div>
             </form>
         </div>

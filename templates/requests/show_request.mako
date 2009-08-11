@@ -11,7 +11,6 @@
     <h2>Sequencing Request "${request.name}"</h2>
 </div>
 
-
 <ul class="manage-table-actions">
     %if request.unsubmitted() and request.samples:
         <li>
@@ -109,7 +108,7 @@
 
 <div class="toolForm">
     ##<div class="toolFormTitle">Samples (${len(request.samples)})</div>
-    <form id="edit_form" name="edit_form" action="${h.url_for( controller='requests', action='show_request' )}" method="post" >
+    <form id="show_request" name="show_request" action="${h.url_for( controller='requests', action='show_request' )}" enctype="multipart/form-data" method="post" >
         <div class="form-row">
             %if current_samples: 
                 <table class="grid">
@@ -186,7 +185,7 @@
                         <td>
                             ##<div class="form-row">
                             <label>Import from csv file</label>           
-                            <input type="text" name="import_samples" value="" size="20"/>
+                            <input type="file" name="file_data" />
                             <input type="submit" name="import_samples_button" value="Import samples"/>
                             ##</div>
                         </td>

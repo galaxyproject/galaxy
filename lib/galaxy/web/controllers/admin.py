@@ -710,7 +710,7 @@ class Admin( BaseController ):
                                     library=trans.app.model.Library.get( id ),
                                     deleted=deleted,
                                     created_ldda_ids=created_ldda_ids,
-                                    forms=get_all_forms( trans ),
+                                    forms=get_all_forms( trans, filter=dict(deleted=False) ),
                                     msg=msg,
                                     messagetype=messagetype,
                                     show_deleted=show_deleted )
@@ -1628,7 +1628,7 @@ class Admin( BaseController ):
             library_item_desc = 'library'
             response_action = 'browse_library'
             response_id = library_id
-        forms = get_all_forms( trans )
+        forms = get_all_forms( trans, filter=dict(deleted=False) )
         if not forms:
             msg = "There are no forms on which to base the template, so create a form and "
             msg += "try again to add the information template to the %s." % library_item_desc
@@ -1982,19 +1982,20 @@ class Admin( BaseController ):
         messagetype = params.get( 'messagetype', 'done' )   
         if params.get( 'create', False ):
             return trans.fill_template( '/admin/requests/create_request_type.mako', 
-                                        forms=get_all_forms( trans ),
+                                        forms=get_all_forms( trans, 
+                                                             filter=dict(deleted=False) ),
                                         msg=msg,
                                         messagetype=messagetype)
-        elif params.get( 'add_states', False ):
+        elif params.get( 'define_states_button', False ):
             return trans.fill_template( '/admin/requests/add_states.mako',
-                                        sample_type_name=util.restore_text( params.name ),
+                                        request_type_name=util.restore_text( params.name ),
                                         desc=util.restore_text( params.description ),
                                         num_states=int(util.restore_text( params.num_states )),
                                         request_form_id=int(util.restore_text( params.request_form_id )),
                                         sample_form_id=int(util.restore_text( params.sample_form_id )),
                                         msg=msg,
                                         messagetype=messagetype)            
-        elif params.get( 'save_new', False ):
+        elif params.get( 'save_request_type', False ):
             st, msg = self._save_request_type(trans, **kwd)
             if not st:
                 return trans.fill_template( '/admin/requests/create_request_type.mako', 
@@ -2005,7 +2006,7 @@ class Admin( BaseController ):
                                                               action='manage_request_types',
                                                               msg='Request type <b>%s</b> has been created' % st.name,
                                                               messagetype='done') )
-        elif params.get('edit', False) == 'True':
+        elif params.get('view', False):
             rt = trans.app.model.RequestType.get(int(util.restore_text( params.id )))
             ss_list = trans.app.model.SampleState.filter(trans.app.model.SampleState.table.c.request_type_id == rt.id).all()
             return trans.fill_template( '/admin/requests/view_request_type.mako', 
@@ -2039,9 +2040,6 @@ class Admin( BaseController ):
         for ss in ss_list:
             ss.delete()
             ss.flush()
-        # unsubmitted state
-        #ss = trans.app.model.SampleState('Unsubmitted', 'Sample not yet submitted', rt) 
-        ##ss.flush()
         for i in range( num_states ):
             name = util.restore_text( params.get( 'new_element_name_%i' % i, None ))
             desc = util.restore_text( params.get( 'new_element_description_%i' % i, None ))
@@ -2075,5 +2073,5 @@ class Admin( BaseController ):
         rt.flush()
         return trans.response.send_redirect( web.url_for( controller='admin',
                                                           action='manage_request_types',
-                                                          msg='Request type <b>%s</b> has been deleted' % rt.name,
+                                                          msg='Request type <b>%s</b> has been undeleted' % rt.name,
                                                           messagetype='done') )

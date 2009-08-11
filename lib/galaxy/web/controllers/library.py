@@ -1130,7 +1130,7 @@ class Library( BaseController ):
                                         library_id=library_id,
                                         folder_id=folder_id,
                                         ldda_id=ldda_id,
-                                        forms=get_all_forms( trans ),
+                                        forms=get_all_forms( trans, filter=dict(deleted=False) ),
                                         msg=msg,
                                         messagetype=messagetype )
     @web.expose

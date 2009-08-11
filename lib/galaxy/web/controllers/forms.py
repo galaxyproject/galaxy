@@ -62,7 +62,7 @@ class Forms( BaseController ):
         self.current_form[ 'fields' ] = []
         inputs = [ ( 'Name', TextField( 'name', 40, self.current_form[ 'name' ] ) ),
                    ( 'Description', TextField( 'description', 40, self.current_form[ 'desc' ] ) ),
-                   ( 'Import from csv file (Optional)', TextField( 'csv_file', 40, '' ) ) ]
+                   ( 'Import from csv file (Optional)', FileField( 'file_data', 40, '' ) ) ]
         return trans.fill_template( '/admin/forms/create_form.mako', 
                                     inputs=inputs,
                                     msg=msg,
@@ -123,13 +123,13 @@ class Forms( BaseController ):
                 return self.__show( trans=trans, form=fd, msg=msg, messagetype=messagetype, empty_form=True, **kwd )
         # Delete a field
         elif params.get( 'remove_button', False ):
-            self.__update_current_form( **kwd )
+            self.__update_current_form( trans, **kwd )
             index = int( kwd[ 'remove_button' ].split( ' ' )[2] ) - 1
             self.__remove_field( index )
             return self.__show( trans=trans, form=fd, msg=msg, messagetype=messagetype, **kwd )          
         # Save changes
         elif params.get( 'save_changes_button', False ):
-            self.__update_current_form( **kwd )
+            self.__update_current_form( trans, **kwd )
             fd_new, msg = self.__save_form( trans, fd.form_definition_current.id, **kwd )
             if not fd_new:
                 return self.__show( trans=trans, form=fd, msg=msg, messagetype='error', **kwd )
@@ -139,7 +139,7 @@ class Forms( BaseController ):
             return self.__show( trans=trans, form=fd, msg=msg, messagetype=messagetype, **kwd )
         #Add a field
         elif params.get( 'add_field_button', False ):
-            self.__update_current_form( **kwd )
+            self.__update_current_form( trans, **kwd )
             self.__add_field()
             # show the form again with one empty field
             return self.__show( trans=trans, form=fd, msg=msg, messagetype=messagetype, **kwd )
@@ -151,7 +151,7 @@ class Forms( BaseController ):
                                         messagetype=messagetype )
         # Refresh page, SelectField is selected/deselected as the type of a field
         elif params.get( 'refresh', False ):
-            self.__update_current_form( **kwd )
+            self.__update_current_form( trans, **kwd )
             return self.__show( trans=trans, form=fd, msg=msg, messagetype=messagetype, **kwd )
         # Remove SelectField option
         elif params.get( 'select_box_options', False ) == 'remove':
@@ -235,29 +235,28 @@ class Forms( BaseController ):
             if not util.restore_text(params.get( 'field_name_%i' % i, None )):
                 return None, "All the field label(s) must be completed."
         return True, ''
-    def __get_form(self, **kwd):
+    def __get_form(self, trans, **kwd):
         params = util.Params( kwd )
         name = util.restore_text( params.name ) 
         desc = util.restore_text( params.description ) or ""
-        if params.get( 'csv_file', None ):
-            csv_file = util.restore_text( params.get( 'csv_file', '' ) )
-            if csv_file:
-                fields = self.__import_fields(csv_file)
-        else:
+        csv_file = params.get( 'file_data', '' )
+        if csv_file == '':
             # set form fields
             fields = []
             for i in range( len(self.current_form['fields']) ):
                 fields.append(self.__get_field(i, **kwd))
             fields = fields
+        else:
+            fields = self.__import_fields(trans, csv_file)
         return name, desc, fields
-    def __update_current_form(self, **kwd):
-        name, desc, fields = self.__get_form(**kwd)
+    def __update_current_form(self, trans, **kwd):
+        name, desc, fields = self.__get_form(trans, **kwd)
         self.current_form = {}
         self.current_form['name'] = name
         self.current_form['desc'] = desc
         self.current_form['fields'] = fields
         
-    def __import_fields(self, csv_file):
+    def __import_fields(self, trans, csv_file):
         '''
         "company","name of the company", "True", "required", "TextField",,
         "due date","turnaround time", "True", "optional", "SelectField","24 hours, 1 week, 1 month"
@@ -265,7 +264,7 @@ class Forms( BaseController ):
         import csv
         fields = []
         try:
-            reader = csv.reader(open(csv_file))
+            reader = csv.reader(csv_file.file)
             for row in reader:
                 options = row[5].split(',')
                 fields.append({'label': row[0], 
@@ -291,7 +290,7 @@ class Forms( BaseController ):
         if not flag:
             return None, msg
         fd = trans.app.model.FormDefinition()
-        fd.name, fd.desc, fd.fields = self.__get_form(**kwd)
+        fd.name, fd.desc, fd.fields = self.__get_form(trans, **kwd)
         if fdc_id: # save changes to the existing form    
             # change the pointer in the form_definition_current table to point 
             # to this new record
@@ -415,9 +414,11 @@ def get_all_forms( trans, all_versions=False, filter=None ):
     '''
     if all_versions:
         return trans.app.model.FormDefinition.query().all()
+    if filter:
+        fdc_list = trans.app.model.FormDefinitionCurrent.query().filter_by(**filter)
     else:
         fdc_list = trans.app.model.FormDefinitionCurrent.query().all()
-        return [ fdc.latest_form for fdc in fdc_list ]
+    return [ fdc.latest_form for fdc in fdc_list ]
 def get_form_widgets( trans, form, contents={} ):
     '''
     Return the list of widgets that comprise a form definition,
