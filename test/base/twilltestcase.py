@@ -182,7 +182,7 @@ class TwillTestCase( unittest.TestCase ):
         self.home()
         self.visit_page( "root/history_options" )
         if user:
-            self.check_page_for_string( 'List</a> previously stored histories' )
+            self.check_page_for_string( 'Previously</a> stored histories' )
             if active_datasets:
                 self.check_page_for_string( 'Create</a> a new empty history' )
                 self.check_page_for_string( 'Construct workflow</a> from current history' )
@@ -190,7 +190,7 @@ class TwillTestCase( unittest.TestCase ):
             self.check_page_for_string( 'Share</a> current history' )
             self.check_page_for_string( 'Change default permissions</a> for current history' )
             if histories_shared_by_others:
-                self.check_page_for_string( 'List</a> histories shared with you by others' )
+                self.check_page_for_string( 'Histories</a> shared with you by others' )
         if activatable_datasets:
             self.check_page_for_string( 'Show deleted</a> datasets in current history' )
         self.check_page_for_string( 'Rename</a> current history' )

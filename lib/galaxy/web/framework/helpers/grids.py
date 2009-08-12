@@ -156,9 +156,7 @@ class GridColumn( object ):
         elif column_filter == "All":
             del filter_args[self.key]
         return query
-        
-        
-    
+
 class GridOperation( object ):
     def __init__( self, label, key=None, condition=None, allow_multiple=True ):
         self.label = label

@@ -72,16 +72,18 @@
     </style>
 </%def>
 
-<div class="grid-header">
-    <h2>${grid.title}</h2>
-    <span class="title">Filter:</span>
-    %for i, filter in enumerate( grid.standard_filters ):
-        %if i > 0:    
-            <span>|</span>
-        %endif
-        <span class="filter"><a href="${url( filter.get_url_args() )}">${filter.label}</a></span>
-    %endfor
-</div>
+%if grid.standard_filters:
+    <div class="grid-header">
+        <h2>${grid.title}</h2>
+        <span class="title">Filter:</span>
+        %for i, filter in enumerate( grid.standard_filters ):
+            %if i > 0:    
+                <span>|</span>
+            %endif
+            <span class="filter"><a href="${url( filter.get_url_args() )}">${filter.label}</a></span>
+        %endfor
+    </div>
+%endif
 
 <form name="history_actions" action="${url()}" method="post" >
     <table class="grid">

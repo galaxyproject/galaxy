@@ -1214,7 +1214,6 @@ class Admin( BaseController ):
                 template = info_association.template
                 # See if we have any field contents
                 info = info_association.info
-                log.debug("####In library_dataset_dataset_association, info.content: %s" % str( info.content))
                 if info:
                     field_contents = {}
                     for index, value in enumerate( info.content ):
