@@ -8,6 +8,7 @@ import logging, tempfile, zipfile, tarfile, os, sys
 from galaxy.web.form_builder import * 
 from datetime import datetime, timedelta
 from cgi import escape, FieldStorage
+from galaxy.web.controllers.forms import get_form_widgets
 
 
 log = logging.getLogger( __name__ )
@@ -464,9 +465,7 @@ class Requests( BaseController ):
         libraries = self.get_authorized_libs(trans)
         libui = self.__library_ui(libraries, **kwd)
         widgets = widgets + libui
-        widgets = self.__create_form(trans, request_type.request_form_id, widgets, 
-                                     form_values, **kwd)
-        title = 'Add a new request of type: %s' % request_type.name
+        widgets = widgets + get_form_widgets(trans, request_type.request_form, contents=[], **kwd)
         return trans.fill_template( '/requests/new_request.mako',
                                     select_request_type=select_request_type,
                                     request_type=request_type,                                    
@@ -507,51 +506,6 @@ class Requests( BaseController ):
             return [widget, new_lib]
         else:
             return [widget]
-        
-    def __create_form(self, trans, form_id, widgets=[], form_values=None, **kwd):
-        # TODO: RC - replace this method by importing as follows:
-        # from galaxy.web.controllers.forms import get_form_widgets
-        params = util.Params( kwd )
-        form = trans.app.model.FormDefinition.get(form_id)
-        # form fields
-        for index, field in enumerate(form.fields):
-            # value of the field 
-            if field['type'] == 'CheckboxField':
-                value = util.restore_text( params.get( 'field_%i' % index, False  ) )
-            else:
-                value = util.restore_text( params.get( 'field_%i' % index, ''  ) )
-            if not value:
-                if form_values:
-                    value = str(form_values.content[index])
-            # create the field
-            fw = eval(field['type'])('field_%i' % index)
-            if field['type'] == 'TextField':
-                fw.set_size(40)
-                fw.value = value
-            elif field['type'] == 'TextArea':
-                fw.set_size(3, 40)
-                fw.value = value
-            elif field['type'] == 'AddressField':
-                fw.user = trans.user
-                fw.value = value
-                fw.params = params
-            elif field['type'] == 'SelectField':
-                for option in field['selectlist']:
-                    if option == value:
-                        fw.add_option(option, option, selected=True)
-                    else:
-                        fw.add_option(option, option)
-            elif field['type'] == 'CheckboxField':
-                fw.checked = value
-            # require/optional
-            if field['required'] == 'required':
-                req = 'Required'
-            else:
-                req = 'Optional'
-            widgets.append(dict(label=field['label'],
-                                widget=fw,
-                                helptext=field['helptext']+' ('+req+')'))
-        return widgets
     def __validate(self, trans, request):
         '''
         Validates the request entered by the user 
@@ -706,8 +660,7 @@ class Requests( BaseController ):
         libraries = self.get_authorized_libs(trans)
         libui = self.__library_ui(libraries, request, **kwd)
         widgets = widgets + libui
-        widgets = self.__create_form(trans, request.type.request_form_id, widgets, 
-                                     request.values, **kwd)
+        widgets = widgets + get_form_widgets(trans, request.type.request_form, request.values.content, **kwd)
         return trans.fill_template( '/requests/edit_request.mako',
                                     select_request_type=select_request_type,
                                     request_type=request.type,

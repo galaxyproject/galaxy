@@ -137,11 +137,7 @@ class Library( BaseController ):
                 # See if we have any field contents
                 info = library.info_association[0].info
                 if info:
-                    field_contents = {}
-                    for index, value in enumerate( info.content ):
-                        key = 'field_%i' % index
-                        field_contents[ key ] = value
-                    widgets = get_form_widgets( trans, template, field_contents )
+                    widgets = get_form_widgets( trans, template, info.content )
                 else:
                     widgets = get_form_widgets( trans, template )
             else:
@@ -475,11 +471,7 @@ class Library( BaseController ):
                 # See if we have any field contents
                 info = info_association.info
                 if info:
-                    field_contents = {}
-                    for index, value in enumerate( info.content ):
-                        key = 'field_%i' % index
-                        field_contents[ key ] = value
-                    widgets = get_form_widgets( trans, template, field_contents )
+                    widgets = get_form_widgets( trans, template, info.content )
                 else:
                     widgets = get_form_widgets( trans, template )
             else:
@@ -996,11 +988,7 @@ class Library( BaseController ):
                 # See if we have any field contents
                 info = info_association.info
                 if info:
-                    field_contents = {}
-                    for index, value in enumerate( info.content ):
-                        key = 'field_%i' % index
-                        field_contents[ key ] = value
-                    widgets = get_form_widgets( trans, template, field_contents )
+                    widgets = get_form_widgets( trans, template, info.content )
                 else:
                     widgets = get_form_widgets( trans, template )
             else:
