@@ -1,3 +1,14 @@
+"""
+This migration script adds the following new tables for supporting Galaxy forms:
+1) form_definition_current
+2) form_definition
+3) form_values
+4) request_type
+5) request
+6) sample
+7) sample_state
+8) sample_event
+"""
 from sqlalchemy import *
 from sqlalchemy.orm import *
 from sqlalchemy.exceptions import *
@@ -22,15 +33,26 @@ from galaxy.model.custom_types import *
 metadata = MetaData( migrate_engine )
 db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, transactional=False ) )
 
+def display_migration_details():
+    print "========================================"
+    print "This migration script adds the following new tables for supporting Galaxy forms:"
+    print "1) form_definition_current"
+    print "2) form_definition"
+    print "3) form_values"
+    print "4) request_type"
+    print "5) request"
+    print "6) sample"
+    print "7) sample_state"
+    print "8) sample_event"
+    print "========================================"
 
 FormDefinitionCurrent_table = Table('form_definition_current', metadata,
     Column( "id", Integer, primary_key=True),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "latest_form_id", Integer, 
-            #ForeignKey( "form_definition.id", use_alter=True, name='form_definition_current_latest_form_id_fk'), 
-            index=True ),
+    Column( "latest_form_id", Integer, index=True ),
     Column( "deleted", Boolean, index=True, default=False ))
+
 FormDefinition_table = Table('form_definition', metadata,
     Column( "id", Integer, primary_key=True),
     Column( "create_time", DateTime, default=now ),
@@ -55,7 +77,7 @@ RequestType_table = Table('request_type', metadata,
     Column( "desc", TEXT ),
     Column( "request_form_id", Integer, ForeignKey( "form_definition.id" ), index=True ),
     Column( "sample_form_id", Integer, ForeignKey( "form_definition.id" ), index=True ) )
-# request table
+
 Request_table = Table('request', metadata,
     Column( "id", Integer, primary_key=True),
     Column( "create_time", DateTime, default=now ),
@@ -94,13 +116,10 @@ SampleEvent_table = Table('sample_event', metadata,
     Column( "sample_state_id", Integer, ForeignKey( "sample_state.id" ), index=True ),
     Column( "comment", TEXT ) )
 
-
-
-
 def upgrade():
+    display_migration_details()
     # Load existing tables
     metadata.reflect()
-    
     # Add all of the new tables above
 #    metadata.create_all()
     try:
@@ -145,8 +164,6 @@ def upgrade():
         SampleEvent_table.create()
     except Exception, e:
         log.debug( "Creating sample_event table failed: %s" % str( e ) )  
-    
- 
 
 def downgrade():
     # Load existing tables
@@ -183,7 +200,3 @@ def downgrade():
         SampleEvent_table.drop()
     except Exception, e:
         log.debug( "Dropping sample_event table failed: %s" % str( e ) )      
-        
-        
-        
-          

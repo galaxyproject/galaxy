@@ -46,7 +46,7 @@
             %for request_type in request_types:    
                 <tr>
                     <td>
-                        <a href="${h.url_for( controller='admin', action='request_type', edit='True', id=request_type.id)}">${request_type.name}</a>
+                        <a href="${h.url_for( controller='admin', action='request_type', view='True', id=request_type.id)}">${request_type.name}</a>
                         <a id="request_type-${request_type.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
                         %if request_type.deleted:
                             <div popupmenu="request_type-${request_type.id}-popup">

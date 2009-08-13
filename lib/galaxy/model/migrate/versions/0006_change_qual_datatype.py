@@ -1,3 +1,7 @@
+"""
+This migration script changes certain values in the history_dataset_association.extension
+column, specifically 'qual' is chaged to be 'qual454'.
+"""
 from sqlalchemy import *
 from sqlalchemy.orm import *
 from migrate import *
@@ -13,9 +17,17 @@ log.addHandler( handler )
 
 metadata = MetaData( migrate_engine )
 db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, transactional=False ) )
+
+def display_migration_details():
+    print "========================================"
+    print "This migration script changes certain values in the history_dataset_association.extension"
+    print "column, specifically 'qual' is chaged to be 'qual454'."
+    print "========================================"
+
 HistoryDatasetAssociation_table = Table( "history_dataset_association", metadata, autoload=True )
-        
+
 def upgrade():
+    display_migration_details()
     # Load existing tables
     metadata.reflect()
     # Add 2 indexes to the galaxy_user table
@@ -42,6 +54,5 @@ def upgrade():
     except Exception, e:
         log.debug( "Dropping index 'ix_hda_extension' to history_dataset_association table failed: %s" % ( str( e ) ) )
 
-   
 def downgrade():
     pass

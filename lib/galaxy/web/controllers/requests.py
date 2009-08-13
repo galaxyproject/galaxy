@@ -7,6 +7,8 @@ from galaxy.util.streamball import StreamBall
 import logging, tempfile, zipfile, tarfile, os, sys
 from galaxy.web.form_builder import * 
 from datetime import datetime, timedelta
+from cgi import escape, FieldStorage
+
 
 log = logging.getLogger( __name__ )
 
@@ -216,11 +218,10 @@ class Requests( BaseController ):
                                                               message="Invalid request ID",
                                                               **kwd) )
         if params.get('import_samples_button', False) == 'Import samples':
-            import traceback
             try:
-                fname = params.get('import_samples', '')
+                file_obj = params.get('file_data', '')
                 import csv
-                reader = csv.reader(open(fname))
+                reader = csv.reader(file_obj.file)
                 for row in reader:
                     self.current_samples.append([row[0], row[1:]])  
                 return trans.fill_template( '/requests/show_request.mako',
@@ -234,7 +235,7 @@ class Requests( BaseController ):
                 return trans.response.send_redirect( web.url_for( controller='requests',
                                                                   action='list',
                                                                   status='error',
-                                                                  message='Error in importing <b>%s</b> samples file' % fname,
+                                                                  message='Error in importing <b>%s</b> samples file' % file_obj.file,
                                                                   **kwd))
         elif params.get('add_sample_button', False) == 'Add New':
             # save the all (saved+unsaved) sample info in 'current_samples'
@@ -508,6 +509,8 @@ class Requests( BaseController ):
             return [widget]
         
     def __create_form(self, trans, form_id, widgets=[], form_values=None, **kwd):
+        # TODO: RC - replace this method by importing as follows:
+        # from galaxy.web.controllers.forms import get_form_widgets
         params = util.Params( kwd )
         form = trans.app.model.FormDefinition.get(form_id)
         # form fields

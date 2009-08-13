@@ -226,7 +226,14 @@ class RootController( BaseController ):
 
     @web.expose
     def edit(self, trans, id=None, hid=None, **kwd):
-        """Returns data directly into the browser. Sets the mime-type according to the extension"""
+        """Allows user to modify parameters of an HDA."""
+        def __ok_to_edit_metadata( dataset_id ):
+            #prevent modifying metadata when dataset is queued or running as input/output
+            #This code could be more efficient, i.e. by using mappers, but to prevent slowing down loading a History panel, we'll leave the code here for now
+            for job_to_dataset_association in self.app.model.JobToInputDatasetAssociation.filter_by( dataset_id=dataset_id ).all() + self.app.model.JobToOutputDatasetAssociation.filter_by( dataset_id=dataset_id ).all():
+                if job_to_dataset_association.job.state not in [ job_to_dataset_association.job.states.OK, job_to_dataset_association.job.states.ERROR, job_to_dataset_association.job.states.DELETED ]:
+                    return False
+            return True
         if hid is not None:
             history = trans.get_history()
             # TODO: hid handling
@@ -248,6 +255,9 @@ class RootController( BaseController ):
             if params.change:
                 # The user clicked the Save button on the 'Change data type' form
                 if data.datatype.allow_datatype_change and trans.app.datatypes_registry.get_datatype_by_extension( params.datatype ).allow_datatype_change:
+                    #prevent modifying datatype when dataset is queued or running as input/output
+                    if not __ok_to_edit_metadata( data.id ):
+                        return trans.show_error_message( "This dataset is currently being used as input or output.  You cannot change datatype until the jobs have completed or you have canceled them." )
                     trans.app.datatypes_registry.change_datatype( data, params.datatype )
                     trans.app.model.flush()
                 else:
@@ -256,36 +266,46 @@ class RootController( BaseController ):
                 # The user clicked the Save button on the 'Edit Attributes' form
                 data.name  = params.name
                 data.info  = params.info
-                
-                # The following for loop will save all metadata_spec items
-                for name, spec in data.datatype.metadata_spec.items():
-                    if spec.get("readonly"):
-                        continue
-                    optional = params.get("is_"+name, None)
-                    other = params.get("or_"+name, None)
-                    if optional and optional == 'true':
-                        # optional element... == 'true' actually means it is NOT checked (and therefore omitted)
-                        setattr(data.metadata, name, None)
-                    else:
-                        if other:
-                            setattr( data.metadata, name, other )
+                msg = ''
+                if __ok_to_edit_metadata( data.id ):
+                    # The following for loop will save all metadata_spec items
+                    for name, spec in data.datatype.metadata_spec.items():
+                        if spec.get("readonly"):
+                            continue
+                        optional = params.get("is_"+name, None)
+                        other = params.get("or_"+name, None)
+                        if optional and optional == 'true':
+                            # optional element... == 'true' actually means it is NOT checked (and therefore omitted)
+                            setattr(data.metadata, name, None)
                         else:
-                            setattr( data.metadata, name, spec.unwrap( params.get (name, None) ) )
-
-                data.datatype.after_edit( data )
+                            if other:
+                                setattr( data.metadata, name, other )
+                            else:
+                                setattr( data.metadata, name, spec.unwrap( params.get (name, None) ) )
+                    data.datatype.after_edit( data )
+                else:
+                    msg = ' (Metadata could not be changed because this dataset is currently being used as input or output. You must cancel or wait for these jobs to complete before changing metadata.)'
                 trans.app.model.flush()
-                return trans.show_ok_message( "Attributes updated", refresh_frames=['history'] )
+                return trans.show_ok_message( "Attributes updated%s" % msg, refresh_frames=['history'] )
             elif params.detect:
                 # The user clicked the Auto-detect button on the 'Edit Attributes' form
+                #prevent modifying metadata when dataset is queued or running as input/output
+                if not __ok_to_edit_metadata( data.id ):
+                    return trans.show_error_message( "This dataset is currently being used as input or output.  You cannot change metadata until the jobs have completed or you have canceled them." )
                 for name, spec in data.metadata.spec.items():
                     # We need to be careful about the attributes we are resetting
                     if name not in [ 'name', 'info', 'dbkey' ]:
                         if spec.get( 'default' ):
                             setattr( data.metadata, name, spec.unwrap( spec.get( 'default' ) ) )
-                data.set_meta()
-                data.datatype.after_edit( data )
+                if trans.app.config.set_metadata_externally:
+                    msg = 'Attributes have been queued to be updated'
+                    trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute( trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming = { 'input1':data } )
+                else:
+                    msg = 'Attributes updated'
+                    data.set_meta()
+                    data.datatype.after_edit( data )
                 trans.app.model.flush()
-                return trans.show_ok_message( "Attributes updated", refresh_frames=['history'] )
+                return trans.show_ok_message( msg, refresh_frames=['history'] )
             elif params.convert_data:
                 target_type = kwd.get("target_type", None)
                 if target_type:
@@ -314,6 +334,7 @@ class RootController( BaseController ):
                 # returns the metadata dbkey unless it is None, in which
                 # case it resorts to the old dbkey.  Setting the dbkey
                 # sets it properly in the metadata
+                #### This is likely no longer required, since the dbkey exists entirely within metadata (the old_dbkey field is gone): REMOVE ME?
                 data.metadata.dbkey = data.dbkey
             # let's not overwrite the imported datatypes module with the variable datatypes?
             # the built-in 'id' is overwritten in lots of places as well

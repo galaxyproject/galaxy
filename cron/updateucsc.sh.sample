@@ -9,8 +9,20 @@ GALAXY=/galaxy/path
 export PYTHONPATH=${GALAXY}/lib
 
 # setup directories
-mkdir ${GALAXY}/tool-data/shared/ucsc/new
-mkdir ${GALAXY}/tool-data/shared/ucsc/chrom/new
+echo "Creating required directories."
+DIRS="
+${GALAXY}/tool-data/shared/ucsc/new
+${GALAXY}/tool-data/shared/ucsc/chrom
+${GALAXY}/tool-data/shared/ucsc/chrom/new
+"
+for dir in $DIRS; do
+    if [ ! -d $dir ]; then
+        echo "Creating $dir"
+        mkdir $dir
+    else
+        echo "$dir already exists, continuing."
+    fi
+done
 
 date
 echo "Updating UCSC shared data tables."

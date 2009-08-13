@@ -128,7 +128,7 @@ class ToolBox( object ):
         tree = util.parse_xml( config_file )
         root = tree.getroot()
         # Allow specifying a different tool subclass to instantiate
-        if root.find( "type" ):
+        if root.find( "type" ) is not None:
             type_elem = root.find( "type" )
             module = type_elem.get( 'module', 'galaxy.tools' )
             cls = type_elem.get( 'class' )
@@ -1468,7 +1468,7 @@ class Tool:
                 out_data[ name ] = data
             return out_data
 
-    def exec_after_process( self, app, inp_data, out_data, param_dict ):
+    def exec_after_process( self, app, inp_data, out_data, param_dict, job = None ):
         if self.tool_type == 'data_source':
             name, data = out_data.items()[0]
             data.set_size()
@@ -1572,6 +1572,18 @@ class Tool:
                     dataset.history.add( new_data )
                     new_data.flush()
         return primary_datasets
+
+class SetMetadataTool( Tool ):
+    def exec_after_process( self, app, inp_data, out_data, param_dict, job = None ):
+        for name, dataset in inp_data.iteritems():
+            external_metadata = galaxy.datatypes.metadata.JobExternalOutputMetadataWrapper( job )
+            if external_metadata.external_metadata_set_successfully( dataset ):
+                dataset.metadata.from_JSON_dict( external_metadata.get_output_filenames_by_dataset( dataset ).filename_out )    
+            # If setting external metadata has failed, how can we inform the user?
+            # For now, we'll leave the default metadata and set the state back to its original.
+            dataset.datatype.after_edit( dataset )
+            dataset.state = param_dict.get( '__ORIGINAL_DATASET_STATE__' )
+            dataset.flush()
 
         
 # ---- Utility classes to be factored out -----------------------------------

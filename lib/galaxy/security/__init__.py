@@ -75,12 +75,10 @@ class GalaxyRBACAgent( RBACAgent ):
             self.permitted_actions = permitted_actions
         # List of "library_item" objects and their associated permissions and info template objects
         self.library_item_assocs = ( 
-            ( self.model.Library, self.model.LibraryPermissions, self.model.LibraryInfoAssociation ),
-            ( self.model.LibraryFolder, self.model.LibraryFolderPermissions, self.model.LibraryFolderInfoAssociation ),
-            ( self.model.LibraryDataset, self.model.LibraryDatasetPermissions, self.model.LibraryDatasetInfoAssociation ),
-            ( self.model.LibraryDatasetDatasetAssociation, self.model.LibraryDatasetDatasetAssociationPermissions, self.model.LibraryDatasetDatasetInfoAssociation ),
-            ( self.model.LibraryItemInfo, self.model.LibraryItemInfoPermissions, None ),
-            ( self.model.LibraryItemInfoTemplate, self.model.LibraryItemInfoTemplatePermissions, None ) )
+            ( self.model.Library, self.model.LibraryPermissions ),
+            ( self.model.LibraryFolder, self.model.LibraryFolderPermissions ),
+            ( self.model.LibraryDataset, self.model.LibraryDatasetPermissions ),
+            ( self.model.LibraryDatasetDatasetAssociation, self.model.LibraryDatasetDatasetAssociationPermissions ) )
     def allow_action( self, user, action, **kwd ):
         if 'dataset' in kwd:
             return self.allow_dataset_action( user, action, kwd[ 'dataset' ] )
@@ -117,7 +115,7 @@ class GalaxyRBACAgent( RBACAgent ):
             user_role_ids = [ r.id for r in user.all_roles() ]
             # Check to see if user has access to any of the roles
             allowed_role_assocs = []
-            for item_class, permission_class, info_association_class in self.library_item_assocs:
+            for item_class, permission_class in self.library_item_assocs:
                 if isinstance( library_item, item_class ):
                     if permission_class == self.model.LibraryPermissions:
                         allowed_role_assocs = permission_class.filter_by( action=action.action, library_id=library_item.id ).all()
@@ -127,10 +125,6 @@ class GalaxyRBACAgent( RBACAgent ):
                         allowed_role_assocs = permission_class.filter_by( action=action.action, library_dataset_id=library_item.id ).all()
                     elif permission_class == self.model.LibraryDatasetDatasetAssociationPermissions:
                         allowed_role_assocs = permission_class.filter_by( action=action.action, library_dataset_dataset_association_id=library_item.id ).all()
-                    elif permission_class == self.model.LibraryItemInfoPermissions:
-                        allowed_role_assocs = permission_class.filter_by( action=action.action, library_item_info_id=library_item.id ).all()
-                    elif permission_class == self.model.LibraryItemInfoTemplatePermissions:
-                        allowed_role_assocs = permission_class.filter_by( action=action.action, library_item_info_template_id=library_item.id ).all()
             for allowed_role_assoc in allowed_role_assocs:
                 if allowed_role_assoc.role_id in user_role_ids:
                     return True
@@ -366,7 +360,7 @@ class GalaxyRBACAgent( RBACAgent ):
             role_assoc.delete()
             role_assoc.flush()
         # Add the new permissions on library_item
-        for item_class, permission_class, info_association_class in self.library_item_assocs:
+        for item_class, permission_class in self.library_item_assocs:
             if isinstance( library_item, item_class ):
                 for action, roles in permissions.items():
                     if isinstance( action, Action ):
@@ -396,12 +390,12 @@ class GalaxyRBACAgent( RBACAgent ):
                 permissions[role_assoc.action] = [ role_assoc.role ]
         self.set_all_library_permissions( target_library_item, permissions )
         if user:
-            # The user passed will be the current Galaxy user.  Make sure user's private role is included
             item_class = None
-            for item_class, permission_class, info_association_class in self.library_item_assocs:
+            for item_class, permission_class in self.library_item_assocs:
                 if isinstance( target_library_item, item_class ):
                     break
             if item_class:
+                # Make sure user's private role is included
                 private_role = self.model.security_agent.get_private_user_role( user )
                 for name, action in self.permitted_actions.items():
                     if not permission_class.filter_by( role_id = private_role.id, action = action.action ).first():

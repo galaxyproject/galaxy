@@ -60,174 +60,60 @@
     </div>
 </%def>
 
-<%def name="render_library_item_info_for_edit( library_item, library_id )">
+<%def name="render_template_info( library_item, library_id, widgets, editable=True )">
     <%
         library_item_type = 'unknown type'
         library_item_desc = ''
-        library_item_info_associations = []
         if isinstance( library_item, trans.app.model.Library ):
             library_item_type = 'library'
             library_item_desc = 'library'
-            library_item_info_associations = library_item.library_info_associations
         elif isinstance( library_item, trans.app.model.LibraryFolder ):
             library_item_type = 'folder'
             library_item_desc = 'folder'
-            library_item_info_associations = library_item.library_folder_info_associations
         elif isinstance( library_item, trans.app.model.LibraryDataset ):
             library_item_type = 'library_dataset'
             library_item_desc = 'dataset'
-            library_item_info_associations = library_item.library_dataset_info_associations
         elif isinstance( library_item, trans.app.model.LibraryDatasetDatasetAssociation ):
             library_item_type = 'library_dataset_dataset_association'
             library_item_desc = 'library dataset'
-            if library_item.library_dataset_dataset_info_associations:
-                library_item_info_associations = library_item.library_dataset_dataset_info_associations
-            elif library_item.library_dataset_dataset_info_template_associations:
-                library_item_info_associations = library_item.library_dataset_dataset_info_template_associations
     %>
-    %if library_item_info_associations:
+    %if widgets:
         <p/>
         <div class="toolForm">
             <div class="toolFormTitle">Other information about ${library_item_desc} ${library_item.name}</div>
             <div class="toolFormBody">
-                <form name="edit_info" action="${h.url_for( controller='library', action='library_item_info', library_id=library_id, edit_info=True )}" method="post">
-                    <input type="hidden" name="library_item_id" value="${library_item.id}"/>
-                    <input type="hidden" name="library_item_type" value="${library_item_type}"/>
-                    %for library_item_info_association in library_item_info_associations:
-                        %for template_element in library_item_info_association.library_item_info.library_item_info_template.elements:
-                            <% element = library_item_info_association.library_item_info.get_element_by_template_element( template_element, create_element=True ) %>
-                            <input type="hidden" name="id" value="${element.id}"/>
-                            <div class="form-row">
-                                <label>${template_element.name}:</label>
-                                %if element.contents:
-                                    <textarea name="info_element_${element.id}" rows="3" cols="35">${element.contents}</textarea>
-                                %else:
-                                    <textarea name="info_element_${element.id}" rows="3" cols="35"></textarea>
-                                %endif
-                                <div class="toolParamHelp" style="clear: both;">
-                                    ${template_element.description}
-                                </div>
-                                <div style="clear: both"></div>
-                            </div>
-                        %endfor
-                        <div style="clear: both"></div>
-                    %endfor
-                    <div class="form-row">
-                        <input type="submit" name="edit_info_button" value="Save"/>
-                    </div>
-                </form>
-            </div>
-        </div>
-    %endif
-</%def>
-
-<%def name="render_library_item_info( library_item, library_id )">
-    <%
-        library_item_type = 'unknown type'
-        library_item_desc = ''
-        library_item_info_associations = []
-        if isinstance( library_item, trans.app.model.Library ):
-            library_item_type = 'library'
-            library_item_desc = 'library'
-            library_item_info_associations = library_item.library_info_associations
-        elif isinstance( library_item, trans.app.model.LibraryFolder ):
-            library_item_type = 'folder'
-            library_item_desc = 'folder'
-            library_item_info_associations = library_item.library_folder_info_associations
-        elif isinstance( library_item, trans.app.model.LibraryDataset ):
-            library_item_type = 'library_dataset'
-            library_item_desc = 'dataset'
-            library_item_info_associations = library_item.library_dataset_info_associations
-        elif isinstance( library_item, trans.app.model.LibraryDatasetDatasetAssociation ):
-            library_item_type = 'library_dataset_dataset_association'
-            library_item_desc = 'library dataset'
-            if library_item.library_dataset_dataset_info_associations:
-                library_item_info_associations = library_item.library_dataset_dataset_info_associations
-            elif library_item.library_dataset_dataset_info_template_associations:
-                library_item_info_associations = library_item.library_dataset_dataset_info_template_associations
-    %>
-    %if library_item_info_associations:
-        <p/>
-        <div class="toolForm">
-            <div class="toolFormTitle">Other information about ${library_item_desc} ${library_item.name}</div>
-            <div class="toolFormBody">
-                %for library_item_info_association in library_item_info_associations:
-                    %for template_element in library_item_info_association.library_item_info.library_item_info_template.elements:
-                        <% element = library_item_info_association.library_item_info.get_element_by_template_element( template_element, create_element=True ) %>
-                        <div class="form-row">
-                            <label>${template_element.name}:</label>
-                            <div style="float: left; width: 250px; margin-right: 10px;">
-                                ${element.contents}
-                            </div>
-                            <div class="toolParamHelp" style="clear: both;">
-                                ${template_element.description}
-                            </div>
-                            <div style="clear: both"></div>
-                        </div>
-                    %endfor
-                    <div style="clear: both"></div>
-                %endfor
-            </div>
-        </div>
-    %endif
-</%def>
-
-<%def name="render_available_templates( library_item, library_id, restrict=False, upload=False )">
-    <%
-        available_templates = library_item.get_library_item_info_templates( template_list=[], restrict=restrict )
-        if available_templates:
-            library_item_ids = {}
-            if isinstance( library_item, trans.app.model.Library ):
-                library_item_type = 'library'
-                library_item_desc = 'library'
-            elif isinstance( library_item, trans.app.model.LibraryFolder ):
-                library_item_ids[ 'folder_id' ] = library_item.id
-                library_item_type = 'folder'
-                library_item_desc = 'folder'
-            elif isinstance( library_item, trans.app.model.LibraryDataset ):
-                library_item_ids[ 'library_dataset_id' ] = library_item.id
-                library_item_type = 'library_dataset'
-                library_item_desc = 'dataset'
-            elif isinstance( library_item, trans.app.model.LibraryDatasetDatasetAssociation ):
-                library_item_ids[ 'ldda_id' ] = library_item.id
-                library_item_type = 'library_dataset_dataset_association'
-                library_item_desc = 'library dataset'
-            # Always pass a library_id
-            library_item_ids[ 'library_id' ] = library_id
-    %>
-    %if available_templates:
-        <p/>
-        <div class="toolForm">
-            <div class="toolFormTitle">Other information about ${library_item_desc} ${library_item.name}</div>
-            <div class="toolFormBody">
-                %for available_template in available_templates:
-                    %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=available_template ):
-                        %if upload in [ False, 'False' ]:
-                            ## Only render a form if we're not within the upload form
-                            <form name="add_template_info" action="${h.url_for( controller='library', action='library_item_info', library_id=library_id, new_info=True )}" method="post">
-                        %endif
+                %if editable and trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=library_item ):
+                    <form name="edit_info" action="${h.url_for( controller='library', action='edit_template_info', library_id=library_id, num_widgets=len( widgets ) )}" method="post">
                         <input type="hidden" name="library_item_id" value="${library_item.id}"/>
                         <input type="hidden" name="library_item_type" value="${library_item_type}"/>
-                        <input type="hidden" name="library_item_info_template_id" value="${available_template.id}"/>
-                        <p/>
-                        %for info_elem in available_template.elements:
+                        %for i, field in enumerate( widgets ):
                             <div class="form-row">
-                                <label>${info_elem.name}</label>
-                                <input type="text" name="info_element_${available_template.id}_${info_elem.id}" value="" size="40"/>
+                                <label>${field[ 'label' ]}</label>
+                                ${field[ 'widget' ].get_html()}
                                 <div class="toolParamHelp" style="clear: both;">
-                                    ${info_elem.description}
+                                    ${field[ 'helptext' ]}
                                 </div>
                                 <div style="clear: both"></div>
                             </div>
-                        %endfor
-                        %if upload in [ False, 'False' ]:
+                        %endfor 
+                        <div class="form-row">
+                            <input type="submit" name="edit_info_button" value="Save"/>
+                        </div>
+                    </form>
+                %else:
+                    %for i, field in enumerate( widgets ):
+                        %if field[ 'widget' ].value:
                             <div class="form-row">
-                                <input type="submit" name="create_new_info_button" value="Save"/>
+                                <label>${field[ 'label' ]}</label>
+                                ${field[ 'widget' ].value}
+                                <div class="toolParamHelp" style="clear: both;">
+                                    ${field[ 'helptext' ]}
+                                </div>
+                                <div style="clear: both"></div>
                             </div>
-                            </form>
                         %endif
-                    %endif
-                %endfor
+                    %endfor
+                %endif
             </div>
         </div>
     %endif

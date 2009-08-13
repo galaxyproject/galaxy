@@ -5,6 +5,7 @@ Upload class
 from galaxy.web.base.controller import *
 from galaxy.util.bunch import Bunch
 from galaxy.tools import DefaultToolState
+from galaxy.tools.parameters.basic import UnvalidatedValue
 
 import logging
 log = logging.getLogger( __name__ )
@@ -52,6 +53,80 @@ class ToolRunner( BaseController ):
             add_frame.wiki_url = trans.app.config.wiki_url
             add_frame.from_noframe = True
         return trans.fill_template( template, history=history, toolbox=toolbox, tool=tool, util=util, add_frame=add_frame, **vars )
+        
+    @web.expose
+    def rerun( self, trans, id=None, from_noframe=None, **kwd ):
+        """
+        Given a HistoryDatasetAssociation id, find the job and that created
+        the dataset, extract the parameters, and display the appropriate tool
+        form with parameters already filled in.
+        """
+        if not id:
+            error( "'id' parameter is required" );
+        try:
+            id = int( id )
+        except:
+            error( "Invalid value for 'id' parameter" )
+        # Get the dataset object
+        data = trans.app.model.HistoryDatasetAssociation.get( id )
+        # Get the associated job, if any. If this hda was copied from another,
+        # we need to find the job that created the origial hda
+        job_hda = data
+        while job_hda.copied_from_history_dataset_association:
+            job_hda = job_hda.copied_from_history_dataset_association
+        if not job_hda.creating_job_associations:
+            error( "Could not find the job for this dataset" )
+        # Get the job object
+        job = None
+        for assoc in job_hda.creating_job_associations:
+            job = assoc.job
+            break   
+        if not job:
+            raise Exception("Failed to get job information for dataset hid %d" % hid)
+        # Get the tool object
+        tool_id = job.tool_id
+        try:
+            # Load the tool
+            toolbox = self.get_toolbox()
+            tool = toolbox.tools_by_id.get( tool_id, None )
+        except:
+            #this is expected, so not an exception
+            error( "This dataset was created by an obsolete tool (%s). Can't re-run." % tool_id )
+        # Can't rerun upload, external data sources, et cetera. Workflow
+        # compatible will proxy this for now
+        if not tool.is_workflow_compatible:
+            error( "The '%s' tool does not currently support rerunning." % tool.name )
+        # Get the job's parameters
+        try:
+            params_objects = job.get_param_values( trans.app )
+        except:
+            raise Exception( "Failed to get paramemeters for dataset id %d " % hid )
+        # Unpack unvalidated values to strings, they'll be validated when the
+        # form is submitted (this happens when re-running a job that was
+        # initially run by a workflow)
+        validated_params = {}
+        for name, value in params_objects.items():
+            if isinstance( value, UnvalidatedValue ):
+                validated_params [ str(name) ] = str(value)
+            else:
+                validated_params [ str(name) ] = value
+        params_objects = validated_params
+        # Create a fake tool_state for the tool, with the parameters values 
+        state = tool.new_state( trans )
+        state.inputs = params_objects
+        tool_state_string = util.object_to_string(state.encode(tool, trans.app))
+        # Setup context for template
+        history = trans.get_history()
+        template = "tool_form.mako"
+        vars = dict( tool_state=state, errors = {} )
+        # Is the "add frame" stuff neccesary here?
+        add_frame = AddFrameData()
+        add_frame.debug = trans.debug
+        if from_noframe is not None:
+            add_frame.wiki_url = trans.app.config.wiki_url
+            add_frame.from_noframe = True
+        return trans.fill_template( template, history=history, toolbox=toolbox, tool=tool, util=util, add_frame=add_frame, **vars )
+        
 
     @web.expose
     def redirect( self, trans, redirect_url=None, **kwd ):

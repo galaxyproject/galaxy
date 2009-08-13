@@ -74,16 +74,6 @@
             permitted_actions = trans.app.model.Library.permitted_actions.items()
             obj_str = 'library folder %s' % obj_name
             obj_type = 'library'
-        elif isinstance( obj, trans.app.model.LibraryItemInfoTemplate ):
-            current_actions = obj.actions
-            permitted_actions = trans.app.model.Library.permitted_actions.items()
-            obj_str = 'information template %s' % obj_name
-            obj_type = ''
-        elif isinstance( obj, trans.app.model.LibraryItemInfoElement ):
-            current_actions = obj.library_item_info.actions
-            permitted_actions = trans.app.model.Library.permitted_actions.items()
-            obj_str = 'field %s' % obj_name
-            obj_type = ''
         else:
             current_actions = []
             permitted_actions = {}.items()

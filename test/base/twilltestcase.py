@@ -182,7 +182,7 @@ class TwillTestCase( unittest.TestCase ):
         self.home()
         self.visit_page( "root/history_options" )
         if user:
-            self.check_page_for_string( 'List</a> previously stored histories' )
+            self.check_page_for_string( 'Previously</a> stored histories' )
             if active_datasets:
                 self.check_page_for_string( 'Create</a> a new empty history' )
                 self.check_page_for_string( 'Construct workflow</a> from current history' )
@@ -190,7 +190,7 @@ class TwillTestCase( unittest.TestCase ):
             self.check_page_for_string( 'Share</a> current history' )
             self.check_page_for_string( 'Change default permissions</a> for current history' )
             if histories_shared_by_others:
-                self.check_page_for_string( 'List</a> histories shared with you by others' )
+                self.check_page_for_string( 'Histories</a> shared with you by others' )
         if activatable_datasets:
             self.check_page_for_string( 'Show deleted</a> datasets in current history' )
         self.check_page_for_string( 'Rename</a> current history' )
@@ -425,6 +425,7 @@ class TwillTestCase( unittest.TestCase ):
         tc.fv( 'convert_data', 'target_type', target_type )
         tc.submit( 'convert_data' )
         self.check_page_for_string( 'The file conversion of Convert BED to GFF on data' )
+        self.wait() #wait for the format convert tool to finish before returning
         self.home()
     def change_datatype( self, hda_id, datatype ):
         """Change format of history_dataset_association"""
@@ -966,6 +967,37 @@ class TwillTestCase( unittest.TestCase ):
         self.check_page_for_string( check_str )
         self.home()
 
+    # Form stuff
+    def create_form( self, name='Form One', description='This is Form One', num_fields=1 ):
+        """
+        Create a new form definition.  Testing framework is still limited to only testing
+        one instance for each repeat. This has to do with the 'flat' nature of defining
+        test param values.  Using same-named parameters down different branches (having
+        different scope in the tool) cannot be properly tested when they both exist at the
+        same time.
+        TODO: RC: create an edit_form() method that will test the addition of a new field
+        of a specified type.
+        """
+        # TODO: RC: enhance this so that all supported field types can be passed in
+        # and tested.  If nothing is passed, all fields are TextField.
+        self.home()
+        self.visit_url( "%s/forms/new" % self.url )
+        self.check_page_for_string( 'Create a new form definition' )
+        tc.fv( "1", "name", name ) # form field 1 is the field named name...
+        tc.fv( "1", "description", description ) # form field 1 is the field named name...
+        tc.submit( "create_form_button" )
+        for index in range( num_fields ):
+            field_name = 'field_name_%i' % index
+            field_contents = 'Field %i' % index
+            field_help_name = 'field_helptext_%i' % index
+            field_help_contents = 'Field %i help' % index
+            tc.fv( "1", field_name, field_contents )
+            tc.fv( "1", field_help_name, field_help_contents )
+            tc.submit( "save_changes_button" )
+            check_str = "The form '%s' has been updated with the changes." % name
+        self.check_page_for_string( check_str )
+        self.home()
+
     # Library stuff
     def create_library( self, name='Library One', description='This is Library One' ):
         """Create a new library"""
@@ -1002,46 +1034,15 @@ class TwillTestCase( unittest.TestCase ):
         check_str = "Library '%s' has been renamed to '%s'" % ( old_name, name )
         self.check_page_for_string( check_str )
         self.home()
-    def add_library_info_template( self, library_id, library_name, num_fields='2', name='Library Template 1', ele_name_0='Foo', ele_name_1='Doh' ):
+    def add_library_info_template( self, library_id, library_name, form_id, form_name ):
         """Add a new info template to a library"""
         self.home()
-        url = "%s/admin/info_template?library_id=%s&new_template=True&num_fields=2&create_info_template_button=Go" % ( self.url, library_id )
+        url = "%s/admin/info_template?library_id=%s&add=True" % ( self.url, library_id )
         self.visit_url( url )
-        check_str = "Create a new information template for library '%s'" % library_name
-        self.check_page_for_string ( check_str )
+        self.check_page_for_string ( "Select a form on which to base the template" )
         tc.fv( '1', 'library_id', library_id )
-        tc.fv( '1', 'set_num_fields', num_fields )
-        tc.fv( '1', 'name', name )
-        tc.fv( '1', 'new_element_name_0', ele_name_0 )
-        tc.fv( '1', 'new_element_name_1', ele_name_1 )
-        tc.submit( 'new_info_template_button' )
-        self.check_page_for_string( 'The new information template has been created.' )
-        self.home()
-    def add_library_info_template_element( self, library_id, template_id, template_name,
-                                           ele_field_name_1, ele_name_1,
-                                           ele_field_desc_1, ele_desc_1,
-                                           ele_field_name_2, ele_name_2,
-                                           ele_field_desc_2, ele_desc_2,
-                                           new_ele_name='Fubar', new_ele_desc='This is the Fubar compnent' ):
-        """Add a new element to an existing library info template"""
-        self.home()
-        url = "%s/admin/info_template?library_id=%s&id=%s&edit_template=True&num_fields=1&edit_info_template_button=Save" % \
-            ( self.url, library_id, template_id )
-        self.visit_url( url )
-        check_str = "Edit template '%s'" % template_name
-        self.check_page_for_string ( check_str )
-        tc.fv( '1', 'id', template_id )
-        tc.fv( '1', 'set_num_fields', '0' )
-        tc.fv( '1', 'name', template_name )
-        tc.fv( '1', ele_field_name_1, ele_name_1 )
-        tc.fv( '1', ele_field_desc_1, ele_desc_1 )
-        tc.fv( '1', ele_field_name_2, ele_name_2 )
-        tc.fv( '1', ele_field_desc_2, ele_desc_2 )
-        tc.fv( '1', 'new_element_name_0', new_ele_name )
-        tc.fv( '1', 'new_element_description_0', new_ele_desc )
-        tc.submit( 'edit_info_template_button' )
-        check_str = "Information template '%s' has been updated" % template_name
-        self.check_page_for_string( check_str )
+        tc.submit( 'add_info_template_button' )
+        self.check_page_for_string = 'An information template based on the form "%s" has been added to this library.' % form_name
         self.home()
     def edit_library_info( self, library_id, library_name, ele_1_field_name, ele_1_contents, ele_2_field_name, ele_2_contents ):
         """Add information to a library using an existing template with 2 elements"""

@@ -1,14 +1,7 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
 
-<%def name="title()">Browse Requests</%def>
-
-%if message:
-    <p>
-        <div class="${message_type}message transient-message">${message}</div>
-        <div style="clear: both"></div>
-    </p>
-%endif
+<%def name="title()">${grid.title}</%def>
 
 <%def name="javascripts()">
     ${parent.javascripts()}
@@ -74,40 +67,34 @@
     </style>
 </%def>
 
-<div class="grid-header">
-    <h2>${grid.title}</h2>
-    ##%if len(query.all()):
-        ##<span class="title">Filter:</span>
+%if grid.standard_filters:
+    <div class="grid-header">
+        <h2>${grid.title}</h2>
+        <span class="title">Filter:</span>
         %for i, filter in enumerate( grid.standard_filters ):
             %if i > 0:    
                 <span>|</span>
             %endif
-            %if 'state' in grid.default_filter:
-                %if grid.default_filter['state'] == filter.label:
-                    <span class="filter"><a href="${h.url_for( controller='requests_admin', action='list', show_filter=filter.label )}"><b>${filter.label}</b></a></span>
-                %else:
-                    <span class="filter"><a href="${h.url_for( controller='requests_admin', action='list', show_filter=filter.label )}">${filter.label}</a></span>
-                %endif
-            %else:
-                %if filter.label == 'All':
-                    <span class="filter"><a href="${h.url_for( controller='requests_admin', action='list', show_filter=filter.label )}"><b>${filter.label}</b></a></span>
-                %else:
-                    <span class="filter"><a href="${h.url_for( controller='requests_admin', action='list', show_filter=filter.label )}">${filter.label}</a></span>
-                %endif
-            %endif
+            <span class="filter"><a href="${url( filter.get_url_args() )}">${filter.label}</a></span>
         %endfor
-    ##%endif
-</div>
+    </div>
+%endif
 
+%if message:
+    <p>
+        <div class="${message_type}message transient-message">${message}</div>
+        <div style="clear: both"></div>
+    </p>
+%endif
+%if msg:
+    ${render_msg( msg, messagetype )}
+%endif
 
-%if not len(query.all()):
-    There are no requests.
-%else:
-<form name="history_actions" action="${url()}" method="post" >
+<form name="history_shared_by_others" action="${url()}" method="post" >
     <table class="grid">
         <thead>
             <tr>
-                ##<th></th>
+                <th></th>
                 %for column in grid.columns:
                     %if column.visible:
                         <%
@@ -142,27 +129,24 @@
             </tr>
         </thead>
         <tbody>
-            %for i, item in enumerate( query ):
-                <tr \
-                %if current_item == item:
-                    class="current" \
-                %endif
-                > 
+            %for i, history in enumerate( query ):
+                <tr> 
                     ## Item selection column
-                    ##<td style="width: 1.5em;">
-                    ##    <input type="checkbox" name="id" value=${trans.security.encode_id( item.id )} class="grid-row-select-checkbox" />
-                    ##</td>
+                    <td style="width: 1.5em;">
+                        <input type="checkbox" name="id" value=${trans.security.encode_id( history.id )} class="grid-row-select-checkbox" />
+                    </td>
                     ## Data columns
                     %for column in grid.columns:
                         %if column.visible:
                             <%
                                 # Link
-                                if column.link and column.link( item ):
-                                    href = url( **column.link( item ) )
+                                link = column.get_link( trans, grid, history )
+                                if link:
+                                    href = url( **link )
                                 else:
                                     href = None
                                 # Value (coerced to list so we can loop)
-                                value = column.get_value( trans, grid, item )
+                                value = column.get_value( trans, grid, history )
                                 if column.ncells == 1:
                                     value = [ value ]
                             %>
@@ -187,12 +171,8 @@
                     <td>
                         <div popupmenu="grid-${i}-popup">
                             %for operation in grid.operations:
-                                %if operation.allowed( item ):
-                                    %if operation.label == 'Submit':
-                                        <a class="action-button" confirm="More samples cannot be added to this request once it is submitted. Click OK to submit." href="${url( operation=operation.label, id=item.id )}">${operation.label}</a>
-                                    %else:
-                                        <a class="action-button"  href="${url( operation=operation.label, id=item.id )}">${operation.label}</a>
-                                    %endif
+                                %if operation.allowed( history ):
+                                    <a class="action-button" href="${url( operation=operation.label, id=history.id )}">${operation.label}</a>
                                 %endif
                             %endfor
                         </div>
@@ -200,19 +180,18 @@
                 </tr>
             %endfor
         </tbody>
-##        <tfoot>
-##            <tr>
-##                <td></td>
-##                <td colspan="100">
-##                    For <span class="grid-selected-count"></span> selected requests:
-##                    %for operation in grid.operations:
-##                        %if operation.allow_multiple:
-##                            <input type="submit" name="operation" value="${operation.label}" class="action-button">
-##                        %endif
-##                    %endfor
-##                </td>
-##            </tr>
-##        </tfoot>
+        <tfoot>
+            <tr>
+                <td></td>
+                <td colspan="100">
+                    For <span class="grid-selected-count"></span> selected histories:
+                    %for operation in grid.operations:
+                        %if operation.allow_multiple:
+                            <input type="submit" name="operation" value="${operation.label}" class="action-button">
+                        %endif
+                    %endfor
+                </td>
+            </tr>
+        </tfoot>
     </table>
 </form>
-%endif

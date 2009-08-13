@@ -216,22 +216,6 @@ LibraryDatasetDatasetAssociationPermissions.table = Table( "library_dataset_data
     Column( "library_dataset_dataset_association_id", Integer, ForeignKey( "library_dataset_dataset_association.id" ), nullable=True, index=True ),
     Column( "role_id", Integer, ForeignKey( "role.id" ), index=True ) )
 
-LibraryItemInfoPermissions.table = Table( "library_item_info_permissions", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "action", TEXT ),
-    Column( "library_item_info_id", Integer, ForeignKey( "library_item_info.id" ), nullable=True, index=True ),
-    Column( "role_id", Integer, ForeignKey( "role.id" ), index=True ) )
-
-LibraryItemInfoTemplatePermissions.table = Table( "library_item_info_template_permissions", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "action", TEXT ),
-    Column( "library_item_info_template_id", Integer, ForeignKey( "library_item_info_template.id" ), nullable=True, index=True ),
-    Column( "role_id", Integer, ForeignKey( "role.id" ), index=True ) )
-
 DefaultUserPermissions.table = Table( "default_user_permissions", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
@@ -299,105 +283,23 @@ LibraryFolder.table = Table( "library_folder", metadata,
     Column( "purged", Boolean, index=True, default=False ),
     Column( "genome_build", TrimmedString( 40 ) ) )
 
-LibraryItemInfoTemplateElement.table = Table( "library_item_info_template_element", metadata,
+LibraryInfoAssociation.table = Table( 'library_info_association', metadata,
     Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "optional", Boolean, index=True, default=True ),
-    Column( "deleted", Boolean, index=True, default=False ),
-    Column( "name", TEXT ),
-    Column( "description", TEXT ),
-    Column( "type", TEXT, default='string' ),
-    Column( "order_id", Integer ),
-    Column( "options", JSONType() ),
-    Column( "library_item_info_template_id", Integer, ForeignKey( "library_item_info_template.id" ), index=True ) )
-    
-LibraryItemInfoTemplate.table = Table( "library_item_info_template", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "optional", Boolean, index=True, default=True ),
-    Column( "deleted", Boolean, index=True, default=False ),
-    Column( "name", TEXT ),
-    Column( "description", TEXT ),
-    Column( "item_count", Integer, default=0 ) )
+    Column( "library_id", Integer, ForeignKey( "library.id" ), index=True ),
+    Column( "form_definition_id", Integer, ForeignKey( "form_definition.id" ), index=True ),
+    Column( "form_values_id", Integer, ForeignKey( "form_values.id" ), index=True ) )
 
-LibraryInfoTemplateAssociation.table = Table( "library_info_template_association", metadata,
+LibraryFolderInfoAssociation.table = Table( 'library_folder_info_association', metadata,
     Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "library_id", Integer, ForeignKey( "library.id" ), nullable=True, index=True ),
-    Column( "library_item_info_template_id", Integer, ForeignKey( "library_item_info_template.id" ), index=True ) )
-
-LibraryFolderInfoTemplateAssociation.table = Table( "library_folder_info_template_association", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "library_folder_id", Integer, ForeignKey( "library_folder.id" ), nullable=True, index=True ),
-    Column( "library_item_info_template_id", Integer, ForeignKey( "library_item_info_template.id" ), index=True ) )
+    Column( "form_definition_id", Integer, ForeignKey( "form_definition.id" ), index=True ),
+    Column( "form_values_id", Integer, ForeignKey( "form_values.id" ), index=True ) )
 
-LibraryDatasetInfoTemplateAssociation.table = Table( "library_dataset_info_template_association", metadata,
+LibraryDatasetDatasetInfoAssociation.table = Table( 'library_dataset_dataset_info_association', metadata,
     Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "library_dataset_id", Integer, ForeignKey( "library_dataset.id" ), nullable=True, index=True ),
-    Column( "library_item_info_template_id", Integer, ForeignKey( "library_item_info_template.id" ), index=True ) )
-
-LibraryDatasetDatasetInfoTemplateAssociation.table = Table( "library_dataset_dataset_info_template_association", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "library_dataset_dataset_association_id", Integer, ForeignKey( "library_dataset_dataset_association.id" ), nullable=True, index=True ),
-    Column( "library_item_info_template_id", Integer, ForeignKey( "library_item_info_template.id" ), index=True ) )
-
-LibraryItemInfoElement.table = Table( "library_item_info_element", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "contents", JSONType() ),
-    Column( "library_item_info_id", Integer, ForeignKey( "library_item_info.id" ), index=True ),
-    Column( "library_item_info_template_element_id", Integer, ForeignKey( "library_item_info_template_element.id" ), index=True ) )
-
-LibraryItemInfo.table = Table( "library_item_info", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "deleted", Boolean, index=True, default=False ),
-    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), nullable=True, index=True ),
-    Column( "library_item_info_template_id", Integer, ForeignKey( "library_item_info_template.id" ), nullable=True, index=True )
-     )
-
-LibraryInfoAssociation.table = Table( "library_info_association", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "library_id", Integer, ForeignKey( "library.id" ), nullable=True, index=True ),
-    Column( "library_item_info_id", Integer, ForeignKey( "library_item_info.id" ), index=True ),
-    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), nullable=True, index=True ) )
-
-LibraryFolderInfoAssociation.table = Table( "library_folder_info_association", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "library_folder_id", Integer, ForeignKey( "library_folder.id" ), nullable=True, index=True ),
-    Column( "library_item_info_id", Integer, ForeignKey( "library_item_info.id" ), index=True ),
-    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), nullable=True, index=True ) )
-
-LibraryDatasetInfoAssociation.table = Table( "library_dataset_info_association", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "library_dataset_id", Integer, ForeignKey( "library_dataset.id" ), nullable=True, index=True ),
-    Column( "library_item_info_id", Integer, ForeignKey( "library_item_info.id" ), index=True ),
-    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), nullable=True, index=True ) )
-
-LibraryDatasetDatasetInfoAssociation.table = Table( "library_dataset_dataset_info_association", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "library_dataset_dataset_association_id", Integer, ForeignKey( "library_dataset_dataset_association.id" ), nullable=True, index=True ),
-    Column( "library_item_info_id", Integer, ForeignKey( "library_item_info.id" ), index=True ),
-    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), nullable=True, index=True ) )
+    Column( "form_definition_id", Integer, ForeignKey( "form_definition.id" ), index=True ),
+    Column( "form_values_id", Integer, ForeignKey( "form_values.id" ), index=True ) )
 
 Job.table = Table( "job", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -545,7 +447,6 @@ MetadataFile.table = Table( "metadata_file", metadata,
     Column( "deleted", Boolean, index=True, default=False ),
     Column( "purged", Boolean, index=True, default=False ) )
 
-
 FormDefinitionCurrent.table = Table('form_definition_current', metadata,
     Column( "id", Integer, primary_key=True),
     Column( "create_time", DateTime, default=now ),
@@ -553,20 +454,17 @@ FormDefinitionCurrent.table = Table('form_definition_current', metadata,
     Column( "latest_form_id", Integer, ForeignKey( "form_definition.id" ), index=True ),
     Column( "deleted", Boolean, index=True, default=False ))
 
-# new table to store all the forms which is created by the admin
 FormDefinition.table = Table('form_definition', metadata,
     Column( "id", Integer, primary_key=True),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "name", TrimmedString( 255 ), nullable=False ),
     Column( "desc", TEXT ),
-    Column( "form_definition_current_id", 
+    Column( "form_definition_current_id",
             Integer, 
-            ForeignKey( "form_definition_current.id", 
-                        name='for_def_form_def_current_id_fk',
-                        use_alter=True), 
+            ForeignKey( "form_definition_current.id", name='for_def_form_def_current_id_fk', use_alter=True ), 
             index=True ),
-    Column( "fields", JSONType()))
+    Column( "fields", JSONType() ) )
 
 RequestType.table = Table('request_type', metadata,
     Column( "id", Integer, primary_key=True),
@@ -598,15 +496,8 @@ Request.table = Table('request', metadata,
     Column( "state", TrimmedString( 255 ),  index=True ),
     Column( "deleted", Boolean, index=True, default=False ) )
 
-RequestState_table = Table('request_state', metadata,
-    Column( "id", Integer, primary_key=True),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "name", TrimmedString( 255 ), nullable=False ),
-    Column( "desc", TEXT ))
-
 Sample.table = Table('sample', metadata,
-    Column( "id", Integer, primary_key=True),
+    Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "name", TrimmedString( 255 ), nullable=False ),
@@ -616,10 +507,8 @@ Sample.table = Table('sample', metadata,
     Column( "bar_code", TrimmedString( 255 ), index=True ),
     Column( "deleted", Boolean, index=True, default=False ) )
 
-# new table to store all the possible sample states and the sample type it
-# belongs to
 SampleState.table = Table('sample_state', metadata,
-    Column( "id", Integer, primary_key=True),
+    Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "name", TrimmedString( 255 ), nullable=False ),
@@ -627,14 +516,12 @@ SampleState.table = Table('sample_state', metadata,
     Column( "request_type_id", Integer, ForeignKey( "request_type.id" ), index=True ) )
 
 SampleEvent.table = Table('sample_event', metadata,
-    Column( "id", Integer, primary_key=True),
+    Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "sample_id", Integer, ForeignKey( "sample.id" ), index=True ), 
     Column( "sample_state_id", Integer, ForeignKey( "sample_state.id" ), index=True ), 
     Column( "comment", TEXT ) )
-
-
 
 # With the tables defined we can define the mappers and setup the 
 # relationships between the model objects.
@@ -652,7 +539,8 @@ assign_mapper( context, Sample, Sample.table,
 assign_mapper( context, FormValues, FormValues.table,
                properties=dict( form_definition=relation( FormDefinition,
                                                           primaryjoin=( FormValues.table.c.form_definition_id == FormDefinition.table.c.id ) )
-                                                       ) )
+             )
+)
 
 assign_mapper( context, Request, Request.table,
                properties=dict( values=relation( FormValues,
@@ -863,25 +751,20 @@ assign_mapper( context, LibraryDatasetDatasetAssociationPermissions, LibraryData
     )
 )
 
-assign_mapper( context, LibraryItemInfoPermissions, LibraryItemInfoPermissions.table,
-    properties=dict(
-        library_item_info = relation( LibraryItemInfo, backref="actions" ),
-        role=relation( Role, backref="library_item_info_actions" )
-    )
-)
-
-assign_mapper( context, LibraryItemInfoTemplatePermissions, LibraryItemInfoTemplatePermissions.table,
-    properties=dict(
-        library_item_info_template = relation( LibraryItemInfoTemplate, backref="actions" ),
-        role=relation( Role, backref="library_item_info_template_actions" )
-    )
-)
-
 assign_mapper( context, Library, Library.table,
     properties=dict(
-        root_folder=relation( LibraryFolder,
-        backref=backref( "library_root" ) )
-        ) )
+        root_folder=relation( LibraryFolder, backref=backref( "library_root" ) )
+        )
+)
+
+assign_mapper( context, LibraryInfoAssociation, LibraryInfoAssociation.table,
+               properties=dict( library=relation( Library,
+                                                  primaryjoin=( LibraryInfoAssociation.table.c.library_id == Library.table.c.id ), backref="info_association" ),
+                                template=relation( FormDefinition,
+                                                   primaryjoin=( LibraryInfoAssociation.table.c.form_definition_id == FormDefinition.table.c.id ) ), 
+                                info=relation( FormValues,
+                                               primaryjoin=( LibraryInfoAssociation.table.c.form_values_id == FormValues.table.c.id ) )
+                              ) )
 
 assign_mapper( context, LibraryFolder, LibraryFolder.table,
     properties=dict( 
@@ -900,6 +783,15 @@ assign_mapper( context, LibraryFolder, LibraryFolder.table,
             lazy=False, 
             viewonly=True )
     ) )
+
+assign_mapper( context, LibraryFolderInfoAssociation, LibraryFolderInfoAssociation.table,
+               properties=dict( folder=relation( LibraryFolder,
+                                                 primaryjoin=( LibraryFolderInfoAssociation.table.c.library_folder_id == LibraryFolder.table.c.id ), backref="info_association" ),
+                                template=relation( FormDefinition,
+                                                   primaryjoin=( LibraryFolderInfoAssociation.table.c.form_definition_id == FormDefinition.table.c.id ) ), 
+                                info=relation( FormValues,
+                                               primaryjoin=( LibraryFolderInfoAssociation.table.c.form_values_id == FormValues.table.c.id ) )
+                              ) )
 
 assign_mapper( context, LibraryDataset, LibraryDataset.table,
     properties=dict( 
@@ -931,65 +823,14 @@ assign_mapper( context, LibraryDatasetDatasetAssociation, LibraryDatasetDatasetA
             primaryjoin=( ( LibraryDatasetDatasetAssociation.table.c.parent_id == LibraryDatasetDatasetAssociation.table.c.id ) & ( LibraryDatasetDatasetAssociation.table.c.visible == True ) ) )
         ) )
 
-assign_mapper( context, LibraryItemInfoTemplateElement, LibraryItemInfoTemplateElement.table,
-    properties=dict( library_item_info_template=relation( LibraryItemInfoTemplate, backref="elements" ),
-    ) )
-
-assign_mapper( context, LibraryItemInfoTemplate, LibraryItemInfoTemplate.table )
-
-assign_mapper( context, LibraryInfoTemplateAssociation, LibraryInfoTemplateAssociation.table,
-    properties=dict( library=relation( Library, backref="library_info_template_associations" ),
-                     library_item_info_template = relation( LibraryItemInfoTemplate, backref="library_info_template_associations" ),
-                     ) )
-
-assign_mapper( context, LibraryFolderInfoTemplateAssociation, LibraryFolderInfoTemplateAssociation.table,
-    properties=dict( folder=relation( LibraryFolder, backref="library_folder_info_template_associations" ),
-                     library_item_info_template = relation( LibraryItemInfoTemplate, backref="library_folder_info_template_associations" ),
-                     ) )
-
-assign_mapper( context, LibraryDatasetInfoTemplateAssociation, LibraryDatasetInfoTemplateAssociation.table,
-    properties=dict( library_dataset=relation( LibraryDataset, backref="library_dataset_info_template_associations" ),
-                     library_item_info_template = relation( LibraryItemInfoTemplate, backref="library_dataset_info_template_associations" ),
-                     ) )
-
-assign_mapper( context, LibraryDatasetDatasetInfoTemplateAssociation, LibraryDatasetDatasetInfoTemplateAssociation.table,
-    properties=dict( library_dataset_dataset_association = relation( LibraryDatasetDatasetAssociation, backref="library_dataset_dataset_info_template_associations" ),
-                     library_item_info_template = relation( LibraryItemInfoTemplate, backref="library_dataset_dataset_info_template_associations" ),
-                     ) )
-
-assign_mapper( context, LibraryItemInfoElement, LibraryItemInfoElement.table,
-    properties=dict( library_item_info=relation( LibraryItemInfo, backref="elements" ),
-                     library_item_info_template_element=relation( LibraryItemInfoTemplateElement )
-    ) )
-    
-assign_mapper( context, LibraryItemInfo, LibraryItemInfo.table,
-    properties=dict( library_item_info_template=relation( LibraryItemInfoTemplate, backref="library_item_infos" ),
-    user=relation( User.mapper )
-    ) )
-
-assign_mapper( context, LibraryInfoAssociation, LibraryInfoAssociation.table,
-    properties=dict( library=relation( Library, backref="library_info_associations" ),
-                     library_item_info = relation( LibraryItemInfo, backref="library_info_associations" ),
-                     user=relation( User.mapper )
-                     ) )
-
-assign_mapper( context, LibraryFolderInfoAssociation, LibraryFolderInfoAssociation.table,
-    properties=dict( folder=relation( LibraryFolder, backref="library_folder_info_associations" ),
-                     library_item_info = relation( LibraryItemInfo, backref="library_folder_info_associations" ),
-                     user=relation( User.mapper )
-                     ) )
-
-assign_mapper( context, LibraryDatasetInfoAssociation, LibraryDatasetInfoAssociation.table,
-    properties=dict( library_dataset=relation( LibraryDataset, backref="library_dataset_info_associations" ),
-                     library_item_info = relation( LibraryItemInfo, backref="library_dataset_info_associations" ),
-                     user=relation( User.mapper )
-                     ) )
-
 assign_mapper( context, LibraryDatasetDatasetInfoAssociation, LibraryDatasetDatasetInfoAssociation.table,
-    properties=dict( library_dataset_dataset_association = relation( LibraryDatasetDatasetAssociation, backref="library_dataset_dataset_info_associations" ),
-                     library_item_info = relation( LibraryItemInfo, backref="library_dataset_dataset_info_associations" ),
-                     user=relation( User.mapper )
-                     ) )
+               properties=dict( library_dataset_dataset_association=relation( LibraryDatasetDatasetAssociation,
+                                                                              primaryjoin=( LibraryDatasetDatasetInfoAssociation.table.c.library_dataset_dataset_association_id == LibraryDatasetDatasetAssociation.table.c.id ), backref="info_association" ),
+                                template=relation( FormDefinition,
+                                                   primaryjoin=( LibraryDatasetDatasetInfoAssociation.table.c.form_definition_id == FormDefinition.table.c.id ) ), 
+                                info=relation( FormValues,
+                                               primaryjoin=( LibraryDatasetDatasetInfoAssociation.table.c.form_values_id == FormValues.table.c.id ) )
+                              ) )
 
 assign_mapper( context, JobToInputDatasetAssociation, JobToInputDatasetAssociation.table,
     properties=dict( job=relation( Job ), dataset=relation( HistoryDatasetAssociation, lazy=False ) ) )

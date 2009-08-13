@@ -10,7 +10,6 @@ from datetime import datetime, timedelta
 
 log = logging.getLogger( __name__ )
 
-
 # States for passing messages
 SUCCESS, INFO, WARNING, ERROR = "done", "info", "warning", "error"
 
@@ -173,9 +172,10 @@ class Requests( BaseController ):
     @web.require_admin
     def bar_codes(self, trans, **kwd):
         params = util.Params( kwd )
-        try:
-            request = trans.app.model.Request.get(int(params.get('request_id', None)))
-        except:
+        request_id = params.get( 'request_id', None )
+        if request_id:
+            request = trans.app.model.Request.get( int( request_id ))
+        if not request:
             return trans.response.send_redirect( web.url_for( controller='requests',
                                                               action='list',
                                                               status='error',
@@ -193,7 +193,6 @@ class Requests( BaseController ):
         return trans.fill_template( '/admin/samples/bar_codes.mako', 
                                     samples_list=[s for s in request.samples],
                                     user=request.user, request=request, widgets=widgets)
-
     @web.expose
     @web.require_admin
     def save_bar_codes(self, trans, **kwd):
