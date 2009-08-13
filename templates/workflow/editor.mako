@@ -31,9 +31,7 @@
     <script type='text/javascript' src="${h.url_for('/static/scripts/jquery.event.hover.js')}"> </script>
     <script type='text/javascript' src="${h.url_for('/static/scripts/jquery.form.js')}"> </script>
     <script type='text/javascript' src="${h.url_for('/static/scripts/jquery.json.js')}"> </script>
-    <script type='text/javascript' src="${h.url_for('/static/scripts/jquery.cookie.js')}"> </script>
-    <script type='text/javascript' src="${h.url_for('/static/scripts/json2.js')}"> </script>
-    <script type='text/javascript' src="${h.url_for('/static/scripts/json_cookie.js')}"> </script>
+    <script type='text/javascript' src="${h.url_for('/static/scripts/jquery.jstore-all.js')}"> </script>
 
     <script type='text/javascript' src="${h.url_for('/static/scripts/galaxy.base.js')}"> </script>
     <script type='text/javascript' src="${h.url_for('/static/scripts/galaxy.workflow_editor.canvas.js')}"> </script>
@@ -50,6 +48,7 @@
     canvas_manager = null;
     // jQuery onReady
     $( function() {
+        
         if ( window.lt_ie_7 ) {
             show_modal(
                 "Browser not supported",
@@ -57,11 +56,13 @@
             );
             return;
         }
+        
+        // Load jStore for local storage
+        $.extend(jQuery.jStore.defaults, { project: 'galaxy', flash: '/static/jStore.Flash.html' })
+        $.jStore.load(); // Auto-select best storage
+        
         // Canvas overview management
         canvas_manager = new CanvasManager( $("#canvas-viewport"), $("#overview") );
-        
-        // Preferences cookie stored as JSON so that only one cookie is needed for multiple settings
-        var prefs_cookie = new JSONCookie("galaxy.workflow");
         
         // Initialize workflow state
         reset();
@@ -128,39 +129,43 @@
             canvas_manager.draw_overview();
         });
         
-        // Stores the size of the overview in a cookie when it's resized
+        $.jStore.ready(function(engine) {
+            engine.ready(function() {
+                // On load, set the size to the pref stored in local storage if it exists
+                overview_size = $.jStore.store("overview-size");
+                if (overview_size) {
+                    $("#overview-border").css( {
+                        width: overview_size,
+                        height: overview_size
+                    });
+                }
+                
+                // Show viewport on load unless pref says it's off
+                $.jStore.store("overview-off") ? hide_overview() : show_overview()
+            });
+        });
+        
+        // Stores the size of the overview into local storage when it's resized
         $("#overview-border").bind( "dragend", function( e ) {
             var op = $(this).offsetParent();
             var opo = op.offset();
             var new_size = Math.max( op.width() - ( e.offsetX - opo.left ),
                                      op.height() - ( e.offsetY - opo.top ) );
-            prefs_cookie.set("overview-size", new_size);
+            $.jStore.store("overview-size", new_size + "px");
         });
         
-        // On load, set the size to the pref stored in cookie if it exists
-        overview_size = prefs_cookie.get("overview-size");
-        if (overview_size) {
-            $("#overview-border").css( {
-                width: overview_size,
-                height: overview_size
-            });
-        }
-        
         function show_overview() {
-            prefs_cookie.unset("overview-off");
+            $.jStore.remove("overview-off");
             $("#overview-border").css("right", "0px");
             $("#close-viewport").css("background-position", "0px 0px");
         }
         
         function hide_overview() {
-            prefs_cookie.set("overview-off", true);
+            $.jStore.store("overview-off", true);
             $("#overview-border").css("right", "20000px");
             $("#close-viewport").css("background-position", "12px 0px");
         }
         
-        // Show viewport on load unless pref says it's off
-        prefs_cookie.get("overview-off") == true ? hide_overview() : show_overview() 
-                
         // Lets the overview be toggled visible and invisible, adjusting the arrows accordingly
         $("#close-viewport").click( function() {
             $("#overview-border").css("right") == "0px" ? hide_overview() : show_overview();

@@ -15,219 +15,242 @@
 <meta http-equiv="Pragma" content="no-cache">
 
 ${h.css( "base", "history" )}
-${h.js( "jquery", "jquery.cookie", "cookie_set" )}
-  
+${h.js( "jquery", "json2", "jquery.jstore-all" )}
+
 <script type="text/javascript">
-    $( document ).ready( function() {
-        initShowHide();
-        setupHistoryItem( $("div.historyItemWrapper") );
-        // Collapse all
-        $("#top-links").append( "|&nbsp;" ).append( $("<a href='#'>${_('collapse all')}</a>").click( function() {
-            $( "div.historyItemBody:visible" ).each( function() {
-                if ( $.browser.mozilla )
-                {
-                    $(this).find( "pre.peek" ).css( "overflow", "hidden" );
-                }
-                $(this).slideUp( "fast" );
-            })
-            var state = new CookieSet( "galaxy.history.expand_state" );
-            state.removeAll().save();
-        return false;
-        }));
-	$("#history-rename").click( function() {
-	    var old_name = $("#history-name").text()
-	    var t = $("<input type='text' value='" + old_name + "'></input>" );
-	    t.blur( function() {
-		$(this).remove();
-		$("#history-name").show();
-	    });
-	    t.keyup( function( e ) {
-		if ( e.keyCode == 27 ) {
-		    // Escape key
-			$(this).trigger( "blur" );
-		} else if ( e.keyCode == 13 ) {
-		    // Enter key
-		    new_value = this.value;
-		    $(this).trigger( "blur" );
-		    $.ajax({
-			url: "${h.url_for( controller='history', action='rename_async', id=history.id )}",
-			data: { "_": true, new_name: new_value },
-			error: function() { alert( "Rename failed" ) },
-			success: function() {
-			    $("#history-name").text( new_value );
-			}
-		    });
-		}
-	    });
-	    $("#history-name").hide();
-	    $("#history-name-area").append( t );
-	    t.focus();
-	    return false;
-	});
-        // Updater
-        updater({
-            %for i, data in enumerate( reversed( datasets ) ):
-                %if data.visible and data.state not in [ "deleted", "empty", "error", "ok" ]:
-                    %if i > 0:
-                    ,
-                    %endif
-                    "${data.id}": "${data.state}"
-                %endif
-            %endfor
+$(function() {
+    // Load jStore for local storage
+    $.extend(jQuery.jStore.defaults, { project: 'galaxy', flash: '/static/jStore.Flash.html' })
+    $.jStore.load(); // Auto-select best storage
+
+    $.jStore.ready(function(engine) {
+        engine.ready(function() {
+            // Init stuff that requires the local storage to be running
+            initShowHide();
+            setupHistoryItem( $("div.historyItemWrapper") ); 
         });
-    })
-    //' Functionized so AJAX'd datasets can call them
-    // Get shown/hidden state from cookie
-    function initShowHide() {
-        // $( "div.historyItemBody" ).hide();
-        // Load saved state and show as neccesary
-        var state = new CookieSet( "galaxy.history.expand_state" );
-	for ( id in state.store ) {
-	    if ( id ) {
-		$( "#" + id + " div.historyItemBody" ).show();
-	    }
-	}
-        // If Mozilla, hide scrollbars in hidden items since they cause animation bugs
-        if ( $.browser.mozilla ) {
-            $( "div.historyItemBody" ).each( function() {
-                if ( ! $(this).is( ":visible" ) ) $(this).find( "pre.peek" ).css( "overflow", "hidden" );
-            })
-        }
-        delete state;
-    }
-    // Add show/hide link and delete link to a history item
-    function setupHistoryItem( query ) {
-        query.each( function() {
-            var id = this.id;
-            var body = $(this).children( "div.historyItemBody" );
-            var peek = body.find( "pre.peek" )
-            $(this).children( ".historyItemTitleBar" ).find( ".historyItemTitle" ).wrap( "<a href='#'></a>" ).click( function() {
-                if ( body.is(":visible") ) {
-                    if ( $.browser.mozilla ) { peek.css( "overflow", "hidden" ) }
-                    body.slideUp( "fast" );
-                    ## other instances of this could be editing the cookie, refetch
-                    var state = new CookieSet( "galaxy.history.expand_state" );
-                    state.remove( id ); state.save();
-                    delete state;
-                } 
-                else {
-                    body.slideDown( "fast", function() { 
-                        if ( $.browser.mozilla ) { peek.css( "overflow", "auto" ); } 
-                    });
-                    var state = new CookieSet( "galaxy.history.expand_state" );
-                    state.add( id ); state.save();
-                    delete state;
-                }
-                return false;
-            });
-            // Delete link
-            $(this).find( "div.historyItemButtons > .delete" ).each( function() {
-                var data_id = this.id.split( "-" )[1];
-                $(this).click( function() {
-                    $( '#historyItem-' + data_id + "> div.historyItemTitleBar" ).addClass( "spinner" );
-                    $.ajax({
-                        url: "${h.url_for( action='delete_async', id='XXX' )}".replace( 'XXX', data_id ),
-                        error: function() { alert( "Delete failed" ) },
-                        success: function() {
-                            %if show_deleted:
-                                var to_update = {};
-                                to_update[data_id] = "none";
-                                updater( to_update );
-                            %else:
-                                $( "#historyItem-" + data_id ).fadeOut( "fast", function() {
-                                $( "#historyItemContainer-" + data_id ).remove();
-                                if ( $( "div.historyItemContainer" ).length < 1 ) {
-                                    $( "#emptyHistoryMessage" ).show();
-                                }
-                                });
-                            %endif
-                        }
-                    });
-                    return false;
-                });
-            });
-            // Undelete link
-            $(this).find( "a.historyItemUndelete" ).each( function() {
-                var data_id = this.id.split( "-" )[1];
-                $(this).click( function() {
-                    $( '#historyItem-' + data_id + " > div.historyItemTitleBar" ).addClass( "spinner" );
-                    $.ajax({
-                        url: "${h.url_for( controller='dataset', action='undelete_async', id='XXX' )}".replace( 'XXX', data_id ),
-                        error: function() { alert( "Undelete failed" ) },
-                        success: function() {
-                            var to_update = {};
-                            to_update[data_id] = "none";
-                            updater( to_update );
-                        }
-                    });
-                    return false;
-                });
-            });
+    });
+    
+    // Generate 'collapse all' link
+    $("#top-links").append( "|&nbsp;" ).append( $("<a href='#'>${_('collapse all')}</a>").click( function() {
+        $( "div.historyItemBody:visible" ).each( function() {
+            if ( $.browser.mozilla ) {
+                $(this).find( "pre.peek" ).css( "overflow", "hidden" );
+            }
+            $(this).slideUp( "fast" );
         });
-    };
-    // Looks for changes in dataset state using an async request. Keeps
-    // calling itself (via setTimeout) until all datasets are in a terminal
-    // state.
-    var updater = function ( tracked_datasets ) {
-        // Check if there are any items left to track
-        var empty = true;
-        for ( i in tracked_datasets ) {
-            empty = false;
-            break;
-        }
-        if ( ! empty ) {
-            // console.log( "Updater running in 3 seconds" );
-            setTimeout( function() { updater_callback( tracked_datasets ) }, 3000 );
-        } else {
-            // console.log( "Updater finished" );
-        }
-    };
-    var updater_callback = function ( tracked_datasets ) {
-        // Build request data
-        var ids = []
-        var states = []
-        var force_history_refresh = false
-        $.each( tracked_datasets, function ( id, state ) {
-            ids.push( id );
-            states.push( state );
+        $.jStore.remove("history_expand_state");
+    }));
+    
+    $("#history-rename").click( function() {
+        var old_name = $("#history-name").text()
+        var t = $("<input type='text' value='" + old_name + "'></input>" );
+        t.blur( function() {
+            $(this).remove();
+            $("#history-name").show();
         });
-        // Make ajax call
-        $.ajax( {
-            type: "POST",
-            url: "${h.url_for( controller='root', action='history_item_updates' )}",
-            dataType: "json",
-            data: { ids: ids.join( "," ), states: states.join( "," ) },
-            success : function ( data ) {
-                $.each( data, function( id, val ) {
-                    // Replace HTML
-                    var container = $("#historyItemContainer-" + id);
-                    container.html( val.html );
-                    setupHistoryItem( container.children( ".historyItemWrapper" ) );
-                    initShowHide();
-                    // If new state was terminal, stop tracking
-                    if (( val.state == "ok") || ( val.state == "error") || ( val.state == "empty") || ( val.state == "deleted" ) || ( val.state == "discarded" )) {
-                        if ( val.force_history_refresh ){
-                            force_history_refresh = true;
-                        }
-                        delete tracked_datasets[ parseInt(id) ];
-                    } else {
-                        tracked_datasets[ parseInt(id) ] = val.state;
+        t.keyup( function( e ) {
+            if ( e.keyCode == 27 ) {
+                // Escape key
+                $(this).trigger( "blur" );
+            } else if ( e.keyCode == 13 ) {
+                // Enter key
+                new_value = this.value;
+                $(this).trigger( "blur" );
+                $.ajax({
+                    url: "${h.url_for( controller='history', action='rename_async', id=history.id )}",
+                    data: { "_": true, new_name: new_value },
+                    error: function() { alert( "Rename failed" ) },
+                    success: function() {
+                        $("#history-name").text( new_value );
                     }
                 });
-                if ( force_history_refresh ) {
-                    parent.frames.galaxy_history.location.reload();
-                }
-                else {
-                    // Keep going (if there are still any items to track)
-                    updater( tracked_datasets ); 
-                }
-            },
-            error: function() {
-                // Just retry, like the old method, should try to be smarter
-                updater( tracked_datasets );
             }
         });
-    };
+        $("#history-name").hide();
+        $("#history-name-area").append( t );
+        t.focus();
+        return false;
+    });
+    // Updater
+    updater({
+        %for i, data in enumerate( reversed( datasets ) ):
+        %if data.visible and data.state not in [ "deleted", "empty", "error", "ok" ]:
+        %if i > 0:
+        ,
+        %endif
+        "${data.id}": "${data.state}"
+        %endif
+        %endfor
+    });
+});
+// Functionized so AJAX'd datasets can call them
+// Get shown/hidden state from cookie
+function initShowHide() {
+
+    // Load saved state and show as neccesary
+    try {
+        var stored = $.jStore.store("history_expand_state");
+        if (stored) {
+            var st = JSON.parse(stored);
+            for (var id in st) {
+                $("#" + id + " div.historyItemBody" ).show();
+            }
+        }
+    } catch(err) {
+        // Something was wrong with values in storage, so clear storage
+        $.jStore.remove("history_expand_state");
+    }
+
+    // If Mozilla, hide scrollbars in hidden items since they cause animation bugs
+    if ( $.browser.mozilla ) {
+        $( "div.historyItemBody" ).each( function() {
+            if ( ! $(this).is( ":visible" ) ) $(this).find( "pre.peek" ).css( "overflow", "hidden" );
+        })
+    }
+}
+// Add show/hide link and delete link to a history item
+function setupHistoryItem( query ) {
+    query.each( function() {
+        var id = this.id;
+        var body = $(this).children( "div.historyItemBody" );
+        var peek = body.find( "pre.peek" )
+        $(this).children( ".historyItemTitleBar" ).find( ".historyItemTitle" ).wrap( "<a href='#'></a>" ).click( function() {
+            if ( body.is(":visible") ) {
+                // Hiding stuff here
+                if ( $.browser.mozilla ) { peek.css( "overflow", "hidden" ) }
+                body.slideUp( "fast" );
+                
+                // Save setting
+                var stored = $.jStore.store("history_expand_state")
+                var prefs = stored ? JSON.parse(stored) : null
+                if (prefs) {
+                    delete prefs[id];
+                    $.jStore.store("history_expand_state", JSON.stringify(prefs));
+                }
+            } 
+            else {
+                // Showing stuff here
+                body.slideDown( "fast", function() { 
+                    if ( $.browser.mozilla ) { peek.css( "overflow", "auto" ); } 
+                });
+                
+                // Save setting
+                var stored = $.jStore.store("history_expand_state")
+                var prefs = stored ? JSON.parse(stored) : new Object;
+                prefs[id] = true;
+                $.jStore.store("history_expand_state", JSON.stringify(prefs));
+            }
+            return false;
+        });
+        // Delete link
+        $(this).find( "div.historyItemButtons > .delete" ).each( function() {
+            var data_id = this.id.split( "-" )[1];
+            $(this).click( function() {
+                $( '#historyItem-' + data_id + "> div.historyItemTitleBar" ).addClass( "spinner" );
+                $.ajax({
+                    url: "${h.url_for( action='delete_async', id='XXX' )}".replace( 'XXX', data_id ),
+                    error: function() { alert( "Delete failed" ) },
+                    success: function() {
+                        %if show_deleted:
+                        var to_update = {};
+                        to_update[data_id] = "none";
+                        updater( to_update );
+                        %else:
+                        $( "#historyItem-" + data_id ).fadeOut( "fast", function() {
+                            $( "#historyItemContainer-" + data_id ).remove();
+                            if ( $( "div.historyItemContainer" ).length < 1 ) {
+                                $( "#emptyHistoryMessage" ).show();
+                            }
+                        });
+                        %endif
+                    }
+                });
+                return false;
+            });
+        });
+        // Undelete link
+        $(this).find( "a.historyItemUndelete" ).each( function() {
+            var data_id = this.id.split( "-" )[1];
+            $(this).click( function() {
+                $( '#historyItem-' + data_id + " > div.historyItemTitleBar" ).addClass( "spinner" );
+                $.ajax({
+                    url: "${h.url_for( controller='dataset', action='undelete_async', id='XXX' )}".replace( 'XXX', data_id ),
+                    error: function() { alert( "Undelete failed" ) },
+                    success: function() {
+                        var to_update = {};
+                        to_update[data_id] = "none";
+                        updater( to_update );
+                    }
+                });
+                return false;
+            });
+        });
+    });
+};
+// Looks for changes in dataset state using an async request. Keeps
+// calling itself (via setTimeout) until all datasets are in a terminal
+// state.
+var updater = function ( tracked_datasets ) {
+    // Check if there are any items left to track
+    var empty = true;
+    for ( i in tracked_datasets ) {
+        empty = false;
+        break;
+    }
+    if ( ! empty ) {
+        // console.log( "Updater running in 3 seconds" );
+        setTimeout( function() { updater_callback( tracked_datasets ) }, 3000 );
+    } else {
+        // console.log( "Updater finished" );
+    }
+};
+var updater_callback = function ( tracked_datasets ) {
+    // Build request data
+    var ids = []
+    var states = []
+    var force_history_refresh = false
+    $.each( tracked_datasets, function ( id, state ) {
+        ids.push( id );
+        states.push( state );
+    });
+    // Make ajax call
+    $.ajax( {
+        type: "POST",
+        url: "${h.url_for( controller='root', action='history_item_updates' )}",
+        dataType: "json",
+        data: { ids: ids.join( "," ), states: states.join( "," ) },
+        success : function ( data ) {
+            $.each( data, function( id, val ) {
+                // Replace HTML
+                var container = $("#historyItemContainer-" + id);
+                container.html( val.html );
+                setupHistoryItem( container.children( ".historyItemWrapper" ) );
+                initShowHide();
+                // If new state was terminal, stop tracking
+                if (( val.state == "ok") || ( val.state == "error") || ( val.state == "empty") || ( val.state == "deleted" ) || ( val.state == "discarded" )) {
+                    if ( val.force_history_refresh ){
+                        force_history_refresh = true;
+                    }
+                    delete tracked_datasets[ parseInt(id) ];
+                } else {
+                    tracked_datasets[ parseInt(id) ] = val.state;
+                }
+            });
+            if ( force_history_refresh ) {
+                parent.frames.galaxy_history.location.reload();
+            }
+            else {
+                // Keep going (if there are still any items to track)
+                updater( tracked_datasets ); 
+            }
+        },
+        error: function() {
+            // Just retry, like the old method, should try to be smarter
+            updater( tracked_datasets );
+        }
+    });
+};
 </script>
 
 <style>
