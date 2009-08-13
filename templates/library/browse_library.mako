@@ -38,16 +38,14 @@ class RowCounter( object ):
                     descendents = descendents.add( child_descendents );
                 });
                 // Set up expand / hide link
-                $(q).find( "span.expandLink").wrap( "<a href='#' class='expandLink'></a>" ).click( function() {
+                $(q).find( "span.expandLink").click( function() {
                     if ( children.is( ":visible" ) ) {
                         descendents.hide();
                         descendents.removeClass( "expanded" );
                         q.removeClass( "expanded" );
-                        // expanded = false;
                     } else {
                         children.show();
                         q.addClass( "expanded" );
-                        // expanded = true;
                     }
                 });
                 // Check/uncheck boxes in subfolders.
