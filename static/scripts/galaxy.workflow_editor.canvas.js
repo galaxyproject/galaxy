@@ -805,9 +805,9 @@ $.extend( CanvasManager.prototype, {
             self.draw_overview();
         });
         
-        /*  Disable dragging for child elements of the panel so that resizing can
-            only be done with the border panels */
-        $("#overview-border>*").bind("drag", function(e) { });
+        /*  Disable dragging for child element of the panel so that resizing can
+            only be done by dragging the borders */
+        $("#overview-border div").bind("drag", function(e) { });
         
     },
     update_viewport_overlay: function() {
