@@ -51,9 +51,12 @@
                 <div>${_('Job is currently running')}</div>
             %elif data_state == "error":
                 <div>
-                    An error occurred running this job: <i>${data.display_info().strip()}</i>, 
-                    <a href="${h.url_for( controller='dataset', action='errors', id=data.id )}" target="galaxy_main">report this error</a>
+                    An error occurred running this job: <i>${data.display_info().strip()}</i>
                 </div>
+		<div>
+		    <a href="${h.url_for( controller='dataset', action='errors', id=data.id )}" target="galaxy_main">report this error</a>
+		    | <a href="${h.url_for( controller='tool_runner', action='rerun', id=data.id )}" target="galaxy_main">rerun</a>
+		</div>
             %elif data_state == "discarded":
                 <div>
                     The job creating this dataset was cancelled before completion.
@@ -77,6 +80,7 @@
                 <div> 
                     %if data.has_data:
                         <a href="${h.url_for( action='display', id=data.id, tofile='yes', toext=data.ext )}" target="_blank">save</a>
+			| <a href="${h.url_for( controller='tool_runner', action='rerun', id=data.id )}" target="galaxy_main">rerun</a>
                         %for display_app in data.datatype.get_display_types():
                             <% display_links = data.datatype.get_display_links( data, display_app, app, request.base ) %>
                             %if len( display_links ) > 0:
