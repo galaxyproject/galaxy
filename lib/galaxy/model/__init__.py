@@ -330,7 +330,8 @@ class Dataset( object ):
                     OK = 'ok',
                     EMPTY = 'empty',
                     ERROR = 'error',
-                    DISCARDED = 'discarded' )
+                    DISCARDED = 'discarded',
+                    SETTING_METADATA = 'setting_metadata' )
     permitted_actions = get_permitted_actions( filter='DATASET' )
     file_path = "/tmp/"
     engine = None

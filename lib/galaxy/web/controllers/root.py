@@ -297,10 +297,15 @@ class RootController( BaseController ):
                     if name not in [ 'name', 'info', 'dbkey' ]:
                         if spec.get( 'default' ):
                             setattr( data.metadata, name, spec.unwrap( spec.get( 'default' ) ) )
-                data.set_meta()
-                data.datatype.after_edit( data )
+                if trans.app.config.set_metadata_externally:
+                    msg = 'Attributes have been queued to be updated'
+                    trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute( trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming = { 'input1':data } )
+                else:
+                    msg = 'Attributes updated'
+                    data.set_meta()
+                    data.datatype.after_edit( data )
                 trans.app.model.flush()
-                return trans.show_ok_message( "Attributes updated", refresh_frames=['history'] )
+                return trans.show_ok_message( msg, refresh_frames=['history'] )
             elif params.convert_data:
                 target_type = kwd.get("target_type", None)
                 if target_type:

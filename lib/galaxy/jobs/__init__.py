@@ -274,7 +274,7 @@ class JobQueue( object ):
             elif idata.state == idata.states.ERROR:
                 job_wrapper.fail( "input data %d is in error state" % ( idata.hid ) )
                 return JOB_INPUT_ERROR
-            elif idata.state != idata.states.OK:
+            elif idata.state != idata.states.OK and not ( idata.state == idata.states.SETTING_METADATA and job.tool_id is not None and job.tool_id == self.app.datatypes_registry.set_external_metadata_tool.id ):
                 # need to requeue
                 return JOB_WAIT
         return JOB_READY
@@ -543,7 +543,7 @@ class JobWrapper( object ):
         # Certain tools require tasks to be completed after job execution
         # ( this used to be performed in the "exec_after_process" hook, but hooks are deprecated ).
         if self.tool.tool_type is not None:
-            self.tool.exec_after_process( self.queue.app, inp_data, out_data, param_dict )
+            self.tool.exec_after_process( self.queue.app, inp_data, out_data, param_dict, job = job )
         # Call 'exec_after_process' hook
         self.tool.call_hook( 'exec_after_process', self.queue.app, inp_data=inp_data, 
                              out_data=out_data, param_dict=param_dict, 

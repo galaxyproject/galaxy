@@ -58,6 +58,8 @@
                 <div>
                     The job creating this dataset was cancelled before completion.
                 </div>
+            %elif data_state == 'setting_metadata':
+                <div>${_('Metadata is being Auto-Detected.')}</div>
             %elif data_state == "empty":
                 <div>${_('No data: ')}<i>${data.display_info()}</i></div>
             %elif data_state == "ok":

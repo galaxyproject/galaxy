@@ -13,6 +13,8 @@ div.historyItem-empty{border-color:#AA6666;background:#FFCCCC;}
 div.historyItem-empty .state-icon{background:url(history-states.png) no-repeat 0px -25px;}
 div.historyItem-running{border-color:#AAAA66;background:#FFFFCC;}
 div.historyItem-running .state-icon{background-image:url(data_running.gif);}
+div.historyItem-setting_metadata{border-color:#AAAA66;background:#FFFFCC;}
+div.historyItem-setting_metadata .state-icon{background-image:url(data_running.gif);}
 div.historyItem-upload{border-color:#6666AA;background:#CCCCFF;}
 div.historyItem-upload .state-icon{background-image:url(data_upload.gif);}
 div.historyItem-queued{background:#EEEEEE;}
