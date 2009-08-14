@@ -641,6 +641,7 @@ class FormBuilder( object ):
         self.name = name
         self.action = action
         self.submit_text = submit_text
+        #self.submit_name = submit_text+"_button"
         self.inputs = []
     def add_input( self, type, name, label, value=None, error=None, help=None, use_label=True  ):
         self.inputs.append( FormInput( type, label, name, value, error, help, use_label ) )

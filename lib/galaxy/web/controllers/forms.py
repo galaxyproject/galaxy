@@ -175,7 +175,7 @@ class Forms( BaseController ):
                         'visible': True,
                         'required': False,
                         'type': BaseField.form_field_types()[0],
-                        'selectlist': '' }
+                        'selectlist': [] }
         self.current_form['fields'].append(empty_field)
     def __get_field(self, index, **kwd):
         params = util.Params( kwd )
@@ -183,10 +183,10 @@ class Forms( BaseController ):
         # To reproduce, create a new form, click the "add field" button, click the
         # browser back arrow, then click the "add field" button again.
         # You should never attempt to "restore_text()" on a None object...
-        name = util.restore_text( params.get( 'field_name_%i' % index, None ) )
-        helptext = util.restore_text( params.get( 'field_helptext_%i' % index, None ) )
+        name = util.restore_text( params.get( 'field_name_%i' % index, '' ) )
+        helptext = util.restore_text( params.get( 'field_helptext_%i' % index, '' ) )
         required =  params.get( 'field_required_%i' % index, False )
-        field_type = util.restore_text( params.get( 'field_type_%i' % index, None ) )
+        field_type = util.restore_text( params.get( 'field_type_%i' % index, '' ) )
         if field_type == 'SelectField':
             selectlist = self.__get_selectbox_options(index, **kwd)
             return {'label': name, 
@@ -434,7 +434,10 @@ def get_form_widgets( trans, form, contents=[], **kwd ):
         if field_name in kwd:
             # the user had already filled out this field and the same form is re-rendered 
             # due to some reason like required fields have been left out.
-            value = util.restore_text( params.get( field_name, ''  ) )
+            if field[ 'type' ] == 'CheckboxField':
+                value = CheckboxField.is_checked( util.restore_text( params.get( field_name, False ) ) )
+            else:
+                value = util.restore_text( params.get( field_name, ''  ) )
         elif contents:
             # this field has a saved value
             value = str(contents[ index ])

@@ -63,6 +63,7 @@ class Requests( BaseController ):
     request_grid = RequestsListGrid()
 
     @web.expose
+    @web.require_login( "create/submit sequencing requests" )
     def index( self, trans ):
         return trans.fill_template( "requests/index.mako" )
     
@@ -75,6 +76,7 @@ class Requests( BaseController ):
                 authorized_libraries.append(library)
         return authorized_libraries
     @web.expose
+    @web.require_login( "create/submit sequencing requests" )
     def list( self, trans, **kwargs ):
         '''
         List all request made by the current user
@@ -206,6 +208,7 @@ class Requests( BaseController ):
             copy_list.add_option(s[0], i)
         return copy_list   
     @web.expose
+    @web.require_login( "create/submit sequencing requests" )
     def show_request(self, trans, **kwd):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
@@ -331,6 +334,7 @@ class Requests( BaseController ):
 
             
     @web.expose
+    @web.require_login( "create/submit sequencing requests" )
     def delete_sample(self, trans, **kwd):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
@@ -353,6 +357,7 @@ class Requests( BaseController ):
                                     edit_mode=self.edit_mode)
         
     @web.expose
+    @web.require_login( "create/submit sequencing requests" )
     def toggle_request_details(self, trans, **kwd):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
@@ -389,6 +394,7 @@ class Requests( BaseController ):
                     select_reqtype.add_option(rt.name, rt.id)
         return select_reqtype
     @web.expose
+    @web.require_login( "create/submit sequencing requests" )
     def new(self, trans, **kwd):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
@@ -581,6 +587,7 @@ class Requests( BaseController ):
             request.flush()
         return request
     @web.expose
+    @web.require_login( "create/submit sequencing requests" )
     def edit(self, trans, **kwd):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
@@ -742,10 +749,14 @@ class Requests( BaseController ):
         request.flush()
         kwd = {}
         kwd['id'] = trans.security.encode_id(request.id)
+        kwd['status'] = 'done'
+        kwd['message'] = 'The request <b>%s</b> has been submitted.' % request.name
         return trans.response.send_redirect( web.url_for( controller='requests',
                                                           action='list',
+                                                          show_filter=trans.app.model.Request.states.SUBMITTED,
                                                           **kwd) )
     @web.expose
+    @web.require_login( "create/submit sequencing requests" )
     def submit_request(self, trans, **kwd):
         params = util.Params( kwd )
         try:
@@ -775,13 +786,16 @@ class Requests( BaseController ):
         # change request's submitted field
         request.state = request.states.SUBMITTED
         request.flush()
-        ## TODO
         kwd['id'] = trans.security.encode_id(request.id)
+        kwd['status'] = 'done'
+        kwd['message'] = 'The request <b>%s</b> has been submitted.' % request.name
         return trans.response.send_redirect( web.url_for( controller='requests',
                                                           action='list',
+                                                          show_filter=trans.app.model.Request.states.SUBMITTED,
                                                           **kwd) )
 
     @web.expose
+    @web.require_login( "create/submit sequencing requests" )
     def show_events(self, trans, **kwd):
         params = util.Params( kwd )
         try:

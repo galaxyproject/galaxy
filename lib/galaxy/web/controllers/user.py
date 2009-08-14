@@ -229,6 +229,8 @@ class User( BaseController ):
     def manage_addresses(self, trans, **kwd):
         if trans.user:
             params = util.Params( kwd )
+            msg = util.restore_text( params.get( 'msg', ''  ) )
+            messagetype = params.get( 'messagetype', 'done' )
             show_filter = util.restore_text( params.get( 'show_filter', 'Active'  ) )
             if show_filter == 'All':
                 addresses = [address for address in trans.user.addresses]
@@ -238,7 +240,9 @@ class User( BaseController ):
                 addresses = [address for address in trans.user.addresses if not address.deleted]
             return trans.fill_template( 'user/address.mako', 
                                         addresses=addresses,
-                                        show_filter=show_filter)
+                                        show_filter=show_filter,
+                                        msg=msg,
+                                        messagetype=messagetype)
         else:
             # User not logged in, history group must be only public
             return trans.show_error_message( "You must be logged in to change your default permitted actions." )

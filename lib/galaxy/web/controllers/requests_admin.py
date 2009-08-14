@@ -172,6 +172,8 @@ class Requests( BaseController ):
     @web.require_admin
     def bar_codes(self, trans, **kwd):
         params = util.Params( kwd )
+        msg = util.restore_text( params.get( 'msg', ''  ) )
+        messagetype = params.get( 'messagetype', 'done' )
         request_id = params.get( 'request_id', None )
         if request_id:
             request = trans.app.model.Request.get( int( request_id ))
@@ -192,7 +194,9 @@ class Requests( BaseController ):
                                      bc))
         return trans.fill_template( '/admin/samples/bar_codes.mako', 
                                     samples_list=[s for s in request.samples],
-                                    user=request.user, request=request, widgets=widgets)
+                                    user=request.user, request=request, widgets=widgets, 
+                                    messagetype=messagetype,
+                                    msg=msg)
     @web.expose
     @web.require_admin
     def save_bar_codes(self, trans, **kwd):
@@ -256,9 +260,10 @@ class Requests( BaseController ):
             sample.bar_code = bar_code
             sample.flush()
         return trans.response.send_redirect( web.url_for( controller='requests_admin',
-                                                          action='list',
-                                                          operation='show_request',
-                                                          id=trans.security.encode_id(request.id)) )
+                                                          action='bar_codes',
+                                                          request_id=request.id,
+                                                          msg='Bar codes has been saved for this request',
+                                                          messagetype='done'))
     def __set_request_state(self, request):
         # check if all the samples of the current request are in the final state
         complete = True 

@@ -40,7 +40,7 @@
             </tbody>
         </table>
         <div class="form-row">
-            <input type="submit" name="save_new_sample_type" value="Save"/>
+            <input type="submit" name="save_bar_codes" value="Save"/>
         </div>
     </form>
 </div>
