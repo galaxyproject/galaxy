@@ -38,14 +38,21 @@ class RowCounter( object ):
                     descendents = descendents.add( child_descendents );
                 });
                 // Set up expand / hide link
+                // HACK: assume descendents are invisible. The caller actually
+                //       ensures this for the root node. However, if we start
+                //       remembering folder states, we'll need something
+                //       more sophisticated here.
+                var visible = false;
                 $(q).find( "span.expandLink").click( function() {
-                    if ( children.is( ":visible" ) ) {
+                    if ( visible ) {
                         descendents.hide();
                         descendents.removeClass( "expanded" );
                         q.removeClass( "expanded" );
+                        visible = false;
                     } else {
                         children.show();
                         q.addClass( "expanded" );
+                        visible = true;
                     }
                 });
                 // Check/uncheck boxes in subfolders.
