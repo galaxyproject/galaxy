@@ -1,9 +1,9 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
 
-<%def name="title()">Browse Libraries</%def>
+<%def name="title()">Browse Data Libraries</%def>
 
-<h2>Libraries</h2>
+<h2>Data Libraries</h2>
 
 %if msg:
     ${render_msg( msg, messagetype )}

@@ -1,13 +1,13 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
 
-<%def name="title()">Browse Libraries</%def>
+<%def name="title()">Browse Data Libraries</%def>
 
 <h2>
     %if deleted:
         Deleted 
     %endif
-    Libraries
+    Data Libraries
 </h2>
 
 <ul class="manage-table-actions">

@@ -16,7 +16,7 @@
 <br/><br/>
 <ul class="manage-table-actions">
     <li>
-        <a class="action-button" href="${h.url_for( controller='library', action='browse_library', id=library_id )}"><span>Browse this library</span></a>
+        <a class="action-button" href="${h.url_for( controller='library', action='browse_library', id=library_id )}"><span>Browse this data library</span></a>
     </li>
 </ul>
 
@@ -68,7 +68,7 @@
                 %elif upload_option == 'upload_directory':
                     <div class="form-row">
                         <%
-                            # Directories of files from the Libraries view are restricted to a
+                            # Directories of files from the Data Libraries view are restricted to a
                             # sub-directory named the same as the current user's email address
                             # contained within the configured setting for user_library_import_dir
                             user_library_import_dir = os.path.join( trans.app.config.user_library_import_dir, trans.user.email )

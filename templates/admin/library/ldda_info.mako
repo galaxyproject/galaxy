@@ -20,7 +20,7 @@
 
 <ul class="manage-table-actions">
     <li>
-        <a class="action-button" href="${h.url_for( controller='admin', action='browse_library', id=library_id, deleted=library.deleted, show_deleted=show_deleted )}"><span>Browse this library</span></a>
+        <a class="action-button" href="${h.url_for( controller='admin', action='browse_library', id=library_id, deleted=library.deleted, show_deleted=show_deleted )}"><span>Browse this data library</span></a>
     </li>
 </ul>
 

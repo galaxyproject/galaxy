@@ -4,7 +4,7 @@
 
 <% import os, os.path %>
 
-<b>Create new library datasets</b>
+<b>Create new data library datasets</b>
 <a id="upload-librarydataset--popup" class="popup-arrow" style="display: none;">&#9660;</a>
 <div popupmenu="upload-librarydataset--popup">
     <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', library_id=library_id, folder_id=folder_id, replace_id=replace_id, upload_option='upload_file' )}">Upload files</a>
@@ -16,7 +16,7 @@
 <br/><br/>
 <ul class="manage-table-actions">
     <li>
-        <a class="action-button" href="${h.url_for( controller='admin', action='browse_library', id=library_id )}"><span>Browse this library</span></a>
+        <a class="action-button" href="${h.url_for( controller='admin', action='browse_library', id=library_id )}"><span>Browse this data library</span></a>
     </li>
 </ul>
 
@@ -142,7 +142,7 @@
                         <textarea name="message" rows="3" cols="35"></textarea>
                     </div>
                     <div class="toolParamHelp" style="clear: both;">
-                        This information will be displayed in the "Information" column for this dataset in the library browser
+                        This information will be displayed in the "Information" column for this dataset in the data library browser
                     </div>
                     <div style="clear: both"></div>
                 </div>
