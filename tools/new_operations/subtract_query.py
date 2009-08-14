@@ -5,12 +5,16 @@
 Subtract an entire query from another query
 usage: %prog in_file_1 in_file_2 begin_col end_col output 
 """
-
-import sys, sets, re
-
+import sys, re
 from galaxy import eggs
 import pkg_resources; pkg_resources.require( "bx-python" )
 from bx.cookbook import doc_optparse
+
+# Older py compatibility
+try:
+    set()
+except:
+    from sets import Set as set
 
 assert sys.version_info[:2] >= ( 2, 4 )
 

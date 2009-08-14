@@ -1,8 +1,8 @@
-import sys, os, operator, sets, string, shutil, re, socket, urllib
+import sys, os, operator, string, shutil, re, socket, urllib, time
 from galaxy import web
 from cgi import escape, FieldStorage
 from galaxy.webapps.reports.base.controller import *
-import logging, sets, time
+import logging
 log = logging.getLogger( __name__ )
 
 class Report( BaseController ):

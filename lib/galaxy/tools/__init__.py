@@ -1,15 +1,13 @@
 """
 Classes encapsulating galaxy tools and tool configuration.
 """
-
 import pkg_resources; 
 
 pkg_resources.require( "simplejson" )
 
 import logging, os, string, sys, tempfile, glob, shutil
 import simplejson
-import sha, hmac, binascii
-
+import hmac, binascii
 from UserDict import DictMixin
 from galaxy.util.odict import odict
 from galaxy.util.bunch import Bunch
@@ -26,6 +24,12 @@ from galaxy.model import directory_hash_id
 from galaxy.util.none_like import NoneDataset
 from galaxy.datatypes import sniff
 from cgi import FieldStorage
+
+using_24 = sys.version_info[:2] < ( 2, 5 )
+if using_24:
+    import sha
+else:
+    import hashlib
 
 log = logging.getLogger( __name__ )
 
@@ -211,7 +215,10 @@ class DefaultToolState( object ):
         value["__page__"] = self.page
         value = simplejson.dumps( value )
         # Make it secure
-        a = hmac.new( app.config.tool_secret, value, sha ).hexdigest()
+        if using_24:
+            a = hmac.new( app.config.tool_secret, value, sha ).hexdigest()
+        else:
+            a = hmac.new( app.config.tool_secret, value, hashlib.sha1 ).hexdigest()
         b = binascii.hexlify( value )
         return "%s:%s" % ( a, b )      
     def decode( self, value, tool, app ):
@@ -221,7 +228,10 @@ class DefaultToolState( object ):
         # Extract and verify hash
         a, b = value.split( ":" )
         value = binascii.unhexlify( b )
-        test = hmac.new( app.config.tool_secret, value, sha ).hexdigest()
+        if using_24:
+            test = hmac.new( app.config.tool_secret, value, sha ).hexdigest()
+        else:
+            test = hmac.new( app.config.tool_secret, value, hashlib.sha1 ).hexdigest()
         assert a == test
         # Restore from string
         values = json_fix( simplejson.loads( value ) )
@@ -453,7 +463,6 @@ class Tool:
             self.tests = None
         # Determine if this tool can be used in workflows
         self.is_workflow_compatible = self.check_workflow_compatible()
-        
             
     def parse_inputs( self, root ):
         """

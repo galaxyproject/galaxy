@@ -1,11 +1,15 @@
-import time, glob, os
+import time, glob, os, sys
 from itertools import cycle
-import sha
-
 from mako import exceptions
 from mako.template import Template
 from mako.lookup import TemplateLookup
 from galaxy.web.base.controller import *
+
+using_24 = sys.version_info[:2] < ( 2, 5 )
+if using_24:
+    import sha
+else:
+    import hashlib
 
 try:
     import pkg_resources
@@ -265,7 +269,10 @@ class WebRoot(BaseController):
         tmpl_name, track_maker  = conf.PLOT_MAPPER[param.plot]
         
         # check against a hash, display an image that already exists if it was previously created.
-        hash = sha.new()
+        if using_24:
+            hash = sha.new()
+        else:
+            hash = hashlib.sha1()
         hash.update(str(dataset_id))
         for key in sorted(kwds.keys()):
             hash.update(str(kwds[key]))

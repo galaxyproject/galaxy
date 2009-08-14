@@ -1,4 +1,4 @@
-import logging, os, sys, time, sets, tempfile
+import logging, os, sys, time, tempfile
 from galaxy import util
 from galaxy.util.odict import odict
 from galaxy.util.bunch import Bunch

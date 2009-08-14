@@ -1,8 +1,13 @@
 # runs after the job (and after the default post-filter)
-import sets, os
+import os
 from galaxy import eggs
 from galaxy import jobs
 from galaxy.tools.parameters import DataToolParameter
+# Older py compatibility
+try:
+    set()
+except:
+    from sets import Set as set
 
 #def exec_before_process(app, inp_data, out_data, param_dict, tool=None):
 #    """Sets the name of the data"""
@@ -11,8 +16,8 @@ from galaxy.tools.parameters import DataToolParameter
 #        raise Exception, '<p><font color="yellow">Both Queries must be from the same genome build</font></p>'
 
 def validate_input( trans, error_map, param_values, page_param_map ):
-    dbkeys = sets.Set()
-    data_param_names = sets.Set()
+    dbkeys = set()
+    data_param_names = set()
     data_params = 0
     for name, param in page_param_map.iteritems():
         if isinstance( param, DataToolParameter ):

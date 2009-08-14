@@ -5,8 +5,7 @@ Naming: try to use class names that have a distinct plural form so that
 the relationship cardinalities are obvious (e.g. prefer Dataset to Data)
 """
 
-import os.path, os, errno
-import sha
+import os.path, os, errno, sys
 import galaxy.datatypes
 from galaxy.util.bunch import Bunch
 from galaxy import util
@@ -14,8 +13,11 @@ import tempfile
 import galaxy.datatypes.registry
 from galaxy.datatypes.metadata import MetadataCollection
 from galaxy.security import RBACAgent, get_permitted_actions
-
-
+using_24 = sys.version_info[:2] < ( 2, 5 )
+if using_24:
+    import sha
+else:
+    import hashlib
 import logging
 log = logging.getLogger( __name__ )
 
@@ -40,10 +42,16 @@ class User( object ):
         
     def set_password_cleartext( self, cleartext ):
         """Set 'self.password' to the digest of 'cleartext'."""
-        self.password = sha.new( cleartext ).hexdigest()
+        if using_24:
+            self.password = sha.new( cleartext ).hexdigest()
+        else:
+            self.password = hashlib.sha1( cleartext ).hexdigest()
     def check_password( self, cleartext ):
         """Check if 'cleartext' matches 'self.password' when hashed."""
-        return self.password == sha.new( cleartext ).hexdigest()
+        if using_24:
+            return self.password == sha.new( cleartext ).hexdigest()
+        else:
+            return self.password == hashlib.sha1( cleartext ).hexdigest()
     def all_roles( self ):
         roles = [ ura.role for ura in self.roles ]
         for group in [ uga.group for uga in self.groups ]:

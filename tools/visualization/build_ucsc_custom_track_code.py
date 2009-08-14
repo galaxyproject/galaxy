@@ -1,6 +1,10 @@
 # runs after the job (and after the default post-filter)
 
-from sets import Set as set
+# Older py compatibility
+try:
+    set()
+except:
+    from sets import Set as set
 
 def validate_input( trans, error_map, param_values, page_param_map ):
     dbkeys = set()

@@ -1,4 +1,4 @@
-import sets, os
+import os
 from galaxy import eggs
 from galaxy import jobs
 from galaxy.tools.parameters import DataToolParameter

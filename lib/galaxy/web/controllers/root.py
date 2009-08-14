@@ -1,7 +1,7 @@
 """
 Contains the main interface in the Universe class
 """
-import logging, os, sets, string, shutil, urllib, re, socket
+import logging, os, string, shutil, urllib, re, socket
 from cgi import escape, FieldStorage
 from galaxy import util, datatypes, jobs, web, util
 from galaxy.web.base.controller import *
@@ -60,7 +60,6 @@ class RootController( BaseController ):
             trans.response.set_content_type('text/xml')
             return trans.fill_template_mako( "root/history_as_xml.mako", history=history, show_deleted=util.string_as_bool( show_deleted ) )
         else:
-            template = "root/history.mako"
             show_deleted = util.string_as_bool( show_deleted )
             query = trans.sa_session.query( model.HistoryDatasetAssociation ) \
                 .filter( model.HistoryDatasetAssociation.history == history ) \
