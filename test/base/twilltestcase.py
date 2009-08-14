@@ -1003,7 +1003,7 @@ class TwillTestCase( unittest.TestCase ):
         """Create a new library"""
         self.home()
         self.visit_url( "%s/admin/library?new=True" % self.url )
-        self.check_page_for_string( 'Create a new library' )
+        self.check_page_for_string( 'Create a new data library' )
         tc.fv( "1", "1", name ) # form field 1 is the field named name...
         tc.fv( "1", "2", description ) # form field 1 is the field named name...
         tc.submit( "create_library_button" )
