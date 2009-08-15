@@ -7,7 +7,7 @@ pkg_resources.require( "simplejson" )
 
 import logging, os, string, sys, tempfile, glob, shutil
 import simplejson
-import hmac, binascii
+import binascii
 from UserDict import DictMixin
 from galaxy.util.odict import odict
 from galaxy.util.bunch import Bunch
@@ -24,12 +24,7 @@ from galaxy.model import directory_hash_id
 from galaxy.util.none_like import NoneDataset
 from galaxy.datatypes import sniff
 from cgi import FieldStorage
-
-using_24 = sys.version_info[:2] < ( 2, 5 )
-if using_24:
-    import sha
-else:
-    import hashlib
+from galaxy.util.hash_util import *
 
 log = logging.getLogger( __name__ )
 
@@ -215,10 +210,7 @@ class DefaultToolState( object ):
         value["__page__"] = self.page
         value = simplejson.dumps( value )
         # Make it secure
-        if using_24:
-            a = hmac.new( app.config.tool_secret, value, sha ).hexdigest()
-        else:
-            a = hmac.new( app.config.tool_secret, value, hashlib.sha1 ).hexdigest()
+        a = hmac_new( app.config.tool_secret, value )
         b = binascii.hexlify( value )
         return "%s:%s" % ( a, b )      
     def decode( self, value, tool, app ):
@@ -228,10 +220,7 @@ class DefaultToolState( object ):
         # Extract and verify hash
         a, b = value.split( ":" )
         value = binascii.unhexlify( b )
-        if using_24:
-            test = hmac.new( app.config.tool_secret, value, sha ).hexdigest()
-        else:
-            test = hmac.new( app.config.tool_secret, value, hashlib.sha1 ).hexdigest()
+        test = hmac_new( app.config.tool_secret, value )
         assert a == test
         # Restore from string
         values = json_fix( simplejson.loads( value ) )
