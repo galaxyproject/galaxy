@@ -1,5 +1,5 @@
 import os, shutil, urllib, StringIO, re, gzip, tempfile, shutil, zipfile
-from . import ToolAction
+from __init__ import ToolAction
 from galaxy import datatypes, jobs
 from galaxy.datatypes import sniff
 from galaxy import model, util
