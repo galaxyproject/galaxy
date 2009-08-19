@@ -3,6 +3,7 @@ Classes for generating HTML forms
 """
 
 import logging,sys
+from cgi import escape
 log = logging.getLogger(__name__)
 
 class BaseField(object):
@@ -28,7 +29,7 @@ class TextField(BaseField):
         self.value = value or ""
     def get_html( self, prefix="" ):
         return '<input type="text" name="%s%s" size="%d" value="%s">' \
-            % ( prefix, self.name, self.size, self.value )
+            % ( prefix, self.name, self.size, escape(str(self.value), quote=True) )
     def set_size(self, size):
         self.size = int( size )
 
@@ -49,7 +50,7 @@ class TextArea(BaseField):
         self.value = value or ""
     def get_html( self, prefix="" ):
         return '<textarea name="%s%s" rows="%d" cols="%d">%s</textarea>' \
-            % ( prefix, self.name, self.rows, self.cols, self.value )
+            % ( prefix, self.name, self.rows, self.cols, escape(str(self.value), quote=True) )
     def set_size(self, rows, cols):
         self.rows = rows
         self.cols = cols
@@ -113,7 +114,7 @@ class HiddenField(BaseField):
         self.name = name
         self.value = value or ""
     def get_html( self, prefix="" ):
-        return '<input type="hidden" name="%s%s" value="%s">' % ( prefix, self.name, self.value )
+        return '<input type="hidden" name="%s%s" value="%s">' % ( prefix, self.name, escape(str(self.value), quote=True) )
 
 class SelectField(BaseField):
     """
@@ -190,9 +191,9 @@ class SelectField(BaseField):
             if len(self.options) > 2 and ctr % 2 == 1:
                 style = " class=\"odd_row\""
             if selected:
-                rval.append( '<div%s><input type="checkbox" name="%s%s" value="%s" checked>%s</div>' % ( style, prefix, self.name, value, text) )
+                rval.append( '<div%s><input type="checkbox" name="%s%s" value="%s" checked>%s</div>' % ( style, prefix, self.name, escape(str(value), quote=True), text) )
             else:
-                rval.append( '<div%s><input type="checkbox" name="%s%s" value="%s">%s</div>' % ( style, prefix, self.name, value, text) )
+                rval.append( '<div%s><input type="checkbox" name="%s%s" value="%s">%s</div>' % ( style, prefix, self.name, escape(str(value), quote=True), text) )
             ctr += 1
         return "\n".join( rval )
     def get_html_radio( self, prefix="" ):
@@ -204,7 +205,7 @@ class SelectField(BaseField):
                 style = " class=\"odd_row\""
             if selected: selected_text = " checked"
             else: selected_text = ""
-            rval.append( '<div%s><input type="radio" name="%s%s"%s value="%s"%s>%s</div>' % ( style, prefix, self.name, self.refresh_on_change_text, value, selected_text, text ) )
+            rval.append( '<div%s><input type="radio" name="%s%s"%s value="%s"%s>%s</div>' % ( style, prefix, self.name, self.refresh_on_change_text, escape(str(value), quote=True), selected_text, text ) )
             ctr += 1
         return "\n".join( rval )    
     def get_html_default( self, prefix="" ):
@@ -217,9 +218,9 @@ class SelectField(BaseField):
                 selected_text = " selected"
                 last_selected_value = value
             else: selected_text = ""
-            rval.append( '<option value="%s"%s>%s</option>' % ( value, selected_text, text ) )
+            rval.append( '<option value="%s"%s>%s</option>' % ( escape(str(value), quote=True), selected_text, text ) )
         if last_selected_value:
-            last_selected_value = ' last_selected_value="%s"' % last_selected_value
+            last_selected_value = ' last_selected_value="%s"' % escape(str(last_selected_value), quote=True)
         rval.insert( 0, '<select name="%s%s"%s%s%s>' % ( prefix, self.name, multiple, self.refresh_on_change_text, last_selected_value ) )
         rval.append( '</select>' )
         return "\n".join( rval )
@@ -326,12 +327,12 @@ class DrillDownField( BaseField ):
                     if option['value'] in expanded_options:
                         default_state = 'expanded'
                         default_icon = '[-]'
-                    html.append( '<li><span class="toolParameterExpandableCollapsable">%s</span><input type="%s" name="%s%s" value="%s"%s">%s' % ( default_icon, self.display, prefix, self.name, option['value'], selected, option['name']) )
+                    html.append( '<li><span class="toolParameterExpandableCollapsable">%s</span><input type="%s" name="%s%s" value="%s"%s">%s' % ( default_icon, self.display, prefix, self.name, escape(str(option['value']), quote=True), selected, option['name']) )
                     html.append( '<ul class="toolParameterExpandableCollapsable" default_state="%s">' % default_state )
                     recurse_options( html, option['options'], expanded_options )
                     html.append( '</ul>')
                 else:
-                    html.append( '<li><input type="%s" name="%s%s" value="%s"%s">%s' % ( self.display, prefix, self.name, option['value'], selected, option['name']) )
+                    html.append( '<li><input type="%s" name="%s%s" value="%s"%s">%s' % ( self.display, prefix, self.name, escape(str(option['value']), quote=True), selected, option['name']) )
                 html.append( '</li>' )
         rval = []
         rval.append( '<div><ul class="toolParameterExpandableCollapsable">' )

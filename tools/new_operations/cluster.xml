@@ -74,7 +74,7 @@ See Galaxy Interval Operation Screencasts_ (right click to open this link in ano
 **Syntax**
 
 - **Maximum distance** is greatest distance in base pairs allowed between intervals that will be considered &quot;clustered&quot;.  **Negative** values for distance are allowed, and are useful for clustering intervals that overlap.
-- **Minimum intervals per cluster** allow a threshold to be set on the minimum number of intervals to be considered a cluster.  Any area with less than this minimum will not be included in the ouput.
+- **Minimum intervals per cluster** allow a threshold to be set on the minimum number of intervals to be considered a cluster.  Any area with less than this minimum will not be included in the output.
 - **Merge clusters into single intervals** outputs intervals that span the entire cluster.
 - **Find cluster intervals; preserve comments and order** filters out non-cluster intervals while maintaining the original ordering and comments in the file.
 - **Find cluster intervals; output grouped by clusters** filters out non-cluster intervals, but outputs the cluster intervals so that they are grouped together. Comments and original ordering in the file are lost.

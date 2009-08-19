@@ -93,7 +93,7 @@ from galaxy.util.expressions import ExpressionContext
         <div style="clear: both"></div>       
     </div>
 </%def>
-    
+
 <div class="toolForm">
     <div class="toolFormTitle">Tool: ${tool.name}</div>
     <div class="toolFormBody">
@@ -105,9 +105,11 @@ from galaxy.util.expressions import ExpressionContext
                 %endif
                 ${do_inputs( inputs, values, errors, "" )}
             %endfor
-            <div class="form-row">
-                <input type="submit" id="tool-form-save-button" value="Save"></input>
-            </div>
         </form>
     </div>
 </div>
+
+<script type="text/javascript">
+    workflow.enable_auto_save();
+</script>
+
