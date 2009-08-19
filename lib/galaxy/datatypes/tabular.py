@@ -11,6 +11,7 @@ from galaxy import util
 from cgi import escape
 from galaxy.datatypes import metadata
 from galaxy.datatypes.metadata import MetadataElement
+from sniff import *
 
 log = logging.getLogger(__name__)
 
