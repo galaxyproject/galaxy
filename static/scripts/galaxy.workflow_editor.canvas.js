@@ -502,7 +502,7 @@ $.extend( Workflow.prototype, {
                 var v = level_parents[k];
                 delete n_pred[v];
                 for ( var sk in successors[v] ) {
-                    n_pred[ sucessors[v][sk] ] -= 1;
+                    n_pred[ successors[v][sk] ] -= 1;
                 }
             }
         }
