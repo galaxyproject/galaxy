@@ -303,6 +303,15 @@
                 $(this).remove();
                 make_popupmenu( b, options );
             });
+            // Implements auto-saving based on whether the inputs change. We consider
+            // "changed" to be when a field is accessed and not necessarily modified
+            // because of an issue where "onchange" is not triggered when activating
+            // another node, or saving the workflow.
+            $(this).find("input,textarea,select").each( function() {
+                $(this).focus( function() {
+                    workflow.active_form_has_changes = true;
+                });
+            });
         });
     }
     

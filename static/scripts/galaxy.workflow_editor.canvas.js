@@ -439,25 +439,11 @@ $.extend( Workflow.prototype, {
             });
         });
     },
-    enable_auto_save : function() {
-        // Implements auto-saving based on whether the inputs change. We consider
-        // "changed" to be when a field is accessed and not necessarily modified
-        // because of an issue where "onchange" is not triggered when activating
-        // another node, or saving the workflow.
-        outer_this = this;
-        $(".toolFormBody").find("input,textarea,select").each( function() {
-            $(this).focus( function() {
-                outer_this.active_form_has_changes = true;
-            });
-        });
-    },
     check_changes_in_active_form : function() {
         // If active form has changed, save it
         if (this.active_form_has_changes) {
             this.has_changes = true;
-            $(".toolFormBody").find("form").each( function() {
-                $(this).submit();
-            });
+            $("#right-content").find("form").submit();
             this.active_form_has_changes = false;
         }
     },
