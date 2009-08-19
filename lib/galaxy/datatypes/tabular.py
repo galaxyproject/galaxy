@@ -236,3 +236,84 @@ class Taxonomy( Tabular ):
             out = "Can't create peek %s" % exc
         return out
 
+class Sam( Tabular ):
+    file_ext = 'sam'
+    def __init__(self, **kwd):
+        """Initialize taxonomy datatype"""
+        Tabular.__init__( self, **kwd )
+        self.column_names = ['QNAME', 'FLAG', 'RNAME', 'POS', 'MAPQ', 'CIGAR',
+                             'MRNM', 'MPOS', 'ISIZE', 'SEQ', 'QUAL', 'OPT'
+                             ]
+    def make_html_table( self, dataset, skipchars=[] ):
+        """Create HTML table, used for displaying peek"""
+        out = ['<table cellspacing="0" cellpadding="3">']
+        try:
+            # Generate column header
+            out.append( '<tr>' )
+            for i, name in enumerate( self.column_names ):
+                out.append( '<th>%s.%s</th>' % ( str( i+1 ), name ) )
+            # This data type requires at least 11 columns in the data
+            if dataset.metadata.columns - len( self.column_names ) > 0:
+                for i in range( len( self.column_names ), dataset.metadata.columns ):
+                    out.append( '<th>%s</th>' % str( i+1 ) )
+                out.append( '</tr>' )
+            out.append( self.make_html_peek_rows( dataset, skipchars=skipchars ) )
+            out.append( '</table>' )
+            out = "".join( out )
+        except Exception, exc:
+            out = "Can't create peek %s" % exc
+        return out
+    def sniff( self, filename ):
+        """
+        Determines whether the file is in SAM format
+        
+        A file in SAM format consists of lines of tab-separated data.
+        The following header line may be the first line:
+        @QNAME  FLAG    RNAME   POS     MAPQ    CIGAR   MRNM    MPOS    ISIZE   SEQ     QUAL
+        or
+        @QNAME  FLAG    RNAME   POS     MAPQ    CIGAR   MRNM    MPOS    ISIZE   SEQ     QUAL    OPT
+        Data in the OPT column is optional and can consist of tab-separated data
+
+        For complete details see http://samtools.sourceforge.net/SAM1.pdf
+        
+        Rules for sniffing as True:
+            There must be 11 or more columns of data on each line
+            Columns 2 (FLAG), 4(POS), 5 (MAPQ), 8 (MPOS), and 9 (ISIZE) must be numbers (9 can be negative)
+            We will only check that up to the first 5 alignments are correctly formatted.
+        
+        >>> fname = get_test_fname( 'sequence.maf' )
+        >>> Sam().sniff( fname )
+        False
+        >>> fname = get_test_fname( '1.sam' )
+        >>> Sam().sniff( fname )
+        True
+        """
+        try:
+            fh = open( filename )
+            count = 0
+            while True:
+                line = fh.readline()
+                line = line.strip()
+                if not line:
+                    break #EOF
+                if line: 
+                    if line[0] != '@':
+                        linePieces = line.split('\t')
+                        if len(linePieces) < 11:
+                            return False
+                        try:
+                            check = int(linePieces[1])
+                            check = int(linePieces[3])
+                            check = int(linePieces[4])
+                            check = int(linePieces[7])
+                            check = int(linePieces[8])
+                        except ValueError:
+                            return False
+                        count += 1
+                        if count == 5:
+                            return True
+            if count < 5 and count > 0:
+                return True
+        except:
+            pass
+        return False

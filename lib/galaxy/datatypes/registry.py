@@ -111,6 +111,7 @@ class Registry( object ):
             self.datatypes_by_extension = { 
                 'ab1'         : images.Ab1(),
                 'axt'         : sequence.Axt(),
+                'bam'         : images.Bam(),
                 'bed'         : interval.Bed(), 
                 'binseq.zip'  : images.Binseq(),
                 'blastxml'    : xml.BlastXml(),
@@ -130,6 +131,7 @@ class Registry( object ):
                 'qualsolid'   : qualityscore.QualityScoreSOLiD(),
                 'qualsolexa'  : qualityscore.QualityScoreSolexa(),
                 'qual454'     : qualityscore.QualityScore454(),
+                'sam'         : tabular.Sam(), 
                 'scf'         : images.Scf(),
                 'tabular'     : tabular.Tabular(),
                 'taxonomy'    : tabular.Taxonomy(),
@@ -140,6 +142,7 @@ class Registry( object ):
             self.mimetypes_by_extension = { 
                 'ab1'         : 'application/octet-stream',
                 'axt'         : 'text/plain',
+                'bam'         : 'application/octet-stream',
                 'bed'         : 'text/plain', 
                 'binseq.zip'  : 'application/zip',
                 'blastxml'    : 'text/plain', 
@@ -157,6 +160,7 @@ class Registry( object ):
                 'qualsolid'   : 'text/plain',
                 'qualsolexa'  : 'text/plain',
                 'qual454'     : 'text/plain',
+                'sam'         : 'text/plain',
                 'scf'         : 'application/octet-stream',
                 'tabular'     : 'text/plain',
                 'taxonomy'    : 'text/plain',
@@ -184,7 +188,8 @@ class Registry( object ):
                 interval.CustomTrack(),
                 interval.Gff(),
                 interval.Gff3(),
-                interval.Interval()
+                interval.Interval(),
+                tabular.Sam()
             ]
         def append_to_sniff_order():
             # Just in case any supported data types are not included in the config's sniff_order section.
