@@ -282,10 +282,6 @@
             beforeSubmit: function( data ) {
                 data.push( { name: 'tool_state', value: node.tool_state } );
                 data.push( { name: '_', value: "true" } );
-                $("#tool-form-save-button").each( function() {
-                    this.value = "Saving...";
-                    this.disabled = true;
-                });
             }
         }).each( function() {
             form = this;
@@ -312,6 +308,7 @@
     
     var close_editor = function() {
         <% next_url = h.url_for( controller='workflow', action='index' ) %>
+        workflow.check_changes_in_active_form();
         if ( workflow && workflow.has_changes ) {
             do_close = function() {
                 window.onbeforeunload = undefined;
@@ -334,39 +331,46 @@
     
     var save_current_workflow = function ( success_callback ) {
         show_modal( "Saving workflow", "progress" );
-        $.ajax( {
-            url: "${h.url_for( action='save_workflow' )}",
-            type: "POST",
-            data: {
-                id: "${trans.security.encode_id( workflow_id )}",
-                workflow_data: $.toJSON( workflow.to_simple() ),
-                "_": "true"
-            },
-            dataType: 'json',
-            success: function( data ) { 
-                var body = $("<div></div>").text( data.message );
-                if ( data.errors ) {
-                    body.addClass( "warningmark" )
-                    var errlist = $( "<ul/>" );
-                    $.each( data.errors, function( i, v ) {
-                        $("<li></li>").text( v ).appendTo( errlist );
-                    });
-                    body.append( errlist );
-                } else {
-                    body.addClass( "donemark" );
+        workflow.check_changes_in_active_form();
+        // We bind to ajaxStop because of auto-saving, since the form submission ajax
+        // call needs to be completed so that the new data is saved
+        $(document).bind('ajaxStop.save_workflow', function() {
+            $(document).unbind('ajaxStop.save_workflow');
+            $.ajax( {
+                url: "${h.url_for( action='save_workflow' )}",
+                type: "POST",
+                data: {
+                    id: "${trans.security.encode_id( workflow_id )}",
+                    workflow_data: function() { return $.toJSON( workflow.to_simple() ) },
+                    "_": "true"
+                },
+                dataType: 'json',
+                success: function( data ) { 
+                    var body = $("<div></div>").text( data.message );
+                    if ( data.errors ) {
+                        body.addClass( "warningmark" )
+                        var errlist = $( "<ul/>" );
+                        $.each( data.errors, function( i, v ) {
+                            $("<li></li>").text( v ).appendTo( errlist );
+                        });
+                        body.append( errlist );
+                    } else {
+                        body.addClass( "donemark" );
+                    }
+                    workflow.name = data.name;
+                    workflow.has_changes = false;
+                    workflow.stored = true;
+                    if ( success_callback ) {
+                        success_callback();
+                    }
+                    if ( data.errors ) {
+                        show_modal( "Saving workflow", body, { "Ok" : hide_modal } );
+                    } else {
+                        hide_modal();
+                    }
                 }
-                workflow.name = data.name;
-                workflow.has_changes = false;
-                workflow.stored = true;
-                if ( success_callback ) {
-                    success_callback();
-                }
-                if ( data.errors ) {
-                    show_modal( "Saving workflow", body, { "Ok" : hide_modal } );
-                } else {
-                    hide_modal();
-                }
-            }
+            });
+            $(document).unbind('ajaxStop.save_workflow'); // IE7 needs it here
         });
     }
     

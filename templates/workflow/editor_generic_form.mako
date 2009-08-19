@@ -33,7 +33,6 @@
   
               </div>
           %endfor
-        <div class="form-row"><input type="submit" value="${form.submit_text}"></div>
         %else:
           <div class="form-row"><i>No options</i></div>
         %endif
@@ -41,3 +40,7 @@
     </form>
     </div>
 </div>
+
+<script type="text/javascript">
+    workflow.enable_auto_save();
+</script>
