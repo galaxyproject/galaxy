@@ -1,7 +1,12 @@
 #!/usr/bin/python
 
-import sys, sets, re, tempfile
+import sys, re, tempfile
 from rpy import *
+# Older py compatibility
+try:
+    set()
+except:
+    from sets import Set as set
 
 assert sys.version_info[:2] >= ( 2, 4 )
 
@@ -33,7 +38,7 @@ def main():
     for word in re.compile( '[a-zA-Z]+' ).findall( expression ):
         if word and not word in math_allowed: 
             stop_err( "Invalid expression '%s': term '%s' is not recognized or allowed" %( expression, word ) )
-    symbols = sets.Set()
+    symbols = set()
     for symbol in re.compile( '[^a-z0-9\s]+' ).findall( expression ):
         if symbol and not symbol in ops_allowed:
             stop_err( "Invalid expression '%s': operator '%s' is not recognized or allowed" % ( expression, symbol ) )

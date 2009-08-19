@@ -139,14 +139,14 @@
     
     ${tab( "workflow", "Workflow", h.url_for( controller='workflow', action='index' ))}
     
-    ${tab( "libraries", "Libraries", h.url_for( controller='library', action='index' ))}
+    ${tab( "libraries", "Data Libraries", h.url_for( controller='library', action='index' ))}
     
     %if trans.request_types():
         <td class="tab">
             <a>Lab</a>
             <div class="submenu">
             <ul>            
-                <li><a target="requests" href="${h.url_for( controller='requests', action='index' )}">Sequencing Requests</a></li>
+                <li><a href="${h.url_for( controller='requests', action='index' )}">Sequencing Requests</a></li>
             </ul>
             </div>
         </td>

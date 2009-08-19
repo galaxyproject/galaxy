@@ -117,7 +117,6 @@ class ToolRunner( BaseController ):
         tool_state_string = util.object_to_string(state.encode(tool, trans.app))
         # Setup context for template
         history = trans.get_history()
-        template = "tool_form.mako"
         vars = dict( tool_state=state, errors = {} )
         # Is the "add frame" stuff neccesary here?
         add_frame = AddFrameData()
@@ -125,17 +124,13 @@ class ToolRunner( BaseController ):
         if from_noframe is not None:
             add_frame.wiki_url = trans.app.config.wiki_url
             add_frame.from_noframe = True
-        return trans.fill_template( template, history=history, toolbox=toolbox, tool=tool, util=util, add_frame=add_frame, **vars )
-        
-
+        return trans.fill_template( "tool_form.mako", history=history, toolbox=toolbox, tool=tool, util=util, add_frame=add_frame, **vars )
     @web.expose
     def redirect( self, trans, redirect_url=None, **kwd ):
         if not redirect_url:
             return trans.show_error_message( "Required URL for redirection missing" )
         trans.log_event( "Redirecting to: %s" % redirect_url )
         return trans.fill_template( 'root/redirect.mako', redirect_url=redirect_url )
-
-    
     @web.json
     def upload_async_create( self, trans, tool_id=None, **kwd ):
         """

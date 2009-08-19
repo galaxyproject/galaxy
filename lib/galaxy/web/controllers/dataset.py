@@ -1,4 +1,4 @@
-import logging, os, sets, string, shutil, re, socket, mimetypes, smtplib, urllib
+import logging, os, string, shutil, re, socket, mimetypes, smtplib, urllib
 
 from galaxy.web.base.controller import *
 from galaxy import util, datatypes, jobs, web, model

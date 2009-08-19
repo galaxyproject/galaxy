@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import urllib
-import sys, os, sets
+import sys, os
 
 assert sys.version_info[:2] >= ( 2, 4 )
 

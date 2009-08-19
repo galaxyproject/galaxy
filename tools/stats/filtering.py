@@ -2,8 +2,13 @@
 # This tool takes a tab-delimited text file as input and creates filters on columns based on certain properties.
 # The tool will skip over invalid lines within the file, informing the user about the number of lines skipped.
 
-import sys, sets, re, os.path
+import sys, re, os.path
 from galaxy import eggs
+# Older py compatibility
+try:
+    set()
+except:
+    from sets import Set as set
 
 assert sys.version_info[:2] >= ( 2, 4 )
 
@@ -13,7 +18,7 @@ def get_operands( filter_condition ):
     for item in items_to_strip:
         if filter_condition.find( item ) >= 0:
             filter_condition = filter_condition.replace( item, ' ' )
-    operands = sets.Set( filter_condition.split( ' ' ) )
+    operands = set( filter_condition.split( ' ' ) )
     return operands
 
 def stop_err( msg ):

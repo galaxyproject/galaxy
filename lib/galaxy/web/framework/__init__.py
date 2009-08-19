@@ -93,8 +93,8 @@ class MessageException( Exception ):
     """
     Exception to make throwing errors from deep in controllers easier
     """
-    def __init__( self, message, type="info" ):
-        self.message = message
+    def __init__( self, err_msg, type="info" ):
+        self.err_msg = err_msg
         self.type = type
         
 def error( message ):
@@ -117,7 +117,7 @@ class WebApplication( base.WebApplication ):
         self.security = galaxy_app.security
     def handle_controller_exception( self, e, trans, **kwargs ):
         if isinstance( e, MessageException ):
-            return trans.show_message( e.message, e.type )
+            return trans.show_message( e.err_msg, e.type )
     def make_body_iterable( self, trans, body ):
         if isinstance( body, FormBuilder ):
             body = trans.show_form( body )

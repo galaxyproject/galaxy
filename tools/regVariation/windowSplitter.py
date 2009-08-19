@@ -7,7 +7,7 @@ usage: %prog input size out_file
    -l, --cols=N,N,N,N: Columns for chrom, start, end, strand in file
 """
 
-import sys, sets, re, os
+import sys, re, os
 
 from galaxy import eggs
 import pkg_resources; pkg_resources.require( "bx-python" )

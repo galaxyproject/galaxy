@@ -2,7 +2,7 @@
 <%namespace file="/message.mako" import="render_msg" />
 <% from galaxy import util %>
 
-<%def name="title()">Browse Library</%def>
+<%def name="title()">Browse data library</%def>
 <%def name="stylesheets()">
     <link href="${h.url_for('/static/style/base.css')}" rel="stylesheet" type="text/css" />
     <link href="${h.url_for('/static/style/library.css')}" rel="stylesheet" type="text/css" />
@@ -38,14 +38,21 @@ class RowCounter( object ):
                     descendents = descendents.add( child_descendents );
                 });
                 // Set up expand / hide link
+                // HACK: assume descendents are invisible. The caller actually
+                //       ensures this for the root node. However, if we start
+                //       remembering folder states, we'll need something
+                //       more sophisticated here.
+                var visible = false;
                 $(q).find( "span.expandLink").click( function() {
-                    if ( children.is( ":visible" ) ) {
+                    if ( visible ) {
                         descendents.hide();
                         descendents.removeClass( "expanded" );
                         q.removeClass( "expanded" );
+                        visible = false;
                     } else {
                         children.show();
                         q.addClass( "expanded" );
+                        visible = true;
                     }
                 });
                 // Check/uncheck boxes in subfolders.
@@ -211,7 +218,7 @@ class RowCounter( object ):
     %endfor
 </%def>
 
-<h2>Library &ldquo;${library.name}&rdquo;</h2>
+<h2>Data Library &ldquo;${library.name}&rdquo;</h2>
 
 <ul class="manage-table-actions">
     %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=library ):

@@ -161,7 +161,7 @@ class HistoryController( BaseController ):
                     status, message = self._list_undelete( trans, histories )
                 trans.sa_session.flush()
         # Render the list view
-        return self.stored_list_grid( trans, status=status, message=message, template='/history/stored_grid.mako', **kwargs )
+        return self.stored_list_grid( trans, status=status, message=message, template='/history/grid.mako', **kwargs )
     def _list_delete( self, trans, histories ):
         """Delete histories"""
         n_deleted = 0
@@ -239,14 +239,14 @@ class HistoryController( BaseController ):
             if operation == "clone":
                 if not id:
                     message = "Select a history to clone"
-                    return self.shared_list_grid( trans, status='error', message=message, template='/history/shared_grid.mako', **kwargs )
+                    return self.shared_list_grid( trans, status='error', message=message, template='/history/grid.mako', **kwargs )
                 # When cloning shared histories, only copy active datasets
                 new_kwargs = { 'clone_choice' : 'active' }
                 return self.clone( trans, id, **new_kwargs )
             elif operation == 'unshare':
                 if not id:
                     message = "Select a history to unshare"
-                    return self.shared_list_grid( trans, status='error', message=message, template='/history/shared_grid.mako', **kwargs )
+                    return self.shared_list_grid( trans, status='error', message=message, template='/history/grid.mako', **kwargs )
                 ids = util.listify( id )
                 histories = []
                 for history_id in ids:
@@ -260,7 +260,7 @@ class HistoryController( BaseController ):
                 message = "Unshared %d shared histories" % len( ids )
                 status = 'done'
         # Render the list view
-        return self.shared_list_grid( trans, status=status, message=message, template='/history/shared_grid.mako', **kwargs )
+        return self.shared_list_grid( trans, status=status, message=message, template='/history/grid.mako', **kwargs )
     @web.expose
     def delete_current( self, trans ):
         """Delete just the active history -- this does not require a logged in user."""

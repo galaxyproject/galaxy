@@ -1,9 +1,14 @@
-import shutil, StringIO, operator, urllib, gzip, tempfile, sets, string, sys
+import shutil, StringIO, operator, urllib, gzip, tempfile, string, sys
 from datetime import datetime, timedelta
 from galaxy import util, datatypes
 from galaxy.web.base.controller import *
 from galaxy.model.orm import *
 from galaxy.web.controllers.forms import get_all_forms, get_form_widgets
+# Older py compatibility
+try:
+    set()
+except:
+    from sets import Set as set
 
 import logging
 log = logging.getLogger( __name__ )
@@ -1236,16 +1241,16 @@ class Admin( BaseController ):
                         if v == trans.app.security_agent.permitted_actions.DATASET_ACCESS:
                             if len( in_roles ) > 1:
                                 # Get the set of all users that are being associated with the dataset
-                                in_roles_set = sets.Set()
+                                in_roles_set = set()
                                 for role in in_roles:
                                     in_roles_set.add( role )
-                                users_set = sets.Set()
+                                users_set = set()
                                 for role in in_roles:
                                     for ura in role.users:
                                         users_set.add( ura.user )
                                 # Make sure that at least 1 user has every role being associated with the dataset
                                 for user in users_set:
-                                    user_roles_set = sets.Set()
+                                    user_roles_set = set()
                                     for ura in user.roles:
                                         user_roles_set.add( ura.role )
                                     if in_roles_set.issubset( user_roles_set ):
@@ -1421,16 +1426,16 @@ class Admin( BaseController ):
                         if v == trans.app.security_agent.permitted_actions.DATASET_ACCESS:
                             if len( in_roles ) > 1:
                                 # Get the set of all users that are being associated with the dataset
-                                in_roles_set = sets.Set()
+                                in_roles_set = set()
                                 for role in in_roles:
                                     in_roles_set.add( role )
-                                users_set = sets.Set()
+                                users_set = set()
                                 for role in in_roles:
                                     for ura in role.users:
                                         users_set.add( ura.user )
                                 # Make sure that at least 1 user has every role being associated with the dataset
                                 for user in users_set:
-                                    user_roles_set = sets.Set()
+                                    user_roles_set = set()
                                     for ura in user.roles:
                                         user_roles_set.add( ura.role )
                                     if in_roles_set.issubset( user_roles_set ):
