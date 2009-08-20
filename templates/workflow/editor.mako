@@ -30,7 +30,6 @@
     <script type='text/javascript' src="${h.url_for('/static/scripts/jquery.event.drop.js')}"> </script>
     <script type='text/javascript' src="${h.url_for('/static/scripts/jquery.event.hover.js')}"> </script>
     <script type='text/javascript' src="${h.url_for('/static/scripts/jquery.form.js')}"> </script>
-    <script type='text/javascript' src="${h.url_for('/static/scripts/jquery.json.js')}"> </script>
     <script type='text/javascript' src="${h.url_for('/static/scripts/jquery.jstore-all.js')}"> </script>
 
     <script type='text/javascript' src="${h.url_for('/static/scripts/galaxy.base.js')}"> </script>
@@ -350,7 +349,7 @@
                 type: "POST",
                 data: {
                     id: "${trans.security.encode_id( workflow_id )}",
-                    workflow_data: function() { return $.toJSON( workflow.to_simple() ) },
+                    workflow_data: function() { return JSON.stringify( workflow.to_simple() ) },
                     "_": "true"
                 },
                 dataType: 'json',
