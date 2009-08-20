@@ -1,10 +1,13 @@
 <?xml version="1.0"?>
 
-<tool name="Upload File" id="upload1" version="1.0.2">
+<tool name="Upload File" id="upload1" version="1.0.3">
   <description>
     from your computer  
   </description>
   <action module="galaxy.tools.actions.upload" class="UploadToolAction"/>
+  <command interpreter="python">
+    upload.py $paramfile
+  </command>
   <inputs>
     <param name="file_type" type="select" label="File Format" help="Which format? See help below">
       <options from_parameter="tool.app.datatypes_registry.upload_file_formats" transform_lines="[ &quot;%s%s%s&quot; % ( line, self.separator, line ) for line in obj ]">

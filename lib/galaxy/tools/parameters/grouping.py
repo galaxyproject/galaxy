@@ -12,6 +12,7 @@ import StringIO, os, urllib
 from galaxy.datatypes import sniff
 from galaxy.util.bunch import Bunch
 from galaxy.util.odict import odict
+from galaxy.util import json
 
 class Group( object ):
     def __init__( self ):
@@ -167,33 +168,30 @@ class UploadDataset( Group ):
             rval.append( rval_dict )
         return rval
     def get_uploaded_datasets( self, trans, context, override_name = None, override_info = None ):
-        def get_data_file_filename( data_file, is_multi_byte = False, override_name = None, override_info = None ):
+        def get_data_file_filename( data_file, override_name = None, override_info = None ):
             dataset_name = override_name
             dataset_info = override_info
             def get_file_name( file_name ):
                 file_name = file_name.split( '\\' )[-1]
                 file_name = file_name.split( '/' )[-1]
                 return file_name
-            if 'local_filename' in dir( data_file ):
+            try:
                 # Use the existing file
-                return data_file.local_filename, get_file_name( data_file.filename ), is_multi_byte
-            elif 'filename' in dir( data_file ):
-                #create a new tempfile
-                try:
-                    temp_name, is_multi_byte = sniff.stream_to_file( data_file.file, prefix='upload' )
-                    precreated_name = get_file_name( data_file.filename )
-                    if not dataset_name:
-                        dataset_name = precreated_name
-                    if not dataset_info:
-                        dataset_info = 'uploaded file'
-                    return temp_name, get_file_name( data_file.filename ), is_multi_byte, dataset_name, dataset_info
-                except Exception, e:
-                    log.exception( 'exception in sniff.stream_to_file using file %s: %s' % ( data_file.filename, str( e ) ) )
-                    self.remove_temp_file( temp_name )
-            return None, None, is_multi_byte, None, None
-        def filenames_from_url_paste( url_paste, group_incoming, override_name = None, override_info = None ):
+                if not dataset_name and 'filename' in data_file:
+                    dataset_name = get_file_name( data_file['filename'] )
+                if not dataset_info:
+                    dataset_info = 'uploaded file'
+                return Bunch( type='file', path=data_file['local_filename'], name=get_file_name( data_file['filename'] ) )
+                #return 'file', data_file['local_filename'], get_file_name( data_file.filename ), dataset_name, dataset_info
+            except:
+                # The uploaded file should've been persisted by the upload tool action
+                return Bunch( type=None, path=None, name=None )
+                #return None, None, None, None, None
+        def get_url_paste_urls_or_filename( group_incoming, override_name = None, override_info = None ):
             filenames = []
-            if url_paste not in [ None, "" ]:
+            url_paste_file = group_incoming.get( 'url_paste', None )
+            if url_paste_file is not None:
+                url_paste = open( url_paste_file, 'r' ).read( 1024 )
                 if url_paste.lstrip().lower().startswith( 'http://' ) or url_paste.lstrip().lower().startswith( 'ftp://' ):
                     url_paste = url_paste.replace( '\r', '' ).split( '\n' )
                     for line in url_paste:
@@ -208,114 +206,54 @@ class UploadDataset( Group ):
                             dataset_info = override_info
                             if not dataset_info:
                                 dataset_info = 'uploaded url'
-                            try:
-                                temp_name, is_multi_byte = sniff.stream_to_file( urllib.urlopen( line ), prefix='url_paste' )
-                            except Exception, e:
-                                temp_name = None
-                                precreated_name = str( e )
-                                log.exception( 'exception in sniff.stream_to_file using url_paste %s: %s' % ( url_paste, str( e ) ) )
-                                try:
-                                    self.remove_temp_file( temp_name )
-                                except:
-                                    pass
-                            yield ( temp_name, precreated_name, is_multi_byte, dataset_name, dataset_info )
-                            #yield ( None, str( e ), False, dataset_name, dataset_info )
+                            yield Bunch( type='url', path=line, name=precreated_name )
+                            #yield ( 'url', line, precreated_name, dataset_name, dataset_info )
                 else:
                     dataset_name = dataset_info = precreated_name = 'Pasted Entry' #we need to differentiate between various url pastes here
                     if override_name:
                         dataset_name = override_name
                     if override_info:
                         dataset_info = override_info
-                    is_valid = False
-                    for line in url_paste: #Trim off empty lines from begining
-                        line = line.rstrip( '\r\n' )
-                        if line:
-                            is_valid = True
-                            break
-                    if is_valid:
-                        try:
-                            temp_name, is_multi_byte = sniff.stream_to_file( StringIO.StringIO( url_paste ), prefix='strio_url_paste' )
-                        except Exception, e:
-                            log.exception( 'exception in sniff.stream_to_file using StringIO.StringIO( url_paste ) %s: %s' % ( url_paste, str( e ) ) )
-                            temp_name = None
-                            precreated_name = str( e )
-                            try:
-                                self.remove_temp_file( temp_name )
-                            except:
-                                pass
-                        yield ( temp_name, precreated_name, is_multi_byte, dataset_name, dataset_info )
-                        #yield ( None, str( e ), False, dataset_name, dataset_info )
-        
+                    yield Bunch( type='file', path=url_paste_file, name=precreated_name )
+                    #yield ( 'file', url_paste_file, precreated_name, dataset_name, dataset_info )
         def get_one_filename( context ):
             data_file = context['file_data']
             url_paste = context['url_paste']
             name = context.get( 'NAME', None )
             info = context.get( 'INFO', None )
             warnings = []
-            is_multi_byte = False
             space_to_tab = False 
             if context.get( 'space_to_tab', None ) not in ["None", None]:
                 space_to_tab = True
-            temp_name, precreated_name, is_multi_byte, dataset_name, dataset_info = get_data_file_filename( data_file, is_multi_byte = is_multi_byte, override_name = name, override_info = info )
-            if temp_name:
+            file_bunch = get_data_file_filename( data_file, override_name = name, override_info = info )
+            if file_bunch.path:
                 if url_paste.strip():
                     warnings.append( "All file contents specified in the paste box were ignored." )
             else: #we need to use url_paste
-                #file_names = filenames_from_url_paste( url_paste, context, override_name = name, override_info = info )
-                for temp_name, precreated_name, is_multi_byte, dataset_name, dataset_info in filenames_from_url_paste( url_paste, context, override_name = name, override_info = info ):#file_names:
-                    if temp_name:
+                for file_bunch in get_url_paste_urls_or_filename( context, override_name = name, override_info = info ):
+                    if file_bunch.path:
                         break
-                ###this check will cause an additional file to be retrieved and created...so lets not do that
-                #try: #check to see if additional paste contents were available
-                #    file_names.next()
-                #    warnings.append( "Additional file contents were specified in the paste box, but ignored." )
-                #except StopIteration:
-                #    pass
-            return temp_name, precreated_name, is_multi_byte, space_to_tab, dataset_name, dataset_info, warnings
-        
+            return file_bunch, warnings
         def get_filenames( context ):
             rval = []
             data_file = context['file_data']
             url_paste = context['url_paste']
             name = context.get( 'NAME', None )
             info = context.get( 'INFO', None )
-            warnings = []
-            is_multi_byte = False
             space_to_tab = False 
             if context.get( 'space_to_tab', None ) not in ["None", None]:
                 space_to_tab = True
-            temp_name, precreated_name, is_multi_byte, dataset_name, dataset_info = get_data_file_filename( data_file, is_multi_byte = is_multi_byte, override_name = name, override_info = info )
-            if temp_name:
-                rval.append( ( temp_name, precreated_name, is_multi_byte, space_to_tab, dataset_name, dataset_info ) )
-            for temp_name, precreated_name, is_multi_byte, dataset_name, dataset_info in filenames_from_url_paste( url_paste, context, override_name = name, override_info = info ):
-                if temp_name:
-                    rval.append( ( temp_name, precreated_name, is_multi_byte, space_to_tab, dataset_name, dataset_info ) )
+            warnings = []
+            file_bunch = get_data_file_filename( data_file, override_name = name, override_info = info )
+            if file_bunch.path:
+                file_bunch.space_to_tab = space_to_tab
+                rval.append( file_bunch )
+                #rval.append( ( type, temp_name, precreated_name, space_to_tab, dataset_name, dataset_info ) )
+            for file_bunch in get_url_paste_urls_or_filename( context, override_name = name, override_info = info ):
+                if file_bunch.path:
+                    file_bunch.space_to_tab = space_to_tab
+                    rval.append( file_bunch )
             return rval
-        class UploadedDataset( Bunch ):
-            def __init__( self, **kwd ):
-                Bunch.__init__( self, **kwd )
-                self.primary_file = None
-                self.composite_files = odict()
-                self.dbkey = None
-                self.warnings = []
-                self.metadata = {}
-                
-                self._temp_filenames = [] #store all created filenames here, delete on cleanup
-            def register_temp_file( self, filename ):
-                if isinstance( filename, list ):
-                    self._temp_filenames.extend( filename )
-                else:
-                    self._temp_filenames.append( filename )
-            def remove_temp_file( self, filename ):
-                try:
-                    os.unlink( filename )
-                except Exception, e:
-                    pass
-                    #log.warning( str( e ) )
-            def clean_up_temp_files( self ):
-                for filename in self._temp_filenames:
-                    self.remove_temp_file( filename )
-        
         file_type = self.get_file_type( context )
         d_type = self.get_datatype( trans, context )
         dbkey = context.get( 'dbkey', None )
@@ -325,15 +263,22 @@ class UploadDataset( Group ):
         for group_incoming in context.get( self.name, [] ):
             i = int( group_incoming['__index__'] )
             groups_incoming[ i ] = group_incoming
-        
         if d_type.composite_type is not None:
             #handle uploading of composite datatypes
             #Only one Dataset can be created
             
+            '''
             dataset = UploadedDataset()
-            dataset.file_type = file_type
             dataset.datatype = d_type
+            '''
+            dataset = Bunch()
+            dataset.type = 'composite'
+            dataset.file_type = file_type
             dataset.dbkey = dbkey
+            dataset.datatype = d_type
+            dataset.warnings = []
+            dataset.metadata = {}
+            dataset.composite_files = {}
             
             #load metadata
             files_metadata = context.get( self.metadata_ref, {} )
@@ -342,34 +287,26 @@ class UploadDataset( Group ):
                     if meta_name in files_metadata:
                         dataset.metadata[ meta_name ] = files_metadata[ meta_name ]
             
-            temp_name = None
-            precreated_name = None
-            is_multi_byte = False
-            space_to_tab = False
-            warnings = []
-            
             dataset_name = None
             dataset_info = None
             if dataset.datatype.composite_type == 'auto_primary_file':
                 #replace sniff here with just creating an empty file
                 temp_name, is_multi_byte = sniff.stream_to_file( StringIO.StringIO( d_type.generate_primary_file() ), prefix='upload_auto_primary_file' )
-                precreated_name = dataset_name = 'Uploaded Composite Dataset (%s)' % ( file_type )
+                dataset.primary_file = temp_name
+                dataset.space_to_tab = False
+                dataset.precreated_name = dataset.name = 'Uploaded Composite Dataset (%s)' % ( file_type )
             else:
-                temp_name, precreated_name, is_multi_byte, space_to_tab, dataset_name, dataset_info, warnings = get_one_filename( groups_incoming[ 0 ] )
+                file_bunch, warnings = get_one_filename( groups_incoming[ 0 ] )
                 if dataset.datatype.composite_type:
                     precreated_name = 'Uploaded Composite Dataset (%s)' % ( file_type )
                 writable_files_offset = 1
-            if temp_name is None:#remove this before finish, this should create an empty dataset
+                dataset.primary_file = file_bunch.path
+                dataset.space_to_tab = file_bunch.space_to_tab
+                dataset.precreated_name = file_bunch.precreated_name
+                dataset.name = file_bunch.precreated_name
+                dataset.warnings.extend( file_bunch.warnings )
+            if dataset.primary_file is None:#remove this before finish, this should create an empty dataset
                 raise Exception( 'No primary dataset file was available for composite upload' )
-            dataset.primary_file = temp_name
-            dataset.is_multi_byte = is_multi_byte
-            dataset.space_to_tab = space_to_tab
-            dataset.precreated_name = precreated_name
-            dataset.name = dataset_name
-            dataset.info = dataset_info
-            dataset.warnings.extend( warnings )
-            dataset.register_temp_file( temp_name )
-            
             keys = [ value.name for value in writable_files.values() ]
             for i, group_incoming in enumerate( groups_incoming[ writable_files_offset : ] ):
                 key = keys[ i + writable_files_offset ]
@@ -377,37 +314,22 @@ class UploadDataset( Group ):
                     dataset.warnings.append( "A required composite file (%s) was not specified." % ( key ) )
                     dataset.composite_files[ key ] = None
                 else:
-                    temp_name, precreated_name, is_multi_byte, space_to_tab, dataset_name, dataset_info, warnings = get_one_filename( group_incoming )
-                    if temp_name:
-                        dataset.composite_files[ key ] = Bunch( filename = temp_name, precreated_name = precreated_name, is_multi_byte = is_multi_byte, space_to_tab = space_to_tab, warnings = warnings, info = dataset_info, name = dataset_name )
-                        dataset.register_temp_file( temp_name )
+                    file_bunch, warnings = get_one_filename( group_incoming )
+                    if file_bunch.path:
+                        dataset.composite_files[ key ] = file_bunch.__dict__
                     else:
                         dataset.composite_files[ key ] = None
                         if not writable_files[ writable_files.keys()[ keys.index( key ) ] ].optional:
                             dataset.warnings.append( "A required composite file (%s) was not specified." % ( key ) )
             return [ dataset ]
         else:
+            datasets = get_filenames( context[ self.name ][0] )
             rval = []
-            for temp_name, precreated_name, is_multi_byte, space_to_tab, dataset_name, dataset_info, in get_filenames( context[ self.name ][0] ):
-                dataset = UploadedDataset()
+            for dataset in datasets:
                 dataset.file_type = file_type
-                dataset.datatype = d_type
                 dataset.dbkey = dbkey
-                dataset.primary_file = temp_name
-                dataset.is_multi_byte = is_multi_byte
-                dataset.space_to_tab = space_to_tab
-                dataset.name = dataset_name
-                dataset.info = dataset_info
-                dataset.precreated_name = precreated_name
-                dataset.register_temp_file( temp_name )
                 rval.append( dataset )
-        return rval
-    def remove_temp_file( self, filename ):
-        try:
-            os.unlink( filename )
-        except Exception, e:
-            log.warning( str( e ) )
-
+            return rval
 
 class Conditional( Group ):
     type = "conditional"

@@ -93,6 +93,8 @@ class TwillTestCase( unittest.TestCase ):
                 valid_hid = int( hid )
             except:
                 raise AssertionError, "Invalid hid (%s) created when uploading file %s" % ( hid, filename )
+        # Wait for upload processing to finish (TODO: this should be done in each test case instead)
+        self.wait()
     def upload_url_paste( self, url_paste, ftype='auto', dbkey='unspecified (?)' ):
         """Pasted data in the upload utility"""
         self.visit_page( "tool_runner/index?tool_id=upload1" )
@@ -112,6 +114,8 @@ class TwillTestCase( unittest.TestCase ):
                 valid_hid = int( hid )
             except:
                 raise AssertionError, "Invalid hid (%s) created when pasting %s" % ( hid, url_paste )
+        # Wait for upload processing to finish (TODO: this should be done in each test case instead)
+        self.wait()
 
     # Functions associated with histories
     def check_history_for_errors( self ):
