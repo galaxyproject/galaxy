@@ -95,7 +95,7 @@
     <li>
         <a class="action-button" href="${h.url_for( controller='requests', action='new', select_request_type=True )}">
         <img src="${h.url_for('/static/images/silk/add.png')}" />
-        <span>New request</span></a>
+        <span>Create a new request</span></a>
     </li>
 </ul>
 

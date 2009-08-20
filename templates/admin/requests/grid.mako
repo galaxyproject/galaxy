@@ -82,23 +82,22 @@
             %if i > 0:    
                 <span>|</span>
             %endif
-            %if 'state' in grid.default_filter:
-                %if grid.default_filter['state'] == filter.label:
-                    <span class="filter"><a href="${h.url_for( controller='requests_admin', action='list', show_filter=filter.label )}"><b>${filter.label}</b></a></span>
-                %else:
-                    <span class="filter"><a href="${h.url_for( controller='requests_admin', action='list', show_filter=filter.label )}">${filter.label}</a></span>
-                %endif
+            %if grid.show_filter == filter.label:
+                <span class="filter"><a href="${h.url_for( controller='requests_admin', action='list', show_filter=filter.label )}"><b>${filter.label}</b></a></span>
             %else:
-                %if filter.label == 'All':
-                    <span class="filter"><a href="${h.url_for( controller='requests_admin', action='list', show_filter=filter.label )}"><b>${filter.label}</b></a></span>
-                %else:
-                    <span class="filter"><a href="${h.url_for( controller='requests_admin', action='list', show_filter=filter.label )}">${filter.label}</a></span>
-                %endif
+                <span class="filter"><a href="${h.url_for( controller='requests_admin', action='list', show_filter=filter.label )}">${filter.label}</a></span>
             %endif
         %endfor
     %endif
 </div>
 
+<ul class="manage-table-actions">
+    <li>
+        <a class="action-button" href="${h.url_for( controller='requests_admin', action='new', select_request_type=True )}">
+        <img src="${h.url_for('/static/images/silk/add.png')}" />
+        <span>Create a new request</span></a>
+    </li>
+</ul>
 
 %if not len(query.all()):
     There are no request(s).

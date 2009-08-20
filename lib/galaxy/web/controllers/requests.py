@@ -9,6 +9,7 @@ from galaxy.web.form_builder import *
 from datetime import datetime, timedelta
 from cgi import escape, FieldStorage
 from galaxy.web.controllers.forms import get_form_widgets
+from galaxy.web.controllers.library import get_authorized_libs 
 
 
 log = logging.getLogger( __name__ )
@@ -66,15 +67,7 @@ class Requests( BaseController ):
     @web.require_login( "create/submit sequencing requests" )
     def index( self, trans ):
         return trans.fill_template( "requests/index.mako" )
-    
-    def get_authorized_libs(self, trans):
-        all_libraries = trans.app.model.Library.filter(trans.app.model.Library.table.c.deleted == False).order_by(trans.app.model.Library.name).all()
-        authorized_libraries = []
-        for library in all_libraries:
-            if trans.app.security_agent.allow_action(trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=library) \
-                or trans.app.security_agent.allow_action(trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=library):
-                authorized_libraries.append(library)
-        return authorized_libraries
+
     @web.expose
     @web.require_login( "create/submit sequencing requests" )
     def list( self, trans, **kwargs ):
@@ -140,7 +133,6 @@ class Requests( BaseController ):
         Shows the request details
         '''
         request = trans.app.model.Request.get(id)
-        libraries = self.get_authorized_libs(trans)
         # list of widgets to be rendered on the request form
         request_details = []
         # main details
@@ -424,8 +416,8 @@ class Requests( BaseController ):
                 if params.get('create_request_button', False) == 'Save':
                     return trans.response.send_redirect( web.url_for( controller='requests',
                                                                       action='list',
-                                                                      msg=msg ,
-                                                                      messagetype='done') )
+                                                                      message=msg ,
+                                                                      status='done') )
                 elif params.get('create_request_samples_button', False) == 'Add samples':
                     new_kwd = {}
                     new_kwd['id'] = trans.security.encode_id(request.id)
@@ -468,7 +460,7 @@ class Requests( BaseController ):
                             helptext='(Optional)'))
        
         # libraries selectbox
-        libraries = self.get_authorized_libs(trans)
+        libraries = get_authorized_libs(trans, trans.user)
         libui = self.__library_ui(libraries, **kwd)
         widgets = widgets + libui
         widgets = widgets + get_form_widgets(trans, request_type.request_form, contents=[], **kwd)
@@ -517,8 +509,8 @@ class Requests( BaseController ):
         Validates the request entered by the user 
         '''
         empty_fields = []
-        if not request.library:
-            empty_fields.append('Library')
+#        if not request.library:
+#            empty_fields.append('Library')
         # check rest of the fields of the form
         for index, field in enumerate(request.type.request_form.fields):
             if field['required'] == 'required' and request.values.content[index] in ['', None]:
@@ -664,7 +656,7 @@ class Requests( BaseController ):
                             helptext='(Optional)'))
        
         # libraries selectbox
-        libraries = self.get_authorized_libs(trans)
+        libraries = get_authorized_libs(trans, trans.user)
         libui = self.__library_ui(libraries, request, **kwd)
         widgets = widgets + libui
         widgets = widgets + get_form_widgets(trans, request.type.request_form, request.values.content, **kwd)
@@ -700,6 +692,8 @@ class Requests( BaseController ):
         kwd['id'] = trans.security.encode_id(request.id)
         return trans.response.send_redirect( web.url_for( controller='requests',
                                                           action='list',
+                                                          status='done',
+                                                          message='The request <b>%s</b> has been deleted.' % request.name,                                                          
                                                           **kwd) )
     def __undelete_request(self, trans, id):
         try:
@@ -719,6 +713,8 @@ class Requests( BaseController ):
         kwd['id'] = trans.security.encode_id(request.id)
         return trans.response.send_redirect( web.url_for( controller='requests',
                                                           action='list',
+                                                          status='done',
+                                                          message='The request <b>%s</b> has been undeleted.' % request.name,                                                          
                                                           **kwd) )
     def __submit(self, trans, id):
         try:
