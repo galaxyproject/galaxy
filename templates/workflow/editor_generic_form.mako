@@ -40,7 +40,3 @@
     </form>
     </div>
 </div>
-
-<script type="text/javascript">
-    workflow.enable_auto_save();
-</script>
