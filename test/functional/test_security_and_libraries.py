@@ -196,7 +196,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         dhps.sort()
         # Compare DefaultHistoryPermissions and actions_in - should be the same
         if dhps != actions_in:
-                raise AssertionError( 'DefaultHistoryPermissions "%s" for history id %d differ from actions "%s" passed for changing' \
+            raise AssertionError( 'DefaultHistoryPermissions "%s" for history id %d differ from actions "%s" passed for changing' \
                                       % ( str( dhps ), latest_history.id, str( actions_in ) ) )
         # Make sure DatasetPermissionss are correct
         if len( latest_dataset.actions ) != len( latest_history.default_permissions ):
@@ -209,7 +209,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         dps.sort()
         # Compare DatasetPermissionss and DefaultHistoryPermissions - should be the same
         if dps != dhps:
-                raise AssertionError( 'DatasetPermissionss "%s" for dataset id %d differ from DefaultHistoryPermissions "%s"' \
+            raise AssertionError( 'DatasetPermissionss "%s" for dataset id %d differ from DefaultHistoryPermissions "%s"' \
                                       % ( str( dps ), latest_dataset.id, str( dhps ) ) )
         self.logout()
     def test_020_create_new_user_account_as_admin( self ):
