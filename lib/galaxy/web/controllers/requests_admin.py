@@ -177,10 +177,9 @@ class Requests( BaseController ):
                             widget=TextField('desc', 40, desc), 
                             helptext='(Optional)'))
         # libraries selectbox
-        libraries = get_authorized_libs(trans, trans.user)
-        libui = self.__library_ui(libraries, request, **kwd)
+        libui = self.__library_ui(trans, trans.user, request, **kwd)
         widgets = widgets + libui
-        widgets = widgets + get_form_widgets(trans, request.type.request_form, request.values.content, **kwd)
+        widgets = widgets + get_form_widgets(trans, request.type.request_form, request.values.content, request.user, **kwd)
         return trans.fill_template( '/admin/requests/edit_request.mako',
                                     select_request_type=select_request_type,
                                     request_type=request.type,
@@ -673,13 +672,9 @@ class Requests( BaseController ):
                                              util.restore_text( params.get( 'desc', ''  ) )), 
                             helptext='(Optional)'))
         # libraries selectbox
-        if not user:
-            libraries = []
-        else:
-            libraries = get_authorized_libs(trans, user)
-        libui = self.__library_ui(libraries, **kwd)
+        libui = self.__library_ui(trans, user, **kwd)
         widgets = widgets + libui
-        widgets = widgets + get_form_widgets(trans, request_type.request_form, contents=[], **kwd)
+        widgets = widgets + get_form_widgets(trans, request_type.request_form, contents=[], user=user, **kwd)
         return trans.fill_template( '/admin/requests/new_request.mako',
                                     select_request_type=select_request_type,
                                     request_type=request_type,                                    
@@ -706,9 +701,13 @@ class Requests( BaseController ):
                     select_user.add_option(user.email, user.id)
         return select_user
         
-    def __library_ui(self, libraries, request=None, **kwd):
+    def __library_ui(self, trans, user, request=None, **kwd):
         params = util.Params( kwd )
         lib_id = params.get( 'library_id', 'none'  )
+        if not user:
+            libraries = trans.app.model.Library.filter(trans.app.model.Library.table.c.deleted == False).order_by(trans.app.model.Library.name).all()
+        else:
+            libraries = get_authorized_libs(trans, user)
         lib_list = SelectField('library_id', refresh_on_change=True, 
                                refresh_on_change_values=['new'])
         if request and lib_id == 'none':
@@ -724,13 +723,12 @@ class Requests( BaseController ):
             else:
                 lib_list.add_option(lib.name, lib.id)
         if lib_id == 'new':
-            lib_list.add_option('Create a new library', 'new', selected=True)
+            lib_list.add_option('Create a new data library', 'new', selected=True)
         else:
-            lib_list.add_option('Create a new library', 'new')
-        widget = dict(label='Library', 
+            lib_list.add_option('Create a new data library', 'new')
+        widget = dict(label='Data library', 
                       widget=lib_list, 
-                      helptext='Associated library where the resultant \
-                                dataset will be stored.')
+                      helptext='Data library where the resultant dataset will be stored.')
         if lib_id == 'new':
             new_lib = dict(label='Create a new Library', 
                            widget=TextField('new_library_name', 40,

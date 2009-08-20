@@ -100,28 +100,13 @@ class TestFormsAndRequests( TwillTestCase ):
         global request_type
         request_type = galaxy.model.RequestType.filter( and_( galaxy.model.RequestType.table.c.name==request_type_name ) ).all()[-1]
         assert request_type is not None, 'Problem retrieving request type named "%s" from the database' % request_type_name
-    def test_025_create_address( self ):
-        """Testing address creation"""
-        #self.create_address( user_address1 )
-        #self.check_page_for_string( 'Address <b>%s</b> has been added' % user_address1[ 'short_desc' ] )
-        ## TODO: FIX HACK
-        ## the user address creation should be done as a test. 
-        global user_address
-        user_address = galaxy.model.UserAddress()
-        user_address.user = galaxy.model.User.filter( galaxy.model.User.table.c.email=='test@bx.psu.edu' ).first()
-        user_address.desc = address1[ 'short_desc' ]
-        user_address.name = address1[ 'name' ]
-        user_address.institution = address1[ 'institution' ]
-        user_address.address = address1[ 'address1' ]+' '+address1[ 'address2' ]
-        user_address.city = address1[ 'city' ]
-        user_address.state = address1[ 'state' ]
-        user_address.postal_code = address1[ 'postal_code' ]
-        user_address.country = address1[ 'country' ]
-        user_address.phone = address1[ 'phone' ]
-        user_address.flush()
-        user_address.user.refresh()
-    def test_030_create_request( self ):
-        """Testing creating and submitting a request"""
+    def test_025_create_address_and_library( self ):
+        """Testing address & library creation"""
+        # first create a regular user
+        self.logout()
+        self.login( email='test1@bx.psu.edu' )
+        self.logout()
+        self.login( email='test@bx.psu.edu' )
         # first create a library for the request so that it can be submitted later
         lib_name = 'TestLib001'
         self.create_library( lib_name, '' )
@@ -144,12 +129,48 @@ class TestFormsAndRequests( TwillTestCase ):
                 break
         if not admin_user_private_role:
             raise AssertionError( "Private role not found for user '%s'" % admin_user.email )
+        global regular_user1
+        regular_user1 = galaxy.model.User.filter( galaxy.model.User.table.c.email=='test1@bx.psu.edu' ).first()
+        assert regular_user1 is not None, 'Problem retrieving user with email "test1@bx.psu.edu" from the database'
+        # Get the regular user's private role for later use
+        global regular_user1_private_role
+        regular_user1_private_role = None
+        for role in regular_user1.all_roles():
+            if role.name == regular_user1.email and role.description == 'Private Role for %s' % regular_user1.email:
+                regular_user1_private_role = role
+                break
+        if not regular_user1_private_role:
+            raise AssertionError( "Private role not found for user '%s'" % regular_user1.email )
         # Set permissions on the library, sort for later testing
         permissions_in = [ k for k, v in galaxy.model.Library.permitted_actions.items() ]
         permissions_out = []
-        # Role one members are: admin_user, regular_user1, regular_user3.  Each of these users will be permitted to
+        # Role one members are: admin_user, regular_user1.  Each of these users will be permitted to
         # LIBRARY_ADD, LIBRARY_MODIFY, LIBRARY_MANAGE for library items.
-        self.set_library_permissions( str( library_one.id ), library_one.name, str( admin_user_private_role.id ), permissions_in, permissions_out )
+        self.set_library_permissions( str( library_one.id ), library_one.name, str( regular_user1_private_role.id ), permissions_in, permissions_out )
+        # create address
+        #self.create_address( user_address1 )
+        #self.check_page_for_string( 'Address <b>%s</b> has been added' % user_address1[ 'short_desc' ] )
+        ## TODO: FIX HACK
+        ## the user address creation should be done as a test. 
+        global user_address
+        user_address = galaxy.model.UserAddress()
+        user_address.user = galaxy.model.User.filter( galaxy.model.User.table.c.email=='test1@bx.psu.edu' ).first()
+        user_address.desc = address1[ 'short_desc' ]
+        user_address.name = address1[ 'name' ]
+        user_address.institution = address1[ 'institution' ]
+        user_address.address = address1[ 'address1' ]+' '+address1[ 'address2' ]
+        user_address.city = address1[ 'city' ]
+        user_address.state = address1[ 'state' ]
+        user_address.postal_code = address1[ 'postal_code' ]
+        user_address.country = address1[ 'country' ]
+        user_address.phone = address1[ 'phone' ]
+        user_address.flush()
+        user_address.user.refresh()
+    def test_030_create_request( self ):
+        """Testing creating and submitting a request as a regular user"""
+        # login as a regular user
+        self.logout()
+        self.login( email='test1@bx.psu.edu' )
         # set field values
         fields = ['field one value', 'field two value', str(user_address.id)] 
         # create the request
@@ -162,7 +183,6 @@ class TestFormsAndRequests( TwillTestCase ):
                                                          galaxy.model.Request.table.c.deleted==False ) ).first()        
         # check if the request's state is now set to 'unsubmitted'
         assert request_one.state is not request_one.states.UNSUBMITTED, "The state of the request '%s' should be set to '%s'" % ( request_one.name, request_one.states.UNSUBMITTED )
-
         # sample fields
         samples = [ ( 'Sample One', [ 'S1 Field 0 Value' ] ),
                     ( 'Sample Two', [ 'S2 Field 0 Value' ] ) ]
@@ -181,6 +201,8 @@ class TestFormsAndRequests( TwillTestCase ):
     def test_035_request_lifecycle( self ):
         """Testing request lifecycle as it goes through all the states"""
         # goto admin manage requests page
+        self.logout()
+        self.login( email='test@bx.psu.edu' )
         self.home()
         self.visit_page( 'requests_admin/list' )
         self.check_page_for_string( request_one.name )
@@ -203,8 +225,41 @@ class TestFormsAndRequests( TwillTestCase ):
         request_one.refresh()
         # check if the request's state is now set to 'complete'
         assert request_one.state is not request_one.states.COMPLETE, "The state of the request '%s' should be set to '%s'" % ( request_one.name, request_one.states.COMPLETE )
+#    def test_40_admin_create_request_on_behalf_of_regular_user( self ):
+#        """Testing creating and submitting a request as an admin on behalf of a regular user"""
+#        self.logout()
+#        self.login( email='test@bx.psu.edu' )
+##        permissions_in = [ k for k, v in galaxy.model.Library.permitted_actions.items() ]
+##        permissions_out = []
+##        self.set_library_permissions( str( library_one.id ), library_one.name, str( admin_user_private_role.id ), permissions_in, permissions_out )
+#        # set field values
+#        fields = ['field one value', 'field two value', str(user_address.id)] 
+#        # create the request
+#        request_name, request_desc = 'Request Two', 'Request Two Description'
+#        self.create_request_admin(request_type.id, regular_user1.id, request_name, request_desc, library_one.id, fields)
+#        self.check_page_for_string( request_name )
+#        self.check_page_for_string( request_desc )
+#        global request_two
+#        request_one = galaxy.model.Request.filter( and_( galaxy.model.Request.table.c.name==request_name,
+#                                                         galaxy.model.Request.table.c.deleted==False ) ).first()        
+#        # check if the request's state is now set to 'unsubmitted'
+#        assert request_two.state is not request_two.states.UNSUBMITTED, "The state of the request '%s' should be set to '%s'" % ( request_two.name, request_two.states.UNSUBMITTED )
+#        # sample fields
+#        samples = [ ( 'Sample One', [ 'S1 Field 0 Value' ] ),
+#                    ( 'Sample Two', [ 'S2 Field 0 Value' ] ) ]
+#        # add samples to this request
+#        self.add_samples( request_two.id, request_two.name, samples )
+#        for sample_name, fields in samples:
+#            self.check_page_for_string( sample_name )
+#            self.check_page_for_string( 'Unsubmitted' )
+#            for field_value in fields:
+#                self.check_page_for_string( field_value )
+#        # submit the request
+#        self.submit_request( request_two.id, request_two.name )
+#        request_two.refresh()
+#        # check if the request's state is now set to 'submitted'
+#        assert request_two.state is not request_two.states.SUBMITTED, "The state of the request '%s' should be set to '%s'" % ( request_two.name, request_two.states.SUBMITTED )
 
-        
         
         
         

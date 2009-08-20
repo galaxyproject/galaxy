@@ -421,12 +421,14 @@ def get_all_forms( trans, all_versions=False, filter=None ):
     return [ fdc.latest_form for fdc in fdc_list ]
 
 
-def get_form_widgets( trans, form, contents=[], **kwd ):
+def get_form_widgets( trans, form, contents=[], user=None, **kwd ):
     '''
     Return the list of widgets that comprise a form definition,
     including field contents if any.
     '''
     params = util.Params( kwd )
+    if not user:
+        user = trans.user
     widgets = []
     for index, field in enumerate( form.fields ):
         field_name = 'field_%i' % index
@@ -458,7 +460,7 @@ def get_form_widgets( trans, form, contents=[], **kwd ):
             field_widget.set_size( 3, 40 )
             field_widget.value = value
         elif field['type'] == 'AddressField':
-            field_widget.user = trans.user
+            field_widget.user = user
             field_widget.value = value
             field_widget.params = params
         elif field[ 'type' ] == 'SelectField':

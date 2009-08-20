@@ -76,7 +76,7 @@
 
 <div class="grid-header">
     <h2>${grid.title}</h2>
-    %if len(trans.user.requests):
+    %if len(trans.app.model.Request.query().all()):
         ##<span class="title">Filter:</span>
         %for i, filter in enumerate( grid.standard_filters ):
             %if i > 0:    
