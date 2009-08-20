@@ -5,7 +5,7 @@ import pkg_resources;
 
 pkg_resources.require( "simplejson" )
 
-import logging, os, string, sys, tempfile, glob, shutil
+import logging, os, string, sys, tempfile, glob, shutil, types
 import simplejson
 import binascii
 from UserDict import DictMixin
@@ -415,6 +415,7 @@ class Tool:
                 output.metadata_source = data_elem.get("metadata_source", "")
                 output.parent = data_elem.get("parent", None)
                 output.label = util.xml_text( data_elem, "label" )
+                output.count = int( data_elem.get("count", 1) )
                 output.filters = data_elem.findall( 'filter' )
                 self.outputs[ output.name ] = output
         # Any extra generated config files for the tool
@@ -816,7 +817,11 @@ class Tool:
             # If we've completed the last page we can execute the tool
             elif state.page == self.last_page:
                 out_data = self.execute( trans, incoming=params )
-                return 'tool_executed.mako', dict( out_data=out_data )
+                try:
+                    assert type( out_data ) is types.DictType
+                    return 'tool_executed.mako', dict( out_data=out_data )
+                except:
+                    return 'message.mako', dict( message_type='error', message=out_data, refresh_frames=[] )
             # Otherwise move on to the next page
             else:
                 state.page += 1
@@ -824,15 +829,26 @@ class Tool:
                 self.fill_in_new_state( trans, self.inputs_by_page[ state.page ], state.inputs )
                 return 'tool_form.mako', dict( errors=errors, tool_state=state )
         else:
-            if filter( lambda x: isinstance( x, FieldStorage ) and x.file, state.inputs.values() ):
+            try:
+                self.find_fieldstorage( state.inputs )
+            except InterruptedUpload:
                 # If inputs contain a file it won't persist.  Most likely this
                 # is an interrupted upload.  We should probably find a more
                 # standard method of determining an incomplete POST.
                 return self.handle_interrupted( trans, state.inputs )
-            else:
-                # Just a refresh, render the form with updated state and errors.
-                return 'tool_form.mako', dict( errors=errors, tool_state=state )
+            except:
+                pass
+            # Just a refresh, render the form with updated state and errors.
+            return 'tool_form.mako', dict( errors=errors, tool_state=state )
       
+    def find_fieldstorage( self, x ):
+        if isinstance( x, FieldStorage ):
+            raise InterruptedUpload( None )
+        elif type( x ) is types.DictType:
+            [ self.find_fieldstorage( y ) for y in x.values() ]
+        elif type( x ) is types.ListType:
+            [ self.find_fieldstorage( y ) for y in x ]
+
     def handle_interrupted( self, trans, inputs ):
         """
         Upon handling inputs, if it appears that we have received an incomplete
@@ -1704,3 +1720,6 @@ def get_incoming_value( incoming, key, default ):
         return value
     else:
         return incoming.get( key, default )
+
+class InterruptedUpload( Exception ):
+    pass

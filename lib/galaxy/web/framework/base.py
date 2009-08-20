@@ -212,6 +212,17 @@ class DefaultWebTransaction( object ):
         else:
             return None
     
+# For request.params, override cgi.FieldStorage.make_file to create persistent
+# tempfiles.  Necessary for externalizing the upload tool.  It's a little hacky
+# but for performance reasons it's way better to use Paste's tempfile than to
+# create a new one and copy.
+import cgi
+class FieldStorage( cgi.FieldStorage ):
+    def make_file(self, binary=None):
+        import tempfile
+        return tempfile.NamedTemporaryFile()
+cgi.FieldStorage = FieldStorage
+
 class Request( webob.Request ):
     """
     Encapsulates an HTTP request. 

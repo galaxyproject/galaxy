@@ -6,6 +6,8 @@ from galaxy.model.orm import lazyload
 from galaxy.datatypes.tabular import *
 from galaxy.datatypes.interval import *
 from galaxy.datatypes import metadata
+from galaxy.util.json import from_json_string
+from galaxy.util.expressions import ExpressionContext
 
 import pkg_resources
 pkg_resources.require( "PasteDeploy" )
@@ -18,6 +20,12 @@ log = logging.getLogger( __name__ )
 
 # States for running a job. These are NOT the same as data states
 JOB_WAIT, JOB_ERROR, JOB_INPUT_ERROR, JOB_INPUT_DELETED, JOB_OK, JOB_READY, JOB_DELETED, JOB_ADMIN_DELETED = 'wait', 'error', 'input_error', 'input_deleted', 'ok', 'ready', 'deleted', 'admin_deleted'
+
+# This file, if created in the job's working directory, will be used for
+# setting advanced metadata properties on the job and its associated outputs.
+# This interface is currently experimental, is only used by the upload tool,
+# and should eventually become API'd
+TOOL_PROVIDED_JOB_METADATA_FILE = 'galaxy.json'
 
 class JobManager( object ):
     """
@@ -320,6 +328,7 @@ class JobWrapper( object ):
         self.working_directory = \
             os.path.join( self.app.config.job_working_directory, str( self.job_id ) )
         self.output_paths = None
+        self.tool_provided_job_metadata = None
         self.external_output_metadata = metadata.JobExternalOutputMetadataWrapper( job ) #wrapper holding the info required to restore and clean up from files used for setting metadata externally
         
     def get_param_dict( self ):
@@ -422,6 +431,8 @@ class JobWrapper( object ):
                 dataset.blurb = 'tool error'
                 dataset.info = message
                 dataset.set_size()
+                if dataset.ext == 'auto':
+                    dataset.extension = 'data'
                 dataset.flush()
             job.state = model.Job.states.ERROR
             job.command_line = self.command_line
@@ -486,16 +497,28 @@ class JobWrapper( object ):
                 except ( IOError, OSError ):
                     self.fail( "Job %s's output dataset(s) could not be read" % job.id )
                     return
+        job_context = ExpressionContext( dict( stdout = stdout, stderr = stderr ) )
         for dataset_assoc in job.output_datasets:
+            context = self.get_dataset_finish_context( job_context, dataset_assoc.dataset.dataset )
             #should this also be checking library associations? - can a library item be added from a history before the job has ended? - lets not allow this to occur
             for dataset in dataset_assoc.dataset.dataset.history_associations: #need to update all associated output hdas, i.e. history was shared with job running
+                if context.get( 'path', None ):
+                    # The tool can set an alternate output path for the dataset.
+                    try:
+                        shutil.move( context['path'], dataset.file_name )
+                    except ( IOError, OSError ):
+                        if not context['stderr']:
+                            context['stderr'] = 'This dataset could not be processed'
                 dataset.blurb = 'done'
                 dataset.peek  = 'no peek'
-                dataset.info  = stdout + stderr
+                dataset.info  = context['stdout'] + context['stderr']
                 dataset.set_size()
-                if stderr:
+                if context['stderr']:
                     dataset.blurb = "error"
                 elif dataset.has_data():
+                    # If the tool was expected to set the extension, attempt to retrieve it
+                    if dataset.ext == 'auto':
+                        dataset.extension = context.get( 'ext', 'data' )
                     #if a dataset was copied, it won't appear in our dictionary:
                     #either use the metadata from originating output dataset, or call set_meta on the copies
                     #it would be quicker to just copy the metadata from the originating output dataset, 
@@ -510,18 +533,39 @@ class JobWrapper( object ):
                         #the metadata that was stored to disk for use via the external process, 
                         #and the changes made by the user will be lost, without warning or notice
                         dataset.metadata.from_JSON_dict( self.external_output_metadata.get_output_filenames_by_dataset( dataset ).filename_out )
-                    if self.tool.is_multi_byte:
-                        dataset.set_multi_byte_peek()
-                    else:
-                        dataset.set_peek()
+                    try:
+                        assert context.get( 'line_count', None ) is not None
+                        if self.tool.is_multi_byte:
+                            dataset.set_multi_byte_peek( line_count=context['line_count'] )
+                        else:
+                            dataset.set_peek( line_count=context['line_count'] )
+                    except:
+                        if self.tool.is_multi_byte:
+                            dataset.set_multi_byte_peek()
+                        else:
+                            dataset.set_peek()
+                    try:
+                        # set the name if provided by the tool
+                        dataset.name = context['name']
+                    except:
+                        pass
                 else:
                     dataset.blurb = "empty"
+                    if dataset.ext == 'auto':
+                        dataset.extension = 'txt'
                 dataset.flush()
-            if stderr:
+            if context['stderr']:
                 dataset_assoc.dataset.dataset.state = model.Dataset.states.ERROR
             else:
                 dataset_assoc.dataset.dataset.state = model.Dataset.states.OK
-            dataset_assoc.dataset.dataset.flush()
+            # If any of the rest of the finish method below raises an
+            # exception, the fail method will run and set the datasets to
+            # ERROR.  The user will never see that the datasets are in error if
+            # they were flushed as OK here, since upon doing so, the history
+            # panel stops checking for updates.  So allow the
+            # mapping.context.current.flush() at the bottom of this method set
+            # the state instead.
+            #dataset_assoc.dataset.dataset.flush()
         
         # Save stdout and stderr    
         if len( stdout ) > 32768:
@@ -591,7 +635,8 @@ class JobWrapper( object ):
             return self.output_paths
 
         class DatasetPath( object ):
-            def __init__( self, real_path, false_path = None ):
+            def __init__( self, dataset_id, real_path, false_path = None ):
+                self.dataset_id = dataset_id
                 self.real_path = real_path
                 self.false_path = false_path
             def __str__( self ):
@@ -605,10 +650,55 @@ class JobWrapper( object ):
             self.output_paths = []
             for name, data in [ ( da.name, da.dataset.dataset ) for da in job.output_datasets ]:
                 false_path = os.path.abspath( os.path.join( self.working_directory, "galaxy_dataset_%d.dat" % data.id ) )
-                self.output_paths.append( DatasetPath( data.file_name, false_path ) )
+                self.output_paths.append( DatasetPath( data.id, data.file_name, false_path ) )
         else:
-            self.output_paths = [ DatasetPath( da.dataset.file_name ) for da in job.output_datasets ]
+            self.output_paths = [ DatasetPath( da.dataset.dataset.id, da.dataset.file_name ) for da in job.output_datasets ]
         return self.output_paths
+
+    def get_output_file_id( self, file ):
+        if self.output_paths is None:
+            self.get_output_fnames()
+        for dp in self.output_paths:
+            if self.app.config.outputs_to_working_directory and os.path.basename( dp.false_path ) == file:
+                return dp.dataset_id
+            elif os.path.basename( dp.real_path ) == file:
+                return dp.dataset_id
+        return None
+
+    def get_tool_provided_job_metadata( self ):
+        if self.tool_provided_job_metadata is not None:
+            return self.tool_provided_job_metadata
+
+        # Look for JSONified job metadata
+        self.tool_provided_job_metadata = []
+        meta_file = os.path.join( self.working_directory, TOOL_PROVIDED_JOB_METADATA_FILE )
+        if os.path.exists( meta_file ):
+            for line in open( meta_file, 'r' ):
+                try:
+                    line = from_json_string( line )
+                    assert 'type' in line
+                except:
+                    log.exception( '(%s) Got JSON data from tool, but data is improperly formatted or no "type" key in data' % self.job_id )
+                    log.debug( 'Offending data was: %s' % line )
+                    continue
+                # Set the dataset id if it's a dataset entry and isn't set.
+                # This isn't insecure.  We loop the job's output datasets in
+                # the finish method, so if a tool writes out metadata for a
+                # dataset id that it doesn't own, it'll just be ignored.
+                if line['type'] == 'dataset' and 'dataset_id' not in line:
+                    try:
+                        line['dataset_id'] = self.get_output_file_id( line['dataset'] )
+                    except KeyError:
+                        log.warning( '(%s) Tool provided job dataset-specific metadata without specifying a dataset' % self.job_id )
+                        continue
+                self.tool_provided_job_metadata.append( line )
+        return self.tool_provided_job_metadata
+
+    def get_dataset_finish_context( self, job_context, dataset ):
+        for meta in self.get_tool_provided_job_metadata():
+            if meta['type'] == 'dataset' and meta['dataset_id'] == dataset.id:
+                return ExpressionContext( meta, job_context )
+        return job_context
 
     def check_output_sizes( self ):
         sizes = []

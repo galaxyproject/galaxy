@@ -136,6 +136,7 @@ class ToolRunner( BaseController ):
         """
         Precreate datasets for asynchronous uploading.
         """
+        permissions = trans.app.security_agent.history_get_default_permissions( trans.history )
         def create_dataset( name, history ):
             data = trans.app.model.HistoryDatasetAssociation( create_dataset = True )
             data.name = name
@@ -143,6 +144,7 @@ class ToolRunner( BaseController ):
             data.history = history
             data.flush()
             history.add_dataset( data )
+            trans.app.security_agent.set_all_dataset_permissions( data.dataset, permissions )
             return data
         tool = self.get_toolbox().tools_by_id.get( tool_id, None )
         if not tool:
