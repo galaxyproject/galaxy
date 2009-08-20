@@ -141,6 +141,8 @@
     
     ${tab( "libraries", "Data Libraries", h.url_for( controller='library', action='index' ))}
     
+    ${tab( "cloud", "Cloud", h.url_for( controller='cloud', action='index' ))}
+    
     %if trans.request_types():
         <td class="tab">
             <a>Lab</a>
