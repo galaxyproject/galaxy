@@ -15,7 +15,7 @@
                     ${input.label}:
                 </label>
                 <div style="float: left; width: 250px; margin-right: 10px;">
-                    <input type="${input.type}" name="${input.name}" value="${input.value}" size="40">
+                    <input type="${input.type}" name="${input.name | h}" value="${input.value | h}" size="30">
                 </div>
                 %if input.error:
                 <div style="float: left; color: red; font-weight: bold; padding-top: 1px; padding-bottom: 3px;">
@@ -33,7 +33,6 @@
   
               </div>
           %endfor
-        <div class="form-row"><input type="submit" value="${form.submit_text}"></div>
         %else:
           <div class="form-row"><i>No options</i></div>
         %endif
@@ -41,3 +40,7 @@
     </form>
     </div>
 </div>
+
+<script type="text/javascript">
+    workflow.enable_auto_save();
+</script>

@@ -9,7 +9,7 @@ usage: %prog input out_file size direction region
    -o, --off=N: Offset
 """
 
-import sys, sets, re, os
+import sys, re, os
 from galaxy import eggs
 import pkg_resources; pkg_resources.require( "bx-python" )
 from bx.cookbook import doc_optparse

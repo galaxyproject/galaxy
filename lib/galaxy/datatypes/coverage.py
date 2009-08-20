@@ -5,7 +5,7 @@ Coverage datatypes
 import pkg_resources
 pkg_resources.require( "bx-python" )
 
-import logging, os, sys, time, sets, tempfile, shutil
+import logging, os, sys, time, tempfile, shutil
 import data
 from galaxy import util
 from galaxy.datatypes.sniff import *

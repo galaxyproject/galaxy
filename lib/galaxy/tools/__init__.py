@@ -1,15 +1,13 @@
 """
 Classes encapsulating galaxy tools and tool configuration.
 """
-
 import pkg_resources; 
 
 pkg_resources.require( "simplejson" )
 
 import logging, os, string, sys, tempfile, glob, shutil
 import simplejson
-import sha, hmac, binascii
-
+import binascii
 from UserDict import DictMixin
 from galaxy.util.odict import odict
 from galaxy.util.bunch import Bunch
@@ -26,6 +24,7 @@ from galaxy.model import directory_hash_id
 from galaxy.util.none_like import NoneDataset
 from galaxy.datatypes import sniff
 from cgi import FieldStorage
+from galaxy.util.hash_util import *
 
 log = logging.getLogger( __name__ )
 
@@ -211,7 +210,7 @@ class DefaultToolState( object ):
         value["__page__"] = self.page
         value = simplejson.dumps( value )
         # Make it secure
-        a = hmac.new( app.config.tool_secret, value, sha ).hexdigest()
+        a = hmac_new( app.config.tool_secret, value )
         b = binascii.hexlify( value )
         return "%s:%s" % ( a, b )      
     def decode( self, value, tool, app ):
@@ -221,7 +220,7 @@ class DefaultToolState( object ):
         # Extract and verify hash
         a, b = value.split( ":" )
         value = binascii.unhexlify( b )
-        test = hmac.new( app.config.tool_secret, value, sha ).hexdigest()
+        test = hmac_new( app.config.tool_secret, value )
         assert a == test
         # Restore from string
         values = json_fix( simplejson.loads( value ) )
@@ -453,7 +452,6 @@ class Tool:
             self.tests = None
         # Determine if this tool can be used in workflows
         self.is_workflow_compatible = self.check_workflow_compatible()
-        
             
     def parse_inputs( self, root ):
         """
@@ -1468,7 +1466,7 @@ class Tool:
                 out_data[ name ] = data
             return out_data
 
-    def exec_after_process( self, app, inp_data, out_data, param_dict ):
+    def exec_after_process( self, app, inp_data, out_data, param_dict, job = None ):
         if self.tool_type == 'data_source':
             name, data = out_data.items()[0]
             data.set_size()
@@ -1572,6 +1570,18 @@ class Tool:
                     dataset.history.add( new_data )
                     new_data.flush()
         return primary_datasets
+
+class SetMetadataTool( Tool ):
+    def exec_after_process( self, app, inp_data, out_data, param_dict, job = None ):
+        for name, dataset in inp_data.iteritems():
+            external_metadata = galaxy.datatypes.metadata.JobExternalOutputMetadataWrapper( job )
+            if external_metadata.external_metadata_set_successfully( dataset ):
+                dataset.metadata.from_JSON_dict( external_metadata.get_output_filenames_by_dataset( dataset ).filename_out )    
+            # If setting external metadata has failed, how can we inform the user?
+            # For now, we'll leave the default metadata and set the state back to its original.
+            dataset.datatype.after_edit( dataset )
+            dataset.state = param_dict.get( '__ORIGINAL_DATASET_STATE__' )
+            dataset.flush()
 
         
 # ---- Utility classes to be factored out -----------------------------------

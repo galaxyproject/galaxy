@@ -100,7 +100,7 @@
 </ul>
 
 %if not len(query.all()):
-    There are no request(s).
+    There are no requests.
 %else:
 <form name="history_actions" action="${url()}" method="post" >
     <table class="grid">

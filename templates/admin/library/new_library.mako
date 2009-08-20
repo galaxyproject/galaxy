@@ -6,13 +6,13 @@
 %endif
 
 <div class="toolForm">
-    <div class="toolFormTitle">Create a new library</div>
+    <div class="toolFormTitle">Create a new data library</div>
     <div class="toolFormBody">
         <form name="library" action="${h.url_for( controller='admin', action='library' )}" method="post" >
             <div class="form-row">
                 <label>Name:</label>
                 <div style="float: left; width: 250px; margin-right: 10px;">
-                    <input type="text" name="name" value="New Library" size="40"/>
+                    <input type="text" name="name" value="New data library" size="40"/>
                 </div>
                 <div style="clear: both"></div>
             </div>

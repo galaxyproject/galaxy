@@ -3,7 +3,7 @@
 """
 This tool provides the SQL "group by" functionality.
 """
-import sys, string, re, commands, tempfile, random, sets
+import sys, string, re, commands, tempfile, random
 from rpy import *
 
 def stop_err(msg):

@@ -162,16 +162,16 @@ def name_sorted( l ):
     %if deleted:
         Deleted 
     %endif
-    Library '${library.name}'
+    Data Library &ldquo;${library.name}&rdquo;
 </h2>
 
 <ul class="manage-table-actions">
     %if not deleted:
         <li>
-            <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', library_id=library.id, folder_id=library.root_folder.id )}"><span>Add datasets to this library</span></a>
+            <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', library_id=library.id, folder_id=library.root_folder.id )}"><span>Add datasets to this data library</span></a>
         </li>
         <li>
-            <a class="action-button" href="${h.url_for( controller='admin', action='folder', new=True, id=library.root_folder.id, library_id=library.id )}">Add a folder to this library</a>
+            <a class="action-button" href="${h.url_for( controller='admin', action='folder', new=True, id=library.root_folder.id, library_id=library.id )}">Add a folder to this data library</a>
         </li>
     %endif
 </ul>
@@ -200,24 +200,24 @@ def name_sorted( l ):
                                 library_item_ids = {}
                                 library_item_ids[ 'library' ] = library.id
                             %>
-                            <a class="action-button" href="${h.url_for( controller='admin', action='library', id=library.id, information=True )}">Edit this library's information</a>
+                            <a class="action-button" href="${h.url_for( controller='admin', action='library', id=library.id, information=True )}">Edit this data library's information</a>
                             ## Editing templates disabled until we determine optimal approach to re-linking library item to new version of form definition
                             ##%if library.info_association:
                             ##    <% form_id = library.info_association[0].template.id %>
-                            ##    <a class="action-button" href="${h.url_for( controller='forms', action='edit', form_id=form_id, show_form=True )}">Edit this library's information template</a>
+                            ##    <a class="action-button" href="${h.url_for( controller='forms', action='edit', form_id=form_id, show_form=True )}">Edit this data library's information template</a>
                             ##%else:
                             %if not library.info_association:
-                                <a class="action-button" href="${h.url_for( controller='admin', action='info_template', library_id=library.id, add=True )}">Add an information template to this library</a>
+                                <a class="action-button" href="${h.url_for( controller='admin', action='info_template', library_id=library.id, add=True )}">Add an information template to this data library</a>
                             %endif
-                            <a class="action-button" href="${h.url_for( controller='admin', action='library', id=library.id, permissions=True )}">Edit this library's permissions</a>
-                            <a class="action-button" confirm="Click OK to delete the library named '${library.name}'." href="${h.url_for( controller='admin', action='delete_library_item', library_id=library.id, library_item_id=library.id, library_item_type='library' )}">Delete this library and its contents</a>
+                            <a class="action-button" href="${h.url_for( controller='admin', action='library', id=library.id, permissions=True )}">Edit this data library's permissions</a>
+                            <a class="action-button" confirm="Click OK to delete the library named '${library.name}'." href="${h.url_for( controller='admin', action='delete_library_item', library_id=library.id, library_item_id=library.id, library_item_type='library' )}">Delete this data library and its contents</a>
                             %if show_deleted:
-                            	<a class="action-button" href="${h.url_for( controller='admin', action='browse_library', id=library.id, show_deleted=False )}">Hide deleted library items</a>
+                            	<a class="action-button" href="${h.url_for( controller='admin', action='browse_library', id=library.id, show_deleted=False )}">Hide deleted data library items</a>
                             %else:
-                            	<a class="action-button" href="${h.url_for( controller='admin', action='browse_library', id=library.id, show_deleted=True )}">Show deleted library items</a>
+                            	<a class="action-button" href="${h.url_for( controller='admin', action='browse_library', id=library.id, show_deleted=True )}">Show deleted data library items</a>
                             %endif
                         %elif not library.purged:
-                              <a class="action-button" href="${h.url_for( controller='admin', action='undelete_library_item', library_id=library.id, library_item_id=library.id, library_item_type='library' )}">Undelete this library</a>
+                              <a class="action-button" href="${h.url_for( controller='admin', action='undelete_library_item', library_id=library.id, library_item_id=library.id, library_item_type='library' )}">Undelete this data library</a>
                         %endif
                         </div>
                     </th>

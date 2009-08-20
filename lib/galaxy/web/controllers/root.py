@@ -1,7 +1,7 @@
 """
 Contains the main interface in the Universe class
 """
-import logging, os, sets, string, shutil, urllib, re, socket
+import logging, os, string, shutil, urllib, re, socket
 from cgi import escape, FieldStorage
 from galaxy import util, datatypes, jobs, web, util
 from galaxy.web.base.controller import *
@@ -60,7 +60,6 @@ class RootController( BaseController ):
             trans.response.set_content_type('text/xml')
             return trans.fill_template_mako( "root/history_as_xml.mako", history=history, show_deleted=util.string_as_bool( show_deleted ) )
         else:
-            template = "root/history.mako"
             show_deleted = util.string_as_bool( show_deleted )
             query = trans.sa_session.query( model.HistoryDatasetAssociation ) \
                 .filter( model.HistoryDatasetAssociation.history == history ) \
@@ -297,10 +296,15 @@ class RootController( BaseController ):
                     if name not in [ 'name', 'info', 'dbkey' ]:
                         if spec.get( 'default' ):
                             setattr( data.metadata, name, spec.unwrap( spec.get( 'default' ) ) )
-                data.set_meta()
-                data.datatype.after_edit( data )
+                if trans.app.config.set_metadata_externally:
+                    msg = 'Attributes have been queued to be updated'
+                    trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute( trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming = { 'input1':data } )
+                else:
+                    msg = 'Attributes updated'
+                    data.set_meta()
+                    data.datatype.after_edit( data )
                 trans.app.model.flush()
-                return trans.show_ok_message( "Attributes updated", refresh_frames=['history'] )
+                return trans.show_ok_message( msg, refresh_frames=['history'] )
             elif params.convert_data:
                 target_type = kwd.get("target_type", None)
                 if target_type:

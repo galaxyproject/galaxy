@@ -6,8 +6,8 @@ from galaxy.web.base.controller import *
 
 from galaxy import jobs, util, datatypes, web
 
-import logging, urllib
-import sha, hmac
+import logging, urllib, sys
+from galaxy.util.hash_util import *
 
 log = logging.getLogger( __name__ )
 
@@ -58,7 +58,7 @@ class ASync( BaseController ):
                 return "Data %s does not exist or has already been deleted" % data_id
 
             if STATUS == 'OK':
-                key = hmac.new( trans.app.config.tool_secret, "%d:%d" % ( data.id, data.history_id), sha ).hexdigest()
+                key = hmac_new( trans.app.config.tool_secret, "%d:%d" % ( data.id, data.history_id ) )
                 if key != data_secret:
                     return "You do not have permission to alter data %s." % data_id
                 # push the job into the queue
@@ -116,7 +116,7 @@ class ASync( BaseController ):
             trans.log_event( "Added dataset %d to history %d" %(data.id, trans.history.id ), tool_id=tool_id )
 
             try:
-                key = hmac.new( trans.app.config.tool_secret, "%d:%d" % ( data.id, data.history_id), sha ).hexdigest()
+                key = hmac_new( trans.app.config.tool_secret, "%d:%d" % ( data.id, data.history_id ) )
                 galaxy_url  = trans.request.base + '/async/%s/%s/%s' % ( tool_id, data.id, key )
                 params.update( { 'GALAXY_URL' :galaxy_url } )
                 params.update( { 'data_id' :data.id } )

@@ -115,18 +115,9 @@
 ## Masthead
 <%def name="masthead()">
 
-    <div style="position: absolute; left: 0px; width: 100%; text-align: center">
+    ## Tab area, fills entire width
+    <div style="position: absolute; top: 0; left: 0; width: 100%; text-align: center">
     
-    <div class="title" style="float: left;">
-        <a href="/">
-        <img border="0" src="${h.url_for('/static/images/galaxyIcon_noText.png')}" style="width: 26px; vertical-align: top;">
-        Galaxy
-        %if app.config.brand:
-        <span class='brand'>/${app.config.brand}</span>
-        %endif
-        </a>
-    </div>
-
     <table class="tab-group" border="0" cellspacing="0" style="margin: auto;">
 	<tr>
     
@@ -148,7 +139,7 @@
     
     ${tab( "workflow", "Workflow", h.url_for( controller='workflow', action='index' ))}
     
-    ${tab( "libraries", "Libraries", h.url_for( controller='library', action='index' ))}
+    ${tab( "libraries", "Data Libraries", h.url_for( controller='library', action='index' ))}
     
     %if trans.user and trans.request_types():
         <td class="tab">
@@ -231,6 +222,17 @@
     
     </div>
     
+    ## Logo, layered over tabs to be clickable
+    <div class="title" style="position: absolute; top: 0; left: 0;">
+        <a href="/">
+        <img border="0" src="${h.url_for('/static/images/galaxyIcon_noText.png')}" style="width: 26px; vertical-align: top;">
+        Galaxy
+        %if app.config.brand:
+        <span class='brand'>/${app.config.brand}</span>
+        %endif
+        </a>
+    </div>
+    
 </%def>
 
 <%def name="overlay( title='', content='' )">
@@ -283,7 +285,7 @@
     </head>
     
     <body scroll="no" class="${self.body_class}">
-	<div id="everything" style="position: absolute; width: 100%; height: 100%; min-width: 960px; min-height: 400px;">
+	<div id="everything" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; min-width: 960px;">
         ## Background displays first
         <div id="background"></div>
         ## Layer iframes over backgrounds

@@ -544,15 +544,12 @@ class Requests( BaseController ):
                                     helptext=''))
         # library associated
         if request.library:
-            request_details.append(dict(label='Library', 
-                                        value=request.library.name, 
-                                        helptext='Associated library where the resultant \
-                                                  dataset will be stored'))
+			value=request.library.name
         else:
-            request_details.append(dict(label='Library', 
-                                        value=None, 
-                                        helptext='Associated library where the resultant \
-                                                  dataset will be stored'))
+			value = None
+        request_details.append(dict(label='Data library', 
+                            value=value, 
+                            helptext='Data library where the resultant dataset will be stored'))
         # form fields
         for index, field in enumerate(request.type.request_form.fields):
             if field['required']:

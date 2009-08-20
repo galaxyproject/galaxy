@@ -12,7 +12,7 @@ ross lazarus for rgenetics
 august 20 2007
 """
 
-import logging, os, sys, time, sets, tempfile, shutil
+import logging, os, sys, time, tempfile, shutil
 import data
 from galaxy import util
 from cgi import escape

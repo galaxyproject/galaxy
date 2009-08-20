@@ -13,7 +13,6 @@ log = logging.getLogger( __name__ )
 # States for passing messages
 SUCCESS, INFO, WARNING, ERROR = "done", "info", "warning", "error"
 
-
 class HistoryListGrid( grids.Grid ):
     # Custom column types
     class DatasetsByStateColumn( grids.GridColumn ):
@@ -70,8 +69,43 @@ class HistoryListGrid( grids.Grid ):
     def apply_default_filter( self, trans, query ):
         return query.filter_by( user=trans.user, purged=False )
 
+class SharedHistoryListGrid( grids.Grid ):
+    # Custom column types
+    class DatasetsByStateColumn( grids.GridColumn ):
+        def get_value( self, trans, grid, history ):
+            rval = []
+            for state in ( 'ok', 'running', 'queued', 'error' ):
+                total = sum( 1 for d in history.active_datasets if d.state == state )
+                if total:
+                    rval.append( '<div class="count-box state-color-%s">%s</div>' % ( state, total ) )
+                else:
+                    rval.append( '' )
+            return rval
+    class SharedByColumn( grids.GridColumn ):
+        def get_value( self, trans, grid, history ):
+            return history.user.email
+    # Grid definition
+    title = "Histories shared with you by others"
+    model_class = model.History
+    default_sort_key = "-update_time"
+    columns = [
+        grids.GridColumn( "Name", key="name" ),
+        DatasetsByStateColumn( "Datasets (by state)", ncells=4 ),
+        grids.GridColumn( "Created", key="create_time", format=time_ago ),
+        grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
+        SharedByColumn( "Shared by", key="user_id" )
+    ]
+    operations = [
+        grids.GridOperation( "Clone" ),
+        grids.GridOperation( "Unshare" )
+    ]
+    standard_filters = []
+    def build_initial_query( self, session ):
+        return session.query( self.model_class ).join( 'users_shared_with' )
+    def apply_default_filter( self, trans, query ):
+        return query.filter( model.HistoryUserShareAssociation.user == trans.user )
+
 class HistoryController( BaseController ):
-    
     @web.expose
     def index( self, trans ):
         return ""
@@ -80,7 +114,8 @@ class HistoryController( BaseController ):
         """XML history list for functional tests"""
         return trans.fill_template( "/history/list_as_xml.mako" )
     
-    list_grid = HistoryListGrid()
+    stored_list_grid = HistoryListGrid()
+    shared_list_grid = SharedHistoryListGrid()
     
     @web.expose
     @web.require_login( "work with multiple histories" )
@@ -91,7 +126,6 @@ class HistoryController( BaseController ):
         if 'operation' in kwargs:
             history_ids = util.listify( kwargs.get( 'id', [] ) )
             histories = []
-            shared_by_others = []
             operation = kwargs['operation'].lower()
             if operation == "share":
                 return self.share( trans, **kwargs )
@@ -127,7 +161,7 @@ class HistoryController( BaseController ):
                     status, message = self._list_undelete( trans, histories )
                 trans.sa_session.flush()
         # Render the list view
-        return self.list_grid( trans, status=status, message=message, template='/history/grid.mako', **kwargs )
+        return self.stored_list_grid( trans, status=status, message=message, template='/history/grid.mako', **kwargs )
     def _list_delete( self, trans, histories ):
         """Delete histories"""
         n_deleted = 0
@@ -195,18 +229,38 @@ class HistoryController( BaseController ):
         # No message
         return None, None
     @web.expose
-    def list_shared( self, trans, **kwd ):
+    def list_shared( self, trans, **kwargs ):
         """List histories shared with current user by others"""
-        params = util.Params( kwd )
-        msg = util.restore_text( params.get( 'msg', '' ) )
-        shared_by_others = trans.sa_session \
-            .query( model.HistoryUserShareAssociation ) \
-            .filter_by( user=trans.user ) \
-            .join( 'history' ) \
-            .filter( model.History.deleted == False ) \
-            .order_by( desc( model.History.update_time ) ) \
-            .all()
-        return trans.fill_template( "/history/list_shared.mako", shared_by_others=shared_by_others, msg=msg, messagetype='done' )
+        msg = util.restore_text( kwargs.get( 'msg', '' ) )
+        status = message = None
+        if 'operation' in kwargs:
+            id = kwargs.get( 'id', None )
+            operation = kwargs['operation'].lower()
+            if operation == "clone":
+                if not id:
+                    message = "Select a history to clone"
+                    return self.shared_list_grid( trans, status='error', message=message, template='/history/grid.mako', **kwargs )
+                # When cloning shared histories, only copy active datasets
+                new_kwargs = { 'clone_choice' : 'active' }
+                return self.clone( trans, id, **new_kwargs )
+            elif operation == 'unshare':
+                if not id:
+                    message = "Select a history to unshare"
+                    return self.shared_list_grid( trans, status='error', message=message, template='/history/grid.mako', **kwargs )
+                ids = util.listify( id )
+                histories = []
+                for history_id in ids:
+                    history = get_history( trans, history_id, check_ownership=False )
+                    histories.append( history )
+                for history in histories:
+                    # Current user is the user with which the histories were shared
+                    association = trans.app.model.HistoryUserShareAssociation.filter_by( user=trans.user, history=history ).one()
+                    association.delete()
+                    association.flush()
+                message = "Unshared %d shared histories" % len( ids )
+                status = 'done'
+        # Render the list view
+        return self.shared_list_grid( trans, status=status, message=message, template='/history/grid.mako', **kwargs )
     @web.expose
     def delete_current( self, trans ):
         """Delete just the active history -- this does not require a logged in user."""
@@ -323,6 +377,9 @@ class HistoryController( BaseController ):
             can_change, cannot_change, no_change_needed, unique_no_change_needed, send_to_err = \
                 self._populate_restricted( trans, user, histories, send_to_users, None, send_to_err, unique=True )
             send_to_err += err_msg
+            if cannot_change and not no_change_needed and not can_change:
+                send_to_err = "The histories you are sharing do not contain any datasets that can be accessed by the users with which you are sharing."
+                return trans.fill_template( "/history/share.mako", histories=histories, email=email, send_to_err=send_to_err )
             if can_change or cannot_change:
                 return trans.fill_template( "/history/share.mako", 
                                             histories=histories, 
@@ -350,8 +407,6 @@ class HistoryController( BaseController ):
                                                           email=email,
                                                           err_msg=err_msg,
                                                           share_button=True ) )
-        if action == "no_share":
-            trans.response.send_redirect( url_for( controller='root', action='history_options' ) )
         user = trans.get_user()
         histories, send_to_users, send_to_err = self._get_histories_and_users( trans, user, id, email )
         send_to_err = ''
@@ -629,29 +684,38 @@ class HistoryController( BaseController ):
     @web.expose
     @web.require_login( "clone shared Galaxy history" )
     def clone( self, trans, id, **kwd ):
-        history = get_history( trans, id, check_ownership=False )
+        """Clone a list of histories"""
         params = util.Params( kwd )
+        ids = util.listify( id )
+        histories = []
+        for history_id in ids:
+            history = get_history( trans, history_id, check_ownership=False )
+            histories.append( history )
         clone_choice = params.get( 'clone_choice', None )
         if not clone_choice:
             return trans.fill_template( "/history/clone.mako", history=history )
         user = trans.get_user()
-        if history.user == user:
-            owner = True
+        for history in histories:
+            if history.user == user:
+                owner = True
+            else:
+                if trans.sa_session.query( trans.app.model.HistoryUserShareAssociation ) \
+                        .filter_by( user=user, history=history ).count() == 0:
+                    return trans.show_error_message( "The history you are attempting to clone is not owned by you or shared with you.  " )
+                owner = False
+            name = "Clone of '%s'" % history.name
+            if not owner:
+                name += " shared by '%s'" % history.user.email
+            if clone_choice == 'activatable':
+                new_history = history.copy( name=name, target_user=user, activatable=True )
+            elif clone_choice == 'active':
+                name += " (active items only)"
+                new_history = history.copy( name=name, target_user=user )
+        if len( histories ) == 1:
+            msg = 'Clone with name "%s" is now included in your previously stored histories.' % new_history.name
         else:
-            if trans.sa_session.query( trans.app.model.HistoryUserShareAssociation ) \
-                    .filter_by( user=user, history=history ).count() == 0:
-                return trans.show_error_message( "The history you are attempting to clone is not owned by you or shared with you.  " )
-            owner = False
-        name = "Clone of '%s'" % history.name
-        if not owner:
-            name += " shared by '%s'" % history.user.email
-        if clone_choice == 'activatable':
-            new_history = history.copy( name=name, target_user=user, activatable=True )
-        elif clone_choice == 'active':
-            name += " (active items only)"
-            new_history = history.copy( name=name, target_user=user )
-        # Render the list view
-        return trans.show_ok_message( 'Clone with name "%s" is now included in your list of stored histories.' % new_history.name )
+            msg = '%d cloned histories are now included in your previously stored histories.' % len( histories )
+        return trans.show_ok_message( msg )
 
 ## ---- Utility methods -------------------------------------------------------
         

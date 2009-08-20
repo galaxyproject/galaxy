@@ -465,7 +465,7 @@ class Library( BaseController ):
                                                                   msg=util.sanitize_text( msg ),
                                                                   messagetype='error' ) )
             # See if we have any associated templates
-            info_association = folder.get_info_association()
+            info_association = ldda.get_info_association()
             if info_association:
                 template = info_association.template
                 # See if we have any field contents

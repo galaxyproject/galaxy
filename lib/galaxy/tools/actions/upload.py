@@ -1,4 +1,5 @@
 import os, shutil, urllib, StringIO, re, gzip, tempfile, shutil, zipfile
+from __init__ import ToolAction
 from galaxy import datatypes, jobs
 from galaxy.datatypes import sniff
 from galaxy import model, util
@@ -8,7 +9,7 @@ import sys, traceback
 import logging
 log = logging.getLogger( __name__ )
 
-class UploadToolAction( object ):
+class UploadToolAction( ToolAction ):
     # Action for uploading files
     def __init__( self ):
         self.empty = False

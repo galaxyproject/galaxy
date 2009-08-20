@@ -37,6 +37,8 @@ class UniverseApplication( object ):
         self.toolbox = tools.ToolBox( self.config.tool_config, self.config.tool_path, self )
         # Load datatype converters
         self.datatypes_registry.load_datatype_converters( self.toolbox )
+        #load external metadata tool
+        self.datatypes_registry.load_external_metadata_tool( self.toolbox )
         # Load datatype indexers
         self.datatypes_registry.load_datatype_indexers( self.toolbox )
         #Load security policy

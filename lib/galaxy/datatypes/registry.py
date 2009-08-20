@@ -1,7 +1,7 @@
 """
 Provides mapping between extensions and datatypes, mime-types, etc.
 """
-import os
+import os, tempfile
 import logging
 import data, tabular, interval, images, sequence, qualityscore, genetics, xml, coverage, tracks, chrominfo
 import galaxy.util
@@ -18,6 +18,7 @@ class Registry( object ):
         self.datatype_converters = odict()
         self.datatype_indexers = odict()
         self.converters = []
+        self.set_external_metadata_tool = None
         self.indexers = []
         self.sniff_order = []
         self.upload_file_formats = []
@@ -110,6 +111,7 @@ class Registry( object ):
             self.datatypes_by_extension = { 
                 'ab1'         : images.Ab1(),
                 'axt'         : sequence.Axt(),
+                'bam'         : images.Bam(),
                 'bed'         : interval.Bed(), 
                 'binseq.zip'  : images.Binseq(),
                 'blastxml'    : xml.BlastXml(),
@@ -129,6 +131,7 @@ class Registry( object ):
                 'qualsolid'   : qualityscore.QualityScoreSOLiD(),
                 'qualsolexa'  : qualityscore.QualityScoreSolexa(),
                 'qual454'     : qualityscore.QualityScore454(),
+                'sam'         : tabular.Sam(), 
                 'scf'         : images.Scf(),
                 'tabular'     : tabular.Tabular(),
                 'taxonomy'    : tabular.Taxonomy(),
@@ -139,6 +142,7 @@ class Registry( object ):
             self.mimetypes_by_extension = { 
                 'ab1'         : 'application/octet-stream',
                 'axt'         : 'text/plain',
+                'bam'         : 'application/octet-stream',
                 'bed'         : 'text/plain', 
                 'binseq.zip'  : 'application/zip',
                 'blastxml'    : 'text/plain', 
@@ -156,6 +160,7 @@ class Registry( object ):
                 'qualsolid'   : 'text/plain',
                 'qualsolexa'  : 'text/plain',
                 'qual454'     : 'text/plain',
+                'sam'         : 'text/plain',
                 'scf'         : 'application/octet-stream',
                 'tabular'     : 'text/plain',
                 'taxonomy'    : 'text/plain',
@@ -183,7 +188,8 @@ class Registry( object ):
                 interval.CustomTrack(),
                 interval.Gff(),
                 interval.Gff3(),
-                interval.Interval()
+                interval.Interval(),
+                tabular.Sam()
             ]
         def append_to_sniff_order():
             # Just in case any supported data types are not included in the config's sniff_order section.
@@ -251,6 +257,31 @@ class Registry( object ):
             self.datatype_converters[source_datatype][target_datatype] = converter
             self.log.debug( "Loaded converter: %s", converter.id )
 
+    def load_external_metadata_tool( self, toolbox ):
+        """Adds a tool which is used to set external metadata"""
+        #we need to be able to add a job to the queue to set metadata. The queue will currently only accept jobs with an associated tool.
+        #We'll create a special tool to be used for Auto-Detecting metadata; this is less than ideal, but effective
+        #Properly building a tool without relying on parsing an XML file is near impossible...so we'll create a temporary file 
+        tool_xml_text = """
+            <tool id="__SET_METADATA__" name="Set External Metadata" version="1.0.0" tool_type="set_metadata">
+              <type class="SetMetadataTool" module="galaxy.tools"/>
+              <action module="galaxy.tools.actions.metadata" class="SetMetadataToolAction"/>
+              <command>$__SET_EXTERNAL_METADATA_COMMAND_LINE__</command>
+              <inputs>
+                <param format="data" name="input1" type="data" label="File to set metadata on."/>
+                <param name="__ORIGINAL_DATASET_STATE__" type="hidden" value=""/>
+                <param name="__SET_EXTERNAL_METADATA_COMMAND_LINE__" type="hidden" value=""/>
+              </inputs>
+            </tool>
+            """
+        tmp_name = tempfile.NamedTemporaryFile()
+        tmp_name.write( tool_xml_text )
+        tmp_name.flush()
+        set_meta_tool = toolbox.load_tool( tmp_name.name )
+        toolbox.tools_by_id[ set_meta_tool.id ] = set_meta_tool
+        self.set_external_metadata_tool = set_meta_tool
+        self.log.debug( "Loaded external metadata tool: %s", self.set_external_metadata_tool.id )
+        
     def load_datatype_indexers( self, toolbox ):
         """Adds indexers from self.indexers to the toolbox from app"""
         for elem in self.indexers:

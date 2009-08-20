@@ -183,7 +183,7 @@ class TestHistory( TwillTestCase ):
         self.view_shared_histories( check_str=history3.name, check_str2=admin_user.email )
         self.clone_history( self.security.encode_id( history3.id ),
                             'activatable',
-                            check_str_after_submit='is now included in your list of stored histories.' )
+                            check_str_after_submit='is now included in your previously stored histories.' )
         global history3_clone1
         history3_clone1 = galaxy.model.History.filter( and_( galaxy.model.History.table.c.deleted==False,
                                                              galaxy.model.History.table.c.user_id==regular_user1.id ) ) \
@@ -216,7 +216,7 @@ class TestHistory( TwillTestCase ):
         # Test cloning activatable datasets
         self.clone_history( self.security.encode_id( history3.id ),
                             'activatable',
-                            check_str_after_submit='is now included in your list of stored histories.' )
+                            check_str_after_submit='is now included in your previously stored histories.' )
         global history3_clone2
         history3_clone2 = galaxy.model.History.filter( and_( galaxy.model.History.table.c.deleted==False,
                                                              galaxy.model.History.table.c.user_id==admin_user.id ) ) \
@@ -244,7 +244,7 @@ class TestHistory( TwillTestCase ):
         # Test cloning only active datasets
         self.clone_history( self.security.encode_id( history3.id ),
                             'active',
-                            check_str_after_submit='is now included in your list of stored histories.' )
+                            check_str_after_submit='is now included in your previously stored histories.' )
         global history3_clone3
         history3_clone3 = galaxy.model.History.filter( and_( galaxy.model.History.table.c.deleted==False,
                                                              galaxy.model.History.table.c.user_id==admin_user.id ) ) \
@@ -355,7 +355,7 @@ class TestHistory( TwillTestCase ):
         # Clone restricted history5
         self.clone_history( self.security.encode_id( history5.id ),
                             'activatable',
-                            check_str_after_submit='is now included in your list of stored histories.' )
+                            check_str_after_submit='is now included in your previously stored histories.' )
         global history5_clone1
         history5_clone1 = galaxy.model.History.filter( and_( galaxy.model.History.table.c.deleted==False,
                                                              galaxy.model.History.table.c.user_id==regular_user1.id ) ) \
@@ -411,7 +411,7 @@ class TestHistory( TwillTestCase ):
         # Clone restricted history5
         self.clone_history( self.security.encode_id( history5.id ),
                             'activatable',
-                            check_str_after_submit='is now included in your list of stored histories.' )
+                            check_str_after_submit='is now included in your previously stored histories.' )
         global history5_clone2
         history5_clone2 = galaxy.model.History.filter( and_( galaxy.model.History.table.c.deleted==False,
                                                              galaxy.model.History.table.c.user_id==regular_user2.id ) ) \
@@ -484,7 +484,7 @@ class TestHistory( TwillTestCase ):
         # Clone restricted history5
         self.clone_history( self.security.encode_id( history5.id ),
                             'activatable',
-                            check_str_after_submit='is now included in your list of stored histories.' )
+                            check_str_after_submit='is now included in your previously stored histories.' )
         global history5_clone3
         history5_clone3 = galaxy.model.History.filter( and_( galaxy.model.History.table.c.deleted==False,
                                                              galaxy.model.History.table.c.user_id==regular_user2.id ) ) \
@@ -522,7 +522,7 @@ class TestHistory( TwillTestCase ):
         # Clone restricted history5
         self.clone_history( self.security.encode_id( history5.id ),
                             'activatable',
-                            check_str_after_submit='is now included in your list of stored histories.' )
+                            check_str_after_submit='is now included in your previously stored histories.' )
         global history5_clone4
         history5_clone4 = galaxy.model.History.filter( and_( galaxy.model.History.table.c.deleted==False,
                                                              galaxy.model.History.table.c.user_id==regular_user3.id ) ) \
@@ -591,15 +591,6 @@ class TestHistory( TwillTestCase ):
             pass
         self.logout()
         self.login( email=admin_user.email )
-        email = '%s,%s' % ( regular_user2.email, regular_user3.email )
-        check_str_after_submit = 'The following datasets can be shared with %s with no changes' % email
-        check_str_after_submit2 = 'The following datasets can be shared with %s by updating their permissions' % email
-        action_check_str_after_submit = 'History Options'
-        self.share_current_history( email,
-                                    check_str_after_submit=check_str_after_submit,
-                                    check_str_after_submit2=check_str_after_submit2,
-                                    action='no_share',
-                                    action_check_str_after_submit=action_check_str_after_submit )
     def test_070_history_show_and_hide_deleted_datasets( self ):
         """Testing displaying deleted history items"""
         # Logged in as admin_user

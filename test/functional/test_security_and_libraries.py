@@ -1451,7 +1451,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         check_edit_page2( latest_3_lddas )
         self.home()
     def test_195_upload_directory_of_files_from_libraries_view( self ):
-        """Testing uploading a directory of files to a root folder from the Libraries view"""
+        """Testing uploading a directory of files to a root folder from the Data Libraries view"""
         # admin_user will not have the option sto upload a directory of files from the
         # Libraries view since a sub-directory named the same as their email is not contained
         # in the configured user_library_import_dir.  However, since members of role_one have

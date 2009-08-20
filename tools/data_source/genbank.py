@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 from Bio import GenBank
-import sys, os, sets, textwrap
+import sys, os, textwrap
 
 assert sys.version_info[:2] >= ( 2, 4 )
 

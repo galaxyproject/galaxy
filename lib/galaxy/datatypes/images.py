@@ -4,6 +4,8 @@ Image classes
 
 import data
 import logging
+from galaxy.datatypes.metadata import MetadataElement
+from galaxy.datatypes import metadata
 from galaxy.datatypes.sniff import *
 from urllib import urlencode, quote_plus
 import zipfile
@@ -187,7 +189,7 @@ class Html( data.Text ):
         return 'text/html'
     def sniff( self, filename ):
         """
-        Determines wether the file is in html format
+        Determines whether the file is in html format
 
         >>> fname = get_test_fname( 'complete.bed' )
         >>> Html().sniff( fname )
@@ -233,3 +235,25 @@ class Laj( data.Text ):
             return dataset.peek
         except:
             return "peek unavailable"
+
+class Bam( data.Binary ):
+    """Class describing a BAM binary file"""
+    file_ext = "bam"
+    MetadataElement( name="bam_index", desc="BAM Index File", param=metadata.FileParameter, readonly=True, no_value=None, visible=False, optional=True )    
+    def set_peek( self, dataset ):
+        if not dataset.dataset.purged:
+            export_url = "/history_add_to?" + urlencode({'history_id':dataset.history_id,'ext':'bam','name':'bam alignments','info':'Alignments file','dbkey':dataset.dbkey})
+            dataset.peek  = "Binary bam alignments file" 
+            dataset.blurb = data.nice_size( dataset.get_size() )
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except:
+            return "Binary bam alignments file (%s)" % ( data.nice_size( dataset.get_size() ) )
+    def get_mime(self):
+        """Returns the mime type of the datatype"""
+        return 'application/octet-stream'
+        

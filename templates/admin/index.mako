@@ -89,7 +89,7 @@
                 </div>
                 <div class="toolSectionBody">
                   <div class="toolSectionBg">
-                    <div class="toolTitle"><a href="${h.url_for( controller='admin', action='browse_libraries' )}" target="galaxy_main">Manage libraries</a></div>
+                    <div class="toolTitle"><a href="${h.url_for( controller='admin', action='browse_libraries' )}" target="galaxy_main">Manage data libraries</a></div>
                   </div>
                 </div>
                 <div class="toolSectionPad"></div>

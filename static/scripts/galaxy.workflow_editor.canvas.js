@@ -359,6 +359,7 @@ function Workflow( canvas_container ) {
     this.nodes = {};
     this.name = null;
     this.has_changes = false;
+    this.active_form_has_changes = false;
 }
 $.extend( Workflow.prototype, {
     add_node : function( node ) {
@@ -438,6 +439,14 @@ $.extend( Workflow.prototype, {
             });
         });
     },
+    check_changes_in_active_form : function() {
+        // If active form has changed, save it
+        if (this.active_form_has_changes) {
+            this.has_changes = true;
+            $("#right-content").find("form").submit();
+            this.active_form_has_changes = false;
+        }
+    },
     clear_active_node : function() {
         if ( this.active_node ) {
             this.active_node.make_inactive();
@@ -447,6 +456,7 @@ $.extend( Workflow.prototype, {
     },
     activate_node : function( node ) {
         if ( this.active_node != node ) {
+            this.check_changes_in_active_form();
             this.clear_active_node();
             parent.show_form_for_tool( node.form_html, node );
             node.make_active();
@@ -461,6 +471,7 @@ $.extend( Workflow.prototype, {
         }
     },
     layout : function () {
+        this.check_changes_in_active_form();
         // Prepare predecessor / successor tracking
         var n_pred = {};
         var successors = {};
@@ -502,7 +513,7 @@ $.extend( Workflow.prototype, {
                 var v = level_parents[k];
                 delete n_pred[v];
                 for ( var sk in successors[v] ) {
-                    n_pred[ sucessors[v][sk] ] -= 1;
+                    n_pred[ successors[v][sk] ] -= 1;
                 }
             }
         }
@@ -804,6 +815,10 @@ $.extend( CanvasManager.prototype, {
             });
             self.draw_overview();
         });
+        
+        /*  Disable dragging for child element of the panel so that resizing can
+            only be done by dragging the borders */
+        $("#overview-border div").bind("drag", function(e) { });
         
     },
     update_viewport_overlay: function() {

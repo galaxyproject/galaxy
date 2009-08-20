@@ -84,7 +84,7 @@ $().ready(function() {
 <br clear="left"/>
 <br/>
 %if len( library_dataset_actions ) > 0:
-    <h3>Library datasets associated with role '${role.name}'</h3>
+    <h3>Data library datasets associated with role '${role.name}'</h3>
     <table class="manage-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
         <tr>
             <td>

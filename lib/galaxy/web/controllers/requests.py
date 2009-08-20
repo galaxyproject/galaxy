@@ -147,16 +147,12 @@ class Requests( BaseController ):
                                     helptext=''))
         # library associated
         if request.library:
-            request_details.append(dict(label='Library', 
-                                        value=request.library.name, 
-                                        helptext='Associated library where the resultant \
-                                                  dataset will be stored'))
+            value = request.library.name
         else:
-            request_details.append(dict(label='Library', 
-                                        value=None, 
-                                        helptext='Associated library where the resultant \
-                                                  dataset will be stored'))
-
+            value = None
+        request_details.append( dict( label='Data library', 
+                                      value=value, 
+                                      helptext='Data library where the resultant dataset will be stored' ) )
         # form fields
         for index, field in enumerate(request.type.request_form.fields):
             if field['required']:
@@ -489,18 +485,17 @@ class Requests( BaseController ):
             else:
                 lib_list.add_option(lib.name, lib.id)
         if lib_id == 'new':
-            lib_list.add_option('Create a new library', 'new', selected=True)
+            lib_list.add_option('Create a new data library', 'new', selected=True)
         else:
-            lib_list.add_option('Create a new library', 'new')
-        widget = dict(label='Library', 
+            lib_list.add_option('Create a new data library', 'new')
+        widget = dict(label='Data library', 
                       widget=lib_list, 
-                      helptext='Associated library where the resultant \
-                                dataset will be stored.')
+                      helptext='Data library where the resultant dataset will be stored.')
         if lib_id == 'new':
-            new_lib = dict(label='Create a new Library', 
+            new_lib = dict(label='Create a new data library', 
                            widget=TextField('new_library_name', 40,
                                      util.restore_text( params.get( 'new_library_name', ''  ) )), 
-                           helptext='Enter a library name here to request a new library')
+                           helptext='Enter a name here to request a new data library')
             return [widget, new_lib]
         else:
             return [widget]
@@ -510,7 +505,7 @@ class Requests( BaseController ):
         '''
         empty_fields = []
 #        if not request.library:
-#            empty_fields.append('Library')
+#            empty_fields.append('Data library')
         # check rest of the fields of the form
         for index, field in enumerate(request.type.request_form.fields):
             if field['required'] == 'required' and request.values.content[index] in ['', None]:

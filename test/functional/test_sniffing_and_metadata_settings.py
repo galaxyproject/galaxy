@@ -226,6 +226,16 @@ class SniffingAndMetaDataSettings( TwillTestCase ):
         assert latest_hda is not None, "Problem retrieving fastqsanger hda from the database"
         if not latest_hda.name == '1.fastqsanger' and not latest_hda.extension == 'fastqsanger':
             raise AssertionError, "fastqsanger data type was not correctly sniffed."
+    def test_090_sam_datatype( self ):
+        """Testing correctly sniffing sam format upon upload"""
+        self.upload_file( '1.sam' )
+        self.verify_dataset_correctness( '1.sam' )
+        self.check_history_for_string( '1.sam format: <span class="sam">sam</span>, database: \? Info: uploaded sam file' )
+        latest_hda = galaxy.model.HistoryDatasetAssociation.query() \
+            .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ).first()
+        assert latest_hda is not None, "Problem retrieving sam hda from the database"
+        if not latest_hda.name == '1.sam' and not latest_hda.extension == 'sam':
+            raise AssertionError, "sam data type was not correctly sniffed."
     def test_9999_clean_up( self ):
         self.delete_history( id=self.security.encode_id( history1.id ) )
         self.logout()
