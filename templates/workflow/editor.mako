@@ -31,6 +31,7 @@
     <script type='text/javascript' src="${h.url_for('/static/scripts/jquery.event.hover.js')}"> </script>
     <script type='text/javascript' src="${h.url_for('/static/scripts/jquery.form.js')}"> </script>
     <script type='text/javascript' src="${h.url_for('/static/scripts/jquery.jstore-all.js')}"> </script>
+    <script type='text/javascript' src="${h.url_for('/static/scripts/json2.js')}"> </script>
 
     <script type='text/javascript' src="${h.url_for('/static/scripts/galaxy.base.js')}"> </script>
     <script type='text/javascript' src="${h.url_for('/static/scripts/galaxy.workflow_editor.canvas.js')}"> </script>
