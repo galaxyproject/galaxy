@@ -1,4 +1,4 @@
-from . import ToolAction
+from __init__ import ToolAction
 from galaxy.datatypes.metadata import JobExternalOutputMetadataWrapper
 
 import logging
