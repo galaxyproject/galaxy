@@ -304,21 +304,22 @@ class FileToolParameter( ToolParameter ):
     def get_html_field( self, trans=None, value=None, other_values={}  ):
         return form_builder.FileField( self.name, ajax = self.ajax, value = value )
     def from_html( self, value, trans=None, other_values={} ):
+        # TODO: Fix nginx upload module support
         # Middleware or proxies may encode files in special ways (TODO: this
         # should be pluggable)
-        if type( value ) == dict:
-            upload_location = self.tool.app.config.nginx_upload_location
-            assert upload_location, \
-                "Request appears to have been processed by nginx_upload_module \
-                but Galaxy is not configured to recgonize it"
-            # Check that the file is in the right location
-            local_filename = os.path.abspath( value['path'] )
-            assert local_filename.startswith( upload_location ), \
-                "Filename provided by nginx is not in correct directory"
-            value = Bunch(
-                filename = value["name"],
-                local_filename = local_filename
-            )
+        #if type( value ) == dict:
+        #    upload_location = self.tool.app.config.nginx_upload_location
+        #    assert upload_location, \
+        #        "Request appears to have been processed by nginx_upload_module \
+        #        but Galaxy is not configured to recgonize it"
+        #    # Check that the file is in the right location
+        #    local_filename = os.path.abspath( value['path'] )
+        #    assert local_filename.startswith( upload_location ), \
+        #        "Filename provided by nginx is not in correct directory"
+        #    value = Bunch(
+        #        filename = value["name"],
+        #        local_filename = local_filename
+        #    )
         return value
     def get_required_enctype( self ):
         """
@@ -330,10 +331,18 @@ class FileToolParameter( ToolParameter ):
             return None
         elif isinstance( value, unicode ) or isinstance( value, str ):
             return value
+        elif isinstance( value, dict ):
+            # or should we jsonify?
+            try:
+                return value['local_filename']
+            except:
+                return None
         raise Exception( "FileToolParameter cannot be persisted" )
     def to_python( self, value, app ):
         if value is None:
             return None
+        elif isinstance( value, unicode ) or isinstance( value, str ):
+            return value
         else:
             raise Exception( "FileToolParameter cannot be persisted" )
     def get_initial_value( self, trans, context ):

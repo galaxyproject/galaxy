@@ -72,9 +72,6 @@
     <script type="text/javascript">
         jQuery( function() {
             $("iframe#galaxy_main").load( function() {
-                ##$(this.contentDocument).find("input[galaxy-ajax-upload]").each( function() {
-                ##$("iframe")[0].contentDocument.body.innerHTML = "HELLO"
-                ##$(this.contentWindow.document).find("input[galaxy-ajax-upload]").each( function() {
                 $(this).contents().find("form").each( function() { 
                     if ( $(this).find("input[galaxy-ajax-upload]").length > 0 ){
                         $(this).submit( function() {

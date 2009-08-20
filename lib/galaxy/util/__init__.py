@@ -3,7 +3,7 @@ Utility functions used systemwide.
 
 """
 import logging
-import threading, random, string, re, binascii, pickle, time, datetime, math, re, os, sys
+import threading, random, string, re, binascii, pickle, time, datetime, math, re, os, sys, tempfile
 
 # Older py compatibility
 try:
@@ -453,6 +453,26 @@ def stringify_dictionary_keys( in_dict ):
     for key, value in in_dict.iteritems():
         out_dict[ str( key ) ] = value
     return out_dict
+
+def mkstemp_ln( src, prefix='mkstemp_ln_' ):
+    """
+    From tempfile._mkstemp_inner, generate a hard link in the same dir with a
+    random name.  Created so we can persist the underlying file of a
+    NamedTemporaryFile upon its closure.
+    """
+    dir = os.path.dirname(src)
+    names = tempfile._get_candidate_names()
+    for seq in xrange(tempfile.TMP_MAX):
+        name = names.next()
+        file = os.path.join(dir, prefix + name)
+        try:
+            linked_path = os.link( src, file )
+            return (os.path.abspath(file))
+        except OSError, e:
+            if e.errno == errno.EEXIST:
+                continue # try again
+            raise
+    raise IOError, (errno.EEXIST, "No usable temporary file name found")
 
 galaxy_root_path = os.path.join(__path__[0], "..","..","..")
 dbnames = read_dbnames( os.path.join( galaxy_root_path, "tool-data", "shared", "ucsc", "builds.txt" ) ) #this list is used in edit attributes and the upload tool
