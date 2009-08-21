@@ -15,6 +15,10 @@ from galaxy.workflow.modules import *
 from galaxy.model.mapping import desc
 from galaxy.model.orm import *
 
+from boto.ec2.connection import EC2Connection
+import logging
+log = logging.getLogger( __name__ )
+
 class CloudController( BaseController ):
     
     @web.expose
@@ -28,20 +32,18 @@ class CloudController( BaseController ):
         Render cloud main page (management of cloud resources)
         """
         user = trans.get_user()
+        #awsCredentials = 0
+        awsCredentials = trans.sa_session.query ( model.StoredUserCredentials ).all()        
+        log.debug( "in list" )
+        log.debug( awsCredentials )
+        
         workflows = trans.sa_session.query( model.StoredWorkflow ) \
             .filter_by( user=user, deleted=False ) \
             .order_by( desc( model.StoredWorkflow.c.update_time ) ) \
             .all()
-        shared_by_others = trans.sa_session \
-            .query( model.StoredWorkflowUserShareAssociation ) \
-            .filter_by( user=user ) \
-            .join( 'stored_workflow' ) \
-            .filter( model.StoredWorkflow.deleted == False ) \
-            .order_by( desc( model.StoredWorkflow.update_time ) ) \
-            .all()
         return trans.fill_template( "cloud/configure_cloud.mako",
-                                    workflows = workflows,
-                                    shared_by_others = shared_by_others )
+                                    awsCredentials = awsCredentials,
+                                    workflows = workflows )
     
     @web.expose
     @web.require_login( "use Galaxy workflows" )
@@ -219,7 +221,30 @@ class CloudController( BaseController ):
         Add user's AWS credentials stored under name `account_name`.
         """
         user = trans.get_user()
+        
+        """
+        awsCredentials = trans.sa_session.query ( model.StoredUserCredentials ).all()        
+        log.debug( "in add" ) 
+        log.debug( user )
+        log.debug( stored_credentials.name )
+        log.debug( awsCredentials )
+        """
+        
         if account_name is not None:
+            # Create new user stored credentials
+            stored_credentials = model.StoredUserCredentials()
+            stored_credentials.name = account_name
+            stored_credentials.user = user
+            stored_credentials.access_key = "access key"
+            stored_credentials.secret_key = "secret key"
+            # Persist
+            session = trans.sa_session
+            session.save_or_update( stored_credentials )
+            session.flush()
+            # Display the management page
+            trans.set_message( "Credential '%s' created" % stored_credentials.name )
+            return self.list( trans )
+            
             """
             # Create the new stored workflow
             stored_workflow = model.StoredWorkflow()

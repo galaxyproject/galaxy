@@ -25,30 +25,29 @@
             ## <th>Last Updated</th>
             <th></th>
         </tr>
-        %for i, workflow in enumerate( workflows ):
+        %for i, awsCredential in enumerate( awsCredentials ):
             <tr>
                 <td>
-                    ${workflow.name}
+                    ${awsCredential.name}
                     <a id="wf-${i}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
                 </td>
-                <td>${len(workflow.latest_workflow.steps)}</td>
-                ## <td>${str(workflow.update_time)[:19]}</td>
+                ## Comment <td>${len(workflow.latest_workflow.steps)}</td>
+                ## Comment <td>${str(workflow.update_time)[:19]}</td>
                 <td>
                     <div popupmenu="wf-${i}-popup">
-                    <a class="action-button" href="${h.url_for( action='editor', id=trans.security.encode_id(workflow.id) )}" target="_parent">Edit</a>
-                    <a class="action-button" href="${h.url_for( controller='root', action='index', workflow_id=trans.security.encode_id(workflow.id) )}" target="_parent">Run</a>
-                    <a class="action-button" href="${h.url_for( action='clone', id=trans.security.encode_id(workflow.id) )}">Clone</a>
-                    <a class="action-button" href="${h.url_for( action='rename', id=trans.security.encode_id(workflow.id) )}">Rename</a>
-                    <a class="action-button" href="${h.url_for( action='sharing', id=trans.security.encode_id(workflow.id) )}">Sharing</a>
-                    <a class="action-button" confirm="Are you sure you want to delete workflow '${workflow.name}'?" href="${h.url_for( action='delete', id=trans.security.encode_id(workflow.id) )}">Delete</a>
+                    ##<a class="action-button" href="${h.url_for( action='editor', id=trans.security.encode_id(workflow.id) )}" target="_parent">Edit</a>
+                    ##<a class="action-button" href="${h.url_for( controller='root', action='index', workflow_id=trans.security.encode_id(workflow.id) )}" target="_parent">Run</a>
+                    ##<a class="action-button" href="${h.url_for( action='clone', id=trans.security.encode_id(workflow.id) )}">Clone</a>
+                    ##<a class="action-button" href="${h.url_for( action='rename', id=trans.security.encode_id(workflow.id) )}">Rename</a>
+                    ##<a class="action-button" href="${h.url_for( action='sharing', id=trans.security.encode_id(workflow.id) )}">Sharing</a>
+                    ##<a class="action-button" confirm="Are you sure you want to delete workflow '${workflow.name}'?" href="${h.url_for( action='delete', id=trans.security.encode_id(workflow.id) )}">Delete</a>
                     </div>
                 </td>
             </tr>    
         %endfor
     </table>
 %else:
-
-    You have no AWS credentials associated with your Galaxy account: 
+   You have no AWS credentials associated with your Galaxy account: 
 	<a class="action-button" href="${h.url_for( action='add' )}">
         <img src="${h.url_for('/static/images/silk/add.png')}" />
         <span>Add AWS credentials</span>

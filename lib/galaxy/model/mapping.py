@@ -379,6 +379,16 @@ GalaxySessionToHistoryAssociation.table = Table( "galaxy_session_to_history", me
     Column( "session_id", Integer, ForeignKey( "galaxy_session.id" ), index=True ),
     Column( "history_id", Integer, ForeignKey( "history.id" ), index=True ) )
 
+StoredUserCredentials.table = Table( "stored_user_credentials", metadata, 
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True, nullable=False ),
+    Column( "name", TEXT),
+    Column( "access_key", TEXT),
+    Column( "secret_key", TEXT)
+    )
+
 StoredWorkflow.table = Table( "stored_workflow", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
@@ -883,6 +893,10 @@ assign_mapper( context, WorkflowStepConnection, WorkflowStepConnection.table,
                                           primaryjoin=( WorkflowStepConnection.table.c.input_step_id == WorkflowStep.table.c.id ) ),
                      output_step=relation( WorkflowStep, backref="output_connections", cascade="all",
                                            primaryjoin=( WorkflowStepConnection.table.c.output_step_id == WorkflowStep.table.c.id ) ) ) )
+
+assign_mapper( context, StoredUserCredentials, StoredUserCredentials.table,
+    properties=dict( user=relation( User) )
+                    )
 
 assign_mapper( context, StoredWorkflow, StoredWorkflow.table,
     properties=dict( user=relation( User ),

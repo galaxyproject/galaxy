@@ -35,6 +35,7 @@ class User( object ):
         self.purged = False
         # Relationships
         self.histories = []
+        self.credentials = []
         
     def set_password_cleartext( self, cleartext ):
         """Set 'self.password' to the digest of 'cleartext'."""
@@ -164,6 +165,15 @@ class UserGroupAssociation( object ):
     def __init__( self, user, group ):
         self.user = user
         self.group = group
+
+class Credential( object ):
+    """
+    Crediential stores user credential data for accessing cloud resources
+    """
+    def __init__(self, name=None, accessKey=None, secretKey=None):
+        self.name = name or "Unnamed account"
+        self.accessKey = accesKey
+        self.secretKey = secretKey
 
 class History( object ):
     def __init__( self, id=None, name=None, user=None ):
@@ -930,7 +940,16 @@ class GalaxySessionToHistoryAssociation( object ):
     def __init__( self, galaxy_session, history ):
         self.galaxy_session = galaxy_session
         self.history = history
-        
+       
+class StoredUserCredentials( object ):
+    def __init__( self ):
+        self.id = None
+        self.user = None
+        self.name = None
+        self.accessKey = None
+        self.secretKey = None
+        self.credentials = []
+ 
 class StoredWorkflow( object ):
     def __init__( self ):
         self.id = None
