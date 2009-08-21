@@ -1,4 +1,4 @@
-/*!
+/*
  * jStore - Persistent Client-Side Storage
  *
  * Copyright (c) 2009 Eric Garside (http://eric.garside.name)
@@ -71,7 +71,7 @@
     return Class;
   };
 })();
-/*!
+/*
  * jStore Delegate Framework
  * Copyright (c) 2009 Eric Garside (http://eric.garside.name)
  */
@@ -357,7 +357,7 @@
 	});
 	
 })(jQuery);
-/*!
+/*
  * jStore DOM Storage Engine
  * Copyright (c) 2009 Eric Garside (http://eric.garside.name)
  */
@@ -426,7 +426,7 @@
 	$.jStore.EngineOrder[ 1 ] = 'local';
 
 })(jQuery);
-/*!
+/*
  * jStore Flash Storage Engine
  * Copyright (c) 2009 Eric Garside (http://eric.garside.name)
  * jStore.swf Copyright (c) 2008 Daniel Bulli (http://www.nuff-respec.com)
@@ -551,7 +551,7 @@
 function flash_ready(){
 	$.jStore.delegate.trigger('flash-ready');
 }
-/*!
+/*
  * jStore Google Gears Storage Engine
  * Copyright (c) 2009 Eric Garside (http://eric.garside.name)
  */
@@ -621,7 +621,7 @@ function flash_ready(){
 	$.jStore.EngineOrder[ 3 ] = 'gears';
 
 })(jQuery);
-/*!
+/*
  * jStore HTML5 Specification Storage Engine
  * Copyright (c) 2009 Eric Garside (http://eric.garside.name)
  */
@@ -693,7 +693,7 @@ function flash_ready(){
 	$.jStore.EngineOrder[ 0 ] = 'html5';
 
 })(jQuery);
-/*!*
+/*
  * jStore IE Storage Engine
  * Copyright (c) 2009 Eric Garside (http://eric.garside.name)
  */
