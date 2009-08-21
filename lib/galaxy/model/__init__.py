@@ -166,15 +166,6 @@ class UserGroupAssociation( object ):
         self.user = user
         self.group = group
 
-class Credential( object ):
-    """
-    Crediential stores user credential data for accessing cloud resources
-    """
-    def __init__(self, name=None, accessKey=None, secretKey=None):
-        self.name = name or "Unnamed account"
-        self.accessKey = accesKey
-        self.secretKey = secretKey
-
 class History( object ):
     def __init__( self, id=None, name=None, user=None ):
         self.id = id

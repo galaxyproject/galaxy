@@ -1,6 +1,6 @@
 <%inherit file="/base.mako"/>
 
-<%def name="title()">Workflow home</%def>
+<%def name="title()">Cloud home</%def>
 
 %if message:
 <%
@@ -18,10 +18,19 @@
 <h2>Galaxy in the clouds</h2>
  
 %if awsCredentials:
+	<ul class="manage-table-actions">
+	    <li>
+	        <a class="action-button" href="${h.url_for( action='add' )}">
+	            <img src="${h.url_for('/static/images/silk/add.png')}" />
+	            <span>Add AWS credentials</span>
+	        </a>
+	    </li>
+	</ul>
+
     <table class="mange-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
         <tr class="header">
-            <th>Name</th>
-            <th># of Steps</th>
+            <th>Credentials Name</th>
+            <th>Default</th>
             ## <th>Last Updated</th>
             <th></th>
         </tr>
@@ -32,15 +41,12 @@
                     <a id="wf-${i}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
                 </td>
                 ## Comment <td>${len(workflow.latest_workflow.steps)}</td>
-                ## Comment <td>${str(workflow.update_time)[:19]}</td>
+                ##<td>${str(awsCredentials.update_time)[:19]}</td>
                 <td>
                     <div popupmenu="wf-${i}-popup">
-                    ##<a class="action-button" href="${h.url_for( action='editor', id=trans.security.encode_id(workflow.id) )}" target="_parent">Edit</a>
-                    ##<a class="action-button" href="${h.url_for( controller='root', action='index', workflow_id=trans.security.encode_id(workflow.id) )}" target="_parent">Run</a>
-                    ##<a class="action-button" href="${h.url_for( action='clone', id=trans.security.encode_id(workflow.id) )}">Clone</a>
-                    ##<a class="action-button" href="${h.url_for( action='rename', id=trans.security.encode_id(workflow.id) )}">Rename</a>
-                    ##<a class="action-button" href="${h.url_for( action='sharing', id=trans.security.encode_id(workflow.id) )}">Sharing</a>
-                    ##<a class="action-button" confirm="Are you sure you want to delete workflow '${workflow.name}'?" href="${h.url_for( action='delete', id=trans.security.encode_id(workflow.id) )}">Delete</a>
+                    <a class="action-button" href="${h.url_for( action='makeDefault', id=trans.security.encode_id(awsCredential.id) )}" target="_parent">Made default</a>
+                    <a class="action-button" href="${h.url_for( action='rename', id=trans.security.encode_id(awsCredential.id) )}">Rename</a>
+                    <a class="action-button" confirm="Are you sure you want to delete workflow '${awsCredential.name}'?" href="${h.url_for( action='delete', id=trans.security.encode_id(awsCredential.id) )}">Delete</a>
                     </div>
                 </td>
             </tr>    

@@ -46,6 +46,17 @@ class CloudController( BaseController ):
                                     workflows = workflows )
     
     @web.expose
+    @web.require_login( "use Galaxy cloud" )
+    def makeDefault( self, trans ):
+        """ 
+        Set current credentials as default to be used for submitting jobs
+        """
+        awsCredentials = trans.sa_session.query ( model.StoredUserCredentials ).all()        
+        
+        return trans.fill_template( "cloud/configure_cloud.mako",
+                                    awsCredentials = awsCredentials )
+    
+    @web.expose
     @web.require_login( "use Galaxy workflows" )
     def list_for_run( self, trans ):
         """
@@ -146,20 +157,20 @@ class CloudController( BaseController ):
             session.flush()
             # Redirect to load galaxy frames.
             return trans.response.send_redirect( url_for( controller='workflow' ) )
-    
+      
     @web.expose
-    @web.require_login( "use Galaxy workflows" )
+    @web.require_login( "use Galaxy cloud" )
     def rename( self, trans, id, new_name=None ):
-        stored = get_stored_workflow( trans, id )
+        stored = get_stored_credentials( trans, id )
         if new_name is not None:
             stored.name = new_name
             trans.sa_session.flush()
-            trans.set_message( "Workflow renamed to '%s'." % new_name )
+            trans.set_message( "Credentials renamed to '%s'." % new_name )
             return self.list( trans )
         else:
-            return form( url_for( id=trans.security.encode_id(stored.id) ), "Rename workflow", submit_text="Rename" ) \
-                .add_text( "new_name", "Workflow Name", value=stored.name )
-    
+            return form( url_for( id=trans.security.encode_id(stored.id) ), "Rename credentials", submit_text="Rename" ) \
+                .add_text( "new_name", "Credentials Name", value=stored.name )
+        
     @web.expose
     @web.require_login( "use Galaxy workflows" )
     def clone( self, trans, id ):
@@ -226,23 +237,23 @@ class CloudController( BaseController ):
         awsCredentials = trans.sa_session.query ( model.StoredUserCredentials ).all()        
         log.debug( "in add" ) 
         log.debug( user )
-        log.debug( stored_credentials.name )
+        log.debug( credentials.name )
         log.debug( awsCredentials )
         """
         
         if account_name is not None:
             # Create new user stored credentials
-            stored_credentials = model.StoredUserCredentials()
-            stored_credentials.name = account_name
-            stored_credentials.user = user
-            stored_credentials.access_key = "access key"
-            stored_credentials.secret_key = "secret key"
+            credentials = model.StoredUserCredentials()
+            credentials.name = account_name
+            credentials.user = user
+            credentials.access_key = "access key"
+            credentials.secret_key = "secret key"
             # Persist
             session = trans.sa_session
-            session.save_or_update( stored_credentials )
+            session.save_or_update( credentials )
             session.flush()
             # Display the management page
-            trans.set_message( "Credential '%s' created" % stored_credentials.name )
+            trans.set_message( "Credential '%s' created" % credentials.name )
             return self.list( trans )
             
             """
@@ -264,21 +275,26 @@ class CloudController( BaseController ):
             return self.list( trans )
            """
         else:
-            return form( url_for(), "Add AWS credentials", submit_text="Add" ) \
+            return trans.fill_template("cloud/credentials.mako") 
+        """
+        form( url_for(), "Add AWS credentials", submit_text="Add" ) \
                 .add_text( "account_name", "Account Name", value="Unnamed credentials" )
-    
+                .add_text( "access_key", "Access Key", value="" )
+                .add_text( "secret_key", "Secret Key", value="" )
+        """
     @web.expose
     def delete( self, trans, id=None ):
         """
-        Mark a workflow as deleted
+        Delete credentials 
         """        
-        # Load workflow from database
-        stored = get_stored_workflow( trans, id )
-        # Marke as deleted and save
-        stored.deleted = True
+        # Load credentials from database
+        stored = get_stored_credentials( trans, id )
+        # Delete and save
+        sess = trans.sa_session
+        sess.delete( stored )
         stored.flush()
         # Display the management page
-        trans.set_message( "Workflow '%s' deleted" % stored.name )
+        trans.set_message( "Credentials '%s' deleted." % stored.name )
         return self.list( trans )
         
     @web.expose
@@ -723,21 +739,21 @@ class CloudController( BaseController ):
     
 ## ---- Utility methods -------------------------------------------------------
         
-def get_stored_workflow( trans, id, check_ownership=True ):
+def get_stored_credentials( trans, id, check_ownership=True ):
     """
-    Get a StoredWorkflow from the database by id, verifying ownership. 
+    Get a StoredUserCredntials from the database by id, verifying ownership. 
     """
-    # Load workflow from database
+    # Load credentials from database
     id = trans.security.decode_id( id )
-    stored = trans.sa_session.query( model.StoredWorkflow ).get( id )
+    stored = trans.sa_session.query( model.StoredUserCredentials ).get( id )
     if not stored:
-        error( "Workflow not found" )
+        error( "Credentials not found" )
     # Verify ownership
     user = trans.get_user()
     if not user:
-        error( "Must be logged in to use workflows" )
+        error( "Must be logged in to use the cloud." )
     if check_ownership and not( stored.user == user ):
-        error( "Workflow is not owned by current user" )
+        error( "Credentials are not owned by current user." )
     # Looks good
     return stored
 
