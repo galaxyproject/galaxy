@@ -167,7 +167,7 @@ class TestFormsAndRequests( TwillTestCase ):
         user_address.flush()
         user_address.user.refresh()
     def test_030_create_request( self ):
-        """Testing creating and submitting a request as a regular user"""
+        """Testing creating, editing and submitting a request as a regular user"""
         # login as a regular user
         self.logout()
         self.login( email='test1@bx.psu.edu' )
@@ -193,6 +193,12 @@ class TestFormsAndRequests( TwillTestCase ):
             self.check_page_for_string( 'Unsubmitted' )
             for field_value in fields:
                 self.check_page_for_string( field_value )
+        # edit this request
+        fields = ['field one value (editted)', 'field two value (editted)', str(user_address.id)]
+        self.edit_request(request_one.id, request_one.name, request_one.name+' (Renamed)', request_one.desc+' (Re-described)', library_one.id, fields)
+        request_one.refresh()
+        self.check_page_for_string( request_name+' (Renamed)' )
+        self.check_page_for_string( request_desc+' (Re-described)' )
         # submit the request
         self.submit_request( request_one.id, request_one.name )
         request_one.refresh()
@@ -260,6 +266,7 @@ class TestFormsAndRequests( TwillTestCase ):
 #        # check if the request's state is now set to 'submitted'
 #        assert request_two.state is not request_two.states.SUBMITTED, "The state of the request '%s' should be set to '%s'" % ( request_two.name, request_two.states.SUBMITTED )
 
+        
         
         
         

@@ -1088,6 +1088,16 @@ class TwillTestCase( unittest.TestCase ):
         for index, field_value in enumerate(fields):
             tc.fv( "1", "field_%i" % index, field_value )
         tc.submit( "create_request_button" )
+    def edit_request( self, request_id, name, new_name, new_desc, new_library_id, new_fields):
+        self.home()
+        self.visit_url( "%s/requests/edit?request_id=%i&show=True" % (self.url, request_id) )
+        self.check_page_for_string( 'Edit request "%s"' % name )
+        tc.fv( "1", "name", new_name )
+        tc.fv( "1", "desc", new_desc )
+        tc.fv( "1", "library_id", str(new_library_id) )
+        for index, field_value in enumerate(new_fields):
+            tc.fv( "1", "field_%i" % index, field_value )
+        tc.submit( "save_changes_request_button" )
     def add_samples( self, request_id, request_name, samples ):
         self.home()
         self.visit_url( "%s/requests/list?sort=-create_time&operation=show_request&id=%s" % ( self.url, self.security.encode_id( request_id ) ))

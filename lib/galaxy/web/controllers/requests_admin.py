@@ -32,7 +32,7 @@ class RequestsListGrid( grids.Grid ):
     ]
     operations = [
         grids.GridOperation( "Submit", allow_multiple=False, condition=( lambda item: not item.deleted and item.unsubmitted() and item.samples )  ),
-        grids.GridOperation( "Edit", allow_multiple=False, condition=( lambda item: not item.deleted and item.unsubmitted() )  ),
+        grids.GridOperation( "Edit", allow_multiple=False, condition=( lambda item: not item.deleted )  ),
         grids.GridOperation( "Delete", allow_multiple=False, condition=( lambda item: not item.deleted and item.unsubmitted() )  ),
         grids.GridOperation( "Undelete", condition=( lambda item: item.deleted ) ),    
     ]
@@ -71,14 +71,15 @@ class Requests( BaseController ):
         '''
         List all request made by the current user
         '''
-        status = message = None
+        message = util.restore_text( kwargs.get( 'message', ''  ) )
+        status = kwargs.get( 'status', 'done' )
         self.request_grid.default_filter = dict(state=trans.app.model.Request.states.SUBMITTED, 
                                                 deleted=False)
         if 'operation' in kwargs:
             operation = kwargs['operation'].lower()
             if operation == "show_request":
                 id = trans.security.decode_id(kwargs['id'])
-                return self.__show_request(trans, id)
+                return self.__show_request(trans, id, status, message)
             elif operation == "submit":
                 id = trans.security.decode_id(kwargs['id'])
                 return self.__submit(trans, id)
@@ -110,7 +111,7 @@ class Requests( BaseController ):
         try:
             request = trans.app.model.Request.get(int(params.get('request_id', None)))
         except:
-            return trans.response.send_redirect( web.url_for( controller='requests',
+            return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                               action='list',
                                                               status='error',
                                                               message="Invalid request ID",
@@ -125,13 +126,13 @@ class Requests( BaseController ):
                     kwd['messagetype'] = 'error'
                     kwd['msg'] = msg
                     kwd['show'] = 'True'
-                    return trans.response.send_redirect( web.url_for( controller='requests',
+                    return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                                       action='edit',
                                                                       **kwd) )
                 request = self.__save_request(trans, request, **kwd)
                 msg = 'The changes made to the request named %s has been saved' % request.name
                 if params.get('save_changes_request_button', False) == 'Save changes':
-                    return trans.response.send_redirect( web.url_for( controller='requests',
+                    return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                                       action='list',
                                                                       message=msg ,
                                                                       status='done') )
@@ -139,7 +140,7 @@ class Requests( BaseController ):
                     new_kwd = {}
                     new_kwd['request_id'] = request.id
                     new_kwd['edit_samples_button'] = 'Edit samples'
-                    return trans.response.send_redirect( web.url_for( controller='requests',
+                    return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                                       action='show_request',
                                                                       msg=msg ,
                                                                       messagetype='done',
@@ -177,7 +178,7 @@ class Requests( BaseController ):
                             widget=TextField('desc', 40, desc), 
                             helptext='(Optional)'))
         # libraries selectbox
-        libui = self.__library_ui(trans, trans.user, request, **kwd)
+        libui = self.__library_ui(trans, request.user, request, **kwd)
         widgets = widgets + libui
         widgets = widgets + get_form_widgets(trans, request.type.request_form, request.values.content, request.user, **kwd)
         return trans.fill_template( '/admin/requests/edit_request.mako',
@@ -212,6 +213,7 @@ class Requests( BaseController ):
         kwd['id'] = trans.security.encode_id(request.id)
         return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                           action='list',
+                                                          show_filter=trans.app.model.Request.states.UNSUBMITTED,
                                                           status='done',
                                                           message='The request <b>%s</b> has been deleted.' % request.name,
                                                           **kwd) )
@@ -233,6 +235,7 @@ class Requests( BaseController ):
         kwd['id'] = trans.security.encode_id(request.id)
         return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                           action='list',
+                                                          show_filter=trans.app.model.Request.states.UNSUBMITTED,
                                                           status='done',
                                                           message='The request <b>%s</b> has been undeleted.' % request.name,                                                          
                                                           **kwd) )
@@ -290,7 +293,7 @@ class Requests( BaseController ):
         if msg:
             return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                               action='edit',
-                                                              messagetype = 'error',
+                                                              messagetype='error',
                                                               msg=msg,
                                                               request_id=request.id,
                                                               show='True') )
@@ -328,11 +331,11 @@ class Requests( BaseController ):
             for field_index in range(len(request.type.sample_form.fields)):
                 sample_values.append(util.restore_text( params.get( 'sample_%i_field_%i' % (sample_index, field_index), ''  ) ))
             self.current_samples.append([sample_name, sample_values])
-    def __show_request(self, trans, id):
+    def __show_request(self, trans, id, messagetype, msg):
         try:
             request = trans.app.model.Request.get(id)
         except:
-            return trans.response.send_redirect( web.url_for( controller='requests',
+            return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                               action='list',
                                                               status='error',
                                                               message="Invalid request ID",
@@ -348,7 +351,8 @@ class Requests( BaseController ):
                                     current_samples = self.current_samples, 
                                     sample_copy=self.__copy_sample(), 
                                     details_state=self.details_state,
-                                    edit_mode=self.edit_mode)
+                                    edit_mode=self.edit_mode,
+                                    msg=msg, messagetype=messagetype)
     @web.expose
     @web.require_admin
     def show_request(self, trans, **kwd):
@@ -381,7 +385,9 @@ class Requests( BaseController ):
                 return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                                   action='list',
                                                                   status='error',
-                                                                  message='Error in importing <b>%s</b> samples file' % file_obj.file,
+                                                                  operation='show_request',
+                                                                  id=trans.security.encode_id(request.id),
+                                                                  message='Error in importing samples from the given file.',
                                                                   **kwd))
         elif params.get('add_sample_button', False) == 'Add New':
             # save the all (saved+unsaved) sample info in 'current_samples'
@@ -526,20 +532,20 @@ class Requests( BaseController ):
         # list of widgets to be rendered on the request form
         request_details = []
         # main details
+        request_details.append(dict(label='User', 
+                                    value=str(request.user.email), 
+                                    helptext=''))
         request_details.append(dict(label='Description', 
                                     value=request.desc, 
                                     helptext=''))
         request_details.append(dict(label='Type', 
                                     value=request.type.name, 
                                     helptext=''))
+        request_details.append(dict(label='State', 
+                                    value=request.state, 
+                                    helptext=''))
         request_details.append(dict(label='Date created', 
                                     value=request.create_time, 
-                                    helptext=''))
-        request_details.append(dict(label='Date updated', 
-                                    value=request.create_time, 
-                                    helptext=''))
-        request_details.append(dict(label='User', 
-                                    value=str(request.user.email), 
                                     helptext=''))
         # library associated
         if request.library:
@@ -778,7 +784,7 @@ class Requests( BaseController ):
                 value = util.restore_text(params.get('field_%i' % index, ''))
                 if value == 'new':
                     # save this new address in the list of this user's addresses
-                    user_address = trans.app.model.UserAddress( user=trans.user )
+                    user_address = trans.app.model.UserAddress( user=user )
                     user_address.desc = util.restore_text(params.get('field_%i_short_desc' % index, ''))
                     user_address.name = util.restore_text(params.get('field_%i_name' % index, ''))
                     user_address.institution = util.restore_text(params.get('field_%i_institution' % index, ''))
@@ -812,7 +818,6 @@ class Requests( BaseController ):
             request.user = user
             request.values = form_values
             request.library = library
-            request.state = trans.app.model.Request.states.UNSUBMITTED
             request.flush()
         return request
     @web.expose

@@ -142,6 +142,9 @@ class Requests( BaseController ):
         request_details.append(dict(label='Type', 
                                     value=request.type.name, 
                                     helptext=''))
+        request_details.append(dict(label='State', 
+                                    value=request.state, 
+                                    helptext=''))
         request_details.append(dict(label='Date created', 
                                     value=request.create_time, 
                                     helptext=''))

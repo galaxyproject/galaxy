@@ -162,7 +162,7 @@
                     <tr>
                         <div class="form-row">
                             <td>
-                                %if current_samples:                        
+                                %if current_samples and not request.complete():                        
                                     <input type="submit" name="edit_samples_button" value="Edit samples"/>
                                 %endif
                             </td>
