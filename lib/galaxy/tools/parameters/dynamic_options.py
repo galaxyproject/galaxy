@@ -242,6 +242,55 @@ class AdditionalValueFilter( Filter ):
             rval.append( add_value )
         return rval
 
+class RemoveValueFilter( Filter ):
+    """
+    Removes a value from an options list.
+    
+    Type: remove_value
+    
+    Required Attributes:
+        value: value to remove from select list
+            or
+        ref: param to refer to
+            or
+        meta_ref: dataset to refer to
+        key: metadata key to compare to
+    """
+    def __init__( self, d_option, elem ):
+        Filter.__init__( self, d_option, elem )
+        self.value = elem.get( "value", None )
+        self.ref_name = elem.get( "ref", None )
+        self.meta_ref = elem.get( "meta_ref", None )
+        self.metadata_key = elem.get( "key", None )
+        assert self.value is not None or ( ( self.ref_name is not None or self.meta_ref is not None )and self.metadata_key is not None ), ValueError( "Required 'value' or 'ref' and 'key' attributes missing from filter" )
+        self.multiple = string_as_bool( elem.get( "multiple", "False" ) )
+        self.separator = elem.get( "separator", "," )
+    def filter_options( self, options, trans, other_values ):
+        if trans is not None and trans.workflow_building_mode: return options
+        assert self.value is not None or ( self.ref_name is not None and self.ref_name in other_values ) or (self.meta_ref is not None and self.meta_ref in other_values ) or ( trans is not None and trans.workflow_building_mode), Exception( "Required dependency '%s' or '%s' not found in incoming values" % ( self.ref_name, self.meta_ref ) )
+        def compare_value( option_value, filter_value ):
+            if isinstance( filter_value, list ):
+                if self.multiple:
+                    option_value = option_value.split( self.separator )
+                    for value in filter_value:
+                        if value not in filter_value:
+                            return False
+                    return True
+                return option_value in filter_value
+            if self.multiple:
+                return filter_value in option_value.split( self.separator )
+            return option_value == filter_value
+        value = self.value
+        if value is None:
+            if self.ref_name is not None:
+                value = other_values.get( self.ref_name )
+            else:
+                data_ref = other_values.get( self.meta_ref )
+                if not isinstance( data_ref, self.dynamic_option.tool_param.tool.app.model.HistoryDatasetAssociation ):
+                    return options #cannot modify options
+                value = data_ref.metadata.get( self.metadata_key, None )
+        return [ ( disp_name, optval, selected ) for disp_name, optval, selected in options if not compare_value( optval, value ) ]
+
 class SortByColumnFilter( Filter ):
     """
     Sorts an options list by a column
@@ -274,6 +323,7 @@ filter_types = dict( data_meta = DataMetaFilter,
                      unique_value = UniqueValueFilter,
                      multiple_splitter = MultipleSplitterFilter,
                      add_value = AdditionalValueFilter,
+                     remove_value = RemoveValueFilter,
                      sort_by = SortByColumnFilter )
 
 class DynamicOptions( object ):

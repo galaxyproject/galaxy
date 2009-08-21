@@ -1534,10 +1534,19 @@ class Tool:
                 child_dataset.flush()
                 child_dataset.set_size()
                 child_dataset.name = "Secondary Dataset (%s)" % ( designation )
-                child_dataset.state = child_dataset.states.OK
                 child_dataset.init_meta()
                 child_dataset.set_meta()
                 child_dataset.set_peek()
+                # Associate new dataset with job
+                job = None
+                for assoc in outdata.creating_job_associations:
+                    job = assoc.job
+                    break   
+                if job:
+                    assoc = self.app.model.JobToOutputDatasetAssociation( '__new_child_file_%s__' % designation, child_dataset )
+                    assoc.job = job
+                    assoc.flush()
+                child_dataset.state = outdata.state
                 child_dataset.flush()
                 # Add child to return dict 
                 children[name][designation] = child_dataset
@@ -1550,7 +1559,7 @@ class Tool:
         
     def collect_primary_datasets( self, output):
         primary_datasets = {}
-        #Loop through output file names, looking for generated primary datasets in form of 'primary_associatedWithDatasetID_designation_visibility_extension'
+        #Loop through output file names, looking for generated primary datasets in form of 'primary_associatedWithDatasetID_designation_visibility_extension(_DBKEY)'
         for name, outdata in output.items():
             for filename in glob.glob(os.path.join(self.app.config.new_file_path,"primary_%i_*" % outdata.id) ):
                 if not name in primary_datasets:
@@ -1563,19 +1572,32 @@ class Tool:
                 if visible == "visible": visible = True
                 else: visible = False
                 ext = fields.pop(0).lower()
+                dbkey = outdata.dbkey
+                if fields:
+                    dbkey = fields[ 0 ]
                 # Create new primary dataset
-                primary_data = self.app.model.HistoryDatasetAssociation( extension=ext, designation=designation, visible=visible, dbkey=outdata.dbkey, create_dataset=True )
+                primary_data = self.app.model.HistoryDatasetAssociation( extension=ext, designation=designation, visible=visible, dbkey=dbkey, create_dataset=True )
                 self.app.security_agent.copy_dataset_permissions( outdata.dataset, primary_data.dataset )
                 primary_data.flush()
                 # Move data from temp location to dataset location
                 shutil.move( filename, primary_data.file_name )
                 primary_data.set_size()
-                primary_data.name = dataset.name
-                primary_data.info = dataset.info
-                primary_data.state = primary_data.states.OK
-                primary_data.init_meta( copy_from=dataset )
+                primary_data.name = outdata.name
+                primary_data.info = outdata.info
+                primary_data.init_meta( copy_from=outdata )
+                primary_data.dbkey = dbkey
                 primary_data.set_meta()
                 primary_data.set_peek()
+                # Associate new dataset with job
+                job = None
+                for assoc in outdata.creating_job_associations:
+                    job = assoc.job
+                    break   
+                if job:
+                    assoc = self.app.model.JobToOutputDatasetAssociation( '__new_primary_file_%s__' % designation, primary_data )
+                    assoc.job = job
+                    assoc.flush()
+                primary_data.state = outdata.state
                 primary_data.flush()
                 outdata.history.add_dataset( primary_data )
                 # Add dataset to return dict 
