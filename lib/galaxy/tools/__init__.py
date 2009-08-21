@@ -1543,7 +1543,7 @@ class Tool:
                     job = assoc.job
                     break   
                 if job:
-                    assoc = self.app.model.JobToOutputDatasetAssociation( '__new_child_file_%s__' % designation, child_dataset )
+                    assoc = self.app.model.JobToOutputDatasetAssociation( '__new_child_file_%s|%s__' % ( name, designation ), child_dataset )
                     assoc.job = job
                     assoc.flush()
                 child_dataset.state = outdata.state
@@ -1594,7 +1594,7 @@ class Tool:
                     job = assoc.job
                     break   
                 if job:
-                    assoc = self.app.model.JobToOutputDatasetAssociation( '__new_primary_file_%s__' % designation, primary_data )
+                    assoc = self.app.model.JobToOutputDatasetAssociation( '__new_primary_file_%s|%s__' % ( name, designation ), primary_data )
                     assoc.job = job
                     assoc.flush()
                 primary_data.state = outdata.state
