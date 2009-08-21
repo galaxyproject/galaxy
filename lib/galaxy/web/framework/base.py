@@ -216,11 +216,18 @@ class DefaultWebTransaction( object ):
 # tempfiles.  Necessary for externalizing the upload tool.  It's a little hacky
 # but for performance reasons it's way better to use Paste's tempfile than to
 # create a new one and copy.
-import cgi
+import cgi, tempfile
 class FieldStorage( cgi.FieldStorage ):
     def make_file(self, binary=None):
-        import tempfile
         return tempfile.NamedTemporaryFile()
+    def read_lines(self):
+    # Always make a new file
+        self.file = self.make_file()
+        self.__file = None
+        if self.outerboundary:
+            self.read_lines_to_outerboundary()
+        else:
+            self.read_lines_to_eof() 
 cgi.FieldStorage = FieldStorage
 
 class Request( webob.Request ):

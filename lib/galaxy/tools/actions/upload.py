@@ -20,12 +20,10 @@ class UploadToolAction( ToolAction ):
             for upload_dataset in incoming['files']:
                 f = upload_dataset['file_data']
                 if isinstance( f, FieldStorage ): 
-                    # very small files can be StringIOs
-                    if 'name' in dir( f.file ) and f.file.name != '<fdopen>':
-                        local_filename = util.mkstemp_ln( f.file.name, 'upload_file_data_' )
-                        f.file.close()
-                    else:
-                        local_filename = datatypes.sniff.stream_to_file( f.file, prefix="strio_upload_file_" )[0]
+                    assert not isinstance( f.file, StringIO.StringIO )
+                    assert f.file.name != '<fdopen>'
+                    local_filename = util.mkstemp_ln( f.file.name, 'upload_file_data_' )
+                    f.file.close()
                     upload_dataset['file_data'] = dict( filename = f.filename,
                                                         local_filename = local_filename )
                 if upload_dataset['url_paste'].strip() != '':
