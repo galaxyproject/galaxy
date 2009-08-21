@@ -1,7 +1,7 @@
 #! /usr/bin/python
 
 """
-Split Solexa paired end reads
+Split fixed length paired end reads
 """
 
 import os, sys
@@ -12,9 +12,13 @@ if __name__ == '__main__':
     outfile_end1 = open(sys.argv[2], 'w')
     outfile_end2 = open(sys.argv[3], 'w')
     
-    for i, line in enumerate(file(infile)):
+    i = 0
+    
+    for line in file( infile ):
         line = line.rstrip()
-        if not line or line.startswith('#'): continue
+        
+        if not line:
+            continue 
         
         end1 = ''
         end2 = ''
@@ -42,5 +46,9 @@ if __name__ == '__main__':
         outfile_end1.write('%s\n' %(end1))
         outfile_end2.write('%s\n' %(end2))
         
+        i += 1
+        
+    if  i % 4 != 0  :
+        sys.stderr.write("WARNING: Number of lines in the input file was not divisible by 4.\nCheck consistency of the input fastq file.\n")
     outfile_end1.close()
     outfile_end2.close()    

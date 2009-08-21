@@ -48,9 +48,9 @@ def __main__():
         cmd1 = "solid2fastq_modified.pl 'yes' %s %s %s %s %s %s %s 2>&1" %(tmpf.name,tmpr.name,tmps.name,f3_read_fname,f3_qual_fname,r3_read_fname,r3_qual_fname)
         try:
             os.system(cmd1)
-            os.system('zcat -f %s >> %s' %(tmpf.name,tmpffastq.name))
-            os.system('zcat -f %s >> %s' %(tmpr.name,tmprfastq.name))
-            os.system('zcat -f %s >> %s' %(tmps.name,tmpsfastq.name))
+            os.system('gunzip -c %s >> %s' %(tmpf.name,tmpffastq.name))
+            os.system('gunzip -c %s >> %s' %(tmpr.name,tmprfastq.name))
+            os.system('gunzip -c %s >> %s' %(tmps.name,tmpsfastq.name))
 
         except Exception, eq:
             stop_err("Error converting data to fastq format." + str(eq))
@@ -135,7 +135,7 @@ def __main__():
         cmd1 = "solid2fastq_modified.pl 'no' %s %s %s %s %s %s %s 2>&1" %(tmpf.name,None,None,f3_read_fname,f3_qual_fname,None,None)
         try:
             os.system(cmd1)
-            os.system('zcat -f %s >> %s' %(tmpf.name,tmpfastq.name))
+            os.system('gunzip -c %s >> %s' %(tmpf.name,tmpfastq.name))
             tmpf.close()
         except:
             stop_err("Error converting data to fastq format.")
