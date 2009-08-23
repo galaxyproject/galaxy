@@ -35,22 +35,15 @@ div.form-row-input > input{max-width:300px;}
 div.form-row-error-message{width:300px;float:left;color:red;font-weight:bold;padding:3px 0 0 1em;}
 select,input,textarea{font:inherit;font-size:115%;}
 select,textarea,input[type="text"],input[type="file"],input[type="password"]{-webkit-box-sizing:border-box;max-width:300px;}
-.errormessage,.warningmessage,.donemessage,.infomessage,.welcomeBlue,.welcomeRed,.screencastBox,.yellowbox,.redbox,.bluebox,.greenbox{padding:10px;padding-left:52px;min-height:32px;border:1px solid #AA6666;background-color:#FFCCCC;background-image:url(error_message_icon.png);background-repeat:no-repeat;background-position:10px 10px;}
-.warningmessage{background-image:url(warn_message_icon.png);border-color:#AAAA66;background-color:#FFFFCC;}
-.donemessage{background-image:url(done_message_icon.png);border-color:#66AA66;background-color:#CCFFCC;}
-.infomessage{background-image:url(info_message_icon.png);border-color:#6666AA;background-color:#CCCCFF;}
-.welcomeBlue{padding-left:10px;border-color:#6666AA;background-color:#CCCCFF;background-image:none;}
-.welcomeRed{padding-left:10px;border-color:#AA6666;background-color:#FFCCCC;background-image:none;}
+.errormessagelarge,.warningmessagelarge,.donemessagelarge,.infomessagelarge{padding:10px;padding-left:52px;min-height:32px;border:1px solid #AA6666;background-color:#FFCCCC;background-image:url(error_message_icon.png);background-repeat:no-repeat;background-position:10px 10px;}
+.warningmessagelarge{background-image:url(warn_message_icon.png);border-color:#AAAA66;background-color:#FFFFCC;}
+.donemessagelarge{background-image:url(done_message_icon.png);border-color:#66AA66;background-color:#CCFFCC;}
+.infomessagelarge{background-image:url(info_message_icon.png);border-color:#6666AA;background-color:#CCCCFF;}
 .screencastBox{padding-left:10px;border-color:#AAAA66;background-color:#FFFFCC;background-image:none;}
-.redbox{border:none;padding:10px;border-color:#000000;background-color:#FF6666;background-image:none;border-right-width:1px;border-right-style:dotted;border-bottom-width:1px;border-bottom-style:dotted;margin-top:5px;min-height:32px;}
-.yellowbox{border:none;padding:10px;border-color:#000000;background-color:#FFCC00;background-image:none;border-right-width:1px;border-right-style:dotted;border-bottom-width:1px;border-bottom-style:dotted;margin-top:5px;min-height:32px;}
-.bluebox{border:none;padding:10px;border-color:#000000;background-color:#6666FF;background-image:none;border-right-width:1px;border-right-style:dotted;border-bottom-width:1px;border-bottom-style:dotted;margin-top:5px;color:#FFFFFF;min-height:32px;}
-.greenbox{border:none;padding:10px;border-color:#000000;background-color:#00CC00;background-image:none;border-right-width:1px;border-right-style:dotted;border-bottom-width:1px;border-bottom-style:dotted;margin-top:5px;min-height:32px;}
-.redbox li,.yellowbox li,.bluebox li,.greenbox li{list-style:disc;text-transform:none;list-style-position:inside;list-style-image:none;margin:3px;}
-.errormessagesmall,.warningmessagesmall,.donemessagesmall,.infomessagesmall{padding:5px;padding-left:25px;min-height:25px;border:1px solid #AA6666;background-color:#FFCCCC;background-image:url(error_small.png);background-repeat:no-repeat;background-position:5px 5px;}
-.warningmessagesmall{background-image:url(warn_small.png);border-color:#AAAA66;background-color:#FFFFCC;}
-.donemessagesmall{background-image:url(ok_small.png);border-color:#66AA66;background-color:#CCFFCC;}
-.infomessagesmall{background-image:url(info_small.png);border-color:#6666AA;background-color:#CCCCFF;}
+.errormessage,.warningmessage,.donemessage,.infomessage,.errormessagesmall,.warningmessagesmall,.donemessagesmall,.infomessagesmall{padding:5px;padding-left:25px;min-height:15px;border:1px solid #AA6666;background-color:#FFCCCC;background-image:url(error_small.png);background-repeat:no-repeat;background-position:5px 5px;}
+.warningmessage,.warningmessagesmall{background-image:url(warn_small.png);border-color:#AAAA66;background-color:#FFFFCC;}
+.donemessage,.donemessagesmall{background-image:url(ok_small.png);border-color:#66AA66;background-color:#CCFFCC;}
+.infomessage,.infomessagesmall{background-image:url(info_small.png);border-color:#6666AA;background-color:#CCCCFF;}
 .errormark,.warningmark,.donemark,.infomark,.ok_bgr,.err_bgr{padding-left:20px;min-height:15px;background:url(error_small.png) no-repeat;}
 .warningmark{background-image:url(warn_small.png);}
 .donemark{background-image:url(ok_small.png);}

@@ -45,7 +45,7 @@
     </script>
 </%def>
 
-<div class="${message_type}message">${_(message)}</div>
+<div class="${message_type}messagelarge">${_(message)}</div>
 
 ## Render a message
 <%def name="render_msg( msg, messagetype='done' )">

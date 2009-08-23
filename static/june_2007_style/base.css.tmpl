@@ -187,8 +187,7 @@ select, textarea, input[type="text"], input[type="file"], input[type="password"]
 
 ## Messages 
 
-.errormessage, .warningmessage, .donemessage, .infomessage, .welcomeBlue, .welcomeRed , .screencastBox, .yellowbox, .redbox, .bluebox, .greenbox
-{
+.errormessagelarge, .warningmessagelarge, .donemessagelarge, .infomessagelarge {
     padding: 10px;
     padding-left: 52px;
     min-height: 32px;
@@ -199,127 +198,35 @@ select, textarea, input[type="text"], input[type="file"], input[type="password"]
     background-position: 10px 10px;
 }
 
-.warningmessage 
-{
+.warningmessagelarge {
     background-image: url(warn_message_icon.png);
     border-color: $warn_message_border;
     background-color: $warn_message_bg;
 }
 
-.donemessage 
-{
+.donemessagelarge {
     background-image: url(done_message_icon.png);
     border-color: $done_message_border;
     background-color: $done_message_bg;
 }
 
-.infomessage 
-{
+.infomessagelarge {
     background-image: url(info_message_icon.png);
     border-color: $info_message_border;
     background-color: $info_message_bg;
 }
 
-.welcomeBlue 
-{
-    padding-left: 10px;
-    border-color: $info_message_border;
-    background-color: $info_message_bg;
-    background-image: none;
-}
-
-.welcomeRed 
-{
-    padding-left: 10px;
-    border-color: $error_message_border;
-    background-color: $error_message_bg;
-    background-image: none;
-}
-
-.screencastBox 
-{   
+.screencastBox {   
     padding-left: 10px;
     border-color: #AAAA66;
     background-color: #FFFFCC;
     background-image: none;
 }
 
-.redbox
-{
-    border: none;
-    padding: 10px;
-    border-color: #000000;
-    background-color: #FF6666;
-    background-image: none;
-    border-right-width: 1px;
-    border-right-style: dotted;
-    border-bottom-width: 1px;
-    border-bottom-style: dotted;
-    margin-top: 5px;
-    min-height: 32px;
-    
-}
-
-.yellowbox
-{
-    border: none;
-    padding: 10px;
-    border-color: #000000;
-    background-color: #FFCC00;
-    background-image: none;
-    border-right-width: 1px;
-    border-right-style: dotted;
-    border-bottom-width: 1px;
-    border-bottom-style: dotted;
-    margin-top: 5px;
-    min-height: 32px;
-}
-
-.bluebox
-{
-    border: none;
-    padding: 10px;
-    border-color: #000000;
-    background-color: #6666FF;
-    background-image: none;
-    border-right-width: 1px;
-    border-right-style: dotted;
-    border-bottom-width: 1px;
-    border-bottom-style: dotted;
-    margin-top: 5px;
-    color: #FFFFFF;
-    min-height: 32px;
-}
-
-.greenbox
-{
-    border: none;
-    padding: 10px;
-    border-color: #000000;
-    background-color: #00CC00;
-    background-image: none;
-    border-right-width: 1px;
-    border-right-style: dotted;
-    border-bottom-width: 1px;
-    border-bottom-style: dotted;
-    margin-top: 5px;
-    min-height: 32px;
-}
-
-.redbox li, .yellowbox li, .bluebox li, .greenbox li {
-   list-style: disc;	
-   text-transform: none;
-   list-style-position: inside;
-   list-style-image: none;
-   margin: 3px;
-}
-
-
-.errormessagesmall, .warningmessagesmall, .donemessagesmall, .infomessagesmall 
-{
+.errormessage, .warningmessage, .donemessage, .infomessage, .errormessagesmall, .warningmessagesmall, .donemessagesmall, .infomessagesmall {
     padding: 5px;
     padding-left: 25px;
-    min-height: 25px;
+    min-height: 15px;
     border: 1px solid $error_message_border;
     background-color: $error_message_bg;
     background-image: url(error_small.png);
@@ -327,83 +234,70 @@ select, textarea, input[type="text"], input[type="file"], input[type="password"]
     background-position: 5px 5px;
 }
 
-.warningmessagesmall
-{
+.warningmessage, .warningmessagesmall {
     background-image: url(warn_small.png);
     border-color: $warn_message_border;
     background-color: $warn_message_bg;
 }
 
-.donemessagesmall
-{
+.donemessage, .donemessagesmall {
     background-image: url(ok_small.png);
     border-color: $done_message_border;
     background-color: $done_message_bg;
 }
 
-.infomessagesmall
-{
+.infomessage, .infomessagesmall {
     background-image: url(info_small.png);
     border-color: $info_message_border;
     background-color: $info_message_bg;
 }
 
-.errormark, .warningmark, .donemark, .infomark, .ok_bgr, .err_bgr
-{
+.errormark, .warningmark, .donemark, .infomark, .ok_bgr, .err_bgr {
     padding-left: 20px;
     min-height: 15px;
     background: url(error_small.png) no-repeat;
 }
 
-.warningmark 
-{
+.warningmark {
     background-image: url(warn_small.png);
 }
 
-.donemark 
-{
+.donemark {
     background-image: url(ok_small.png);
 }
 
-.infomark, .ok_bgr
-{
+.infomark, .ok_bgr {
     background-image: url(info_small.png);
 }
 
-table.colored
-{
-  border-top: solid $table_border 1px;
-  border-bottom: solid $table_border 1px;
+table.colored {
+    border-top: solid $table_border 1px;
+    border-bottom: solid $table_border 1px;
 }
 
-table.colored td, table.colored th
-{
+table.colored td, table.colored th {
     text-align: left;
     padding: 5px;
 }
 
-table.colored tr.header
-{ 
-  background: $table_header_bg;
-  background-image: url(form_title_bg.png);
-  background-repeat: repeat-x;
-  background-position: top;
-	border-bottom: solid $table_border 1px;
-  font-weight: bold;
+table.colored tr.header { 
+    background: $table_header_bg;
+    background-image: url(form_title_bg.png);
+    background-repeat: repeat-x;
+    background-position: top;
+    border-bottom: solid $table_border 1px;
+    font-weight: bold;
 }
 
-table.colored tr
-{ 
-  background: $table_row_bg;
+table.colored tr { 
+    background: $table_row_bg;
 }
 
-table.colored tr.odd_row
-{ 
-  background: $odd_row_bg;
+table.colored tr.odd_row { 
+    background: $odd_row_bg;
 }
 
-div.debug
-{
+div.debug {
     margin: 10px;
     padding: 5px;
     background: #FFFF99;
@@ -411,8 +305,7 @@ div.debug
     color: black;
 }
 
-div.odd_row
-{
+div.odd_row {
     background: $odd_row_bg;
 }
     
@@ -422,51 +315,44 @@ div.odd_row
 
 ## Tool panel stuff
 
-td.panel-body
-{
+td.panel-body {
     background: white;
     color: $base_text;
     background: $menu_bg_over url(menu_bg.png) top repeat-x;
 }
 
-div.toolSectionPad
-{
+div.toolSectionPad {
     margin: 0;
     padding: 0;
     height: 5px;
     font-size: 0px;
 }
 
-div.toolSectionDetailsInner
-{ 
-  margin-left: 5px;
-  margin-right: 5px;
+div.toolSectionDetailsInner { 
+    margin-left: 5px;
+    margin-right: 5px;
 }
 
-div.toolSectionTitle
-{
-  padding-bottom: 0px;
-  font-weight: bold;
+div.toolSectionTitle {
+    padding-bottom: 0px;
+    font-weight: bold;
 }
 
-div.toolTitle
-{
-  padding-top: 5px;
-  padding-bottom: 5px;
-  margin-left: 16px;
-  margin-right: 10px;
-  display: list-item;
-  list-style: square outside;
+div.toolTitle {
+    padding-top: 5px;
+    padding-bottom: 5px;
+    margin-left: 16px;
+    margin-right: 10px;
+    display: list-item;
+    list-style: square outside;
 }
 
-span.toolParameterExpandableCollapsable
-{
-  font-weight: bold;
-  cursor: pointer;
+span.toolParameterExpandableCollapsable {
+    font-weight: bold;
+    cursor: pointer;
 }
-ul.toolParameterExpandableCollapsable
-{
-  list-style: none;
+ul.toolParameterExpandableCollapsable {
+    list-style: none;
 }
 
 ul.manage-table-actions {

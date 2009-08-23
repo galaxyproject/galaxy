@@ -37,7 +37,7 @@
 
 <body onLoad="main()">
 
-<div class="donemessage">
+<div class="donemessagelarge">
 
 <p>The following job has been succesfully added to the queue:</p>
 
