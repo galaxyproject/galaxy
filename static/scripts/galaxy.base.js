@@ -77,14 +77,12 @@ function make_popupmenu( button_element, options ) {
 };
 
 function attach_popupmenu( button_element, wrapper ) {
-    console.log( button_element, wrapper );
     var clean = function() {
         wrapper.unbind().hide();
         $("#popup-helper").unbind( "click.popupmenu" ).hide();
         // $(document).unbind( "click.popupmenu" ); 
     };
     var click = function( e ) {
-        console.log( e );
         var o = $(button_element).offset();
         $("#popup-helper").bind( "click.popupmenu", clean ).show();
         // $(document).bind( "click.popupmenu", clean );
