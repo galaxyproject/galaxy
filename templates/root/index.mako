@@ -20,7 +20,7 @@
             "Clone": function() {
                 galaxy_main.location = "${h.url_for( controller='history', action='clone')}";
             },
-            "Manage sharing": function() {
+            "Share": function() {
                 galaxy_main.location = "${h.url_for( controller='history', action='share' )}";
             },
             "Extract workflow": function() {

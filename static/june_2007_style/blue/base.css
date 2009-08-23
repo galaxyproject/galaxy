@@ -10,6 +10,7 @@ img{border:0;}
 a:link,a:visited,a:active{color:#303030;}
 h1,h2,h3,h4{color:#023858;}
 hr{border:none;height:0px;border-bottom:dotted #303030 1px;}
+th{text-align:left;}
 div.toolForm{border:solid #d8b365 1px;}
 div.toolFormTitle{font-weight:bold;padding:5px;padding-left:10px;padding-right:10px;background:#ebd9b2;background-repeat:repeat-x;background-position:top;border-bottom:solid #d8b365 1px;}
 div.toolParamHelp{color:#666;}

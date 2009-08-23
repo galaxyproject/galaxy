@@ -8,32 +8,32 @@
         %if not can_change and not cannot_change and not no_change_needed:
             ## We are sharing histories that contain only public datasets
             <form name='share' id='share' action="${h.url_for( controller="history", action='share' )}" method="post" >
-                %for history in histories:
-                    <input type="hidden" name="id" value="${trans.security.encode_id( history.id )}">
-                    <div class="toolForm">
-                        <div class="form-row">
-                            <label>${_('History Name:')}</label>
-                            <div style="float: left; width: 250px; margin-right: 10px;">
-                                ${history.name}
-                            </div>
-                        </div>
-                        <div style="clear: both"></div>
-                        <div class="form-row">
-                            <label>${_('Number of Datasets:')}</label>
-                            <div style="float: left; width: 250px; margin-right: 10px;">
-                                %if len( history.datasets ) < 1:
-                                    <div class="warningmark">${_('This history contains no data.')}</div>
-                                %else:
-                                    ${len(history.datasets)}
-                                %endif
-                                </td>
-                            </div>
-                        </div>
-                        <div style="clear: both"></div>
-                        <p/>
-                    </div>
-                %endfor
-                <p/>
+                <div class="form-title-row"><b>Histories to be shared:</b></div>
+                <div class="form-row" style="padding-left: 2em;">
+                    <table width="100%">
+                        <thead>
+                            <th>${_('History Name')}</th>
+                            <th>${_('Number of Datasets')}</th>
+                        </thead>
+                        <tbody>
+                            %for history in histories:
+                                <tr>
+                                    <td>
+                                        <input type="hidden" name="id" value="${trans.security.encode_id( history.id )}">
+                                        ${history.name}
+                                    </td>
+                                    <td>
+                                        %if len( history.datasets ) < 1:
+                                            <div class="warningmark">${_('This history contains no data.')}</div>
+                                        %else:
+                                            ${len(history.datasets)}
+                                        %endif
+                                    </td>
+                                </tr>
+                            %endfor
+                        </tbody>
+                    </table>
+                </div>
                 <div style="clear: both"></div>
                 <div class="form-row">
                     <label>Galaxy user emails with which to share histories</label>

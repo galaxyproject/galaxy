@@ -3,39 +3,37 @@
 <%def name="title()">${_('Rename History')}</%def>
 
 <div class="toolForm">
-  <div class="toolFormTitle">${_('Rename History')}</div>
+  <div class="toolFormTitle">${_('Rename')}</div>
     <div class="toolFormBody">
         <form action="${h.url_for( controller='history', action='rename' )}" method="post" >
-            <table class="grid">
+            <div class="form-row">
+            <table>
+                <thead>
+                    <tr>
+                        <th>${_('Current Name')}</th>
+                        <th>${_('New Name')}</th>
+                    </tr>
+                </thead>
+                <tbody>
                 %for history in histories:
                     <tr>
                         <td>
-                            <div class="form-row">
-                                <input type="hidden" name="id" value="${trans.security.encode_id( history.id )}">
-                                <label>${_('Current Name')}</label>
-                                <div style="float: left; width: 250px; margin-right: 10px;">
-                                    ${history.name}
-                                </div>
-                            </div>
+                            <input type="hidden" name="id" value="${trans.security.encode_id( history.id )}">      
+                            ${history.name}
                         </td>
                         <td>
-                            <div class="form-row">
-                                <label>${_('New Name')}</label>
-                                <div style="float: left; width: 250px; margin-right: 10px;">
-                                    <input type="text" name="name" value="${history.name}" size="40">
-                                </div>
-                            </div>
+                            <input type="text" name="name" value="${history.name}" size="40">
                         </td>
                     </tr>
                 %endfor
+                </tbody>
                 <tr>
                     <td colspan="2">
-                        <div class="form-row">
-                            <input type="submit" name="history_rename_btn" value="${_('Rename Histories')}">
-                        </div>
+                        <input type="submit" name="history_rename_btn" value="${_('Rename Histories')}">
                     </td>
                 </tr>
             </table>
+            </div>
         </form>
     </div>
 </div>

@@ -3,6 +3,7 @@ body{font:13px/1.231 verdana,arial,helvetica,clean,sans-serif;*font-size:small;*
 body{font-size:75%;}
 
 ## Mixins
+
 .unselectable {
     user-select: none;
     -moz-user-select: none;
@@ -15,8 +16,8 @@ body{font-size:75%;}
 }
 
 ## Real styles
-body 
-{
+
+body  {
     background: $base_bg_bottom;
     color: $base_text;
     background-image: url(base_bg.png);
@@ -25,60 +26,55 @@ body
     margin: 10px;
 }
 
-img
-{
+img {
     border: 0;
 }
 
 
-a:link, a:visited, a:active
-{
+a:link, a:visited, a:active {
     color: $link_text;
 }
 
-h1, h2, h3, h4 
-{
+h1, h2, h3, h4 {
     color: $header_text;
     /*text-shadow: #bbb 2px 2px 1px;*/
 }
 
-hr
-{
+hr {
     border: none;
     height: 0px;
     border-bottom: dotted $base_text 1px;
 }
 
-div.toolForm
-{
-  border: solid $form_border 1px;
+th {
+    text-align: left;
 }
 
-div.toolFormTitle
-{ 
-  font-weight: bold;
-  padding: 5px;
-  padding-left: 10px;
-  padding-right: 10px;
-  background: $form_title_bg_bottom;
-  ## background-image: url(form_title_bg.png);
-  background-repeat: repeat-x;
-  background-position: top;
-  border-bottom: solid $form_border 1px;
+div.toolForm {
+    border: solid $form_border 1px;
 }
 
-div.toolParamHelp
-{
-  color: #666;
+div.toolFormTitle { 
+    font-weight: bold;
+    padding: 5px;
+    padding-left: 10px;
+    padding-right: 10px;
+    background: $form_title_bg_bottom;
+    ## background-image: url(form_title_bg.png);
+    background-repeat: repeat-x;
+    background-position: top;
+    border-bottom: solid $form_border 1px;
 }
 
-div.toolParamHelp a
-{
-  color: #666;
+div.toolParamHelp {
+    color: #666;
 }
 
-div.toolFormBody
-{ 
+div.toolParamHelp a {
+    color: #666;
+}
+
+div.toolFormBody { 
     background: $form_body_bg_bottom;
     background-image: url(form_body_bg.png);
     background-repeat: repeat-x;
@@ -86,8 +82,7 @@ div.toolFormBody
     padding: 5px 0;
 }
 
-div.toolFormBody div.toolFormTitle
-{
+div.toolFormBody div.toolFormTitle {
     background: transparent;
     border: none;
     font-weight: bold;
@@ -104,12 +99,10 @@ div.toolFormDisabled {
     border-color: ${layout_border};
 }
 
-div.toolHelp
-{ 
+div.toolHelp { 
 }
 
-div.toolHelpBody
-{ 
+div.toolHelpBody { 
     width: 100%;
     overflow: auto;
 }
@@ -121,15 +114,13 @@ div.titleRow {
     padding-bottom: 0.25em;
 }
 
-/* Forms */
+## Forms 
 
-div.form
-{
+div.form {
     border: solid $form_border 1px;
 }
 
-div.form-title
-{ 
+div.form-title { 
     font-weight: bold;
     padding: 5px 10px;
     background: $form_title_bg_bottom;
@@ -139,53 +130,44 @@ div.form-title
     border-bottom: solid $form_border 1px;
 }
 
-div.form-body
-{ 
+div.form-body { 
     padding: 5px 0;
 }
 
-div.form-row 
-{
+div.form-row  {
     padding: 5px 10px;
 }
 
-div.form-title-row
-{
+div.form-title-row {
     padding: 5px 10px;
 }
 
-div.repeat-group-item
-{
+div.repeat-group-item {
     border-left: solid $form_border 5px;
     margin-left: 10px;
     margin-bottom: 10px;
 }
 
-div.form-row-error
-{
+div.form-row-error {
     background: $error_message_bg;
 }
 
-div.form-row label
-{
+div.form-row label {
     font-weight: bold;
     display: block;
     margin-bottom: .2em;
 }
 
-div.form-row-input
-{
+div.form-row-input {
     float: left;
     width: 300px;
 }
 
-div.form-row-input > input
-{
+div.form-row-input > input {
     max-width: 300px;
 }
 
-div.form-row-error-message
-{
+div.form-row-error-message {
     width: 300px;
     float: left;
     color: red;
@@ -193,19 +175,17 @@ div.form-row-error-message
     padding: 3px 0 0 1em;
 }
 
-select, input, textarea
-{
+select, input, textarea {
     font: inherit;
     font-size: 115%;
 }
 
-select, textarea, input[type="text"], input[type="file"], input[type="password"]
-{
+select, textarea, input[type="text"], input[type="file"], input[type="password"] {
     -webkit-box-sizing: border-box;
     max-width: 300px;
 }
 
-/* Messages */
+## Messages 
 
 .errormessage, .warningmessage, .donemessage, .infomessage, .welcomeBlue, .welcomeRed , .screencastBox, .yellowbox, .redbox, .bluebox, .greenbox
 {
