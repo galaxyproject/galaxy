@@ -14,8 +14,9 @@ class Grid( object ):
     title = ""
     exposed = True
     model_class = None
-    template = None
+    template = "grid.mako"
     columns = []
+    operations = []
     standard_filters = []
     default_filter = None
     default_sort_key = None
@@ -25,7 +26,6 @@ class Grid( object ):
     def __call__( self, trans, **kwargs ):
         status = kwargs.get( 'status', None )
         message = kwargs.get( 'message', None )
-        template = kwargs.get( 'template', None )
         session = trans.sa_session
         # Build initial query
         query = self.build_initial_query( session )
@@ -77,7 +77,7 @@ class Grid( object ):
                 else:
                     new_kwargs[ 'id' ] = trans.security.encode_id( id )
             return url_for( **new_kwargs )
-        return trans.fill_template( template,
+        return trans.fill_template( self.template,
                                     grid=self,
                                     query=query,
                                     sort_key=sort_key,

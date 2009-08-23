@@ -16,6 +16,7 @@ log = logging.getLogger( __name__ )
 
 class RequestsListGrid( grids.Grid ):
     title = "Sequencing Requests"
+    template = '/requests/grid.mako'
     model_class = model.Request
     default_sort_key = "-create_time"
     show_filter = model.Request.states.UNSUBMITTED
@@ -103,7 +104,7 @@ class Requests( BaseController ):
                 self.request_grid.default_filter = dict(state=kwargs['show_filter'], deleted=False)
         self.request_grid.show_filter = kwargs.get('show_filter', trans.app.model.Request.states.UNSUBMITTED)
         # Render the list view
-        return self.request_grid( trans, template='/requests/grid.mako', **kwargs )
+        return self.request_grid( trans, **kwargs )
     
     def __show_request(self, trans, id, add_sample=False):
         try:
