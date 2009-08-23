@@ -9,6 +9,7 @@ from migrate import *
 from migrate.changeset import *
 import sys, logging
 from galaxy.model.custom_types import *
+from sqlalchemy.exceptions import *
 
 log = logging.getLogger( __name__ )
 log.setLevel(logging.DEBUG)

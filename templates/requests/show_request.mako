@@ -68,7 +68,6 @@
 </%def>
 
 <div class="toolForm">
-    ##<div class="toolFormTitle">Request Details: '${request_details[0]['value']}'</div>
         <div class="form-row">
         <a href="${h.url_for( controller='requests', action='toggle_request_details', request_id=request.id )}">${details_state}</a>
         </div>
@@ -217,7 +216,6 @@
                 %endif
             </div>
         %endif
-    ##</div>
-    <input type="hidden" name="request_id" value="${request.id}" />
+        <input type="hidden" name="request_id" value="${request.id}" />
     </form>
 </div>

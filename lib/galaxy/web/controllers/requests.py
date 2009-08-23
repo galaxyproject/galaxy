@@ -8,6 +8,8 @@ import logging, tempfile, zipfile, tarfile, os, sys
 from galaxy.web.form_builder import * 
 from datetime import datetime, timedelta
 from cgi import escape, FieldStorage
+from galaxy.web.controllers.forms import get_form_widgets
+from galaxy.web.controllers.library import get_authorized_libs 
 
 
 log = logging.getLogger( __name__ )
@@ -62,18 +64,12 @@ class Requests( BaseController ):
     request_grid = RequestsListGrid()
 
     @web.expose
+    @web.require_login( "create/submit sequencing requests" )
     def index( self, trans ):
         return trans.fill_template( "requests/index.mako" )
-    
-    def get_authorized_libs(self, trans):
-        all_libraries = trans.app.model.Library.filter(trans.app.model.Library.table.c.deleted == False).order_by(trans.app.model.Library.name).all()
-        authorized_libraries = []
-        for library in all_libraries:
-            if trans.app.security_agent.allow_action(trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=library) \
-                or trans.app.security_agent.allow_action(trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=library):
-                authorized_libraries.append(library)
-        return authorized_libraries
+
     @web.expose
+    @web.require_login( "create/submit sequencing requests" )
     def list( self, trans, **kwargs ):
         '''
         List all request made by the current user
@@ -137,7 +133,6 @@ class Requests( BaseController ):
         Shows the request details
         '''
         request = trans.app.model.Request.get(id)
-        libraries = self.get_authorized_libs(trans)
         # list of widgets to be rendered on the request form
         request_details = []
         # main details
@@ -146,6 +141,9 @@ class Requests( BaseController ):
                                     helptext=''))
         request_details.append(dict(label='Type', 
                                     value=request.type.name, 
+                                    helptext=''))
+        request_details.append(dict(label='State', 
+                                    value=request.state, 
                                     helptext=''))
         request_details.append(dict(label='Date created', 
                                     value=request.create_time, 
@@ -201,6 +199,7 @@ class Requests( BaseController ):
             copy_list.add_option(s[0], i)
         return copy_list   
     @web.expose
+    @web.require_login( "create/submit sequencing requests" )
     def show_request(self, trans, **kwd):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
@@ -326,6 +325,7 @@ class Requests( BaseController ):
 
             
     @web.expose
+    @web.require_login( "create/submit sequencing requests" )
     def delete_sample(self, trans, **kwd):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
@@ -348,6 +348,7 @@ class Requests( BaseController ):
                                     edit_mode=self.edit_mode)
         
     @web.expose
+    @web.require_login( "create/submit sequencing requests" )
     def toggle_request_details(self, trans, **kwd):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
@@ -384,6 +385,7 @@ class Requests( BaseController ):
                     select_reqtype.add_option(rt.name, rt.id)
         return select_reqtype
     @web.expose
+    @web.require_login( "create/submit sequencing requests" )
     def new(self, trans, **kwd):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
@@ -413,8 +415,8 @@ class Requests( BaseController ):
                 if params.get('create_request_button', False) == 'Save':
                     return trans.response.send_redirect( web.url_for( controller='requests',
                                                                       action='list',
-                                                                      msg=msg ,
-                                                                      messagetype='done') )
+                                                                      message=msg ,
+                                                                      status='done') )
                 elif params.get('create_request_samples_button', False) == 'Add samples':
                     new_kwd = {}
                     new_kwd['id'] = trans.security.encode_id(request.id)
@@ -457,12 +459,10 @@ class Requests( BaseController ):
                             helptext='(Optional)'))
        
         # libraries selectbox
-        libraries = self.get_authorized_libs(trans)
+        libraries = get_authorized_libs(trans, trans.user)
         libui = self.__library_ui(libraries, **kwd)
         widgets = widgets + libui
-        widgets = self.__create_form(trans, request_type.request_form_id, widgets, 
-                                     form_values, **kwd)
-        title = 'Add a new request of type: %s' % request_type.name
+        widgets = widgets + get_form_widgets(trans, request_type.request_form, contents=[], **kwd)
         return trans.fill_template( '/requests/new_request.mako',
                                     select_request_type=select_request_type,
                                     request_type=request_type,                                    
@@ -502,58 +502,13 @@ class Requests( BaseController ):
             return [widget, new_lib]
         else:
             return [widget]
-        
-    def __create_form(self, trans, form_id, widgets=[], form_values=None, **kwd):
-        # TODO: RC - replace this method by importing as follows:
-        # from galaxy.web.controllers.forms import get_form_widgets
-        params = util.Params( kwd )
-        form = trans.app.model.FormDefinition.get(form_id)
-        # form fields
-        for index, field in enumerate(form.fields):
-            # value of the field 
-            if field['type'] == 'CheckboxField':
-                value = util.restore_text( params.get( 'field_%i' % index, False  ) )
-            else:
-                value = util.restore_text( params.get( 'field_%i' % index, ''  ) )
-            if not value:
-                if form_values:
-                    value = str(form_values.content[index])
-            # create the field
-            fw = eval(field['type'])('field_%i' % index)
-            if field['type'] == 'TextField':
-                fw.set_size(40)
-                fw.value = value
-            elif field['type'] == 'TextArea':
-                fw.set_size(3, 40)
-                fw.value = value
-            elif field['type'] == 'AddressField':
-                fw.user = trans.user
-                fw.value = value
-                fw.params = params
-            elif field['type'] == 'SelectField':
-                for option in field['selectlist']:
-                    if option == value:
-                        fw.add_option(option, option, selected=True)
-                    else:
-                        fw.add_option(option, option)
-            elif field['type'] == 'CheckboxField':
-                fw.checked = value
-            # require/optional
-            if field['required'] == 'required':
-                req = 'Required'
-            else:
-                req = 'Optional'
-            widgets.append(dict(label=field['label'],
-                                widget=fw,
-                                helptext=field['helptext']+' ('+req+')'))
-        return widgets
     def __validate(self, trans, request):
         '''
         Validates the request entered by the user 
         '''
         empty_fields = []
-        if not request.library:
-            empty_fields.append('Data library')
+#        if not request.library:
+#            empty_fields.append('Data library')
         # check rest of the fields of the form
         for index, field in enumerate(request.type.request_form.fields):
             if field['required'] == 'required' and request.values.content[index] in ['', None]:
@@ -622,6 +577,7 @@ class Requests( BaseController ):
             request.flush()
         return request
     @web.expose
+    @web.require_login( "create/submit sequencing requests" )
     def edit(self, trans, **kwd):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
@@ -698,11 +654,10 @@ class Requests( BaseController ):
                             helptext='(Optional)'))
        
         # libraries selectbox
-        libraries = self.get_authorized_libs(trans)
+        libraries = get_authorized_libs(trans, trans.user)
         libui = self.__library_ui(libraries, request, **kwd)
         widgets = widgets + libui
-        widgets = self.__create_form(trans, request.type.request_form_id, widgets, 
-                                     request.values, **kwd)
+        widgets = widgets + get_form_widgets(trans, request.type.request_form, request.values.content, **kwd)
         return trans.fill_template( '/requests/edit_request.mako',
                                     select_request_type=select_request_type,
                                     request_type=request.type,
@@ -735,6 +690,8 @@ class Requests( BaseController ):
         kwd['id'] = trans.security.encode_id(request.id)
         return trans.response.send_redirect( web.url_for( controller='requests',
                                                           action='list',
+                                                          status='done',
+                                                          message='The request <b>%s</b> has been deleted.' % request.name,                                                          
                                                           **kwd) )
     def __undelete_request(self, trans, id):
         try:
@@ -754,6 +711,8 @@ class Requests( BaseController ):
         kwd['id'] = trans.security.encode_id(request.id)
         return trans.response.send_redirect( web.url_for( controller='requests',
                                                           action='list',
+                                                          status='done',
+                                                          message='The request <b>%s</b> has been undeleted.' % request.name,                                                          
                                                           **kwd) )
     def __submit(self, trans, id):
         try:
@@ -784,10 +743,14 @@ class Requests( BaseController ):
         request.flush()
         kwd = {}
         kwd['id'] = trans.security.encode_id(request.id)
+        kwd['status'] = 'done'
+        kwd['message'] = 'The request <b>%s</b> has been submitted.' % request.name
         return trans.response.send_redirect( web.url_for( controller='requests',
                                                           action='list',
+                                                          show_filter=trans.app.model.Request.states.SUBMITTED,
                                                           **kwd) )
     @web.expose
+    @web.require_login( "create/submit sequencing requests" )
     def submit_request(self, trans, **kwd):
         params = util.Params( kwd )
         try:
@@ -817,13 +780,16 @@ class Requests( BaseController ):
         # change request's submitted field
         request.state = request.states.SUBMITTED
         request.flush()
-        ## TODO
         kwd['id'] = trans.security.encode_id(request.id)
+        kwd['status'] = 'done'
+        kwd['message'] = 'The request <b>%s</b> has been submitted.' % request.name
         return trans.response.send_redirect( web.url_for( controller='requests',
                                                           action='list',
+                                                          show_filter=trans.app.model.Request.states.SUBMITTED,
                                                           **kwd) )
 
     @web.expose
+    @web.require_login( "create/submit sequencing requests" )
     def show_events(self, trans, **kwd):
         params = util.Params( kwd )
         try:

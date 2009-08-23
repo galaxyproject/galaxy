@@ -972,7 +972,7 @@ class TwillTestCase( unittest.TestCase ):
         self.home()
 
     # Form stuff
-    def create_form( self, name='Form One', description='This is Form One', num_fields=1 ):
+    def create_form( self, name='Form One', desc='This is Form One', num_fields=1 ):
         """
         Create a new form definition.  Testing framework is still limited to only testing
         one instance for each repeat. This has to do with the 'flat' nature of defining
@@ -988,7 +988,7 @@ class TwillTestCase( unittest.TestCase ):
         self.visit_url( "%s/forms/new" % self.url )
         self.check_page_for_string( 'Create a new form definition' )
         tc.fv( "1", "name", name ) # form field 1 is the field named name...
-        tc.fv( "1", "description", description ) # form field 1 is the field named name...
+        tc.fv( "1", "description", desc ) # form field 1 is the field named name...
         tc.submit( "create_form_button" )
         for index in range( num_fields ):
             field_name = 'field_name_%i' % index
@@ -1001,7 +1001,140 @@ class TwillTestCase( unittest.TestCase ):
             check_str = "The form '%s' has been updated with the changes." % name
         self.check_page_for_string( check_str )
         self.home()
-
+    def edit_form( self, form_id, form_name, new_form_name="Form One's Name (Renamed)", new_form_desc="This is Form One's description (Re-described)"):
+        """
+        Edit form details; name & description
+        """
+        self.home()
+        self.visit_url( "%s/forms/edit?form_id=%i&show_form=True" % (self.url, form_id) )
+        self.check_page_for_string( 'Edit form definition "%s"' % form_name )
+        tc.fv( "1", "name", new_form_name ) 
+        tc.fv( "1", "description", new_form_desc ) 
+        tc.submit( "save_changes_button" )
+        self.check_page_for_string( "The form '%s' has been updated with the changes." % new_form_name )
+        self.home()
+    def form_add_field( self, form_id, form_name, field_index, fields):
+        """
+        Add a new fields to the form definition
+        """
+        self.home()
+        self.visit_url( "%s/forms/edit?form_id=%i&show_form=True" % (self.url, form_id) )
+        self.check_page_for_string( 'Edit form definition "%s"' % form_name)
+        for i, field in enumerate(fields):
+            index = i+field_index
+            tc.submit( "add_field_button" )
+            tc.fv( "1", "field_name_%i" % index, field['name'] )
+            tc.fv( "1", "field_helptext_%i" % index, field['desc'] )
+            tc.fv( "1", "field_type_%i" % index, field['type'] )
+            tc.fv( "1", "field_required_%i" % index, field['required'] )
+#            if field['type'] == 'SelectField':
+#                for option_index, option in enumerate(field['selectlist']):
+#                    self.visit_url( "%s/forms/edit?select_box_options=add&form_id=%i&field_index=%i" % \
+#                                    (self.url, form_id, index))
+#                    #data = self.last_page()
+#                    #file( "rc.html", 'wb' ).write(data)
+#                    tc.fv( "1", "field_%i_option_%i" % (index, option_index), option )
+        tc.submit( "save_changes_button" )
+        check_str = "The form '%s' has been updated with the changes." % form_name
+        self.check_page_for_string( check_str )
+        self.home()
+    def form_remove_field( self, form_id, form_name, field_name):
+        """
+        Remove a field from the form definition
+        """
+        self.home()
+        self.visit_url( "%s/forms/edit?form_id=%i&show_form=True" % (self.url, form_id) )
+        self.check_page_for_string( 'Edit form definition "%s"' % form_name)
+        tc.submit( "remove_button" )
+        tc.submit( "save_changes_button" )
+        check_str = "The form '%s' has been updated with the changes." % form_name
+        self.check_page_for_string( check_str )
+        self.home()
+    # Requests stuff
+    def create_request_type( self, name, desc, request_form_id, sample_form_id, states ):
+        self.home()
+        self.visit_url( "%s/admin/request_type?create=True" % self.url )
+        self.check_page_for_string( 'Create a new request type' )
+        tc.fv( "1", "name", name )
+        tc.fv( "1", "description", desc )
+        tc.fv( "1", "request_form_id", request_form_id )
+        tc.fv( "1", "sample_form_id", sample_form_id )
+        tc.fv( "1", "num_states", str( len( states ) ) )
+        tc.submit( "define_states_button" )
+        self.check_page_for_string( "Create %i states for the '%s' request type" % ( len(states), name ))
+        for index, state in enumerate(states):
+            tc.fv("1", "state_name_%i" % index, state[0])
+            tc.fv("1", "state_desc_%i" % index, state[1])
+        tc.submit( "save_request_type" )
+        self.check_page_for_string( "Request type <b>%s</b> has been created" % name )
+    def create_request( self, request_type_id, name, desc, library_id, fields ):
+        self.home()
+        self.visit_url( "%s/requests/new?create=True&select_request_type=%i" % (self.url, request_type_id) )
+        self.check_page_for_string( 'Add a new request' )
+        tc.fv( "1", "name", name )
+        tc.fv( "1", "desc", desc )
+        tc.fv( "1", "library_id", str(library_id) )
+        for index, field_value in enumerate(fields):
+            tc.fv( "1", "field_%i" % index, field_value )
+        tc.submit( "create_request_button" )
+    def create_request_admin( self, request_type_id, user_id, name, desc, library_id, fields ):
+        self.home()
+        self.visit_url( "%s/requests_admin/new?create=True&select_request_type=%i" % (self.url, request_type_id) )
+        self.check_page_for_string( 'Add a new request' )
+        tc.fv( "1", "select_user", str(user_id) )
+        tc.fv( "1", "name", name )
+        tc.fv( "1", "desc", desc )
+        tc.fv( "1", "library_id", str(library_id) )
+        for index, field_value in enumerate(fields):
+            tc.fv( "1", "field_%i" % index, field_value )
+        tc.submit( "create_request_button" )
+    def edit_request( self, request_id, name, new_name, new_desc, new_library_id, new_fields):
+        self.home()
+        self.visit_url( "%s/requests/edit?request_id=%i&show=True" % (self.url, request_id) )
+        self.check_page_for_string( 'Edit request "%s"' % name )
+        tc.fv( "1", "name", new_name )
+        tc.fv( "1", "desc", new_desc )
+        tc.fv( "1", "library_id", str(new_library_id) )
+        for index, field_value in enumerate(new_fields):
+            tc.fv( "1", "field_%i" % index, field_value )
+        tc.submit( "save_changes_request_button" )
+    def add_samples( self, request_id, request_name, samples ):
+        self.home()
+        self.visit_url( "%s/requests/list?sort=-create_time&operation=show_request&id=%s" % ( self.url, self.security.encode_id( request_id ) ))
+        self.check_page_for_string( 'Sequencing Request "%s"' % request_name )
+        for sample_index, sample in enumerate(samples):
+            tc.submit( "add_sample_button" )
+            sample_name, fields = sample
+            tc.fv( "1", "sample_%i_name" % sample_index, sample_name )
+            for field_index, field_value in enumerate(fields):
+                tc.fv( "1", "sample_%i_field_%i" % ( sample_index, field_index ), field_value )
+        tc.submit( "save_samples_button" )
+    def submit_request( self, request_id, request_name ):
+        self.home()
+        self.visit_url( "%s/requests/submit_request?id=%i" % ( self.url, request_id ))
+        self.check_page_for_string( 'The request <b>%s</b> has been submitted.' % request_name )
+    def add_bar_codes( self, request_id, request_name, bar_codes ):
+        self.home()
+        self.visit_url( "%s/requests_admin/bar_codes?request_id=%i" % (self.url, request_id) )
+        self.check_page_for_string( 'Bar codes for Samples of Request "%s"' % request_name )
+        for index, bar_code in enumerate(bar_codes):
+            tc.fv( "1", "sample_%i_bar_code" % index, bar_code )
+        tc.submit( "save_bar_codes" )
+    def change_sample_state( self, sample_name, sample_id, new_state_id, comment='' ):
+        self.home()
+        self.visit_url( "%s/requests_admin/show_events?sample_id=%i" % (self.url, sample_id) )
+        self.check_page_for_string( 'Events for Sample "%s"' % sample_name )
+        tc.fv( "1", "select_state", str(new_state_id) )
+        tc.fv( "1", "comment", comment )
+        tc.submit( "add_event_button" )
+    # Address stuff
+    def create_address( self, address ):
+        self.home()
+        self.visit_url( "%s/user/new_address" % self.url )
+        self.check_page_for_string( 'New address' )
+        for name, value in address.iteritems():
+            tc.fv( "1", name, value )
+        tc.submit( "Save_button" )
     # Library stuff
     def create_library( self, name='Library One', description='This is Library One' ):
         """Create a new library"""

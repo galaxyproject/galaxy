@@ -175,7 +175,7 @@ class Forms( BaseController ):
                         'visible': True,
                         'required': False,
                         'type': BaseField.form_field_types()[0],
-                        'selectlist': '' }
+                        'selectlist': [] }
         self.current_form['fields'].append(empty_field)
     def __get_field(self, index, **kwd):
         params = util.Params( kwd )
@@ -183,10 +183,10 @@ class Forms( BaseController ):
         # To reproduce, create a new form, click the "add field" button, click the
         # browser back arrow, then click the "add field" button again.
         # You should never attempt to "restore_text()" on a None object...
-        name = util.restore_text( params.get( 'field_name_%i' % index, None ) )
-        helptext = util.restore_text( params.get( 'field_helptext_%i' % index, None ) )
+        name = util.restore_text( params.get( 'field_name_%i' % index, '' ) )
+        helptext = util.restore_text( params.get( 'field_helptext_%i' % index, '' ) )
         required =  params.get( 'field_required_%i' % index, False )
-        field_type = util.restore_text( params.get( 'field_type_%i' % index, None ) )
+        field_type = util.restore_text( params.get( 'field_type_%i' % index, '' ) )
         if field_type == 'SelectField':
             selectlist = self.__get_selectbox_options(index, **kwd)
             return {'label': name, 
@@ -419,22 +419,39 @@ def get_all_forms( trans, all_versions=False, filter=None ):
     else:
         fdc_list = trans.app.model.FormDefinitionCurrent.query().all()
     return [ fdc.latest_form for fdc in fdc_list ]
-def get_form_widgets( trans, form, contents={} ):
+
+
+def get_form_widgets( trans, form, contents=[], user=None, **kwd ):
     '''
     Return the list of widgets that comprise a form definition,
     including field contents if any.
     '''
+    params = util.Params( kwd )
+    if not user:
+        user = trans.user
     widgets = []
     for index, field in enumerate( form.fields ):
         field_name = 'field_%i' % index
-        if field_name in contents:
-            value = contents[ field_name ]
-        elif field[ 'type' ] == 'CheckboxField':
-            # Since we do not have contents, set checkbox value to False
-            value = False
+        # determine the value of the field
+        if field_name in kwd:
+            # the user had already filled out this field and the same form is re-rendered 
+            # due to some reason like required fields have been left out.
+            if field[ 'type' ] == 'CheckboxField':
+                value = CheckboxField.is_checked( util.restore_text( params.get( field_name, False ) ) )
+            else:
+                value = util.restore_text( params.get( field_name, ''  ) )
+        elif contents:
+            # this field has a saved value
+            value = str(contents[ index ])
         else:
-            # Set other field types to empty string
-            value = ''
+            # if none of the above, then leave the field empty
+            if field[ 'type' ] == 'CheckboxField':
+                # Since we do not have contents, set checkbox value to False
+                value = False
+            else:
+                # Set other field types to empty string
+                value = ''
+        # create the field widget
         field_widget = eval( field[ 'type' ] )( field_name )
         if field[ 'type' ] == 'TextField':
             field_widget.set_size( 40 )
@@ -442,6 +459,10 @@ def get_form_widgets( trans, form, contents={} ):
         elif field[ 'type' ] == 'TextArea':
             field_widget.set_size( 3, 40 )
             field_widget.value = value
+        elif field['type'] == 'AddressField':
+            field_widget.user = user
+            field_widget.value = value
+            field_widget.params = params
         elif field[ 'type' ] == 'SelectField':
             for option in field[ 'selectlist' ]:
                 if option == value:

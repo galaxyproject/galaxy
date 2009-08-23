@@ -12,9 +12,9 @@
             %for element_count in range( num_states ):
                 <div class="form-row">
                     <label>${1+element_count}) State name:</label>
-                    <input type="text" name="new_element_name_${element_count}" value="" size="40"/>
+                    <input type="text" name="state_name_${element_count}" value="" size="40"/>
                     <label>State help text (optional):</label>
-                    <input type="text" name="new_element_description_${element_count}" value="" size="40"/>
+                    <input type="text" name="state_desc_${element_count}" value="" size="40"/>
                 </div>
                 <div style="clear: both"></div>
             %endfor

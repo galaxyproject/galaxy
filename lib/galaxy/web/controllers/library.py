@@ -137,11 +137,7 @@ class Library( BaseController ):
                 # See if we have any field contents
                 info = library.info_association[0].info
                 if info:
-                    field_contents = {}
-                    for index, value in enumerate( info.content ):
-                        key = 'field_%i' % index
-                        field_contents[ key ] = value
-                    widgets = get_form_widgets( trans, template, field_contents )
+                    widgets = get_form_widgets( trans, template, info.content )
                 else:
                     widgets = get_form_widgets( trans, template )
             else:
@@ -475,11 +471,7 @@ class Library( BaseController ):
                 # See if we have any field contents
                 info = info_association.info
                 if info:
-                    field_contents = {}
-                    for index, value in enumerate( info.content ):
-                        key = 'field_%i' % index
-                        field_contents[ key ] = value
-                    widgets = get_form_widgets( trans, template, field_contents )
+                    widgets = get_form_widgets( trans, template, info.content )
                 else:
                     widgets = get_form_widgets( trans, template )
             else:
@@ -996,11 +988,7 @@ class Library( BaseController ):
                 # See if we have any field contents
                 info = info_association.info
                 if info:
-                    field_contents = {}
-                    for index, value in enumerate( info.content ):
-                        key = 'field_%i' % index
-                        field_contents[ key ] = value
-                    widgets = get_form_widgets( trans, template, field_contents )
+                    widgets = get_form_widgets( trans, template, info.content )
                 else:
                     widgets = get_form_widgets( trans, template )
             else:
@@ -1173,3 +1161,13 @@ class Library( BaseController ):
                                                           edit_info=True,
                                                           msg=util.sanitize_text( msg ),
                                                           messagetype='done' ) )
+
+
+def get_authorized_libs(trans, user):
+    all_libraries = trans.app.model.Library.filter(trans.app.model.Library.table.c.deleted == False).order_by(trans.app.model.Library.name).all()
+    authorized_libraries = []
+    for library in all_libraries:
+        if trans.app.security_agent.allow_action(user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=library) \
+            or trans.app.security_agent.allow_action(user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=library):
+            authorized_libraries.append(library)
+    return authorized_libraries

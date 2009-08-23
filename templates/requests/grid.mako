@@ -76,7 +76,7 @@
 
 <div class="grid-header">
     <h2>${grid.title}</h2>
-    ##%if len(query.all()):
+    %if len(trans.user.requests):
         ##<span class="title">Filter:</span>
         %for i, filter in enumerate( grid.standard_filters ):
             %if i > 0:    
@@ -88,17 +88,16 @@
                 <span class="filter"><a href="${h.url_for( controller='requests', action='list', show_filter=filter.label )}">${filter.label}</a></span>
             %endif
         %endfor
-    ##%endif
+    %endif
 </div>
 
 <ul class="manage-table-actions">
     <li>
         <a class="action-button" href="${h.url_for( controller='requests', action='new', select_request_type=True )}">
         <img src="${h.url_for('/static/images/silk/add.png')}" />
-        <span>New request</span></a>
+        <span>Create a new request</span></a>
     </li>
 </ul>
-
 
 %if not len(query.all()):
     There are no request(s).

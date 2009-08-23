@@ -138,7 +138,7 @@
     
     ${tab( "libraries", "Data Libraries", h.url_for( controller='library', action='index' ))}
     
-    %if trans.request_types():
+    %if trans.user and trans.request_types():
         <td class="tab">
             <a>Lab</a>
             <div class="submenu">

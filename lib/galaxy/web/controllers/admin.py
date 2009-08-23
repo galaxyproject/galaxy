@@ -764,11 +764,7 @@ class Admin( BaseController ):
                 # See if we have any field contents
                 info = info_association.info
                 if info:
-                    field_contents = {}
-                    for index, value in enumerate( info.content ):
-                        key = 'field_%i' % index
-                        field_contents[ key ] = value
-                    widgets = get_form_widgets( trans, template, field_contents )
+                    widgets = get_form_widgets( trans, template, info.content )
                 else:
                     widgets = get_form_widgets( trans, template )
             else:
@@ -965,11 +961,7 @@ class Admin( BaseController ):
                 # See if we have any field contents
                 info = info_association.info
                 if info:
-                    field_contents = {}
-                    for index, value in enumerate( info.content ):
-                        key = 'field_%i' % index
-                        field_contents[ key ] = value
-                    widgets = get_form_widgets( trans, template, field_contents )
+                    widgets = get_form_widgets( trans, template, info.content )
                 else:
                     widgets = get_form_widgets( trans, template )
             else:
@@ -1220,11 +1212,7 @@ class Admin( BaseController ):
                 # See if we have any field contents
                 info = info_association.info
                 if info:
-                    field_contents = {}
-                    for index, value in enumerate( info.content ):
-                        key = 'field_%i' % index
-                        field_contents[ key ] = value
-                    widgets = get_form_widgets( trans, template, field_contents )
+                    widgets = get_form_widgets( trans, template, info.content )
                 else:
                     widgets = get_form_widgets( trans, template )
             else:
@@ -2027,7 +2015,7 @@ class Admin( BaseController ):
         num_states = int( util.restore_text( params.get( 'num_states', 0 ) ))
         proceed = True
         for i in range( num_states ):
-            if not util.restore_text( params.get( 'new_element_name_%i' % i, None ) ):
+            if not util.restore_text( params.get( 'state_name_%i' % i, None ) ):
                 proceed = False
                 break
         if not proceed:
@@ -2045,8 +2033,8 @@ class Admin( BaseController ):
             ss.delete()
             ss.flush()
         for i in range( num_states ):
-            name = util.restore_text( params.get( 'new_element_name_%i' % i, None ))
-            desc = util.restore_text( params.get( 'new_element_description_%i' % i, None ))
+            name = util.restore_text( params.get( 'state_name_%i' % i, None ))
+            desc = util.restore_text( params.get( 'state_desc_%i' % i, None ))
             ss = trans.app.model.SampleState(name, desc, rt) 
             ss.flush()
         msg = "The new request type named '%s' with %s state(s) has been created" % (rt.name, num_states)

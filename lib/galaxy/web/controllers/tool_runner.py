@@ -82,7 +82,7 @@ class ToolRunner( BaseController ):
             job = assoc.job
             break   
         if not job:
-            raise Exception("Failed to get job information for dataset hid %d" % hid)
+            raise Exception("Failed to get job information for dataset hid %d" % data.hid)
         # Get the tool object
         tool_id = job.tool_id
         try:

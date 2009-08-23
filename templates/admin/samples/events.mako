@@ -56,7 +56,7 @@
                     </div>
                 %endfor
             <div class="form-row">
-                <input type="submit" name="add_event" value="Save"/>
+                <input type="submit" name="add_event_button" value="Save"/>
             </div>
         </form>
     </div>
