@@ -20,3 +20,10 @@ universe_wsgi.ini
 reports_wsgi.ini
 datatypes_conf.xml
 tool_conf.xml
+tool-data/*.loc
+
+# Test output
+run_functional_tests.html
+
+# Project files
+*.kpf
