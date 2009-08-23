@@ -4,7 +4,7 @@ Contains the user interface in the Universe class
 from galaxy.web.base.controller import *
 from galaxy.model.orm import *
 from galaxy import util
-import logging, os, string
+import logging, os, string, re
 from random import choice
 
 log = logging.getLogger( __name__ )
@@ -19,6 +19,8 @@ require_login_template = """
 """
 require_login_nocreation_template = require_login_template % ""
 require_login_creation_template = require_login_template % "  If you don't already have an account, <a href='%s'>you may create one</a>."
+
+VALID_USERNAME_RE = re.compile( "^[a-zA-Z0-9\-\_]+$" )
 
 class User( BaseController ):
     edit_address_id = None
@@ -78,6 +80,37 @@ class User( BaseController ):
                 .add_text( "email", "Email", value=email, error=email_err )
                 .add_text( "conf_email", "Confirm Email", value='', error=conf_email_err ) 
                 .add_password( "password", "Password", value='', error=pass_err ) )
+
+    @web.expose
+    def change_username(self, trans, username='', **kwd):
+        username_err = ''
+        user = trans.get_user()
+        if not user:
+            trans.response.send_redirect( web.url_for( action='login' ) )
+        if trans.request.method == "POST":
+            if len( username ) < 4:
+                username_err = "Username must be at least 4 characters in length"
+            elif len( username ) > 255:
+                username_err = "USername must be at most 255 characters in length"
+            elif not( VALID_USERNAME_RE.match( username ) ):
+                username_err = "Username must contain only letters, numbers, '-', and '_'"
+            elif trans.app.model.User.filter_by( username=username ).first():
+                username_err = "This username is not available"
+            else:
+                user.username = username
+                user.flush()
+                trans.log_event( "User change username" )
+                return trans.show_ok_message( "Username been set to: " + user.username )
+        else:
+            username = user.username or ''
+        return trans.show_form( 
+            web.FormBuilder( web.url_for(), "Change username", submit_text="Submit" )
+                .add_text( "username", "Username", value=username, error=username_err,
+                           help="""Your username is an optional identifier that
+                                will be used to generate adresses for information
+                                you share publicly. Usernames must be at least
+                                four characters in length and contain only letters,
+                                numbers, and the '-' and '_' characters""" ) )
 
     @web.expose
     def login( self, trans, email='', password='' ):

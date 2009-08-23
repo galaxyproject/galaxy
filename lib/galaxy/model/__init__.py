@@ -33,6 +33,7 @@ class User( object ):
         self.external = False
         self.deleted = False
         self.purged = False
+        self.username = None
         # Relationships
         self.histories = []
         
@@ -1118,7 +1119,20 @@ class UserAddress( object ):
                 self.country+'<br/>'+ \
                 'Phone: '+self.phone
                 
+class Page( object ):
+    def __init__( self ):
+        self.id = None
+        self.user = None
+        self.title = None
+        self.slug = None
+        self.latest_revision_id = None
+        self.revisions = []
 
+class PageRevision( object ):
+    def __init__( self ):
+        self.user = None
+        self.title = None
+        self.content = None
 
 
 
