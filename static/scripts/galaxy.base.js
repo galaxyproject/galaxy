@@ -59,7 +59,7 @@ function make_popupmenu( button_element, options ) {
     //    container_element = container_element.parent();
     // }
     // ontainer_element).css( "position", "relative" );
-    var menu_element = $( "<ul id='" + button_element.attr('id') + "-menu'></div>" );
+    var menu_element = $( "<ul id='" + button_element.attr('id') + "-menu'></ul>" );
     $.each( options, function( k, v ) {
         if ( v ) {
             $( "<li/>" ).html( k ).click( v ).appendTo( menu_element );

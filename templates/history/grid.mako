@@ -158,7 +158,7 @@
                                         extra = ""
                                 %>
                                 %if href:                    
-                                    <td><div class="menubutton split"><a class="label" href="${href}">${v}${extra}</a></td>
+                                    <td><div class="menubutton split" style="float: left;"><a class="label" href="${href}">${v}${extra}</a> </td>
                                 %else:
                                     <td >${v}${extra}</td>
                                 %endif    

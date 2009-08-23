@@ -37,7 +37,7 @@
         %for i, workflow in enumerate( workflows ):
             <tr>
                 <td>
-                    <div class="menubutton">
+                    <div class="menubutton" style="float: left;">
                     <a id="wf-${i}-popup" class="arrow" style="display: none;"><span>&#9660;</span></a>
                     ${workflow.name}
                     </div>
