@@ -27,9 +27,6 @@ ${self.javascripts()}
   ## <!--[if lt IE 7]>
   ## <script type='text/javascript' src="/static/scripts/IE7.js"> </script>
   ## <![endif]-->
-  <script type="text/javascript" src="${h.url_for('/static/scripts/jquery.js')}"></script>
-  <script type="text/javascript" src="${h.url_for('/static/scripts/galaxy.base.js')}"></script>
-
-
+  ${h.js( "jquery", "galaxy.base" )}
 </%def>
 

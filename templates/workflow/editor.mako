@@ -25,17 +25,17 @@
     <!--[if IE]>
     <script type='text/javascript' src="${h.url_for('/static/scripts/excanvas.js')}"> </script>
     <![endif]-->
-    <script type='text/javascript' src="${h.url_for('/static/scripts/jquery.js')}"> </script>
-    <script type='text/javascript' src="${h.url_for('/static/scripts/jquery.event.drag.js')}"> </script>
-    <script type='text/javascript' src="${h.url_for('/static/scripts/jquery.event.drop.js')}"> </script>
-    <script type='text/javascript' src="${h.url_for('/static/scripts/jquery.event.hover.js')}"> </script>
-    <script type='text/javascript' src="${h.url_for('/static/scripts/jquery.form.js')}"> </script>
-    <script type='text/javascript' src="${h.url_for('/static/scripts/jquery.jstore-all.js')}"> </script>
-    <script type='text/javascript' src="${h.url_for('/static/scripts/json2.js')}"> </script>
 
-    <script type='text/javascript' src="${h.url_for('/static/scripts/galaxy.base.js')}"> </script>
-    <script type='text/javascript' src="${h.url_for('/static/scripts/galaxy.workflow_editor.canvas.js')}"> </script>
-    
+    ${h.js( "jquery", 
+            "jquery.event.drag", 
+            "jquery.event.drop", 
+            "jquery.event.hover",
+            "jquery.form", 
+            "jquery.jstore-all", 
+            "json2",
+            "galaxy.base",
+            "galaxy.workflow_editor.canvas" )}
+
     <!--[if lt IE 7]>
     <script type='text/javascript'>
     window.lt_ie_7 = true;
