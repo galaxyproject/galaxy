@@ -42,6 +42,7 @@ User.table = Table( "galaxy_user", metadata,
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "email", TrimmedString( 255 ), nullable=False ),
+    Column( "username", TrimmedString( 255 ), index=True, unique=True ),
     Column( "password", TrimmedString( 40 ), nullable=False ),
     Column( "external", Boolean, default=False ),
     Column( "deleted", Boolean, index=True, default=False ),
@@ -523,6 +524,26 @@ SampleEvent.table = Table('sample_event', metadata,
     Column( "sample_state_id", Integer, ForeignKey( "sample_state.id" ), index=True ), 
     Column( "comment", TEXT ) )
 
+Page.table = Table( "page", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True, nullable=False ),
+    Column( "latest_revision_id", Integer,
+            ForeignKey( "page_revision.id", use_alter=True, name='page_latest_revision_id_fk' ), index=True ),
+    Column( "title", TEXT ),
+    Column( "slug", TEXT, unique=True, index=True ),
+    )
+
+PageRevision.table = Table( "page_revision", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "page_id", Integer, ForeignKey( "page.id" ), index=True, nullable=False ),
+    Column( "title", TEXT ),
+    Column( "content", TEXT )
+    )
+
 # With the tables defined we can define the mappers and setup the 
 # relationships between the model objects.
 
@@ -904,6 +925,18 @@ assign_mapper( context, StoredWorkflowMenuEntry, StoredWorkflowMenuEntry.table,
 
 assign_mapper( context, MetadataFile, MetadataFile.table,
     properties=dict( history_dataset=relation( HistoryDatasetAssociation ), library_dataset=relation( LibraryDatasetDatasetAssociation ) ) )
+
+assign_mapper( context, PageRevision, PageRevision.table )
+
+assign_mapper( context, Page, Page.table,
+    properties=dict( user=relation( User ),
+                     revisions=relation( PageRevision, backref='page',
+                                         cascade="all, delete-orphan",
+                                         primaryjoin=( Page.table.c.id == PageRevision.table.c.page_id ) ),
+                     latest_revision=relation( PageRevision, post_update=True,
+                                               primaryjoin=( Page.table.c.latest_revision_id == PageRevision.table.c.id ),
+                                               lazy=False )
+                   ) )
 
 def db_next_hid( self ):
     """

@@ -1,4 +1,12 @@
-<%inherit file="/base.mako"/>
+<%!
+def inherit(context):
+    if context.get('use_panels'):
+        return '/base_panels.mako'
+    else:
+        return '/base.mako'
+%>
+<%inherit file="${inherit(context)}"/>
+
 <%def name="title()">${grid.title}</%def>
 
 %if message:
@@ -74,6 +82,17 @@
 
 <div class="grid-header">
     <h2>${grid.title}</h2>
+    
+    %if grid.global_actions:
+        <ul class="manage-table-actions">
+        %for action in grid.global_actions:
+            <li>
+                <a class="action-button" href="${h.url_for( **action.url_args )}">${action.label}</a>
+            </li>
+        %endfor
+        </ul>
+    %endif
+    
     %if grid.standard_filters:
         <span class="title">Filter:</span>
         %for i, filter in enumerate( grid.standard_filters ):
@@ -85,12 +104,13 @@
     %endif
 </div>
 
-
 <form action="${url()}" method="post" >
     <table class="grid">
         <thead>
             <tr>
-                <th></th>
+                %if grid.has_multiple_item_operations:
+                    <th></th>
+                %endif
                 %for column in grid.columns:
                     %if column.visible:
                         <%
@@ -132,9 +152,11 @@
                 %endif
                 > 
                     ## Item selection column
-                    <td style="width: 1.5em;">
-                        <input type="checkbox" name="id" value=${trans.security.encode_id( item.id )} class="grid-row-select-checkbox" />
-                    </td>
+                    %if grid.has_multiple_item_operations:
+                        <td style="width: 1.5em;">
+                            <input type="checkbox" name="id" value=${trans.security.encode_id( item.id )} class="grid-row-select-checkbox" />
+                        </td>
+                    %endif
                     ## Data columns
                     %for column in grid.columns:
                         %if column.visible:
@@ -157,11 +179,18 @@
                                         extra = '<a id="grid-%d-popup" class="arrow" style="display: none;"><span>&#9660;</span></a>' % i
                                     else:
                                         extra = ""
+                                    # Button class
+                                    if href and extra:
+                                        cls = "menubutton split"
+                                    elif extra:
+                                        cls = "menubutton"
+                                    else:
+                                        cls = ""
                                 %>
                                 %if href:                    
-                                    <td><div class="menubutton split"><a class="label" href="${href}">${v}${extra}</a></td>
+                                    <td><div class="${cls}"><a class="label" href="${href}">${v|h}${extra}</a></div></td>
                                 %else:
-                                    <td >${v}${extra}</td>
+                                    <td><div class="${cls}">${v}${extra}</div></td>
                                 %endif    
                             %endfor
                         %endif
@@ -171,7 +200,12 @@
                         <div popupmenu="grid-${i}-popup">
                             %for operation in grid.operations:
                                 %if operation.allowed( item ):
-                                    <a class="action-button" href="${url( operation=operation.label, id=item.id )}">${operation.label}</a>
+                                    <%
+                                    target = ""
+                                    if operation.target:
+                                        target = "target='" + operation.target + "'"
+                                    %>  
+                                    <a class="action-button" ${target} href="${url( **operation.get_url_args( item ) )}">${operation.label}</a>
                                 %endif
                             %endfor
                         </div>
@@ -179,6 +213,7 @@
                 </tr>
             %endfor
         </tbody>
+        %if grid.has_multiple_item_operations:
         <tfoot>
             <tr>
                 <td></td>
@@ -192,5 +227,6 @@
                 </td>
             </tr>
         </tfoot>
+        %endif
     </table>
 </form>

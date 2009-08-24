@@ -15,6 +15,7 @@ class Grid( object ):
     exposed = True
     model_class = None
     template = "grid.mako"
+    global_actions = []
     columns = []
     operations = []
     standard_filters = []
@@ -22,7 +23,12 @@ class Grid( object ):
     default_sort_key = None
     pass_through_operations = {}
     def __init__( self ):
-        pass
+        # Determine if any multiple row operations are defined
+        self.has_multiple_item_operations = False
+        for operation in self.operations:
+            if operation.allow_multiple:
+                self.has_multiple_item_operations = True
+                break
     def __call__( self, trans, **kwargs ):
         status = kwargs.get( 'status', None )
         message = kwargs.get( 'message', None )
@@ -65,7 +71,13 @@ class Grid( object ):
         current_item = self.get_current_item( trans )
         # Render
         def url( *args, **kwargs ):
-            new_kwargs = dict( extra_url_args )
+            # Only include sort/filter arguments if not linking to another
+            # page. This is a bit of a hack.
+            if 'action' in kwargs:
+                new_kwargs = dict()
+            else:
+                new_kwargs = dict( extra_url_args )
+            # Extend new_kwargs with first argument if found
             if len(args) > 0:
                 new_kwargs.update( args[0] )
             new_kwargs.update( kwargs )
@@ -158,16 +170,31 @@ class GridColumn( object ):
         return query
 
 class GridOperation( object ):
-    def __init__( self, label, key=None, condition=None, allow_multiple=True ):
+    def __init__( self, label, key=None, condition=None, allow_multiple=True, target=None, url_args=None ):
         self.label = label
         self.key = key
         self.allow_multiple = allow_multiple
         self.condition = condition
+        self.target = target
+        self.url_args = url_args
+    def get_url_args( self, item ):
+        if self.url_args:
+            temp = dict( self.url_args )
+            temp['id'] = item.id
+            return temp
+        else:
+            return dict( operation=operation.label, id=item.id )
+        
     def allowed( self, item ):
         if self.condition:
             return self.condition( item )
         else:
             return True
+        
+class GridAction( object ):
+    def __init__( self, label=None, url_args=None ):
+        self.label = label
+        self.url_args = url_args
         
 class GridColumnFilter( object ):
     def __init__( self, label, args=None ):
