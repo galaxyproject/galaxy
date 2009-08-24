@@ -1,3 +1,9 @@
+"""
+Migration script to add support for "Pages".
+  1) Creates Page and PageRevision tables
+  2) Adds username column to User table
+"""
+
 from sqlalchemy import *
 from migrate import *
 from migrate.changeset import *
@@ -31,6 +37,7 @@ PageRevision_table = Table( "page_revision", metadata,
     )
 
 def upgrade():
+    print __doc__
     metadata.reflect()
     try:
         Page_table.create()
