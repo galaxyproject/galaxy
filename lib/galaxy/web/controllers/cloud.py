@@ -15,7 +15,11 @@ from galaxy.workflow.modules import *
 from galaxy.model.mapping import desc
 from galaxy.model.orm import *
 
+# Required for Cloud tab
+import galaxy.eggs
+galaxy.eggs.require("boto")
 from boto.ec2.connection import EC2Connection
+
 import logging
 log = logging.getLogger( __name__ )
 
@@ -32,33 +36,31 @@ class CloudController( BaseController ):
         Render cloud main page (management of cloud resources)
         """
         user = trans.get_user()
-        #awsCredentials = 0
         awsCredentials = trans.sa_session.query ( model.StoredUserCredentials ) \
             .order_by( desc( model.StoredUserCredentials.c.update_time ) ) \
             .all()
-        log.debug( "in list" )
-        log.debug( awsCredentials )
-        
-        workflows = trans.sa_session.query( model.StoredWorkflow ) \
-            .filter_by( user=user, deleted=False ) \
-            .order_by( desc( model.StoredWorkflow.c.update_time ) ) \
-            .all()
-        return trans.fill_template( "cloud/configure_cloud.mako",
-                                    awsCredentials = awsCredentials,
-                                    workflows = workflows )
-    
-    @web.expose
-    @web.require_login( "use Galaxy cloud" )
-    def makeDefault( self, trans ):
-        """ 
-        Set current credentials as default to be used for submitting jobs
-        TODO: Implement, this is only a dummy method.
-        """
-        awsCredentials = trans.sa_session.query ( model.StoredUserCredentials ).all()        
         
         return trans.fill_template( "cloud/configure_cloud.mako",
                                     awsCredentials = awsCredentials )
     
+    @web.expose
+    @web.require_login( "use Galaxy cloud" )
+    def makeDefault( self, trans, id=None ):
+        """ 
+        Set current credentials as default to be used for acquiring cloud resources.
+        """
+        currentDefault = get_defalt_credentials (trans)
+        if currentDefault:
+            currentDefault.defaultCred = False
+        
+        newDefault = get_stored_credentials( trans, id )
+        newDefault.defaultCred = True
+        trans.sa_session.flush()
+        trans.set_message( "Credentials '%s' set as default." % newDefault.name )
+                    
+        return self.list( trans ) #trans.fill_template( "cloud/configure_cloud.mako",
+               #awsCredentials = awsCredentials )
+   
     @web.expose
     @web.require_login( "use Galaxy workflows" )
     def list_for_run( self, trans ):
@@ -176,10 +178,9 @@ class CloudController( BaseController ):
    
     @web.expose
     @web.require_login( "add credentials" )
-    def add( self, trans, credName='', accessKey='', secretKey='', default=False ):
+    def add( self, trans, credName='', accessKey='', secretKey='', defaultCred=False ):
         """
         Add user's AWS credentials stored under name `credName`.
-        TODO: Make use of 'default' credential selection
         """
         user = trans.get_user()
         cred_error = accessKey_error = secretKey_error = None
@@ -203,18 +204,15 @@ class CloudController( BaseController ):
                 # Log and display the management page
                 trans.log_event( "User added new credentials" )
                 trans.set_message( "Credential '%s' created" % credentials.name )
-                if default:
-                        mail = os.popen("%s -t" % trans.app.config.sendmail_path, 'w')
-                        mail.write("To: %s\nFrom: %s\nSubject: Join Mailing List\n\nJoin Mailing list." % (trans.app.config.mailing_join_addr,email) )
-                        if mail.close():
-                            return trans.show_warn_message( "Now logged in as " + user.email+". However, subscribing to the mailing list has failed.", refresh_frames=refresh_frames )
+                if defaultCred:
+                    self.makeDefault( trans, credentials.id)
                 return self.list( trans )
         return trans.show_form( 
             web.FormBuilder( web.url_for(), "Add credentials", submit_text="Add" )
                 .add_text( "credName", "Credentials name", value="Unnamed credentials", error=cred_error )
                 .add_text( "accessKey", "Access key", value='', error=accessKey_error ) 
                 .add_password( "secretKey", "Secret key", value='', error=secretKey_error ) 
-                .add_input( "checkbox","Make default credentials","default", value='default' ) )
+                .add_input( "checkbox","Make default credentials","defaultCred", value='defaultCred' ) )
         
     @web.expose
     @web.require_login( "view credentials" )
@@ -232,7 +230,7 @@ class CloudController( BaseController ):
     @web.require_login( "delete credentials" )
     def delete( self, trans, id=None ):
         """
-        Delete credentials 
+        Delete user's cloud credentials 
         """        
         # Load credentials from database
         stored = get_stored_credentials( trans, id )
@@ -690,8 +688,11 @@ def get_stored_credentials( trans, id, check_ownership=True ):
     """
     Get a StoredUserCredntials from the database by id, verifying ownership. 
     """
-    # Load credentials from database
-    id = trans.security.decode_id( id )
+    # Check if 'id' is in int (i.e., it was called from this program) or
+    #    it was passed from the web (in which case decode it)
+    if not isinstance( id, int ):
+        id = trans.security.decode_id( id )
+
     stored = trans.sa_session.query( model.StoredUserCredentials ).get( id )
     if not stored:
         error( "Credentials not found" )
@@ -702,6 +703,18 @@ def get_stored_credentials( trans, id, check_ownership=True ):
     if check_ownership and not( stored.user == user ):
         error( "Credentials are not owned by current user." )
     # Looks good
+    return stored
+
+def get_defalt_credentials( trans, check_ownership=True ):
+    """
+    Get a StoredUserCredntials from the database by 'default' setting, verifying ownership. 
+    """
+    user = trans.get_user()
+    # Load credentials from database
+    stored = trans.sa_session.query( model.StoredUserCredentials ) \
+        .filter_by (user=user, defaultCred=True) \
+        .first()
+
     return stored
 
 def attach_ordered_steps( workflow, steps ):

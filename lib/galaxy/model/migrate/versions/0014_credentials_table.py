@@ -19,7 +19,8 @@ Credentials_table = Table( "stored_user_credentials", metadata,
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True, nullable=False ),
     Column( "name", TEXT),
     Column( "access_key", TEXT),
-    Column( "secret_key", TEXT) )
+    Column( "secret_key", TEXT),
+    Column( "defaultCred", Boolean, default=False ) )
 
 def upgrade():
     metadata.reflect()

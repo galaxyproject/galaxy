@@ -9,6 +9,9 @@
     except:
         messagetype = "done"
 %>
+
+
+
 <p />
 <div class="${messagetype}message">
     ${message}
@@ -31,7 +34,6 @@
         <tr class="header">
             <th>Credentials Name</th>
             <th>Default</th>
-            ## <th>Last Updated</th>
             <th></th>
         </tr>
         %for i, awsCredential in enumerate( awsCredentials ):
@@ -41,8 +43,17 @@
                     <a id="wf-${i}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
                 </td>
                 ## Comment <td>${len(workflow.latest_workflow.steps)}</td>
-                ##<td>${str(awsCredentials.update_time)[:19]}</td>
+                ##<td>${str(awsCredential.update_time)[:19]}</td>
                 <td>
+                	${str(awsCredential.defaultCred)}
+                	<%
+						c=str(awsCredential.defaultCred)
+					%>
+					
+					##${dflt(cred=c)}
+				</td>
+                
+				<td>
                     <div popupmenu="wf-${i}-popup">
                     <a class="action-button" href="${h.url_for( action='view', id=trans.security.encode_id(awsCredential.id) )}">View</a>
                     <a class="action-button" href="${h.url_for( action='rename', id=trans.security.encode_id(awsCredential.id) )}">Rename</a>
@@ -65,3 +76,8 @@
 	
 %endif
 
+<%def name="dflt(cred)">
+	%if cred:
+		default
+	%endif
+</%def>
