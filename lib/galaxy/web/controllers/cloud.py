@@ -33,7 +33,9 @@ class CloudController( BaseController ):
         """
         user = trans.get_user()
         #awsCredentials = 0
-        awsCredentials = trans.sa_session.query ( model.StoredUserCredentials ).all()        
+        awsCredentials = trans.sa_session.query ( model.StoredUserCredentials ) \
+            .order_by( desc( model.StoredUserCredentials.c.update_time ) ) \
+            .all()
         log.debug( "in list" )
         log.debug( awsCredentials )
         
@@ -50,6 +52,7 @@ class CloudController( BaseController ):
     def makeDefault( self, trans ):
         """ 
         Set current credentials as default to be used for submitting jobs
+        TODO: Implement, this is only a dummy method.
         """
         awsCredentials = trans.sa_session.query ( model.StoredUserCredentials ).all()        
         
@@ -170,119 +173,63 @@ class CloudController( BaseController ):
         else:
             return form( url_for( id=trans.security.encode_id(stored.id) ), "Rename credentials", submit_text="Rename" ) \
                 .add_text( "new_name", "Credentials Name", value=stored.name )
-        
+   
     @web.expose
-    @web.require_login( "use Galaxy workflows" )
-    def clone( self, trans, id ):
-        stored = get_stored_workflow( trans, id, check_ownership=False )
-        user = trans.get_user()
-        if stored.user == user:
-            owner = True
-        else:
-            if trans.sa_session.query( model.StoredWorkflowUserShareAssociation ) \
-                    .filter_by( user=user, stored_workflow=stored ).count() == 0:
-                error( "Workflow is not owned by or shared with current user" )
-            owner = False
-        new_stored = model.StoredWorkflow()
-        new_stored.name = "Clone of '%s'" % stored.name
-        new_stored.latest_workflow = stored.latest_workflow
-        if not owner:
-            new_stored.name += " shared by '%s'" % stored.user.email
-        new_stored.user = user
-        # Persist
-        session = trans.sa_session
-        session.save_or_update( new_stored )
-        session.flush()
-        # Display the management page
-        trans.set_message( 'Clone created with name "%s"' % new_stored.name )
-        return self.list( trans )
-    
-    @web.expose
-    @web.require_login( "create workflows" )
-    def create( self, trans, workflow_name=None ):
+    @web.require_login( "add credentials" )
+    def add( self, trans, credName='', accessKey='', secretKey='', default=False ):
         """
-        Create a new stored workflow with name `workflow_name`.
+        Add user's AWS credentials stored under name `credName`.
+        TODO: Make use of 'default' credential selection
         """
         user = trans.get_user()
-        if workflow_name is not None:
-            # Create the new stored workflow
-            stored_workflow = model.StoredWorkflow()
-            stored_workflow.name = workflow_name
-            stored_workflow.user = user
-            # And the first (empty) workflow revision
-            workflow = model.Workflow()
-            workflow.name = workflow_name
-            workflow.stored_workflow = stored_workflow
-            stored_workflow.latest_workflow = workflow
-            # Persist
-            session = trans.sa_session
-            session.save_or_update( stored_workflow )
-            session.flush()
-            # Display the management page
-            trans.set_message( "Workflow '%s' created" % stored_workflow.name )
-            return self.list( trans )
-        else:
-            return form( url_for(), "Create new workflow", submit_text="Create" ) \
-                .add_text( "workflow_name", "Workflow Name", value="Unnamed cloud" )
-    
-    @web.expose
-    @web.require_login( "add AWS credentials" )
-    def add( self, trans, account_name=None ):
-        """
-        Add user's AWS credentials stored under name `account_name`.
-        """
-        user = trans.get_user()
+        cred_error = accessKey_error = secretKey_error = None
+        if credName:
+            if len( credName ) > 255:
+                cred_error = "Credentials name exceeds maximum allowable length."
+            elif trans.app.model.StoredUserCredentials.filter(  
+                    trans.app.model.StoredUserCredentials.table.c.name==credName ).first():
+                cred_error = "Credentials with that name already exist."
+            else:
+                # Create new user stored credentials
+                credentials = model.StoredUserCredentials()
+                credentials.name = credName
+                credentials.user = user
+                credentials.access_key = accessKey
+                credentials.secret_key = secretKey
+                # Persist
+                session = trans.sa_session
+                session.save_or_update( credentials )
+                session.flush()
+                # Log and display the management page
+                trans.log_event( "User added new credentials" )
+                trans.set_message( "Credential '%s' created" % credentials.name )
+                if default:
+                        mail = os.popen("%s -t" % trans.app.config.sendmail_path, 'w')
+                        mail.write("To: %s\nFrom: %s\nSubject: Join Mailing List\n\nJoin Mailing list." % (trans.app.config.mailing_join_addr,email) )
+                        if mail.close():
+                            return trans.show_warn_message( "Now logged in as " + user.email+". However, subscribing to the mailing list has failed.", refresh_frames=refresh_frames )
+                return self.list( trans )
+        return trans.show_form( 
+            web.FormBuilder( web.url_for(), "Add credentials", submit_text="Add" )
+                .add_text( "credName", "Credentials name", value="Unnamed credentials", error=cred_error )
+                .add_text( "accessKey", "Access key", value='', error=accessKey_error ) 
+                .add_password( "secretKey", "Secret key", value='', error=secretKey_error ) 
+                .add_input( "checkbox","Make default credentials","default", value='default' ) )
         
-        """
-        awsCredentials = trans.sa_session.query ( model.StoredUserCredentials ).all()        
-        log.debug( "in add" ) 
-        log.debug( user )
-        log.debug( credentials.name )
-        log.debug( awsCredentials )
-        """
-        
-        if account_name is not None:
-            # Create new user stored credentials
-            credentials = model.StoredUserCredentials()
-            credentials.name = account_name
-            credentials.user = user
-            credentials.access_key = "access key"
-            credentials.secret_key = "secret key"
-            # Persist
-            session = trans.sa_session
-            session.save_or_update( credentials )
-            session.flush()
-            # Display the management page
-            trans.set_message( "Credential '%s' created" % credentials.name )
-            return self.list( trans )
-            
-            """
-            # Create the new stored workflow
-            stored_workflow = model.StoredWorkflow()
-            stored_workflow.name = workflow_name
-            stored_workflow.user = user
-            # And the first (empty) workflow revision
-            workflow = model.Workflow()
-            workflow.name = workflow_name
-            workflow.stored_workflow = stored_workflow
-            stored_workflow.latest_workflow = workflow
-            # Persist
-            session = trans.sa_session
-            session.save_or_update( stored_workflow )
-            session.flush()
-            # Display the management page
-            trans.set_message( "Workflow '%s' created" % stored_workflow.name )
-            return self.list( trans )
-           """
-        else:
-            return trans.fill_template("cloud/credentials.mako") 
-        """
-        form( url_for(), "Add AWS credentials", submit_text="Add" ) \
-                .add_text( "account_name", "Account Name", value="Unnamed credentials" )
-                .add_text( "access_key", "Access Key", value="" )
-                .add_text( "secret_key", "Secret Key", value="" )
-        """
     @web.expose
+    @web.require_login( "view credentials" )
+    def view( self, trans, id=None ):
+        """
+        View details for user credentials 
+        """        
+        # Load credentials from database
+        stored = get_stored_credentials( trans, id )
+        
+        return trans.fill_template( "cloud/view.mako", 
+                                   credDetails = stored)
+
+    @web.expose
+    @web.require_login( "delete credentials" )
     def delete( self, trans, id=None ):
         """
         Delete credentials 

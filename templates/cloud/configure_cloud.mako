@@ -44,8 +44,9 @@
                 ##<td>${str(awsCredentials.update_time)[:19]}</td>
                 <td>
                     <div popupmenu="wf-${i}-popup">
-                    <a class="action-button" href="${h.url_for( action='makeDefault', id=trans.security.encode_id(awsCredential.id) )}" target="_parent">Made default</a>
+                    <a class="action-button" href="${h.url_for( action='view', id=trans.security.encode_id(awsCredential.id) )}">View</a>
                     <a class="action-button" href="${h.url_for( action='rename', id=trans.security.encode_id(awsCredential.id) )}">Rename</a>
+                    <a class="action-button" href="${h.url_for( action='makeDefault', id=trans.security.encode_id(awsCredential.id) )}" target="_parent">Make default</a>
                     <a class="action-button" confirm="Are you sure you want to delete workflow '${awsCredential.name}'?" href="${h.url_for( action='delete', id=trans.security.encode_id(awsCredential.id) )}">Delete</a>
                     </div>
                 </td>
