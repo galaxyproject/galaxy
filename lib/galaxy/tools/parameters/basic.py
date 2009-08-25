@@ -793,7 +793,21 @@ class ColumnListParameter( SelectToolParameter ):
         return set( self.get_column_list( trans, other_values ) )
     def get_dependencies( self ):
         return [ self.data_ref ]
-
+    def need_late_validation( self, trans, context ):
+        if super( ColumnListParameter, self ).need_late_validation( trans, context ):
+            return True
+        # Get the selected dataset if selected
+        dataset = context[ self.data_ref ]
+        if dataset:
+            # Check if the dataset does not have the expected metadata for columns
+            if not dataset.metadata.columns:
+                # Only allow late validation if the dataset is not yet ready
+                # (since we have reason to expect the metadata to be ready eventually)
+                if dataset.is_pending:
+                    return True
+        # No late validation
+        return False
+        
 
 class DrillDownSelectToolParameter( SelectToolParameter ):
     """

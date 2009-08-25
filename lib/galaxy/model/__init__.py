@@ -403,6 +403,7 @@ class Dataset( object ):
         return self.get_size() > 0
     def mark_deleted( self, include_children=True ):
         self.deleted = True
+        
     # FIXME: sqlalchemy will replace this
     def _delete(self):
         """Remove the file that corresponds to this data"""
@@ -560,6 +561,14 @@ class DatasetInstance( object ):
         if self.purged:
             return False
         return True
+    @property
+    def is_pending( self ):
+        """
+        Return true if the dataset is neither ready nor in error
+        """
+        return self.state in ( self.states.NEW, self.states.UPLOAD,
+                               self.states.QUEUED, self.states.RUNNING,
+                               self.states.SETTING_METADATA )
     @property
     def source_library_dataset( self ):
         def get_source( dataset ):
