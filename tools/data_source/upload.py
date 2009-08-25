@@ -206,6 +206,8 @@ def add_file( dataset, json_file ):
                         elif ext == 'scf' and dataset.file_type != 'scf':
                             file_err( "You must manually set the 'File Format' to 'Scf' when uploading scf files.", dataset, json_file )
                             return
+                    else:
+                        ext = 'binary'
                     data_type = 'binary'
         if not data_type:
             # We must have a text file

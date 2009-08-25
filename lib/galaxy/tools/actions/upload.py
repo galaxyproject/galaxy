@@ -144,6 +144,7 @@ class UploadToolAction( ToolAction ):
         job.add_parameter( 'paramfile', to_json_string( json_file_path ) )
         for i, dataset in enumerate( data_list ):
             job.add_output_dataset( i, dataset )
+        job.state = trans.app.model.Job.states.NEW
         trans.app.model.flush()
         
         # Queue the job for execution
