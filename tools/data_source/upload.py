@@ -136,7 +136,7 @@ def add_file( dataset, json_file ):
         file_err( 'The uploaded file is empty', dataset, json_file )
         return
     if 'is_multi_byte' not in dir( dataset ):
-        dataset.is_multi_byte = util.is_multi_byte( open( dataset.path, 'r' ).read( 1024 )[:100] )
+        dataset.is_multi_byte = util.is_multi_byte( open( dataset.path, 'r' ).read( 1024 ) )
     if dataset.is_multi_byte:
         ext = sniff.guess_ext( dataset.path, is_multi_byte=True )
         data_type = ext
@@ -225,6 +225,10 @@ def add_file( dataset, json_file ):
                 ext = dataset.file_type
             data_type = ext
     # Save job info for the framework
+    if ext == 'auto' and dataset.ext:
+        ext = dataset.ext
+    if ext == 'auto':
+        ext = 'data'
     info = dict( type = 'dataset',
                  dataset_id = dataset.dataset_id,
                  path = dataset.path,

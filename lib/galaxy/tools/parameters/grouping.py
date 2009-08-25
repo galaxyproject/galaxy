@@ -327,6 +327,8 @@ class UploadDataset( Group ):
             rval = []
             for dataset in datasets:
                 dataset.file_type = file_type
+                dataset.datatype = d_type
+                dataset.ext = self.get_datatype_ext( trans, context )
                 dataset.dbkey = dbkey
                 rval.append( dataset )
             return rval

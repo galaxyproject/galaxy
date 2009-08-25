@@ -104,6 +104,7 @@ class UploadToolAction( ToolAction ):
                     except:
                         is_binary = None
                     json = dict( file_type = uploaded_dataset.file_type,
+                                 ext = uploaded_dataset.ext,
                                  name = uploaded_dataset.name,
                                  dataset_id = data.dataset.id,
                                  dbkey = uploaded_dataset.dbkey,
