@@ -298,7 +298,7 @@ class HistoryController( BaseController ):
         user_history = trans.get_history()
         if not id:
             return trans.show_error_message( "You must specify a history you want to import." )
-        import_history = get_history( trans, id )
+        import_history = get_history( trans, id, check_ownership=False )
         if not import_history:
             return trans.show_error_message( "The specified history does not exist.")
         if not import_history.importable:
