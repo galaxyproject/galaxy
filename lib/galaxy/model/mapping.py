@@ -379,6 +379,37 @@ GalaxySessionToHistoryAssociation.table = Table( "galaxy_session_to_history", me
     Column( "session_id", Integer, ForeignKey( "galaxy_session.id" ), index=True ),
     Column( "history_id", Integer, ForeignKey( "history.id" ), index=True ) )
 
+
+
+
+
+# ***************************************************************************
+# *************************** Cloud tables***********************************
+# ***************************************************************************
+UserInstances.table = Table( "user_instances", metadata, 
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "launch_time", DateTime, onupdate=now ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True, nullable=False ),
+    Column( "name", TEXT ),
+    Column( "reservation_id", TEXT ),
+    Column( "instance_id", TEXT ),
+    Column( "ami", TEXT, ForeignKey( "cloud_images.image_id" ), nullable=False ),
+    Column( "state", TEXT ),
+    Column( "public_dns", TEXT ),
+    Column( "private_dns", TEXT ),
+    Column( "keypair_fingerprint", TEXT ),
+    Column( "keypair_material", TEXT ),
+    Column( "availability_zone", TEXT ) )
+
+CloudImages.table = Table( "cloud_images", metadata, 
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "upadte_time", DateTime, default=now, onupdate=now ),
+    Column( "image_id", TEXT, nullable=False ),
+    Column( "manifest", TEXT ),
+    Column( "state", TEXT ) )
+
 StoredUserCredentials.table = Table( "stored_user_credentials", metadata, 
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
@@ -895,9 +926,18 @@ assign_mapper( context, WorkflowStepConnection, WorkflowStepConnection.table,
                      output_step=relation( WorkflowStep, backref="output_connections", cascade="all",
                                            primaryjoin=( WorkflowStepConnection.table.c.output_step_id == WorkflowStep.table.c.id ) ) ) )
 
+# vvvvvvvvvvvvvvvv Start cloud table mappings vvvvvvvvvvvvvvvv
+assign_mapper( context, UserInstances, UserInstances.table,
+    properties=dict( user=relation( User ), 
+                     cloud_image=relation( CloudImages )
+                    ) )
+
+assign_mapper( context, CloudImages, CloudImages.table )
+
 assign_mapper( context, StoredUserCredentials, StoredUserCredentials.table,
     properties=dict( user=relation( User) )
                     )
+# ^^^^^^^^^^^^^^^ End cloud table mappings ^^^^^^^^^^^^^^^^^^
 
 assign_mapper( context, StoredWorkflow, StoredWorkflow.table,
     properties=dict( user=relation( User ),

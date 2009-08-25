@@ -36,12 +36,17 @@ class CloudController( BaseController ):
         Render cloud main page (management of cloud resources)
         """
         user = trans.get_user()
-        awsCredentials = trans.sa_session.query ( model.StoredUserCredentials ) \
+        awsCredentials = trans.sa_session.query( model.StoredUserCredentials ) \
             .order_by( desc( model.StoredUserCredentials.c.update_time ) ) \
             .all()
         
+        prevInstances = trans.sa_session.query( model.UserInstances ) \
+            .order_by( desc( model.UserInstances.c.create_time ) ) \
+            .all() #TODO: diff between live and previous instances 
+            
         return trans.fill_template( "cloud/configure_cloud.mako",
-                                    awsCredentials = awsCredentials )
+                                    awsCredentials = awsCredentials,
+                                    prevInstances = prevInstances )
     
     @web.expose
     @web.require_login( "use Galaxy cloud" )
@@ -162,7 +167,82 @@ class CloudController( BaseController ):
             session.flush()
             # Redirect to load galaxy frames.
             return trans.response.send_redirect( url_for( controller='workflow' ) )
-      
+    
+    
+    @web.expose
+    @web.require_login( "use Galaxy cloud" )
+    def configureNew( self, trans, instanceName='', volSize=''):
+        """
+        Configure and add new cloud instance to user's instance pool
+        """
+        user = trans.get_user()
+        ami = trans.app.model.CloudImages.filter(
+                trans.app.model.CloudImages.table.c.id==1).first()
+        log.debug(ami.image_id)
+        inst_error = vol_error = None
+        if instanceName:
+            # Create new user configured instance
+            if len( instanceName ) > 255:
+                inst_error = "Instance name exceeds maximum allowable length."
+            elif trans.app.model.UserInstances.filter(  
+                    trans.app.model.UserInstances.table.c.name==instanceName ).first():
+                inst_error = "An instance with that name already exist."
+            elif int( volSize ) > 1000:
+                vol_error = "Volume size cannot exceed 1000GB. You must specify an integer between 1 and 1000." 
+            elif int( volSize ) < 1:
+                vol_error = "Volume size cannot be less than 1GB. You must specify an integer between 1 and 1000." 
+            else:
+                instance = model.UserInstances()
+                instance.user_id = user
+                instance.name = instanceName
+                instance.ami = ami.image_id
+                #TODO: include storage volume size code
+                # Persist
+                session = trans.sa_session
+                session.save_or_update( instance )
+                session.flush()
+                # Log and display the management page
+                trans.log_event( "User configured new cloud resource instance" )
+                trans.set_message( "Instance '%s' configured" % credentials.name )
+                return self.list( trans )
+            
+        return trans.show_form( 
+            web.FormBuilder( web.url_for(), "Configure new instance", submit_text="Add" )
+                .add_text( "instanceName", "Instance name", value="Unnamed instance", error=inst_error ) 
+                .add_text( "volSize", "Permanent storage size (1GB - 1000GB)", value='', error=vol_error ) )
+        
+    @web.expose
+    @web.require_login( "add a cloud image" )
+    #@web.require_admin
+    def addNewImage( self, trans, image_id='', manifest='', state=None ):
+        error = None
+        if image_id:
+            if len( image_id ) > 255:
+                error = "Image ID name exceeds maximum allowable length."
+            elif trans.app.model.StoredUserCredentials.filter(  
+                    trans.app.model.CloudImages.table.c.image_id==image_id ).first():
+                error = "Image with that ID is already registered."
+            else:
+                # Create new image
+                image = model.CloudImages()
+                image.image_id = image_id
+                image.manifest = manifest
+                # Persist
+                session = trans.sa_session
+                session.save_or_update( image )
+                session.flush()
+                # Log and display the management page
+                trans.log_event( "New cloud image added: '%s'" % image.image_id )
+                trans.set_message( "Cloud image '%s' added." % image.image_id )
+                if state:
+                    image.state= state
+                return self.list( trans )
+            
+        return trans.show_form(
+            web.FormBuilder( web.url_for(), "Add new cloud image", submit_text="Add" )
+                .add_text( "image_id", "Image ID", value='', error=error )
+                .add_text( "manifest", "Manifest", value='', error=error ) )
+            
     @web.expose
     @web.require_login( "use Galaxy cloud" )
     def rename( self, trans, id, new_name=None ):
@@ -178,7 +258,7 @@ class CloudController( BaseController ):
    
     @web.expose
     @web.require_login( "add credentials" )
-    def add( self, trans, credName='', accessKey='', secretKey='', defaultCred=False ):
+    def add( self, trans, credName='', accessKey='', secretKey='', defaultCred=True ):
         """
         Add user's AWS credentials stored under name `credName`.
         """
