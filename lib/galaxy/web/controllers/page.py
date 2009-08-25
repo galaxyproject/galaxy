@@ -34,6 +34,8 @@ class PageListGrid( grids.Grid ):
         grids.GridOperation( "View", allow_multiple=False, url_args=dict( action='display') ),
         grids.GridOperation( "Edit", allow_multiple=False, url_args=dict( action='edit') )
     ]
+    def apply_default_filter( self, trans, query ):
+        return query.filter_by( user=trans.user )
 
 class PageController( BaseController ):
     
