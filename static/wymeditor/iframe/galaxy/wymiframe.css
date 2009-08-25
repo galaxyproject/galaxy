@@ -19,11 +19,6 @@
 
 /* VISUAL FEEDBACK */
 
-/* Galaxy font styles */
-
-body{font:13px/1.231 verdana,arial,helvetica,clean,sans-serif;*font-size:small;*font:x-small;}select,input,button,textarea,button{font:99% verdana,arial,helvetica,clean,sans-serif;}table{font-size:inherit;font:100%;}pre,code,kbd,samp,tt{font-family:monospace;*font-size:108%;line-height:100%;}
-body{font-size:75%;}
-
 /* basic */
  
 /* make HTML blocs visible */
@@ -38,15 +33,15 @@ body{font-size:75%;}
   ol,
   table,
   blockquote,
-  pre           { background: #FFFFFF no-repeat 2px 2px;
-                  padding:8px 5px 5px;
-                  margin:10px; }
+  pre           { background: #FFFFFF no-repeat 2px 2px !important;
+                  padding:8px 5px 5px !important;
+                  margin:10px !important; }
   td            { background: #F0F4F8; }
   th            { background: #ffffcc; }
   ul,
   ol            { border-left:20px solid #B9C4D0; padding:0px 5px; }
   caption       { background: #E4E4B0; padding: 5px; font-weight: bold; }
-  table         { font-size: 12px; width: 500px; }
+  table         { font-size: 12px; min-width: 500px; border: none !important; border-collapse: separate !important }
   td            { width: 25%; }
   blockquote    { margin-left: 30px; }
   pre           { background-color:transparent; border: 1px solid white; }

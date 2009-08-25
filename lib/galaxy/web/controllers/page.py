@@ -13,7 +13,7 @@ class PageListGrid( grids.Grid ):
             return username + "/" + item.slug
         def get_link( self, trans, grid, item ):
             if trans.user.username:
-                return dict( action='display_by_username_and_slug', username=trans.user.username, slug=item.slug )
+                return dict( action='display_by_username_and_slug', username=item.user.username, slug=item.slug )
             else:
                 return None
     # Grid definition
@@ -44,7 +44,9 @@ class PageController( BaseController ):
     @web.expose
     @web.require_admin  
     def index( self, trans, *args, **kwargs ):
+        # Build grid
         grid = self.list( trans, *args, **kwargs )
+        # Render grid wrapped in panels
         return trans.fill_template( "page/index.mako", grid=grid )
              
     @web.expose

@@ -20,7 +20,7 @@
 
     <div class="unified-panel-body">
         <div style="overflow: auto; height: 100%;">
-        <div class="page-container" style="padding: 10px;">
+        <div class="page text-content" style="padding: 10px;">
         ${page.latest_revision.content.decode( "utf-8" )}
         </div>
         </div>

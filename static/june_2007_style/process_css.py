@@ -12,7 +12,11 @@ CSS processor for Galaxy style sheets. Supports the following features:
 import sys, string, os.path
 from pyparsing import *
 from odict import odict
-import Image
+
+try:
+    import Image
+except ImportError:
+    from PIL import Image
 
 def cross_lists(*sets):
     """
