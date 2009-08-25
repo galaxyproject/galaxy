@@ -738,10 +738,11 @@ def get_history( trans, id, check_ownership=True ):
     history = trans.sa_session.query( model.History ).get( id )
     if not history:
         err+msg( "History not found" )
-    # Verify ownership
-    user = trans.get_user()
-    if not user:
-        error( "Must be logged in to manage histories" )
-    if check_ownership and not( history.user == user ):
-        error( "History is not owned by current user" )
+    if check_ownership:
+        # Verify ownership
+        user = trans.get_user()
+        if not user:
+            error( "Must be logged in to manage histories" )
+        if history.user != user:
+            error( "History is not owned by current user" )
     return history
