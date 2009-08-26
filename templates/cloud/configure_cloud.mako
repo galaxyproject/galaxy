@@ -79,12 +79,16 @@
 	</ul>
 
     <table class="mange-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
-        <tr class="header">
+        <colgroup width="40%"></colgroup>
+		<colgroup width="15%"></colgroup>
+		<colgroup width="10%"></colgroup>
+		<colgroup width="35%"></colgroup>
+		<tr class="header">
             <th>Live instances</th>
+			<th>Volume size (GB)</th>
 			<th>State</th>
             <th>Alive since</th>
-			<th>Action</th>
-            <th></th>
+			<th></th>
         </tr>
 		%if liveInstances:
 	        %for i, liveInstance in enumerate( liveInstances ):
@@ -93,7 +97,8 @@
 	                	${liveInstance.name}
 	                    <a id="li-${i}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
 	                </td>
-					<td>${str(liveInstance.state)}</td>
+					<td>${str(liveInstance.name)}</td> <!--TODO:Replace with vol size once available-->
+	                <td>${str(liveInstance.state)}</td>
 	                <td>
 	                	${str(liveInstance.launch_time)[:16]} 
 	                	<%
@@ -115,13 +120,10 @@
 						%>)
 					</td>
 	                <td>
-	                	<a class="action-button" href="${h.url_for( action='stop', id=trans.security.encode_id(liveInstance.id) )}">Stop</a>
-	                </td>
-					<td>
 	                    <div popupmenu="li-${i}-popup">
-	                    <a class="action-button" href="${h.url_for( action='viewInstance', id=trans.security.encode_id(liveInstance.id) )}">View details</a>
-	                    <a class="action-button" href="${h.url_for( action='renameInstance', id=trans.security.encode_id(liveInstance.id) )}">Rename</a>
 	                    <a class="action-button" confirm="Are you sure you want to stop instance '${liveInstance.name}'?" href="${h.url_for( action='stop', id=trans.security.encode_id(liveInstance.id) )}">Stop</a>
+	                    <a class="action-button" href="${h.url_for( action='renameInstance', id=trans.security.encode_id(liveInstance.id) )}">Rename</a>
+	                    <a class="action-button" href="${h.url_for( action='viewInstance', id=trans.security.encode_id(liveInstance.id) )}">View details</a>
 	                    </div>
 	                </td>
 	            </tr>    
@@ -135,13 +137,20 @@
 	
 	## *****************************************************
 	## Manage previously configured instances
-	<p /> <p />
 	<table class="mange-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
-        <tr class="header">
+        <colgroup width="40%"></colgroup>
+		<colgroup width="15%"></colgroup>
+		<colgroup width="10%"></colgroup>
+		<colgroup width="35%"></colgroup>
+		<tr class="header">
             <th>Previously configured instances</th>
-            <th>Volume size</th>
-			<th>Action</th>
-            <th></th>
+            ##<th>Volume size (GB)</th>
+			##<th>State</th>
+            ##<th>Alive since</th>
+			<th></th>
+			<th></th>
+			<th></th>
+			<th></th>
         </tr>
         
 		%if prevInstances:
@@ -152,18 +161,14 @@
 	                    <a id="pi-${i}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
 	                </td>
 	                ## Comment <td>${len(workflow.latest_workflow.steps)}</td>
-	                ## Chnage to show vol size once available
-					<td>${str(prevInstance.name)}</td> 
+	                <td>${str(prevInstance.name)}</td> <!-- TODO: Change to show vol size once available--> 
+	                <td>${str(prevInstance.state)}</td>
 	                <td>
-	                	<a class="action-button" href="${h.url_for( action='start', id=trans.security.encode_id(prevInstance.id) )}">Start</a>
-	               </td>
-	                
-					<td>
 	                    <div popupmenu="pi-${i}-popup">
-	                    ##<a class="action-button" href="${h.url_for( action='viewInstance', id=trans.security.encode_id(prevInstance.id) )}">View details</a>
+	                    <a class="action-button" href="${h.url_for( action='start', id=trans.security.encode_id(prevInstance.id) )}">Start</a>
 	                    <a class="action-button" href="${h.url_for( action='renameInstance', id=trans.security.encode_id(prevInstance.id) )}">Rename</a>
-	                    <a class="action-button" href="${h.url_for( action='edit', id=trans.security.encode_id(prevInstance.id) )}" target="_parent">Edit</a>
-	                    <a class="action-button" confirm="Are you sure you want to delete instance '${prevInstance.name}'?" href="${h.url_for( action='deleteInstance', id=trans.security.encode_id(prevInstance.id) )}">Delete</a>
+	                    <a class="action-button" href="${h.url_for( action='addStorage', id=trans.security.encode_id(prevInstance.id) )}" target="_parent">Add storage</a>
+	                    <a class="action-button" confirm="Are you sure you want to delete instance '${prevInstance.name}'? This will delete all of your data assocaiated with this instance!" href="${h.url_for( action='deleteInstance', id=trans.security.encode_id(prevInstance.id) )}">Delete</a>
 	                    </div>
 	                </td>
 	            </tr>    

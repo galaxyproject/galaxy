@@ -46,14 +46,18 @@
 				%> ago)
 			</td>
 	   </tr>
+	   %if liveInstance.instance_id != None:
+	   		<tr>
+		   		<td> Instance ID: </td>
+				<td> ${liveInstance.instance_id} </td>
+		   	</tr>
+	   %endif
+	   %if liveInstance.reservation_id != None:
 	   <tr>
-	   		<td> Instance ID: </td>
-			<td> ${liveInstance.instance_id} </td>
-	   </tr>
-	    <tr>
 	   		<td> Reservation ID: </td>
 			<td> ${liveInstance.reservation_id} </td>
 	   </tr>
+	   %endif
 	   <tr>
 	   		<td> AMI: </td>
 	   		<td> ${liveInstance.ami} </td>
@@ -66,18 +70,25 @@
 	   		<td> Public DNS:</td>
 			<td> ${liveInstance.public_dns} </td>
 	   </tr>
+	   %if liveInstance.private_dns != None:
 	   <tr>
 	   		<td> Private DNS:</td>
 			<td> ${liveInstance.private_dns} </td>
 	   </tr>
+	   %endif
+	   %if liveInstance.availability_zone != None:
 	   <tr>
 	   		<td> Availabilty zone:</td>
 			<td> ${liveInstance.availability_zone} </td>
 	   </tr>
+	   %endif
+	   %if liveInstance.keypair_fingerprint != None:
 	   <tr>
 	   		<td> Keypair fingerprint:</td>
 			<td> ${liveInstance.keypair_fingerprint} </td>
 	   </tr>
+	   %endif
+	   %if liveInstance.keypair_material != None:
 	   <tr>
 	   		<td> Keypair private key:</td>
 			<td>
@@ -98,6 +109,7 @@
                </div>
 			</td>
 	   </tr>
+	   %endif
 	</table>
 %else:
 	There is no live instance under that name.

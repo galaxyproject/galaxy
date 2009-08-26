@@ -208,11 +208,11 @@ class CloudController( BaseController ):
     
     @web.expose
     @web.require_login( "delete Galaxy cloud instance" )
-    def edit( self, trans, id ):
+    def addStorage( self, trans, id ):
         instance = get_instance( trans, id )
         
         
-        error( "Editing instance '%s' is not supported yet." % instance.name )
+        error( "Adding storage to instance '%s' is not supported yet." % instance.name )
                     
         return self.list( trans )
     
@@ -262,7 +262,8 @@ class CloudController( BaseController ):
         return trans.show_form( 
             web.FormBuilder( web.url_for(), "Configure new instance", submit_text="Add" )
                 .add_text( "instanceName", "Instance name", value="Unnamed instance", error=inst_error ) 
-                .add_text( "volSize", "Permanent storage size (1GB - 1000GB)", value='', error=vol_error ) )
+                .add_text( "volSize", "Permanent storage size (1GB - 1000GB)"  
+                    "<br />Note: you will be able to add more storage later", value='', error=vol_error ) )
         
     @web.expose
     @web.require_login( "add a cloud image" )
