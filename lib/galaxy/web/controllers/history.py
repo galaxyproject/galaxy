@@ -322,7 +322,7 @@ class HistoryController( BaseController ):
             return trans.show_ok_message( """
                 History "%s" has been imported. Click <a href="%s">here</a>
                 to begin.""" % ( new_history.name, web.url_for( '/' ) ) )
-        elif not user_history.datasets or confirm:
+        elif not user_history or not user_history.datasets or confirm:
             new_history = import_history.copy()
             new_history.name = "imported: " + new_history.name
             new_history.user_id = None
