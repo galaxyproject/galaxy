@@ -420,6 +420,7 @@ StoredUserCredentials.table = Table( "stored_user_credentials", metadata,
     Column( "secret_key", TEXT),
     Column( "defaultCred", Boolean, default=False)
     )
+# ***************************************************************************
 
 StoredWorkflow.table = Table( "stored_workflow", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -925,8 +926,9 @@ assign_mapper( context, WorkflowStepConnection, WorkflowStepConnection.table,
                                           primaryjoin=( WorkflowStepConnection.table.c.input_step_id == WorkflowStep.table.c.id ) ),
                      output_step=relation( WorkflowStep, backref="output_connections", cascade="all",
                                            primaryjoin=( WorkflowStepConnection.table.c.output_step_id == WorkflowStep.table.c.id ) ) ) )
-
+# ************************************************************
 # vvvvvvvvvvvvvvvv Start cloud table mappings vvvvvvvvvvvvvvvv
+# ************************************************************
 assign_mapper( context, UserInstances, UserInstances.table,
     properties=dict( user=relation( User ), 
                      cloud_image=relation( CloudImages )

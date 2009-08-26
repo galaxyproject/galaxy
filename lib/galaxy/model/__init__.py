@@ -938,6 +938,7 @@ class UserInstances( object ):
         self.user = None
         self.name = None
         self.instance_id = None
+        self.ami = None
         self.state = None
         self.public_dns = None
         self.availability_zone = None

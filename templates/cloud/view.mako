@@ -24,10 +24,19 @@
 			<td>
                 <div popupmenu="wf-popup">
                 <a class="action-button" href="${h.url_for( action='rename', id=trans.security.encode_id(credDetails.id) )}">Rename</a>
-                <a class="action-button" confirm="Are you sure you want to delete workflow '${credDetails.name}'?" href="${h.url_for( action='delete', id=trans.security.encode_id(credDetails.id) )}">Delete</a>
+                <a class="action-button" confirm="Are you sure you want to delete credentials '${credDetails.name}'?" href="${h.url_for( action='delete', id=trans.security.encode_id(credDetails.id) )}">Delete</a>
                 </div>
             </td>
        </tr>
+	   <tr>
+	   		<td> Last updated: </td>
+			<td> ${str(credDetails.update_time)[:16]} 
+	        	<%
+					context.write( ' UTC (' )
+					context.write( str(h.date.distance_of_time_in_words (credDetails.update_time, h.date.datetime.utcnow() ) ) )
+				%> ago)
+			</td>
+	   </tr>
 	   <tr>
 	   		<td> Access key: </td>
 			<td> 

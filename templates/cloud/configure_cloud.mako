@@ -33,7 +33,7 @@
 
     <table class="mange-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
         <tr class="header">
-            <th>Credentials Name</th>
+            <th>Credentials name</th>
             <th>Default</th>
             <th></th>
         </tr>
@@ -41,7 +41,7 @@
             <tr>
                 <td>
                     ${awsCredential.name}
-                    <a id="wf-${i}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
+                    <a id="cr-${i}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
                 </td>
                 ## Comment <td>${len(workflow.latest_workflow.steps)}</td>
                 ##<td>${str(awsCredential.update_time)[:19]}</td>
@@ -54,11 +54,11 @@
 				</td>
                 
 				<td>
-                    <div popupmenu="wf-${i}-popup">
+                    <div popupmenu="cr-${i}-popup">
                     <a class="action-button" href="${h.url_for( action='view', id=trans.security.encode_id(awsCredential.id) )}">View</a>
                     <a class="action-button" href="${h.url_for( action='rename', id=trans.security.encode_id(awsCredential.id) )}">Rename</a>
                     <a class="action-button" href="${h.url_for( action='makeDefault', id=trans.security.encode_id(awsCredential.id) )}" target="_parent">Make default</a>
-                    <a class="action-button" confirm="Are you sure you want to delete workflow '${awsCredential.name}'?" href="${h.url_for( action='delete', id=trans.security.encode_id(awsCredential.id) )}">Delete</a>
+                    <a class="action-button" confirm="Are you sure you want to delete credentials '${awsCredential.name}'?" href="${h.url_for( action='delete', id=trans.security.encode_id(awsCredential.id) )}">Delete</a>
                     </div>
                 </td>
             </tr>    
@@ -81,46 +81,56 @@
     <table class="mange-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
         <tr class="header">
             <th>Live instances</th>
+			<th>State</th>
             <th>Alive since</th>
+			<th>Action</th>
             <th></th>
         </tr>
-        %for i, awsCredential in enumerate( awsCredentials ):
-            <tr>
-                <td>
-                    ${awsCredential.name}
-                    <a id="wf-${i}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
-                </td>
-                <td>
-                	##${str(awsCredential.update_time)[:19]} 
-                	<%
-						from datetime import datetime
-						from datetime import timedelta
-
-						# DB stores all times in GMT, so adjust for difference (4 hours)
-						adjustedStarttime = awsCredential.update_time - timedelta(hours=4)
-
-						# (NOT CURRENTLY USED BLOCK OF CODE) Calculate time difference from now
-						delta = datetime.now() - adjustedStarttime
-						#context.write( str(datetime.utcnow() ) )
-						#context.write( str(delta) )
-						
-						# This is where current time and since duration is calculated
-						context.write( str( awsCredential.update_time ) )
-						context.write( ' UTC (' )
-						context.write( str(h.date.distance_of_time_in_words (awsCredential.update_time, h.date.datetime.utcnow() ) ) )
-					%>)
-				</td>
-                
-				<td>
-                    <div popupmenu="wf-${i}-popup">
-                    <a class="action-button" href="${h.url_for( action='view', id=trans.security.encode_id(awsCredential.id) )}">View</a>
-                    <a class="action-button" href="${h.url_for( action='rename', id=trans.security.encode_id(awsCredential.id) )}">Rename</a>
-                    <a class="action-button" href="${h.url_for( action='makeDefault', id=trans.security.encode_id(awsCredential.id) )}" target="_parent">Make default</a>
-                    <a class="action-button" confirm="Are you sure you want to delete workflow '${awsCredential.name}'?" href="${h.url_for( action='delete', id=trans.security.encode_id(awsCredential.id) )}">Delete</a>
-                    </div>
-                </td>
-            </tr>    
-        %endfor
+		%if liveInstances:
+	        %for i, liveInstance in enumerate( liveInstances ):
+	            <tr>
+	                <td>
+	                	${liveInstance.name}
+	                    <a id="li-${i}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
+	                </td>
+					<td>${str(liveInstance.state)}</td>
+	                <td>
+	                	${str(liveInstance.launch_time)[:16]} 
+	                	<%
+							from datetime import datetime
+							from datetime import timedelta
+	
+							# DB stores all times in GMT, so adjust for difference (4 hours)
+							adjustedStarttime = liveInstance.launch_time - timedelta(hours=4)
+	
+							# (NOT CURRENTLY USED BLOCK OF CODE) Calculate time difference from now
+							delta = datetime.now() - adjustedStarttime
+							#context.write( str(datetime.utcnow() ) )
+							#context.write( str(delta) )
+							
+							# This is where current time and since duration is calculated
+							#context.write( str( liveInstance.launch_time ) )
+							context.write( ' UTC (' )
+							context.write( str(h.date.distance_of_time_in_words (liveInstance.launch_time, h.date.datetime.utcnow() ) ) )
+						%>)
+					</td>
+	                <td>
+	                	<a class="action-button" href="${h.url_for( action='stop', id=trans.security.encode_id(liveInstance.id) )}">Stop</a>
+	                </td>
+					<td>
+	                    <div popupmenu="li-${i}-popup">
+	                    <a class="action-button" href="${h.url_for( action='viewInstance', id=trans.security.encode_id(liveInstance.id) )}">View details</a>
+	                    <a class="action-button" href="${h.url_for( action='renameInstance', id=trans.security.encode_id(liveInstance.id) )}">Rename</a>
+	                    <a class="action-button" confirm="Are you sure you want to stop instance '${liveInstance.name}'?" href="${h.url_for( action='stop', id=trans.security.encode_id(liveInstance.id) )}">Stop</a>
+	                    </div>
+	                </td>
+	            </tr>    
+	        %endfor
+		%else:
+			<tr>
+				<td>Currently, you have no live instances.</td>
+			</tr>
+		%endif
     </table>
 	
 	## *****************************************************
@@ -129,7 +139,8 @@
 	<table class="mange-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
         <tr class="header">
             <th>Previously configured instances</th>
-            <th>Action</th>
+            <th>Volume size</th>
+			<th>Action</th>
             <th></th>
         </tr>
         
@@ -138,27 +149,28 @@
 	            <tr>
 	                <td>
 	                    ${prevInstance.name}
-	                    <a id="wf-${i}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
+	                    <a id="pi-${i}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
 	                </td>
 	                ## Comment <td>${len(workflow.latest_workflow.steps)}</td>
-	                ##<td>${str(awsCredential.update_time)[:19]}</td>
+	                ## Chnage to show vol size once available
+					<td>${str(prevInstance.name)}</td> 
 	                <td>
-	                	<a class="action-button" href="${h.url_for( action='start', id=trans.security.encode_id(awsCredential.id) )}">Start</a>
+	                	<a class="action-button" href="${h.url_for( action='start', id=trans.security.encode_id(prevInstance.id) )}">Start</a>
 	               </td>
 	                
 					<td>
-	                    <div popupmenu="wf-${i}-popup">
-	                    <a class="action-button" href="${h.url_for( action='view', id=trans.security.encode_id(awsCredential.id) )}">View</a>
-	                    <a class="action-button" href="${h.url_for( action='rename', id=trans.security.encode_id(awsCredential.id) )}">Rename</a>
-	                    <a class="action-button" href="${h.url_for( action='makeDefault', id=trans.security.encode_id(awsCredential.id) )}" target="_parent">Make default</a>
-	                    <a class="action-button" confirm="Are you sure you want to delete workflow '${awsCredential.name}'?" href="${h.url_for( action='delete', id=trans.security.encode_id(awsCredential.id) )}">Delete</a>
+	                    <div popupmenu="pi-${i}-popup">
+	                    ##<a class="action-button" href="${h.url_for( action='viewInstance', id=trans.security.encode_id(prevInstance.id) )}">View details</a>
+	                    <a class="action-button" href="${h.url_for( action='renameInstance', id=trans.security.encode_id(prevInstance.id) )}">Rename</a>
+	                    <a class="action-button" href="${h.url_for( action='edit', id=trans.security.encode_id(prevInstance.id) )}" target="_parent">Edit</a>
+	                    <a class="action-button" confirm="Are you sure you want to delete instance '${prevInstance.name}'?" href="${h.url_for( action='deleteInstance', id=trans.security.encode_id(prevInstance.id) )}">Delete</a>
 	                    </div>
 	                </td>
 	            </tr>    
 	        %endfor
 		%else:
 			<tr>
-				<td>You have no previously configured instances.</td>
+				<td>You have no previously configured instances (or they are all currently alive).</td>
 			</tr>
 		%endif
     </table>

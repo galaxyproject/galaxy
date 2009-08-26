@@ -41,12 +41,20 @@ class CloudController( BaseController ):
             .all()
         
         prevInstances = trans.sa_session.query( model.UserInstances ) \
+            .filter_by( user=user, state="available" ) \
             .order_by( desc( model.UserInstances.c.create_time ) ) \
             .all() #TODO: diff between live and previous instances 
-            
+                        
+        liveInstances = trans.sa_session.query( model.UserInstances ) \
+            .filter_by( user=user ) \
+            .filter( or_(model.UserInstances.c.state=="running", model.UserInstances.c.state=="pending") ) \
+            .order_by( desc( model.UserInstances.c.create_time ) ) \
+            .all()
+                        
         return trans.fill_template( "cloud/configure_cloud.mako",
                                     awsCredentials = awsCredentials,
-                                    prevInstances = prevInstances )
+                                    prevInstances = prevInstances,
+                                    liveInstances = liveInstances )
     
     @web.expose
     @web.require_login( "use Galaxy cloud" )
@@ -168,6 +176,45 @@ class CloudController( BaseController ):
             # Redirect to load galaxy frames.
             return trans.response.send_redirect( url_for( controller='workflow' ) )
     
+    @web.expose
+    @web.require_login( "use Galaxy cloud instance" )
+    def start( self, trans, id ):
+        instance = get_instance( trans, id )
+        
+        
+        error( "Starting instance '%s' is not supported yet." % instance.name )
+                    
+        return self.list( trans )
+    
+    @web.expose
+    @web.require_login( "stop Galaxy cloud instance" )
+    def stop( self, trans, id ):
+        instance = get_instance( trans, id )
+        
+        
+        error( "Stopping instance '%s' is not supported yet." % instance.name )
+                    
+        return self.list( trans )
+    
+    @web.expose
+    @web.require_login( "delete Galaxy cloud instance" )
+    def deleteInstance( self, trans, id ):
+        instance = get_instance( trans, id )
+        
+        
+        error( "Deleting instance '%s' is not supported yet." % instance.name )
+                    
+        return self.list( trans )
+    
+    @web.expose
+    @web.require_login( "delete Galaxy cloud instance" )
+    def edit( self, trans, id ):
+        instance = get_instance( trans, id )
+        
+        
+        error( "Editing instance '%s' is not supported yet." % instance.name )
+                    
+        return self.list( trans )
     
     @web.expose
     @web.require_login( "use Galaxy cloud" )
@@ -176,35 +223,41 @@ class CloudController( BaseController ):
         Configure and add new cloud instance to user's instance pool
         """
         user = trans.get_user()
+        # TODO: If more images are made available, must add code to choose between those
         ami = trans.app.model.CloudImages.filter(
                 trans.app.model.CloudImages.table.c.id==1).first()
-        log.debug(ami.image_id)
+        
         inst_error = vol_error = None
         if instanceName:
             # Create new user configured instance
-            if len( instanceName ) > 255:
-                inst_error = "Instance name exceeds maximum allowable length."
-            elif trans.app.model.UserInstances.filter(  
-                    trans.app.model.UserInstances.table.c.name==instanceName ).first():
-                inst_error = "An instance with that name already exist."
-            elif int( volSize ) > 1000:
-                vol_error = "Volume size cannot exceed 1000GB. You must specify an integer between 1 and 1000." 
-            elif int( volSize ) < 1:
-                vol_error = "Volume size cannot be less than 1GB. You must specify an integer between 1 and 1000." 
-            else:
-                instance = model.UserInstances()
-                instance.user_id = user
-                instance.name = instanceName
-                instance.ami = ami.image_id
-                #TODO: include storage volume size code
-                # Persist
-                session = trans.sa_session
-                session.save_or_update( instance )
-                session.flush()
-                # Log and display the management page
-                trans.log_event( "User configured new cloud resource instance" )
-                trans.set_message( "Instance '%s' configured" % credentials.name )
-                return self.list( trans )
+            try:
+                if len( instanceName ) > 255:
+                    inst_error = "Instance name exceeds maximum allowable length."
+                elif trans.app.model.UserInstances.filter(  
+                        trans.app.model.UserInstances.table.c.name==instanceName ).first():
+                    inst_error = "An instance with that name already exist."
+                elif int( volSize ) > 1000:
+                    vol_error = "Volume size cannot exceed 1000GB. You must specify an integer between 1 and 1000." 
+                elif int( volSize ) < 1:
+                    vol_error = "Volume size cannot be less than 1GB. You must specify an integer between 1 and 1000." 
+                else:
+                    instance = model.UserInstances()
+                    instance.user = user
+                    instance.name = instanceName
+                    instance.ami = ami.image_id
+                    # Valid states include: "available", "running" or "pending"
+                    instance.state = "available"
+                    #TODO: include storage volume size code
+                    # Persist
+                    session = trans.sa_session
+                    session.save_or_update( instance )
+                    session.flush()
+                    # Log and display the management page
+                    trans.log_event( "User configured new cloud resource instance" )
+                    trans.set_message( "Instance '%s' configured" % instance.name )
+                    return self.list( trans )
+            except ValueError:
+                vol_error = "Volume size must be specified as an integer value only, between 1 and 1000."
             
         return trans.show_form( 
             web.FormBuilder( web.url_for(), "Configure new instance", submit_text="Add" )
@@ -257,6 +310,19 @@ class CloudController( BaseController ):
                 .add_text( "new_name", "Credentials Name", value=stored.name )
    
     @web.expose
+    @web.require_login( "use Galaxy cloud" )
+    def renameInstance( self, trans, id, new_name=None ):
+        instance = get_instance( trans, id )
+        if new_name is not None:
+            instance.name = new_name
+            trans.sa_session.flush()
+            trans.set_message( "Instance renamed to '%s'." % new_name )
+            return self.list( trans )
+        else:
+            return form( url_for( id=trans.security.encode_id(instance.id) ), "Rename instance", submit_text="Rename" ) \
+                .add_text( "new_name", "Instance name", value=instance.name )
+   
+    @web.expose
     @web.require_login( "add credentials" )
     def add( self, trans, credName='', accessKey='', secretKey='', defaultCred=True ):
         """
@@ -304,7 +370,20 @@ class CloudController( BaseController ):
         stored = get_stored_credentials( trans, id )
         
         return trans.fill_template( "cloud/view.mako", 
-                                   credDetails = stored)
+                                   credDetails = stored )
+
+    @web.expose
+    @web.require_login( "view instance details" )
+    def viewInstance( self, trans, id=None ):
+        """
+        View details about running instance
+        """
+        instance = get_instance( trans, id )
+        log.debug ( instance.name )
+        
+        return trans.fill_template( "cloud/viewInstance.mako",
+                                    liveInstance = instance )
+        
 
     @web.expose
     @web.require_login( "delete credentials" )
@@ -796,6 +875,24 @@ def get_defalt_credentials( trans, check_ownership=True ):
         .first()
 
     return stored
+
+def get_instance( trans, id, check_ownership=True ):
+    """
+    Get a UserInstances from the database by id, verifying ownership. 
+    """
+    id = trans.security.decode_id( id )
+
+    live = trans.sa_session.query( model.UserInstances ).get( id )
+    if not live:
+        error( "Instance not found" )
+    # Verify ownership
+    user = trans.get_user()
+    if not user:
+        error( "Must be logged in to use the cloud." )
+    if check_ownership and not( live.user == user ):
+        error( "Instance is not owned by current user." )
+    # Looks good
+    return live
 
 def attach_ordered_steps( workflow, steps ):
     ordered_steps = order_workflow_steps( steps )
