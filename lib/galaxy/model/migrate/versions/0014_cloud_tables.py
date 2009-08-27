@@ -12,7 +12,47 @@ log = logging.getLogger( __name__ )
 
 metadata = MetaData( migrate_engine )
 
-Credentials_table = Table( "stored_user_credentials", metadata, 
+CloudImage_table = Table( "cloud_image", metadata, 
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "image_id", TEXT, nullable=False ),
+    Column( "manifest", TEXT ),
+    Column( "state", TEXT ) )
+
+CloudInstance_table = Table( "cloud_instance", metadata, 
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "launch_time", DateTime ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True, nullable=False ),
+    Column( "name", TEXT ),
+    Column( "type", TEXT ),
+    Column( "reservation_id", TEXT ),
+    Column( "instance_id", TEXT ),
+    Column( "mi", TEXT, ForeignKey( "cloud_image.image_id" ), index=True, nullable=False ),
+    Column( "state", TEXT ),
+    Column( "public_dns", TEXT ),
+    Column( "private_dns", TEXT ),
+    Column( "keypair_name", TEXT ),
+    Column( "availability_zone", TEXT ) )
+
+CloudStorage_table = Table( "cloud_storage", metadata, 
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "attach_time", DateTime ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True, nullable=False ),
+    Column( "volume_id", TEXT, nullable=False ),
+    Column( "size", Integer, nullable=False ),
+    Column( "availability_zone", TEXT, nullable=False ),
+    Column( "i_id", TEXT, ForeignKey( "cloud_instance.instance_id" ), index=True ),
+    Column( "status", TEXT ),
+    Column( "device", TEXT ),
+    Column( "space_consumed", Integer )
+    )
+
+CloudUserCredentials_table = Table( "cloud_user_credentials", metadata, 
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
@@ -20,49 +60,41 @@ Credentials_table = Table( "stored_user_credentials", metadata,
     Column( "name", TEXT),
     Column( "access_key", TEXT),
     Column( "secret_key", TEXT),
-    Column( "defaultCred", Boolean, default=False ) )
-
-UserInstances_table = Table ( "user_instances", metadata, 
-    Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "launch_time", DateTime, onupdate=now ),
-    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True, nullable=False ),
-    Column( "name", TEXT ),
-    Column( "reservation_id", TEXT ),
-    Column( "instance_id", TEXT ),
-    Column( "ami", TEXT, ForeignKey( "cloud_images.image_id" ), nullable=False ),
-    Column( "state", TEXT ),
-    Column( "public_dns", TEXT ),
-    Column( "private_dns", TEXT ),
-    Column( "keypair_fingerprint", TEXT ),
-    Column( "keypair_material", TEXT ),
-    Column( "availability_zone", TEXT ) )
-
-CloudImages_table = Table( "cloud_images", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "upadte_time", DateTime, default=now, onupdate=now ),
-    Column( "image_id", TEXT, nullable=False ),
-    Column( "manifest", TEXT ),
-    Column( "state", TEXT ) )
-    
+    Column( "defaultCred", Boolean, default=False)
+    )
 def upgrade():
     metadata.reflect()
-    Credentials_table.create()
-    UserInstances_table.create()
+    CloudUserCredentials_table.create()
+    CloudInstance_table.create()
+    CloudStorage_table.create()
     try:
-        CloudImages_table.create()
+        CloudImage_table.create()
     except Exception, e:
-        log.debug( "Creating CloudImages table failed. Table probably exists already." )
+        log.debug( "Creating cloud_image table failed. Table probably exists already." )
 
 def downgrade():
     metadata.reflect()
     try:
-        Credentials_table.drop()
+        CloudImage_table.drop()
     except Exception, e:
-        log.debug( "Dropping stored_user_credentials table failed: %s" % str( e ) )  
+        log.debug( "Dropping cloud_image table failed: %s" % str( e ) ) 
+    
+    try:
+        CloudInstance_table.drop()
+    except Exception, e:
+        log.debug( "Dropping cloud_instance table failed: %s" % str( e ) )  
         
     try:
-        UserInstances_table.drop()
+        CloudStorage_table.drop()
     except Exception, e:
-        log.debug( "Dropping user_instances table failed: %s" % str( e ) )  
+        log.debug( "Dropping cloud_user_credentials table failed: %s" % str( e ) )  
+        
+    try:
+        log.deboug( "Would drop cloud user credentials table." )
+        #CloudUserCredentials_table.drop()
+    except Exception, e:
+        log.debug( "Dropping cloud_user_credentials table failed: %s" % str( e ) )  
+        
+    
+        
+    

@@ -20,7 +20,7 @@
 
 <h2>Galaxy in the clouds</h2>
  
-%if awsCredentials:
+%if cloudCredentials:
 	## Manage user credentials
 	<ul class="manage-table-actions">
 	    <li>
@@ -37,28 +37,28 @@
             <th>Default</th>
             <th></th>
         </tr>
-        %for i, awsCredential in enumerate( awsCredentials ):
+        %for i, cloudCredential in enumerate( cloudCredentials ):
             <tr>
                 <td>
-                    ${awsCredential.name}
+                    ${cloudCredential.name}
                     <a id="cr-${i}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
                 </td>
                 ## Comment <td>${len(workflow.latest_workflow.steps)}</td>
-                ##<td>${str(awsCredential.update_time)[:19]}</td>
+                ##<td>${str(cloudCredential.update_time)[:19]}</td>
                 <td>
-                	##${str(awsCredential.defaultCred)}
+                	##${str(cloudCredential.defaultCred)}
                 	<%
-						if awsCredential.defaultCred:
+						if cloudCredential.defaultCred:
 							context.write('*')
 					%>
 				</td>
                 
 				<td>
                     <div popupmenu="cr-${i}-popup">
-                    <a class="action-button" href="${h.url_for( action='view', id=trans.security.encode_id(awsCredential.id) )}">View</a>
-                    <a class="action-button" href="${h.url_for( action='rename', id=trans.security.encode_id(awsCredential.id) )}">Rename</a>
-                    <a class="action-button" href="${h.url_for( action='makeDefault', id=trans.security.encode_id(awsCredential.id) )}" target="_parent">Make default</a>
-                    <a class="action-button" confirm="Are you sure you want to delete credentials '${awsCredential.name}'?" href="${h.url_for( action='delete', id=trans.security.encode_id(awsCredential.id) )}">Delete</a>
+                    <a class="action-button" href="${h.url_for( action='view', id=trans.security.encode_id(cloudCredential.id) )}">View</a>
+                    <a class="action-button" href="${h.url_for( action='rename', id=trans.security.encode_id(cloudCredential.id) )}">Rename</a>
+                    <a class="action-button" href="${h.url_for( action='makeDefault', id=trans.security.encode_id(cloudCredential.id) )}" target="_parent">Make default</a>
+                    <a class="action-button" confirm="Are you sure you want to delete credentials '${cloudCredential.name}'?" href="${h.url_for( action='delete', id=trans.security.encode_id(cloudCredential.id) )}">Delete</a>
                     </div>
                 </td>
             </tr>    
@@ -97,7 +97,7 @@
 	                	${liveInstance.name}
 	                    <a id="li-${i}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
 	                </td>
-					<td>${str(liveInstance.name)}</td> <!--TODO:Replace with vol size once available-->
+					<td>${str(liveInstance.size)}</td> <!--TODO:Replace with vol size once available-->
 	                <td>${str(liveInstance.state)}</td>
 	                <td>
 	                	${str(liveInstance.launch_time)[:16]} 
@@ -161,7 +161,7 @@
 	                    <a id="pi-${i}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
 	                </td>
 	                ## Comment <td>${len(workflow.latest_workflow.steps)}</td>
-	                <td>${str(prevInstance.name)}</td> <!-- TODO: Change to show vol size once available--> 
+	                <td>${str(prevInstance.CloudStorage.size)}</td> <!-- TODO: Change to show vol size once available--> 
 	                <td>${str(prevInstance.state)}</td>
 	                <td>
 	                    <div popupmenu="pi-${i}-popup">

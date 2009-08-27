@@ -386,31 +386,47 @@ GalaxySessionToHistoryAssociation.table = Table( "galaxy_session_to_history", me
 # ***************************************************************************
 # *************************** Cloud tables***********************************
 # ***************************************************************************
-UserInstances.table = Table( "user_instances", metadata, 
+CloudImage.table = Table( "cloud_image", metadata, 
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
-    Column( "launch_time", DateTime, onupdate=now ),
-    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True, nullable=False ),
-    Column( "name", TEXT ),
-    Column( "reservation_id", TEXT ),
-    Column( "instance_id", TEXT ),
-    Column( "ami", TEXT, ForeignKey( "cloud_images.image_id" ), nullable=False ),
-    Column( "state", TEXT ),
-    Column( "public_dns", TEXT ),
-    Column( "private_dns", TEXT ),
-    Column( "keypair_fingerprint", TEXT ),
-    Column( "keypair_material", TEXT ),
-    Column( "availability_zone", TEXT ) )
-
-CloudImages.table = Table( "cloud_images", metadata, 
-    Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "upadte_time", DateTime, default=now, onupdate=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "image_id", TEXT, nullable=False ),
     Column( "manifest", TEXT ),
     Column( "state", TEXT ) )
 
-StoredUserCredentials.table = Table( "stored_user_credentials", metadata, 
+CloudInstance.table = Table( "cloud_instance", metadata, 
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "launch_time", DateTime ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True, nullable=False ),
+    Column( "name", TEXT ),
+    Column( "type", TEXT ),
+    Column( "reservation_id", TEXT ),
+    Column( "instance_id", TEXT ),
+    Column( "mi", TEXT, ForeignKey( "cloud_image.image_id" ), index=True, nullable=False ),
+    Column( "state", TEXT ),
+    Column( "public_dns", TEXT ),
+    Column( "private_dns", TEXT ),
+    Column( "keypair_name", TEXT ),
+    Column( "availability_zone", TEXT ) )
+
+CloudStorage.table = Table( "cloud_storage", metadata, 
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "attach_time", DateTime ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True, nullable=False ),
+    Column( "volume_id", TEXT, nullable=False ),
+    Column( "size", Integer, nullable=False ),
+    Column( "availability_zone", TEXT, nullable=False ),
+    Column( "i_id", TEXT, ForeignKey( "cloud_instance.instance_id" ), index=True ),
+    Column( "status", TEXT ),
+    Column( "device", TEXT ),
+    Column( "space_consumed", Integer )
+    )
+
+CloudUserCredentials.table = Table( "cloud_user_credentials", metadata, 
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
@@ -929,14 +945,19 @@ assign_mapper( context, WorkflowStepConnection, WorkflowStepConnection.table,
 # ************************************************************
 # vvvvvvvvvvvvvvvv Start cloud table mappings vvvvvvvvvvvvvvvv
 # ************************************************************
-assign_mapper( context, UserInstances, UserInstances.table,
+assign_mapper( context, CloudImage, CloudImage.table )
+
+assign_mapper( context, CloudInstance, CloudInstance.table,
     properties=dict( user=relation( User ), 
-                     cloud_image=relation( CloudImages )
+                     image=relation( CloudImage )
                     ) )
 
-assign_mapper( context, CloudImages, CloudImages.table )
+assign_mapper( context, CloudStorage, CloudStorage.table,
+    properties=dict( user=relation( User ),
+                     instance=relation( CloudInstance, backref='cloud_instance' )
+                    ) )
 
-assign_mapper( context, StoredUserCredentials, StoredUserCredentials.table,
+assign_mapper( context, CloudUserCredentials, CloudUserCredentials.table,
     properties=dict( user=relation( User) )
                     )
 # ^^^^^^^^^^^^^^^ End cloud table mappings ^^^^^^^^^^^^^^^^^^

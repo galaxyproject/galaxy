@@ -932,24 +932,34 @@ class GalaxySessionToHistoryAssociation( object ):
         self.galaxy_session = galaxy_session
         self.history = history
        
-class UserInstances( object ):
+class CloudInstance( object ):
     def __init__( self ):
         self.id = None
         self.user = None
         self.name = None
         self.instance_id = None
-        self.ami = None
+        self.mi = None
         self.state = None
+        self.keypair_name = None
         self.public_dns = None
         self.availability_zone = None
         
-class CloudImages( object ):
+class CloudImage( object ):
     def __init__( self ):
         self.id = None
         self.instance_id = None
         self.state = None
 
-class StoredUserCredentials( object ):
+class CloudStorage( object ):
+    def __init__( self ):
+        self.id = None
+        self.volume_id = None
+        self.i_id = None
+        self.user = None
+        self.size = None
+        self.availability_zone = None
+
+class CloudUserCredentials( object ):
     def __init__( self ):
         self.id = None
         self.user = None

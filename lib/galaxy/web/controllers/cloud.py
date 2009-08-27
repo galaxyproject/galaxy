@@ -36,23 +36,23 @@ class CloudController( BaseController ):
         Render cloud main page (management of cloud resources)
         """
         user = trans.get_user()
-        awsCredentials = trans.sa_session.query( model.StoredUserCredentials ) \
-            .order_by( desc( model.StoredUserCredentials.c.update_time ) ) \
+        cloudCredentials = trans.sa_session.query( model.CloudUserCredentials ) \
+            .order_by( desc( model.CloudUserCredentials.c.update_time ) ) \
             .all()
         
-        prevInstances = trans.sa_session.query( model.UserInstances ) \
+        prevInstances = trans.sa_session.query( model.CloudInstance ) \
             .filter_by( user=user, state="available" ) \
-            .order_by( desc( model.UserInstances.c.create_time ) ) \
+            .order_by( desc( model.CloudInstance.c.create_time ) ) \
             .all() #TODO: diff between live and previous instances 
                         
-        liveInstances = trans.sa_session.query( model.UserInstances ) \
+        liveInstances = trans.sa_session.query( model.CloudInstance ) \
             .filter_by( user=user ) \
-            .filter( or_(model.UserInstances.c.state=="running", model.UserInstances.c.state=="pending") ) \
-            .order_by( desc( model.UserInstances.c.create_time ) ) \
+            .filter( or_(model.CloudInstance.c.state=="running", model.CloudInstance.c.state=="pending") ) \
+            .order_by( desc( model.CloudInstance.c.create_time ) ) \
             .all()
                         
         return trans.fill_template( "cloud/configure_cloud.mako",
-                                    awsCredentials = awsCredentials,
+                                    cloudCredentials = cloudCredentials,
                                     prevInstances = prevInstances,
                                     liveInstances = liveInstances )
     
@@ -60,9 +60,9 @@ class CloudController( BaseController ):
     @web.require_login( "use Galaxy cloud" )
     def makeDefault( self, trans, id=None ):
         """ 
-        Set current credentials as default to be used for acquiring cloud resources.
+        Set current credentials as default.
         """
-        currentDefault = get_defalt_credentials (trans)
+        currentDefault = get_default_credentials (trans)
         if currentDefault:
             currentDefault.defaultCred = False
         
@@ -177,8 +177,11 @@ class CloudController( BaseController ):
             return trans.response.send_redirect( url_for( controller='workflow' ) )
     
     @web.expose
-    @web.require_login( "use Galaxy cloud instance" )
+    @web.require_login( "start Galaxy cloud instance" )
     def start( self, trans, id ):
+        """
+        Start a new cloud resource instance
+        """
         instance = get_instance( trans, id )
         
         
@@ -189,6 +192,9 @@ class CloudController( BaseController ):
     @web.expose
     @web.require_login( "stop Galaxy cloud instance" )
     def stop( self, trans, id ):
+        """
+        Stop a cloud resource instance
+        """
         instance = get_instance( trans, id )
         
         
@@ -207,7 +213,7 @@ class CloudController( BaseController ):
         return self.list( trans )
     
     @web.expose
-    @web.require_login( "delete Galaxy cloud instance" )
+    @web.require_login( "add instance storage" )
     def addStorage( self, trans, id ):
         instance = get_instance( trans, id )
         
@@ -224,33 +230,43 @@ class CloudController( BaseController ):
         """
         user = trans.get_user()
         # TODO: If more images are made available, must add code to choose between those
-        ami = trans.app.model.CloudImages.filter(
-                trans.app.model.CloudImages.table.c.id==1).first()
+        mi = trans.app.model.CloudImage.filter(
+                trans.app.model.CloudImage.table.c.id==1).first()
         
+                        
         inst_error = vol_error = None
         if instanceName:
             # Create new user configured instance
             try:
                 if len( instanceName ) > 255:
                     inst_error = "Instance name exceeds maximum allowable length."
-                elif trans.app.model.UserInstances.filter(  
-                        trans.app.model.UserInstances.table.c.name==instanceName ).first():
+                elif trans.app.model.CloudInstance.filter(  
+                        trans.app.model.CloudInstance.table.c.name==instanceName ).first():
                     inst_error = "An instance with that name already exist."
                 elif int( volSize ) > 1000:
                     vol_error = "Volume size cannot exceed 1000GB. You must specify an integer between 1 and 1000." 
                 elif int( volSize ) < 1:
                     vol_error = "Volume size cannot be less than 1GB. You must specify an integer between 1 and 1000." 
                 else:
-                    instance = model.UserInstances()
+                    instance = model.CloudInstance()
                     instance.user = user
                     instance.name = instanceName
-                    instance.ami = ami.image_id
-                    # Valid states include: "available", "running" or "pending"
+                    instance.mi = mi.image_id
+                    # TODO: get state from AWS - also, update state on page update
+                    # Currently, valid states include: "available", "running" or "pending"
                     instance.state = "available"
-                    #TODO: include storage volume size code
+                    # Capture storage related information
+                    storage = model.CloudStorage()
+                    storage.user = user
+                    storage.size = volSize
+                    log.debug("******** Size: %s" % storage.size )
+                    # TODO: get correct values from AWS
+                    storage.volume_id = "made up"
+                    storage.availability_zone = "avail zone"
                     # Persist
                     session = trans.sa_session
                     session.save_or_update( instance )
+                    session.save_or_update( storage )
                     session.flush()
                     # Log and display the management page
                     trans.log_event( "User configured new cloud resource instance" )
@@ -258,7 +274,10 @@ class CloudController( BaseController ):
                     return self.list( trans )
             except ValueError:
                 vol_error = "Volume size must be specified as an integer value only, between 1 and 1000."
-            
+            except AttributeError, ae:
+                inst_error = "No registered cloud images. You must contact administrator to add some before proceeding."
+                log.debug("AttributeError: %s " % str( ae ) )
+                
         return trans.show_form( 
             web.FormBuilder( web.url_for(), "Configure new instance", submit_text="Add" )
                 .add_text( "instanceName", "Instance name", value="Unnamed instance", error=inst_error ) 
@@ -273,12 +292,12 @@ class CloudController( BaseController ):
         if image_id:
             if len( image_id ) > 255:
                 error = "Image ID name exceeds maximum allowable length."
-            elif trans.app.model.StoredUserCredentials.filter(  
-                    trans.app.model.CloudImages.table.c.image_id==image_id ).first():
+            elif trans.app.model.CloudUserCredentials.filter(  
+                    trans.app.model.CloudImage.table.c.image_id==image_id ).first():
                 error = "Image with that ID is already registered."
             else:
                 # Create new image
-                image = model.CloudImages()
+                image = model.CloudImage()
                 image.image_id = image_id
                 image.manifest = manifest
                 # Persist
@@ -327,19 +346,19 @@ class CloudController( BaseController ):
     @web.require_login( "add credentials" )
     def add( self, trans, credName='', accessKey='', secretKey='', defaultCred=True ):
         """
-        Add user's AWS credentials stored under name `credName`.
+        Add user's cloud credentials stored under name `credName`.
         """
         user = trans.get_user()
         cred_error = accessKey_error = secretKey_error = None
         if credName:
             if len( credName ) > 255:
                 cred_error = "Credentials name exceeds maximum allowable length."
-            elif trans.app.model.StoredUserCredentials.filter(  
-                    trans.app.model.StoredUserCredentials.table.c.name==credName ).first():
+            elif trans.app.model.CloudUserCredentials.filter(  
+                    trans.app.model.CloudUserCredentials.table.c.name==credName ).first():
                 cred_error = "Credentials with that name already exist."
             else:
                 # Create new user stored credentials
-                credentials = model.StoredUserCredentials()
+                credentials = model.CloudUserCredentials()
                 credentials.name = credName
                 credentials.user = user
                 credentials.access_key = accessKey
@@ -853,7 +872,7 @@ def get_stored_credentials( trans, id, check_ownership=True ):
     if not isinstance( id, int ):
         id = trans.security.decode_id( id )
 
-    stored = trans.sa_session.query( model.StoredUserCredentials ).get( id )
+    stored = trans.sa_session.query( model.CloudUserCredentials ).get( id )
     if not stored:
         error( "Credentials not found" )
     # Verify ownership
@@ -865,13 +884,13 @@ def get_stored_credentials( trans, id, check_ownership=True ):
     # Looks good
     return stored
 
-def get_defalt_credentials( trans, check_ownership=True ):
+def get_default_credentials( trans, check_ownership=True ):
     """
     Get a StoredUserCredntials from the database by 'default' setting, verifying ownership. 
     """
     user = trans.get_user()
     # Load credentials from database
-    stored = trans.sa_session.query( model.StoredUserCredentials ) \
+    stored = trans.sa_session.query( model.CloudUserCredentials ) \
         .filter_by (user=user, defaultCred=True) \
         .first()
 
@@ -879,11 +898,11 @@ def get_defalt_credentials( trans, check_ownership=True ):
 
 def get_instance( trans, id, check_ownership=True ):
     """
-    Get a UserInstances from the database by id, verifying ownership. 
+    Get a CloudInstance from the database by id, verifying ownership. 
     """
     id = trans.security.decode_id( id )
 
-    live = trans.sa_session.query( model.UserInstances ).get( id )
+    live = trans.sa_session.query( model.CloudInstance ).get( id )
     if not live:
         error( "Instance not found" )
     # Verify ownership
