@@ -9,6 +9,7 @@ from galaxy.datatypes import metadata
 from galaxy.datatypes.sniff import *
 from urllib import urlencode, quote_plus
 import zipfile
+import os, subprocess, tempfile
 
 log = logging.getLogger(__name__)
 
@@ -240,6 +241,26 @@ class Bam( data.Binary ):
     """Class describing a BAM binary file"""
     file_ext = "bam"
     MetadataElement( name="bam_index", desc="BAM Index File", param=metadata.FileParameter, readonly=True, no_value=None, visible=False, optional=True )    
+    def init_meta( self, dataset, copy_from=None ):
+        data.Binary.init_meta( self, dataset, copy_from=copy_from )
+    def set_meta( self, dataset, overwrite = True, **kwd ):
+        """
+        Sets index for BAM file.
+        """
+        index_file = dataset.metadata.bam_index
+        if not index_file:
+            index_file = dataset.metadata.spec['bam_index'].param.new_file( dataset = dataset )
+        tmp_dir = tempfile.gettempdir()
+        tmpf1 = tempfile.NamedTemporaryFile(dir=tmp_dir)
+        try:
+            subprocess.check_call(['cd', tmp_dir], shell=True)
+            subprocess.check_call('cp %s %s' % (dataset.file_name, tmpf1.name), shell=True)
+            subprocess.check_call('samtools index %s' % tmpf1.name, shell=True)
+            subprocess.check_call('cp %s.bai %s' % (tmpf1.name, index_file.file_name), shell=True)
+        except subprocess.CalledProcessError:
+            sys.stderr.write('There was a problem creating the index for the BAM file\n')
+        tmpf1.close()
+        dataset.metadata.bam_index = index_file
     def set_peek( self, dataset ):
         if not dataset.dataset.purged:
             export_url = "/history_add_to?" + urlencode({'history_id':dataset.history_id,'ext':'bam','name':'bam alignments','info':'Alignments file','dbkey':dataset.dbkey})
@@ -256,4 +277,3 @@ class Bam( data.Binary ):
     def get_mime(self):
         """Returns the mime type of the datatype"""
         return 'application/octet-stream'
-        
