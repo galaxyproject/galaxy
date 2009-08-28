@@ -2,12 +2,17 @@
 ## Render the dataset `data` as history item, using `hid` as the displayed id
 <%def name="render_dataset( data, hid, show_deleted_on_refresh = False )">
     <%
-	if data.state in ['no state','',None]:
-	    data_state = "queued"
-	else:
-	    data_state = data.state
+    	if data.state in ['no state','',None]:
+    	    data_state = "queued"
+    	else:
+    	    data_state = data.state
+    	user = trans.user
+    	if user:
+    	   roles = user.all_roles()
+    	else:
+    	   roles = None
     %>
-    %if not trans.app.security_agent.allow_action( trans.user, data.permitted_actions.DATASET_ACCESS, dataset = data.dataset ):
+    %if not trans.app.security_agent.allow_action( user, roles, data.permitted_actions.DATASET_ACCESS, dataset = data.dataset ):
         <div class="historyItemWrapper historyItem historyItem-${data_state} historyItem-noPermission" id="historyItem-${data.id}">
     %else:
         <div class="historyItemWrapper historyItem historyItem-${data_state}" id="historyItem-${data.id}">
@@ -41,7 +46,7 @@
         ## Body for history items, extra info and actions, data "peek"
         
         <div id="info${data.id}" class="historyItemBody">
-            %if not trans.app.security_agent.allow_action( trans.user, data.permitted_actions.DATASET_ACCESS, dataset = data.dataset ):
+            %if not trans.app.security_agent.allow_action( user, roles, data.permitted_actions.DATASET_ACCESS, dataset = data.dataset ):
                 <div>You do not have permission to view this dataset.</div>
             %elif data_state == "upload":
                 <div>Dataset is uploading</div>

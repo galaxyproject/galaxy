@@ -269,7 +269,7 @@ class Admin( BaseController ):
             gra.delete()
             gra.flush()
         # Delete DatasetPermissionss
-        for dp in role.actions:
+        for dp in role.dataset_actions:
             dp.delete()
             dp.flush()
         msg = "The following have been purged from the database for role '%s': " % role.name
@@ -997,16 +997,8 @@ class Admin( BaseController ):
                                         msg=msg,
                                         messagetype=messagetype )
         elif action == 'delete':
-            def delete_folder( folder ):
-                folder.refresh()
-                for subfolder in folder.active_folders:
-                    delete_folder( subfolder )
-                for ldda in folder.active_datasets:
-                    ldda.deleted = True
-                    ldda.flush()
-                folder.deleted = True
-                folder.flush()
-            delete_folder( folder )
+            folder.deleted = True
+            folder.flush()
             msg = "Folder '%s' and all of its contents have been marked deleted" % folder.name
             return trans.response.send_redirect( web.url_for( action='browse_library',
                                                               id=library_id,

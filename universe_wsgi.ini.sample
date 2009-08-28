@@ -26,6 +26,11 @@ database_file = database/universe.sqlite
 #database_engine_option_pool_size = 10
 #database_engine_option_max_overflow = 20
 
+# If using MySQL, see:
+# http://rapd.wordpress.com/2008/03/02/sqlalchemy-sqlerror-operationalerror-2006-mysql-server-has-gone-away/
+# To handle this issue, try the following setting:
+#database_engine_option_pool_recycle = 7200
+
 # Where dataset files are saved
 file_path = database/files
 # Temporary storage for additional datasets, this should be shared through the cluster

@@ -3,6 +3,13 @@
 
 <%def name="title()">${_('Edit Dataset Attributes')}</%def>
 
+<%
+    user = trans.user
+    if user:
+        user_roles = user.all_roles()
+    else:
+        user_roles = None
+%>
 
 <%def name="datatype( dataset, datatypes )">
     <select name="datatype">
@@ -134,9 +141,9 @@
 </div>
 <p />
 
-%if trans.app.security_agent.allow_action( trans.user, data.permitted_actions.DATASET_MANAGE_PERMISSIONS, dataset = data ):
+%if trans.app.security_agent.allow_action( user, user_roles, data.permitted_actions.DATASET_MANAGE_PERMISSIONS, dataset=data.dataset ):
     <%namespace file="/dataset/security_common.mako" import="render_permission_form" />
-    ${render_permission_form( data.dataset, data.name, h.url_for( controller='root', action='edit', id=data.id ), trans.user.all_roles() )}
+    ${render_permission_form( data.dataset, data.name, h.url_for( controller='root', action='edit', id=data.id ), user_roles )}
 %elif trans.user:
     <div class="toolForm">
         <div class="toolFormTitle">View Permissions</div>

@@ -62,14 +62,29 @@ class Library( BaseController ):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
-        all_libraries = trans.app.model.Library.filter( trans.app.model.Library.table.c.deleted==False ).order_by( trans.app.model.Library.name ).all()
+        user = trans.user
+        if user:
+            roles = user.all_roles()
+        else:
+            roles = None
+        all_libraries = trans.app.model.Library.filter( trans.app.model.Library.table.c.deleted==False ) \
+                                               .order_by( trans.app.model.Library.name ).all()
         authorized_libraries = []
         for library in all_libraries:
-            if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=library ) or \
-               trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=library ) or \
-               trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MANAGE, library_item=library ) or \
-               trans.app.security_agent.check_folder_contents( trans.user, library ) or \
-               trans.app.security_agent.show_library_item( trans.user, library ):
+            if trans.app.security_agent.allow_action( user,
+                                                      roles,
+                                                      trans.app.security_agent.permitted_actions.LIBRARY_ADD,
+                                                      library_item=library ) or \
+               trans.app.security_agent.allow_action( user,
+                                                      roles,
+                                                      trans.app.security_agent.permitted_actions.LIBRARY_MODIFY,
+                                                      library_item=library ) or \
+               trans.app.security_agent.allow_action( user,
+                                                      roles,
+                                                      trans.app.security_agent.permitted_actions.LIBRARY_MANAGE,
+                                                      library_item=library ) or \
+               trans.app.security_agent.check_folder_contents( user, roles, library.root_folder ) or \
+               trans.app.security_agent.show_library_item( user, roles, library ):
                 authorized_libraries.append( library )
         return trans.fill_template( '/library/browse_libraries.mako', 
                                     libraries=authorized_libraries,
@@ -264,9 +279,15 @@ class Library( BaseController ):
                                                                   msg=util.sanitize_text( msg ),
                                                                   messagetype='error' ) )
             seen = []
+            user = trans.user
+            if user:
+                roles = user.all_roles()
+            else:
+                roles = None
             for id in ldda_ids:
                 ldda = trans.app.model.LibraryDatasetDatasetAssociation.get( id )
-                if not ldda or not trans.app.security_agent.allow_action( trans.user,
+                if not ldda or not trans.app.security_agent.allow_action( user,
+                                                                          roles,
                                                                           trans.app.security_agent.permitted_actions.DATASET_ACCESS,
                                                                           dataset = ldda.dataset ):
                     continue
@@ -363,9 +384,15 @@ class Library( BaseController ):
                                                               id=library_id,
                                                               msg=util.sanitize_text( msg ),
                                                               messagetype='error' ) )
+        user = trans.user
+        if user:
+            roles = user.all_roles()
+        else:
+            roles = None
         if action == 'information':
             if params.get( 'edit_attributes_button', False ):
-                if trans.app.security_agent.allow_action( trans.user,
+                if trans.app.security_agent.allow_action( user,
+                                                          roles,
                                                           trans.app.security_agent.permitted_actions.LIBRARY_MODIFY,
                                                           library_item=library_dataset ):
                     if params.get( 'edit_attributes_button', False ):
@@ -391,7 +418,8 @@ class Library( BaseController ):
                                         messagetype=messagetype )
         elif action == 'permissions':
             if params.get( 'update_roles_button', False ):
-                if trans.app.security_agent.allow_action( trans.user,
+                if trans.app.security_agent.allow_action( user,
+                                                          roles,
                                                           trans.app.security_agent.permitted_actions.LIBRARY_MANAGE,
                                                           library_item=library_dataset ):
                     # The user clicked the Save button on the 'Associate With Roles' form
@@ -436,6 +464,11 @@ class Library( BaseController ):
                 last_used_build = replace_dataset.library_dataset_dataset_association.dbkey
         else:
             replace_dataset = None
+        user = trans.user
+        if user:
+            roles = user.all_roles()
+        else:
+            roles = None
         # Let's not overwrite the imported datatypes module with the variable datatypes?
         # The built-in 'id' is overwritten in lots of places as well
         ldatatypes = [ dtype_name for dtype_name, dtype_value in trans.app.datatypes_registry.datatypes_by_extension.iteritems() if dtype_value.allow_datatype_change ]
@@ -479,10 +512,12 @@ class Library( BaseController ):
             if action == 'permissions':
                 if params.get( 'update_roles_button', False ):
                     # The user clicked the Save button on the 'Associate With Roles' form
-                    if trans.app.security_agent.allow_action( trans.user,
+                    if trans.app.security_agent.allow_action( user,
+                                                              roles,
                                                               trans.app.security_agent.permitted_actions.LIBRARY_MANAGE,
                                                               library_item=ldda ) and \
-                        trans.app.security_agent.allow_action( trans.user,
+                        trans.app.security_agent.allow_action( user,
+                                                               roles,
                                                                trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS,
                                                                dataset=ldda.dataset ):
                         permissions = {}
@@ -523,7 +558,8 @@ class Library( BaseController ):
             elif action == 'edit_info':
                 if params.get( 'change', False ):
                     # The user clicked the Save button on the 'Change data type' form
-                    if trans.app.security_agent.allow_action( trans.user,
+                    if trans.app.security_agent.allow_action( user,
+                                                              roles,
                                                               trans.app.security_agent.permitted_actions.LIBRARY_MODIFY,
                                                               library_item=ldda ):
                         if ldda.datatype.allow_datatype_change and trans.app.datatypes_registry.get_datatype_by_extension( params.datatype ).allow_datatype_change:
@@ -546,7 +582,8 @@ class Library( BaseController ):
                                                 messagetype=messagetype )
                 elif params.get( 'save', False ):
                     # The user clicked the Save button on the 'Edit Attributes' form
-                    if trans.app.security_agent.allow_action( trans.user,
+                    if trans.app.security_agent.allow_action( user,
+                                                              roles,
                                                               trans.app.security_agent.permitted_actions.LIBRARY_MODIFY,
                                                               library_item=ldda ):
                         old_name = ldda.name
@@ -587,7 +624,8 @@ class Library( BaseController ):
                                                 messagetype=messagetype )
                 elif params.get( 'detect', False ):
                     # The user clicked the Auto-detect button on the 'Edit Attributes' form
-                    if trans.app.security_agent.allow_action( trans.user,
+                    if trans.app.security_agent.allow_action( user,
+                                                              roles,
                                                               trans.app.security_agent.permitted_actions.LIBRARY_MODIFY,
                                                               library_item=ldda ):
                         for name, spec in ldda.datatype.metadata_spec.items():
@@ -611,7 +649,8 @@ class Library( BaseController ):
                                                 msg=msg,
                                                 messagetype=messagetype )
                 elif params.get( 'delete', False ):
-                    if trans.app.security_agent.allow_action( trans.user,
+                    if trans.app.security_agent.allow_action( user,
+                                                              roles,
                                                               trans.app.security_agent.permitted_actions.LIBRARY_MODIFY,
                                                               library_item=folder ):
                         ldda.deleted = True
@@ -628,7 +667,8 @@ class Library( BaseController ):
                                                 widgets=widgets,
                                                 msg=msg,
                                                 messagetype=messagetype )
-                if trans.app.security_agent.allow_action( trans.user,
+                if trans.app.security_agent.allow_action( user,
+                                                          roles,
                                                           trans.app.security_agent.permitted_actions.LIBRARY_MODIFY,
                                                           library_item=ldda ):
                     ldda.datatype.before_edit( ldda )
@@ -668,10 +708,12 @@ class Library( BaseController ):
                                                            messagetype='error' ) )
             if action == 'permissions':
                 if params.get( 'update_roles_button', False ):
-                    if trans.app.security_agent.allow_action( trans.user,
+                    if trans.app.security_agent.allow_action( user,
+                                                              roles,
                                                               trans.app.security_agent.permitted_actions.LIBRARY_MANAGE,
                                                               library_item=ldda ) and \
-                        trans.app.security_agent.allow_action( trans.user,
+                        trans.app.security_agent.allow_action( user,
+                                                               roles,
                                                                trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS,
                                                                dataset=ldda.dataset ):
                         permissions = {}
@@ -704,10 +746,12 @@ class Library( BaseController ):
                                                 library_id=library_id,
                                                 msg=msg,
                                                 messagetype=messagetype )
-                if trans.app.security_agent.allow_action( trans.user,
+                if trans.app.security_agent.allow_action( user,
+                                                          roles,
                                                           trans.app.security_agent.permitted_actions.LIBRARY_MANAGE,
                                                           library_item=ldda ) and \
-                    trans.app.security_agent.allow_action( trans.user,
+                    trans.app.security_agent.allow_action( user,
+                                                           roles,
                                                            trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS,
                                                            dataset=ldda.dataset ):
                     # Ensure that the permissions across all library items are identical, otherwise we can't update them together.
@@ -741,10 +785,12 @@ class Library( BaseController ):
                                             library_id=library_id,
                                             msg=msg,
                                             messagetype=messagetype )
-        if trans.app.security_agent.allow_action( trans.user,
+        if trans.app.security_agent.allow_action( user,
+                                                  roles,
                                                   trans.app.security_agent.permitted_actions.LIBRARY_ADD,
                                                   library_item=folder ) or \
-             ( replace_dataset and trans.app.security_agent.allow_action( trans.user,
+             ( replace_dataset and trans.app.security_agent.allow_action( user,
+                                                                          roles,
                                                                           trans.app.security_agent.permitted_actions.LIBRARY_MODIFY,
                                                                           library_item=replace_dataset ) ):
             if params.get( 'new_dataset_button', False ):
@@ -769,7 +815,8 @@ class Library( BaseController ):
                     # Since permissions on all LibraryDatasetDatasetAssociations must be the same at this point, we only need
                     # to check one of them to see if the current user can manage permissions on them.
                     check_ldda = trans.app.model.LibraryDatasetDatasetAssociation.get( ldda_id_list[0] )
-                    if trans.app.security_agent.allow_action( trans.user,
+                    if trans.app.security_agent.allow_action( user,
+                                                              roles,
                                                               trans.app.security_agent.permitted_actions.LIBRARY_MANAGE,
                                                               library_item=check_ldda ):
                         if replace_dataset:
@@ -892,7 +939,13 @@ class Library( BaseController ):
                     # Since permissions on all LibraryDatasetDatasetAssociations must be the same at this point, we only need
                     # to check one of them to see if the current user can manage permissions on them.
                     check_ldda = trans.app.model.LibraryDatasetDatasetAssociation.get( ldda_id_list[0] )
-                    if trans.app.security_agent.allow_action( trans.user,
+                    user = trans.user
+                    if user:
+                        roles = user.all_roles()
+                    else:
+                        roles = None
+                    if trans.app.security_agent.allow_action( user,
+                                                              roles,
                                                               trans.app.security_agent.permitted_actions.LIBRARY_MANAGE,
                                                               library_item=check_ldda ):
                         if replace_dataset:
@@ -957,6 +1010,11 @@ class Library( BaseController ):
                                                               id=library_id,
                                                               msg=util.sanitize_text( msg ),
                                                               messagetype='error' ) )
+        user = trans.user
+        if user:
+            roles = user.all_roles()
+        else:
+            roles = None
         if action == 'new':
             if params.new == 'submitted':
                 new_folder = trans.app.model.LibraryFolder( name=util.restore_text( params.name ),
@@ -994,7 +1052,8 @@ class Library( BaseController ):
             else:
                 widgets = []
             if params.get( 'rename_folder_button', False ):
-                if trans.app.security_agent.allow_action( trans.user, 
+                if trans.app.security_agent.allow_action( user,
+                                                          roles,
                                                           trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, 
                                                           library_item=folder ):
                     old_name = folder.name
@@ -1037,7 +1096,8 @@ class Library( BaseController ):
         elif action == 'permissions':
             if params.get( 'update_roles_button', False ):
                 # The user clicked the Save button on the 'Associate With Roles' form
-                if trans.app.security_agent.allow_action( trans.user, 
+                if trans.app.security_agent.allow_action( user,
+                                                          roles,
                                                           trans.app.security_agent.permitted_actions.LIBRARY_MANAGE, 
                                                           library_item=folder ):
                     permissions = {}
@@ -1162,12 +1222,24 @@ class Library( BaseController ):
                                                           msg=util.sanitize_text( msg ),
                                                           messagetype='done' ) )
 
-
-def get_authorized_libs(trans, user):
-    all_libraries = trans.app.model.Library.filter(trans.app.model.Library.table.c.deleted == False).order_by(trans.app.model.Library.name).all()
+def get_authorized_libs( trans, user ):
+    # TODO: this is a mis-named function - the name should reflect the authorization policy
+    # If user is not authenticated, this method should not even be called.  Also, it looks
+    # like all that is using this is the new request stuff, so it should be placed there.
+    if not user:
+        return []
+    roles = user.all_roles()
+    all_libraries = trans.app.model.Library.filter( trans.app.model.Library.table.c.deleted == False ) \
+                                           .order_by( trans.app.model.Library.name ).all()
     authorized_libraries = []
     for library in all_libraries:
-        if trans.app.security_agent.allow_action(user, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=library) \
-            or trans.app.security_agent.allow_action(user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=library):
-            authorized_libraries.append(library)
+        if trans.app.security_agent.allow_action( user,
+                                                  roles,
+                                                  trans.app.security_agent.permitted_actions.LIBRARY_ADD,
+                                                  library_item=library ) \
+            or trans.app.security_agent.allow_action( user,
+                                                      roles,
+                                                      trans.app.security_agent.permitted_actions.LIBRARY_MODIFY,
+                                                      library_item=library ):
+            authorized_libraries.append( library )
     return authorized_libraries

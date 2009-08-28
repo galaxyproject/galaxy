@@ -1229,7 +1229,7 @@ class TwillTestCase( unittest.TestCase ):
         tc.fv( '1', 'new_element_description_1', ele_help_1.replace( '+', ' ' ) )
         tc.submit( 'new_info_template_button' )
         self.home()
-    def add_folder( self, library_id, folder_id, name='Folder One', description='NThis is Folder One' ):
+    def add_folder( self, library_id, folder_id, name='Folder One', description='This is Folder One' ):
         """Create a new folder"""
         self.home()
         self.visit_url( "%s/admin/folder?library_id=%s&id=%s&new=True" % ( self.url, library_id, folder_id ) )

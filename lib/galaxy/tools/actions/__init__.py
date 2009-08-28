@@ -47,8 +47,15 @@ class DefaultToolAction( object ):
                             assoc.dataset = new_data
                             assoc.flush()
                             data = new_data
-                # TODO, Nate: Make sure the permitted actions here are appropriate.
-                if data and not trans.app.security_agent.allow_action( trans.user, data.permitted_actions.DATASET_ACCESS, dataset=data ):
+                user = trans.user
+                if user:
+                    roles = user.all_roles()
+                else:
+                    roles = None
+                if data and not trans.app.security_agent.allow_action( user,
+                                                                       roles,
+                                                                       data.permitted_actions.DATASET_ACCESS,
+                                                                       dataset=data.dataset ):
                     raise "User does not have permission to use a dataset (%s) provided for input." % data.id
                 return data
             if isinstance( input, DataToolParameter ):
@@ -261,10 +268,17 @@ class DefaultToolAction( object ):
         #        parameters to the command as a special case.
         for name, value in tool.params_to_strings( incoming, trans.app ).iteritems():
             job.add_parameter( name, value )
+        user = trans.user
+        if user:
+            roles = user.all_roles()
+        else:
+            roles = None
         for name, dataset in inp_data.iteritems():
             if dataset:
-                # TODO, Nate: Make sure the permitted actions here are appropriate.
-                if not trans.app.security_agent.allow_action( trans.user, dataset.permitted_actions.DATASET_ACCESS, dataset=dataset ):
+                if not trans.app.security_agent.allow_action( user,
+                                                              roles,
+                                                              dataset.permitted_actions.DATASET_ACCESS,
+                                                              dataset=dataset.dataset ):
                     raise "User does not have permission to use a dataset (%s) provided for input." % data.id
                 job.add_input_dataset( name, dataset )
             else:

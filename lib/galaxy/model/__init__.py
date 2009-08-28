@@ -723,15 +723,19 @@ class LibraryFolder( object ):
         return None
     @property
     def active_components( self ):
-        return list( self.active_folders ) + list( self.active_datasets )
+        return list( self.active_folders ) + list( self.active_library_datasets )
     @property
-    def active_datasets( self ):
+    def active_library_datasets( self ):
          # This needs to be a list
         return [ ld for ld in self.datasets if not ld.library_dataset_dataset_association.deleted ]
     @property
-    def activatable_datasets( self ):
+    def activatable_library_datasets( self ):
          # This needs to be a list
         return [ ld for ld in self.datasets if not ld.library_dataset_dataset_association.dataset.deleted ]
+    @property
+    def active_datasets( self ):
+         # This needs to be a list
+        return [ ld.library_dataset_dataset_association.dataset for ld in self.datasets if not ld.library_dataset_dataset_association.deleted ]
     @property #make this a relation
     def activatable_folders( self ):
         # This needs to be a list

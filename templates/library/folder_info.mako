@@ -2,6 +2,14 @@
 <%namespace file="/message.mako" import="render_msg" />
 <%namespace file="/library/common.mako" import="render_template_info" />
 
+<%
+    user = trans.user
+    if user:
+        roles = user.all_roles()
+    else:
+        roles = None
+%>
+
 <br/><br/>
 <ul class="manage-table-actions">
     <li>
@@ -16,7 +24,7 @@
 <div class="toolForm">
     <div class="toolFormTitle">Edit folder name and description</div>
     <div class="toolFormBody">
-        %if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=folder ):
+        %if trans.app.security_agent.allow_action( user, roles, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=folder ):
             <form name="folder" action="${h.url_for( controller='library', action='folder', rename=True, id=folder.id, library_id=library_id )}" method="post" >
                 <div class="form-row">
                     <label>Name:</label>

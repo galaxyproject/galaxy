@@ -1137,6 +1137,11 @@ class DataToolParameter( ToolParameter ):
         field = form_builder.SelectField( self.name, self.multiple, None, self.refresh_on_change, refresh_on_change_values = self.refresh_on_change_values )
         # CRUCIAL: the dataset_collector function needs to be local to DataToolParameter.get_html_field()
         def dataset_collector( hdas, parent_hid ):
+            user = trans.user
+            if user:
+                roles = user.all_roles()
+            else:
+                roles = None
             for i, hda in enumerate( hdas ):
                 if len( hda.name ) > 30:
                     hda_name = '%s..%s' % ( hda.name[:17], hda.name[-11:] )
@@ -1148,12 +1153,18 @@ class DataToolParameter( ToolParameter ):
                     hid = str( hda.hid )
                 if not hda.dataset.state in [galaxy.model.Dataset.states.ERROR, galaxy.model.Dataset.states.DISCARDED] and \
                     hda.visible and \
-                    trans.app.security_agent.allow_action( trans.user, hda.permitted_actions.DATASET_ACCESS, dataset=hda ):
+                    trans.app.security_agent.allow_action( user,
+                                                           roles,
+                                                           hda.permitted_actions.DATASET_ACCESS,
+                                                           dataset=hda.dataset ):
                     # If we are sending data to an external application, then we need to make sure there are no roles
                     # associated with the dataset that restrict it's access from "public".  We determine this by sending
                     # None as the user to the allow_action method.
                     if self.tool and self.tool.tool_type == 'data_destination':
-                        if not trans.app.security_agent.allow_action( None, hda.permitted_actions.DATASET_ACCESS, dataset=hda ):
+                        if not trans.app.security_agent.allow_action( None,
+                                                                      None,
+                                                                      hda.permitted_actions.DATASET_ACCESS,
+                                                                      dataset=hda.dataset ):
                             continue
                     if self.options and hda.get_dbkey() != filter_value:
                         continue
@@ -1165,7 +1176,10 @@ class DataToolParameter( ToolParameter ):
                         if target_ext:
                             if converted_dataset:
                                 hda = converted_dataset
-                            if not trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.DATASET_ACCESS, dataset=hda.dataset ):
+                            if not trans.app.security_agent.allow_action( user,
+                                                                          roles,
+                                                                          trans.app.security_agent.permitted_actions.DATASET_ACCESS,
+                                                                          dataset=hda.dataset ):
                                 continue
                             selected = ( value and ( hda in value ) )
                             field.add_option( "%s: (as %s) %s" % ( hid, target_ext, hda_name ), hda.id, selected )

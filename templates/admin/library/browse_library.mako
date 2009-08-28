@@ -138,12 +138,12 @@ def name_sorted( l ):
         %if show_deleted:
             <%
                 parent_folders = folder.activatable_folders
-                parent_datasets = folder.activatable_datasets
+                parent_datasets = folder.activatable_library_datasets
             %>
         %else:
             <%
                 parent_folders = folder.active_folders
-                parent_datasets = folder.active_datasets
+                parent_datasets = folder.active_library_datasets
             %>
         %endif
         %for folder in name_sorted( parent_folders ):

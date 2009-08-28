@@ -2,6 +2,14 @@
 <%namespace file="/message.mako" import="render_msg" />
 <%namespace file="/dataset/security_common.mako" import="render_permission_form" />>
 
+<%
+    user = trans.user
+    if user:
+        user_roles = user.all_roles()
+    else:
+        user_roles = None
+%>
+
 %if library_dataset == library_dataset.library_dataset_dataset_association.library_dataset:
     <b><i>This is the latest version of this library dataset</i></b>
 %else:
@@ -19,7 +27,7 @@
     ${render_msg( msg, messagetype )}
 %endif
 
-%if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_manage, library_item=library_dataset ):
+%if trans.app.security_agent.allow_action( user, user_roles, trans.app.security_agent.permitted_actions.LIBRARY_manage, library_item=library_dataset ):
     <%
         roles = trans.app.model.Role.filter( trans.app.model.Role.table.c.deleted==False ).order_by( trans.app.model.Role.table.c.name ).all()
     %>

@@ -740,7 +740,7 @@ assign_mapper( context, GroupRoleAssociation, GroupRoleAssociation.table,
 assign_mapper( context, DatasetPermissions, DatasetPermissions.table,
     properties=dict(
         dataset=relation( Dataset, backref="actions" ),
-        role=relation( Role, backref="actions" )
+        role=relation( Role, backref="dataset_actions" )
     )
 )
 

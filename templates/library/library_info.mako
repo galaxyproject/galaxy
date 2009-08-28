@@ -2,6 +2,14 @@
 <%namespace file="/message.mako" import="render_msg" />
 <%namespace file="/library/common.mako" import="render_template_info" />
 
+<%
+    user = trans.user
+    if user:
+        roles = user.all_roles()
+    else:
+        roles = None
+%>
+
 <br/><br/>
 <ul class="manage-table-actions">
     <li>
@@ -13,7 +21,7 @@
     ${render_msg( msg, messagetype )}
 %endif
 
-%if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=library ):
+%if trans.app.security_agent.allow_action( user, roles, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=library ):
     <div class="toolForm">
         <div class="toolFormTitle">Change library name and description</div>
         <div class="toolFormBody">

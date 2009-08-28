@@ -3,6 +3,14 @@
 <%namespace file="/library/common.mako" import="render_template_info" />
 <% from galaxy import util %>
 
+<%
+    user = trans.user
+    if user:
+        roles = user.all_roles()
+    else:
+        roles = None
+%>
+
 %if ldda == ldda.library_dataset.library_dataset_dataset_association:
     <b><i>This is the latest version of this library dataset</i></b>
 %else:
@@ -32,7 +40,7 @@
     </select>
 </%def>
 
-%if trans.app.security_agent.allow_action( trans.user, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=ldda.library_dataset ):
+%if trans.app.security_agent.allow_action( user, roles, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=ldda.library_dataset ):
     <div class="toolForm">
         <div class="toolFormTitle">Edit attributes of ${ldda.name}</div>
         <div class="toolFormBody">
