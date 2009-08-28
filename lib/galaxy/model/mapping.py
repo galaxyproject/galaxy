@@ -544,6 +544,34 @@ PageRevision.table = Table( "page_revision", metadata,
     Column( "content", TEXT )
     )
 
+Tag.table = Table( "tag", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "type", Integer ),
+    Column( "parent_id", Integer, ForeignKey( "tag.id" ) ),
+    Column( "name", TrimmedString(255) ), 
+    UniqueConstraint( "name" ) )
+
+HistoryTagAssociation.table = Table( "history_tag_association", metadata,
+    Column( "history_id", Integer, ForeignKey( "history.id" ), index=True ),
+    Column( "tag_id", Integer, ForeignKey( "tag.id" ), index=True ),
+    Column( "user_tname", TrimmedString(255), index=True),
+    Column( "value", TrimmedString(255), index=True),
+    Column( "user_value", TrimmedString(255), index=True) )
+    
+DatasetTagAssociation.table = Table( "dataset_tag_association", metadata,
+    Column( "dataset_id", Integer, ForeignKey( "dataset.id" ), index=True ),
+    Column( "tag_id", Integer, ForeignKey( "tag.id" ), index=True ),
+    Column( "user_tname", TrimmedString(255), index=True),
+    Column( "value", TrimmedString(255), index=True),
+    Column( "user_value", TrimmedString(255), index=True) )
+
+HistoryDatasetAssociationTagAssociation.table = Table( "history_dataset_association_tag_association", metadata,
+    Column( "history_dataset_association_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True ),
+    Column( "tag_id", Integer, ForeignKey( "tag.id" ), index=True ),
+    Column( "user_tname", TrimmedString(255), index=True),
+    Column( "value", TrimmedString(255), index=True),
+    Column( "user_value", TrimmedString(255), index=True) )
+
 # With the tables defined we can define the mappers and setup the 
 # relationships between the model objects.
 
@@ -643,7 +671,8 @@ assign_mapper( context, HistoryDatasetAssociation, HistoryDatasetAssociation.tab
             backref=backref( "parent", primaryjoin=( HistoryDatasetAssociation.table.c.parent_id == HistoryDatasetAssociation.table.c.id ), remote_side=[HistoryDatasetAssociation.table.c.id], uselist=False ) ),
         visible_children=relation( 
             HistoryDatasetAssociation, 
-            primaryjoin=( ( HistoryDatasetAssociation.table.c.parent_id == HistoryDatasetAssociation.table.c.id ) & ( HistoryDatasetAssociation.table.c.visible == True ) ) )
+            primaryjoin=( ( HistoryDatasetAssociation.table.c.parent_id == HistoryDatasetAssociation.table.c.id ) & ( HistoryDatasetAssociation.table.c.visible == True ) ) ),
+        tags=relation(HistoryDatasetAssociationTagAssociation, backref='history_tag_associations')
             ) )
 
 assign_mapper( context, Dataset, Dataset.table,
@@ -659,7 +688,8 @@ assign_mapper( context, Dataset, Dataset.table,
             primaryjoin=( Dataset.table.c.id == LibraryDatasetDatasetAssociation.table.c.dataset_id ) ),
         active_library_associations=relation( 
             LibraryDatasetDatasetAssociation, 
-            primaryjoin=( ( Dataset.table.c.id == LibraryDatasetDatasetAssociation.table.c.dataset_id ) & ( LibraryDatasetDatasetAssociation.table.c.deleted == False ) ) )
+            primaryjoin=( ( Dataset.table.c.id == LibraryDatasetDatasetAssociation.table.c.dataset_id ) & ( LibraryDatasetDatasetAssociation.table.c.deleted == False ) ) ),
+        tags=relation(DatasetTagAssociation, backref='datasets')
             ) )
 
 assign_mapper( context, HistoryDatasetAssociationDisplayAtAuthorization, HistoryDatasetAssociationDisplayAtAuthorization.table,
@@ -678,7 +708,8 @@ assign_mapper( context, ImplicitlyConvertedDatasetAssociation, ImplicitlyConvert
 assign_mapper( context, History, History.table,
     properties=dict( galaxy_sessions=relation( GalaxySessionToHistoryAssociation ),
                      datasets=relation( HistoryDatasetAssociation, backref="history", order_by=asc(HistoryDatasetAssociation.table.c.hid) ),
-                     active_datasets=relation( HistoryDatasetAssociation, primaryjoin=( ( HistoryDatasetAssociation.table.c.history_id == History.table.c.id ) & ( not_( HistoryDatasetAssociation.table.c.deleted ) ) ), order_by=asc( HistoryDatasetAssociation.table.c.hid ), viewonly=True )
+                     active_datasets=relation( HistoryDatasetAssociation, primaryjoin=( ( HistoryDatasetAssociation.table.c.history_id == History.table.c.id ) & ( not_( HistoryDatasetAssociation.table.c.deleted ) ) ), order_by=asc( HistoryDatasetAssociation.table.c.hid ), viewonly=True ),
+                     tags=relation(HistoryTagAssociation, backref="histories") 
                       ) )
 
 assign_mapper( context, HistoryUserShareAssociation, HistoryUserShareAssociation.table,
@@ -937,6 +968,25 @@ assign_mapper( context, Page, Page.table,
                                                primaryjoin=( Page.table.c.latest_revision_id == PageRevision.table.c.id ),
                                                lazy=False )
                    ) )
+
+assign_mapper( context, Tag, Tag.table,
+    properties=dict( children=relation(Tag, backref=backref( 'parent', remote_side=[Tag.table.c.id] ) )  
+                     ) )
+
+assign_mapper( context, HistoryTagAssociation, HistoryTagAssociation.table,
+    properties=dict( tag=relation(Tag, backref="tagged_histories") ),
+                     primary_key=[HistoryTagAssociation.table.c.history_id, HistoryTagAssociation.table.c.tag_id]
+                     )
+
+assign_mapper( context, DatasetTagAssociation, DatasetTagAssociation.table,
+    properties=dict( tag=relation(Tag, backref="tagged_datasets") ),
+                     primary_key=[DatasetTagAssociation.table.c.dataset_id, DatasetTagAssociation.table.c.tag_id]
+                     )
+
+assign_mapper( context, HistoryDatasetAssociationTagAssociation, HistoryDatasetAssociationTagAssociation.table,
+    properties=dict( tag=relation(Tag, backref="tagged_history_dataset_associations") ),
+                     primary_key=[HistoryDatasetAssociationTagAssociation.table.c.history_dataset_association_id, HistoryDatasetAssociationTagAssociation.table.c.tag_id]
+                     )
 
 def db_next_hid( self ):
     """
