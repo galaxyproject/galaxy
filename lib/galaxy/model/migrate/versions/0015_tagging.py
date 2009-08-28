@@ -1,3 +1,15 @@
+"""
+This migration script adds the tables necessary to support tagging of histories,
+datasets, and history-dataset associations (user views of datasets).
+
+If using mysql, this script will display the following error, which is corrected in the next
+migration script:
+
+history_dataset_association_tag_association table failed:  (OperationalError)
+(1059, "Identifier name 'ix_history_dataset_association_tag_association_history_dataset_association_id'
+is too long)
+"""
+
 from sqlalchemy import *
 from migrate import *
 
@@ -11,6 +23,19 @@ import logging
 log = logging.getLogger( __name__ )
 
 metadata = MetaData( migrate_engine )
+
+def display_migration_details():
+    print ""
+    print "This migration script adds the tables necessary to support tagging of histories,"
+    print "datasets, and history-dataset associations (user views of datasets)."
+    print ""
+    print "If using mysql, this script will display the following error, which is "
+    print "corrected in the next migration script:"
+    print "history_dataset_association_tag_association table failed:  "
+    print "(OperationalError) (1059, 'Identifier name "
+    print "'ix_history_dataset_association_tag_association_history_dataset_association_id'"
+    print "is too long)"
+    
 
 # New tables to support tagging of histories, datasets, and history-dataset associations.
 Tag_table = Table( "tag", metadata,
@@ -42,15 +67,48 @@ HistoryDatasetAssociationTagAssociation_table = Table( "history_dataset_associat
     Column( "user_value", TrimmedString(255), index=True) )
 
 def upgrade():
+    display_migration_details()
     metadata.reflect()
-    Tag_table.create()
-    HistoryTagAssociation_table.create()
-    DatasetTagAssociation_table.create()
-    HistoryDatasetAssociationTagAssociation_table.create()
+    try:
+        Tag_table.create()
+    except Exception, e:
+        print str(e)
+        log.debug( "Creating tag table failed: %s" % str( e ) )
+    try:
+        HistoryTagAssociation_table.create()
+    except Exception, e:
+        print str(e)
+        log.debug( "Creating history_tag_association table failed: %s" % str( e ) )
+    try:
+        DatasetTagAssociation_table.create()
+    except Exception, e:
+        print str(e)
+        log.debug( "Creating dataset_tag_association table failed: %s" % str( e ) )
+    try:
+        HistoryDatasetAssociationTagAssociation_table.create()
+    except Exception, e:
+        print str(e)
+        log.debug( "Creating history_dataset_association_tag_association table failed: %s" % str( e ) )
     
 def downgrade():
     metadata.reflect()
-    Tag_table.drop()
-    HistoryTagAssociation_table.drop()
-    DatasetTagAssociation_table.drop()
-    HistoryDatasetAssociationTagAssociation_table.drop()
+    try:
+        Tag_table.drop()
+    except Exception, e:
+        print str(e)
+        log.debug( "Dropping tag table failed: %s" % str( e ) )
+    try:
+        HistoryTagAssociation_table.drop()
+    except Exception, e:
+        print str(e)
+        log.debug( "Dropping history_tag_association table failed: %s" % str( e ) )
+    try:
+        DatasetTagAssociation_table.drop()
+    except Exception, e:
+        print str(e)
+        log.debug( "Dropping dataset_tag_association table failed: %s" % str( e ) )
+    try:
+        HistoryDatasetAssociationTagAssociation_table.drop()
+    except Exception, e:
+        print str(e)
+        log.debug( "Dropping history_dataset_association_tag_association table failed: %s" % str( e ) )
