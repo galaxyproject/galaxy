@@ -14,6 +14,7 @@ from galaxy.util.topsort import topsort, topsort_levels, CycleError
 from galaxy.workflow.modules import *
 from galaxy.model.mapping import desc
 from galaxy.model.orm import *
+from datetime import datetime
 
 # Required for Cloud tab
 import galaxy.eggs
@@ -40,15 +41,21 @@ class CloudController( BaseController ):
             .order_by( desc( model.CloudUserCredentials.c.update_time ) ) \
             .all()
         
-        prevInstances = trans.sa_session.query( model.CloudInstance ) \
+        prevInstances = trans.sa_session.query( model.UCI ) \
             .filter_by( user=user, state="available" ) \
-            .order_by( desc( model.CloudInstance.c.create_time ) ) \
+            .order_by( desc( model.UCI.c.update_time ) ) \
             .all() #TODO: diff between live and previous instances 
                         
         liveInstances = trans.sa_session.query( model.CloudInstance ) \
             .filter_by( user=user ) \
             .filter( or_(model.CloudInstance.c.state=="running", model.CloudInstance.c.state=="pending") ) \
-            .order_by( desc( model.CloudInstance.c.create_time ) ) \
+            .order_by( desc( model.CloudInstance.c.launch_time ) ) \
+            .all()
+        
+        liveInstances = trans.sa_session.query( model.UCI ) \
+            .filter_by( user=user ) \
+            .filter( or_(model.UCI.c.state=="running", model.UCI.c.state=="pending") ) \
+            .order_by( desc( model.UCI.c.launch_time ) ) \
             .all()
                         
         return trans.fill_template( "cloud/configure_cloud.mako",
@@ -178,15 +185,35 @@ class CloudController( BaseController ):
     
     @web.expose
     @web.require_login( "start Galaxy cloud instance" )
-    def start( self, trans, id ):
+    def start( self, trans, id, size='small' ):
         """
         Start a new cloud resource instance
         """
-        instance = get_instance( trans, id )
+        user = trans.get_user()
+        mi = get_mi( trans, size )
+        uci = get_uci( trans, id )
+        stores = get_stores( trans, uci ) #TODO: handle list!
         
+        instance = model.CloudInstance()
+        instance.user = user
+        instance.image = mi
+        instance.uci = uci
+        # TODO: get real value from AWS
+        instance.state = "pending"
+        uci.state = instance.state
+        uci.launch_time = datetime.utcnow()
+        instance.launch_time = datetime.utcnow()
+        instance.availability_zone = stores.availability_zone
+        instance.type = size
         
-        error( "Starting instance '%s' is not supported yet." % instance.name )
+        # Persist
+        session = trans.sa_session
+        session.save_or_update( instance )
+        session.flush()
+        #error( "Starting instance '%s' is not supported yet." % uci.name )
                     
+        trans.log_event( "User started cloud instance '%s'" % uci.name )
+        trans.set_message( "Galaxy instance '%s' started." % uci.name )
         return self.list( trans )
     
     @web.expose
@@ -195,17 +222,27 @@ class CloudController( BaseController ):
         """
         Stop a cloud resource instance
         """
-        instance = get_instance( trans, id )
+        uci = get_uci( trans, id )
+        instances = get_instances( trans, uci ) #TODO: handle list!
         
-        
-        error( "Stopping instance '%s' is not supported yet." % instance.name )
+        instances.state = 'done'
+        instances.stop_time = datetime.utcnow()
+        uci.state = 'available'
+        uci.launch_time = None
+        # Persist
+        session = trans.sa_session
+        session.save_or_update( uci )
+        session.save_or_update( instances )
+        session.flush()
+        trans.log_event( "User stopped cloud instance '%s'" % uci.name )
+        trans.set_message( "Galaxy instance '%s' stopped." % uci.name )
                     
         return self.list( trans )
     
     @web.expose
     @web.require_login( "delete Galaxy cloud instance" )
     def deleteInstance( self, trans, id ):
-        instance = get_instance( trans, id )
+        instance = get_uci( trans, id )
         
         
         error( "Deleting instance '%s' is not supported yet." % instance.name )
@@ -215,7 +252,7 @@ class CloudController( BaseController ):
     @web.expose
     @web.require_login( "add instance storage" )
     def addStorage( self, trans, id ):
-        instance = get_instance( trans, id )
+        instance = get_uci( trans, id )
         
         
         error( "Adding storage to instance '%s' is not supported yet." % instance.name )
@@ -229,48 +266,42 @@ class CloudController( BaseController ):
         Configure and add new cloud instance to user's instance pool
         """
         user = trans.get_user()
-        # TODO: If more images are made available, must add code to choose between those
-        mi = trans.app.model.CloudImage.filter(
-                trans.app.model.CloudImage.table.c.id==1).first()
-        
-                        
         inst_error = vol_error = None
         if instanceName:
             # Create new user configured instance
             try:
                 if len( instanceName ) > 255:
                     inst_error = "Instance name exceeds maximum allowable length."
-                elif trans.app.model.CloudInstance.filter(  
-                        trans.app.model.CloudInstance.table.c.name==instanceName ).first():
+                elif trans.app.model.UCI.filter(  
+                        trans.app.model.UCI.table.c.name==instanceName ).first():
                     inst_error = "An instance with that name already exist."
                 elif int( volSize ) > 1000:
                     vol_error = "Volume size cannot exceed 1000GB. You must specify an integer between 1 and 1000." 
                 elif int( volSize ) < 1:
                     vol_error = "Volume size cannot be less than 1GB. You must specify an integer between 1 and 1000." 
                 else:
-                    instance = model.CloudInstance()
-                    instance.user = user
-                    instance.name = instanceName
-                    instance.mi = mi.image_id
-                    # TODO: get state from AWS - also, update state on page update
-                    # Currently, valid states include: "available", "running" or "pending"
-                    instance.state = "available"
-                    # Capture storage related information
-                    storage = model.CloudStorage()
+                    # Capture user configured instance information
+                    uci = model.UCI()
+                    uci.name = instanceName
+                    uci.user= user
+                    uci.state = "available" # Valid states include: "available", "running" or "pending"
+                    uci.total_size = volSize # This is OK now because new instance is being created. 
+                    # Capture store related information
+                    storage = model.CloudStore()
                     storage.user = user
+                    storage.uci = uci
                     storage.size = volSize
-                    log.debug("******** Size: %s" % storage.size )
                     # TODO: get correct values from AWS
                     storage.volume_id = "made up"
                     storage.availability_zone = "avail zone"
                     # Persist
                     session = trans.sa_session
-                    session.save_or_update( instance )
+                    session.save_or_update( uci )
                     session.save_or_update( storage )
                     session.flush()
                     # Log and display the management page
-                    trans.log_event( "User configured new cloud resource instance" )
-                    trans.set_message( "Instance '%s' configured" % instance.name )
+                    trans.log_event( "User configured new cloud instance" )
+                    trans.set_message( "New Galaxy instance '%s' configured." % uci.name )
                     return self.list( trans )
             except ValueError:
                 vol_error = "Volume size must be specified as an integer value only, between 1 and 1000."
@@ -332,7 +363,7 @@ class CloudController( BaseController ):
     @web.expose
     @web.require_login( "use Galaxy cloud" )
     def renameInstance( self, trans, id, new_name=None ):
-        instance = get_instance( trans, id )
+        instance = get_uci( trans, id )
         if new_name is not None:
             instance.name = new_name
             trans.sa_session.flush()
@@ -398,7 +429,7 @@ class CloudController( BaseController ):
         """
         View details about running instance
         """
-        instance = get_instance( trans, id )
+        instance = get_uci( trans, id )
         log.debug ( instance.name )
         
         return trans.fill_template( "cloud/viewInstance.mako",
@@ -896,15 +927,15 @@ def get_default_credentials( trans, check_ownership=True ):
 
     return stored
 
-def get_instance( trans, id, check_ownership=True ):
+def get_uci( trans, id, check_ownership=True ):
     """
-    Get a CloudInstance from the database by id, verifying ownership. 
+    Get a UCI from the database by id, verifying ownership. 
     """
     id = trans.security.decode_id( id )
 
-    live = trans.sa_session.query( model.CloudInstance ).get( id )
+    live = trans.sa_session.query( model.UCI ).get( id )
     if not live:
-        error( "Instance not found" )
+        error( "Galaxy instance not found." )
     # Verify ownership
     user = trans.get_user()
     if not user:
@@ -913,6 +944,39 @@ def get_instance( trans, id, check_ownership=True ):
         error( "Instance is not owned by current user." )
     # Looks good
     return live
+
+def get_mi( trans, size='small' ):
+    """
+    Get appropriate machine image (mi) based on instance size.
+    TODO: Dummy method - need to implement logic
+        For valid sizes, see http://aws.amazon.com/ec2/instance-types/
+    """
+    return trans.app.model.CloudImage.filter(
+        trans.app.model.CloudImage.table.c.id==1).first() 
+
+def get_stores( trans, uci ):
+    """
+    Get store objects/tables that are connected to uci object/table
+    """
+    user = trans.get_user()
+    stores = trans.sa_session.query( model.CloudStore ) \
+            .filter_by( user=user, uci_id=uci.id ) \
+            .first()
+            #.all() #TODO: return all but need to edit calling method(s) to handle list
+            
+    return stores
+
+def get_instances( trans, uci ):
+    """
+    Get instance objects/tables that are connected to uci object/table
+    """
+    user = trans.get_user()
+    instances = trans.sa_session.query( model.CloudInstance ) \
+            .filter_by( user=user, uci_id=uci.id ) \
+            .first()
+            #.all() #TODO: return all but need to edit calling method(s) to handle list
+            
+    return instances
 
 def attach_ordered_steps( workflow, steps ):
     ordered_steps = order_workflow_steps( steps )

@@ -85,7 +85,7 @@
 		<colgroup width="35%"></colgroup>
 		<tr class="header">
             <th>Live instances</th>
-			<th>Volume size (GB)</th>
+			<th>Storage size (GB)</th>
 			<th>State</th>
             <th>Alive since</th>
 			<th></th>
@@ -97,7 +97,7 @@
 	                	${liveInstance.name}
 	                    <a id="li-${i}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
 	                </td>
-					<td>${str(liveInstance.size)}</td> <!--TODO:Replace with vol size once available-->
+					<td>${str(liveInstance.total_size)}</td> <!--TODO:Replace with vol size once available-->
 	                <td>${str(liveInstance.state)}</td>
 	                <td>
 	                	${str(liveInstance.launch_time)[:16]} 
@@ -106,7 +106,7 @@
 							from datetime import timedelta
 	
 							# DB stores all times in GMT, so adjust for difference (4 hours)
-							adjustedStarttime = liveInstance.launch_time - timedelta(hours=4)
+							adjustedStarttime = liveInstance.update_time - timedelta(hours=4)
 	
 							# (NOT CURRENTLY USED BLOCK OF CODE) Calculate time difference from now
 							delta = datetime.now() - adjustedStarttime
@@ -117,6 +117,8 @@
 							#context.write( str( liveInstance.launch_time ) )
 							context.write( ' UTC (' )
 							context.write( str(h.date.distance_of_time_in_words (liveInstance.launch_time, h.date.datetime.utcnow() ) ) )
+							
+							
 						%>)
 					</td>
 	                <td>
@@ -144,7 +146,7 @@
 		<colgroup width="35%"></colgroup>
 		<tr class="header">
             <th>Previously configured instances</th>
-            ##<th>Volume size (GB)</th>
+            ##<th>Storage size (GB)</th>
 			##<th>State</th>
             ##<th>Alive since</th>
 			<th></th>
@@ -160,9 +162,9 @@
 	                    ${prevInstance.name}
 	                    <a id="pi-${i}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
 	                </td>
-	                ## Comment <td>${len(workflow.latest_workflow.steps)}</td>
-	                <td>${str(prevInstance.CloudStorage.size)}</td> <!-- TODO: Change to show vol size once available--> 
+	                <td>${str(prevInstance.total_size)}</td> <!-- TODO: Change to show vol size once available--> 
 	                <td>${str(prevInstance.state)}</td>
+					<td>N/A</td>
 	                <td>
 	                    <div popupmenu="pi-${i}-popup">
 	                    <a class="action-button" href="${h.url_for( action='start', id=trans.security.encode_id(prevInstance.id) )}">Start</a>

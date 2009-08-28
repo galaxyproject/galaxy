@@ -20,29 +20,41 @@ CloudImage_table = Table( "cloud_image", metadata,
     Column( "manifest", TEXT ),
     Column( "state", TEXT ) )
 
+UCI_table = Table( "uci", metadata, 
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True, nullable=False ),
+    Column( "name", TEXT ),
+    Column( "state", TEXT ),
+    Column( "total_size", Integer ),
+    Column( "launch_time", DateTime ) )
+
 CloudInstance_table = Table( "cloud_instance", metadata, 
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "launch_time", DateTime ),
+    Column( "stop_time", DateTime ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True, nullable=False ),
-    Column( "name", TEXT ),
+    Column( "uci_id", Integer, ForeignKey( "uci.id" ), index=True ),
     Column( "type", TEXT ),
     Column( "reservation_id", TEXT ),
     Column( "instance_id", TEXT ),
-    Column( "mi", TEXT, ForeignKey( "cloud_image.image_id" ), index=True, nullable=False ),
+    Column( "mi_id", TEXT, ForeignKey( "cloud_image.image_id" ), index=True, nullable=False ),
     Column( "state", TEXT ),
     Column( "public_dns", TEXT ),
     Column( "private_dns", TEXT ),
     Column( "keypair_name", TEXT ),
     Column( "availability_zone", TEXT ) )
 
-CloudStorage_table = Table( "cloud_storage", metadata, 
+CloudStore_table = Table( "cloud_store", metadata, 
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "attach_time", DateTime ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True, nullable=False ),
+    Column( "uci_id", Integer, ForeignKey( "uci.id" ), index=True, nullable=False ),
     Column( "volume_id", TEXT, nullable=False ),
     Column( "size", Integer, nullable=False ),
     Column( "availability_zone", TEXT, nullable=False ),
@@ -62,20 +74,26 @@ CloudUserCredentials_table = Table( "cloud_user_credentials", metadata,
     Column( "secret_key", TEXT),
     Column( "defaultCred", Boolean, default=False)
     )
+
 def upgrade():
     metadata.reflect()
-    CloudUserCredentials_table.create()
-    CloudInstance_table.create()
-    CloudStorage_table.create()
     try:
         CloudImage_table.create()
     except Exception, e:
         log.debug( "Creating cloud_image table failed. Table probably exists already." )
-
+    UCI_table.create()
+    CloudInstance_table.create()
+    CloudStore_table.create()
+    try:
+        CloudUserCredentials_table.create()
+    except Exception, e:
+        log.debug( "Creating cloud_image table failed. Table probably exists already." )
+    
 def downgrade():
     metadata.reflect()
     try:
-        CloudImage_table.drop()
+        log.deboug( "Would drop cloud_image table." ) 
+        #CloudImage_table.drop() #Enable before putting final version
     except Exception, e:
         log.debug( "Dropping cloud_image table failed: %s" % str( e ) ) 
     
@@ -85,16 +103,20 @@ def downgrade():
         log.debug( "Dropping cloud_instance table failed: %s" % str( e ) )  
         
     try:
-        CloudStorage_table.drop()
+        CloudStore_table.drop()
+    except Exception, e:
+        log.debug( "Dropping cloud_store table failed: %s" % str( e ) )  
+        
+    try:
+        log.deboug( "Would drop cloud_user_credentials table." )
+        #CloudUserCredentials_table.drop() #Enable before putting final version
     except Exception, e:
         log.debug( "Dropping cloud_user_credentials table failed: %s" % str( e ) )  
         
     try:
-        log.deboug( "Would drop cloud user credentials table." )
-        #CloudUserCredentials_table.drop()
+        UCI_table.drop()
     except Exception, e:
-        log.debug( "Dropping cloud_user_credentials table failed: %s" % str( e ) )  
-        
+        log.debug( "Dropping UCI table failed: %s" % str( e ) )  
     
         
     

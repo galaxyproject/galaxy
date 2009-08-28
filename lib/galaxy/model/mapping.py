@@ -394,29 +394,42 @@ CloudImage.table = Table( "cloud_image", metadata,
     Column( "manifest", TEXT ),
     Column( "state", TEXT ) )
 
+""" UserConfiguredInstance (UCI) table """
+UCI.table = Table( "uci", metadata, 
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True, nullable=False ),
+    Column( "name", TEXT ),
+    Column( "state", TEXT ),
+    Column( "total_size", Integer ),
+    Column( "launch_time", DateTime ) )
+
 CloudInstance.table = Table( "cloud_instance", metadata, 
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "launch_time", DateTime ),
+    Column( "stop_time", DateTime ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True, nullable=False ),
-    Column( "name", TEXT ),
+    Column( "uci_id", Integer, ForeignKey( "uci.id" ), index=True ),
     Column( "type", TEXT ),
     Column( "reservation_id", TEXT ),
     Column( "instance_id", TEXT ),
-    Column( "mi", TEXT, ForeignKey( "cloud_image.image_id" ), index=True, nullable=False ),
+    Column( "mi_id", TEXT, ForeignKey( "cloud_image.image_id" ), index=True, nullable=False ),
     Column( "state", TEXT ),
     Column( "public_dns", TEXT ),
     Column( "private_dns", TEXT ),
     Column( "keypair_name", TEXT ),
     Column( "availability_zone", TEXT ) )
 
-CloudStorage.table = Table( "cloud_storage", metadata, 
+CloudStore.table = Table( "cloud_store", metadata, 
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "attach_time", DateTime ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True, nullable=False ),
+    Column( "uci_id", Integer, ForeignKey( "uci.id" ), index=True, nullable=False ),
     Column( "volume_id", TEXT, nullable=False ),
     Column( "size", Integer, nullable=False ),
     Column( "availability_zone", TEXT, nullable=False ),
@@ -947,19 +960,25 @@ assign_mapper( context, WorkflowStepConnection, WorkflowStepConnection.table,
 # ************************************************************
 assign_mapper( context, CloudImage, CloudImage.table )
 
+assign_mapper( context, UCI, UCI.table,
+    properties=dict( user=relation( User ),
+                     instance=relation( CloudInstance, backref='uci' ),
+                     store=relation( CloudStore, backref='uci' ) 
+                    ) )
+
 assign_mapper( context, CloudInstance, CloudInstance.table,
     properties=dict( user=relation( User ), 
                      image=relation( CloudImage )
                     ) )
 
-assign_mapper( context, CloudStorage, CloudStorage.table,
+assign_mapper( context, CloudStore, CloudStore.table,
     properties=dict( user=relation( User ),
-                     instance=relation( CloudInstance, backref='cloud_instance' )
+                     i=relation( CloudInstance )
                     ) )
 
 assign_mapper( context, CloudUserCredentials, CloudUserCredentials.table,
-    properties=dict( user=relation( User) )
-                    )
+    properties=dict( user=relation( User)
+                    ) )
 # ^^^^^^^^^^^^^^^ End cloud table mappings ^^^^^^^^^^^^^^^^^^
 
 assign_mapper( context, StoredWorkflow, StoredWorkflow.table,
