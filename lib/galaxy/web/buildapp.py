@@ -11,7 +11,6 @@ from paste.request import parse_formvars
 from paste.util import import_string
 from paste import httpexceptions
 from paste.deploy.converters import asbool
-import flup.middleware.session as flup_session
 import pkg_resources
 
 log = logging.getLogger( __name__ )
@@ -116,17 +115,6 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
         from paste import recursive
         app = recursive.RecursiveMiddleware( app, conf )
         log.debug( "Enabling 'recursive' middleware" )
-    ## # Session middleware puts a session factory into the environment 
-    ## if asbool( conf.get( 'use_session', True ) ):
-    ##     store = flup_session.MemorySessionStore()
-    ##     app = flup_session.SessionMiddleware( store, app )
-    ##     log.debug( "Enabling 'flup session' middleware" )
-    # Beaker session middleware
-    if asbool( conf.get( 'use_beaker_session', False ) ):
-        pkg_resources.require( "Beaker" )
-        import beaker.session
-        app = beaker.session.SessionMiddleware( app, conf )
-        log.debug( "Enabling 'beaker session' middleware" )
     # Various debug middleware that can only be turned on if the debug
     # flag is set, either because they are insecure or greatly hurt
     # performance
