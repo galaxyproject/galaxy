@@ -1,0 +1,59 @@
+<tool id="sam_to_bam" name="SAM-to-BAM" version="1.0.0">
+  <description>converts SAM format to BAM format</description>
+  <command interpreter="python">
+    sam_to_bam.py 
+        --input1=$source.input1
+        --dbkey=${input1.metadata.dbkey} 
+        #if $source.indexSource == "history":
+         --ref_file=$ref_file
+        #else
+         --ref_file="None"
+        #end if
+        --output1=$output1
+        --index_dir=${GALAXY_DATA_INDEX_DIR}
+  </command>
+  <inputs>
+    <conditional name="source">
+      <param name="indexSource" type="select" label="Choose the source for the reference list">
+        <option value="built_in">Built-in</option>
+        <option value="history">History</option>
+      </param>
+      <when value="built_in">
+        <param name="input1" type="data" format="sam" label="SAM File to Convert">
+           <validator type="unspecified_build" />
+           <validator type="dataset_metadata_in_file" filename="sam_fa_indices.loc" metadata_name="dbkey" metadata_column="1" message="Sequences are not currently available for the specified build." line_startswith="index" />
+        </param>
+      </when>
+      <when value="history">
+        <param name="input1" type="data" format="sam" label="SAM File to Convert" />
+        <param name="ref_file" type="data" format="fasta" label="Choose the reference file" />
+      </when>
+    </conditional>
+  </inputs>
+  <outputs>
+    <data name="output1" format="bam"/>
+  </outputs>
+  <tests>
+    <test>
+      <param name="indexSource" value="history" /> 
+      <param name="input1" value="sam_to_bam_in1.sam" ftype="sam" />
+      <param name="ref_file" value="chrM.fa" ftype="fasta" />
+      <output name="output1" file="sam_to_bam_out1.bam" />
+    </test>
+    <test>
+      <param name="indexSource" value="built_in" />
+      <param name="input1" value="sam_to_bam_in2.sam" ftype="sam" dbkey="chrM" />
+      <param name="ref_file" value="chrM.fa" ftype="fasta" />
+      <output name="output1" file="sam_to_bam_out2.bam" />
+    </test>
+  </tests>
+  <help>
+
+**What it does**
+
+This tool uses the SAMTools_ toolkit to produce a BAM file based on a sorted input SAM file.
+
+.. _SAMTools: http://samtools.sourceforge.net/samtools.shtml
+
+  </help>
+</tool>

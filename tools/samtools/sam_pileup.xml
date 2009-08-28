@@ -1,0 +1,50 @@
+<tool id="sam_pileup" name="SAM Pileup Format" version="1.0.0">
+  <description>generates the pileup format for a provided BAM file</description>
+  <command interpreter="python">
+    sam_pileup.py 
+	    --input1=$input1
+	    --output=$output1
+	    --ref=$refOrHistory.reference
+	    #if $refOrHistory.reference == "history":
+	     --ownFile=$refOrHistory.ownFile
+	    #else:
+	     --ownFile="None"
+	    #end if
+	    --dbkey=${input1.metadata.dbkey}
+        --indexDir=${GALAXY_DATA_INDEX_DIR}
+        --bamIndex=${input1.metadata.bam_index}
+  </command>
+  <inputs>
+    <conditional name="refOrHistory">
+      <param name="reference" type="select" label="Will you select a reference genome from your history or use a built-in index?">
+        <option value="indexed">Use a built-in index</option>
+        <option value="history">Use one from the history</option>
+      </param>
+      <when value="indexed">
+        <param name="input1" type="data" format="bam" label="Select the BAM file to generate the pileup file for">
+           <validator type="unspecified_build" />
+           <validator type="dataset_metadata_in_file" filename="sam_fa_indices.loc" metadata_name="dbkey" metadata_column="1" message="Sequences are not currently available for the specified build." line_startswith="index" />
+        </param>
+      </when>      
+      <when value="history">
+        <param name="input1" type="data" format="sam, bam" label="Select the BAM file to generate the pileup file for" />
+        <param name="ownFile" type="data" format="fasta" metadata_name="dbkey" label="Select a reference genome" />
+      </when>
+    </conditional>	
+  </inputs>
+  <outputs>
+    <data format="tabular" name="output1" />
+  </outputs>
+  <!-- tests are not possible because bam is a non-sniffable binary format and cannot be uploaded without being corrupted -->
+  <help>
+    	
+**What it does**   	
+
+Uses SAMTools_' pileup command to produce a file in the pileup format based on the provided BAM file. 
+
+.. _SAMTools: http://samtools.sourceforge.net/samtools.shtml
+
+  </help>
+</tool>
+
+

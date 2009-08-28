@@ -1,0 +1,32 @@
+<tool id="sam_merge" name="Merge BAM Files" version="1.0.0">
+  <description>merges BAM files together</description>
+  <command interpreter="python">
+   sam_merge.py 
+      $input1
+      $output1
+      $input2
+      #for $i in $inputs
+        ${i.input}
+      #end for
+  </command>
+  <inputs>
+    <param name="input1" label="First file" type="data" format="bam" />
+    <param name="input2" label="with file" type="data" format="bam" help="Need to add more files? Use controls below." />
+    <repeat name="inputs" title="Input Files">
+      <param name="input" label="Add file" type="data" format="bam" />
+    </repeat>
+  </inputs>
+  <outputs>
+    <data name="output1" format="bam" />
+  </outputs>
+  <!-- bam files are binary and not sniffable so can't be uploaded without being corrupted, so no tests -->
+  <help>
+
+**What it does**
+
+This tool uses SAMTools_' merge command to merge any number of BAM files together into one BAM file.
+
+.. _SAMTools: http://samtools.sourceforge.net/samtools.shtml
+
+  </help>
+</tool>
