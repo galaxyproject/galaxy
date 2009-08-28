@@ -1142,6 +1142,37 @@ class PageRevision( object ):
         self.user = None
         self.title = None
         self.content = None
+        
+class Tag ( object ):
+    def __init__( self, id=None, type=None, parent_id=None, name=None ):
+        self.id = id
+        self.type = type
+        self.parent_id = parent_id
+        self.name = name
+        
+    def __str__ ( self ):
+        return "Tag(id=%s, type=%s, parent_id=%s, name=%s)" %  ( self.id, self.type, self.parent_id, self.name )
+    
+class ItemTagAssociation ( object ):
+    def __init__( self, item_id=None, tag_id=None, user_tname=None, value=None ):    
+        self.item_id = item_id
+        self.tag_id = tag_id
+        self.user_tname = user_tname
+        self.value = None
+        self.user_value = None
+        
+    def __str__ ( self ):
+        return "%s(item_id=%s, item_tag=%s, user_tname=%s, value=%s, user_value=%s)" % (self.__class__.__name__, self.item_id, self.tag_id, self.user_tname, self.value. self.user_value )  
+    
+    
+class HistoryTagAssociation ( ItemTagAssociation ):
+    pass
+
+class DatasetTagAssociation ( ItemTagAssociation ):
+    pass
+    
+class HistoryDatasetAssociationTagAssociation ( ItemTagAssociation ):
+    pass
 
 
 
