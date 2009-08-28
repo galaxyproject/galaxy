@@ -27,7 +27,8 @@ templates = [ ( "base.css.tmpl", "base.css" ),
               ( "history.css.tmpl", "history.css" ),
               ( "tool_menu.css.tmpl", "tool_menu.css" ),
               ( "iphone.css.tmpl", "iphone.css" ),
-              ( "reset.css.tmpl", "reset.css" ) ]
+              ( "reset.css.tmpl", "reset.css" ),
+              ( "autocomplete_tagging.css.tmpl", "autocomplete_tagging.css") ]
               
 images = [ 
            ( "./gradient.py 9 30 $panel_header_bg_top - $panel_header_bg_bottom 0 0 $panel_header_bg_bottom 1 1", "panel_header_bg.png" ),
