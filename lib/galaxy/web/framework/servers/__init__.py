@@ -1,3 +1,0 @@
-"""
-Various WSGI webserver implementations. 
-"""
