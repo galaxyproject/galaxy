@@ -35,7 +35,7 @@
 	    <a class="icon-button delete" title="delete" href="${h.url_for( action='delete', id=data.id, show_deleted_on_refresh=show_deleted_on_refresh )}" id="historyItemDeleter-${data.id}"></a>
 	    </div>
 	    <span class="state-icon"></span>
-	    <span class="historyItemTitle"><b>${hid}: ${data.display_name()}</b></span>
+	    <span class="historyItemTitle"><b>${hid}: ${data.display_name().decode('utf-8')}</b></span>
 	</div>
         
         ## Body for history items, extra info and actions, data "peek"

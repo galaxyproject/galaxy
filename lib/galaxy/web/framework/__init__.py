@@ -583,12 +583,12 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         data.update( kwargs )
         ## return template.render( **data )
         def render( environ, start_response ):
-            response_write = start_response( self.response.wsgi_status(), 
-            self.response.wsgi_headeritems() )
-            class C:
-                def write( self, *args, **kwargs ):
-                    response_write( *args, **kwargs )
-            context = mako.runtime.Context( C(), **data )
+            response_write = start_response( self.response.wsgi_status(), self.response.wsgi_headeritems() )
+            class StreamBuffer( object ):
+                def write( self, d ):
+                    response_write( d.encode( 'utf-8' ) )
+            buffer = StreamBuffer()
+            context = mako.runtime.Context( buffer, **data )
             template.render_context( context )
             return []
         return render

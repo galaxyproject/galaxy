@@ -13,7 +13,6 @@ from Cookie import SimpleCookie
 import pkg_resources; 
 pkg_resources.require( "Paste" )
 pkg_resources.require( "Routes" )
-pkg_resources.require( "flup" )
 pkg_resources.require( "WebOb" )
 
 import routes
