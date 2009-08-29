@@ -377,8 +377,8 @@ var updater_callback = function ( tracked_datasets ) {
     <p></p>
 %endif
 
-<div id="history-tag-area" style="margin-bottom: 1em">
-</div>
+## <div id="history-tag-area" style="margin-bottom: 1em">
+## </div>
 
 <%namespace file="history_common.mako" import="render_dataset" />
 
