@@ -152,11 +152,7 @@ class RootController( BaseController ):
             except:
                 return "Dataset id '%s' is invalid" %str( id )
         if data:
-            user = trans.user
-            if user:
-                roles = user.all_roles
-            else:
-                roles = None
+            user, roles = trans.get_user_and_roles()
             if trans.app.security_agent.allow_action( user,
                                                       roles,
                                                       data.permitted_actions.DATASET_ACCESS,
@@ -192,11 +188,7 @@ class RootController( BaseController ):
             if data:
                 child = data.get_child_by_designation( designation )
                 if child:
-                    user = trans.user
-                    if user:
-                        roles = user.all_roles
-                    else:
-                        roles = None
+                    user, roles = trans.get_user_and_roles()
                     if trans.app.security_agent.allow_action( user,
                                                               roles,
                                                               child.permitted_actions.DATASET_ACCESS,
@@ -216,11 +208,7 @@ class RootController( BaseController ):
         if 'authz_method' in kwd:
             authz_method = kwd['authz_method']
         if data:
-            user = trans.user
-            if user:
-                roles = user.all_roles
-            else:
-                roles = None
+            user, roles = trans.get_user_and_roles()
             if authz_method == 'rbac' and trans.app.security_agent.allow_action( user,
                                                                                  roles,
                                                                                  data.permitted_actions.DATASET_ACCESS,
@@ -273,11 +261,7 @@ class RootController( BaseController ):
             return trans.show_error_message( "Problem retrieving dataset." )
         if id is not None and data.history.user is not None and data.history.user != trans.user:
             return trans.show_error_message( "This instance of a dataset (%s) in a history does not belong to you." % ( data.id ) )
-        user = trans.user
-        if user:
-            roles = user.all_roles()
-        else:
-            roles = None
+        user, roles = trans.get_user_and_roles()
         if trans.app.security_agent.allow_action( user,
                                                   roles,
                                                   data.permitted_actions.DATASET_ACCESS,

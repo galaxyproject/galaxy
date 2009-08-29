@@ -14,11 +14,7 @@
         elif isinstance( library_item, trans.app.model.LibraryDatasetDatasetAssociation ):
             library_item_type = 'library_dataset_dataset_association'
             library_item_desc = 'library dataset'
-        user = trans.user
-        if user:
-            roles = user.all_roles()
-        else:
-            roles = None
+        user, roles = trans.get_user_and_roles()
     %>
     %if widgets:
         <p/>

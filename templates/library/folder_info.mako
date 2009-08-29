@@ -2,13 +2,7 @@
 <%namespace file="/message.mako" import="render_msg" />
 <%namespace file="/library/common.mako" import="render_template_info" />
 
-<%
-    user = trans.user
-    if user:
-        roles = user.all_roles()
-    else:
-        roles = None
-%>
+<% user, roles = trans.get_user_and_roles() %>
 
 <br/><br/>
 <ul class="manage-table-actions">

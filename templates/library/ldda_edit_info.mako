@@ -3,13 +3,7 @@
 <%namespace file="/library/common.mako" import="render_template_info" />
 <% from galaxy import util %>
 
-<%
-    user = trans.user
-    if user:
-        roles = user.all_roles()
-    else:
-        roles = None
-%>
+<% user, roles = trans.get_user_and_roles() %>
 
 %if ldda == ldda.library_dataset.library_dataset_dataset_association:
     <b><i>This is the latest version of this library dataset</i></b>

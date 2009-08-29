@@ -62,11 +62,7 @@ class Library( BaseController ):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
-        user = trans.user
-        if user:
-            roles = user.all_roles()
-        else:
-            roles = None
+        user, roles = trans.get_user_and_roles()
         all_libraries = trans.app.model.Library.filter( trans.app.model.Library.table.c.deleted==False ) \
                                                .order_by( trans.app.model.Library.name ).all()
         authorized_libraries = []
@@ -279,11 +275,7 @@ class Library( BaseController ):
                                                                   msg=util.sanitize_text( msg ),
                                                                   messagetype='error' ) )
             seen = []
-            user = trans.user
-            if user:
-                roles = user.all_roles()
-            else:
-                roles = None
+            user, roles = trans.get_user_and_roles()
             for id in ldda_ids:
                 ldda = trans.app.model.LibraryDatasetDatasetAssociation.get( id )
                 if not ldda or not trans.app.security_agent.allow_action( user,
@@ -384,11 +376,7 @@ class Library( BaseController ):
                                                               id=library_id,
                                                               msg=util.sanitize_text( msg ),
                                                               messagetype='error' ) )
-        user = trans.user
-        if user:
-            roles = user.all_roles()
-        else:
-            roles = None
+        user, roles = trans.get_user_and_roles()
         if action == 'information':
             if params.get( 'edit_attributes_button', False ):
                 if trans.app.security_agent.allow_action( user,
@@ -464,11 +452,7 @@ class Library( BaseController ):
                 last_used_build = replace_dataset.library_dataset_dataset_association.dbkey
         else:
             replace_dataset = None
-        user = trans.user
-        if user:
-            roles = user.all_roles()
-        else:
-            roles = None
+        user, roles = trans.get_user_and_roles()
         # Let's not overwrite the imported datatypes module with the variable datatypes?
         # The built-in 'id' is overwritten in lots of places as well
         ldatatypes = [ dtype_name for dtype_name, dtype_value in trans.app.datatypes_registry.datatypes_by_extension.iteritems() if dtype_value.allow_datatype_change ]
@@ -939,11 +923,7 @@ class Library( BaseController ):
                     # Since permissions on all LibraryDatasetDatasetAssociations must be the same at this point, we only need
                     # to check one of them to see if the current user can manage permissions on them.
                     check_ldda = trans.app.model.LibraryDatasetDatasetAssociation.get( ldda_id_list[0] )
-                    user = trans.user
-                    if user:
-                        roles = user.all_roles()
-                    else:
-                        roles = None
+                    user, roles = trans.get_user_and_roles()
                     if trans.app.security_agent.allow_action( user,
                                                               roles,
                                                               trans.app.security_agent.permitted_actions.LIBRARY_MANAGE,
@@ -1010,11 +990,7 @@ class Library( BaseController ):
                                                               id=library_id,
                                                               msg=util.sanitize_text( msg ),
                                                               messagetype='error' ) )
-        user = trans.user
-        if user:
-            roles = user.all_roles()
-        else:
-            roles = None
+        user, roles = trans.get_user_and_roles()
         if action == 'new':
             if params.new == 'submitted':
                 new_folder = trans.app.model.LibraryFolder( name=util.restore_text( params.name ),

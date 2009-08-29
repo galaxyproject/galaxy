@@ -2,13 +2,7 @@
 <%namespace file="/message.mako" import="render_msg" />
 <%namespace file="/dataset/security_common.mako" import="render_permission_form" />>
 
-<%
-    user = trans.user
-    if user:
-        user_roles = user.all_roles()
-    else:
-        user_roles = None
-%>
+<% user, roles = trans.get_user_and_roles() %>
 
 %if library_dataset == library_dataset.library_dataset_dataset_association.library_dataset:
     <b><i>This is the latest version of this library dataset</i></b>

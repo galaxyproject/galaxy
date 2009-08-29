@@ -2,13 +2,7 @@
 <%namespace file="/message.mako" import="render_msg" />
 <%namespace file="/dataset/security_common.mako" import="render_permission_form" />
 
-<%
-    user = trans.user
-    if user:
-        user_roles = user.all_roles()
-    else:
-        user_roles = None
-%>
+<% user, roles = trans.get_user_and_roles() %>
 
 <br/><br/>
 <ul class="manage-table-actions">

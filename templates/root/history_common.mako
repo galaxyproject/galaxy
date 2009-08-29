@@ -6,11 +6,7 @@
     	    data_state = "queued"
     	else:
     	    data_state = data.state
-    	user = trans.user
-    	if user:
-    	   roles = user.all_roles()
-    	else:
-    	   roles = None
+    	user, roles = trans.get_user_and_roles()
     %>
     %if not trans.app.security_agent.allow_action( user, roles, data.permitted_actions.DATASET_ACCESS, dataset = data.dataset ):
         <div class="historyItemWrapper historyItem historyItem-${data_state} historyItem-noPermission" id="historyItem-${data.id}">

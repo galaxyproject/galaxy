@@ -6,13 +6,7 @@
 <%def name="stylesheets()">
     ${h.css( "base", "history", "autocomplete_tagging" )}
 </%def>
-<%
-    user = trans.user
-    if user:
-        user_roles = user.all_roles()
-    else:
-        user_roles = None
-%>
+<% user, user_roles = trans.get_user_and_roles() %>
 
 <%def name="javascripts()">
   ## <!--[if lt IE 7]>

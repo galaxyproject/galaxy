@@ -47,11 +47,7 @@ class DefaultToolAction( object ):
                             assoc.dataset = new_data
                             assoc.flush()
                             data = new_data
-                user = trans.user
-                if user:
-                    roles = user.all_roles()
-                else:
-                    roles = None
+                user, roles = trans.get_user_and_roles()
                 if data and not trans.app.security_agent.allow_action( user,
                                                                        roles,
                                                                        data.permitted_actions.DATASET_ACCESS,
@@ -268,11 +264,7 @@ class DefaultToolAction( object ):
         #        parameters to the command as a special case.
         for name, value in tool.params_to_strings( incoming, trans.app ).iteritems():
             job.add_parameter( name, value )
-        user = trans.user
-        if user:
-            roles = user.all_roles()
-        else:
-            roles = None
+        user, roles = trans.get_user_and_roles()
         for name, dataset in inp_data.iteritems():
             if dataset:
                 if not trans.app.security_agent.allow_action( user,

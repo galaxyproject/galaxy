@@ -4,11 +4,7 @@
     from galaxy import util
     from time import strftime
     
-    user = trans.user
-    if user:
-        roles = user.all_roles()
-    else:
-        roles = None
+    user, roles = trans.get_user_and_roles()
 %>
 
 <%def name="title()">Browse data library</%def>

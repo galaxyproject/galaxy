@@ -11,7 +11,6 @@ from paste.request import parse_formvars
 from paste.util import import_string
 from paste import httpexceptions
 from paste.deploy.converters import asbool
-import flup.middleware.session as flup_session
 import pkg_resources
 
 log = logging.getLogger( __name__ )

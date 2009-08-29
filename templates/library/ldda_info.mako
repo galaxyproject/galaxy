@@ -8,11 +8,7 @@
         current_version = True
     else:
         current_version = False
-    user = trans.user
-    if user:
-        roles = user.all_roles()
-    else:
-        roles = None
+    user, roles = trans.get_user_and_roles()
 %>
 
 %if current_version:

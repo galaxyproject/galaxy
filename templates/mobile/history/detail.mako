@@ -36,13 +36,7 @@
         
         <div class="secondary">
         ## Body for history items, extra info and actions, data "peek"
-        	<%
-        	   user = trans.user
-        	   if user:
-        	       roles = user.all_roles()
-        	   else:
-        	       roles = None
-        	%>
+        	<% user, roles = trans.get_user_and_roles() %>
             %if not trans.app.security_agent.allow_action( user, roles, data.permitted_actions.DATASET_ACCESS, dataset = data.dataset ):
                 <div>You do not have permission to view this dataset.</div>
             %elif data_state == "queued":

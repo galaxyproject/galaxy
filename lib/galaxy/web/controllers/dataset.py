@@ -108,11 +108,7 @@ class DatasetInterface( BaseController ):
         data = trans.app.model.HistoryDatasetAssociation.get( dataset_id )
         if not data:
             raise paste.httpexceptions.HTTPRequestRangeNotSatisfiable( "Invalid reference dataset id: %s." % str( dataset_id ) )
-        user = trans.user
-        if user:
-            roles = user.all_roles()
-        else:
-            roles = None
+        user, roles = trans.get_user_and_roles()
         if trans.app.security_agent.allow_action( user,
                                                   roles,
                                                   data.permitted_actions.DATASET_ACCESS,
@@ -150,11 +146,7 @@ class DatasetInterface( BaseController ):
         if 'display_url' not in kwd or 'redirect_url' not in kwd:
             return trans.show_error_message( 'Invalid parameters specified for "display at" link, please contact a Galaxy administrator' )
         redirect_url = kwd['redirect_url'] % urllib.quote_plus( kwd['display_url'] )
-        user = trans.user
-        if user:
-            roles = user.all_roles()
-        else:
-            roles = None
+        user, roles = trans.get_user_and_roles()
         if trans.app.security_agent.allow_action( None, None, data.permitted_actions.DATASET_ACCESS, dataset=data.dataset ):
             return trans.response.send_redirect( redirect_url ) # anon access already permitted by rbac
         if trans.app.security_agent.allow_action( user,

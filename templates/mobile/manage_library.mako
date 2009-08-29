@@ -3,13 +3,7 @@
 <%namespace file="/dataset/security_common.mako" import="render_permission_form" />
 <%namespace file="/library/common.mako" import="render_template_info" />
 
-<%
-    user = trans.user
-    if user:
-        roles = user.all_roles()
-    else:
-        roles = None
-%>
+<% user, roles = trans.get_user_and_roles() %>
 
 %if msg:
     ${render_msg( msg, messagetype )}
