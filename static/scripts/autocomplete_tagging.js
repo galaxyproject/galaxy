@@ -379,9 +379,17 @@ jQuery.fn.autocomplete_tagging = function(options) {
   // When the tag area blurs, go to "view tag" mode.
   tag_area.blur( function(e) 
   {
-    add_tag_button.show();
-    tag_input_field.hide();
-    tag_area.removeClass("active-tag-area");
+    num_tags = array_length(settings.tags);
+    if (num_tags != 0)
+    {
+      add_tag_button.show();
+      tag_input_field.hide();
+      tag_area.removeClass("active-tag-area");
+    }
+    else
+    {
+      // No tags, so do nothing to ensure that input is still visible.
+    }
   });  
   
   tag_area.append(add_tag_button);

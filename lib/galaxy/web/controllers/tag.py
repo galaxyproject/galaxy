@@ -63,10 +63,22 @@ class TagsController ( BaseController ):
     @web.require_login( "get autocomplete data for an item's tags" )
     def tag_autocomplete_data(self, trans, id=None, item_type=None, q=None, limit=None, timestamp=None):
         """ Get autocomplete data for an item's tags. """
+        
+        #
+        # Get item, do security check, and get autocomplete data.
+        #
         item = self._get_item(trans, item_type, trans.security.decode_id(id))
         
         self._do_security_check(trans, item)
         
+        if q.find(":") == -1:
+            return self._get_tag_autocomplete_names(trans, item, q, limit, timestamp)
+        else:
+            return self._get_tag_autocomplete_values(trans, item, q, limit, timestamp)
+    
+    def _get_tag_autocomplete_names(self, trans, item, q, limit, timestamp):
+        """Returns autocomplete data for tag names ordered from most frequently used to
+            least frequently used."""
         #    
         # Get user's item tags and usage counts.
         #
@@ -75,55 +87,99 @@ class TagsController ( BaseController ):
         item_tag_assoc_class = self.tag_handler.get_tag_assoc_class(item.__class__)
         
         # Build select statement.
-        cols_to_select = [ item_tag_assoc_class.table.c.tag_id, item_tag_assoc_class.table.c.user_tname, item_tag_assoc_class.table.c.user_value, func.count('*') ] 
+        cols_to_select = [ item_tag_assoc_class.table.c.tag_id, func.count('*') ] 
         from_obj = item_tag_assoc_class.table.join(item.table).join(Tag)
-        where_clause = self._get_column_for_filtering_item_by_user_id(item)==trans.get_user().id  
+        where_clause = and_(self._get_column_for_filtering_item_by_user_id(item.__class__)==trans.get_user().id,
+                            Tag.table.c.name.like(q + "%"))
         order_by = [ func.count("*").desc() ]
-        ac_for_names = not q.endswith(":")
-        if ac_for_names:
-            # Autocomplete for tag names.
-            where_clause = and_(where_clause, Tag.table.c.name.like(q + "%"))
-            group_by = item_tag_assoc_class.table.c.tag_id
-        else:
-            # Autocomplete for tag values.
-            tag_name_and_value = q.split(":")
-            tag_name = tag_name_and_value[0]
-            tag_value = tag_name_and_value[1]
-            where_clause = and_(where_clause, Tag.table.c.name==tag_name)
-            where_clause = and_(where_clause, item_tag_assoc_class.table.c.value.like(tag_value + "%"))
-            group_by = item_tag_assoc_class.table.c.value
+        group_by = item_tag_assoc_class.table.c.tag_id
         
         # Do query and get result set.
         query = select(columns=cols_to_select, from_obj=from_obj,
-                       whereclause=where_clause, group_by=group_by, order_by=order_by)
+                       whereclause=where_clause, group_by=group_by, order_by=order_by, limit=limit)
         result_set = trans.sa_session.execute(query)
         
         # Create and return autocomplete data.
-        if ac_for_names:
-            # Autocomplete for tag names.
-            ac_data = "#Header|Your Tags\n"
-            for row in result_set:
-                # Exclude tags that are already applied to the history.    
-                if self.tag_handler.item_has_tag(item, row[1]):
-                    continue
-                # Add tag to autocomplete data.
-                ac_data += row[1] + "|" + row[1] + "\n"
-        else:
-            # Autocomplete for tag values.
-            ac_data = "#Header|Your Values for '%s'\n" % (tag_name)
-            for row in result_set:
-                ac_data += tag_name + ":" + row[2] + "|" + row[2] + "\n"
+        ac_data = "#Header|Your Tags\n"
+        for row in result_set:
+            tag = self.tag_handler.get_tag_by_id(trans.sa_session, row[0])
                 
+            # Exclude tags that are already applied to the history.    
+            if self.tag_handler.item_has_tag(item, tag):
+                continue
+            # Add tag to autocomplete data. Use the most frequent name that user
+            # has employed for the tag.
+            tag_names = self._get_usernames_for_tag(trans.sa_session, trans.get_user(),
+                                                    tag, item.__class__, item_tag_assoc_class)
+            ac_data += tag_names[0] + "|" + tag_names[0] + "\n"
+        
+        return ac_data
+        
+    def _get_tag_autocomplete_values(self, trans, item, q, limit, timestamp):
+        """Returns autocomplete data for tag values ordered from most frequently used to
+            least frequently used."""
+            
+        tag_name_and_value = q.split(":")
+        tag_name = tag_name_and_value[0]
+        tag_value = tag_name_and_value[1]
+        tag = self.tag_handler.get_tag_by_name(trans.sa_session, tag_name)
+        # Don't autocomplete if tag doesn't exist.
+        if tag is None:
+            return ""
+                
+        # Get item-tag association class.
+        item_tag_assoc_class = self.tag_handler.get_tag_assoc_class(item.__class__)
+        
+        # Build select statement.
+        cols_to_select = [ item_tag_assoc_class.table.c.value, func.count('*') ] 
+        from_obj = item_tag_assoc_class.table.join(item.table).join(Tag)
+        where_clause = and_(self._get_column_for_filtering_item_by_user_id(item.__class__)==trans.get_user().id,
+                            Tag.table.c.id==tag.id,
+                            item_tag_assoc_class.table.c.value.like(tag_value + "%"))
+        order_by = [ func.count("*").desc(),  item_tag_assoc_class.table.c.value ]
+        group_by = item_tag_assoc_class.table.c.value
+        
+        # Do query and get result set.
+        query = select(columns=cols_to_select, from_obj=from_obj,
+                       whereclause=where_clause, group_by=group_by, order_by=order_by, limit=limit)
+        result_set = trans.sa_session.execute(query)
+        
+        # Create and return autocomplete data.
+        ac_data = "#Header|Your Values for '%s'\n" % (tag_name)
+        for row in result_set:
+            ac_data += tag.name + ":" + row[0] + "|" + row[0] + "\n"
         return ac_data
     
-    def _get_column_for_filtering_item_by_user_id(self, item): 
+    def _get_usernames_for_tag(self, db_session, user, tag, item_class, item_tag_assoc_class):
+        """ Returns an ordered list of the user names for a tag; list is ordered from
+            most popular to least popular name."""
+        
+        # Build select stmt.
+        cols_to_select = [ item_tag_assoc_class.table.c.user_tname, func.count('*') ]
+        where_clause = and_(self._get_column_for_filtering_item_by_user_id(item_class)==user.id ,
+                            item_tag_assoc_class.table.c.tag_id==tag.id)
+        group_by = item_tag_assoc_class.table.c.user_tname
+        order_by = [ func.count("*").desc() ]
+        
+        # Do query and get result set.
+        query = select(columns=cols_to_select, whereclause=where_clause,
+                       group_by=group_by, order_by=order_by)
+        result_set = db_session.execute(query)
+        
+        user_tag_names = list()
+        for row in result_set:
+            user_tag_names.append(row[0])
+            
+        return user_tag_names
+    
+    def _get_column_for_filtering_item_by_user_id(self, item_class): 
         """ Returns the column to use when filtering by user id. """
-        if isinstance(item, History): 
-            return item.table.c.user_id
-        elif  isinstance(item, HistoryDatasetAssociation):
+        # TODO: make this generic by using a dict() to map from item class to a "user id" column
+        if item_class is History: 
+            return History.table.c.user_id
+        elif item_class is HistoryDatasetAssociation:
             # Use the user_id associated with the HDA's history.
-            history = item.history 
-            return history.table.c.user_id
+            return History.table.c.user_id
     
     def _get_item(self, trans, item_type, id):
         """ Get an item based on type and id. """

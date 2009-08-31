@@ -1155,7 +1155,7 @@ class Tag ( object ):
         self.name = name
         
     def __str__ ( self ):
-        return "Tag(id=%s, type=%s, parent_id=%s, name=%s)" %  ( self.id, self.type, self.parent_id, self.name )
+        return "Tag(id=%s, type=%i, parent_id=%s, name=%s)" %  ( self.id, self.type, self.parent_id, self.name )
     
 class ItemTagAssociation ( object ):
     def __init__( self, item_id=None, tag_id=None, user_tname=None, value=None ):    

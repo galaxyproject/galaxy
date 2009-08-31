@@ -84,17 +84,17 @@
                 </div>
                 <div style="clear: both"></div>
             </div>
-            ## %if trans.get_user() is not None:
-            ## <div class="form-row">
-            ##     <label>
-            ##         Tags:
-            ##     </label>
-            ##     <div id="dataset-tag-area" 
-            ##          style="float: left; margin-left: 1px; width: 295px; margin-right: 10px; border-style: inset; border-color: #ddd; border-width: 1px">
-            ##     </div>
-            ##     <div style="clear: both"></div>
-            ## </div>
-            ## %endif
+            %if trans.get_user() is not None:
+             <div class="form-row">
+                 <label>
+                     Tags:
+                 </label>
+                 <div id="dataset-tag-area" 
+                      style="float: left; margin-left: 1px; width: 295px; margin-right: 10px; border-style: inset; border-color: #ddd; border-width: 1px">
+                 </div>
+                 <div style="clear: both"></div>
+             </div>
+             %endif
             %for name, spec in data.metadata.spec.items():
                 %if spec.visible:
                     <div class="form-row">

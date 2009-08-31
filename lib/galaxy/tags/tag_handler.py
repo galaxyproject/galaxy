@@ -45,7 +45,13 @@ class TagHandler( object ):
         del item.tags[:]
         
     # Returns true if item is has a given tag.
-    def item_has_tag(self, item, tag_name):
+    def item_has_tag(self, item, tag):
+        # Get tag name.
+        if isinstance(tag, basestring):
+            tag_name = tag
+        elif isinstance(tag, Tag):
+            tag_name = tag.name
+        
         # Check for an item-tag association to see if item has a given tag.
         item_tag_assoc = self._get_item_tag_assoc(item, tag_name)
         if item_tag_assoc:
@@ -103,11 +109,15 @@ class TagHandler( object ):
             if tag.value is not None:
                 tag_str += ":" + tag.user_value
             tags_str_list.append(tag_str)
-        return ", ".join(tags_str_list)            
+        return ", ".join(tags_str_list)
     
-    # Get a Tag object from a tag string.
-    def _get_tag(self, db_session, tag_str):
-        return db_session.query(Tag).filter(Tag.name==tag_str).first()
+    # Get a Tag object from a tag id.
+    def get_tag_by_id(self, db_session, tag_id):
+        return db_session.query(Tag).filter(Tag.id==tag_id).first()    
+        
+    # Get a Tag object from a tag name (string).
+    def get_tag_by_name(self, db_session, tag_name):
+        return db_session.query(Tag).filter(Tag.name==tag_name).first()
     
     # Create a Tag object from a tag string.
     def _create_tag(self, db_session, tag_str):
@@ -119,7 +129,7 @@ class TagHandler( object ):
             tag_name = tag_prefix + self._scrub_tag_name(sub_tag)
             tag = db_session.query(Tag).filter(Tag.name==tag_name).first()
             if not tag:
-                tag = Tag(type="generic", name=tag_name)
+                tag = Tag(type=0, name=tag_name)
                 
             # Set tag parent.
             tag.parent = parent_tag
@@ -137,7 +147,7 @@ class TagHandler( object ):
             return None
         
         # Get item tag.
-        tag = self._get_tag(db_session, scrubbed_tag_str)
+        tag = self.get_tag_by_name(db_session, scrubbed_tag_str)
         
         # Create tag if necessary.
         if tag is None:
