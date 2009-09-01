@@ -13,6 +13,21 @@
 	    --dbkey=${input1.metadata.dbkey}
         --indexDir=${GALAXY_DATA_INDEX_DIR}
         --bamIndex=${input1.metadata.bam_index}
+        --lastCol=$lastCol
+        --indels=$indels
+        --mapCap=$mapCap
+        --consensus=$c.consensus
+        #if $c.consensus == "yes":
+         --theta=$c.theta
+         --hapNum=$c.hapNum
+         --fraction=$c.fraction
+         --phredProb=$c.phredProb
+        #else:
+         --theta="None"
+         --hapNum="None"
+         --fraction="None"
+         --phredProb="None"
+        #end if
   </command>
   <inputs>
     <conditional name="refOrHistory">
@@ -31,6 +46,28 @@
         <param name="ownFile" type="data" format="fasta" metadata_name="dbkey" label="Select a reference genome" />
       </when>
     </conditional>	
+    <param name="lastCol" type="select" label="Whether or not to print the mapping quality as the last column" help="Makes the output easier to parse, but is space inefficient">
+      <option value="no">Do not print the mapping quality as the last column</option>
+      <option value="yes">Print the mapping quality as the last column</option>
+    </param>
+    <param name="indels" type="select" label="Whether or not to print only output pileup lines containing indels">
+      <option value="no">Print all lines</option>
+      <option value="yes">Print only lines containing indels</option>
+    </param>
+    <param name="mapCap" type="integer" value="60" label="Where to cap mapping quality" />
+    <conditional name="c">
+      <param name="consensus" type="select" label="Whether or not to call the consensus sequence using the MAQ consensus model">
+        <option value="no">Don't use MAQ consensus model</option>
+        <option value="yes">Use the MAQ consensus model</option>
+      </param> 
+      <when value="no" />
+      <when value="yes">
+        <param name="theta" type="float" value="0.85" label="Theta paramter (error dependency coefficient) in the MAQ consensus calling model" />
+        <param name="hapNum" type="integer" value="2" label="Number of haplotypes in the sample" help="Greater than or equal to 2" />
+        <param name="fraction" type="float" value="0.001" label="Expected fraction of differences between a pair of haplotypes" />
+        <param name="phredProb" type="integer" value="40" label="Phred probability of an indel in sequencing/prep" />
+      </when>
+    </conditional>
   </inputs>
   <outputs>
     <data format="tabular" name="output1" />

@@ -4,15 +4,22 @@
 Creates a pileup file from a bam file and a reference.
 
 usage: %prog [options]
-   -i, --input1=i: bam file
+   -p, --input1=p: bam file
    -o, --output1=o: Output pileup
-   -r, --ref=r: Reference file type
+   -R, --ref=R: Reference file type
    -n, --ownFile=n: User-supplied fasta reference file
    -d, --dbkey=d: dbkey of user-supplied file
    -x, --indexDir=x: Index directory
    -b, --bamIndex=b: BAM index file
+   -s, --lastCol=s: Print the mapping quality as the last column
+   -i, --indels=i: Only output lines containing indels
+   -M, --mapCap=M: Cap mapping quality
+   -c, --consensus=c: Call the consensus sequence using MAQ consensu model
+   -T, --theta=T: Theta paramter (error dependency coefficient)
+   -N, --hapNum=N: Number of haplotypes in sample
+   -r, --fraction=r: Expected fraction of differences between a pair of haplotypes
+   -I, --phredProb=I: Phred probability of an indel in sequencing/prep
 
-usage: %prog input1 output1 ref_type refFile ownFile dbkey index_dir bam_index
 """
 
 import os, sys, tempfile
@@ -49,17 +56,20 @@ def __main__():
     tmpf0bambai = '%s.bam.bai' % tmpf0.name
     tmpf1 = tempfile.NamedTemporaryFile(dir=tmp_dir)
     tmpf1fai = '%s.fai' % tmpf1.name
+    opts = '%s %s -M %s' % (('','-s')[options.lastCol=='yes'], ('','-i')[options.indels=='yes'], options.mapCap)
+    if options.consensus == 'yes':
+        opts += ' -c -T %s -N %s -r %s -I %s' % (options.theta, options.hapNum, options.fraction, options.phredProb)
     cmd1 = None
     cmd2 = 'cp %s %s; cp %s %s' % (options.input1, tmpf0bam, options.bamIndex, tmpf0bambai)
-    cmd3 = 'samtools pileup -f %s %s > %s 2> /dev/null'
+    cmd3 = 'samtools pileup %s -f %s %s > %s 2> /dev/null'
     if options.ref =='indexed':
         full_path = "%s.fai" % seq_path 
         if not os.path.exists( full_path ):
             stop_err( "No sequences are available for '%s', request them by reporting this error." % options.dbkey )
-        cmd3 = cmd3 % (seq_path, tmpf0bam, options.output1)
+        cmd3 = cmd3 % (opts, seq_path, tmpf0bam, options.output1)
     elif options.ref == 'history':
         cmd1 = 'cp %s %s; cp %s.fai %s' % (options.ownFile, tmpf1.name, options.ownFile, tmpf1fai)
-        cmd3 = cmd3 % (tmpf1.name, tmpf0bam, options.output1)
+        cmd3 = cmd3 % (opts, tmpf1.name, tmpf0bam, options.output1)
     # index reference if necessary
     if cmd1:
         try:
