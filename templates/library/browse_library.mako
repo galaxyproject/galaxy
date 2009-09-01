@@ -3,7 +3,6 @@
 <% 
     from galaxy import util
     from time import strftime
-    
     user, roles = trans.get_user_and_roles()
 %>
 
@@ -142,19 +141,21 @@ class RowCounter( object ):
     %>
 </%def>
 
-<%def name="render_folder( folder, folder_pad, created_ldda_ids, library_id, parent=None, row_counter=None )">
+<%def name="render_folder( folder, folder_pad, created_ldda_ids, library_id, hidden_folder_ids, parent=None, row_counter=None )">
     <%
-        def show_folder():
-            ## TODO: instead of calling check_folder_contents(), which we've already done prior to getting here,
-            ## add a new method that will itself call check_folder_contents() and build a list of accessible folders
-            ## for each library - this should improve performance dor large libraries where the current user can only
-            ## access a small number of folders.
-            if trans.app.security_agent.check_folder_contents( user, roles, folder ) or \
-                trans.app.security_agent.show_library_item( user, roles, folder ):
-                return True
-            return False
-        if not show_folder:
+        if str( folder.id ) in hidden_folder_ids:
             return ""
+        can_access, folder_ids = trans.app.security_agent.check_folder_contents( user, roles, folder )
+        if not can_access:
+            can_show, folder_ids = \
+                trans.app.security_agent.show_library_item( user,
+                                                            roles,
+                                                            folder,
+                                                            [ trans.app.security_agent.permitted_actions.LIBRARY_ADD,
+                                                              trans.app.security_agent.permitted_actions.LIBRARY_MODIFY,
+                                                              trans.app.security_agent.permitted_actions.LIBRARY_MANAGE ] )
+            if not can_show:
+                return ""
         root_folder = not folder.parent
         if root_folder:
             pad = folder_pad
@@ -213,7 +214,7 @@ class RowCounter( object ):
         %>
     %endif
     %for child_folder in name_sorted( folder.active_folders ):
-        ${render_folder( child_folder, pad, created_ldda_ids, library_id, my_row, row_counter )}
+        ${render_folder( child_folder, pad, created_ldda_ids, library_id, hidden_folder_ids, my_row, row_counter )}
     %endfor
     %for library_dataset in name_sorted( folder.active_library_datasets ):
         <%
@@ -272,7 +273,7 @@ class RowCounter( object ):
             </thead>
         </tr>
         <% row_counter = RowCounter() %>
-        ${render_folder( library.root_folder, 0, created_ldda_ids, library.id, None, row_counter )}
+        ${render_folder( library.root_folder, 0, created_ldda_ids, library.id, hidden_folder_ids, None, row_counter )}
         <tfoot>
             <tr>
                 <td colspan="4" style="padding-left: 42px;">

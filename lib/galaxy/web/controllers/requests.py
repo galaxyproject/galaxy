@@ -9,8 +9,6 @@ from galaxy.web.form_builder import *
 from datetime import datetime, timedelta
 from cgi import escape, FieldStorage
 from galaxy.web.controllers.forms import get_form_widgets
-from galaxy.web.controllers.library import get_authorized_libs 
-
 
 log = logging.getLogger( __name__ )
 
@@ -432,8 +430,6 @@ class Requests( BaseController ):
                 return self.__show_request_form(trans, **kwd)
         elif params.get('refresh', False) == 'true':
             return self.__show_request_form(trans, **kwd)
-                
-
     def __show_request_form(self, trans, **kwd):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
@@ -460,7 +456,25 @@ class Requests( BaseController ):
                             helptext='(Optional)'))
        
         # libraries selectbox
-        libraries = get_authorized_libs(trans, trans.user)
+        all_libraries = trans.app.model.Library.filter( trans.app.model.Library.table.c.deleted == False ) \
+                                               .order_by( trans.app.model.Library.name ).all()
+        user, roles = trans.get_user_and_roles()
+        actions_to_check = [ trans.app.security_agent.permitted_actions.LIBRARY_ADD ]
+        # The libraries dictionary looks like: { library : '1,2' }, library : '3' }
+        # Its keys are the libraries that should be displayed for the current user and whose values are a
+        # string of comma-separated folder ids, of the associated folders the should NOT be displayed.
+        # The folders that should not be displayed may not be a complete list, but it is ultimately passed
+        # to the calling method to keep from re-checking the same folders when the library / folder
+        # select lists are rendered.
+        #
+        # TODO: RC, when you add the folders select list to your request form, take advantage of the hidden_folder_ids
+        # so that you do not need to check those same folders yet again when populating the select list.
+        #
+        libraries = {}
+        for library in all_libraries:
+            can_show, hidden_folder_ids = trans.app.security_agent.show_library_item( user, roles, library, actions_to_check )
+            if can_show:
+                libraries[ library ] = hidden_folder_ids
         libui = self.__library_ui(libraries, **kwd)
         widgets = widgets + libui
         widgets = widgets + get_form_widgets(trans, request_type.request_form, contents=[], **kwd)
@@ -470,12 +484,10 @@ class Requests( BaseController ):
                                     widgets=widgets,
                                     msg=msg,
                                     messagetype=messagetype)
-        
     def __library_ui(self, libraries, request=None, **kwd):
         params = util.Params( kwd )
         lib_id = params.get( 'library_id', 'none'  )
-        lib_list = SelectField('library_id', refresh_on_change=True, 
-                               refresh_on_change_values=['new'])
+        lib_list = SelectField( 'library_id', refresh_on_change=True, refresh_on_change_values=['new'] )
         if request and lib_id == 'none':
             if request.library:
                 lib_id = str(request.library.id)
@@ -483,7 +495,7 @@ class Requests( BaseController ):
             lib_list.add_option('Select one', 'none', selected=True)
         else:
             lib_list.add_option('Select one', 'none')
-        for lib in libraries:
+        for lib, hidden_folder_ids in libraries.items():
             if str(lib.id) == lib_id:
                 lib_list.add_option(lib.name, lib.id, selected=True)
             else:
@@ -653,9 +665,27 @@ class Requests( BaseController ):
         widgets.append(dict(label='Description', 
                             widget=TextField('desc', 40, desc), 
                             helptext='(Optional)'))
-       
         # libraries selectbox
-        libraries = get_authorized_libs(trans, trans.user)
+        all_libraries = trans.app.model.Library.filter( trans.app.model.Library.table.c.deleted == False ) \
+                                               .order_by( trans.app.model.Library.name ).all()
+        user, roles = trans.get_user_and_roles()
+        actions_to_check = [ trans.app.security_agent.permitted_actions.LIBRARY_ADD ]
+        # The libraries dictionary looks like:
+        # { library : '1,2' }, library : '3' }
+        # Its keys are the libraries that should be displayed for the current user and whose values are a
+        # string of comma-separated folder ids, of the associated folders the should NOT be displayed.
+        # The folders that should not be displayed may not be a complete list, but it is ultimately passed
+        # to the calling method to keep from re-checking the same folders when the library / folder
+        # select lists are rendered.
+        #
+        # TODO: RC, when you add the folders select list to your request form, take advantage of the hidden_folder_ids
+        # so that you do not need to check those same folders yet again when populating the select list.
+        #
+        libraries = {}
+        for library in all_libraries:
+            can_show, hidden_folder_ids = trans.app.security_agent.show_library_item( user, roles, library, actions_to_check )
+            if can_show:
+                libraries[ library ] = hidden_folder_ids
         libui = self.__library_ui(libraries, request, **kwd)
         widgets = widgets + libui
         widgets = widgets + get_form_widgets(trans, request.type.request_form, request.values.content, **kwd)

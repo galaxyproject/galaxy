@@ -65,23 +65,24 @@ class Library( BaseController ):
         user, roles = trans.get_user_and_roles()
         all_libraries = trans.app.model.Library.filter( trans.app.model.Library.table.c.deleted==False ) \
                                                .order_by( trans.app.model.Library.name ).all()
-        authorized_libraries = []
+        library_actions = [ trans.app.security_agent.permitted_actions.LIBRARY_ADD,
+                            trans.app.security_agent.permitted_actions.LIBRARY_MODIFY,
+                            trans.app.security_agent.permitted_actions.LIBRARY_MANAGE ]
+        # The authorized_libraries dictionary looks like: { library : '1,2' }, library : '3' }
+        # Its keys are the libraries that should be displayed for the current user and whose values are a
+        # string of comma-separated folder ids, of the associated folders the should NOT be displayed.
+        # The folders that should not be displayed may not be a complete list, but it is ultimately passed
+        # to the browse_library() method and the browse_library.mako template to keep from re-checking the
+        # same folders when the library is rendered.
+        authorized_libraries = {}
         for library in all_libraries:
-            if trans.app.security_agent.allow_action( user,
-                                                      roles,
-                                                      trans.app.security_agent.permitted_actions.LIBRARY_ADD,
-                                                      library_item=library ) or \
-               trans.app.security_agent.allow_action( user,
-                                                      roles,
-                                                      trans.app.security_agent.permitted_actions.LIBRARY_MODIFY,
-                                                      library_item=library ) or \
-               trans.app.security_agent.allow_action( user,
-                                                      roles,
-                                                      trans.app.security_agent.permitted_actions.LIBRARY_MANAGE,
-                                                      library_item=library ) or \
-               trans.app.security_agent.check_folder_contents( user, roles, library.root_folder ) or \
-               trans.app.security_agent.show_library_item( user, roles, library ):
-                authorized_libraries.append( library )
+            can_access, hidden_folder_ids = trans.app.security_agent.check_folder_contents( user, roles, library.root_folder )
+            if can_access:
+                authorized_libraries[ library ] = hidden_folder_ids
+            else:
+                can_show, hidden_folder_ids = trans.app.security_agent.show_library_item( user, roles, library, library_actions )
+                if can_show:
+                    authorized_libraries[ library ] = hidden_folder_ids
         return trans.fill_template( '/library/browse_libraries.mako', 
                                     libraries=authorized_libraries,
                                     default_action=params.get( 'default_action', None ),
@@ -94,6 +95,7 @@ class Library( BaseController ):
         messagetype = params.get( 'messagetype', 'done' )
         id = params.get( 'id', None )
         if not id:
+            # To handle bots
             msg = "You must specify a library id."
             return trans.response.send_redirect( web.url_for( controller='library',
                                                               action='browse_libraries',
@@ -102,6 +104,7 @@ class Library( BaseController ):
                                                               messagetype='error' ) )
         library = library=trans.app.model.Library.get( id )
         if not library:
+            # To handle bots
             msg = "Invalid library id ( %s )."
             return trans.response.send_redirect( web.url_for( controller='library',
                                                               action='browse_libraries',
@@ -109,9 +112,11 @@ class Library( BaseController ):
                                                               msg=util.sanitize_text( msg ),
                                                               messagetype='error' ) )
         created_ldda_ids = params.get( 'created_ldda_ids', '' )
+        hidden_folder_ids = util.listify( util.restore_text( params.get( 'hidden_folder_ids', '' ) ) )
         return trans.fill_template( '/library/browse_library.mako', 
                                     library=trans.app.model.Library.get( id ),
                                     created_ldda_ids=created_ldda_ids,
+                                    hidden_folder_ids=hidden_folder_ids,
                                     default_action=params.get( 'default_action', None ),
                                     comptypes=comptypes,
                                     msg=msg,
@@ -1197,25 +1202,3 @@ class Library( BaseController ):
                                                           edit_info=True,
                                                           msg=util.sanitize_text( msg ),
                                                           messagetype='done' ) )
-
-def get_authorized_libs( trans, user ):
-    # TODO: this is a mis-named function - the name should reflect the authorization policy
-    # If user is not authenticated, this method should not even be called.  Also, it looks
-    # like all that is using this is the new request stuff, so it should be placed there.
-    if not user:
-        return []
-    roles = user.all_roles()
-    all_libraries = trans.app.model.Library.filter( trans.app.model.Library.table.c.deleted == False ) \
-                                           .order_by( trans.app.model.Library.name ).all()
-    authorized_libraries = []
-    for library in all_libraries:
-        if trans.app.security_agent.allow_action( user,
-                                                  roles,
-                                                  trans.app.security_agent.permitted_actions.LIBRARY_ADD,
-                                                  library_item=library ) \
-            or trans.app.security_agent.allow_action( user,
-                                                      roles,
-                                                      trans.app.security_agent.permitted_actions.LIBRARY_MODIFY,
-                                                      library_item=library ):
-            authorized_libraries.append( library )
-    return authorized_libraries
