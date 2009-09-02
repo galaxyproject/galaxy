@@ -62,12 +62,16 @@ def get_closest_feature (node, direction, threshold_up, threshold_down, report_f
 def proximal_region_finder(readers, region, comments=True):
     primary = readers[0]
     features = readers[1]
+    either = False
     if region == 'Upstream':
         up, down = True, False
     elif region == 'Downstream':
         up, down = False, True
     else:
         up, down = True, True
+        if region == 'Either':
+            either = True
+        
     # Read features into memory:
     rightTree = quicksect.IntervalTree()
     for item in features:
@@ -107,14 +111,29 @@ def proximal_region_finder(readers, region, comments=True):
                         res_ind = ends.index(max(ends)) #fetch the index of the closest interval i.e. the interval with the max end from the results_up list
                     else:
                         res_ind = 0
-                    map(outfields.append, result_up[res_ind].other)
-                    yield outfields
+                    if not(either):
+                        map(outfields.append, result_up[res_ind].other)
+                        yield outfields
                 
                 if result_down:    
                     outfields = list(interval)
-                    map(outfields.append, result_down[-1].other) #The last element of result_down will be the closest element to the given interval
-                    yield outfields
+                    if not(either):
+                        map(outfields.append, result_down[-1].other) #The last element of result_down will be the closest element to the given interval
+                        yield outfields
                 
+                if either:
+                    if result_up and result_down:
+                        if abs(start - int(result_up[res_ind].end)) <= abs(end - int(result_down[-1].start)):
+                            map(outfields.append, result_up[res_ind].other)
+                        else:
+                            map(outfields.append, result_down[-1].other) #The last element of result_down will be the closest element to the given interval
+                    elif result_up:
+                        map(outfields.append, result_up[res_ind].other)
+                    else:
+                        map(outfields.append, result_down[-1].other) #The last element of result_down will be the closest element to the given interval
+                    yield outfields
+                    
+                        
 def main():
     options, args = doc_optparse.parse( __doc__ )
     try:
