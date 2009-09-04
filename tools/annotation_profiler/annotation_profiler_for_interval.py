@@ -27,7 +27,6 @@ class CachedRangesInFile:
         self.length = int( self.file_size / self.fmt_size / 2 )
         self._cached_ranges = [ None for i in xrange( self.length ) ]
     def __getitem__( self, i ):
-        old_i = i
         if self._cached_ranges[i] is not None:
             return self._cached_ranges[i]
         if i < 0: i = self.length + i
@@ -37,13 +36,7 @@ class CachedRangesInFile:
             start = struct.unpack( self.fmt, self.file.read( self.fmt_size ) )[0]
             end = struct.unpack( self.fmt, self.file.read( self.fmt_size ) )[0]
         except Exception, e:
-            print 'filename', self.filename
-            print 'len', len( self )
-            print 'fmtsize', self.fmt_size
-            print 'index', i
-            print 'old i', old_i
-            print 'offset', offset
-            raise IndexError( str( e ) )
+            raise IndexError, e
         self._cached_ranges[i] = ( start, end )
         return start, end
     def __len__( self ):
@@ -149,24 +142,20 @@ class TableCoverageSummary:
             self.chromosome_coverage[chrom] = bx.bitset.BitSet( chrom_length )
         
         self.chromosome_coverage[chrom].set_range( region_start, region_length )
-        try:
-            for table_name, coverage, regions in self.coverage_reader.iter_table_coverage_regions_by_region( chrom, region_start, region_end ):
-                if table_name not in self.table_coverage:
-                    self.table_coverage[table_name] = 0
-                    self.table_chromosome_size[table_name] = {}
-                    self.table_regions_overlaped_count[table_name] = 0
-                    self.interval_table_overlap_count[table_name] = 0
-                    self.table_chromosome_count[table_name] = {}
-                if chrom not in self.table_chromosome_size[table_name]:
-                    self.table_chromosome_size[table_name][chrom] = self.coverage_reader._coverage[table_name][chrom]._total_coverage
-                    self.table_chromosome_count[table_name][chrom] = len( self.coverage_reader._coverage[table_name][chrom]._coverage )
-                self.table_coverage[table_name] += coverage
-                if coverage:
-                    self.interval_table_overlap_count[table_name] += 1
-                self.table_regions_overlaped_count[table_name] += regions
-        except Exception, e:
-            print "chrom:%s, start:%s, end%s:." % ( chrom, start, end )
-            raise e
+        for table_name, coverage, regions in self.coverage_reader.iter_table_coverage_regions_by_region( chrom, region_start, region_end ):
+            if table_name not in self.table_coverage:
+                self.table_coverage[table_name] = 0
+                self.table_chromosome_size[table_name] = {}
+                self.table_regions_overlaped_count[table_name] = 0
+                self.interval_table_overlap_count[table_name] = 0
+                self.table_chromosome_count[table_name] = {}
+            if chrom not in self.table_chromosome_size[table_name]:
+                self.table_chromosome_size[table_name][chrom] = self.coverage_reader._coverage[table_name][chrom]._total_coverage
+                self.table_chromosome_count[table_name][chrom] = len( self.coverage_reader._coverage[table_name][chrom]._coverage )
+            self.table_coverage[table_name] += coverage
+            if coverage:
+                self.interval_table_overlap_count[table_name] += 1
+            self.table_regions_overlaped_count[table_name] += regions
     def iter_table_coverage( self ):
         def get_nr_coverage():
             #returns non-redundant coverage, where user's input intervals have been collapse to resolve overlaps
