@@ -21,7 +21,7 @@
         <div class="toolForm">
             <div class="toolFormTitle">Other information about ${library_item_desc} ${library_item.name}</div>
             <div class="toolFormBody">
-                %if editable and trans.app.security_agent.allow_action( user, roles, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=library_item ):
+                %if editable and trans.app.security_agent.can_modify_library_item( user, roles, library_item ):
                     <form name="edit_info" action="${h.url_for( controller='library', action='edit_template_info', library_id=library_id, num_widgets=len( widgets ) )}" method="post">
                         <input type="hidden" name="library_item_id" value="${library_item.id}"/>
                         <input type="hidden" name="library_item_type" value="${library_item_type}"/>

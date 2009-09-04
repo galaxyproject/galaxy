@@ -2001,7 +2001,6 @@ class Admin( BaseController ):
                                         show_deleted=False,
                                         msg=msg,
                                         messagetype=messagetype )
-
     def _save_request_type(self, trans, **kwd):
         params = util.Params( kwd )
         num_states = int( util.restore_text( params.get( 'num_states', 0 ) ))
@@ -2031,7 +2030,6 @@ class Admin( BaseController ):
             ss.flush()
         msg = "The new request type named '%s' with %s state(s) has been created" % (rt.name, num_states)
         return rt, msg
-
     @web.expose
     @web.require_admin
     def delete_request_type( self, trans, **kwd ):
@@ -2045,7 +2043,6 @@ class Admin( BaseController ):
                                                           action='manage_request_types',
                                                           msg='Request type <b>%s</b> has been deleted' % rt.name,
                                                           messagetype='done') )
-        
     @web.expose
     @web.require_admin
     def undelete_request_type( self, trans, **kwd ):

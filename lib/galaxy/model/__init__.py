@@ -709,9 +709,9 @@ class LibraryFolder( object ):
         folder.order_id = self.item_count
         self.item_count += 1
     def get_info_association( self, restrict=False ):
-        # If restrict is True, we will return this folder's info_association whether it
-        # exists or not.  If restrict is False, we'll return the next available info_association
-        # in the inheritable hierarchy
+        # If restrict is True, we will return this folder's info_association, not inheriting.
+        # If restrict is False, we'll return the next available info_association in the
+        # inheritable hierarchy
         if self.info_association:
             return self.info_association[0]
         if restrict:
@@ -721,9 +721,6 @@ class LibraryFolder( object ):
         if self.library_root:
             return self.library_root[0].get_info_association()
         return None
-    @property
-    def active_components( self ):
-        return list( self.active_folders ) + list( self.active_library_datasets )
     @property
     def active_library_datasets( self ):
          # This needs to be a list
@@ -736,10 +733,6 @@ class LibraryFolder( object ):
     def active_datasets( self ):
          # This needs to be a list
         return [ ld.library_dataset_dataset_association.dataset for ld in self.datasets if not ld.library_dataset_dataset_association.deleted ]
-    @property #make this a relation
-    def activatable_folders( self ):
-        # This needs to be a list
-        return [ folder for folder in self.folders if not folder.purged ]
 
 class LibraryDataset( object ):
     # This class acts as a proxy to the currently selected LDDA
@@ -1062,17 +1055,11 @@ class Request( object ):
                 return s
         return False
     def submitted(self):
-        if self.state == self.states.SUBMITTED:
-            return True
-        return False
+        return self.state == self.states.SUBMITTED
     def unsubmitted(self):
-        if self.state == self.states.UNSUBMITTED:
-            return True
-        return False
+        return self.state == self.states.UNSUBMITTED
     def complete(self):
-        if self.state == self.states.COMPLETE:
-            return True
-        return False
+        return self.state == self.states.COMPLETE
         
 class RequestType( object ):
     def __init__(self, name=None, desc=None, request_form=None, sample_form=None):

@@ -9,7 +9,7 @@
     ${render_msg( msg, messagetype )}
 %endif
 
-%if trans.app.security_agent.allow_action( user, roles, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=library ):
+%if trans.app.security_agent.can_modify_library_item( user, roles, library ):
     <div class="toolForm">
         <div class="toolFormTitle">Change library name and description</div>
         <div class="toolFormBody">
@@ -55,7 +55,7 @@
         </div>
     </div>
 %endif
-%if trans.app.security_agent.allow_action( user, roles, trans.app.security_agent.permitted_actions.LIBRARY_MANAGE, library_item=library ):
+%if trans.app.security_agent.can_manage_library_item( user, roles, library ):
     <%
         roles = trans.app.model.Role.filter( trans.app.model.Role.table.c.deleted==False ).order_by( trans.app.model.Role.table.c.name ).all()
     %>

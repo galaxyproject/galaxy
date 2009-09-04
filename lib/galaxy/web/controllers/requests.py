@@ -4,6 +4,7 @@ from galaxy.model.orm import *
 from galaxy.datatypes import sniff
 from galaxy import util
 from galaxy.util.streamball import StreamBall
+from galaxy.util.odict import odict
 import logging, tempfile, zipfile, tarfile, os, sys
 from galaxy.web.form_builder import * 
 from datetime import datetime, timedelta
@@ -470,7 +471,7 @@ class Requests( BaseController ):
         # TODO: RC, when you add the folders select list to your request form, take advantage of the hidden_folder_ids
         # so that you do not need to check those same folders yet again when populating the select list.
         #
-        libraries = {}
+        libraries = odict()
         for library in all_libraries:
             can_show, hidden_folder_ids = trans.app.security_agent.show_library_item( user, roles, library, actions_to_check )
             if can_show:

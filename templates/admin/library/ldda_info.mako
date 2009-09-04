@@ -86,26 +86,14 @@
         <div class="form-row">
             <div>${ldda.blurb}</div>
         </div>
-        <div class="form-row">
-           <div id="info${ldda.id}" class="historyItemBody">
-                %if ldda.peek != "no peek":
+        %if ldda.peek != "no peek":
+            <div class="form-row">
+               <div id="info${ldda.id}" class="historyItemBody">
                     <label>Peek:</label>
                     <div><pre id="peek${ldda.id}" class="peek">${ldda.display_peek()}</pre></div>
-                %endif
-                ## Recurse for child datasets
-                %if len( ldda.visible_children ) > 0:
-                    <div>
-                        There are ${len( ldda.visible_children )} secondary datasets.
-                        %for idx, child in enumerate( ldda.visible_children ):
-                            ## TODO: do we need to clarify if the child is deleted?
-                            %if not child.purged:
-                                ${ render_dataset( child, selected, library, False, False ) }
-                            %endif
-                        %endfor
-                    </div>
-                %endif
+                </div>
             </div>
-        </div>
+        %endif
     </div>
     %if widgets:
         ${render_template_info( ldda, library.id, widgets, editable=False )}
