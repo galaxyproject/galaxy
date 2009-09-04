@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-Read a maf and print the text as a fasta file, concatenating blocks
+Read a maf and output a single block fasta file, concatenating blocks
 
 usage %prog species1,species2 maf_file out_file
 """
@@ -15,28 +15,43 @@ from galaxy.tools.util import maf_utilities
 assert sys.version_info[:2] >= ( 2, 4 )
 
 def __main__():
-    print "Restricted to species:", sys.argv[1]
+    try:
+        species = maf_utilities.parse_species_option( sys.argv[1] )
+    except Exception, e:
+        maf_utilities.tool_fail( "Error determining species value: %s" % e )
+    try:
+        input_filename = sys.argv[2]
+    except Exception, e:
+        maf_utilities.tool_fail( "Error reading MAF filename: %s" % e )
+    try:
+        file_out = open( sys.argv[3], 'w' )
+    except Exception, e:
+        maf_utilities.tool_fail( "Error opening file for output: %s" % e )
     
-    texts = {}
+    if species:
+        print "Restricted to species: %s" % ', '.join( species )
+    else:
+        print "Not restricted to species."
     
-    input_filename = sys.argv[2]
-    output_filename = sys.argv[3]
-    species = sys.argv[1].split( ',' )
+    if not species:
+        try:
+            species = maf_utilities.get_species_in_maf( input_filename )
+        except Exception, e:
+            maf_utilities.tool_fail( "Error determining species in input MAF: %s" % e )
     
-    if "None" in species:
-        species = maf_utilities.get_species_in_maf( input_filename )
-    
-    file_out = open( output_filename, 'w' )
     for spec in species:
         file_out.write( ">" + spec + "\n" )
         try:
-            for block in maf.Reader( open( input_filename, 'r' ) ):
-                component = block.get_component_by_src_start( spec )
-                if component: file_out.write( component.text )
-                else: file_out.write( "-" * block.text_size )
-        except:
-            print >>sys.stderr, "Your MAF file appears to be malformed."
-            sys.exit()
+            for start_block in maf.Reader( open( input_filename, 'r' ) ):
+                for block in maf_utilities.iter_blocks_split_by_species( start_block ):
+                    block.remove_all_gap_columns() #remove extra gaps
+                    component = block.get_component_by_src_start( spec ) #blocks only have one occurrence of a particular species, so this is safe
+                    if component:
+                        file_out.write( component.text )
+                    else:
+                        file_out.write( "-" * block.text_size )
+        except Exception, e:
+            maf_utilities.tool_fail( "Your MAF file appears to be malformed: %s" % e )
         file_out.write( "\n" )
     file_out.close()
 

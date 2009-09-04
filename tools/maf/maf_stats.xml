@@ -1,4 +1,4 @@
-<tool id="maf_stats1" name="MAF Coverage Stats">
+<tool id="maf_stats1" name="MAF Coverage Stats" version="1.0.1">
   <description>Alignment coverage information</description>
   <command interpreter="python">
     maf_stats.py

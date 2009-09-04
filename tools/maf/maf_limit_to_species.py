@@ -11,13 +11,18 @@ usage: %prog species,species2,... input_maf output_maf allow_partial min_species
 from galaxy import eggs
 import pkg_resources; pkg_resources.require( "bx-python" )
 import bx.align.maf
+from galaxy.tools.util import maf_utilities
 import sys
 
 assert sys.version_info[:2] >= ( 2, 4 )
 
 def main():
 
-    species = sys.argv[1].split( ',' )
+    species = maf_utilities.parse_species_option( sys.argv[1] )
+    if species:
+        spec_len = len( species )
+    else:
+        spec_len = 0
     try:
         maf_reader = bx.align.maf.Reader( open( sys.argv[2],'r' ) )
         maf_writer = bx.align.maf.Writer( open( sys.argv[3],'w' ) )
@@ -30,10 +35,11 @@ def main():
     
     maf_blocks_kept = 0
     for m in maf_reader:
-        if species != ['None']:
+        if species:
             m = m.limit_to_species( species )
         m.remove_all_gap_columns()
-        if ( species == ['None'] or allow_partial or len( m.components ) == len( species ) ) and len( m.components ) > min_species_per_block:
+        spec_in_block_len = len( maf_utilities.get_species_in_block( m ) )
+        if ( not species or allow_partial or spec_in_block_len == spec_len ) and spec_in_block_len > min_species_per_block:
             maf_writer.write( m )
             maf_blocks_kept += 1
     

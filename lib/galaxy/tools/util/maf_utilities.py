@@ -8,8 +8,39 @@ import bx.align.maf
 import bx.intervals
 import bx.interval_index_file
 import sys, os, string, tempfile
+import logging
+from copy import deepcopy
 
 assert sys.version_info[:2] >= ( 2, 4 )
+
+log = logging.getLogger(__name__)
+
+
+GAP_CHARS = [ '-' ]
+SRC_SPLIT_CHAR = '.'
+
+def src_split( src ):
+    spec, chrom = bx.align.maf.src_split( src )
+    if None in [ spec, chrom ]:
+        spec = chrom = src
+    return spec, chrom
+
+def src_merge( spec, chrom, contig = None ):
+    if None in [ spec, chrom ]:
+        spec = chrom = spec or chrom
+    return bx.align.maf.src_merge( spec, chrom, contig )
+
+def get_species_in_block( block ):
+    species = []
+    for c in block.components:
+        spec, chrom = src_split( c.src )
+        if spec not in species:
+            species.append( spec )
+    return species
+
+def tool_fail( msg = "Unknown Error" ):
+    print >> sys.stderr, "Fatal Error: %s" % msg
+    sys.exit()
 
 #an object corresponding to a reference layered alignment
 class RegionAlignment( object ):
@@ -153,69 +184,187 @@ def open_or_build_maf_index( maf_file, index_filename, species = None ):
     except:
         return build_maf_index( maf_file, species = species )
     
-
-#builds and returns ( index, index_filename ) for specified maf_file
-def build_maf_index( maf_file, species = None ):
+#*** ANYCHANGE TO THIS METHOD HERE OR IN galaxy.datatypes.sequences MUST BE PROPAGATED ***
+def build_maf_index_species_chromosomes( filename, index_species = None ):
+    species = []
+    species_chromosomes = {}
     indexes = bx.interval_index_file.Indexes()
     try:
-        maf_reader = bx.align.maf.Reader( open( maf_file ) )
-        # Need to be a bit tricky in our iteration here to get the 'tells' right
+        maf_reader = bx.align.maf.Reader( open( filename ) )
         while True:
             pos = maf_reader.file.tell()
             block = maf_reader.next()
             if block is None: break
             for c in block.components:
-                if species is not None and c.src.split( "." )[0] not in species:
-                    continue
-                indexes.add( c.src, c.forward_strand_start, c.forward_strand_end, pos )
+                spec = c.src
+                chrom = None
+                if "." in spec:
+                    spec, chrom = spec.split( ".", 1 )
+                if spec not in species: 
+                    species.append( spec )
+                    species_chromosomes[spec] = []
+                if chrom and chrom not in species_chromosomes[spec]:
+                    species_chromosomes[spec].append( chrom )
+                if index_species is None or spec in index_species:
+                    forward_strand_start = c.forward_strand_start
+                    forward_strand_end = c.forward_strand_end
+                    try:
+                        forward_strand_start = int( forward_strand_start )
+                        forward_strand_end = int( forward_strand_end )
+                    except ValueError:
+                        continue #start and end are not integers, can't add component to index, goto next component
+                        #this likely only occurs when parse_e_rows is True?
+                        #could a species exist as only e rows? should the
+                    if forward_strand_end > forward_strand_start:
+                        #require positive length; i.e. certain lines have start = end = 0 and cannot be indexed
+                        indexes.add( c.src, forward_strand_start, forward_strand_end, pos, max=c.src_size )
+    except Exception, e:
+        #most likely a bad MAF
+        log.debug( 'Building MAF index on %s failed: %s' % ( filename, e ) )
+        return ( None, [], {} )
+    return ( indexes, species, species_chromosomes )
+
+#builds and returns ( index, index_filename ) for specified maf_file
+def build_maf_index( maf_file, species = None ):
+    indexes, found_species, species_chromosomes = build_maf_index_species_chromosomes( maf_file, species )
+    if indexes is not None:
         fd, index_filename = tempfile.mkstemp()
         out = os.fdopen( fd, 'w' )
         indexes.write( out )
         out.close()
         return ( bx.align.maf.Indexed( maf_file, index_filename = index_filename, keep_open = True, parse_e_rows = False ), index_filename )
-    except:
-        return ( None, None )
+    return ( None, None )
 
-def chop_block_by_region( block, src, region, species = None, mincols = 0, force_strand = None ):
-    ref = block.get_component_by_src( src )
-    #We want our block coordinates to be from positive strand
-    if ref.strand == "-":
-        block = block.reverse_complement()
-        ref = block.get_component_by_src( src )
+def component_overlaps_region( c, region ):
+    if c is None: return False
+    start, end = c.get_forward_strand_start(), c.get_forward_strand_end()
+    if region.start >= end or region.end <= start:
+        return False
+    return True
+
+def chop_block_by_region( block, src, region, species = None, mincols = 0 ):
+    # This chopping method was designed to maintain consistency with how start/end padding gaps have been working in Galaxy thus far:
+    #   behavior as seen when forcing blocks to be '+' relative to src sequence (ref) and using block.slice_by_component( ref, slice_start, slice_end )
+    #   whether-or-not this is the 'correct' behavior is questionable, but this will at least maintain consistency
+    # comments welcome
+    slice_start = block.text_size #max for the min()
+    slice_end = 0 #min for the max()
+    old_score = block.score #save old score for later use
+    # We no longer assume only one occurance of src per block, so we need to check them all
+    for c in iter_components_by_src( block, src ):
+        if component_overlaps_region( c, region ):
+            if c.text is not None:
+                rev_strand = False
+                if c.strand == "-":
+                    #We want our coord_to_col coordinates to be returned from positive stranded component
+                    rev_strand = True
+                    c = c.reverse_complement()
+                start = max( region.start, c.start )
+                end = min( region.end, c.end )
+                start = c.coord_to_col( start )
+                end = c.coord_to_col( end )
+                if rev_strand:
+                    #need to orient slice coordinates to the original block direction
+                    slice_len = end - start
+                    end = len( c.text ) - start
+                    start = end - slice_len
+                slice_start = min( start, slice_start )
+                slice_end = max( end, slice_end )
     
-    #save old score here for later use
-    old_score =  block.score
-    slice_start = max( region.start, ref.start )
-    slice_end = min( region.end, ref.end )
-    
-    #slice block by reference species at determined limits
-    block = block.slice_by_component( ref, slice_start, slice_end )
-    
-    if block.text_size > mincols:
-        if ( force_strand is None and region.strand != ref.strand ) or ( force_strand is not None and force_strand != ref.strand ):
-            block = block.reverse_complement()
-        # restore old score, may not be accurate, but it is better than 0 for everything
-        block.score = old_score
-        if species is not None:
-            block = block.limit_to_species( species )
-            block.remove_all_gap_columns()
-        return block
+    if slice_start < slice_end:
+        block = block.slice( slice_start, slice_end )
+        if block.text_size > mincols:
+            # restore old score, may not be accurate, but it is better than 0 for everything?
+            block.score = old_score
+            if species is not None:
+                block = block.limit_to_species( species )
+                block.remove_all_gap_columns()
+            return block
     return None
-#generator yielding only chopped and valid blocks for a specified region
-def get_chopped_blocks_for_region( index, src, region, species = None, mincols = 0, force_strand = None ):
-    for block, idx, offset in get_chopped_blocks_with_index_offset_for_region( index, src, region, species, mincols, force_strand ):
+    
+def orient_block_by_region( block, src, region, force_strand = None ):
+    #loop through components matching src,
+    #make sure each of these components overlap region
+    #cache strand for each of overlaping regions
+    #if force_strand / region.strand not in strand cache, reverse complement
+    ### we could have 2 sequences with same src, overlapping region, on different strands, this would cause no reverse_complementing
+    strands = [ c.strand for c in iter_components_by_src( block, src ) if component_overlaps_region( c, region ) ]
+    if strands and ( force_strand is None and region.strand not in strands ) or ( force_strand is not None and force_strand not in strands ):
+        block = block.reverse_complement()
+    return block
+
+def get_oriented_chopped_blocks_for_region( index, src, region, species = None, mincols = 0, force_strand = None ):
+    for block, idx, offset in get_oriented_chopped_blocks_with_index_offset_for_region( index, src, region, species, mincols, force_strand ):
         yield block
-def get_chopped_blocks_with_index_offset_for_region( index, src, region, species = None, mincols = 0, force_strand = None ):
+def get_oriented_chopped_blocks_with_index_offset_for_region( index, src, region, species = None, mincols = 0, force_strand = None ):
+    for block, idx, offset in get_chopped_blocks_with_index_offset_for_region( index, src, region, species, mincols ):
+        yield orient_block_by_region( block, src, region, force_strand ), idx, offset
+
+#split a block with multiple occurances of src into one block per src
+def iter_blocks_split_by_src( block, src ):
+    for src_c in iter_components_by_src( block, src ):
+        new_block = bx.align.Alignment( score=block.score, attributes=deepcopy( block.attributes ) )
+        new_block.text_size = block.text_size
+        for c in block.components:
+            if c == src_c or c.src != src:
+                new_block.add_component( deepcopy( c ) ) #components have reference to alignment, dont want to loose reference to original alignment block in original components
+        yield new_block
+
+#split a block into multiple blocks with all combinations of a species appearing only once per block
+def iter_blocks_split_by_species( block, species = None ):
+    def __split_components_by_species( components_by_species, new_block ):
+        if components_by_species:
+            #more species with components to add to this block
+            components_by_species = deepcopy( components_by_species )
+            spec_comps = components_by_species.pop( 0 )
+            for c in spec_comps:
+                newer_block = deepcopy( new_block )
+                newer_block.add_component( deepcopy( c ) )
+                for value in __split_components_by_species( components_by_species, newer_block ):
+                    yield value
+        else:
+            #no more components to add, yield this block
+            yield new_block
+    
+    #divide components by species    
+    spec_dict = {}
+    if not species:
+        species = []
+        for c in block.components:
+            spec, chrom = src_split( c.src )
+            if spec not in spec_dict:
+                spec_dict[ spec ] = []
+                species.append( spec )
+            spec_dict[ spec ].append( c )
+    else:
+        for spec in species:
+            spec_dict[ spec ] = []
+            for c in iter_components_by_src_start( block, spec ):
+                spec_dict[ spec ].append( c )
+    
+    empty_block = bx.align.Alignment( score=block.score, attributes=deepcopy( block.attributes ) ) #should we copy attributes?
+    empty_block.text_size = block.text_size
+    #call recursive function to split into each combo of spec/blocks
+    for value in __split_components_by_species( spec_dict.values(), empty_block ):
+        sort_block_components_by_block( value, block ) #restore original component order
+        yield value
+
+
+#generator yielding only chopped and valid blocks for a specified region
+def get_chopped_blocks_for_region( index, src, region, species = None, mincols = 0 ):
+    for block, idx, offset in get_chopped_blocks_with_index_offset_for_region( index, src, region, species, mincols ):
+        yield block
+def get_chopped_blocks_with_index_offset_for_region( index, src, region, species = None, mincols = 0 ):
     for block, idx, offset in index.get_as_iterator_with_index_and_offset( src, region.start, region.end ):
-        block = chop_block_by_region( block, src, region, species, mincols, force_strand )
+        block = chop_block_by_region( block, src, region, species, mincols )
         if block is not None:
             yield block, idx, offset
 
 #returns a filled region alignment for specified regions
-def get_region_alignment( index, primary_species, chrom, start, end, strand = '+', species = None, mincols = 0 ):
+def get_region_alignment( index, primary_species, chrom, start, end, strand = '+', species = None, mincols = 0, overwrite_with_gaps = True ):
     if species is not None: alignment = RegionAlignment( end - start, species )
     else: alignment = RegionAlignment( end - start, primary_species )
-    return fill_region_alignment( alignment, index, primary_species, chrom, start, end, strand, species, mincols )
+    return fill_region_alignment( alignment, index, primary_species, chrom, start, end, strand, species, mincols, overwrite_with_gaps )
 
 #reduces a block to only positions exisiting in the src provided
 def reduce_block_by_primary_genome( block, species, chromosome, region_start ):
@@ -237,13 +386,11 @@ def reduce_block_by_primary_genome( block, species, chromosome, region_start ):
     return ( start_offset, species_texts )
 
 #fills a region alignment 
-def fill_region_alignment( alignment, index, primary_species, chrom, start, end, strand = '+', species = None, mincols = 0 ):
+def fill_region_alignment( alignment, index, primary_species, chrom, start, end, strand = '+', species = None, mincols = 0, overwrite_with_gaps = True ):
     region = bx.intervals.Interval( start, end )
     region.chrom = chrom
     region.strand = strand
     primary_src = "%s.%s" % ( primary_species, chrom )
-    
-
     
     #Order blocks overlaping this position by score, lowest first
     blocks = []
@@ -256,27 +403,39 @@ def fill_region_alignment( alignment, index, primary_species, chrom, start, end,
         else:
             blocks.append( ( score, idx, offset ) )
     
+    gap_chars_tuple = tuple( GAP_CHARS )
+    gap_chars_str = ''.join( GAP_CHARS )
     #Loop through ordered blocks and layer by increasing score
-    for block_dict in blocks:
-        block = chop_block_by_region( block_dict[1].get_at_offset( block_dict[2] ), primary_src, region, species, mincols, strand )
-        if block is None: continue
-        start_offset, species_texts = reduce_block_by_primary_genome( block, primary_species, chrom, start )
-        for spec, text in species_texts.items():
-            try:
-                alignment.set_range( start_offset, spec, text )
-            except:
-                #species/sequence for species does not exist
-                pass
-    
+    for block_dict in blocks:        for block in iter_blocks_split_by_species( block_dict[1].get_at_offset( block_dict[2] ) ): #need to handle each occurance of sequence in block seperately
+            if component_overlaps_region( block.get_component_by_src( primary_src ), region ):
+                block = chop_block_by_region( block, primary_src, region, species, mincols ) #chop block
+                block = orient_block_by_region( block, primary_src, region ) #orient block
+                start_offset, species_texts = reduce_block_by_primary_genome( block, primary_species, chrom, start )
+                for spec, text in species_texts.items():
+                    #we should trim gaps from both sides, since these are not positions in this species genome (sequence)
+                    text = text.rstrip( gap_chars_str )
+                    gap_offset = 0
+                    while text.startswith( gap_chars_tuple ):
+                        gap_offset += 1
+                        text = text[1:]
+                        if not text:
+                            break
+                    if text:
+                        if overwrite_with_gaps:
+                            alignment.set_range( start_offset + gap_offset, spec, text )
+                        else:
+                            for i, char in enumerate( text ):
+                                if char not in GAP_CHARS:
+                                    alignment.set_position( start_offset + gap_offset + i, spec, char )
     return alignment
 
 #returns a filled spliced region alignment for specified region with start and end lists
-def get_spliced_region_alignment( index, primary_species, chrom, starts, ends, strand = '+', species = None, mincols = 0 ):
+def get_spliced_region_alignment( index, primary_species, chrom, starts, ends, strand = '+', species = None, mincols = 0, overwrite_with_gaps = True ):
     #create spliced alignment object
     if species is not None: alignment = SplicedAlignment( starts, ends, species )
     else: alignment = SplicedAlignment( starts, ends, [primary_species] )
     for exon in alignment.exons:
-        fill_region_alignment( exon, index, primary_species, chrom, exon.start, exon.end, strand, species, mincols)
+        fill_region_alignment( exon, index, primary_species, chrom, exon.start, exon.end, strand, species, mincols, overwrite_with_gaps )
     return alignment
 
 #loop through string array, only return non-commented lines
@@ -319,29 +478,36 @@ def get_starts_ends_fields_from_gene_bed( line ):
             starts.append( start )
             ends.append( end )
     return ( starts, ends, fields )
-    
+
+def iter_components_by_src( block, src ):
+    for c in block.components:
+        if c.src == src:
+            yield c
+
+def get_components_by_src( block, src ):
+    return [ value for value in iter_components_by_src( block, src ) ]
+
+def iter_components_by_src_start( block, src ):
+    for c in block.components:
+        if c.src.startswith( src ):
+            yield c
+
+def get_components_by_src_start( block, src ):
+    return [ value for value in iter_components_by_src_start( block, src ) ]
+
+def sort_block_components_by_block( block1, block2 ):
+    #orders the components in block1 by the index of the component in block2
+    #block1 must be a subset of block2
+    #occurs in-place
+    return block1.components.sort( cmp = lambda x, y: block2.components.index( x ) - block2.components.index( y ) )
+
 def get_species_in_maf( maf_filename ):
-        try:
-            species={}
-            
-            file_in = open( maf_filename, 'r' )
-            maf_reader = maf.Reader( file_in )
-            
-            for i, m in enumerate( maf_reader ):
-                l = m.components
-                for c in l:
-                    spec, chrom = maf.src_split( c.src )
-                    if not spec or not chrom:
-                        spec = chrom = c.src
-                    species[spec] = spec
-            
-            file_in.close()
-            
-            species = species.keys()
-            species.sort()
-            return species
-        except:
-            return []
+    species = []
+    for block in maf.Reader( open( maf_filename ) ):
+        for spec in get_species_in_block( block ):
+            if spec not in species:
+                species.append( spec )
+    return species
 
 def parse_species_option( species ):
     if species:

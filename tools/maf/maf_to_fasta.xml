@@ -1,4 +1,4 @@
-<tool id="MAF_To_Fasta1" name="Maf to FASTA">
+<tool id="MAF_To_Fasta1" name="MAF to FASTA" version="1.0.1">
   <description>Converts a MAF formated file to FASTA format</description>
   <command interpreter="python">
     #if $fasta_target_type.fasta_type == "multiple":#maf_to_fasta_multiple_sets.py $input1 $out_file1 $fasta_target_type.species $fasta_target_type.complete_blocks
@@ -47,7 +47,7 @@
       <param name="species" value="hg17,panTro1,rheMac2,rn3,mm7,canFam2,bosTau2,dasNov1"/>
       <param name="complete_blocks" value="partial_allowed"/>
       <param name="fasta_type" value="multiple"/>
-      <output name="out_file1" file="cf_maf2fasta.dat" ftype="fasta"/>
+      <output name="out_file1" file="cf_maf2fasta_new.dat" ftype="fasta"/>
     </test>
   </tests>
   <help>

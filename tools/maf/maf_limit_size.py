@@ -28,7 +28,7 @@ def __main__():
     blocks_kept = 0
     i = 0
     for i, m in enumerate( maf_reader ):
-        if min_size <= m.components[0].size <= max_size:
+        if min_size <= m.text_size <= max_size:
             maf_writer.write( m )
             blocks_kept += 1
     print 'Kept %s of %s blocks (%.2f%%).' % ( blocks_kept, i + 1, float( blocks_kept ) / float( i + 1 ) * 100.0 )
