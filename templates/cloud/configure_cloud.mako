@@ -82,12 +82,14 @@
         <colgroup width="40%"></colgroup>
 		<colgroup width="15%"></colgroup>
 		<colgroup width="10%"></colgroup>
-		<colgroup width="35%"></colgroup>
+		<colgroup width="25%"></colgroup>
+		<colgroup width="10%"></colgroup>
 		<tr class="header">
             <th>Live instances</th>
 			<th>Storage size (GB)</th>
 			<th>State</th>
             <th>Alive since</th>
+            <th></th>
 			<th></th>
         </tr>
 		%if liveInstances:
@@ -97,30 +99,40 @@
 	                	${liveInstance.name}
 	                    <a id="li-${i}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
 	                </td>
-					<td>${str(liveInstance.total_size)}</td> <!--TODO:Replace with vol size once available-->
+					<td>${str(liveInstance.total_size)}</td>
 	                <td>${str(liveInstance.state)}</td>
 	                <td>
-	                	${str(liveInstance.launch_time)[:16]} 
+	                	##${str(liveInstance.launch_time)[:16]} 
 	                	<%
-							from datetime import datetime
-							from datetime import timedelta
+							#from datetime import datetime
+							#from datetime import timedelta
 	
 							# DB stores all times in GMT, so adjust for difference (4 hours)
-							adjustedStarttime = liveInstance.update_time - timedelta(hours=4)
+							#adjustedStarttime = liveInstance.update_time - timedelta(hours=4)
 	
-							# (NOT CURRENTLY USED BLOCK OF CODE) Calculate time difference from now
-							delta = datetime.now() - adjustedStarttime
+							#delta = datetime.now() - adjustedStarttime
 							#context.write( str(datetime.utcnow() ) )
 							#context.write( str(delta) )
 							
 							# This is where current time and since duration is calculated
-							#context.write( str( liveInstance.launch_time ) )
-							context.write( ' UTC (' )
-							context.write( str(h.date.distance_of_time_in_words (liveInstance.launch_time, h.date.datetime.utcnow() ) ) )
-							
-							
-						%>)
+							if liveInstance.launch_time is None:
+								context.write( 'N/A' )
+							else:
+								context.write( str( liveInstance.launch_time )[:16] )
+								context.write( ' UTC (' )
+								context.write( str(h.date.distance_of_time_in_words (liveInstance.launch_time, h.date.datetime.utcnow() ) ) )
+								context.write( ')' )
+						%>
 					</td>
+					<td><div align="right">
+						%for i, instance in enumerate( liveInstance.instance ):
+							%if instance.state == "running":
+								<a class="action-button" href="http://${instance.public_dns}" target="_blank">
+								<span>Connect to!</span>
+								<img src="${h.url_for('/static/images/silk/resultset_next.png')}" /></a></div>
+							%endif
+						%endfor
+	            	</td>
 	                <td>
 	                    <div popupmenu="li-${i}-popup">
 	                    <a class="action-button" confirm="Are you sure you want to stop instance '${liveInstance.name}'?" href="${h.url_for( action='stop', id=trans.security.encode_id(liveInstance.id) )}">Stop</a>
@@ -139,21 +151,21 @@
 	
 	## *****************************************************
 	## Manage previously configured instances
-	<table class="mange-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
+	<table class="mange-table noHR" border="0" cellspacing="0" cellpadding="0" width="100%">
         <colgroup width="40%"></colgroup>
 		<colgroup width="15%"></colgroup>
 		<colgroup width="10%"></colgroup>
 		<colgroup width="35%"></colgroup>
-		<tr class="header">
-            <th>Previously configured instances</th>
+		##<tr class="header">
+            ##<th>Previously configured instances</th>
             ##<th>Storage size (GB)</th>
 			##<th>State</th>
             ##<th>Alive since</th>
-			<th></th>
-			<th></th>
-			<th></th>
-			<th></th>
-        </tr>
+			##<th></th>
+			##<th></th>
+			##<th></th>
+			##<th></th>
+        ##</tr>
         
 		%if prevInstances:
 			%for i, prevInstance in enumerate( prevInstances ):

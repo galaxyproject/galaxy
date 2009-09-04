@@ -57,6 +57,15 @@ table.colored td,table.colored th{text-align:left;padding:5px;}
 table.colored tr.header{background:#ebd9b2;background-image:url(form_title_bg.png);background-repeat:repeat-x;background-position:top;border-bottom:solid #d8b365 1px;font-weight:bold;}
 table.colored tr{background:white;}
 table.colored tr.odd_row{background:#DADFEF;}
+table.noBottomHR{border-top:solid #d8b365 1px;}
+table.noBottomHR td,table.noBottomHR th{text-align:left;padding:5px;}
+table.noBottomHR tr.header{background:#ebd9b2;background-image:url(form_title_bg.png);background-repeat:repeat-x;background-position:top;border-bottom:solid #d8b365 1px;font-weight:bold;}
+table.noBottomHR tr{background:white;}
+table.noBottomHR tr.odd_row{background:#DADFEF;}
+table.noHR td,table.noHR th{text-align:left;padding:5px;}
+table.noHR tr.header{background:#ebd9b2;background-image:url(form_title_bg.png);background-repeat:repeat-x;background-position:top;border-bottom:solid #d8b365 1px;font-weight:bold;}
+table.noHR tr{background:white;}
+table.noHR tr.odd_row{background:#DADFEF;}
 div.debug{margin:10px;padding:5px;background:#FFFF99;border:solid #FFFF33 1px;color:black;}
 div.odd_row{background:#DADFEF;}
 #footer{display:none;}

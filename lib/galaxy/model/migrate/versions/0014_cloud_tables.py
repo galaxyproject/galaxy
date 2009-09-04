@@ -92,8 +92,8 @@ def upgrade():
 def downgrade():
     metadata.reflect()
     try:
-        log.deboug( "Would drop cloud_image table." ) 
-        #CloudImage_table.drop() #Enable before putting final version
+        log.debug( "Would drop cloud_image table." ) 
+        CloudImage_table.drop() #Enable before putting final version
     except Exception, e:
         log.debug( "Dropping cloud_image table failed: %s" % str( e ) ) 
     
@@ -108,7 +108,7 @@ def downgrade():
         log.debug( "Dropping cloud_store table failed: %s" % str( e ) )  
         
     try:
-        log.deboug( "Would drop cloud_user_credentials table." )
+        log.debug( "Would drop cloud_user_credentials table." )
         #CloudUserCredentials_table.drop() #Enable before putting final version
     except Exception, e:
         log.debug( "Dropping cloud_user_credentials table failed: %s" % str( e ) )  
