@@ -1,0 +1,286 @@
+<tool id="pileup_parser" name="Parse pileup">
+  <description>to find variants</description>
+  <command interpreter="perl">
+    #if   $pileup_type.type_select == "six":    #pileup_parser.pl $input "3" "5" "6" "4" $qv_cutoff $cvrg_cutoff $snps_only $interval "2" $out_file1
+    #elif $pileup_type.type_select == "ten":    #pileup_parser.pl $input "3" "9" "10" "8" $qv_cutoff $cvrg_cutoff $snps_only $interval "2" $out_file1
+    #elif $pileup_type.type_select == "manual": #pileup_parser.pl $input $pileup_type.ref_base_column $pileup_type.read_bases_column $pileup_type.read_qv_column $pileup_type.cvrg_column $qv_cutoff $cvrg_cutoff $snps_only $interval $pileup_type.coord_column $out_file1
+    #end if
+  </command>
+  <inputs>
+    <param name="input" type="data" format="tabular" label="Select dataset"/>
+    <conditional name="pileup_type">
+        <param name="type_select" type="select" label="which contains" help="See &quot;Types of pileup datasets&quot; below for examples">
+            <option value="six" selected="true">Pileup with six columns (simple)</option>
+            <option value="ten">Pileup with ten columns (with consensus)</option>
+            <option value="manual">Set columns manually</option>
+        </param>
+        <when value="manual">
+            <param name="ref_base_column" label="Select column with reference base" type="data_column" numerical="false" data_ref="input" />
+            <param name="read_bases_column" label="Select column with read bases" type="data_column" numerical="false" data_ref="input" help="something like this: ..,a.."/>
+            <param name="read_qv_column" label="Select column with base qualities" type="data_column" numerical="false" data_ref="input" help="something like this: IIIGIAI"/>
+            <param name="cvrg_column" label="Select column with coverage" type="data_column" numerical="true" data_ref="input" />
+            <param name="coord_column" label="Select coordinate column" type="data_column" numerical="true" data_ref="input" />
+        </when>
+        <when value="six">
+        </when>
+        <when value="ten">
+        </when>
+    </conditional>
+    <param name="qv_cutoff" label="Do not consider read bases with quality lower than" type="integer" value="20" help="No variants with quality below this value will be reported"/>
+    <param name="cvrg_cutoff" label="Do not report positions with coverage lower than" type="integer" value="3" help="Pileup lines with coverage lower than this value will be skipped"/>
+    <param name="snps_only" label="Only report variants?" type="select" help="See &quot;Examples 1 and 2&quot; below for explanation">
+        <option value="No">No</option>
+        <option value="Yes" selected="true">Yes</option>
+    </param>
+    <param name="interval" label="Convert coordinates to intervals?" type="select" help="See &quot;Output format&quot; below for explanation">
+        <option value="No" selected="true">No</option>
+        <option value="Yes">Yes</option>
+    </param>
+        
+  </inputs>
+  <outputs>
+    <data format="tabular" name="out_file1">
+        <change_format>
+            <when input="interval" value="Yes" format="interval" />
+        </change_format>
+   </data>
+  </outputs>
+  <tests>
+    <test>
+      <param name="input" value="pileup_parser.6col.pileup"/>
+      <output name="out_file1" file="pileup_parser.6col.20-3-yes-yes.pileup.out"/>
+      <param name="type_select" value="six"/>
+      <param name="qv_cutoff" value="20" />
+      <param name="cvrg_cutoff" value="3" />
+      <param name="snps_only" value="Yes"/>
+      <param name="interval" value="Yes" />
+    </test>
+    <test>
+      <param name="input" value="pileup_parser.6col.pileup"/>
+      <output name="out_file1" file="pileup_parser.6col.20-3-yes-no.pileup.out"/>
+      <param name="type_select" value="six"/>
+      <param name="qv_cutoff" value="20" />
+      <param name="cvrg_cutoff" value="3" />
+      <param name="snps_only" value="Yes"/>
+      <param name="interval" value="No" />
+    </test>
+    <test>
+      <param name="input" value="pileup_parser.6col.pileup"/>
+      <output name="out_file1" file="pileup_parser.6col.20-3-no-no.pileup.out"/>
+      <param name="type_select" value="six"/>
+      <param name="qv_cutoff" value="20" />
+      <param name="cvrg_cutoff" value="3" />
+      <param name="snps_only" value="No"/>
+      <param name="interval" value="No" />
+    </test>
+    <test>
+      <param name="input" value="pileup_parser.10col.pileup"/>
+      <output name="out_file1" file="pileup_parser.10col.20-3-yes-yes.pileup.out"/>
+      <param name="type_select" value="ten"/>
+      <param name="qv_cutoff" value="20" />
+      <param name="cvrg_cutoff" value="3" />
+      <param name="snps_only" value="Yes"/>
+      <param name="interval" value="Yes" />
+    </test>
+    <test>
+      <param name="input" value="pileup_parser.10col.pileup"/>
+      <output name="out_file1" file="pileup_parser.10col.20-3-yes-yes.pileup.out"/>
+      <param name="type_select" value="manual"/>
+      <param name="ref_base_column" value="3"/>
+      <param name="read_bases_column" value="9"/>
+      <param name="read_qv_column" value="10"/>
+      <param name="cvrg_column" value="8"/>
+      <param name="coord_column" value="2"/>
+      <param name="qv_cutoff" value="20" />
+      <param name="cvrg_cutoff" value="3" />
+      <param name="snps_only" value="Yes"/>
+      <param name="interval" value="Yes" />
+    </test>
+ </tests>
+<help>
+
+**What is does**
+
+Allows to find sequence variants and/or sites covered by specified number of reads with bases above a set quality threshold. The tool works on six  and ten column pileup formats produced with *samtools pileup* command. However, it also allows you to specify columns in the input file manually. The tool assumes the following:
+
+- the quality scores follow phred33 convention, where input qualities are ASCII characters equal to the Phred quality plus 33.
+- the pileup dataset was produced by *samtools pileup* command (although you can override this by setting column assignments manually).
+
+--------
+
+**Types of pileup datasets**
+
+The description of pileup format below is largely based on information that can be found on SAMTools_ documentation page. The 6- and 10-column variants are described below.
+
+.. _SAMTools: http://samtools.sourceforge.net/pileup.shtml
+
+**Six column pileup**::
+
+    1    2  3  4        5        6
+ ---------------------------------   
+ chrM  412  A  2       .,       II
+ chrM  413  G  4     ..t,     IIIH
+ chrM  414  C  4     ...a     III2
+ chrM  415  C  4     TTTt     III7
+   
+where::
+
+  Column Definition
+ ------- ----------------------------
+       1 Chromosome
+       2 Position (1-based)
+       3 Reference base at that position
+       4 Coverage (# reads aligning over that position)
+       5 Bases within reads where (see Galaxy wiki for more info)
+       6 Quality values (phred33 scale, see Galaxy wiki for more)
+       
+**Ten column pileup**
+
+The `ten-column`__ pileup incoroporates additional consensus information generated with *-c* option of *samtools pileup* command::
+
+
+    1    2  3  4   5   6   7   8       9       10
+ ------------------------------------------------
+ chrM  412  A  A  75   0  25  2       .,       II
+ chrM  413  G  G  72   0  25  4     ..t,     IIIH
+ chrM  414  C  C  75   0  25  4     ...a     III2
+ chrM  415  C  T  75  75  25  4     TTTt     III7
+
+where::
+
+  Column Definition
+ ------- ----------------------------
+       1 Chromosome
+       2 Position (1-based)
+       3 Reference base at that position
+       4 Consensus bases
+       5 Consensus quality
+       6 SNP quality
+       7 Maximum mapping quality
+       8 Coverage (# reads aligning over that position)
+       9 Bases within reads where (see Galaxy wiki for more info)
+      10 Quality values (phred33 scale, see Galaxy wiki for more)
+
+
+.. __: http://samtools.sourceforge.net/cns0.shtml
+
+------
+
+**The output format**
+
+The tool modifies the input dataset in two ways:
+
+1. It appends five columns to the end of every reported line:
+
+- Number of **A** variants
+- Number of **C** variants
+- Number of **G** variants
+- Number of **T** variants
+- Number of read bases covering this position, where quality is equal to or higher than the value set by **Do not consider read bases with  quality lower than** option. 
+
+2. If **Convert coordinates to intervals?** is set to **Yes**, the tool replaces the position column (typically the second column) with a pair of tab-delimited start/end values.
+
+For example, if you are calling variants with base quality above 20 on this dataset::
+
+ chrM  412  A  2       .,       II
+ chrM  413  G  4     ..t,     III2
+ chrM  414  C  4     ...a     III2
+ chrM  415  C  4     TTTt     III7
+
+you will get this::
+
+ chrM  413  G  4  ..t,  IIIH  0  0  0  1  3
+ chrM  415  C  4  TTTt  III7  0  0  0  4  4
+ 
+where::
+
+  Column Definition
+ ------- ----------------------------
+       1 Chromosome
+       2 Position (1-based)
+       3 Reference base at that position
+       4 Coverage (# reads aligning over that position)
+       5 Bases within reads where (see Galaxy wiki for more info)
+       6 Quality values (phred33 scale, see Galaxy wiki for more)
+       7 Number of A variants
+       8 Number of C variants
+       9 Number of G variants
+      10 Number of T variants
+      11 Quality adjusted coverage:
+         Number of read bases (i.e., # of reads) with quality above the set threshold
+ 
+and if **Convert coordinates to intervals?** is set to **Yes**, you will get one additional column::
+ 
+ chrM  412 413  G  4  ..t,  III2  0  0  0  1  3
+ chrM  414 415  C  4  TTTt  III7  0  0  0  4  4
+ 
+where::
+
+  Column Definition
+ ------- ----------------------------
+       1 Chromosome
+       2 Start position (0-based)
+       3 End position (1-based)
+       4 Reference base at that position
+       5 Coverage (# reads aligning over that position)
+       6 Bases within reads where (see Galaxy wiki for more info)
+       7 Quality values (phred33 scale, see Galaxy wiki for more)
+       8 Number of A variants
+       9 Number of C variants
+      10 Number of G variants
+      11 Number of T variants
+      12 Quality adjusted coverage
+
+
+Note that in this case coordinates of SNPs were converted to intervals, where the start coordinate is 0-based and the end coordinate in 1-based using the UCSC Table Browser convention. 
+ 
+Although three positions have variants in the original file (413, 414, and 415), only 413 and 415 are reported, because the quality values associated with these two SNPs are above threshold of 20. In the case of 414 the **a** allele has quality value of 17 ( ord("2")-33 ), and therefore it is not reported. In each of the reported lines the program added five columns. Let's take a look at this line::
+
+  chrM  413  G  4  ..t,  IIIH  0  0  0  1  3
+  
+here there is one variant, and it is a **t**. Because the fourth column represents **T** counts, it is incremented by 1. The last column shows that at this position three reads has bases above the quality threshold of 20.
+
+-----
+
+**Example 1**: Just variants
+
+In this mode the tool outputs only those lines from the input datasets where at least one read contains a sequence variant with quality above the limit set by the **Do not consider read bases with quality lower than** option. For example, suppose one has a pileup dataset like this::
+
+ chrM  412  A  2       .,       II
+ chrM  413  G  4     ..t,     III2
+ chrM  414  C  4     ...a     III2
+ chrM  415  C  4     TTTt     III7
+ 
+to call all variants (with no restriction by coverage) with quality above phred value of 20 we will need to set parameters as follows:
+
+.. image:: ../static/images/pileup_parser_help1.png 
+
+Running the tool with these parameters will return::
+
+ chrM  413  G  4  ..t,  IIIH  0  0  0  1  3
+ chrM  415  C  4  TTTt  III7  0  0  0  4  4
+ 
+**Note** that position 414 is not reported because the *a* variant has associated quality value of 17 (because ord('2')-33 = 17) in is below the phred threshold 20 set by the **Count variants with quality above this value** parameter.
+
+-----
+
+**Example 2**: Report everything
+
+In addition to calling variants it is often useful to know the quality adjusted coverage. Running the tool with these parameters:
+
+.. image:: ../static/images/pileup_parser_help2.png 
+
+will report everything from the original file::
+
+ chrM  412  A  2  .,    II    0  0  0  0  2
+ chrM  413  G  4  ..t,  III2  0  0  0  1  3
+ chrM  414  C  4  ...a  III2  0  0  0  0  3
+ chrM  415  C  4  TTTt  III7  0  0  0  4  4
+ 
+Here, for instance,  you can see that although the total coverage at position 414 is 4 (column 4) the quality adjusted coverage is 3 (last column). This is because inly three reads out of four have bases with quality above the set threshold of 20 (the actual qualities are III2 or, after conversion,  40, 40, 40, 17).
+
+Now, one can use the last column of this dataset to filter out (using Galaxy's filter tool) positions where quality adjusted coverage (last column) is below a set threshold.
+
+ 
+</help>
+</tool>
