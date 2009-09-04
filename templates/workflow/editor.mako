@@ -46,6 +46,7 @@
     // Globals
     workflow = null;
     canvas_manager = null;
+    active_ajax_call = false;
     // jQuery onReady
     $( function() {
         
@@ -104,6 +105,14 @@
                      }
                 });
             }
+        });
+        
+        // For autosave purposes
+        $(document).ajaxStart( function() {
+            active_ajax_call = true;
+            $(document).bind( "ajaxStop.global", function() {
+                active_ajax_call = false;
+            });
         });
         
         $(document).ajaxError( function ( e, x ) {
@@ -341,10 +350,14 @@
     var save_current_workflow = function ( success_callback ) {
         show_modal( "Saving workflow", "progress" );
         workflow.check_changes_in_active_form();
-        // We bind to ajaxStop because of auto-saving, since the form submission ajax
-        // call needs to be completed so that the new data is saved
-        $(document).bind('ajaxStop.save_workflow', function() {
-            $(document).unbind('ajaxStop.save_workflow');
+        if (!workflow.has_changes) {
+            hide_modal();
+            if ( success_callback ) {
+                success_callback();
+            }
+            return;
+        }
+        var savefn = function() {
             $.ajax( {
                 url: "${h.url_for( action='save_workflow' )}",
                 type: "POST",
@@ -379,8 +392,23 @@
                     }
                 }
             });
-            $(document).unbind('ajaxStop.save_workflow'); // IE7 needs it here
-        });
+        }
+        
+        // We bind to ajaxStop because of auto-saving, since the form submission ajax
+        // call needs to be completed so that the new data is saved
+        if (active_ajax_call) {
+            $(document).bind('ajaxStop.save_workflow', function() {
+                $(document).unbind('ajaxStop.save_workflow');
+                savefn();
+                $(document).unbind('ajaxStop.save_workflow'); // IE7 needs it here
+                active_ajax_call = false;
+            });
+        } else {
+            savefn();
+        }
+        if ( success_callback ) {
+            success_callback();
+        }
     }
     
     </script>
