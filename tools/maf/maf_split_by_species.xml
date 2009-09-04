@@ -116,7 +116,7 @@ the tool will create **a single** history item containing 12 alignment blocks (n
 
 -----
 
-**Example 1**: **Collapse empty alignment columns is Yes**:
+**Example 2**: **Collapse empty alignment columns is No**:
 
 For the following alignment::
 
