@@ -37,19 +37,16 @@ class CloudController( BaseController ):
         Render cloud main page (management of cloud resources)
         """
         user = trans.get_user()
-        cloudCredentials = trans.sa_session.query( model.CloudUserCredentials ) \
-            .order_by( desc( model.CloudUserCredentials.c.update_time ) ) \
+        pendingInstances = trans.sa_session.query( model.UCI ) \
+            .filter_by( user=user, state="pending" ) \
             .all()
+            
+        for i in range( len( pendingInstances ) ):
+            update_instance_state( trans, pendingInstances[i].id )
         
-        prevInstances = trans.sa_session.query( model.UCI ) \
-            .filter_by( user=user, state="available" ) \
-            .order_by( desc( model.UCI.c.update_time ) ) \
-            .all() #TODO: diff between live and previous instances 
-                        
-        liveInstances = trans.sa_session.query( model.CloudInstance ) \
+        cloudCredentials = trans.sa_session.query( model.CloudUserCredentials ) \
             .filter_by( user=user ) \
-            .filter( or_(model.CloudInstance.c.state=="running", model.CloudInstance.c.state=="pending") ) \
-            .order_by( desc( model.CloudInstance.c.launch_time ) ) \
+            .order_by( desc( model.CloudUserCredentials.c.update_time ) ) \
             .all()
         
         liveInstances = trans.sa_session.query( model.UCI ) \
@@ -57,11 +54,16 @@ class CloudController( BaseController ):
             .filter( or_(model.UCI.c.state=="running", model.UCI.c.state=="pending") ) \
             .order_by( desc( model.UCI.c.launch_time ) ) \
             .all()
-                        
+            
+        prevInstances = trans.sa_session.query( model.UCI ) \
+            .filter_by( user=user, state="available" ) \
+            .order_by( desc( model.UCI.c.update_time ) ) \
+            .all()
+                                              
         return trans.fill_template( "cloud/configure_cloud.mako",
                                     cloudCredentials = cloudCredentials,
-                                    prevInstances = prevInstances,
-                                    liveInstances = liveInstances )
+                                    liveInstances = liveInstances,
+                                    prevInstances = prevInstances )
     
     @web.expose
     @web.require_login( "use Galaxy cloud" )
@@ -77,162 +79,94 @@ class CloudController( BaseController ):
         newDefault.defaultCred = True
         trans.sa_session.flush()
         trans.set_message( "Credentials '%s' set as default." % newDefault.name )
-                    
+        
+        # TODO: Fix bug that when this function returns, top Galaxy tab bar is missing from the webpage  
         return self.list( trans ) #trans.fill_template( "cloud/configure_cloud.mako",
                #awsCredentials = awsCredentials )
-   
-    @web.expose
-    @web.require_login( "use Galaxy workflows" )
-    def list_for_run( self, trans ):
-        """
-        Render workflow list for analysis view (just allows running workflow
-        or switching to management view)
-        """
-        user = trans.get_user()
-        workflows = trans.sa_session.query( model.StoredWorkflow ) \
-            .filter_by( user=user, deleted=False ) \
-            .order_by( desc( model.StoredWorkflow.c.update_time ) ) \
-            .all()
-        shared_by_others = trans.sa_session \
-            .query( model.StoredWorkflowUserShareAssociation ) \
-            .filter_by( user=user ) \
-            .filter( model.StoredWorkflow.c.deleted == False ) \
-            .order_by( desc( model.StoredWorkflow.c.update_time ) ) \
-            .all()
-        return trans.fill_template( "workflow/list_for_run.mako",
-                                    workflows = workflows,
-                                    shared_by_others = shared_by_others )
-    
-    @web.expose
-    @web.require_login( "use Galaxy workflows" )
-    def share( self, trans, id, email="" ):
-        msg = mtype = None
-        # Load workflow from database
-        stored = get_stored_workflow( trans, id )
-        if email:
-            other = model.User.filter( and_( model.User.table.c.email==email,
-                                             model.User.table.c.deleted==False ) ).first()
-            if not other:
-                mtype = "error"
-                msg = ( "User '%s' does not exist" % email )
-            elif other == trans.get_user():
-                mtype = "error"
-                msg = ( "You cannot share a workflow with yourself" )
-            elif trans.sa_session.query( model.StoredWorkflowUserShareAssociation ) \
-                    .filter_by( user=other, stored_workflow=stored ).count() > 0:
-                mtype = "error"
-                msg = ( "Workflow already shared with '%s'" % email )
-            else:
-                share = model.StoredWorkflowUserShareAssociation()
-                share.stored_workflow = stored
-                share.user = other
-                session = trans.sa_session
-                session.save_or_update( share )
-                session.flush()
-                trans.set_message( "Workflow '%s' shared with user '%s'" % ( stored.name, other.email ) )
-                return trans.response.send_redirect( url_for( controller='workflow', action='sharing', id=id ) )
-        return trans.fill_template( "workflow/share.mako",
-                                    message = msg,
-                                    messagetype = mtype,
-                                    stored=stored,
-                                    email=email )
-    
-    @web.expose
-    @web.require_login( "use Galaxy workflows" )
-    def sharing( self, trans, id, **kwargs ):
-        session = trans.sa_session
-        stored = get_stored_workflow( trans, id )
-        if 'enable_import_via_link' in kwargs:
-            stored.importable = True
-            stored.flush()
-        elif 'disable_import_via_link' in kwargs:
-            stored.importable = False
-            stored.flush()
-        elif 'unshare_user' in kwargs:
-            user = session.query( model.User ).get( trans.security.decode_id( kwargs['unshare_user' ] ) )
-            if not user:
-                error( "User not found for provided id" )
-            association = session.query( model.StoredWorkflowUserShareAssociation ) \
-                                 .filter_by( user=user, stored_workflow=stored ).one()
-            session.delete( association )
-            session.flush()
-        return trans.fill_template( "workflow/sharing.mako",
-                                    stored=stored )
-        
-    @web.expose
-    @web.require_login( "use Galaxy workflows" )
-    def imp( self, trans, id, **kwargs ):
-        session = trans.sa_session
-        stored = get_stored_workflow( trans, id, check_ownership=False )
-        if stored.importable == False:
-            error( "The owner of this workflow has disabled imports via this link" )
-        elif stored.user == trans.user:
-            error( "You are already the owner of this workflow, can't import" )
-        elif stored.deleted:
-            error( "This workflow has been deleted, can't import" )
-        elif session.query( model.StoredWorkflowUserShareAssociation ) \
-                    .filter_by( user=trans.user, stored_workflow=stored ).count() > 0:
-            error( "This workflow is already shared with you" )
-        else:
-            share = model.StoredWorkflowUserShareAssociation()
-            share.stored_workflow = stored
-            share.user = trans.user
-            session = trans.sa_session
-            session.save_or_update( share )
-            session.flush()
-            # Redirect to load galaxy frames.
-            return trans.response.send_redirect( url_for( controller='workflow' ) )
-    
+               
+
     @web.expose
     @web.require_login( "start Galaxy cloud instance" )
-    def start( self, trans, id, size='small' ):
+    def start( self, trans, id, size='' ):
         """
         Start a new cloud resource instance
         """
+        # TODO: Add choice of instance size before starting one
+        #if size:
         user = trans.get_user()
         mi = get_mi( trans, size )
         uci = get_uci( trans, id )
-        stores = get_stores( trans, uci ) #TODO: handle list!
+        stores = get_stores( trans, uci ) 
+        log.debug(self.app.config.job_working_directory)
+        if len(stores) is not 0:
+            instance = model.CloudInstance()
+            instance.user = user
+            instance.image = mi
+            instance.uci = uci
+            instance.keypair_name = get_keypair_name( trans )
+            instance.availability_zone = stores[0].availability_zone # Bc. all EBS volumes need to be in the same avail. zone, just check 1st
+            instance.type = size
+            conn = get_connection( trans )
+            # Get or setup appropriate security group
+            sg = list() # security group list
+            try:
+                gSecurityGroup = conn.create_security_group('galaxy', 'Galaxy security group')
+                gSecurityGroup.authorize( 'tcp', 80, 80, '0.0.0.0/0' )
+                sg.append( gSecurityGroup )
+            except:
+                sgs = rs = conn.get_all_security_groups()
+                for i in range( len( sgs ) ):
+                    if sgs[i].name == "galaxy":
+                        sg.append( sgs[i] )
+                        break # only 1 security group w/ this name can exist, so continue                    
+            
+            #reservation = conn.run_instances( image_id=instance.image, key_name=instance.keypair_name, security_groups=sg, instance_type=instance.type,  placement=instance.availability_zone )
+            instance.launch_time = datetime.utcnow()
+            uci.launch_time = instance.launch_time
+            #instance.reservation = str( reservation.instances[0] )
+            instance.state = "pending"
+            #instance.state = reservation.instances[0].state
+            uci.state = instance.state
+            # TODO: After instance boots up, need to update status, DNS and attach EBS
+            
+            # Persist
+            session = trans.sa_session
+            session.save_or_update( instance )
+            session.flush()
+            #error( "Starting instance '%s' is not supported yet." % uci.name )
+                        
+            trans.log_event( "User started cloud instance '%s'" % uci.name )
+            trans.set_message( "Galaxy instance '%s' started. NOTE: Please wait about 2-3 minutes for the instance to " 
+                "start up and then refresh this page. A button to connect to the instance will then appear alongside "
+                "instance description." % uci.name )
+            return self.list( trans )
         
-        instance = model.CloudInstance()
-        instance.user = user
-        instance.image = mi
-        instance.uci = uci
-        # TODO: get real value from AWS
-        instance.state = "pending"
-        uci.state = instance.state
-        uci.launch_time = datetime.utcnow()
-        instance.launch_time = datetime.utcnow()
-        instance.availability_zone = stores.availability_zone
-        instance.type = size
-        
-        # Persist
-        session = trans.sa_session
-        session.save_or_update( instance )
-        session.flush()
-        #error( "Starting instance '%s' is not supported yet." % uci.name )
+#        return trans.show_form( 
+#            web.FormBuilder( web.url_for(), "Start instance size", submit_text="Start" )
+#                .add_input( "radio","Small","size", value='small' ) 
+#                .add_input( "radio","Medium","size", value='medium' ) )
                     
-        trans.log_event( "User started cloud instance '%s'" % uci.name )
-        trans.set_message( "Galaxy instance '%s' started." % uci.name )
-        return self.list( trans )
     
     @web.expose
     @web.require_login( "stop Galaxy cloud instance" )
     def stop( self, trans, id ):
         """
-        Stop a cloud resource instance
+        Stop a cloud instance. This implies stopping Galaxy servcer and unmounting relevant file system(s) 
         """
         uci = get_uci( trans, id )
         instances = get_instances( trans, uci ) #TODO: handle list!
         
-        instances.state = 'done'
+        instances.stop()
+        instances.state = 'terminated'
         instances.stop_time = datetime.utcnow()
+        # Reset relevant UCI fields
         uci.state = 'available'
         uci.launch_time = None
+          
         # Persist
         session = trans.sa_session
-        session.save_or_update( uci )
         session.save_or_update( instances )
+        session.save_or_update( uci )
         session.flush()
         trans.log_event( "User stopped cloud instance '%s'" % uci.name )
         trans.set_message( "Galaxy instance '%s' stopped." % uci.name )
@@ -429,11 +363,11 @@ class CloudController( BaseController ):
         """
         View details about running instance
         """
-        instance = get_uci( trans, id )
-        log.debug ( instance.name )
+        uci = get_uci( trans, id )
+        instances = get_instances( trans, uci ) # TODO: Handle list (will probably need to be done in mako template)
         
         return trans.fill_template( "cloud/viewInstance.mako",
-                                    liveInstance = instance )
+                                    liveInstance = instances )
         
 
     @web.expose
@@ -931,7 +865,10 @@ def get_uci( trans, id, check_ownership=True ):
     """
     Get a UCI from the database by id, verifying ownership. 
     """
-    id = trans.security.decode_id( id )
+    # Check if 'id' is in int (i.e., it was called from this program) or
+    #    it was passed from the web (in which case decode it)
+    if not isinstance( id, int ):
+        id = trans.security.decode_id( id )
 
     live = trans.sa_session.query( model.UCI ).get( id )
     if not live:
@@ -956,27 +893,120 @@ def get_mi( trans, size='small' ):
 
 def get_stores( trans, uci ):
     """
-    Get store objects/tables that are connected to uci object/table
+    Get stores objects that are connected to uci object
     """
     user = trans.get_user()
     stores = trans.sa_session.query( model.CloudStore ) \
             .filter_by( user=user, uci_id=uci.id ) \
-            .first()
-            #.all() #TODO: return all but need to edit calling method(s) to handle list
+            .all()
             
     return stores
 
 def get_instances( trans, uci ):
     """
-    Get instance objects/tables that are connected to uci object/table
+    Get objects of instances that are pending or running and are connected to uci object
     """
     user = trans.get_user()
     instances = trans.sa_session.query( model.CloudInstance ) \
             .filter_by( user=user, uci_id=uci.id ) \
+            .filter( or_(model.CloudInstance.table.c.state=="running", model.CloudInstance.table.c.state=="pending" ) ) \
             .first()
             #.all() #TODO: return all but need to edit calling method(s) to handle list
             
     return instances
+
+
+def get_cloud_instance( conn, instance_id ):
+    """
+    Returns a cloud instance representation of the instance id, i.e., cloud instance objects that cloud API can be invoked on
+    """
+    # get_all_instances func. takes a list of desired instance id's, so create a list first
+    idLst = list() 
+    idLst.append( instance_id )
+    # Retrieve cloud instance based on passed instance id
+    cloudInstance = conn.get_all_instances( idLst )
+    return cloudInstance[0]
+
+def get_connection( trans ):
+    """
+    Establishes EC2 conncection using user's default credentials
+    """
+    user = trans.get_user()
+    creds = trans.sa_session.query(model.CloudUserCredentials).filter_by(user=user, defaultCred=True).first()
+    if creds:
+        a_key = creds.access_key
+        s_key = creds.secret_key
+        conn = EC2Connection( a_key, s_key )
+        return conn
+    else:
+        error( "You must specify default credentials before starting an instance." )
+        return 0
+
+def get_keypair_name( trans ):
+    """
+    Generate X.509 Certificate (i.e., keypair) using user's default credentials
+    """
+    conn = get_connection( trans )
+    try:
+        key_pair = conn.get_key_pair( 'galaxy-keypair' )
+    except: # No keypair under this name exists so create it
+        key_pair = conn.create_key_pair( 'galaxy-keypair' )
+#    log.debug( key_pair.name )
+    
+    return key_pair.name
+
+def update_instance_state( trans, id ):
+    """
+    Update state of instances associated with given UCI id and store it in local database. Also update
+    state of the given UCI.  
+    """
+    uci = get_uci( trans, id )
+    # Get list of instances associated with given uci as they are stored in local database
+    dbInstances = get_instances( trans, uci ) # TODO: handle list (currently only 1 instance can correspond to 1 UCI)
+    oldState = dbInstances.state
+    # Establish connection with cloud
+    conn = get_connection( trans )
+    # Get actual instance from the cloud
+    cloudInstance = get_cloud_instance( conn, dbInstances.instance_id )
+    # Update status of instance
+    cloudInstance.update()
+    dbInstances.state = cloudInstance.state
+    log.debug( "Processing instance %i, instance current state: %s" % i, cloudInstance.state )
+    
+    # If instance is now running, update/process instance (i.e., mount file system, start Galaxy, update DB with DNS)
+    if oldState=="pending" and dbInstances.state=="running":
+        update_instance( trans, dbInstances, cloudInstance )
+    
+    # Update state of UCI (TODO: once more than 1 instance is assoc. w/ 1 UCI, this will be need to be updated differently) 
+    uci.state = dbInstances.state
+    
+    # Persist
+    session = trans.sa_session
+    session.save_or_update( dbInstances )
+    session.save_or_update( uci )
+    session.flush()
+    
+    
+def update_instance( trans, dbInstance, cloudInstance ):
+    """
+    Update instance: mount file system, start Galaxy and update local DB w/ DNS info
+    
+    Keyword arguments:
+    trans -- current transaction
+    dbInstance -- object of 'instance' as it is stored in local database
+    cloudInstance -- object of 'instance' as it resides in the cloud. Functions supported by the cloud API can be
+        instantiated directly on this object.
+    """
+    dbInstance.public_dns = cloudInstance.dns_name
+    dbInstance.private_dns = cloudInstance.private_dns_name
+
+    # TODO: mount storage 
+    # TODO: start Galaxy 
+    
+    # Persist
+    session = trans.sa_session
+    session.save_or_update( dbInstance )
+    session.flush()
 
 def attach_ordered_steps( workflow, steps ):
     ordered_steps = order_workflow_steps( steps )
@@ -1104,3 +1134,8 @@ def cleanup_param_values( inputs, values ):
                 cleanup( prefix, input.cases[current_case].inputs, group_values )
     cleanup( "", inputs, values )
     return associations
+
+
+
+
+
