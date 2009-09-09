@@ -663,3 +663,4 @@ eschColi_K12	Escherichia coli K12	chr=4639675
 aeroHydr_ATCC7966	Aeromonas hydrophila subsp. hydrophila ATCC 7966	chr=4744448
 baciAnth_AMES	Bacillus anthracis str. Ames	chr=5227293
 shewOnei	Shewanella oneidensis MR-1	plasmid_pMR-1=161613,chr=4969803
+15217	Human herpesvirus 1	NC_001806=152261
