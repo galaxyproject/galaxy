@@ -1,4 +1,4 @@
-<tool id="maf_limit_size1" name="Filter MAF blocks">
+<tool id="maf_limit_size1" name="Filter MAF blocks" version="1.0.1">
   <description>by Size</description>
   <command interpreter="python">maf_limit_size.py $input1 $out_file1 $min_size $max_size</command>
   <inputs>

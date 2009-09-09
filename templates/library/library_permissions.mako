@@ -15,7 +15,7 @@
     ${render_msg( msg, messagetype )}
 %endif
 
-%if trans.app.security_agent.allow_action( user, user_roles, trans.app.security_agent.permitted_actions.LIBRARY_MANAGE, library_item=library ):
+%if trans.app.security_agent.can_manage_library_item( user, user_roles, library ):
     <%
         roles = trans.app.model.Role.filter( trans.app.model.Role.table.c.deleted==False ).order_by( trans.app.model.Role.table.c.name ).all()
     %>

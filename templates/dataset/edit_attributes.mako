@@ -189,7 +189,7 @@
 </div>
 <p />
 
-%if trans.app.security_agent.allow_action( user, user_roles, data.permitted_actions.DATASET_MANAGE_PERMISSIONS, dataset=data.dataset ):
+%if trans.app.security_agent.can_manage_dataset( user_roles, data.dataset ):
     <%namespace file="/dataset/security_common.mako" import="render_permission_form" />
     ${render_permission_form( data.dataset, data.name, h.url_for( controller='root', action='edit', id=data.id ), user_roles )}
 %elif trans.user:

@@ -1,17 +1,15 @@
 <%inherit file="/base.mako"/>
-<%namespace file="common.mako" import="render_dataset" />
 <%namespace file="/message.mako" import="render_msg" />
-<% from galaxy import util %>
+<%
+    from time import strftime
+    from galaxy import util
+    from galaxy.web.controllers.library import active_folders_and_lddas, activatable_folders_and_lddas
+%>
 
 <%def name="stylesheets()">
     <link href="${h.url_for('/static/style/base.css')}" rel="stylesheet" type="text/css" />
     <link href="${h.url_for('/static/style/library.css')}" rel="stylesheet" type="text/css" />
 </%def>
-
-<%
-def name_sorted( l ):
-    return sorted( l, lambda a, b: cmp( a.name.lower(), b.name.lower() ) )
-%>
 
 <script type="text/javascript">
     $( document ).ready( function () {
@@ -72,24 +70,77 @@ def name_sorted( l ):
     }
 </script>
 
-<%def name="render_folder( folder, folder_pad, deleted, show_deleted, created_ldda_ids, library_id )">
+<%def name="render_dataset( ldda, library_dataset, selected, library, folder, deleted, show_deleted )">
     <%
-        root_folder = not folder.parent
+        ## The received data must always be a LibraryDatasetDatasetAssociation object.  The object id passed to methods
+        ## from the drop down menu should be the ldda id to prevent id collision ( which could happen when displaying
+        ## children, which are always lddas ).  We also need to make sure we're displaying the latest version of this
+        ## library_dataset, so we display the attributes from the ldda.
+        if ldda.user:
+            uploaded_by = ldda.user.email
+        else:
+            uploaded_by = 'anonymous'
+        if ldda == library_dataset.library_dataset_dataset_association:
+            current_version = True
+        else:
+            current_version = False
+    %>
+    <div class="historyItemWrapper historyItem historyItem-${ldda.state}" id="libraryItem-${ldda.id}">
+        ## Header row for library items (name, state, action buttons)
+        <div class="historyItemTitleBar">     
+            <table cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr>
+                    <td width="*">
+                        %if selected:
+                            <input type="checkbox" name="ldda_ids" value="${ldda.id}" checked/>
+                        %else:
+                            <input type="checkbox" name="ldda_ids" value="${ldda.id}"/>
+                        %endif
+                        <span class="libraryItemDeleted-${ldda.deleted}">
+                            <a href="${h.url_for( controller='admin', action='library_dataset_dataset_association', library_id=library.id, folder_id=folder.id, id=ldda.id, info=True, deleted=deleted, show_deleted=show_deleted )}"><b>${ldda.name[:50]}</b></a>
+                        </span>
+                        <a id="dataset-${ldda.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
+                        %if not library.deleted and not folder.deleted and not library_dataset.deleted:
+                            <div popupmenu="dataset-${ldda.id}-popup">
+                                <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', library_id=library.id, folder_id=folder.id, id=ldda.id, edit_info=True )}">Edit this dataset's information</a>
+                                ## We're disabling the ability to add templates at the LDDA and LibraryDataset level, but will leave this here for possible future use
+                                ##<a class="action-button" href="${h.url_for( controller='admin', action='info_template', library_id=library.id, library_dataset_id=library_dataset.id, new_template=True )}">Add an information template to this dataset</a>
+                                <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', library_id=library.id, folder_id=folder.id, id=ldda.id, permissions=True )}">Edit this dataset's permissions</a>
+                                %if current_version:
+                                    <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', library_id=library.id, folder_id=folder.id, replace_id=library_dataset.id )}">Upload a new version of this dataset</a>
+                                %endif
+                                %if ldda.has_data:
+                                    <a class="action-button" href="${h.url_for( controller='admin', action='download_dataset_from_folder', id=ldda.id, library_id=library.id )}">Download this dataset</a>
+                                %endif
+                                <a class="action-button" confirm="Click OK to delete dataset '${ldda.name}'." href="${h.url_for( controller='admin', action='delete_library_item', library_id=library.id, library_item_id=library_dataset.id, library_item_type='library_dataset' )}">Delete this dataset</a>
+                            </div>
+                        %elif not library.deleted and not folder.deleted and library_dataset.deleted:
+                            <div popupmenu="dataset-${ldda.id}-popup">
+                                <a class="action-button" href="${h.url_for( controller='admin', action='undelete_library_item', library_id=library.id, library_item_id=library_dataset.id, library_item_type='library_dataset' )}">Undelete this dataset</a>
+                            </div>
+                        %endif
+                    </td>
+                    <td width="300">${ldda.message}</td>
+                    <td width="150">${uploaded_by}</td>
+                    <td width="60">${ldda.create_time.strftime( "%Y-%m-%d" )}</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</%def>
+
+<%def name="render_folder( folder, folder_pad, deleted, show_deleted, created_ldda_ids, library_id, root_folder=False )">
+    <%
         if root_folder:
             pad = folder_pad
-        else:
-            pad = folder_pad + 20
-        if folder_pad == 0:
             expander = "/static/images/silk/resultset_bottom.png"
             folder_img = "/static/images/silk/folder_page.png"
-            subfolder = False
         else:
+            pad = folder_pad + 20
             expander = "/static/images/silk/resultset_next.png"
             folder_img = "/static/images/silk/folder.png"
-            subfolder = True
-        created_ldda_id_list = util.listify( created_ldda_ids )
-        if created_ldda_id_list:
-           created_ldda_ids = [ int( ldda_id ) for ldda_id in created_ldda_id_list ]
+        if created_ldda_ids:
+            created_ldda_ids = [ int( ldda_id ) for ldda_id in util.listify( created_ldda_ids ) ]
     %>
     %if not root_folder:
         <li class="folderRow libraryOrFolderRow" style="padding-left: ${pad}px;">
@@ -104,10 +155,6 @@ def name_sorted( l ):
                 </div>
             %endif
             %if not folder.deleted:
-                <%
-                    library_item_ids = {}
-                    library_item_ids[ 'folder' ] = folder.id
-                %>
                 <div popupmenu="folder-${folder.id}-popup">
                     <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', library_id=library_id, folder_id=folder.id )}">Add datasets to this folder</a>
                     <a class="action-button" href="${h.url_for( controller='admin', action='folder', new=True, id=folder.id, library_id=library_id )}">Create a new sub-folder in this folder</a>
@@ -130,30 +177,31 @@ def name_sorted( l ):
             %endif
         </li>
     %endif
-    %if subfolder:
+    %if pad > 0:
         <ul id="subFolder">
     %else:
         <ul>
     %endif
         %if show_deleted:
             <%
-                parent_folders = folder.activatable_folders
-                parent_datasets = folder.activatable_library_datasets
+                sub_folders, lddas = activatable_folders_and_lddas( trans, folder )
             %>
         %else:
             <%
-                parent_folders = folder.active_folders
-                parent_datasets = folder.active_library_datasets
+                sub_folders, lddas = active_folders_and_lddas( trans, folder )
             %>
         %endif
-        %for folder in name_sorted( parent_folders ):
-            ${render_folder( folder, pad, deleted, show_deleted, created_ldda_ids, library_id )}
-        %endfor    
-        %for library_dataset in name_sorted( parent_datasets ):
+        %for sub_folder in sub_folders:
+            ${render_folder( sub_folder, pad, deleted, show_deleted, created_ldda_ids, library_id )}
+        %endfor 
+        %for ldda in lddas:
             <%
-                selected = created_ldda_ids and library_dataset.library_dataset_dataset_association.id in created_ldda_ids
+                library_dataset = ldda.library_dataset
+                selected = created_ldda_ids and ldda.id in created_ldda_ids
             %>
-            <li class="datasetRow" style="padding-left: ${pad + 18}px;">${render_dataset( library_dataset, selected, library, deleted, show_deleted )}</li>
+            <li class="datasetRow" style="padding-left: ${pad + 18}px;">
+                ${render_dataset( ldda, library_dataset, selected, library, folder, deleted, show_deleted )}
+            </li>
         %endfor
     </ul>
 </%def>
@@ -196,10 +244,6 @@ def name_sorted( l ):
                         <a id="library-${library.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
                         <div popupmenu="library-${library.id}-popup">
                         %if not deleted:
-                            <%
-                                library_item_ids = {}
-                                library_item_ids[ 'library' ] = library.id
-                            %>
                             <a class="action-button" href="${h.url_for( controller='admin', action='library', id=library.id, information=True )}">Edit this data library's information</a>
                             ## Editing templates disabled until we determine optimal approach to re-linking library item to new version of form definition
                             ##%if library.info_association:
@@ -228,7 +272,7 @@ def name_sorted( l ):
             </div>
         </li>
         <ul>
-            ${render_folder( library.root_folder, 0, deleted, show_deleted, created_ldda_ids, library.id )}
+            ${render_folder( library.root_folder, 0, deleted, show_deleted, created_ldda_ids, library.id, root_folder=True )}
         </ul>
         <br/>
     </ul>

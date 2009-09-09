@@ -23,6 +23,7 @@ class CachedRangesInFile:
     def __init__( self, filename ):
         self.file_size = os.stat( filename ).st_size
         self.file = open( filename, 'rb' )
+        self.filename = filename
         self.length = int( self.file_size / self.fmt_size / 2 )
         self._cached_ranges = [ None for i in xrange( self.length ) ]
     def __getitem__( self, i ):

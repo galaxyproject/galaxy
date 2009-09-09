@@ -1,8 +1,8 @@
-<tool id="GeneBed_Maf_Fasta2" name="Stitch Gene blocks">
+<tool id="GeneBed_Maf_Fasta2" name="Stitch Gene blocks" version="1.0.1">
   <description>given a set of coding exon intervals</description>
   <command interpreter="python">#if $maf_source_type.maf_source == "user":#interval_maf_to_merged_fasta.py --dbkey=$dbkey --species=$maf_source_type.species --mafSource=$maf_source_type.maf_file --mafIndex=$maf_source_type.maf_file.metadata.maf_index --interval_file=$input1 --output_file=$out_file1 --mafSourceType=$maf_source_type.maf_source --geneBED --mafIndexFileDir=${GALAXY_DATA_INDEX_DIR}
 #else:#interval_maf_to_merged_fasta.py --dbkey=$dbkey --species=$maf_source_type.species --mafSource=$maf_source_type.maf_identifier --interval_file=$input1 --output_file=$out_file1 --mafSourceType=$maf_source_type.maf_source  --geneBED --mafIndexFileDir=${GALAXY_DATA_INDEX_DIR}
-#end if
+#end if# --overwrite_with_gaps=$overwrite_with_gaps
   </command>
   <inputs>
     <param name="input1" type="data" format="bed" label="Gene BED File">
@@ -29,35 +29,40 @@
       <when value="cached">
         <param name="maf_identifier" type="select" label="MAF Type" >
           <options from_file="maf_index.loc">
-	        <column name="name" index="0"/>
-	        <column name="value" index="1"/>
-	        <column name="dbkey" index="2"/>
-	        <column name="species" index="3"/>
-	        <filter type="data_meta" ref="input1" key="dbkey" column="2" multiple="True" separator=","/>
-	        <validator type="no_options" message="No alignments are available for the build associated with the selected interval file"/>
+            <column name="name" index="0"/>
+            <column name="value" index="1"/>
+            <column name="dbkey" index="2"/>
+            <column name="species" index="3"/>
+            <filter type="data_meta" ref="input1" key="dbkey" column="2" multiple="True" separator=","/>
+            <validator type="no_options" message="No alignments are available for the build associated with the selected interval file"/>
           </options>
         </param> 
         <param name="species" type="select" display="checkboxes" multiple="true" label="Choose species" help="Select species to be included in the final alignment">
           <options from_file="maf_index.loc">
-	        <column name="uid" index="1"/>
-	        <column name="value" index="3"/>
-	        <column name="name" index="3"/>
-	        <filter type="param_value" ref="maf_identifier" name="uid" column="1"/>
-	        <filter type="multiple_splitter" column="3" separator=","/>
+            <column name="uid" index="1"/>
+            <column name="value" index="3"/>
+            <column name="name" index="3"/>
+            <filter type="param_value" ref="maf_identifier" name="uid" column="1"/>
+            <filter type="multiple_splitter" column="3" separator=","/>
           </options>
         </param>
       </when>
     </conditional>
-   </inputs>
+    <param name="overwrite_with_gaps" type="select" label="Split into Gapless MAF blocks" help="When set to Yes, blocks are divided around gaps appearing in any species. This will prevent gaps occuring in the interior of the sequence for an aligning species from overwriting a nucleotide found for the same position in a lower-scoring block.">
+      <option value="True" selected="true">No</option>
+      <option value="False">Yes</option>
+    </param>
+  </inputs>
   <outputs>
     <data format="fasta" name="out_file1" />
   </outputs>
   <tests>
     <test>
       <param name="input1" value="8.bed"/>
-      <param name="maf_source" value="cached"/>
+      <param name="maf_source" value="cached"/>in aligning species
       <param name="maf_identifier" value="8_WAY_MULTIZ_hg17"/>
       <param name="species" value="canFam1,hg17,mm5,panTro1,rn3"/>
+      <param name="overwrite_with_gaps" value="True"/>
       <output name="out_file1" file="gene_bed_maf_to_fasta_out.fasta" />
     </test>
     <test>
@@ -65,6 +70,7 @@
       <param name="maf_source" value="user"/>
       <param name="maf_file" value="4.maf"/>
       <param name="species" value="hg17,panTro1"/>
+      <param name="overwrite_with_gaps" value="True"/>
       <output name="out_file1" file="gene_bed_maf_to_fasta_user_out.fasta" />
     </test>
   </tests> 

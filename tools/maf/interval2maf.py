@@ -20,6 +20,8 @@ usage: %prog maf_file [options]
    -i, --interval_file=i:       Input interval file
    -o, --output_file=o:      Output MAF file
    -p, --species=p: Species to include in output
+   -P, --split_blocks_by_species=P: Split blocks by species
+   -r, --remove_all_gap_columns=r: Remove all Gap columns
    -l, --indexLocation=l: Override default maf_index.loc file
    -z, --mafIndexFile=z: Directory of local maf index file ( maf_index.loc or maf_pairwise.loc )
 """
@@ -45,25 +47,21 @@ def __main__():
     if options.dbkey: dbkey = options.dbkey
     else: dbkey = None
     if dbkey in [None, "?"]:
-        print >>sys.stderr, "You must specify a proper build in order to extract alignments. You can specify your genome build by clicking on the pencil icon associated with your interval file."
-        sys.exit()
+        maf_utilities.tool_fail( "You must specify a proper build in order to extract alignments. You can specify your genome build by clicking on the pencil icon associated with your interval file." )
     
     species = maf_utilities.parse_species_option( options.species )
     
     if options.chromCol: chromCol = int( options.chromCol ) - 1
     else: 
-        print >>sys.stderr, "Chromosome column not set, click the pencil icon in the history item to set the metadata attributes."
-        sys.exit()
+        maf_utilities.tool_fail( "Chromosome column not set, click the pencil icon in the history item to set the metadata attributes." )
     
     if options.startCol: startCol = int( options.startCol ) - 1
     else: 
-        print >>sys.stderr, "Start column not set, click the pencil icon in the history item to set the metadata attributes."
-        sys.exit()
+        maf_utilities.tool_fail( "Start column not set, click the pencil icon in the history item to set the metadata attributes." )
     
     if options.endCol: endCol = int( options.endCol ) - 1
     else: 
-        print >>sys.stderr, "End column not set, click the pencil icon in the history item to set the metadata attributes."
-        sys.exit()
+        maf_utilities.tool_fail( "End column not set, click the pencil icon in the history item to set the metadata attributes." )
     
     if options.strandCol: strandCol = int( options.strandCol ) - 1
     else: 
@@ -71,13 +69,17 @@ def __main__():
     
     if options.interval_file: interval_file = options.interval_file
     else: 
-        print >>sys.stderr, "Input interval file has not been specified."
-        sys.exit()
+        maf_utilities.tool_fail( "Input interval file has not been specified." )
     
     if options.output_file: output_file = options.output_file
     else: 
-        print >>sys.stderr, "Output file has not been specified."
-        sys.exit()
+        maf_utilities.tool_fail( "Output file has not been specified." )
+    
+    split_blocks_by_species = remove_all_gap_columns = False
+    if options.split_blocks_by_species and options.split_blocks_by_species == 'split_blocks_by_species':
+        split_blocks_by_species = True
+        if options.remove_all_gap_columns and options.remove_all_gap_columns == 'remove_all_gap_columns':
+            remove_all_gap_columns = True
     #Finish parsing command line
     
     #Open indexed access to MAFs
@@ -87,16 +89,13 @@ def __main__():
         else:
             index = maf_utilities.maf_index_by_uid( options.mafType, options.mafIndexFile )
         if index is None:
-            print >> sys.stderr, "The MAF source specified (%s) appears to be invalid." % ( options.mafType )
-            sys.exit()
+            maf_utilities.tool_fail( "The MAF source specified (%s) appears to be invalid." % ( options.mafType ) )
     elif options.mafFile:
         index, index_filename = maf_utilities.open_or_build_maf_index( options.mafFile, options.mafIndex, species = [dbkey] )
         if index is None:
-            print >> sys.stderr, "Your MAF file appears to be malformed."
-            sys.exit()
+            maf_utilities.tool_fail( "Your MAF file appears to be malformed." )
     else:
-        print >>sys.stderr, "Desired source MAF type has not been specified."
-        sys.exit()
+        maf_utilities.tool_fail( "Desired source MAF type has not been specified." )
     
     #Create MAF writter
     out = bx.align.maf.Writer( open(output_file, "w") )
@@ -105,10 +104,20 @@ def __main__():
     num_blocks = 0
     num_regions = None
     for num_regions, region in enumerate( bx.intervals.io.NiceReaderWrapper( open( interval_file, 'r' ), chrom_col = chromCol, start_col = startCol, end_col = endCol, strand_col = strandCol, fix_strand = True, return_header = False, return_comments = False ) ):
-        src = "%s.%s" % ( dbkey, region.chrom )
-        for block in maf_utilities.get_chopped_blocks_for_region( index, src, region, species, mincols ):
-            out.write( block )
-            num_blocks += 1
+        src = maf_utilities.src_merge( dbkey, region.chrom )
+        for block in index.get_as_iterator( src, region.start, region.end ):
+            if split_blocks_by_species:
+                blocks = [ new_block for new_block in maf_utilities.iter_blocks_split_by_species( block ) if maf_utilities.component_overlaps_region( new_block.get_component_by_src_start( dbkey ), region ) ]
+            else:
+                blocks = [ block ]
+            for block in blocks:
+                block = maf_utilities.chop_block_by_region( block, src, region )
+                if block is not None:
+                    block = maf_utilities.orient_block_by_region( block, src, region )
+                    if remove_all_gap_columns:
+                        block.remove_all_gap_columns()
+                    out.write( block )
+                    num_blocks += 1
     
     #Close output MAF
     out.close()

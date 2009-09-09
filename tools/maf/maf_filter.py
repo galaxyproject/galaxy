@@ -46,7 +46,7 @@ def main():
     i = 0
     blocks_kept = 0
     for i, maf_block in enumerate( maf_reader ):
-        if min_size <= maf_block.components[0].size <= max_size:
+        if min_size <= maf_block.text_size <= max_size:
             local = {'maf_block':maf_block, 'ret_val':False}
             execfile( script_file, {}, local )
             if local['ret_val']:

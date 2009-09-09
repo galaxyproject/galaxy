@@ -2,8 +2,8 @@
 <%namespace file="/message.mako" import="render_msg" />
 <% 
     from galaxy import util
+    from galaxy.web.controllers.library import active_folders
     from time import strftime
-    
     user, roles = trans.get_user_and_roles()
 %>
 
@@ -14,10 +14,6 @@
 </%def>
 
 <%
-
-def name_sorted( l ):
-    return sorted( l, lambda a, b: cmp( a.name.lower(), b.name.lower() ) )
-
 class RowCounter( object ):
     def __init__( self ):
         self.count = 0
@@ -83,21 +79,22 @@ class RowCounter( object ):
     });
 </script>
 
-<%def name="render_dataset( library_dataset, selected, library, pad, parent, row_conter )">
+<%def name="render_dataset( ldda, library_dataset, selected, library, folder, pad, parent, row_conter )">
     <%
-        ## The received data must always be a LibraryDataset object, but the object id passed to methods from the drop down menu
-        ## should be the underlying ldda id to prevent id collision ( which could happen when displaying children, which are always
-        ## lddas ).  We also need to make sure we're displaying the latest version of this library_dataset, so we display the attributes
+        ## The id passed to methods from the drop down menu should be the ldda id to prevent id collision
+        ## ( which could happen when displaying children, which are always lddas ).  We also need to make
+        ## sure we're displaying the latest version of this library_dataset, so we display the attributes
         ## from the ldda.
-        ldda = library_dataset.library_dataset_dataset_association
         if ldda.user:
             uploaded_by = ldda.user.email
         else:
             uploaded_by = 'anonymous'
-        if ldda == ldda.library_dataset.library_dataset_dataset_association:
+        if ldda == library_dataset.library_dataset_dataset_association:
             current_version = True
         else:
             current_version = False
+        can_modify_library_dataset = trans.app.security_agent.can_modify_library_item( user, roles, library_dataset )
+        can_manage_library_dataset = trans.app.security_agent.can_manage_library_item( user, roles, library_dataset )
     %>
 
     <tr class="datasetRow"
@@ -112,19 +109,19 @@ class RowCounter( object ):
             %else:
                 <input type="checkbox" name="ldda_ids" value="${ldda.id}"/>
             %endif
-            <a href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library.id, folder_id=library_dataset.folder.id, id=ldda.id, info=True )}"><b>${ldda.name[:60]}</b></a>
+            <a href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library.id, folder_id=folder.id, id=ldda.id, info=True )}"><b>${ldda.name[:60]}</b></a>
             <a id="dataset-${ldda.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
             <div popupmenu="dataset-${ldda.id}-popup">
-                %if trans.app.security_agent.allow_action( user, roles, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=ldda.library_dataset ):
-                    <a class="action-button" href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library.id, folder_id=library_dataset.folder.id, id=ldda.id, edit_info=True )}">Edit this dataset's information</a>
+                %if can_modify_library_dataset:
+                    <a class="action-button" href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library.id, folder_id=folder.id, id=ldda.id, edit_info=True )}">Edit this dataset's information</a>
                 %else:
-                    <a class="action-button" href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library.id, folder_id=library_dataset.folder.id, id=ldda.id, information=True )}">View this dataset's information</a>
+                    <a class="action-button" href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library.id, folder_id=folder.id, id=ldda.id, information=True )}">View this dataset's information</a>
                 %endif
-                %if trans.app.security_agent.allow_action( user, roles, trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS, dataset=ldda.dataset ) and trans.app.security_agent.allow_action( user, roles, trans.app.security_agent.permitted_actions.LIBRARY_MANAGE, library_item=ldda.library_dataset ):
-                    <a class="action-button" href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library.id, folder_id=library_dataset.folder.id, id=ldda.id, permissions=True )}">Edit this dataset's permissions</a>
-                %if current_version and trans.app.security_agent.allow_action( user, roles, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=ldda.library_dataset ):
-                    <a class="action-button" href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library.id, folder_id=library_dataset.folder.id, replace_id=library_dataset.id )}">Upload a new version of this dataset</a>
+                %if can_manage_library_dataset:
+                    <a class="action-button" href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library.id, folder_id=folder.id, id=ldda.id, permissions=True )}">Edit this dataset's permissions</a>
                 %endif
+                %if current_version and can_modify_library_dataset:
+                    <a class="action-button" href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library.id, folder_id=folder.id, replace_id=library_dataset.id )}">Upload a new version of this dataset</a>
                 %endif
                 %if ldda.has_data:
                     <a class="action-button" href="${h.url_for( controller='library', action='datasets', library_id=library.id, ldda_ids=str( ldda.id ), do_action='add' )}">Import this dataset into your current history</a>
@@ -142,31 +139,30 @@ class RowCounter( object ):
     %>
 </%def>
 
-<%def name="render_folder( folder, folder_pad, created_ldda_ids, library_id, parent=None, row_counter=None )">
+<%def name="render_folder( folder, folder_pad, created_ldda_ids, library_id, hidden_folder_ids, parent=None, row_counter=None, root_folder=False )">
     <%
-        def show_folder():
-            ## TODO: instead of calling check_folder_contents(), which we've already done prior to getting here,
-            ## add a new method that will itself call check_folder_contents() and build a list of accessible folders
-            ## for each library - this should improve performance dor large libraries where the current user can only
-            ## access a small number of folders.
-            if trans.app.security_agent.check_folder_contents( user, roles, folder ) or \
-                trans.app.security_agent.show_library_item( user, roles, folder ):
-                return True
-            return False
-        if not show_folder:
+        if str( folder.id ) in hidden_folder_ids:
             return ""
-        root_folder = not folder.parent
+        can_access, folder_ids = trans.app.security_agent.check_folder_contents( user, roles, folder )
+        if not can_access:
+            can_show, folder_ids = \
+                trans.app.security_agent.show_library_item( user,
+                                                            roles,
+                                                            folder,
+                                                            [ trans.app.security_agent.permitted_actions.LIBRARY_ADD,
+                                                              trans.app.security_agent.permitted_actions.LIBRARY_MODIFY,
+                                                              trans.app.security_agent.permitted_actions.LIBRARY_MANAGE ] )
+            if not can_show:
+                return ""
         if root_folder:
             pad = folder_pad
         else:
             pad = folder_pad + 20
-        if folder_pad == 0:
-            subfolder = False
-        else:
-            subfolder = True
-        created_ldda_id_list = util.listify( created_ldda_ids )
-        if created_ldda_id_list:
-           created_ldda_ids = [ int( ldda_id ) for ldda_id in created_ldda_id_list ]
+        if created_ldda_ids:
+            created_ldda_ids = [ int( ldda_id ) for ldda_id in util.listify( created_ldda_ids ) ]
+        can_add = trans.app.security_agent.can_add_library_item( user, roles, folder )
+        can_modify = trans.app.security_agent.can_modify_library_item( user, roles, folder )
+        can_manage = trans.app.security_agent.can_manage_library_item( user, roles, folder )
         my_row = None
     %>
     %if not root_folder:
@@ -186,21 +182,19 @@ class RowCounter( object ):
                 %endif
                 <a id="folder_img-${folder.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
                 <div popupmenu="folder_img-${folder.id}-popup">
-                    %if trans.app.security_agent.allow_action( user, roles, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=folder ):
+                    %if can_add:
                         <a class="action-button" href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library_id, folder_id=folder.id )}">Add datasets to this folder</a>
                         <a class="action-button" href="${h.url_for( controller='library', action='folder', new=True, id=folder.id, library_id=library_id )}">Create a new sub-folder in this folder</a>
                     %endif
-                    %if trans.app.security_agent.allow_action( user, roles, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=folder ):
+                    %if can_modify:
                         <a class="action-button" href="${h.url_for( controller='library', action='folder', information=True, id=folder.id, library_id=library_id )}">Edit this folder's information</a>
                     %else:
                         <a class="action-button" href="${h.url_for( controller='library', action='folder', information=True, id=folder.id, library_id=library_id )}">View this folder's information</a>
                     %endif
-                    %if forms and not folder.info_association:
-                        %if trans.app.security_agent.allow_action( user, roles, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=library ):
-                            <a class="action-button" href="${h.url_for( controller='library', action='info_template', library_id=library.id, add=True )}">Add an information template to this folder</a>
-                        %endif
+                    %if can_add and forms and not folder.info_association:
+                        <a class="action-button" href="${h.url_for( controller='library', action='info_template', library_id=library.id, add=True )}">Add an information template to this folder</a>
                     %endif
-                    %if trans.app.security_agent.allow_action( user, roles, trans.app.security_agent.permitted_actions.LIBRARY_MANAGE, library_item=folder ):
+                    %if can_manage:
                         <a class="action-button" href="${h.url_for( controller='library', action='folder', permissions=True, id=folder.id, library_id=library_id )}">Edit this folder's permissions</a>
                     %endif
                 </div>
@@ -212,43 +206,48 @@ class RowCounter( object ):
             row_counter.increment()
         %>
     %endif
-    %for child_folder in name_sorted( folder.active_folders ):
-        ${render_folder( child_folder, pad, created_ldda_ids, library_id, my_row, row_counter )}
+    <% sub_folders = active_folders( trans, folder ) %>
+    %for sub_folder in sub_folders:
+        ${render_folder( sub_folder, pad, created_ldda_ids, library_id, hidden_folder_ids, parent=my_row, row_counter=row_counter )}
     %endfor
-    %for library_dataset in name_sorted( folder.active_library_datasets ):
+    %for library_dataset in folder.active_library_datasets:
         <%
-            selected = created_ldda_ids and library_dataset.library_dataset_dataset_association.id in created_ldda_ids
+            ldda = library_dataset.library_dataset_dataset_association
+            can_access = trans.app.security_agent.can_access_dataset( roles, ldda.dataset )
+            selected = created_ldda_ids and ldda.id in created_ldda_ids
         %>
-        %if trans.app.security_agent.allow_action( user, roles, trans.app.security_agent.permitted_actions.DATASET_ACCESS, dataset=library_dataset.library_dataset_dataset_association.dataset ):
-            ${render_dataset( library_dataset, selected, library, pad, my_row, row_counter )}
+        %if can_access:
+            ${render_dataset( ldda, library_dataset, selected, library, folder, pad, my_row, row_counter )}
         %endif
     %endfor
 </%def>
 
 <h2>Data Library &ldquo;${library.name}&rdquo;</h2>
 
+<%
+can_add = trans.app.security_agent.can_add_library_item( user, roles, library )
+can_modify = trans.app.security_agent.can_modify_library_item( user, roles, library )
+can_manage = trans.app.security_agent.can_manage_library_item( user, roles, library )
+%>
+
 <ul class="manage-table-actions">
-    %if trans.app.security_agent.allow_action( user, roles, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=library ):
-            %if not deleted:
-                <li>
-                    <a class="action-button" href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library.id, folder_id=library.root_folder.id )}"><span>Add datasets to this library</span></a>
-                </li>
-                <li>
-                    <a class="action-button" href="${h.url_for( controller='library', action='folder', new=True, id=library.root_folder.id, library_id=library.id )}">Add a folder to this library</a>
-                </li>
-            %endif
+    %if can_add and not_deleted:
+        <li>
+            <a class="action-button" href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library.id, folder_id=library.root_folder.id )}"><span>Add datasets to this library</span></a>
+        </li>
+        <li>
+            <a class="action-button" href="${h.url_for( controller='library', action='folder', new=True, id=library.root_folder.id, library_id=library.id )}">Add a folder to this library</a>
+        </li>
     %endif
-    %if trans.app.security_agent.allow_action( user, roles, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=library ):
+    %if can_modify:
         <li><a class="action-button" href="${h.url_for( controller='library', action='library', information=True, id=library.id )}">Edit this library's information</a></li>
     %else:
         <li><a class="action-button" href="${h.url_for( controller='library', action='library', information=True, id=library.id )}">View this library's information</a></li>
     %endif
-    %if forms and not library.info_association:
-        %if trans.app.security_agent.allow_action( user, roles, trans.app.security_agent.permitted_actions.LIBRARY_ADD, library_item=library ):
-            <a class="action-button" href="${h.url_for( controller='library', action='info_template', library_id=library.id, add=True )}">Add an information template to this library</a>
-        %endif
+    %if can_add and forms and not library.info_association:
+        <a class="action-button" href="${h.url_for( controller='library', action='info_template', library_id=library.id, add=True )}">Add an information template to this library</a>
     %endif
-    %if trans.app.security_agent.allow_action( user, roles, trans.app.security_agent.permitted_actions.LIBRARY_MANAGE, library_item=library ):
+    %if can_manage:
         <li><a class="action-button" href="${h.url_for( controller='library', action='library', permissions=True, id=library.id )}">Edit this library's permissions</a></li>
     %endif 
 </ul>
@@ -258,10 +257,6 @@ class RowCounter( object ):
 %endif
 
 <form name="import_from_library" action="${h.url_for( controller='library', action='datasets', library_id=library.id )}" method="post">
-    <%
-        library_item_ids = {}
-        library_item_ids[ 'library' ] = library.id
-    %>
     <table cellspacing="0" cellpadding="0" border="0" width="100%" class="grid" id="library-grid">
         <thead>
             <tr class="libraryTitle">
@@ -272,7 +267,7 @@ class RowCounter( object ):
             </thead>
         </tr>
         <% row_counter = RowCounter() %>
-        ${render_folder( library.root_folder, 0, created_ldda_ids, library.id, None, row_counter )}
+        ${render_folder( library.root_folder, 0, created_ldda_ids, library.id, hidden_folder_ids, parent=None, row_counter=row_counter, root_folder=True )}
         <tfoot>
             <tr>
                 <td colspan="4" style="padding-left: 42px;">

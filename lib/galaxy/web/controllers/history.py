@@ -443,15 +443,9 @@ class HistoryController( BaseController ):
                     for hda in history.activatable_datasets:
                         # If the current dataset is not public, we may need to perform an action on it to
                         # make it accessible by the other user.
-                        if not trans.app.security_agent.allow_action( send_to_user,
-                                                                      send_to_user.all_roles(),
-                                                                      trans.app.security_agent.permitted_actions.DATASET_ACCESS, 
-                                                                      dataset=hda.dataset ):
+                        if not trans.app.security_agent.can_access_dataset( send_to_user.all_roles(), hda.dataset ):
                             # The user with which we are sharing the history does not have access permission on the current dataset
-                            if trans.app.security_agent.allow_action( user,
-                                                                      user_roles,
-                                                                      trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS, 
-                                                                      dataset=hda.dataset ) and not hda.dataset.library_associations:
+                            if trans.app.security_agent.can_manage_dataset( user_roles, hda.dataset ) and not hda.dataset.library_associations:
                                 # The current user has authority to change permissions on the current dataset because
                                 # they have permission to manage permissions on the dataset and the dataset is not associated 
                                 # with a library.
@@ -556,15 +550,9 @@ class HistoryController( BaseController ):
                                 no_change_needed[ send_to_user ][ history ] = [ hda ]
                             else:
                                 no_change_needed[ send_to_user ][ history ].append( hda )
-                        elif not trans.app.security_agent.allow_action( send_to_user,
-                                                                        send_to_user.all_roles(),
-                                                                        trans.app.security_agent.permitted_actions.DATASET_ACCESS, 
-                                                                        dataset=hda.dataset ):
+                        elif not trans.app.security_agent.can_access_dataset( send_to_user.all_roles(), hda.dataset ):
                             # The user with which we are sharing the history does not have access permission on the current dataset
-                            if trans.app.security_agent.allow_action( user,
-                                                                      user_roles,
-                                                                      trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS, 
-                                                                      dataset=hda.dataset ) and not hda.dataset.library_associations:
+                            if trans.app.security_agent.can_manage_dataset( user_roles, hda.dataset ) and not hda.dataset.library_associations:
                                 # The current user has authority to change permissions on the current dataset because
                                 # they have permission to manage permissions on the dataset and the dataset is not associated 
                                 # with a library.

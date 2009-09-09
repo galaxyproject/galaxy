@@ -1149,19 +1149,11 @@ class DataToolParameter( ToolParameter ):
                     hid = str( hda.hid )
                 if not hda.dataset.state in [galaxy.model.Dataset.states.ERROR, galaxy.model.Dataset.states.DISCARDED] and \
                     hda.visible and \
-                    trans.app.security_agent.allow_action( user,
-                                                           roles,
-                                                           hda.permitted_actions.DATASET_ACCESS,
-                                                           dataset=hda.dataset ):
+                    trans.app.security_agent.can_access_dataset( roles, hda.dataset ):
                     # If we are sending data to an external application, then we need to make sure there are no roles
-                    # associated with the dataset that restrict it's access from "public".  We determine this by sending
-                    # None as the user to the allow_action method.
-                    if self.tool and self.tool.tool_type == 'data_destination':
-                        if not trans.app.security_agent.allow_action( None,
-                                                                      None,
-                                                                      hda.permitted_actions.DATASET_ACCESS,
-                                                                      dataset=hda.dataset ):
-                            continue
+                    # associated with the dataset that restrict it's access from "public".
+                    if self.tool and self.tool.tool_type == 'data_destination' and not trans.app.security_agent.dataset_is_public( hda.dataset ):
+                        continue
                     if self.options and hda.get_dbkey() != filter_value:
                         continue
                     if isinstance( hda.datatype, self.formats):
@@ -1172,10 +1164,7 @@ class DataToolParameter( ToolParameter ):
                         if target_ext:
                             if converted_dataset:
                                 hda = converted_dataset
-                            if not trans.app.security_agent.allow_action( user,
-                                                                          roles,
-                                                                          trans.app.security_agent.permitted_actions.DATASET_ACCESS,
-                                                                          dataset=hda.dataset ):
+                            if not trans.app.security_agent.can_access_dataset( roles, hda.dataset ):
                                 continue
                             selected = ( value and ( hda in value ) )
                             field.add_option( "%s: (as %s) %s" % ( hid, target_ext, hda_name ), hda.id, selected )

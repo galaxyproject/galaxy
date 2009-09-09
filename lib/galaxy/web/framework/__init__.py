@@ -503,7 +503,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         if user:
             roles = user.all_roles()
         else:
-            roles = None
+            roles = []
         return user, roles
 
     def user_is_admin( self ):

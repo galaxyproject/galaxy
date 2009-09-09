@@ -15,6 +15,6 @@
     ${render_msg( msg, messagetype )}
 %endif
 
-%if trans.app.security_agent.allow_action( user, roles, trans.app.security_agent.permitted_actions.LIBRARY_MANAGE, library_item=folder ):
+%if trans.app.security_agent.can_manage_library_item( user, roles, folder ):
     ${render_permission_form( folder, folder.name, h.url_for( controller='library', action='folder', id=folder.id, library_id=library_id, permissions=True ), trans.user.all_roles() )}
 %endif

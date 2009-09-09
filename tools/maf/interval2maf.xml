@@ -4,6 +4,9 @@
     #if $maf_source_type.maf_source == "user":#interval2maf.py --dbkey=${input1.dbkey} --chromCol=${input1.metadata.chromCol} --startCol=${input1.metadata.startCol} --endCol=${input1.metadata.endCol} --strandCol=${input1.metadata.strandCol} --mafFile=$maf_source_type.mafFile --mafIndex=$maf_source_type.mafFile.metadata.maf_index --interval_file=$input1 --output_file=$out_file1 --mafIndexFile=${GALAXY_DATA_INDEX_DIR}/maf_index.loc --species=$maf_source_type.species
     #else:#interval2maf.py --dbkey=${input1.dbkey} --chromCol=${input1.metadata.chromCol} --startCol=${input1.metadata.startCol} --endCol=${input1.metadata.endCol} --strandCol=${input1.metadata.strandCol} --mafType=$maf_source_type.mafType --interval_file=$input1 --output_file=$out_file1 --mafIndexFile=${GALAXY_DATA_INDEX_DIR}/maf_index.loc --species=$maf_source_type.species
     #end if
+    --split_blocks_by_species=$split_blocks_by_species_selector.split_blocks_by_species
+    #if $split_blocks_by_species_selector.split_blocks_by_species == "split_blocks_by_species":# --remove_all_gap_columns=$split_blocks_by_species_selector.remove_all_gap_columns
+    #end if
   </command>
   <inputs>
     <param format="interval" name="input1" type="data" label="Choose intervals">
@@ -49,6 +52,21 @@
         </param>
       </when>
     </conditional>
+    <conditional name="split_blocks_by_species_selector">
+      <param name="split_blocks_by_species" type="select" label="Split blocks by species" help="See the Split MAF blocks by Species tool for more information.">
+        <option value="split_blocks_by_species">Split by species</option>
+        <option value="dont_split_blocks_by_species" selected="true">Do not split</option>
+      </param>
+      <when value="dont_split_blocks_by_species">
+        <!-- do nothing here -->
+      </when>
+      <when value="split_blocks_by_species">
+        <param name="remove_all_gap_columns" type="select" label="Collapse empty alignment columns">
+          <option value="remove_all_gap_columns" selected="true">Collapse empty columns</option>
+          <option value="do_not_remove_all_gap_columns">Do not collapse</option>
+        </param>
+      </when>
+    </conditional>
    </inputs>
    <outputs>
      <data format="maf" name="out_file1"/>
@@ -59,6 +77,7 @@
        <param name="maf_source" value="cached"/>
        <param name="mafType" value="ENCODE_TBA_hg17"/>
        <param name="species" value="hg17,panTro1,baboon,marmoset,galago,rn3,mm6,rabbit,cow,canFam1,rfbat,shrew,armadillo,tenrec,monDom1,tetNig1,fr1,rheMac1,galGal2,xenTro1,danRer2,elephant,platypus,hedgehog,colobus_monkey,dusky_titi,owl_monkey,mouse_lemur"/>
+       <param name="split_blocks_by_species" value="dont_split_blocks_by_species"/>
        <output name="out_file1" file="fsa_interval2maf.dat" />
      </test>
      <test>
@@ -66,6 +85,7 @@
        <param name="maf_source" value="user"/>
        <param name="mafFile" value="fsa_interval2maf.dat"/>
        <param name="species" value="hg17,panTro1,baboon,marmoset,galago,rn3,mm6,rabbit,cow,canFam1,rfbat,shrew,armadillo,tenrec,monDom1,tetNig1,fr1,rheMac1,galGal2,xenTro1,danRer2,elephant,platypus,hedgehog,colobus_monkey,dusky_titi,owl_monkey,mouse_lemur"/>
+       <param name="split_blocks_by_species" value="dont_split_blocks_by_species"/>
        <output name="out_file1" file="fsa_interval2maf.dat" />
      </test>
    </tests>

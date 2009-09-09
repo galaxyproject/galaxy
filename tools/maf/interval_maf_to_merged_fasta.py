@@ -19,6 +19,7 @@ usage: %prog maf_file [options]
    -i, --interval_file=i:       Input interval file
    -o, --output_file=o:      Output MAF file
    -p, --species=p: Species to include in output
+   -O, --overwrite_with_gaps=O: Overwrite bases found in a lower-scoring block with gaps interior to the sequence for a species.
    -z, --mafIndexFileDir=z: Directory of local maf_index.loc file
 
 usage: %prog dbkey_of_BED comma_separated_list_of_additional_dbkeys_to_extract comma_separated_list_of_indexed_maf_files input_gene_bed_file output_fasta_file cached|user GALAXY_DATA_INDEX_DIR
@@ -93,6 +94,11 @@ def __main__():
             strand_col = int( options.strandCol ) - 1
     
     mafIndexFile = "%s/maf_index.loc" % options.mafIndexFileDir
+    
+    overwrite_with_gaps = True
+    if options.overwrite_with_gaps and options.overwrite_with_gaps.lower() == 'false':
+        overwrite_with_gaps = False
+    
     #Finish parsing command line
         
     #get index for mafs based on type 
@@ -127,7 +133,7 @@ def __main__():
                 try:
                     starts, ends, fields = maf_utilities.get_starts_ends_fields_from_gene_bed( line )
                     #create spliced alignment object
-                    alignment = maf_utilities.get_spliced_region_alignment( index, primary_species, fields[0], starts, ends, strand = '+', species = species, mincols = mincols )
+                    alignment = maf_utilities.get_spliced_region_alignment( index, primary_species, fields[0], starts, ends, strand = '+', species = species, mincols = mincols, overwrite_with_gaps = overwrite_with_gaps )
                     primary_name = secondary_name = fields[3]
                     alignment_strand = fields[5]
                 except Exception, e:
@@ -136,7 +142,7 @@ def __main__():
             else: #Process as standard intervals
                 try:
                     #create spliced alignment object
-                    alignment = maf_utilities.get_region_alignment( index, primary_species, line.chrom, line.start, line.end, strand = '+', species = species, mincols = mincols )
+                    alignment = maf_utilities.get_region_alignment( index, primary_species, line.chrom, line.start, line.end, strand = '+', species = species, mincols = mincols, overwrite_with_gaps = overwrite_with_gaps )
                     primary_name = "%s(%s):%s-%s" % ( line.chrom, line.strand, line.start, line.end )
                     secondary_name = ""
                     alignment_strand = line.strand

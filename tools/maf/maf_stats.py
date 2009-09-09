@@ -64,16 +64,19 @@ def __main__():
         total_length += region_length
         coverage = { dbkey: BitSet( region_length ) }
         
-        for block in maf_utilities.get_chopped_blocks_for_region( index, src, region, force_strand='+' ):
-            #make sure all species are known
-            for c in block.components:
-                spec = c.src.split( '.' )[0]
+        
+        for block in index.get_as_iterator( src, region.start, region.end ):
+            for spec in maf_utilities.get_species_in_block( block ):
                 if spec not in coverage: coverage[spec] = BitSet( region_length )
-            start_offset, alignment = maf_utilities.reduce_block_by_primary_genome( block, dbkey, region.chrom, region.start )
-            for i in range( len( alignment[dbkey] ) ):
-                for spec, text in alignment.items():
-                    if text[i] != '-':
-                        coverage[spec].set( start_offset + i )
+            for block in maf_utilities.iter_blocks_split_by_species( block ):
+                if maf_utilities.component_overlaps_region( block.get_component_by_src( src ), region ):
+                    #need to chop and orient the block
+                    block = maf_utilities.orient_block_by_region( maf_utilities.chop_block_by_region( block, src, region ), src, region, force_strand = '+' )
+                    start_offset, alignment = maf_utilities.reduce_block_by_primary_genome( block, dbkey, region.chrom, region.start )
+                    for i in range( len( alignment[dbkey] ) ):
+                        for spec, text in alignment.items():
+                            if text[i] != '-':
+                                coverage[spec].set( start_offset + i )
         if summary:
             #record summary
             for key in coverage.keys():

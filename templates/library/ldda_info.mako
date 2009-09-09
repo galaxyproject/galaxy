@@ -40,15 +40,15 @@
         Information about ${ldda.name}
         <a id="dataset-${ldda.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
         <div popupmenu="dataset-${ldda.id}-popup">
-            %if trans.app.security_agent.allow_action( user, roles, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=ldda.library_dataset ):
+            %if trans.app.security_agent.can_modify_library_item( user, roles, ldda.library_dataset ):
                 <a class="action-button" href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library_id, folder_id=ldda.library_dataset.folder.id, id=ldda.id, edit_info=True )}">Edit this dataset's information</a>
             %else:
                 <a class="action-button" href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library_id, folder_id=ldda.library_dataset.folder.id, id=ldda.id, information=True )}">View this dataset's information</a>
             %endif
-            %if trans.app.security_agent.allow_action( user, roles, trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS, dataset=ldda.dataset ) and trans.app.security_agent.allow_action( user, roles, trans.app.security_agent.permitted_actions.LIBRARY_MANAGE, library_item=ldda.library_dataset ):
+            %if trans.app.security_agent.can_manage_dataset( roles, ldda.dataset ) and trans.app.security_agent.can_manage_library_item( user, roles, ldda.library_dataset ):
                 <a class="action-button" href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library_id, folder_id=ldda.library_dataset.folder.id, id=ldda.id, permissions=True )}">Edit this dataset's permissions</a>
             %endif
-            %if current_version and trans.app.security_agent.allow_action( user, roles, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY, library_item=ldda.library_dataset ):
+            %if current_version and trans.app.security_agent.can_modify_library_item( user, roles, ldda.library_dataset ):
                 <a class="action-button" href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library_id, folder_id=ldda.library_dataset.folder.id, replace_id=ldda.library_dataset.id )}">Upload a new version of this dataset</a>
             %endif
             %if ldda.has_data:
@@ -86,28 +86,14 @@
         <div class="form-row">
             <div>${ldda.blurb}</div>
         </div>
-        <div class="form-row">
-           <div id="info${ldda.id}" class="historyItemBody">
-                %if ldda.peek != "no peek":
+        %if ldda.peek != "no peek":
+            <div class="form-row">
+               <div id="info${ldda.id}" class="historyItemBody">
                     <label>Peek:</label>
                     <div><pre id="peek${ldda.id}" class="peek">${ldda.display_peek()}</pre></div>
-                %endif
-                ## Recurse for child datasets
-                ## TODO: eliminate this - child datasets are deprecated, and where does
-                ## render_dataset() come from anyway - it's not imported!
-                %if len( ldda.visible_children ) > 0:
-                    <div>
-                        There are ${len( ldda.visible_children )} secondary datasets.
-                        %for idx, child in enumerate( ldda.visible_children ):
-                            ## TODO: do we need to clarify if the child is deleted?
-                            %if not child.purged:
-                                ${ render_dataset( child, selected, library ) }
-                            %endif
-                        %endfor
-                    </div>
-                %endif
+                </div>
             </div>
-        </div>
+        %endif
     </div>
     %if widgets:
         ${render_template_info( ldda, library_id, widgets, editable=False )}

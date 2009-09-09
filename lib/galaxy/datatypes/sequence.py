@@ -22,7 +22,7 @@ class Sequence( data.Text ):
         pass
 
 class Alignment( Sequence ):
-    """Class describing an alignmnet"""
+    """Class describing an alignment"""
 
     """Add metadata elements"""
     MetadataElement( name="species", desc="Species", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None )
@@ -316,6 +316,78 @@ try:
     import bx.align.maf
 except:
     pass
+#trying to import maf_utilities here throws an ImportError due to a circular import between jobs and tools:
+#from galaxy.tools.util.maf_utilities import build_maf_index_species_chromosomes
+#Traceback (most recent call last):
+#  File "./scripts/paster.py", line 27, in <module>
+#    command.run()
+#  File "build/bdist.solaris-2.11-i86pc/egg/paste/script/command.py", line 78, in run
+#  File "build/bdist.solaris-2.11-i86pc/egg/paste/script/command.py", line 117, in invoke
+#  File "build/bdist.solaris-2.11-i86pc/egg/paste/script/command.py", line 212, in run
+#  File "build/bdist.solaris-2.11-i86pc/egg/paste/script/serve.py", line 227, in command
+#  File "build/bdist.solaris-2.11-i86pc/egg/paste/script/serve.py", line 250, in loadapp
+#  File "build/bdist.solaris-2.11-i86pc/egg/paste/deploy/loadwsgi.py", line 193, in loadapp
+#  File "build/bdist.solaris-2.11-i86pc/egg/paste/deploy/loadwsgi.py", line 213, in loadobj
+#  File "build/bdist.solaris-2.11-i86pc/egg/paste/deploy/loadwsgi.py", line 237, in loadcontext
+#  File "build/bdist.solaris-2.11-i86pc/egg/paste/deploy/loadwsgi.py", line 267, in _loadconfig
+#  File "build/bdist.solaris-2.11-i86pc/egg/paste/deploy/loadwsgi.py", line 397, in get_context
+#  File "build/bdist.solaris-2.11-i86pc/egg/paste/deploy/loadwsgi.py", line 439, in _context_from_explicit
+#  File "build/bdist.solaris-2.11-i86pc/egg/paste/deploy/loadwsgi.py", line 18, in import_string
+#  File "/afs/bx.psu.edu/home/dan/galaxy/central/lib/pkg_resources.py", line 1912, in load
+#    entry = __import__(self.module_name, globals(),globals(), ['__name__'])
+#  File "/afs/bx.psu.edu/home/dan/galaxy/central/lib/galaxy/web/buildapp.py", line 18, in <module>
+#    from galaxy import config, jobs, util, tools
+#  File "/afs/bx.psu.edu/home/dan/galaxy/central/lib/galaxy/jobs/__init__.py", line 3, in <module>
+#    from galaxy import util, model
+#  File "/afs/bx.psu.edu/home/dan/galaxy/central/lib/galaxy/model/__init__.py", line 13, in <module>
+#    import galaxy.datatypes.registry
+#  File "/afs/bx.psu.edu/home/dan/galaxy/central/lib/galaxy/datatypes/registry.py", line 6, in <module>
+#    import data, tabular, interval, images, sequence, qualityscore, genetics, xml, coverage, tracks, chrominfo
+#  File "/afs/bx.psu.edu/home/dan/galaxy/central/lib/galaxy/datatypes/sequence.py", line 344, in <module>
+#    from galaxy.tools.util.maf_utilities import build_maf_index_species_chromosomes
+#  File "/afs/bx.psu.edu/home/dan/galaxy/central/lib/galaxy/tools/__init__.py", line 15, in <module>
+#    from galaxy import util, jobs, model
+#ImportError: cannot import name jobs
+#so we'll copy and paste for now...terribly icky
+#*** ANYCHANGE TO THIS METHOD HERE OR IN maf_utilities MUST BE PROPAGATED ***
+def COPIED_build_maf_index_species_chromosomes( filename, index_species = None ):
+    species = []
+    species_chromosomes = {}
+    indexes = bx.interval_index_file.Indexes()
+    try:
+        maf_reader = bx.align.maf.Reader( open( filename ) )
+        while True:
+            pos = maf_reader.file.tell()
+            block = maf_reader.next()
+            if block is None: break
+            for c in block.components:
+                spec = c.src
+                chrom = None
+                if "." in spec:
+                    spec, chrom = spec.split( ".", 1 )
+                if spec not in species: 
+                    species.append( spec )
+                    species_chromosomes[spec] = []
+                if chrom and chrom not in species_chromosomes[spec]:
+                    species_chromosomes[spec].append( chrom )
+                if index_species is None or spec in index_species:
+                    forward_strand_start = c.forward_strand_start
+                    forward_strand_end = c.forward_strand_end
+                    try:
+                        forward_strand_start = int( forward_strand_start )
+                        forward_strand_end = int( forward_strand_end )
+                    except ValueError:
+                        continue #start and end are not integers, can't add component to index, goto next component
+                        #this likely only occurs when parse_e_rows is True?
+                        #could a species exist as only e rows? should the
+                    if forward_strand_end > forward_strand_start:
+                        #require positive length; i.e. certain lines have start = end = 0 and cannot be indexed
+                        indexes.add( c.src, forward_strand_start, forward_strand_end, pos, max=c.src_size )
+    except Exception, e:
+        #most likely a bad MAF
+        log.debug( 'Building MAF index on %s failed: %s' % ( filename, e ) )
+        return ( None, [], {} )
+    return ( indexes, species, species_chromosomes )
 
 class Maf( Alignment ):
     """Class describing a Maf alignment"""
@@ -333,38 +405,8 @@ class Maf( Alignment ):
         Parses and sets species, chromosomes, index from MAF file.
         """
         #these metadata values are not accessable by users, always overwrite
+        indexes, species, species_chromosomes = COPIED_build_maf_index_species_chromosomes( dataset.file_name )
         
-        try:
-            maf_reader = bx.align.maf.Reader( open( dataset.file_name ) )
-        except:
-            return #not a maf file
-        species = []
-        species_chromosomes = {}
-        indexes = bx.interval_index_file.Indexes()
-        while True:
-            pos = maf_reader.file.tell()
-            block = maf_reader.next()
-            if block is None: break
-            for c in block.components:
-                spec = c.src
-                chrom = None
-                if "." in spec:
-                    spec, chrom = spec.split( ".", 1 )
-                if spec not in species: 
-                    species.append(spec)
-                    species_chromosomes[spec] = []
-                if chrom and chrom not in species_chromosomes[spec]:
-                    species_chromosomes[spec].append( chrom )
-                forward_strand_start = c.forward_strand_start
-                forward_strand_end = c.forward_strand_end
-                try:
-                    forward_strand_start = int( forward_strand_start )
-                    forward_strand_end = int( forward_strand_end )
-                except ValueError:
-                    continue #start and end are not integers, can't add component to index, goto next component
-                if forward_strand_end > forward_strand_start:
-                    #require positive length; i.e. certain lines have start = end = 0 and cannot be indexed
-                    indexes.add( c.src, forward_strand_start, forward_strand_end, pos, max=c.src_size )
         dataset.metadata.species = species
         #only overwrite the contents if our newly determined chromosomes don't match stored
         chrom_file = dataset.metadata.species_chromosomes

@@ -233,10 +233,10 @@ LibraryDataset.table = Table( "library_dataset", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "library_dataset_dataset_association_id", Integer, ForeignKey( "library_dataset_dataset_association.id", use_alter=True, name="library_dataset_dataset_association_id_fk" ), nullable=True, index=True ),#current version of dataset, if null, there is not a current version selected
     Column( "folder_id", Integer, ForeignKey( "library_folder.id" ), index=True ),
-    Column( "order_id", Integer ),
+    Column( "order_id", Integer ), #not currently being used, but for possible future use
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "name", TrimmedString( 255 ), key="_name" ), #when not None/null this will supercede display in library (but not when imported into user's history?)
+    Column( "name", TrimmedString( 255 ), key="_name", index=True ), #when not None/null this will supercede display in library (but not when imported into user's history?)
     Column( "info", TrimmedString( 255 ),  key="_info" ), #when not None/null this will supercede display in library (but not when imported into user's history?)
     Column( "deleted", Boolean, index=True, default=False ) )
 
@@ -248,7 +248,7 @@ LibraryDatasetDatasetAssociation.table = Table( "library_dataset_dataset_associa
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "copied_from_history_dataset_association_id", Integer, ForeignKey( "history_dataset_association.id", use_alter=True, name='history_dataset_association_dataset_id_fkey' ), nullable=True ),
     Column( "copied_from_library_dataset_dataset_association_id", Integer, ForeignKey( "library_dataset_dataset_association.id", use_alter=True, name='library_dataset_dataset_association_id_fkey' ), nullable=True ),
-    Column( "name", TrimmedString( 255 ) ),
+    Column( "name", TrimmedString( 255 ), index=True ),
     Column( "info", TrimmedString( 255 ) ),
     Column( "blurb", TrimmedString( 255 ) ),
     Column( "peek" , TEXT ),
@@ -276,9 +276,9 @@ LibraryFolder.table = Table( "library_folder", metadata,
     Column( "parent_id", Integer, ForeignKey( "library_folder.id" ), nullable = True, index=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "name", TEXT ),
+    Column( "name", TEXT, index=True ),
     Column( "description", TEXT ),
-    Column( "order_id", Integer ),
+    Column( "order_id", Integer ), #not currently being used, but for possible future use
     Column( "item_count", Integer ),
     Column( "deleted", Boolean, index=True, default=False ),
     Column( "purged", Boolean, index=True, default=False ),
@@ -823,15 +823,16 @@ assign_mapper( context, LibraryFolder, LibraryFolder.table,
         folders=relation( 
             LibraryFolder, 
             primaryjoin=( LibraryFolder.table.c.parent_id == LibraryFolder.table.c.id ),
+            order_by=asc( LibraryFolder.table.c.name ),
             backref=backref( "parent", primaryjoin=( LibraryFolder.table.c.parent_id == LibraryFolder.table.c.id ), remote_side=[LibraryFolder.table.c.id] ) ),
         active_folders=relation( LibraryFolder, 
             primaryjoin=( ( LibraryFolder.table.c.parent_id == LibraryFolder.table.c.id ) & ( not_( LibraryFolder.table.c.deleted ) ) ), 
-            order_by=asc( LibraryFolder.table.c.order_id ), 
+            order_by=asc( LibraryFolder.table.c.name ), 
             lazy=True, #"""sqlalchemy.exceptions.ArgumentError: Error creating eager relationship 'active_folders' on parent class '<class 'galaxy.model.LibraryFolder'>' to child class '<class 'galaxy.model.LibraryFolder'>': Cant use eager loading on a self referential relationship."""
             viewonly=True ),
         datasets=relation( LibraryDataset,
             primaryjoin=( ( LibraryDataset.table.c.folder_id == LibraryFolder.table.c.id ) ), 
-            order_by=asc( LibraryDataset.table.c.order_id ), 
+            order_by=asc( LibraryDataset.table.c._name ), 
             lazy=False, 
             viewonly=True )
     ) )

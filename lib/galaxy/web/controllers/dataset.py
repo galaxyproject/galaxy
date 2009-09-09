@@ -109,10 +109,7 @@ class DatasetInterface( BaseController ):
         if not data:
             raise paste.httpexceptions.HTTPRequestRangeNotSatisfiable( "Invalid reference dataset id: %s." % str( dataset_id ) )
         user, roles = trans.get_user_and_roles()
-        if trans.app.security_agent.allow_action( user,
-                                                  roles,
-                                                  data.permitted_actions.DATASET_ACCESS,
-                                                  dataset=data.dataset ):
+        if trans.app.security_agent.can_access_dataset( roles, data.dataset ):
             if data.state == trans.model.Dataset.states.UPLOAD:
                 return trans.show_error_message( "Please wait until this dataset finishes uploading before attempting to view it." )
             if filename is None or filename.lower() == "index":
@@ -147,12 +144,9 @@ class DatasetInterface( BaseController ):
             return trans.show_error_message( 'Invalid parameters specified for "display at" link, please contact a Galaxy administrator' )
         redirect_url = kwd['redirect_url'] % urllib.quote_plus( kwd['display_url'] )
         user, roles = trans.get_user_and_roles()
-        if trans.app.security_agent.allow_action( None, None, data.permitted_actions.DATASET_ACCESS, dataset=data.dataset ):
+        if trans.app.security_agent.dataset_is_public( data.dataset ):
             return trans.response.send_redirect( redirect_url ) # anon access already permitted by rbac
-        if trans.app.security_agent.allow_action( user,
-                                                  roles,
-                                                  data.permitted_actions.DATASET_ACCESS,
-                                                  dataset=data.dataset ):
+        if trans.app.security_agent.can_access_dataset( roles, data.dataset ):
             trans.app.host_security_agent.set_dataset_permissions( data, trans.user, site )
             return trans.response.send_redirect( redirect_url )
         else:
