@@ -30,12 +30,3 @@ def __main__():
 
 
 if __name__ == "__main__": __main__()
-
-        for component in block.components:
-            spec, chrom = maf_utilities.src_split( component.src )
-            if spec not in spec_counts:
-                spec_counts[ spec ] = 0
-            else:
-                spec_counts[ spec ] += 1
-            file_out.write( "%s\n" % maf_utilities.get_fasta_header( component, { 'block_index' : block_num, 'species' : spec, 'sequence_index' : spec_counts[ spec ] }, suffix = "%s_%i_%i" % ( spec, block_num, spec_counts[ spec ] ) ) )
-            file_out.write( "%s\n" % component.text )
