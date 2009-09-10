@@ -1,4 +1,4 @@
-from galaxy.model import Tag, History, HistoryTagAssociation, Dataset, DatasetTagAssociation, HistoryDatasetAssociation, HistoryDatasetAssociationTagAssociation
+from galaxy.model import Tag
 import re
 
 class TagHandler( object ):

@@ -1145,7 +1145,8 @@ class Tag ( object ):
         return "Tag(id=%s, type=%i, parent_id=%s, name=%s)" %  ( self.id, self.type, self.parent_id, self.name )
     
 class ItemTagAssociation ( object ):
-    def __init__( self, item_id=None, tag_id=None, user_tname=None, value=None ):    
+    def __init__( self, id=None, item_id=None, tag_id=None, user_tname=None, value=None ):
+        self.id = id
         self.item_id = item_id
         self.tag_id = tag_id
         self.user_tname = user_tname
@@ -1165,6 +1166,8 @@ class DatasetTagAssociation ( ItemTagAssociation ):
 class HistoryDatasetAssociationTagAssociation ( ItemTagAssociation ):
     pass
 
+class PageTagAssociation ( ItemTagAssociation ):
+    pass
 
 
 ## ---- Utility methods -------------------------------------------------------

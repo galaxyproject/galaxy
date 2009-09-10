@@ -2,6 +2,9 @@
 Tags Controller: handles tagging/untagging of entities and provides autocomplete support.
 """
 
+from galaxy.model import History, HistoryTagAssociation, Dataset, DatasetTagAssociation, \
+    HistoryDatasetAssociation, HistoryDatasetAssociationTagAssociation, Page, PageTagAssociation
+
 from galaxy.web.base.controller import *
 from galaxy.tags.tag_handler import *
 from sqlalchemy.sql.expression import func, and_
