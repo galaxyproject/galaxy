@@ -502,13 +502,6 @@ class JobWrapper( object ):
             context = self.get_dataset_finish_context( job_context, dataset_assoc.dataset.dataset )
             #should this also be checking library associations? - can a library item be added from a history before the job has ended? - lets not allow this to occur
             for dataset in dataset_assoc.dataset.dataset.history_associations: #need to update all associated output hdas, i.e. history was shared with job running
-                if context.get( 'path', None ):
-                    # The tool can set an alternate output path for the dataset.
-                    try:
-                        shutil.move( context['path'], dataset.file_name )
-                    except ( IOError, OSError ):
-                        if not context['stderr']:
-                            context['stderr'] = 'This dataset could not be processed'
                 dataset.blurb = 'done'
                 dataset.peek  = 'no peek'
                 dataset.info  = context['stdout'] + context['stderr']
@@ -707,6 +700,13 @@ class JobWrapper( object ):
             sizes.append( ( outfile, os.stat( outfile ).st_size ) )
         return sizes
     def setup_external_metadata( self, exec_dir = None, tmp_dir = None, dataset_files_path = None, config_root = None, datatypes_config = None, **kwds ):
+        # extension could still be 'auto' if this is the upload tool.
+        job = model.Job.get( self.job_id )
+        for output_dataset_assoc in job.output_datasets:
+            if output_dataset_assoc.dataset.ext == 'auto':
+                context = self.get_dataset_finish_context( dict(), output_dataset_assoc.dataset.dataset )
+                output_dataset_assoc.dataset.extension = context.get( 'ext', 'data' )
+        mapping.context.current.flush()
         if tmp_dir is None:
             #this dir should should relative to the exec_dir
             tmp_dir = self.app.config.new_file_path
@@ -716,7 +716,6 @@ class JobWrapper( object ):
             config_root = self.app.config.root
         if datatypes_config is None:
             datatypes_config = self.app.config.datatypes_config
-        job = model.Job.get( self.job_id )
         return self.external_output_metadata.setup_external_metadata( [ output_dataset_assoc.dataset for output_dataset_assoc in job.output_datasets ], exec_dir = exec_dir, tmp_dir = tmp_dir, dataset_files_path = dataset_files_path, config_root = config_root, datatypes_config = datatypes_config, **kwds )
 
 class DefaultJobDispatcher( object ):

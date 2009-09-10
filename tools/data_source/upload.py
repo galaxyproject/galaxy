@@ -115,7 +115,14 @@ def check_zip( temp_name ):
             return ( True, False, test_ext )
     return ( True, True, test_ext )
 
-def add_file( dataset, json_file ):
+def parse_outputs( args ):
+    rval = {}
+    for arg in args:
+        id, path = arg.split( ':', 1 )
+        rval[int( id )] = path
+    return rval
+
+def add_file( dataset, json_file, output_path ):
     data_type = None
     line_count = None
 
@@ -229,16 +236,18 @@ def add_file( dataset, json_file ):
         ext = dataset.ext
     if ext == 'auto':
         ext = 'data'
+    # Move the dataset to its "real" path
+    shutil.move( dataset.path, output_path )
+    # Write the job info
     info = dict( type = 'dataset',
                  dataset_id = dataset.dataset_id,
-                 path = dataset.path,
                  ext = ext,
                  stdout = 'uploaded %s file' % data_type,
                  name = dataset.name,
                  line_count = line_count )
     json_file.write( to_json_string( info ) + "\n" )
 
-def add_composite_file( dataset, json_file ):
+def add_composite_file( dataset, json_file, output_path ):
         if dataset.composite_files:
             os.mkdir( dataset.extra_files_path )
             for name, value in dataset.composite_files.iteritems():
@@ -253,17 +262,21 @@ def add_composite_file( dataset, json_file ):
                         else:
                             sniff.convert_newlines( dataset.composite_file_paths[ value.name ][ 'path' ] )
                     shutil.move( dataset.composite_file_paths[ value.name ][ 'path' ], os.path.join( dataset.extra_files_path, name ) )
+        # Move the dataset to its "real" path
+        shutil.move( dataset.primary_file, output_path )
+        # Write the job info
         info = dict( type = 'dataset',
                      dataset_id = dataset.dataset_id,
-                     path = dataset.primary_file,
                      stdout = 'uploaded %s file' % dataset.file_type )
         json_file.write( to_json_string( info ) + "\n" )
 
 def __main__():
 
-    if len( sys.argv ) != 2:
-        print >>sys.stderr, 'usage: upload.py <json paramfile>'
+    if len( sys.argv ) < 2:
+        print >>sys.stderr, 'usage: upload.py <json paramfile> <output spec> ...'
         sys.exit( 1 )
+
+    output_paths = parse_outputs( sys.argv[2:] )
 
     json_file = open( 'galaxy.json', 'w' )
 
@@ -271,10 +284,16 @@ def __main__():
         dataset = from_json_string( line )
         dataset = util.bunch.Bunch( **safe_dict( dataset ) )
 
+        try:
+            output_path = output_paths[int( dataset.dataset_id )]
+        except:
+            print >>sys.stderr, 'Output path for dataset %s not found on command line' % dataset.dataset_id
+            sys.exit( 1 )
+
         if dataset.type == 'composite':
-            add_composite_file( dataset, json_file )
+            add_composite_file( dataset, json_file, output_path )
         else:
-            add_file( dataset, json_file )
+            add_file( dataset, json_file, output_path )
 
     # clean up paramfile
     try:

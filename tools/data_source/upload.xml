@@ -7,6 +7,12 @@
   <action module="galaxy.tools.actions.upload" class="UploadToolAction"/>
   <command interpreter="python">
     upload.py $paramfile
+    #set $outnum = 0
+    #while $varExists('output%i' % $outnum):
+        #set $output = $getVar('output%i' % $outnum)
+        #set $outnum += 1
+        ${output.dataset.dataset.id}:${output}
+    #end while
   </command>
   <inputs>
     <param name="file_type" type="select" label="File Format" help="Which format? See help below">
