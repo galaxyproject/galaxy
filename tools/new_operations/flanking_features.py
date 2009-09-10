@@ -129,7 +129,7 @@ def proximal_region_finder(readers, region, comments=True):
                             map(outfields.append, result_down[-1].other) #The last element of result_down will be the closest element to the given interval
                     elif result_up:
                         map(outfields.append, result_up[res_ind].other)
-                    else:
+                    elif result_down:
                         map(outfields.append, result_down[-1].other) #The last element of result_down will be the closest element to the given interval
                     yield outfields
                     
