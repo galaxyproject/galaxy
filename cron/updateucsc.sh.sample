@@ -6,7 +6,8 @@
 
 # Edit this line to refer to galaxy's path:
 GALAXY=/galaxy/path
-export PYTHONPATH=${GALAXY}/lib
+PYTHONPATH=${GALAXY}/lib
+export PYTHONPATH
 
 # setup directories
 echo "Creating required directories."
@@ -32,7 +33,11 @@ echo "Updating builds.txt"
 python ${GALAXY}/cron/parse_builds.py > ${GALAXY}/tool-data/shared/ucsc/new/builds.txt
 if [ $? -eq 0 ]
 then
-    cp -uf ${GALAXY}/tool-data/shared/ucsc/new/builds.txt ${GALAXY}/tool-data/shared/ucsc/builds.txt
+    diff ${GALAXY}/tool-data/shared/ucsc/new/builds.txt ${GALAXY}/tool-data/shared/ucsc/builds.txt > /dev/null 2>&1
+    if [ $? -ne 0 ]
+    then
+        cp -f ${GALAXY}/tool-data/shared/ucsc/new/builds.txt ${GALAXY}/tool-data/shared/ucsc/builds.txt
+    fi
 else
     echo "Failed to update builds.txt" >&2
 fi
@@ -42,7 +47,11 @@ echo "Updating ucsc_build_sites.txt"
 python ${GALAXY}/cron/parse_builds_3_sites.py > ${GALAXY}/tool-data/shared/ucsc/new/ucsc_build_sites.txt
 if [ $? -eq 0 ]
 then
-    cp -uf ${GALAXY}/tool-data/shared/ucsc/new/ucsc_build_sites.txt ${GALAXY}/tool-data/shared/ucsc/ucsc_build_sites.txt
+    diff ${GALAXY}/tool-data/shared/ucsc/new/ucsc_build_sites.txt ${GALAXY}/tool-data/shared/ucsc/ucsc_build_sites.txt > /dev/null 2>&1
+    if [ $? -ne 0 ]
+    then
+        cp -f ${GALAXY}/tool-data/shared/ucsc/new/ucsc_build_sites.txt ${GALAXY}/tool-data/shared/ucsc/ucsc_build_sites.txt
+    fi
 else
     echo "Failed to update builds.txt" >&2
 fi
@@ -52,7 +61,16 @@ echo "Building chromInfo tables."
 python ${GALAXY}/cron/build_chrom_db.py ${GALAXY}/tool-data/shared/ucsc/chrom/new/ ${GALAXY}/tool-data/shared/ucsc/builds.txt
 if [ $? -eq 0 ]
 then
-    cp -uf ${GALAXY}/tool-data/shared/ucsc/chrom/new/*.len ${GALAXY}/tool-data/shared/ucsc/chrom/
+    for src in ${GALAXY}/tool-data/shared/ucsc/chrom/new/*.len
+    do
+        dst=${GALAXY}/tool-data/shared/ucsc/chrom/`basename $src`
+        diff $src $dst > /dev/null 2>&1
+        if [ $? -ne 0 ]
+        then
+            echo "cp -f $src $dst"
+            cp -f $src $dst
+        fi
+    done
 else
     echo "Failed to update chromInfo tables." >&2
 fi
