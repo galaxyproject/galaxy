@@ -332,7 +332,8 @@
    <tool file="metag_tools/megablast_xml_parser.xml" />
    <tool file="metag_tools/blat_wrapper.xml" />
    <tool file="metag_tools/mapping_to_ucsc.xml" />
-   </section>
+   <tool file="sr_mapping/bowtie_wrapper.xml" />
+  </section>
   <section name="Tracks" id="tracks">
    <tool file="visualization/genetrack.xml" />
   </section>
