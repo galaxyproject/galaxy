@@ -4,7 +4,7 @@ from galaxy import util
 from galaxy.model.mapping import desc
 from galaxy.model.orm import *
 from galaxy.util.json import *
-import webhelpers, logging
+import webhelpers, logging, operator
 from datetime import datetime
 from cgi import escape
 
@@ -31,10 +31,12 @@ class HistoryListGrid( grids.Grid ):
                 return "deleted"
             elif history.users_shared_with:
                 return "shared"
+            elif history.importable:
+                return "importable"
             return ""
         def get_link( self, trans, grid, item ):
-            if item.users_shared_with:
-                return dict( operation="sharing", id=item.id )
+            if item.users_shared_with or item.importable:
+                return dict( operation="sharing" )
             return None
     # Grid definition
     title = "Stored histories"
@@ -55,9 +57,12 @@ class HistoryListGrid( grids.Grid ):
     operations = [
         grids.GridOperation( "Switch", allow_multiple=False, condition=( lambda item: not item.deleted ) ),
         grids.GridOperation( "Share", condition=( lambda item: not item.deleted )  ),
+        grids.GridOperation( "Unshare", condition=( lambda item: not item.deleted )  ),
         grids.GridOperation( "Rename", condition=( lambda item: not item.deleted )  ),
         grids.GridOperation( "Delete", condition=( lambda item: not item.deleted ) ),
-        grids.GridOperation( "Undelete", condition=( lambda item: item.deleted ) )
+        grids.GridOperation( "Undelete", condition=( lambda item: item.deleted ) ),
+        grids.GridOperation( "Enable import via link", condition=( lambda item: item.deleted ) ),
+        grids.GridOperation( "Disable import via link", condition=( lambda item: item.deleted ) )
     ]
     standard_filters = [
         grids.GridColumnFilter( "Active", args=dict( deleted=False ) ),
@@ -99,7 +104,9 @@ class SharedHistoryListGrid( grids.Grid ):
     ]
     operations = [
         grids.GridOperation( "Clone" ),
-        grids.GridOperation( "Unshare" )
+        grids.GridOperation( "Unshare" ),
+        grids.GridOperation( "Enable import via link", condition=( lambda item: item.deleted ) ),
+        grids.GridOperation( "Disable import via link", condition=( lambda item: item.deleted ) )
     ]
     standard_filters = []
     def build_initial_query( self, session ):
@@ -126,19 +133,19 @@ class HistoryController( BaseController ):
         current_history = trans.get_history()
         status = message = None
         if 'operation' in kwargs:
-            history_ids = util.listify( kwargs.get( 'id', [] ) )
-            histories = []
             operation = kwargs['operation'].lower()
             if operation == "share":
                 return self.share( trans, **kwargs )
-            elif operation == "rename":
+            if operation == "rename":
                 return self.rename( trans, **kwargs )
-            elif operation == 'sharing':
-                return self.sharing( trans, id=kwargs['id'] )
+            history_ids = util.listify( kwargs.get( 'id', [] ) )
+            if operation == "sharing":
+                return self.sharing( trans, id=history_ids )
             # Display no message by default
             status, message = None, None
             refresh_history = False
             # Load the histories and ensure they all belong to the current user
+            histories = []
             for history_id in history_ids:      
                 history = get_history( trans, history_id )
                 if history:
@@ -161,6 +168,21 @@ class HistoryController( BaseController ):
                         trans.template_context['refresh_frames'] = ['history']
                 elif operation == "undelete":
                     status, message = self._list_undelete( trans, histories )
+                elif operation == "unshare":
+                    for history in histories:
+                        husas = trans.app.model.HistoryUserShareAssociation.filter_by( history=history ).all()
+                        for husa in husas:
+                            husa.delete()
+                elif operation == "enable import via link":
+                    for history in histories:
+                        if not history.importable:
+                            history.importable = True
+                elif operation == "disable import via link":
+                    if history_ids:
+                        histories = [ get_history( trans, history_id ) for history_id in history_ids ]
+                        for history in histories:
+                            if history.importable:
+                                history.importable = False
                 trans.sa_session.flush()
         # Render the list view
         return self.stored_list_grid( trans, status=status, message=message, **kwargs )
@@ -237,24 +259,20 @@ class HistoryController( BaseController ):
         msg = util.restore_text( kwargs.get( 'msg', '' ) )
         status = message = None
         if 'operation' in kwargs:
-            id = kwargs.get( 'id', None )
+            ids = util.listify( kwargs.get( 'id', [] ) )
             operation = kwargs['operation'].lower()
             if operation == "clone":
-                if not id:
+                if not ids:
                     message = "Select a history to clone"
                     return self.shared_list_grid( trans, status='error', message=message, **kwargs )
                 # When cloning shared histories, only copy active datasets
                 new_kwargs = { 'clone_choice' : 'active' }
                 return self.clone( trans, id, **new_kwargs )
             elif operation == 'unshare':
-                if not id:
+                if not ids:
                     message = "Select a history to unshare"
                     return self.shared_list_grid( trans, status='error', message=message, **kwargs )
-                ids = util.listify( id )
-                histories = []
-                for history_id in ids:
-                    history = get_history( trans, history_id, check_ownership=False )
-                    histories.append( history )
+                histories = [ get_history( trans, history_id ) for history_id in ids ]
                 for history in histories:
                     # Current user is the user with which the histories were shared
                     association = trans.app.model.HistoryUserShareAssociation.filter_by( user=trans.user, history=history ).one()
@@ -262,6 +280,20 @@ class HistoryController( BaseController ):
                     association.flush()
                 message = "Unshared %d shared histories" % len( ids )
                 status = 'done'
+            elif operation == "enable import via link":
+                if ids:
+                    histories = [ get_history( trans, id ) for id in ids ]
+                    for history in histories:
+                        if not history.importable:
+                            history.importable = True
+                            history.flush()
+            elif operation == "disable import via link":
+                if ids:
+                    histories = [ get_history( trans, id ) for id in ids ]
+                    for history in histories:
+                        if history.importable:
+                            history.importable = False
+                            history.flush()
         # Render the list view
         return self.shared_list_grid( trans, status=status, message=message, **kwargs )
     @web.expose
@@ -622,7 +654,9 @@ class HistoryController( BaseController ):
         params = util.Params( kwd )
         msg = util.restore_text ( params.get( 'msg', '' ) )
         if id:
-            histories = [ get_history( trans, id ) ]
+            ids = util.listify( id )
+            if ids:
+                histories = [ get_history( trans, history_id ) for history_id in ids ]
         for history in histories:
             if params.get( 'enable_import_via_link', False ):
                 history.importable = True
@@ -635,14 +669,34 @@ class HistoryController( BaseController ):
                 if not user:
                     msg = 'History (%s) does not seem to be shared with user (%s)' % ( history.name, user.email )
                     return trans.fill_template( 'history/sharing.mako', histories=histories, msg=msg, messagetype='error' )
-                association = trans.app.model.HistoryUserShareAssociation.filter_by( user=user, history=history ).one()
-                association.delete()
-                association.flush()
-            if not id:
-                shared_msg = "History (%s) now shared with: %d users.  " % ( history.name, len( history.users_shared_with ) )
-                msg = '%s%s' % ( shared_msg, msg )
+                husas = trans.app.model.HistoryUserShareAssociation.filter_by( user=user, history=history ).all()
+                if husas:
+                    for husa in husas:
+                        husa.delete()
+                        husa.flush()
+        histories = []
+        # Get all histories that have been shared with others
+        husas = trans.sa_session.query( trans.app.model.HistoryUserShareAssociation ) \
+                                .join( "history" ) \
+                                .filter( and_( trans.app.model.History.user == trans.user,
+                                               trans.app.model.History.deleted == False ) ) \
+                                .order_by( trans.app.model.History.table.c.name ) \
+                                .all()
+        for husa in husas:
+            history = husa.history
+            if history not in histories:
+                histories.append( history )
+        # Get all histories that are importable
+        importables = trans.sa_session.query( trans.app.model.History ) \
+                                      .filter_by( user=trans.user, importable=True, deleted=False ) \
+                                      .order_by( trans.app.model.History.table.c.name ) \
+                                      .all()
+        for importable in importables:
+            if importable not in histories:
+                histories.append( importable )
+        # Sort the list of histories by history.name
+        histories.sort( key=operator.attrgetter( 'name') )
         return trans.fill_template( 'history/sharing.mako', histories=histories, msg=msg, messagetype='done' )
-
     @web.expose
     @web.require_login( "rename histories" )
     def rename( self, trans, id=None, name=None, **kwd ):

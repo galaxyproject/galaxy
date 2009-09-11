@@ -141,14 +141,13 @@ class TestHistory( TwillTestCase ):
                                     check_str_after_submit='You cannot send histories to yourself.' )
         # Share history3 with 1 valid user
         self.share_current_history( regular_user1.email,
-                                    check_str=history3.name,
-                                    check_str_after_submit='History (%s) now shared with: 1 users' % history3.name )
+                                    check_str=history3.name )
         # Check out list of histories to make sure history3 was shared
-        self.view_stored_active_histories( check_str='operation=sharing&id=%s">shared' % self.security.encode_id( history3.id ) )
+        self.view_stored_active_histories( check_str='operation=sharing">shared' )
         # Enable importing history3 via a URL
         self.enable_import_via_link( self.security.encode_id( history3.id ),
                                      check_str='Unshare',
-                                     check_str_after_submit='Send the following URL to users' )
+                                     check_str_after_submit='Send the above URL to users' )
         # Make sure history3 is now import-able
         history3.refresh()
         if not history3.importable:
@@ -159,7 +158,7 @@ class TestHistory( TwillTestCase ):
                                      check_str_after_submit='You cannot import your own history.' )
         # Disable the import link for history3
         self.disable_import_via_link( self.security.encode_id( history3.id ),
-                                     check_str='Send the following URL to users',
+                                     check_str='Send the above URL to users',
                                      check_str_after_submit='Enable import via link' )
         # Try importing history3 after disabling the URL
         self.import_history_via_url( self.security.encode_id( history3.id ),
@@ -274,12 +273,10 @@ class TestHistory( TwillTestCase ):
         self.upload_file( '2.bed', dbkey='hg18' )
         ids = '%s,%s' % ( self.security.encode_id( history3.id ), self.security.encode_id( history4.id ) )
         emails = '%s,%s' % ( regular_user2.email, regular_user3.email )
-        check_str_after_submit = 'History (%s) now shared with: 3 users.' % history3.name
         self.share_histories_with_users( ids,
                                          emails,
                                          check_str1='Share 2 histories',
-                                         check_str2=history4.name,
-                                         check_str_after_submit=check_str_after_submit )
+                                         check_str2=history4.name )
         self.logout()
         self.login( email=regular_user2.email )
         # Shared history3 should be in regular_user2's list of shared histories
@@ -342,12 +339,10 @@ class TestHistory( TwillTestCase ):
         """Testing sharing a restricted history by making the datasets public"""
         # Logged in as admin_user
         action_check_str = 'The following datasets can be shared with %s by updating their permissions' % regular_user1.email
-        action_check_str_after_submit = 'History (%s) now shared with: 1 users.' % history5.name
         # Current history is history5
         self.share_current_history( regular_user1.email,
                                     action='public',
-                                    action_check_str=action_check_str,
-                                    action_check_str_after_submit=action_check_str_after_submit )
+                                    action_check_str=action_check_str )
         self.logout()
         self.login( email=regular_user1.email )
         # Shared history5 should be in regular_user1's list of shared histories
@@ -375,12 +370,10 @@ class TestHistory( TwillTestCase ):
         self.upload_file( '2.bed', dbkey='hg18' )
         check_str_after_submit = 'The following datasets can be shared with %s with no changes' % regular_user2.email
         check_str_after_submit2 = 'The following datasets can be shared with %s by updating their permissions' % regular_user2.email
-        action_check_str_after_submit = 'History (%s) now shared with: 2 users.' % history5.name
         self.share_current_history( regular_user2.email,
                                     check_str_after_submit=check_str_after_submit,
                                     check_str_after_submit2=check_str_after_submit2,
-                                    action='private',
-                                    action_check_str_after_submit=action_check_str_after_submit )        
+                                    action='private' )        
         # We should now have a new sharing role
         global sharing_role
         role_name = 'Sharing role for: %s, %s' % ( admin_user.email, regular_user2.email )
@@ -470,12 +463,10 @@ class TestHistory( TwillTestCase ):
         check_str_after_submit = 'The following datasets can be shared with %s with no changes' % email
         check_str_after_submit2 = 'The following datasets can be shared with %s by updating their permissions' % email
         # history5 will be shared with regular_user1, regular_user2 and regular_user3
-        action_check_str_after_submit = 'History (%s) now shared with: 3 users.' % history5.name
         self.share_current_history( email,
                                     check_str_after_submit=check_str_after_submit,
                                     check_str_after_submit2=check_str_after_submit2,
-                                    action='share_anyway',
-                                    action_check_str_after_submit=action_check_str_after_submit )
+                                    action='share_anyway' )
         # Check security on clone of history5 for regular_user2
         self.logout()
         self.login( email=regular_user2.email )

@@ -416,8 +416,9 @@ def get_file_peek( file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5 ):
     count = 0
     file_type = None
     data_checked = False
-    for line in file( file_name ):
-        line = line[:WIDTH]
+    temp = open( file_name, "U" )
+    while count <= LINE_COUNT:
+        line = temp.readline( WIDTH )
         if line and not is_multi_byte and not data_checked:
             # See if we have a compressed or binary file
             if line[0:2] == util.gzip_magic:
@@ -432,9 +433,8 @@ def get_file_peek( file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5 ):
         if file_type in [ 'gzipped', 'binary' ]:
             break
         lines.append( line )
-        if count == LINE_COUNT: 
-            break
         count += 1
+    temp.close()
     if file_type in [ 'gzipped', 'binary' ]: 
         text = "%s file" % file_type 
     else: 

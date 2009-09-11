@@ -10,9 +10,6 @@
             "Stored by you": function() {
                 galaxy_main.location = "${h.url_for( controller='history', action='list')}";
             },
-            "Shared with you": function() {
-                galaxy_main.location = "${h.url_for( controller='history', action='list_shared')}";
-            },
             "Current History": null,
             "Create new": function() {
                 galaxy_history.location = "${h.url_for( controller='root', action='history_new' )}";
@@ -32,10 +29,19 @@
             "Show deleted datasets": function() {
                 galaxy_history.location = "${h.url_for( controller='root', action='history', show_deleted=True)}";
             },
-            "Delete": function() {
-                if ( confirm( "Really delete the current history?" ) ) {
+            "Delete": function()
+            {
+                if ( confirm( "Really delete the current history?" ) )
+                {
                     galaxy_main.location = "${h.url_for( controller='history', action='delete_current' )}";
                 }
+            },
+            "Manage shared histories": null,
+            "Shared by you": function() {
+                galaxy_main.location = "${h.url_for( controller='history', action='list', operation='sharing' )}";
+            },
+            "Shared with you": function() {
+                galaxy_main.location = "${h.url_for( controller='history', action='list_shared')}";
             }
         });
     });
