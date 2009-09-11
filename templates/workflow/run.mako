@@ -87,8 +87,7 @@ from galaxy.tools.parameters import DataToolParameter, RuntimeValue
                     ${param.get_html_field( t, value, other_values ).get_html( str(step.id) + "|" + prefix )}
                     <input type="hidden" name="${step.id}|__force_update__${prefix}${param.name}" value="true" />
                 %endif
-            %elif isinstance( value, RuntimeValue ) or \
-                  ( str(step.id) + '|__runtime__' + prefix + param.name ) in incoming:
+            %elif isinstance( value, RuntimeValue ) or ( str(step.id) + '|__runtime__' + prefix + param.name ) in incoming:
                 ## On the first load we may see a RuntimeValue, so we write
                 ## an input field using the initial value for the param.
                 ## Subsequents posts will no longer have the runtime value
