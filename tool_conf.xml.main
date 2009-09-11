@@ -1,0 +1,263 @@
+<?xml version="1.0"?>
+<toolbox>
+  <section name="Get Data" id="getext">
+    <tool file="data_source/upload.xml"/>
+    <tool file="data_source/ucsc_tablebrowser.xml" />
+    <tool file="data_source/ucsc_tablebrowser_archaea.xml" />
+    <tool file="data_source/microbial_import.xml" />
+    <tool file="data_source/biomart.xml" />
+    <tool file="data_source/gramene_mart.xml" />
+    <tool file="data_source/flymine.xml" />
+    <tool file="data_source/encode_db.xml" />
+    <tool file="data_source/epigraph_import.xml" />
+  </section>
+  <section name="Send Data" id="send">
+    <tool file="data_destination/epigraph.xml" />
+  </section>
+  <section name="ENCODE Tools" id="EncodeTools">
+    <tool file="encode/gencode_partition.xml" />
+    <tool file="encode/random_intervals.xml" />
+  </section>
+  <section name="Lift-Over" id="liftOver">
+    <tool file="extract/liftOver_wrapper.xml" />
+  </section>
+  <section name="Text Manipulation" id="textutil">
+    <tool file="filters/fixedValueColumn.xml" />
+    <tool file="stats/column_maker.xml" />
+    <tool file="filters/catWrapper.xml" />
+    <tool file="filters/condense_characters.xml" />
+    <tool file="filters/convert_characters.xml" />
+    <tool file="filters/CreateInterval.xml" />
+    <tool file="filters/cutWrapper.xml" />
+    <tool file="filters/changeCase.xml" />
+    <tool file="filters/pasteWrapper.xml" />
+    <tool file="filters/remove_beginning.xml" />
+    <tool file="filters/headWrapper.xml" />
+    <tool file="filters/tailWrapper.xml" />
+  </section>
+  <section name="Convert Formats" id="convert">
+    <tool file="filters/bed2gff.xml" />
+    <tool file="fasta_tools/fasta_to_tabular.xml" />
+    <tool file="filters/gff2bed.xml" />
+    <tool file="maf/maf_to_bed.xml" />
+    <tool file="maf/maf_to_fasta.xml" />
+    <tool file="fasta_tools/tabular_to_fasta.xml" />
+  </section>
+  <section name="FASTA manipulation" id="fasta_manipulation">
+    <tool file="fasta_tools/fasta_compute_length.xml" />
+    <tool file="fasta_tools/fasta_filter_by_length.xml" />
+    <tool file="fasta_tools/fasta_concatenate_by_species.xml" />
+    <tool file="fasta_tools/fasta_to_tabular.xml" />
+    <tool file="fasta_tools/tabular_to_fasta.xml" />
+  </section>
+  <section name="Filter and Sort" id="filter">
+    <tool file="stats/filtering.xml" />
+    <tool file="filters/sorter.xml" />
+    <tool file="filters/grep.xml" />
+  </section>
+  <section name="Join, Subtract and Group" id="group">
+    <tool file="filters/joiner.xml" />
+    <tool file="filters/compare.xml"/>
+    <tool file="new_operations/subtract_query.xml"/>
+    <tool file="stats/grouping.xml" />   
+  </section>
+  <section name="Extract Features" id="features">
+    <tool file="filters/ucsc_gene_bed_to_exon_bed.xml" />
+    <tool file="extract/extract_GFF_Features.xml" />
+  </section>
+  <section name="Fetch Sequences" id="fetchSeq">
+    <tool file="extract/extract_genomic_dna.xml" />
+  </section>
+  <section name="Fetch Alignments" id="fetchAlign">
+    <tool file="maf/interval2maf_pairwise.xml" />
+    <tool file="maf/interval2maf.xml" />
+    <tool file="maf/interval_maf_to_merged_fasta.xml" />
+    <tool file="maf/genebed_maf_to_fasta.xml"/>
+    <tool file="maf/maf_stats.xml"/>
+    <tool file="maf/maf_thread_for_species.xml"/>
+    <tool file="maf/maf_limit_to_species.xml"/>
+    <tool file="maf/maf_limit_size.xml"/>
+    <tool file="maf/maf_by_block_number.xml"/>
+    <tool file="maf/maf_filter.xml"/>
+    <!--    
+    <tool file="maf/maf_reverse_complement.xml"/>
+    -->
+  </section>
+  <section name="Get Genomic Scores" id="scores">
+    <tool file="stats/wiggle_to_simple.xml" />
+    <tool file="stats/aggregate_binned_scores_in_intervals.xml" />
+    <tool file="extract/phastOdds/phastOdds_tool.xml" />
+  </section>
+  <section name="Operate on Genomic Intervals" id="bxops">
+  	<tool file="new_operations/intersect.xml" />  
+    <tool file="new_operations/subtract.xml" />
+    <tool file="new_operations/merge.xml" />
+    <tool file="new_operations/concat.xml" />
+    <tool file="new_operations/basecoverage.xml" />
+    <tool file="new_operations/coverage.xml" />
+    <tool file="new_operations/complement.xml" />
+    <tool file="new_operations/cluster.xml" id="cluster" />
+    <tool file="new_operations/join.xml" />
+    <tool file="new_operations/get_flanks.xml" />
+    <tool file="new_operations/flanking_features.xml" />
+    <tool file="annotation_profiler/annotation_profiler.xml" />
+  </section>
+  <section name="Statistics" id="stats">
+    <tool file="stats/gsummary.xml" />
+    <tool file="filters/uniq.xml" /> 
+    <tool file="stats/cor.xml" /> 
+  </section>
+  <section name="Graph/Display Data" id="plots">
+    <tool file="plotting/histogram2.xml" />
+    <tool file="plotting/scatterplot.xml" />
+    <tool file="plotting/xy_plot.xml" />
+    <tool file="visualization/GMAJ.xml" />
+    <tool file="visualization/build_ucsc_custom_track.xml" />
+  </section>
+  <section name="Regional Variation" id="regVar">
+    <tool file="regVariation/windowSplitter.xml" />
+    <tool file="regVariation/featureCounter.xml" />
+    <tool file="regVariation/quality_filter.xml" />
+    <tool file="regVariation/maf_cpg_filter.xml" />
+    <tool file="regVariation/getIndels_2way.xml" />
+    <tool file="regVariation/getIndels_3way.xml" />
+    <tool file="regVariation/getIndelRates_3way.xml" />
+    <tool file="regVariation/substitutions.xml" />
+    <tool file="regVariation/substitution_rates.xml" />
+    <tool file="regVariation/microsats_alignment_level.xml" />
+    <tool file="regVariation/microsats_mutability.xml" />
+  </section>
+  <section name="Multiple regression" id="multReg">
+    <tool file="regVariation/linear_regression.xml" />
+    <tool file="regVariation/best_regression_subsets.xml" />
+    <tool file="regVariation/rcve.xml" />
+  </section>
+ <section name="Evolution: HyPhy" id="hyphy">
+    <tool file="hyphy/hyphy_branch_lengths_wrapper.xml" />
+    <tool file="hyphy/hyphy_nj_tree_wrapper.xml" />
+    <tool file="hyphy/hyphy_dnds_wrapper.xml" />
+ </section>
+ <section name="Metagenomic analyses" id="tax_manipulation">
+    <tool file="taxonomy/gi2taxonomy.xml" />
+    <tool file="taxonomy/t2t_report.xml" />
+    <tool file="taxonomy/t2ps_wrapper.xml" />
+    <tool file="taxonomy/find_diag_hits.xml" />
+    <tool file="taxonomy/lca.xml" />
+    <tool file="taxonomy/poisson2test.xml" />
+  </section>
+  <section name="Short Read Analysis" id="short_read_analysis">
+    <tool file="metag_tools/short_reads_figure_score.xml" />
+    <tool file="metag_tools/short_reads_trim_seq.xml" />
+    <tool file="metag_tools/megablast_wrapper.xml" />
+    <tool file="metag_tools/megablast_xml_parser.xml" /> 
+  </section>
+  <section name="EMBOSS" id="EMBOSSLite">
+    <tool file="emboss_5/emboss_antigenic.xml" />
+    <tool file="emboss_5/emboss_backtranseq.xml" />
+    <tool file="emboss_5/emboss_banana.xml" />
+    <tool file="emboss_5/emboss_biosed.xml" />
+    <tool file="emboss_5/emboss_btwisted.xml" />
+    <tool file="emboss_5/emboss_cai_custom.xml" />
+    <tool file="emboss_5/emboss_cai.xml" />
+    <tool file="emboss_5/emboss_chaos.xml" />
+    <tool file="emboss_5/emboss_charge.xml" />
+    <tool file="emboss_5/emboss_checktrans.xml" />
+    <tool file="emboss_5/emboss_chips.xml" />
+    <tool file="emboss_5/emboss_cirdna.xml" />
+    <tool file="emboss_5/emboss_codcmp.xml" />
+    <tool file="emboss_5/emboss_coderet.xml" /> 
+    <tool file="emboss_5/emboss_compseq.xml" />
+    <tool file="emboss_5/emboss_cpgplot.xml" /> 
+    <tool file="emboss_5/emboss_cpgreport.xml" />
+    <tool file="emboss_5/emboss_cusp.xml" />
+    <tool file="emboss_5/emboss_cutseq.xml" />
+    <tool file="emboss_5/emboss_dan.xml" /> 
+    <tool file="emboss_5/emboss_degapseq.xml" />
+    <tool file="emboss_5/emboss_descseq.xml" />
+    <tool file="emboss_5/emboss_diffseq.xml" />
+    <tool file="emboss_5/emboss_digest.xml" />
+    <tool file="emboss_5/emboss_dotmatcher.xml" />
+    <tool file="emboss_5/emboss_dotpath.xml" />
+    <tool file="emboss_5/emboss_dottup.xml" />
+    <tool file="emboss_5/emboss_dreg.xml" />
+    <tool file="emboss_5/emboss_einverted.xml" />
+    <tool file="emboss_5/emboss_epestfind.xml" />
+    <tool file="emboss_5/emboss_equicktandem.xml" />
+    <tool file="emboss_5/emboss_est2genome.xml" />
+    <tool file="emboss_5/emboss_etandem.xml" />
+    <tool file="emboss_5/emboss_extractfeat.xml" />
+    <tool file="emboss_5/emboss_extractseq.xml" />
+    <tool file="emboss_5/emboss_freak.xml" /> 
+    <tool file="emboss_5/emboss_fuzznuc.xml" />
+    <tool file="emboss_5/emboss_fuzzpro.xml" />
+    <tool file="emboss_5/emboss_fuzztran.xml" />
+    <tool file="emboss_5/emboss_garnier.xml" />
+    <tool file="emboss_5/emboss_geecee.xml" />
+    <tool file="emboss_5/emboss_getorf.xml" />
+    <tool file="emboss_5/emboss_helixturnhelix.xml" />
+    <tool file="emboss_5/emboss_hmoment.xml" />
+    <tool file="emboss_5/emboss_iep.xml" />
+    <tool file="emboss_5/emboss_infoseq.xml" />
+    <tool file="emboss_5/emboss_isochore.xml" />
+    <tool file="emboss_5/emboss_lindna.xml" />
+    <tool file="emboss_5/emboss_marscan.xml" />
+    <tool file="emboss_5/emboss_maskfeat.xml" />
+    <tool file="emboss_5/emboss_maskseq.xml" />
+    <tool file="emboss_5/emboss_matcher.xml" />
+    <tool file="emboss_5/emboss_megamerger.xml" />
+    <tool file="emboss_5/emboss_merger.xml" />
+    <tool file="emboss_5/emboss_msbar.xml" />
+    <tool file="emboss_5/emboss_needle.xml" />
+    <tool file="emboss_5/emboss_newcpgreport.xml" /> 
+    <tool file="emboss_5/emboss_newcpgseek.xml" />
+    <tool file="emboss_5/emboss_newseq.xml" />
+    <tool file="emboss_5/emboss_noreturn.xml" />
+    <tool file="emboss_5/emboss_notseq.xml" />
+    <tool file="emboss_5/emboss_nthseq.xml" />
+    <tool file="emboss_5/emboss_octanol.xml" />
+    <tool file="emboss_5/emboss_oddcomp.xml" />
+    <tool file="emboss_5/emboss_palindrome.xml" />
+    <tool file="emboss_5/emboss_pasteseq.xml" />
+    <tool file="emboss_5/emboss_patmatdb.xml" />
+    <tool file="emboss_5/emboss_pepcoil.xml" />
+    <tool file="emboss_5/emboss_pepinfo.xml" />
+    <tool file="emboss_5/emboss_pepnet.xml" />
+    <tool file="emboss_5/emboss_pepstats.xml" />
+    <tool file="emboss_5/emboss_pepwheel.xml" />
+    <tool file="emboss_5/emboss_pepwindow.xml" />
+    <tool file="emboss_5/emboss_pepwindowall.xml" />
+    <tool file="emboss_5/emboss_plotcon.xml" />
+    <tool file="emboss_5/emboss_plotorf.xml" />
+    <tool file="emboss_5/emboss_polydot.xml" />
+    <tool file="emboss_5/emboss_preg.xml" />
+    <tool file="emboss_5/emboss_prettyplot.xml" />
+    <tool file="emboss_5/emboss_prettyseq.xml" />
+    <tool file="emboss_5/emboss_primersearch.xml" />
+    <tool file="emboss_5/emboss_revseq.xml" />
+    <tool file="emboss_5/emboss_seqmatchall.xml" />
+    <tool file="emboss_5/emboss_seqret.xml" />
+    <tool file="emboss_5/emboss_showfeat.xml" /> 
+    <tool file="emboss_5/emboss_shuffleseq.xml" />
+    <tool file="emboss_5/emboss_sigcleave.xml" />
+    <tool file="emboss_5/emboss_sirna.xml" />
+    <tool file="emboss_5/emboss_sixpack.xml" />
+    <tool file="emboss_5/emboss_skipseq.xml" />
+    <tool file="emboss_5/emboss_splitter.xml" />
+    <tool file="emboss_5/emboss_supermatcher.xml" />
+    <tool file="emboss_5/emboss_syco.xml" />
+    <tool file="emboss_5/emboss_tcode.xml" />
+    <tool file="emboss_5/emboss_textsearch.xml" />
+    <tool file="emboss_5/emboss_tmap.xml" />
+    <tool file="emboss_5/emboss_tranalign.xml" />
+    <tool file="emboss_5/emboss_transeq.xml" />
+    <tool file="emboss_5/emboss_trimest.xml" />
+    <tool file="emboss_5/emboss_trimseq.xml" />
+    <tool file="emboss_5/emboss_twofeat.xml" />
+    <tool file="emboss_5/emboss_union.xml" />
+    <tool file="emboss_5/emboss_vectorstrip.xml" />
+    <tool file="emboss_5/emboss_water.xml" />
+    <tool file="emboss_5/emboss_wobble.xml" />
+    <tool file="emboss_5/emboss_wordcount.xml" />
+    <tool file="emboss_5/emboss_wordmatch.xml" /> 
+  </section>
+</toolbox>
