@@ -104,9 +104,7 @@ class SharedHistoryListGrid( grids.Grid ):
     ]
     operations = [
         grids.GridOperation( "Clone" ),
-        grids.GridOperation( "Unshare" ),
-        grids.GridOperation( "Enable import via link", condition=( lambda item: item.deleted ) ),
-        grids.GridOperation( "Disable import via link", condition=( lambda item: item.deleted ) )
+        grids.GridOperation( "Unshare" )
     ]
     standard_filters = []
     def build_initial_query( self, session ):
@@ -280,20 +278,6 @@ class HistoryController( BaseController ):
                     association.flush()
                 message = "Unshared %d shared histories" % len( ids )
                 status = 'done'
-            elif operation == "enable import via link":
-                if ids:
-                    histories = [ get_history( trans, id ) for id in ids ]
-                    for history in histories:
-                        if not history.importable:
-                            history.importable = True
-                            history.flush()
-            elif operation == "disable import via link":
-                if ids:
-                    histories = [ get_history( trans, id ) for id in ids ]
-                    for history in histories:
-                        if history.importable:
-                            history.importable = False
-                            history.flush()
         # Render the list view
         return self.shared_list_grid( trans, status=status, message=message, **kwargs )
     @web.expose
