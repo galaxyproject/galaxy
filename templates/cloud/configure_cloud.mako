@@ -125,7 +125,8 @@
 						%>
 					</td>
 					<td><div align="right">
-						%for i, instance in enumerate( liveInstance.instance ):
+						%for j, instance in enumerate( liveInstance.instance ):
+						## TODO: Once more instances will be running under the same liveInstance, additional logic will need to be added to account for that
 							%if instance.state == "running":
 								<a class="action-button" href="http://${instance.public_dns}" target="_blank">
 								<span>Connect to!</span>

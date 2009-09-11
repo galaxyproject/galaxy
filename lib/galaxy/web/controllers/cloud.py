@@ -107,20 +107,20 @@ class CloudController( BaseController ):
             instance.availability_zone = stores[0].availability_zone # Bc. all EBS volumes need to be in the same avail. zone, just check 1st
             instance.type = size
             conn = get_connection( trans )
-            # Get or setup appropriate security group
-            sg = list() # security group list
+            # If not existent, setup galaxy security group
             try:
-                gSecurityGroup = conn.create_security_group('galaxy', 'Galaxy security group')
-                gSecurityGroup.authorize( 'tcp', 80, 80, '0.0.0.0/0' )
-                sg.append( gSecurityGroup )
+                gSecurityGroup = conn.create_security_group('galaxy', 'Security group for Galaxy.')
+                gSecurityGroup.authorize( 'tcp', 80, 80, '0.0.0.0/0' ) # Open HTTP port
+                gSecurityGroup.authorize( 'tcp', 22, 22, '0.0.0.0/0' ) # Open SSH port
             except:
-                sgs = rs = conn.get_all_security_groups()
-                for i in range( len( sgs ) ):
-                    if sgs[i].name == "galaxy":
-                        sg.append( sgs[i] )
-                        break # only 1 security group w/ this name can exist, so continue                    
+                pass
+#                sgs = conn.get_all_security_groups()
+#                for i in range( len( sgs ) ):
+#                    if sgs[i].name == "galaxy":
+#                        sg.append( sgs[i] )
+#                        break # only 1 security group w/ this name can exist, so continue                    
             
-            #reservation = conn.run_instances( image_id=instance.image, key_name=instance.keypair_name, security_groups=sg, instance_type=instance.type,  placement=instance.availability_zone )
+            #reservation = conn.run_instances( image_id=instance.image, key_name=instance.keypair_name, security_groups=['galaxy'], instance_type=instance.type,  placement=instance.availability_zone )
             instance.launch_time = datetime.utcnow()
             uci.launch_time = instance.launch_time
             #instance.reservation = str( reservation.instances[0] )
@@ -133,7 +133,6 @@ class CloudController( BaseController ):
             session = trans.sa_session
             session.save_or_update( instance )
             session.flush()
-            #error( "Starting instance '%s' is not supported yet." % uci.name )
                         
             trans.log_event( "User started cloud instance '%s'" % uci.name )
             trans.set_message( "Galaxy instance '%s' started. NOTE: Please wait about 2-3 minutes for the instance to " 
@@ -225,9 +224,11 @@ class CloudController( BaseController ):
                     storage.user = user
                     storage.uci = uci
                     storage.size = volSize
-                    # TODO: get correct values from AWS
+                    storage.availability_zone = "us-east-1a" # TODO: Give user choice here. Also, enable region selection.
+                    conn = get_connection( trans )
+                    #conn.create_volume( volSize, storage.availability_zone, snapshot=None )
+                    # TODO: get correct value from AWS
                     storage.volume_id = "made up"
-                    storage.availability_zone = "avail zone"
                     # Persist
                     session = trans.sa_session
                     session.save_or_update( uci )
@@ -863,7 +864,7 @@ def get_default_credentials( trans, check_ownership=True ):
 
 def get_uci( trans, id, check_ownership=True ):
     """
-    Get a UCI from the database by id, verifying ownership. 
+    Get a UCI object from the database by id, verifying ownership. 
     """
     # Check if 'id' is in int (i.e., it was called from this program) or
     #    it was passed from the web (in which case decode it)
@@ -944,20 +945,19 @@ def get_connection( trans ):
 
 def get_keypair_name( trans ):
     """
-    Generate X.509 Certificate (i.e., keypair) using user's default credentials
+    Generate keypair using user's default credentials
     """
     conn = get_connection( trans )
     try:
         key_pair = conn.get_key_pair( 'galaxy-keypair' )
     except: # No keypair under this name exists so create it
         key_pair = conn.create_key_pair( 'galaxy-keypair' )
-#    log.debug( key_pair.name )
     
     return key_pair.name
 
 def update_instance_state( trans, id ):
     """
-    Update state of instances associated with given UCI id and store it in local database. Also update
+    Update state of instances associated with given UCI id and store state in local database. Also update
     state of the given UCI.  
     """
     uci = get_uci( trans, id )
@@ -971,36 +971,48 @@ def update_instance_state( trans, id ):
     # Update status of instance
     cloudInstance.update()
     dbInstances.state = cloudInstance.state
-    log.debug( "Processing instance %i, instance current state: %s" % i, cloudInstance.state )
-    
-    # If instance is now running, update/process instance (i.e., mount file system, start Galaxy, update DB with DNS)
-    if oldState=="pending" and dbInstances.state=="running":
-        update_instance( trans, dbInstances, cloudInstance )
-    
+    log.debug( "Processing instance %i, current instance state: %s" % i, cloudInstance.state )
     # Update state of UCI (TODO: once more than 1 instance is assoc. w/ 1 UCI, this will be need to be updated differently) 
     uci.state = dbInstances.state
-    
     # Persist
     session = trans.sa_session
     session.save_or_update( dbInstances )
     session.save_or_update( uci )
     session.flush()
     
+    # If instance is now running, update/process instance (i.e., mount file system, start Galaxy, update DB with DNS)
+    if oldState=="pending" and dbInstances.state=="running":
+        update_instance( trans, dbInstances, cloudInstance, conn, uci )
     
-def update_instance( trans, dbInstance, cloudInstance ):
+    
+def update_instance( trans, dbInstance, cloudInstance, conn, uci ):
     """
-    Update instance: mount file system, start Galaxy and update local DB w/ DNS info
+    Update instance: connect EBS volume, mount file system, start Galaxy, and update local DB w/ DNS info
     
     Keyword arguments:
     trans -- current transaction
     dbInstance -- object of 'instance' as it is stored in local database
     cloudInstance -- object of 'instance' as it resides in the cloud. Functions supported by the cloud API can be
         instantiated directly on this object.
+    conn -- cloud connection object
+    uci -- UCI object 
     """
     dbInstance.public_dns = cloudInstance.dns_name
     dbInstance.private_dns = cloudInstance.private_dns_name
 
-    # TODO: mount storage 
+    # TODO: connect EBS volume to instance
+    # Attach storage volume(s) to instance
+    stores = get_stores( trans, uci )
+    for i, store in enumerate( stores ):
+        log.debug( "Attaching volume %s to instance %s." % store.volume_id, store.uci_id )
+        mtnDevice = '/dev/sdb'+str(i)
+        conn.attach_volume( store.volume_id, store.uci_id, mntDevice )
+    
+    # Wait until instances have attached and add file system
+    
+    
+    
+    # TODO: mount storage through ZFS
     # TODO: start Galaxy 
     
     # Persist
