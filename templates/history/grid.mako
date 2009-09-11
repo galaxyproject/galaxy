@@ -10,6 +10,7 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
+	${h.js("jquery.autocomplete", "autocomplete_tagging" )}
     <script type="text/javascript">        
         ## TODO: generalize and move into galaxy.base.js
         $(document).ready(function() {
@@ -58,7 +59,7 @@
 </%def>
 
 <%def name="stylesheets()">
-    <link href="${h.url_for('/static/style/base.css')}" rel="stylesheet" type="text/css" />
+    ${h.css( "base", "autocomplete_tagging" )}
     <style>
         ## Not generic to all grids -- move to base?
         .count-box {

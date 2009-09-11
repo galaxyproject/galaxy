@@ -38,6 +38,17 @@ class HistoryListGrid( grids.Grid ):
             if item.users_shared_with or item.importable:
                 return dict( operation="sharing" )
             return None
+    class TagsColumn( grids.GridColumn ):
+        def __init__(self, col_name):
+            grids.GridColumn.__init__(self, col_name)
+            self.tag_elt_id_gen = 0
+
+        def get_value( self, trans, grid, history ):
+            self.tag_elt_id_gen += 1
+            return trans.fill_template( "/tagging_common.mako", trans=trans,
+                                        tagged_item=history,
+                                        elt_id="tagging-elt" + str(self.tag_elt_id_gen) )
+
     # Grid definition
     title = "Stored histories"
     model_class = model.History
@@ -48,6 +59,7 @@ class HistoryListGrid( grids.Grid ):
                           link=( lambda item: iff( item.deleted, None, dict( operation="switch", id=item.id ) ) ),
                           attach_popup=True ),
         DatasetsByStateColumn( "Datasets (by state)", ncells=4 ),
+        #TagsColumn( "Tags" ),
         StatusColumn( "Status", attach_popup=False ),
         grids.GridColumn( "Created", key="create_time", format=time_ago ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),

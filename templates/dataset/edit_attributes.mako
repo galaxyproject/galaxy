@@ -9,43 +9,8 @@
 <% user, user_roles = trans.get_user_and_roles() %>
 
 <%def name="javascripts()">
-    ## <!--[if lt IE 7]>
-    ## <script type='text/javascript' src="/static/scripts/IE7.js"> </script>
-    ## <![endif]-->
-    ${h.js( "jquery", "galaxy.base", "jquery.autocomplete", "autocomplete_tagging" )}
-    <script type="text/javascript">
-    $( document ).ready( function() {
-        // Set up autocomplete tagger.
-<%
-    ## Build string of tag name, values.
-    tag_names_and_values = list()
-    for tag in data.tags:
-        tag_name = tag.user_tname
-        tag_value = ""
-        if tag.value is not None:
-            tag_value = tag.user_value
-        tag_names_and_values.append("\"" + tag_name + "\" : \"" + tag_value + "\"") 
-%>
-        var options = {
-            tags : {${", ".join(tag_names_and_values)}},
-            tag_click_fn: function(tag) { /* Do nothing. */ },
-            use_toggle_link: false,
-            input_size: 30,
-            in_form: true,
-            <% encoded_data_id = trans.security.encode_id(data.id) %>
-            ajax_autocomplete_tag_url: "${h.url_for( controller='tag', action='tag_autocomplete_data', id=encoded_data_id, item_type="hda" )}",
-            ajax_add_tag_url: "${h.url_for( controller='tag', action='add_tag_async', id=encoded_data_id, item_type="hda" )}",
-            ajax_delete_tag_url: "${h.url_for( controller='tag', action='remove_tag_async', id=encoded_data_id, item_type="hda" )}",
-            delete_tag_img: "${h.url_for('/static/images/delete_tag_icon_gray.png')}",
-            delete_tag_img_rollover: "${h.url_for('/static/images/delete_tag_icon_white.png')}",
-            add_tag_img: "${h.url_for('/static/images/add_icon.png')}",
-            add_tag_img_rollover: "${h.url_for('/static/images/add_icon_dark.png')}",
-        };
-% if trans.get_user() is not None:
-    $("#dataset-tag-area").autocomplete_tagging(options);
-% endif
-});
-    </script>
+    ${parent.javascripts()}
+    ${h.js( "jquery.autocomplete", "autocomplete_tagging" )}
 </%def>
 
 <%def name="datatype( dataset, datatypes )">
@@ -84,16 +49,18 @@
                 <div style="clear: both"></div>
             </div>
             %if trans.get_user() is not None:
-             <div class="form-row">
-                 <label>
-                     Tags:
-                 </label>
-                 <div id="dataset-tag-area" 
+			<%namespace file="../tagging_common.mako" import="render_tagging_element" />
+            <div class="form-row">
+                <label>
+                    Tags:
+                </label>
+                <div id="dataset-tag-area" 
                       style="float: left; margin-left: 1px; width: 295px; margin-right: 10px; border-style: inset; border-color: #ddd; border-width: 1px">
-                 </div>
-                 <div style="clear: both"></div>
-             </div>
-             %endif
+                </div>
+                <div style="clear: both"></div>
+            </div>
+			${render_tagging_element(data, "dataset-tag-area", use_toggle_link="false", in_form="true", input_size="30")}
+            %endif
             %for name, spec in data.metadata.spec.items():
                 %if spec.visible:
                     <div class="form-row">

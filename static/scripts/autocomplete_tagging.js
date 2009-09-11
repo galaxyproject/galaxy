@@ -187,13 +187,14 @@ jQuery.fn.autocomplete_tagging = function(options) {
       // Tag button is image's parent.
       var tag_button = $(this).parent();
       
-      // Get tag name.
+      // Get tag name, value.
       var tag_name_elt = tag_button.find(".tag-name").eq(0);
       var tag_str = tag_name_elt.text();
-      var tag_name = get_tag_name_and_value(tag_str)[0];
+      var tag_name_and_value = get_tag_name_and_value(tag_str);
+      var tag_name = tag_name_and_value[0];
+      var tag_value = tag_name_and_value[1];
 
-      // TODO: should remove succeed if tag is not already applied to
-      // history?
+      var prev_button = tag_button.prev();
       tag_button.remove();
 
       // Remove tag from local list for consistency.
@@ -209,12 +210,28 @@ jQuery.fn.autocomplete_tagging = function(options) {
 	    data: { tag_name: tag_name },
 	    error: function() 
 	    { 
-	      // Failed. 
-	      alert( "Remove tag failed" ); 
+	      // Failed. Roll back changes and show alert.
+	      settings.tags[tag_name] = tag_value;
+	      if (prev_button.hasClass("tag-button"))
+			prev_button.after(tag_button);
+	      else
+			tag_area.prepend(tag_button);
+	      var new_text = settings.get_toggle_link_text_fn(settings.tags);
+	      alert( "Remove tag failed" );
+	
+	      toggle_link.text(new_text);
+		
+	      // TODO: no idea why it's necessary to set this up again.
+	      delete_img.mouseenter( function ()
+	      {
+		      $(this).attr("src", settings.delete_tag_img_rollover);
+	      });
+	      delete_img.mouseleave( function ()
+	      {	
+              $(this).attr("src", settings.delete_tag_img);
+	      });
 	    },
-	    success: function() 
-	    {
-	    }
+	    success: function() {}
       });
 
       return true;
@@ -323,8 +340,9 @@ jQuery.fn.autocomplete_tagging = function(options) {
 		data: { new_tag: new_value },
 		error: function() 
 		{
-		  // Remove tag and show alert.
+		  // Failed. Roll back changes and show alert.
 		  new_tag_button.remove();
+		  delete settings.tags[tag_name_and_value[0]];
 		  var new_text = settings.get_toggle_link_text_fn(settings.tags);
 		  toggle_link.text(new_text);
 		  alert( "Add tag failed" );

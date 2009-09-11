@@ -4,7 +4,6 @@ Tags Controller: handles tagging/untagging of entities and provides autocomplete
 
 from galaxy.model import History, HistoryTagAssociation, Dataset, DatasetTagAssociation, \
     HistoryDatasetAssociation, HistoryDatasetAssociationTagAssociation, Page, PageTagAssociation
-
 from galaxy.web.base.controller import *
 from galaxy.tags.tag_handler import *
 from sqlalchemy.sql.expression import func, and_
@@ -15,65 +14,68 @@ class TagsController ( BaseController ):
     def __init__(self, app):
         BaseController.__init__(self, app)
         
-        # Set up dict for mapping from short-hand to full item class.
-        self.shorthand_to_item_class_dict = dict()
-        self.shorthand_to_item_class_dict["history"] = History
-        self.shorthand_to_item_class_dict["hda"] = HistoryDatasetAssociation
+        # Keep a list of taggable classes.
+        self.taggable_classes = dict()
+        self.taggable_classes[History.__name__] = History
+        self.taggable_classes[HistoryDatasetAssociation.__name__] = HistoryDatasetAssociation
+        self.taggable_classes[Page.__name__] = Page
         
-        # Set up tag handler to recognize the following items: History, HistoryDatasetAssociation, ...
+        # Set up tag handler to recognize the following items: History, HistoryDatasetAssociation, Page, ...
         self.tag_handler = TagHandler()
         self.tag_handler.add_tag_assoc_class(History, HistoryTagAssociation)
         self.tag_handler.add_tag_assoc_class(HistoryDatasetAssociation, HistoryDatasetAssociationTagAssociation) 
-    
+        self.tag_handler.add_tag_assoc_class(Page, PageTagAssociation)
+        
     @web.expose
-    def add_tag_async( self, trans, id=None, item_type=None, new_tag=None ):
+    @web.require_login( "Add tag to an item." )
+    def add_tag_async( self, trans, id=None, item_class=None, new_tag=None ):
         """ Add tag to an item. """
-        item = self._get_item(trans, item_type, trans.security.decode_id(id))
+        item = self._get_item(trans, item_class, trans.security.decode_id(id))
         
         self._do_security_check(trans, item)
         
-        self.tag_handler.apply_item_tags(trans.sa_session, item, new_tag)
+        self.tag_handler.apply_item_tags( trans.sa_session, item, unicode(new_tag).encode('utf-8') )
         trans.sa_session.flush()
         
     @web.expose
-    def remove_tag_async( self, trans, id=None, item_type=None, tag_name=None ):
+    @web.require_login( "Remove tag from an item." )
+    def remove_tag_async( self, trans, id=None, item_class=None, tag_name=None ):
         """ Remove tag from an item. """
-        item = self._get_item(trans, item_type, trans.security.decode_id(id))
+        item = self._get_item(trans, item_class, trans.security.decode_id(id))
         
         self._do_security_check(trans, item)
         
-        self.tag_handler.remove_item_tag(item, tag_name)
+        self.tag_handler.remove_item_tag( item, unicode(tag_name).encode('utf-8') )
+        #print tag_name
+        #print unicode(tag_name)
         trans.sa_session.flush()
         
     # Retag an item. All previous tags are deleted and new tags are applied.
     @web.expose
-    def retag_async( self, trans, id=None, item_type=None, new_tags=None ):
+    @web.require_login( "Apply a new set of tags to an item; previous tags are deleted." )
+    def retag_async( self, trans, id=None, item_class=None, new_tags=None ):
         """ Apply a new set of tags to an item; previous tags are deleted. """  
-        item = self._get_item(trans, item_type, trans.security.decode_id(id))
+        item = self._get_item(trans, item_class, trans.security.decode_id(id))
         
         self._do_security_check(trans, item)
         
         tag_handler.delete_item_tags(item)
-        self.tag_handler.apply_item_tags(trans.sa_session, item, new_tag)
+        self.tag_handler.apply_item_tags( trans.sa_session, item, unicode(new_tags).encode('utf-8') )
         trans.sa_session.flush()
-        
-        tag_handler.delete_item_tags(history)
-        tag_handler.apply_item_tags(trans.sa_session, history, new_tags)
-        # Flush to complete changes.    
-        trans.sa_session.flush()
-        
+                
     @web.expose
     @web.require_login( "get autocomplete data for an item's tags" )
-    def tag_autocomplete_data(self, trans, id=None, item_type=None, q=None, limit=None, timestamp=None):
+    def tag_autocomplete_data(self, trans, id=None, item_class=None, q=None, limit=None, timestamp=None):
         """ Get autocomplete data for an item's tags. """
         
         #
         # Get item, do security check, and get autocomplete data.
         #
-        item = self._get_item(trans, item_type, trans.security.decode_id(id))
+        item = self._get_item(trans, item_class, trans.security.decode_id(id))
         
         self._do_security_check(trans, item)
         
+        q = unicode(q).encode('utf-8')
         if q.find(":") == -1:
             return self._get_tag_autocomplete_names(trans, item, q, limit, timestamp)
         else:
@@ -184,9 +186,9 @@ class TagsController ( BaseController ):
             # Use the user_id associated with the HDA's history.
             return History.table.c.user_id
     
-    def _get_item(self, trans, item_type, id):
+    def _get_item(self, trans, item_class_name, id):
         """ Get an item based on type and id. """
-        item_class = self.shorthand_to_item_class_dict[item_type]
+        item_class = self.taggable_classes[item_class_name]
         item = trans.sa_session.query(item_class).filter("id=" + str(id))[0]
         return item;
         

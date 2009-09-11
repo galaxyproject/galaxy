@@ -77,83 +77,6 @@ $(function() {
         <% updateable = [data for data in reversed( datasets ) if data.visible and data.state not in [ "deleted", "empty", "error", "ok" ]] %>
         ${ ",".join( map(lambda data: "\"%s\" : \"%s\"" % (data.id, data.state), updateable) ) }
     });
-    
-    // Set up autocomplete tagger.
-<%
-    ## Build string of tag name, values.
-    tag_names_and_values = list()
-    for tag in history.tags:
-        tag_name = tag.user_tname
-        tag_value = ""
-        if tag.value is not None:
-            tag_value = tag.user_value
-        tag_names_and_values.append("\"" + tag_name + "\" : \"" + tag_value + "\"") 
-%>
-    // Returns the number of keys (elements) in an array/dictionary.
-    var array_length = function(an_array)
-    {
-        if (an_array.length)
-        return an_array.length;
-
-        var count = 0;
-        for (element in an_array)
-        count++;
-        return count;
-    };
-
-    // Function get text to display on the toggle link.
-    var get_toggle_link_text = function(tags) 
-    {
-        var text = "";
-        var num_tags = array_length(tags);
-        if (num_tags != 0) {
-            text = num_tags + (num_tags != 1 ? " Tags" : " Tag");
-        /*
-        // Show first N tags; hide the rest.
-        var max_to_show = 1;
-
-        // Build tag string.
-        var tag_strs = new Array();
-        var count = 0;
-        for (tag_name in tags)
-          {
-            tag_value = tags[tag_name];
-            tag_strs[tag_strs.length] = build_tag_str(tag_name, tag_value);
-            if (++count == max_to_show)
-              break;
-          }
-        tag_str = tag_strs.join(", ");
-
-        // Finalize text.
-        var num_tags_hiding = num_tags - max_to_show;
-        text = "Tags: " + tag_str + 
-          (num_tags_hiding != 0 ? " and " + num_tags_hiding + " more" : "");
-        */
-        } else {
-            // No tags.
-            text = "Add tags to this history";
-        }
-        return text;
-    };
-    
-    var options = {
-        tags : {${", ".join(tag_names_and_values)}},
-        get_toggle_link_text_fn: get_toggle_link_text,
-        input_size: 15,
-        tag_click_fn: function(tag) { /* Do nothing. */ },
-        <% encoded_history_id = trans.security.encode_id(history.id) %>
-        ajax_autocomplete_tag_url: "${h.url_for( controller='tag', action='tag_autocomplete_data', id=encoded_history_id, item_type="history" )}",
-        ajax_add_tag_url: "${h.url_for( controller='tag', action='add_tag_async', id=encoded_history_id, item_type="history" )}",
-        ajax_delete_tag_url: "${h.url_for( controller='tag', action='remove_tag_async', id=encoded_history_id, item_type="history" )}",
-        delete_tag_img: "${h.url_for('/static/images/delete_tag_icon_gray.png')}",
-        delete_tag_img_rollover: "${h.url_for('/static/images/delete_tag_icon_white.png')}",
-        add_tag_img: "${h.url_for('/static/images/add_icon.png')}",
-        add_tag_img_rollover: "${h.url_for('/static/images/add_icon_dark.png')}",
-    };
-% if trans.get_user() is not None:
-    $("#history-tag-area").autocomplete_tagging(options);
-% endif
-
 });
 // Functionized so AJAX'd datasets can call them
 function initShowHide() {
@@ -361,7 +284,13 @@ var updater_callback = function ( tracked_datasets ) {
 <div id="history-tag-area" style="margin-bottom: 1em">
 </div>
 
+<%namespace file="../tagging_common.mako" import="render_tagging_element" />
 <%namespace file="history_common.mako" import="render_dataset" />
+
+%if trans.get_user() is not None:
+    <div id='history-tag-area' class="tag-element"></div>
+    ${render_tagging_element(history, "history-tag-area")}
+%endif
 
 %if not datasets:
 
