@@ -20,6 +20,7 @@ from datetime import datetime
 import galaxy.eggs
 galaxy.eggs.require("boto")
 from boto.ec2.connection import EC2Connection
+from boto.ec2.regioninfo import RegionInfo
 
 import logging
 log = logging.getLogger( __name__ )
@@ -937,7 +938,10 @@ def get_connection( trans ):
     if creds:
         a_key = creds.access_key
         s_key = creds.secret_key
-        conn = EC2Connection( a_key, s_key )
+        #conn = EC2Connection( a_key, s_key )
+        euca_region = RegionInfo(None, "eucalyptus", "mayhem9.cs.ucsb.edu")
+        #conn = EC2Connection(aws_access_key_id="2s42fQmcCu4WBpS3RJ9e5g", aws_secret_access_key="2iEzpThjZQttuvWYXL-0nRUuurzl2dump2drwg", is_secure=False, port=8773, region=euca_region, path="/services/Eucalyptus")
+        conn = EC2Connection(aws_access_key_id=a_key, aws_secret_access_key=s_key, is_secure=False, port=8773, region=euca_region, path="/services/Eucalyptus")
         return conn
     else:
         error( "You must specify default credentials before starting an instance." )

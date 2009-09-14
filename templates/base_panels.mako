@@ -16,7 +16,7 @@
 </%def>
 
 ## Default title
-<%def name="title()">Galaxy Cloud</%def>
+<%def name="title()">Galaxy</%def>
 
 ## Default stylesheets
 <%def name="stylesheets()">
@@ -135,13 +135,15 @@
         <td class="${cls}" style="${style}"><a target="${target}" href="${href}">${display}</a></td>
     </%def>
     
-    ##${tab( "analysis", "Analyze Data", h.url_for( controller='root', action='index' ))}
-    
-    ##${tab( "workflow", "Workflow", h.url_for( controller='workflow', action='index' ))}
-    
-    ##${tab( "libraries", "Data Libraries", h.url_for( controller='library', action='index' ))}
-    
-    ${tab( "cloud", "Cloud", h.url_for( controller='cloud', action='index' ))}
+    %if app.config.cloud_controller_instance:
+		${tab( "cloud", "Cloud", h.url_for( controller='cloud', action='index' ))}
+    %else:
+    	${tab( "analysis", "Analyze Data", h.url_for( controller='root', action='index' ))}
+	    
+	    ${tab( "workflow", "Workflow", h.url_for( controller='workflow', action='index' ))}
+	    
+	    ${tab( "libraries", "Data Libraries", h.url_for( controller='library', action='index' ))}
+	%endif
     
     %if trans.request_types():
         <td class="tab">

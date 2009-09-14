@@ -2,9 +2,14 @@
 
 <%def name="init()">
 <%
-    self.has_left_panel=False
-    self.has_right_panel=False
-    self.active_view="cloud"
+if trans.app.config.cloud_controller_instance:
+	self.has_left_panel=False
+	self.has_right_panel=False
+	self.active_view="cloud"
+else:
+	self.has_left_panel=True
+	self.has_right_panel=True
+	self.active_view="analysis"
 %>
 %if trans.app.config.require_login and not trans.user:
     <script type="text/javascript">
@@ -28,17 +33,18 @@
 
     ## If a specific tool id was specified, load it in the middle frame
     <%
-    if trans.app.config.require_login and not trans.user:
-        center_url = h.url_for( controller='user', action='login' )
-    elif tool_id is not None:
-        center_url = h.url_for( 'tool_runner', tool_id=tool_id, from_noframe=True )
-    elif workflow_id is not None:
-        center_url = h.url_for( controller='workflow', action='run', id=workflow_id )
-    elif m_c is not None:
-        center_url = h.url_for( controller=m_c, action=m_a )
-    else:
-        #center_url = h.url_for( '/static/welcome.html' )
-        center_url = h.url_for( controller='cloud', action='list' )
+if trans.app.config.require_login and not trans.user:
+    center_url = h.url_for( controller='user', action='login' )
+elif tool_id is not None:
+    center_url = h.url_for( 'tool_runner', tool_id=tool_id, from_noframe=True )
+elif workflow_id is not None:
+    center_url = h.url_for( controller='workflow', action='run', id=workflow_id )
+elif m_c is not None:
+    center_url = h.url_for( controller=m_c, action=m_a )
+elif trans.app.config.cloud_controller_instance:
+	center_url = h.url_for( controller='cloud', action='list' )
+else:
+    center_url = h.url_for( '/static/welcome.html' )
     %>
     
     <iframe name="galaxy_main" id="galaxy_main" frameborder="0" style="position: absolute; width: 100%; height: 100%;" src="${center_url}"> </iframe>
