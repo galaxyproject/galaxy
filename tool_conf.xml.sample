@@ -338,6 +338,7 @@
    <tool file="visualization/genetrack.xml" />
   </section>
   <section name="SAM Tools" id="samtools">
+   <tool file="samtools/sam_bitwise_flag_filter.xml" />
    <tool file="samtools/sam_to_bam.xml" />
    <tool file="samtools/sam_merge.xml" />
    <tool file="samtools/sam_pileup.xml" />

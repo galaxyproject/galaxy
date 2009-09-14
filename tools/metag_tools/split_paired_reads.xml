@@ -20,7 +20,7 @@
         
 **What it does**
  
-This tool splits a single paired-end file in half and returns two files with each ends.  
+Splits a single fastq datasret representing paired-end run into two datasets (one for each end). This tool works only for datasets where both ends have **the same** length.  
 
 -----
 
