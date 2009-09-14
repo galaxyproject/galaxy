@@ -1,6 +1,6 @@
 <tool id="cshl_fastx_barcode_splitter" name="Barcode Splitter">
 	<description></description>
-	<command>fastx_barcode_splitter_galaxy_wrapper.sh $BARCODE $input "$input.name" --mismatches $mismatches --partial $partial $EOL > $output </command>
+	<command interpreter="sh">fastx_barcode_splitter_galaxy_wrapper.sh $BARCODE $input "$input.name" "$output.files_path" --mismatches $mismatches --partial $partial $EOL > $output </command>
 
 	<inputs>
 		<param format="txt" name="BARCODE" type="data" label="Barcodes to use" />
@@ -61,7 +61,7 @@ The output of this tool is an HTML file, displaying the split counts and the fil
 
 **Output Example**
 
-.. image:: ../static/fastx_icons/barcode_splitter_output_example.png
+.. image:: ./static/fastx_icons/barcode_splitter_output_example.png
 
 </help>
 </tool>

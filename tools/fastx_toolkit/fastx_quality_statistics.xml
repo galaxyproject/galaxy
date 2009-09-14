@@ -1,14 +1,16 @@
-<tool id="cshl_fastq_qual_stat" name="Quality Statistics">
+<tool id="cshl_fastx_quality_statistics" name="Quality Statistics">
 	<description></description>
-	<command>zcat -f $input | fastq_quality_stats -o $output</command>
+	<command>zcat -f $input | fastx_quality_stats -o $output -Q $offset</command>
 
 	<inputs>
-		<param format="fastqsolexa" name="input" type="data" label="Library to analyse" />
+		<param format="fasta,fastqsolexa" name="input" type="data" label="Library to analyse" />
+		<param name="offset" size="4" type="integer" value="33" label="FASTQ ASCII offset" />
 	</inputs>
 
 	<tests>
 		<test>
 			<param name="input" value="fastq_stats1.fastq" />
+			<param name="offset" value="64" />
 			<output name="output" file="fastq_stats1.out" />
 		</test>
 	</tests>

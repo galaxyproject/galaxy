@@ -1,6 +1,6 @@
-<tool id="cshl_fastq_qual_conv" name="Quality format converter">
+<tool id="cshl_fastq_quality_converter" name="Quality format converter">
 	<description>(ASCII-Numeric)</description>
-	<command>zcat -f $input | fastq_quality_converter $QUAL_FORMAT -o $output</command>
+	<command>zcat -f $input | fastq_quality_converter $QUAL_FORMAT -o $output -Q $offset</command>
 	<inputs>
 		<param format="fastqsolexa" name="input" type="data" label="Library to convert" />
 
@@ -8,6 +8,8 @@
 			<option value="-a">ASCII (letters) quality scores</option>
 			<option value="-n">Numeric quality scores</option>
 		</param>
+		
+		<param name="offset" size="4" type="integer" value="33" label="FASTQ ASCII offset" />
 	</inputs>
 
 	<tests>
@@ -15,24 +17,28 @@
 			<!-- ASCII to NUMERIC -->
 			<param name="input" value="fastq_qual_conv1.fastq" />
 			<param name="QUAL_FORMAT" value="Numeric quality scores" />
+			<param name="offset" value="64" />
 			<output name="output" file="fastq_qual_conv1.out" />
 		</test>
 		<test>
 			<!-- ASCII to ASCII (basically, a no-op, but it should still produce a valid output -->
 			<param name="input" value="fastq_qual_conv1.fastq" />
 			<param name="QUAL_FORMAT" value="ASCII (letters) quality scores" />
+			<param name="offset" value="64" />
 			<output name="output" file="fastq_qual_conv1a.out" />
 		</test>
 		<test>
 			<!-- NUMERIC to ASCII -->
 			<param name="input" value="fastq_qual_conv2.fastq" />
 			<param name="QUAL_FORMAT" value="ASCII (letters) quality scores" />
+			<param name="offset" value="64" />
 			<output name="output" file="fastq_qual_conv2.out" />
 		</test>
 		<test>
 			<!-- NUMERIC to NUMERIC (basically, a no-op, but it should still produce a valid output -->
 			<param name="input" value="fastq_qual_conv2.fastq" />
 			<param name="QUAL_FORMAT" value="Numeric quality scores" />
+			<param name="offset" value="64" />
 			<output name="output" file="fastq_qual_conv2n.out" />
 		</test>
 	</tests>

@@ -1,0 +1,65 @@
+<tool id="cshl_fasta_nucleotides_changer" name="RNA/DNA" >
+	<description>converter</description>
+	<command>zcat -f '$input' | fasta_nucleotide_changer $mode -v -o $output</command>
+	<inputs>
+		<param format="fasta" name="input" type="data" label="Library to convert" />
+
+		<param name="mode" type="select" label="Convert">
+			<option value="-d">RNA to DNA (U to T)</option>
+			<option value="-r">DNA to RNA (T to U)</option>
+		</param>
+	</inputs>
+
+	<tests>
+		<test>
+			<!-- DNA-to-RNA -->
+			<param name="input" value="fasta_nuc_changer1.fasta" /> 
+			<param name="mode" value="-r" /> 
+			<output name="output" file="fasta_nuc_change1.out" />
+		</test>
+		<test>
+			<!-- RNA-to-DNA -->
+			<param name="input" value="fasta_nuc_changer2.fasta" /> 
+			<param name="mode" value="-d" /> 
+			<output name="output" file="fasta_nuc_change2.out" />
+		</test>
+	</tests>
+
+  
+	<outputs>
+		<data format="input" name="output" metadata_source="input" />
+	</outputs>
+
+<help>
+**What it does**
+
+This tool converts RNA FASTA files to DNA (and vice-versa).
+
+In **RNA-to-DNA** mode, U's are changed into T's.
+
+In **DNA-to-RNA** mode, T's are changed into U's.
+
+--------
+
+**Example**
+
+Input RNA FASTA file ( from Sanger's mirBase )::
+
+    >cel-let-7 MIMAT0000001 Caenorhabditis elegans let-7
+    UGAGGUAGUAGGUUGUAUAGUU
+    >cel-lin-4 MIMAT0000002 Caenorhabditis elegans lin-4
+    UCCCUGAGACCUCAAGUGUGA
+    >cel-miR-1 MIMAT0000003 Caenorhabditis elegans miR-1
+    UGGAAUGUAAAGAAGUAUGUA
+
+Output DNA FASTA file (with RNA-to-DNA mode)::
+
+    >cel-let-7 MIMAT0000001 Caenorhabditis elegans let-7
+    TGAGGTAGTAGGTTGTATAGTT
+    >cel-lin-4 MIMAT0000002 Caenorhabditis elegans lin-4
+    TCCCTGAGACCTCAAGTGTGA
+    >cel-miR-1 MIMAT0000003 Caenorhabditis elegans miR-1
+    TGGAATGTAAAGAAGTATGTA
+
+</help>
+</tool>

@@ -299,24 +299,26 @@
     <tool file="fasta_tools/tabular_to_fasta.xml" />
   </section>
   <section name="FASTA/Q Information" id="cshl_library_information">
-    <tool file="fastx_toolkit/fastq_qual_stat.xml" />
+    <tool file="fastx_toolkit/fastx_quality_statistics.xml" />
     <tool file="fastx_toolkit/fastq_quality_boxplot.xml" />
-    <tool file="fastx_toolkit/fastq_nucleotides_distribution.xml" />
-    <!-- <tool file="fastx_toolkit/fasta_clipping_histogram.xml" /> -->
+    <tool file="fastx_toolkit/fastx_nucleotides_distribution.xml" />
+    <tool file="fastx_toolkit/fasta_clipping_histogram.xml" />
   </section>
 
   <section name="FASTA/Q Preprocessing" id="cshl_fastx_manipulation">
     <tool file="fastx_toolkit/fastq_to_fasta.xml" />
-    <tool file="fastx_toolkit/fastq_qual_conv.xml" />
-    <!-- <tool file="fastx_toolkit/fastx_clipper.xml" />  -->
+    <tool file="fastx_toolkit/fastq_quality_converter.xml" />
+    <tool file="fastx_toolkit/fastx_clipper.xml" />
     <tool file="fastx_toolkit/fastx_trimmer.xml" />
+    <tool file="fastx_toolkit/fastx_renamer.xml" />
     <tool file="fastx_toolkit/fastx_reverse_complement.xml" />
+    <tool file="fastx_toolkit/fasta_formatter.xml" />
+    <tool file="fastx_toolkit/fasta_nucleotide_changer.xml" />
     <tool file="fastx_toolkit/fastx_artifacts_filter.xml" />
     <tool file="fastx_toolkit/fastq_quality_filter.xml" />
-    <!-- <tool file="fastx_toolkit/fasta_collapser.xml" /> -->
-    <!-- <tool file="fastx_toolkit/fastx_barcode_splitter.xml" />  -->
+    <tool file="fastx_toolkit/fastx_collapser.xml" />
+    <!--<tool file="fastx_toolkit/fastx_barcode_splitter.xml" />-->
   </section>
-  
   <section name="Short Read QC and Manipulation" id="short_read_analysis">
     <tool file="metag_tools/short_reads_figure_score.xml" />
     <tool file="metag_tools/short_reads_figure_high_quality_length.xml" />

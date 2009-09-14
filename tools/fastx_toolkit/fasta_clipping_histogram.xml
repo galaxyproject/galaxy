@@ -13,7 +13,7 @@
 
 **What it does**
 
-This tool creates a histogram image of sequence lengths distribution in a given fasta data set file.
+This tool creates a histogram image of sequence lengths distribution in a given fasta dataset file.
 
 **TIP:** Use this tool after clipping your library (with **FASTX Clipper tool**), to visualize the clipping results.
 
@@ -21,17 +21,82 @@ This tool creates a histogram image of sequence lengths distribution in a given 
 
 **Output Examples**
 
-
 In the following library, most sequences are 24-mers to 27-mers. 
 This could indicate an abundance of endo-siRNAs (depending of course of what you've tried to sequence in the first place).
 
-.. image:: ../static/fastx_icons/fasta_clipping_histogram_1.png
+.. image:: ./static/fastx_icons/fasta_clipping_histogram_1.png
 
 
 In the following library, most sequences are 19,22 or 23-mers. 
 This could indicate an abundance of miRNAs (depending of course of what you've tried to sequence in the first place).
 
-.. image:: ../static/fastx_icons/fasta_clipping_histogram_2.png
+.. image:: ./static/fastx_icons/fasta_clipping_histogram_2.png
+
+
+-----
+
+
+**Input Formats**
+
+This tool accepts short-reads FASTA files. The reads don't have to be short, but they do have to be on a single line, like so::
+
+   >sequence1
+   AGTAGTAGGTGATGTAGAGAGAGAGAGAGTAG
+   >sequence2
+   GTGTGTGTGGGAAGTTGACACAGTA
+   >sequence3
+   CCTTGAGATTAACGCTAATCAAGTAAAC
+
+
+If the sequences span over multiple lines::
+
+   >sequence1
+   CAGCATCTACATAATATGATCGCTATTAAACTTAAATCTCCTTGACGGAG
+   TCTTCGGTCATAACACAAACCCAGACCTACGTATATGACAAAGCTAATAG
+   aactggtctttacctTTAAGTTG
+
+Use the **FASTA Width Formatter** tool to re-format the FASTA into a single-lined sequences::
+
+   >sequence1
+   CAGCATCTACATAATATGATCGCTATTAAACTTAAATCTCCTTGACGGAGTCTTCGGTCATAACACAAACCCAGACCTACGTATATGACAAAGCTAATAGaactggtctttacctTTAAGTTG
+
+
+-----
+
+
+
+**Multiplicity counts (a.k.a reads-count)**
+
+If the sequence identifier (the text after the '>') contains a dash and a number, it is treated as a multiplicity count value (i.e. how many times that individual sequence repeated in the original FASTA file, before collapsing).
+
+Example 1 - The following FASTA file *does not* have multiplicity counts::
+
+    >seq1
+    GGATCC
+    >seq2
+    GGTCATGGGTTTAAA
+    >seq3
+    GGGATATATCCCCACACACACACAC
+
+Each sequence is counts as one, to produce the following chart:
+
+.. image:: ./static/fastx_icons/fasta_clipping_histogram_3.png
+
+
+Example 2 - The following FASTA file have multiplicity counts::
+
+    >seq1-2
+    GGATCC
+    >seq2-10
+    GGTCATGGGTTTAAA
+    >seq3-3
+    GGGATATATCCCCACACACACACAC
+
+The first sequence counts as 2, the second as 10, the third as 3, to produce the following chart:
+
+.. image:: ./static/fastx_icons/fasta_clipping_histogram_4.png
+
+Use the **FASTA Collapser** tool to create FASTA files with multiplicity counts.
 
 </help>
 </tool>

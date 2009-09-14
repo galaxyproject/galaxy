@@ -1,0 +1,13 @@
+#
+# Adapter/Linker sequences for FASTX-Clipper tool.
+#
+# Format:
+#    Adapter Sequence <TAB> Descriptive name
+#
+# Example:
+#     AAATTTGATAAGATA	Our-Adapter
+#
+# Some adapters can be found here:
+# http://seqanswers.com/forums/showthread.php?t=198
+
+TGTAGGCC	Dummy-Adapter (don't use me)

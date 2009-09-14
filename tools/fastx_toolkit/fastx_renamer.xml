@@ -1,0 +1,56 @@
+<tool id="cshl_fastx_renamer" name="Rename" version="0.0.11" >
+	<description>sequence identifiers</description>
+	<command>zcat -f $input | fastx_renamer -n $TYPE -o $output -v </command>
+
+	<inputs>
+		<param format="fastqsolexa,fasta,fastqsanger" name="input" type="data" label="FASTQ/A Library to rename" />
+
+		<param name="TYPE" type="select" label="Rename sequence identifiers to">
+			<option value="SEQ">Nucleotides sequence</option>
+			<option value="COUNT">Numeric Counter</option>
+		</param>
+	</inputs>
+
+	<outputs>
+		<data format="input" name="output" metadata_source="input" />
+	</outputs>
+
+<help>
+
+**What it does**
+
+This tool renames the sequence identifiers in a FASTQ/A file.
+
+.. class:: infomark
+
+Use this tool at the beginning of your workflow, as a way to keep the original sequence (before trimming,clipping,barcode-removal, etc).
+
+--------
+
+**Example**
+
+The following Solexa-FASTQ file::
+
+    @CSHL_4_FC042GAMMII_2_1_517_596
+    GGTCAATGATGAGTTGGCACTGTAGGCACCATCAAT
+    +CSHL_4_FC042GAMMII_2_1_517_596
+    40 40 40 40 40 40 40 40 40 40 38 40 40 40 40 40 14 40 40 40 40 40 36 40 13 14 24 24 9 24 9 40 10 10 15 40
+  
+Renamed to **nucleotides sequence**::
+
+    @GGTCAATGATGAGTTGGCACTGTAGGCACCATCAAT
+    GGTCAATGATGAGTTGGCACTGTAGGCACCATCAAT
+    +GGTCAATGATGAGTTGGCACTGTAGGCACCATCAAT
+    40 40 40 40 40 40 40 40 40 40 38 40 40 40 40 40 14 40 40 40 40 40 36 40 13 14 24 24 9 24 9 40 10 10 15 40
+
+Renamed to **numeric counter**::
+
+    @1
+    GGTCAATGATGAGTTGGCACTGTAGGCACCATCAAT
+    +1
+    40 40 40 40 40 40 40 40 40 40 38 40 40 40 40 40 14 40 40 40 40 40 36 40 13 14 24 24 9 24 9 40 10 10 15 40
+
+    
+</help>
+</tool>
+<!-- FASTQ-to-FASTA is part of the FASTX-toolkit, by A.Gordon (gordon@cshl.edu) -->

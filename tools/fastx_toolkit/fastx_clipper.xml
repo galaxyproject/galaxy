@@ -1,15 +1,11 @@
 <tool id="cshl_fastx_clipper" name="Clip" version="1.0.1" >
   <description>adapter sequences</description>
   <command>
-    zcat -f $input | fastx_clipper -s $maxmismatches -l $minlength -a $clip_source.clip_sequence -d $keepdelta -o $output -v $KEEP_N $DISCARD_OPTIONS
+    zcat -f $input | fastx_clipper -l $minlength -a $clip_source.clip_sequence -d $keepdelta -o $output -v $KEEP_N $DISCARD_OPTIONS
   </command>
   
   <inputs>
     <param format="fasta,fastqsolexa" name="input" type="data" label="Library to clip" />
-    
-    <param name="maxmismatches" size="4" type="integer" value="2">
-      <label>Maximum number of mismatches allowed (when matching the adapter sequence)</label>
-    </param>
   
     <param name="minlength" size="4" type="integer" value="15">
       <label>Minimum sequence length (after clipping, sequences shorter than this length will be discarded)</label>
@@ -52,22 +48,23 @@
 	</param>
 
   </inputs>
-
+	<!--
+	#functional test with param value starting with - fails.	
 	<tests>
 		<test>
 			<!-- Clip a FASTQ file -->
 			<param name="input" value="fastx_clipper1.fastq" />
 			<param name="maxmismatches" value="2" />
 			<param name="minlength" value="15" />
-			<param name="clip_source.clip_source_list" value="user" />
-			<param name="clip_source.clip_sequence" value="CAATTGGTTAATCCCCCTATATA" />
+			<param name="clip_source_list" value="user" />
+			<param name="clip_sequence" value="CAATTGGTTAATCCCCCTATATA" />
 			<param name="keepdelta" value="0" />
 			<param name="KEEP_N" value="-n" />
 			<param name="DISCARD_OPTIONS" value="-c" />
 			<output name="output" file="fastx_clipper1a.out" />
 		</test>
 	</tests>
-
+	-->
   <outputs>
     <data format="input" name="output" metadata_source="input" />
   </outputs>
@@ -82,7 +79,7 @@ This tool clips adapters from the 3'-end of the sequences in a FASTA/FASTQ file.
 
 **Clipping Illustration:**
 
-.. image:: ../static/fastx_icons/fastx_clipper_illustration.png 
+.. image:: ./static/fastx_icons/fastx_clipper_illustration.png 
  
  
  
@@ -93,7 +90,7 @@ This tool clips adapters from the 3'-end of the sequences in a FASTA/FASTQ file.
 
 **Clipping Example:**
 
-.. image:: ../static/fastx_icons/fastx_clipper_example.png 
+.. image:: ./static/fastx_icons/fastx_clipper_example.png 
 
 
     

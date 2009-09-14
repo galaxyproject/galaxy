@@ -1,0 +1,79 @@
+<tool id="cshl_fasta_formatter" name="FASTA Width">
+	<description>formatter</description>
+	<!--
+		Note:
+			fasta_formatter also has a tabular output mode (-t),
+			but Galaxy already contains such a tool, so no need
+			to offer the user a duplicated tool.
+
+			So this XML tool only changes the width (line-wrapping) of a
+			FASTA file.
+	-->
+	<command>zcat -f '$input' | fasta_formatter -w $width -o $output</command>
+	<inputs>
+		<param format="fasta" name="input" type="data" label="Library to re-format" />
+
+		<param name="width" type="integer" value="0" label="New width for nucleotides strings" help="Use 0 for single line outout." />
+	</inputs>
+
+	<tests>
+		<test>
+			<!-- Re-format a FASTA file into a single line -->
+			<param name="input" value="fasta_formatter1.fasta" /> 
+			<param name="width" value="0" />
+			<output name="output" file="fastx_formatter1.out" />
+		</test>
+		<test>
+			<!-- Re-format a FASTA file into multiple lines wrapping at 60 charactes -->
+			<param name="input" value="fasta_formatter1.fasta" />
+			<param name="width" value="60" />
+			<output name="output" file="fasta_formatter2.out" />
+		</test>
+	</tests>
+
+	<outputs>
+		<data format="input" name="output" metadata_source="input" />
+	</outputs>
+
+<help>
+**What it does**
+
+This tool re-formats a FASTA file, changing the width of the nucleotides lines.
+  
+**TIP:** Outputting a single line (with **width = 0**) can be useful for scripting (with **grep**, **awk**, and **perl**). Every odd line is a sequence identifier, and every even line is a nucleotides line.
+
+--------
+
+**Example**
+
+Input FASTA file (each nucleotides line is 50 characters long)::
+
+    >Scaffold3648
+    AGGAATGATGACTACAATGATCAACTTAACCTATCTATTTAATTTAGTTC
+    CCTAATGTCAGGGACCTACCTGTTTTTGTTATGTTTGGGTTTTGTTGTTG
+    TTGTTTTTTTAATCTGAAGGTATTGTGCATTATATGACCTGTAATACACA
+    ATTAAAGTCAATTTTAATGAACATGTAGTAAAAACT
+    >Scaffold9299
+    CAGCATCTACATAATATGATCGCTATTAAACTTAAATCTCCTTGACGGAG
+    TCTTCGGTCATAACACAAACCCAGACCTACGTATATGACAAAGCTAATAG
+    aactggtctttacctTTAAGTTG
+
+
+Output FASTA file (with width=80)::
+
+    >Scaffold3648
+    AGGAATGATGACTACAATGATCAACTTAACCTATCTATTTAATTTAGTTCCCTAATGTCAGGGACCTACCTGTTTTTGTT
+    ATGTTTGGGTTTTGTTGTTGTTGTTTTTTTAATCTGAAGGTATTGTGCATTATATGACCTGTAATACACAATTAAAGTCA
+    ATTTTAATGAACATGTAGTAAAAACT
+    >Scaffold9299
+    CAGCATCTACATAATATGATCGCTATTAAACTTAAATCTCCTTGACGGAGTCTTCGGTCATAACACAAACCCAGACCTAC
+    GTATATGACAAAGCTAATAGaactggtctttacctTTAAGTTG
+
+Output FASTA file (with width=0 => single line)::
+
+    >Scaffold3648
+    AGGAATGATGACTACAATGATCAACTTAACCTATCTATTTAATTTAGTTCCCTAATGTCAGGGACCTACCTGTTTTTGTTATGTTTGGGTTTTGTTGTTGTTGTTTTTTTAATCTGAAGGTATTGTGCATTATATGACCTGTAATACACAATTAAAGTCAATTTTAATGAACATGTAGTAAAAACT
+    >Scaffold9299
+    CAGCATCTACATAATATGATCGCTATTAAACTTAAATCTCCTTGACGGAGTCTTCGGTCATAACACAAACCCAGACCTACGTATATGACAAAGCTAATAGaactggtctttacctTTAAGTTG
+</help>
+</tool>
