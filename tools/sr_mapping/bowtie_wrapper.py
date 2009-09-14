@@ -13,6 +13,7 @@ def stop_err( msg ):
 def __main__():
     #Parse Command Line
     parser = optparse.OptionParser()
+    parser.add_option('', '--threads', dest='threads', help='The number of threads to run')
     parser.add_option('', '--input1', dest='input1', help='The (forward or single-end) reads file in Sanger FASTQ format')
     parser.add_option('', '--input2', dest='input2', help='The reverse reads file in Sanger FASTQ format')
     parser.add_option('', '--output', dest='output', help='The output file')
@@ -35,7 +36,6 @@ def __main__():
     parser.add_option('', '--offbase', dest='offbase', help='Number the first base of a reference sequence as n when outputting alignments')
     parser.add_option('', '--best', dest='best', help="Whether or not to make Bowtie guarantee that reported singleton alignments are 'best' in terms of stratum and in terms of the quality values at the mismatched positions")
     parser.add_option('', '--maxBacktracks', dest='maxBacktracks', help='Maximum number of backtracks permitted when aligning a read')
-    parser.add_option('', '--threadMem', dest='threadMem', help='Number of megabytes of memory a given thread is given to store path descriptors in best mode')
     parser.add_option('', '--strata', dest='strata', help='Whether or not to report only those alignments that fall in the best stratum if many valid alignments exist and are reportable')
     parser.add_option('', '--minInsert', dest='minInsert', help='Minimum insert size for valid paired-end alignments')
     parser.add_option('', '--maxInsert', dest='maxInsert', help='Maximum insert size for valid paired-end alignments')
@@ -45,7 +45,6 @@ def __main__():
     parser.add_option('', '--reverseAlign', dest='reverseAlign', help='Whether or not to attempt to align the reverse-complement reference strand')
     parser.add_option('', '--phased', dest='phased', help='Whether or not it should alternate between using the forward and mirror indexes in a series of phases so that only half of the index is resident in memory at one time')
     parser.add_option('', '--offrate', dest='offrate', help='Override the offrate of the index to n')
-    parser.add_option('', '--mm', dest='mm', help='Whether or not to use memory-mapped I/O to load the index')
     parser.add_option('', '--seed', dest='seed', help='Seed for pseudo-random number generator')
     parser.add_option('', '--dbkey', dest='dbkey', help='')
     parser.add_option('', '--params', dest='params', help='Whether to use default or specified parameters')
@@ -70,10 +69,10 @@ def __main__():
     if options.genomeSource == 'history':
         # set up commands
         if options.index_settings =='index_pre_set':
-            indexing_cmds = ''
+            indexing_cmds = '--quiet'
         else:
             try:
-                indexing_cmds = '%s %s %s %s %s %s %s --offrate %s %s %s %s %s %s %s' % \
+                indexing_cmds = '%s %s %s %s %s %s %s --offrate %s %s %s %s %s %s %s --quiet' % \
                                 (('','--noauto')[options.iauto_b=='set'], 
                                  ('','--packed')[options.ipacked=='packed'],
                                  ('','--bmax %s'%options.ibmax)[options.ibmax!='None' and options.ibmax>=1], 
@@ -88,7 +87,7 @@ def __main__():
                                  ('','--cutoff %s'%options.icutoff)[int(options.icutoff)>0], 
                                  ('','--oldpmap')[options.ioldpmap=='yes'])
             except ValueError:
-                indexing_cmds = ''
+                indexing_cmds = '--quiet'
                 
         # make temp directory for placement of indices and copy reference file there
         tmp_dir = tempfile.gettempdir()
@@ -97,7 +96,7 @@ def __main__():
         except Exception, erf:
             stop_err('Error creating temp directory for indexing purposes\n' + str(erf))
         options.ref = os.path.join(tmp_dir,os.path.split(options.ref)[1])
-        cmd1 = 'cd %s; bowtie-build %s -f %s %s > /dev/null' % (tmp_dir, indexing_cmds, options.ref, options.ref)
+        cmd1 = 'cd %s; bowtie-build %s -f %s %s' % (tmp_dir, indexing_cmds, options.ref, options.ref)
         try:
             os.system(cmd1)
         except Exception, erf:
@@ -106,11 +105,11 @@ def __main__():
     # set up aligning and generate aligning command options
     # automatically set threads to 8 in both cases
     if options.params == 'pre_set':
-        aligning_cmds = '-p 8'
+        aligning_cmds = '-p %s --quiet' % options.threads
     else:
         try:
             aligning_cmds = '%s %s %s %s %s %s %s %s %s %s %s %s %s %s ' \
-                            '%s %s %s %s %s %s %s %s %s %s %s %s %s %s -p 8' % \
+                            '%s %s %s %s %s %s %s %s %s %s %s %s -p %s --quiet' % \
                             (('','-s %s'%options.skip)[options.skip!='None'], 
                              ('','-u %s'%options.alignLimit)[int(options.alignLimit)>0],
                              ('','-5 %s'%options.trimH)[int(options.trimH)>=0], 
@@ -128,7 +127,6 @@ def __main__():
                              ('','--norc')[options.reverseAlign=='noReverse'],
                              ('','--maxbts %s'%options.maxBacktracks)[options.maxBacktracks!='None' and (options.mismatchSeed=='2' or options.mismatchSeed=='3')], 
                              ('','-y')[options.tryHard=='doTryHard'],
-                             ('','--chunkmbs %s'%options.threadMem)[options.threadMem!='None' and int(options.threadMem)>=0],
                              ('','-k %s'%options.valAlign)[options.valAlign!='None' and int(options.valAlign)>=0], 
                              ('','-a')[options.allValAligns=='doAllValAligns' and int(options.allValAligns)>=0],
                              ('','-m %s'%options.suppressAlign)[int(options.suppressAlign)>=0], 
@@ -137,18 +135,18 @@ def __main__():
                              ('','-B %s'%options.offbase)[int(options.offbase)>=0],
                              ('','-z %s'%options.phased)[options.phased!='None'], 
                              ('','-o %s'%options.offrate)[int(options.offrate)>=0],
-                             ('','--mm')[options.mm=='doMm'], 
-                             ('','--seed %s'%options.seed)[int(options.seed)>=0])
+                             ('','--seed %s'%options.seed)[int(options.seed)>=0],
+                             options.threads)
         except ValueError:
-            aligning_cmds = '-p 8' 
+            aligning_cmds = '-p %s --quiet' % options.threads 
 
     tmp_out = tempfile.NamedTemporaryFile()
 
     # prepare actual aligning commands
     if options.paired == 'paired':
-        cmd2 = 'bowtie %s %s -1 %s -2 %s > %s 2> /dev/null' % (aligning_cmds, options.ref, options.input1, options.input2, tmp_out.name)
+        cmd2 = 'bowtie %s %s -1 %s -2 %s > %s' % (aligning_cmds, options.ref, options.input1, options.input2, tmp_out.name)
     else:
-        cmd2 = 'bowtie %s %s %s > %s 2> /dev/null' % (aligning_cmds, options.ref, options.input1, tmp_out.name)
+        cmd2 = 'bowtie %s %s %s > %s' % (aligning_cmds, options.ref, options.input1, tmp_out.name)
     # prepare command to convert bowtie output to sam and alternative
     cmd3 = 'bowtie2sam.pl %s > %s' % (tmp_out.name, options.output)
     cmd4 = 'cp %s %s' % (tmp_out.name, options.output)

@@ -2,6 +2,7 @@
   <description> fast alignment of reads against reference sequence </description>
   <command interpreter="python">
     bowtie_wrapper.py 
+    --threads="8"
     --input1=$singlePaired.input1
     #if $singlePaired.sPaired == "paired":
      --input2=$singlePaired.input2
@@ -33,17 +34,14 @@
      --suppressAlign=$singlePaired.params.suppressAlign
      --offbase=$singlePaired.params.offbase
      --offrate=$singlePaired.params.offrate
-     --mm=$singlePaired.params.mm
      --seed=$singlePaired.params.seed
      --best=$singlePaired.params.bestOption.best
      #if $singlePaired.params.bestOption.best == "doBest":
       --maxBacktracks=$singlePaired.params.bestOption.maxBacktracks
-      --threadMem=$singlePaired.params.bestOption.threadMem
       --strata=$singlePaired.params.bestOption.strata
       --phased="None"
      #else:
       --maxBacktracks="None"
-      --threadMem="None"
       --strata="None"
       #if $singlePaired.sPaired =="single":
        --phased=$singlePaired.params.bestOption.phased
@@ -83,7 +81,6 @@
      --offbase="None"
      --best="None"
      --maxBacktracks="None"
-     --threadMem="None"
      --strata="None"
      --minInsert="None"
      --maxInsert="None"
@@ -93,7 +90,6 @@
      --reverseAlign="None"
      --phased="None"
      --offrate="None"
-     --mm="None"
      --seed="None"
     #end if
     #if $refGenomeSource.genomeSource == "history":
@@ -264,7 +260,6 @@
               </when>
               <when value="doBest">
                 <param name="maxBacktracks" type="integer" value="800" label="Maximum number of backtracks permitted when aligning a read (--maxbts)" />
-                <param name="threadMem" type="integer" value="32" label="Number of megabytes of memory a given thread is given to store path descriptors in best mode (--chunkmbs)" help="If running in best mode, and you run out of memory, try adjusting this" />
                 <param name="strata" type="select" label="Whether or not to report only those alignments that fall in the best stratum if many valid alignments exist and are reportable (--strata)">
                   <option value="noStrata">Do not use strata option</option>
                   <option value="doStrata">Use strata option</option>
@@ -272,10 +267,6 @@
               </when>
             </conditional> <!-- bestOption -->
             <param name="offrate" type="integer" value="-1" label="Override the offrate of the index to n (-o)" help="-1 for default" />
-            <param name="mm" type="select" label="Whether or not to use memory-mapped I/O to load the index (--m)">
-              <option value="noMm">Use POSIX/C file I/O</option>
-              <option value="doMm">Use memory-mapped I/O</option>
-            </param>
             <param name="seed" type="integer" value="-1" label="Seed for pseudo-random number generator (--seed)" help="-1 for default" />
           </when> <!-- full -->
         </conditional> <!-- params -->
@@ -339,7 +330,6 @@
               </when>
               <when value="doBest">
                 <param name="maxBacktracks" type="integer" value="800" label="Maximum number of backtracks permitted when aligning a read (--maxbts)" />
-                <param name="threadMem" type="integer" value="32" label="Number of megabytes of memory a given thread is given to store path descriptors in best mode (--chunkmbs)" help="If running in best mode, and you run out of memory, try adjusting this" />
                 <param name="strata" type="select" label="Whether or not to report only those alignments that fall in the best stratum if many valid alignments exist and are reportable (--strata)">
                   <option value="noStrata">Do not use strata option</option>
                   <option value="doStrata">Use strata option</option>
@@ -347,10 +337,6 @@
               </when>
             </conditional>
             <param name="offrate" type="integer" value="-1" label="Override the offrate of the index to n -o)" help="-1 for default" />
-            <param name="mm" type="select" label="Whether or not to use memory-mapped I/O to load the index (--mm)">
-              <option value="noMm">Use POSIX/C file I/O</option>
-              <option value="doMm">Use memory-mapped I/O</option>
-            </param>
             <param name="seed" type="integer" value="-1" label="Seed for pseudo-random number generator (--seed)" help="-1 for default" />
           </when> <!-- full -->
         </conditional> <!-- params -->
@@ -431,10 +417,8 @@
       <param name="offbase" value="0" />
       <param name="best" value="doBest" />
       <param name="maxBacktracks" value="800" />
-      <param name="threadMem" value="32" />
       <param name="strata" value="noStrata" />
       <param name="offrate" value="-1" />
-      <param name="mm" value="noMm" />
       <param name="seed" value="403" />
       <output name="output" ftype="sam" file="bowtie_out2.sam" />
     </test>
