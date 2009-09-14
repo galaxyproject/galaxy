@@ -22,7 +22,7 @@
             <div class="toolFormTitle">Other information about ${library_item_desc} ${library_item.name}</div>
             <div class="toolFormBody">
                 %if editable:
-                    <form name="edit_info" action="${h.url_for( controller='admin', action='edit_template_info', library_id=library_id, num_widgets=len( widgets ) )}" method="post">
+                    <form name="edit_info" action="${h.url_for( controller='library_admin', action='edit_template_info', library_id=library_id, num_widgets=len( widgets ) )}" method="post">
                         <input type="hidden" name="library_item_id" value="${library_item.id}"/>
                         <input type="hidden" name="library_item_type" value="${library_item_type}"/>
                         %for i, field in enumerate( widgets ):

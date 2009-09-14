@@ -7,16 +7,16 @@
 <b>Create new data library datasets</b>
 <a id="upload-librarydataset--popup" class="popup-arrow" style="display: none;">&#9660;</a>
 <div popupmenu="upload-librarydataset--popup">
-    <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', library_id=library_id, folder_id=folder_id, replace_id=replace_id, upload_option='upload_file' )}">Upload files</a>
+    <a class="action-button" href="${h.url_for( controller='library_admin', action='library_dataset_dataset_association', library_id=library_id, folder_id=folder_id, replace_id=replace_id, upload_option='upload_file' )}">Upload files</a>
     %if trans.app.config.library_import_dir and os.path.exists( trans.app.config.library_import_dir ):
-        <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', library_id=library_id, folder_id=folder_id, replace_id=replace_id, upload_option='upload_directory' )}">Upload directory of files</a>
+        <a class="action-button" href="${h.url_for( controller='library_admin', action='library_dataset_dataset_association', library_id=library_id, folder_id=folder_id, replace_id=replace_id, upload_option='upload_directory' )}">Upload directory of files</a>
     %endif
-    <a class="action-button" href="${h.url_for( controller='admin', action='library_dataset_dataset_association', library_id=library_id, folder_id=folder_id, replace_id=replace_id, upload_option='import_from_history' )}">Import datasets from your current history</a>
+    <a class="action-button" href="${h.url_for( controller='library_admin', action='library_dataset_dataset_association', library_id=library_id, folder_id=folder_id, replace_id=replace_id, upload_option='import_from_history' )}">Import datasets from your current history</a>
 </div>
 <br/><br/>
 <ul class="manage-table-actions">
     <li>
-        <a class="action-button" href="${h.url_for( controller='admin', action='browse_library', id=library_id )}"><span>Browse this data library</span></a>
+        <a class="action-button" href="${h.url_for( controller='library_admin', action='browse_library', id=library_id )}"><span>Browse this data library</span></a>
     </li>
 </ul>
 
@@ -32,13 +32,13 @@
             <div class="toolFormTitle">Upload a directory of files</div>
         %endif
         <div class="toolFormBody">
-            <form name="tool_form" action="${h.url_for( controller='admin', action='library_dataset_dataset_association', library_id=library_id )}" enctype="multipart/form-data" method="post">
+            <form name="tool_form" action="${h.url_for( controller='library_admin', action='library_dataset_dataset_association', library_id=library_id )}" enctype="multipart/form-data" method="post">
                 <input type="hidden" name="folder_id" value="${folder_id}"/>
                 <input type="hidden" name="upload_option" value="${upload_option}"/>
                 %if replace_dataset:
                     <input type="hidden" name="replace_id" value="${replace_dataset.id}"/>
                     <div class="form-row">
-                        You are currently selecting a new file to replace '<a href="${h.url_for( controller='admin', action='library_dataset_dataset_association', library_id=library_id, folder_id=folder_id, id=replace_dataset.library_dataset_dataset_association.id )}">${replace_dataset.name}</a>'.
+                        You are currently selecting a new file to replace '<a href="${h.url_for( controller='library_admin', action='library_dataset_dataset_association', library_id=library_id, folder_id=folder_id, id=replace_dataset.library_dataset_dataset_association.id )}">${replace_dataset.name}</a>'.
                         <div style="clear: both"></div>
                     </div>
                 %endif
@@ -184,13 +184,13 @@
         <div class="toolFormTitle">Active datasets in your current history (${history.name})</div>
         <div class="toolFormBody">
             %if history and history.active_datasets:
-                <form name="add_history_datasets_to_library" action="${h.url_for( controller='admin', action='add_history_datasets_to_library', library_id=library_id )}" enctype="multipart/form-data" method="post">
+                <form name="add_history_datasets_to_library" action="${h.url_for( controller='library_admin', action='add_history_datasets_to_library', library_id=library_id )}" enctype="multipart/form-data" method="post">
                     <input type="hidden" name="folder_id" value="${folder_id}"/>
                     <input type="hidden" name="upload_option" value="${upload_option}"/>
                     %if replace_dataset:
                         <input type="hidden" name="replace_id" value="${replace_dataset.id}"/>
                         <div class="form-row">
-                            You are currently selecting a new file to replace '<a href="${h.url_for( controller='admin', action='library_dataset_dataset_association', library_id=library_id, folder_id=folder_id, id=replace_dataset.library_dataset_dataset_association.id )}">${replace_dataset.name}</a>'.
+                            You are currently selecting a new file to replace '<a href="${h.url_for( controller='library_admin', action='library_dataset_dataset_association', library_id=library_id, folder_id=folder_id, id=replace_dataset.library_dataset_dataset_association.id )}">${replace_dataset.name}</a>'.
                             <div style="clear: both"></div>
                         </div>
                     %endif

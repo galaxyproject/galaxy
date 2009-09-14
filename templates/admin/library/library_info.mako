@@ -5,7 +5,7 @@
 <br/><br/>
 <ul class="manage-table-actions">
     <li>
-        <a class="action-button" href="${h.url_for( controller='admin', action='browse_library', id=library.id )}"><span>Browse this data library</span></a>
+        <a class="action-button" href="${h.url_for( controller='library_admin', action='browse_library', id=library.id )}"><span>Browse this data library</span></a>
     </li>
 </ul>
 
@@ -16,7 +16,7 @@
 <div class="toolForm">
     <div class="toolFormTitle">Change library name and description</div>
     <div class="toolFormBody">
-        <form name="library" action="${h.url_for( controller='admin', action='library', information=True, id=library.id )}" method="post" >
+        <form name="library" action="${h.url_for( controller='library_admin', action='library', information=True, id=library.id )}" method="post" >
             <div class="form-row">
                 <label>Name:</label>
                 <div style="float: left; width: 250px; margin-right: 10px;">

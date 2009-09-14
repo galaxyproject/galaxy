@@ -12,7 +12,7 @@
 
 <ul class="manage-table-actions">
     <li>
-        <a class="action-button" href="${h.url_for( controller='admin', action='browse_library', id=library_id )}"><span>Browse this data library</span></a>
+        <a class="action-button" href="${h.url_for( controller='library_admin', action='browse_library', id=library_id )}"><span>Browse this data library</span></a>
     </li>
 </ul>
 
@@ -35,7 +35,7 @@
 <div class="toolForm">
     <div class="toolFormTitle">Edit attributes of ${ldda.name}</div>
     <div class="toolFormBody">
-        <form name="edit_attributes" action="${h.url_for( controller='admin', action='library_dataset_dataset_association', library_id=library_id, folder_id=ldda.library_dataset.folder.id, edit_info=True )}" method="post">
+        <form name="edit_attributes" action="${h.url_for( controller='library_admin', action='library_dataset_dataset_association', library_id=library_id, folder_id=ldda.library_dataset.folder.id, edit_info=True )}" method="post">
             <input type="hidden" name="id" value="${ldda.id}"/>
             <br/>
             <div class="form-row">
@@ -73,7 +73,7 @@
                 <input type="submit" name="save" value="Save"/>
             </div>
         </form>
-        <form name="auto_detect" action="${h.url_for( controller='admin', action='library_dataset_dataset_association', library_id=library_id, folder_id=ldda.library_dataset.folder.id, edit_info=True )}" method="post">
+        <form name="auto_detect" action="${h.url_for( controller='library_admin', action='library_dataset_dataset_association', library_id=library_id, folder_id=ldda.library_dataset.folder.id, edit_info=True )}" method="post">
             <div class="form-row">
                 <input type="hidden" name="id" value="${ldda.id}"/>
                 <input type="submit" name="detect" value="Auto-detect"/>
@@ -89,7 +89,7 @@
     <div class="toolFormTitle">Change data type of ${ldda.name}</div>
     <div class="toolFormBody">
         %if ldda.datatype.allow_datatype_change:
-            <form name="change_datatype" action="${h.url_for( controller='admin', action='library_dataset_dataset_association', library_id=library_id, folder_id=ldda.library_dataset.folder.id, edit_info=True )}" method="post">
+            <form name="change_datatype" action="${h.url_for( controller='library_admin', action='library_dataset_dataset_association', library_id=library_id, folder_id=ldda.library_dataset.folder.id, edit_info=True )}" method="post">
                 <input type="hidden" name="id" value="${ldda.id}"/>
                 <div class="form-row">
                     <label>New Type:</label>

@@ -13,10 +13,10 @@
 <ul class="manage-table-actions">
     %if not deleted:
         <li>
-            <a class="action-button" href="${h.url_for( controller='admin', action='library', new=True )}"><span>Create a new data library</span></a>
+            <a class="action-button" href="${h.url_for( controller='library_admin', action='library', new=True )}"><span>Create a new data library</span></a>
         </li>
         <li>
-            <a class="action-button" href="${h.url_for( controller='admin', action='deleted_libraries' )}"><span>Manage deleted libraries</span></a>
+            <a class="action-button" href="${h.url_for( controller='library_admin', action='deleted_libraries' )}"><span>Manage deleted libraries</span></a>
         </li>
     %endif
 </ul>
@@ -42,7 +42,7 @@
         <tbody>
             %for library in libraries:    
                 <tr class="libraryRow libraryOrFolderRow" id="libraryRow">
-                    <td><a href="${h.url_for( controller='admin', action='browse_library', id=library.id, deleted=deleted, show_deleted=show_deleted )}">${library.name}</a></td>
+                    <td><a href="${h.url_for( controller='library_admin', action='browse_library', id=library.id, deleted=deleted, show_deleted=show_deleted )}">${library.name}</a></td>
                     <td><i>${library.description}</i></td>
                 </tr>             
             %endfor

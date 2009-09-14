@@ -11,7 +11,7 @@
 
 <ul class="manage-table-actions">
     <li>
-        <a class="action-button" href="${h.url_for( controller='admin', action='browse_library', id=library_id )}"><span>Browse this data library</span></a>
+        <a class="action-button" href="${h.url_for( controller='library_admin', action='browse_library', id=library_id )}"><span>Browse this data library</span></a>
     </li>
 </ul>
 
@@ -23,4 +23,4 @@
     roles = trans.app.model.Role.filter( trans.app.model.Role.table.c.deleted==False ).order_by( trans.app.model.Role.table.c.name ).all()
 %>
 
-${render_permission_form( library_dataset, library_dataset.name, h.url_for( controller='admin', action='library_dataset', id=library_dataset.id, library_id=library_id, permissions=True ), roles )}
+${render_permission_form( library_dataset, library_dataset.name, h.url_for( controller='library_admin', action='library_dataset', id=library_dataset.id, library_id=library_id, permissions=True ), roles )}

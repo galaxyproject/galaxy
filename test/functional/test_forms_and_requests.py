@@ -110,7 +110,7 @@ class TestFormsAndRequests( TwillTestCase ):
         # first create a library for the request so that it can be submitted later
         lib_name = 'TestLib001'
         self.create_library( lib_name, '' )
-        self.visit_page( 'admin/browse_libraries' )
+        self.visit_page( 'library_admin/browse_libraries' )
         self.check_page_for_string( lib_name )
         # Get the library object for later tests
         global library_one
