@@ -403,7 +403,7 @@ def fill_region_alignment( alignment, index, primary_species, chrom, start, end,
         else:
             blocks.append( ( score, idx, offset ) )
     
-    gap_chars_tuple = tuple( GAP_CHARS )
+    #gap_chars_tuple = tuple( GAP_CHARS )
     gap_chars_str = ''.join( GAP_CHARS )
     #Loop through ordered blocks and layer by increasing score
     for block_dict in blocks:        for block in iter_blocks_split_by_species( block_dict[1].get_at_offset( block_dict[2] ) ): #need to handle each occurance of sequence in block seperately
@@ -415,7 +415,8 @@ def fill_region_alignment( alignment, index, primary_species, chrom, start, end,
                     #we should trim gaps from both sides, since these are not positions in this species genome (sequence)
                     text = text.rstrip( gap_chars_str )
                     gap_offset = 0
-                    while text.startswith( gap_chars_tuple ):
+                    while True in [ text.startswith( gap_char ) for gap_char in GAP_CHARS ]: #python2.4 doesn't accept a tuple for .startswith()
+                    #while text.startswith( gap_chars_tuple ):
                         gap_offset += 1
                         text = text[1:]
                         if not text:
