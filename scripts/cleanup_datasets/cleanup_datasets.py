@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+import os, sys
+
 new_path = [ os.path.join( os.getcwd(), "lib" ) ]
 new_path.extend( sys.path[1:] ) # remove scripts/ from the path
 sys.path = new_path
@@ -8,7 +10,7 @@ from galaxy import eggs
 import pkg_resources  
 pkg_resources.require( "SQLAlchemy >= 0.4" )
 
-import sys, os, time, ConfigParser, shutil
+import time, ConfigParser, shutil
 from datetime import datetime, timedelta
 from time import strftime
 from optparse import OptionParser
