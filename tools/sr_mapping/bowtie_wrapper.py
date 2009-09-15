@@ -69,10 +69,10 @@ def __main__():
     if options.genomeSource == 'history':
         # set up commands
         if options.index_settings =='index_pre_set':
-            indexing_cmds = '--quiet'
+            indexing_cmds = ''
         else:
             try:
-                indexing_cmds = '%s %s %s %s %s %s %s --offrate %s %s %s %s %s %s %s --quiet' % \
+                indexing_cmds = '%s %s %s %s %s %s %s --offrate %s %s %s %s %s %s %s' % \
                                 (('','--noauto')[options.iauto_b=='set'], 
                                  ('','--packed')[options.ipacked=='packed'],
                                  ('','--bmax %s'%options.ibmax)[options.ibmax!='None' and options.ibmax>=1], 
@@ -87,7 +87,7 @@ def __main__():
                                  ('','--cutoff %s'%options.icutoff)[int(options.icutoff)>0], 
                                  ('','--oldpmap')[options.ioldpmap=='yes'])
             except ValueError:
-                indexing_cmds = '--quiet'
+                indexing_cmds = ''
                 
         # make temp directory for placement of indices and copy reference file there
         tmp_dir = tempfile.gettempdir()
@@ -96,7 +96,7 @@ def __main__():
         except Exception, erf:
             stop_err('Error creating temp directory for indexing purposes\n' + str(erf))
         options.ref = os.path.join(tmp_dir,os.path.split(options.ref)[1])
-        cmd1 = 'cd %s; bowtie-build %s -f %s %s' % (tmp_dir, indexing_cmds, options.ref, options.ref)
+        cmd1 = 'cd %s; bowtie-build %s -f %s %s 2> /dev/null' % (tmp_dir, indexing_cmds, options.ref, options.ref)
         try:
             os.system(cmd1)
         except Exception, erf:
@@ -105,11 +105,11 @@ def __main__():
     # set up aligning and generate aligning command options
     # automatically set threads to 8 in both cases
     if options.params == 'pre_set':
-        aligning_cmds = '-p %s --quiet' % options.threads
+        aligning_cmds = '-p %s' % options.threads
     else:
         try:
             aligning_cmds = '%s %s %s %s %s %s %s %s %s %s %s %s %s %s ' \
-                            '%s %s %s %s %s %s %s %s %s %s %s %s -p %s --quiet' % \
+                            '%s %s %s %s %s %s %s %s %s %s %s %s -p %s' % \
                             (('','-s %s'%options.skip)[options.skip!='None'], 
                              ('','-u %s'%options.alignLimit)[int(options.alignLimit)>0],
                              ('','-5 %s'%options.trimH)[int(options.trimH)>=0], 
@@ -138,15 +138,15 @@ def __main__():
                              ('','--seed %s'%options.seed)[int(options.seed)>=0],
                              options.threads)
         except ValueError:
-            aligning_cmds = '-p %s --quiet' % options.threads 
+            aligning_cmds = '-p %s' % options.threads 
 
     tmp_out = tempfile.NamedTemporaryFile()
 
     # prepare actual aligning commands
     if options.paired == 'paired':
-        cmd2 = 'bowtie %s %s -1 %s -2 %s > %s' % (aligning_cmds, options.ref, options.input1, options.input2, tmp_out.name)
+        cmd2 = 'bowtie %s %s -1 %s -2 %s > %s 2> /dev/null' % (aligning_cmds, options.ref, options.input1, options.input2, tmp_out.name)
     else:
-        cmd2 = 'bowtie %s %s %s > %s' % (aligning_cmds, options.ref, options.input1, tmp_out.name)
+        cmd2 = 'bowtie %s %s %s > %s 2> /dev/null' % (aligning_cmds, options.ref, options.input1, tmp_out.name)
     # prepare command to convert bowtie output to sam and alternative
     cmd3 = 'bowtie2sam.pl %s > %s' % (tmp_out.name, options.output)
     cmd4 = 'cp %s %s' % (tmp_out.name, options.output)
