@@ -42,7 +42,7 @@ class CloudController( BaseController ):
             .filter_by( user=user, state="pending" ) \
             .all()
             
-        for i in range( len( pendingInstances ) ):
+        for i in range( len ( pendingInstances ) ):
             update_instance_state( trans, pendingInstances[i].id )
         
         cloudCredentials = trans.sa_session.query( model.CloudUserCredentials ) \
@@ -60,7 +60,16 @@ class CloudController( BaseController ):
             .filter_by( user=user, state="available" ) \
             .order_by( desc( model.UCI.c.update_time ) ) \
             .all()
-                                              
+        
+        # Check after update there are instances in pending state; if so, display message
+        # TODO: Auto-refresh once instance is running
+        pendingInstances = trans.sa_session.query( model.UCI ) \
+            .filter_by( user=user, state="pending" ) \
+            .all()
+        if pendingInstances:
+            trans.set_message( "Galaxy instance started. NOTE: Please wait about 3-5 minutes for the instance to " 
+                    "start up and then refresh this page. A button to connect to the instance will then appear alongside "
+                    "instance description." )         
         return trans.fill_template( "cloud/configure_cloud.mako",
                                     cloudCredentials = cloudCredentials,
                                     liveInstances = liveInstances,
@@ -88,7 +97,7 @@ class CloudController( BaseController ):
 
     @web.expose
     @web.require_login( "start Galaxy cloud instance" )
-    def start( self, trans, id, size='' ):
+    def start( self, trans, id, size='small' ):
         """
         Start a new cloud resource instance
         """
@@ -108,26 +117,32 @@ class CloudController( BaseController ):
             instance.availability_zone = stores[0].availability_zone # Bc. all EBS volumes need to be in the same avail. zone, just check 1st
             instance.type = size
             conn = get_connection( trans )
+#            log.debug( '***** Setting up security group' )
             # If not existent, setup galaxy security group
-            try:
-                gSecurityGroup = conn.create_security_group('galaxy', 'Security group for Galaxy.')
-                gSecurityGroup.authorize( 'tcp', 80, 80, '0.0.0.0/0' ) # Open HTTP port
-                gSecurityGroup.authorize( 'tcp', 22, 22, '0.0.0.0/0' ) # Open SSH port
-            except:
-                pass
+#            try:
+#                gSecurityGroup = conn.create_security_group('galaxy', 'Security group for Galaxy.')
+#                gSecurityGroup.authorize( 'tcp', 80, 80, '0.0.0.0/0' ) # Open HTTP port
+#                gSecurityGroup.authorize( 'tcp', 22, 22, '0.0.0.0/0' ) # Open SSH port
+#            except:
+#                pass
 #                sgs = conn.get_all_security_groups()
 #                for i in range( len( sgs ) ):
 #                    if sgs[i].name == "galaxy":
 #                        sg.append( sgs[i] )
 #                        break # only 1 security group w/ this name can exist, so continue                    
             
+            log.debug( '***** Starting an instance' )
+            log.debug( 'Using following command: conn.run_instances( image_id=%s, key_name=%s )' % ( instance.image.image_id, instance.keypair_name ) )
+            reservation = conn.run_instances( image_id=instance.image.image_id, key_name=instance.keypair_name )
             #reservation = conn.run_instances( image_id=instance.image, key_name=instance.keypair_name, security_groups=['galaxy'], instance_type=instance.type,  placement=instance.availability_zone )
             instance.launch_time = datetime.utcnow()
             uci.launch_time = instance.launch_time
-            #instance.reservation = str( reservation.instances[0] )
-            instance.state = "pending"
-            #instance.state = reservation.instances[0].state
+            instance.reservation_id = str( reservation ).split(":")[1]
+            instance.instance_id = str( reservation.instances[0]).split(":")[1]
+#            instance.state = "pending"
+            instance.state = reservation.instances[0].state
             uci.state = instance.state
+            
             # TODO: After instance boots up, need to update status, DNS and attach EBS
             
             # Persist
@@ -135,10 +150,7 @@ class CloudController( BaseController ):
             session.save_or_update( instance )
             session.flush()
                         
-            trans.log_event( "User started cloud instance '%s'" % uci.name )
-            trans.set_message( "Galaxy instance '%s' started. NOTE: Please wait about 2-3 minutes for the instance to " 
-                "start up and then refresh this page. A button to connect to the instance will then appear alongside "
-                "instance description." % uci.name )
+            trans.log_event ("Started new instance. Reservation ID: '%s', Instance ID: '%s'" % (instance.reservation_id, instance.instance_id ) )
             return self.list( trans )
         
 #        return trans.show_form( 
@@ -151,21 +163,49 @@ class CloudController( BaseController ):
     @web.require_login( "stop Galaxy cloud instance" )
     def stop( self, trans, id ):
         """
-        Stop a cloud instance. This implies stopping Galaxy servcer and unmounting relevant file system(s) 
+        Stop a cloud instance. This implies stopping Galaxy server and disconnecting/unmounting relevant file system(s).
         """
         uci = get_uci( trans, id )
-        instances = get_instances( trans, uci ) #TODO: handle list!
+        dbInstances = get_instances( trans, uci ) #TODO: handle list!
         
-        instances.stop()
-        instances.state = 'terminated'
-        instances.stop_time = datetime.utcnow()
+        conn = get_connection( trans )
+        # Get actual cloud instance object
+        cloudInstance = get_cloud_instance( conn, dbInstances.instance_id )
+        
+        # TODO: Detach persistent storage volume(s) from instance and update volume data in local database
+        stores = get_stores( trans, uci )
+        for i, store in enumerate( stores ):
+            log.debug( "Detaching volume '%s' to instance '%s'." % ( store.volume_id, dbInstances.instance_id ) )
+            mntDevice = store.device
+            volStat = None
+#            try:
+#                volStat = conn.detach_volume( store.volume_id, dbInstances.instance_id, mntDevice )
+#            except:
+#                log.debug ( 'Error detaching volume; still going to try and stop instance %s.' % dbInstances.instance_id )
+            store.attach_time = None
+            store.device = None
+            store.i_id = None
+            store.status = volStat
+            log.debug ( '***** volume status: %s' % volStat )
+   
+        
+        # Stop the instance and update status in local database
+        cloudInstance.stop()
+        dbInstances.stop_time = datetime.utcnow()
+        while cloudInstance.state != 'terminated':
+            log.debug( "Stopping instance %s state; current state: %s" % ( str( cloudInstance ).split(":")[1], cloudInstance.state ) )
+            time.sleep(2)
+            cloudInstance.update()
+        dbInstances.state = cloudInstance.state
+        
         # Reset relevant UCI fields
         uci.state = 'available'
         uci.launch_time = None
           
         # Persist
         session = trans.sa_session
-        session.save_or_update( instances )
+#        session.save_or_update( stores )
+        session.save_or_update( dbInstances ) # TODO: Is this going to work w/ multiple instances stored in dbInstances variable?
         session.save_or_update( uci )
         session.flush()
         trans.log_event( "User stopped cloud instance '%s'" % uci.name )
@@ -891,7 +931,7 @@ def get_mi( trans, size='small' ):
         For valid sizes, see http://aws.amazon.com/ec2/instance-types/
     """
     return trans.app.model.CloudImage.filter(
-        trans.app.model.CloudImage.table.c.id==1).first() 
+        trans.app.model.CloudImage.table.c.id==2).first() 
 
 def get_stores( trans, uci ):
     """
@@ -917,30 +957,33 @@ def get_instances( trans, uci ):
             
     return instances
 
-
 def get_cloud_instance( conn, instance_id ):
     """
-    Returns a cloud instance representation of the instance id, i.e., cloud instance objects that cloud API can be invoked on
+    Returns a cloud instance representation of the instance id, i.e., cloud instance object that cloud API can be invoked on
     """
     # get_all_instances func. takes a list of desired instance id's, so create a list first
     idLst = list() 
     idLst.append( instance_id )
-    # Retrieve cloud instance based on passed instance id
-    cloudInstance = conn.get_all_instances( idLst )
-    return cloudInstance[0]
+    # Retrieve cloud instance based on passed instance id. get_all_instances( idLst ) method returns reservation ID. Because
+    # we are passing only 1 ID, we can retrieve only the first element of the returning list. Furthermore, because (for now!)
+    # only 1 instance corresponds each individual reservation, grab only the first element of the returned list of instances.
+    cloudInstance = conn.get_all_instances( idLst )[0].instances[0]
+    return cloudInstance
 
 def get_connection( trans ):
     """
     Establishes EC2 conncection using user's default credentials
     """
+    log.debug( '##### Establishing cloud connection.' )
     user = trans.get_user()
     creds = trans.sa_session.query(model.CloudUserCredentials).filter_by(user=user, defaultCred=True).first()
     if creds:
         a_key = creds.access_key
         s_key = creds.secret_key
+        # Amazon EC2
         #conn = EC2Connection( a_key, s_key )
+        # Eucalyptus Public Cloud
         euca_region = RegionInfo(None, "eucalyptus", "mayhem9.cs.ucsb.edu")
-        #conn = EC2Connection(aws_access_key_id="2s42fQmcCu4WBpS3RJ9e5g", aws_secret_access_key="2iEzpThjZQttuvWYXL-0nRUuurzl2dump2drwg", is_secure=False, port=8773, region=euca_region, path="/services/Eucalyptus")
         conn = EC2Connection(aws_access_key_id=a_key, aws_secret_access_key=s_key, is_secure=False, port=8773, region=euca_region, path="/services/Eucalyptus")
         return conn
     else:
@@ -952,11 +995,16 @@ def get_keypair_name( trans ):
     Generate keypair using user's default credentials
     """
     conn = get_connection( trans )
-    try:
-        key_pair = conn.get_key_pair( 'galaxy-keypair' )
-    except: # No keypair under this name exists so create it
-        key_pair = conn.create_key_pair( 'galaxy-keypair' )
     
+    log.debug( "Getting user's keypair" )
+    key_pair = conn.get_key_pair( 'galaxy-keypair' )
+    
+    try:
+        return key_pair.name
+    except AttributeError: # No keypair under this name exists so create it
+        log.debug( 'No keypair found, creating keypair' )
+        key_pair = conn.create_key_pair( 'galaxy-keypair' )
+        
     return key_pair.name
 
 def update_instance_state( trans, id ):
@@ -970,12 +1018,12 @@ def update_instance_state( trans, id ):
     oldState = dbInstances.state
     # Establish connection with cloud
     conn = get_connection( trans )
-    # Get actual instance from the cloud
+    # Get actual cloud instance object
     cloudInstance = get_cloud_instance( conn, dbInstances.instance_id )
-    # Update status of instance
+    # Update instance status
     cloudInstance.update()
     dbInstances.state = cloudInstance.state
-    log.debug( "Processing instance %i, current instance state: %s" % i, cloudInstance.state )
+    log.debug( "Updating instance %s state; current state: %s" % ( str( cloudInstance ).split(":")[1], cloudInstance.state ) )
     # Update state of UCI (TODO: once more than 1 instance is assoc. w/ 1 UCI, this will be need to be updated differently) 
     uci.state = dbInstances.state
     # Persist
@@ -1004,13 +1052,17 @@ def update_instance( trans, dbInstance, cloudInstance, conn, uci ):
     dbInstance.public_dns = cloudInstance.dns_name
     dbInstance.private_dns = cloudInstance.private_dns_name
 
-    # TODO: connect EBS volume to instance
     # Attach storage volume(s) to instance
     stores = get_stores( trans, uci )
     for i, store in enumerate( stores ):
-        log.debug( "Attaching volume %s to instance %s." % store.volume_id, store.uci_id )
-        mtnDevice = '/dev/sdb'+str(i)
-        conn.attach_volume( store.volume_id, store.uci_id, mntDevice )
+        log.debug( "Attaching volume '%s' to instance '%s'." % ( store.volume_id, dbInstance.instance_id ) )
+        mntDevice = '/dev/sdb'+str(i)
+        volStat = conn.attach_volume( store.volume_id, dbInstance.instance_id, mntDevice )
+        store.attach_time = datetime.utcnow()
+        store.device = mntDevice
+        store.i_id = dbInstance.instance_id
+        store.status = volStat
+        log.debug ( '***** volume status: %s' % volStat )
     
     # Wait until instances have attached and add file system
     

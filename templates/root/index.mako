@@ -2,14 +2,14 @@
 
 <%def name="init()">
 <%
-if trans.app.config.cloud_controller_instance:
-	self.has_left_panel=False
-	self.has_right_panel=False
-	self.active_view="cloud"
-else:
-	self.has_left_panel=True
-	self.has_right_panel=True
-	self.active_view="analysis"
+	if trans.app.config.cloud_controller_instance:
+		self.has_left_panel=False
+		self.has_right_panel=False
+		self.active_view="cloud"
+	else:
+		self.has_left_panel=True
+		self.has_right_panel=True
+		self.active_view="analysis"
 %>
 %if trans.app.config.require_login and not trans.user:
     <script type="text/javascript">
