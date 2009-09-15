@@ -1,0 +1,60 @@
+<tool id="mutate_snp_codon_1" name="Mutate Codons" version="1.0.0">
+  <description>with SNPs</description>
+  <command interpreter="python">mutate_snp_codon.py $input1 $output1 ${input1.metadata.chromCol} ${input1.metadata.startCol} ${input1.metadata.endCol} ${input1.metadata.strandCol} $codon_seq_col $snp_chrom_col $snp_start_col $snp_end_col $snp_strand_col $snp_observed_col</command>
+  <inputs>
+    <param name="input1" type="data" format="interval" label="Interval file with joined SNPs" optional="False" help="The interval metadata for this file should be set for the codon positions."/>
+    <param name="codon_seq_col" label="Codon Sequence column" type="data_column" data_ref="input1" />
+    <param name="snp_chrom_col" label="SNP chromosome column" type="data_column" data_ref="input1" />
+    <param name="snp_start_col" label="SNP start column" type="data_column" data_ref="input1" />
+    <param name="snp_end_col" label="SNP end column" type="data_column" data_ref="input1" />
+    <param name="snp_strand_col" label="SNP strand column" type="data_column" data_ref="input1" />
+    <param name="snp_observed_col" label="SNP observed column" type="data_column" data_ref="input1" />
+  </inputs>
+  <outputs>
+    <data name="output1" format="interval" metadata_source="input1"/>
+  </outputs>
+   <tests>
+     <test>
+       <param name="input1" value="mutate_snp_codon_in.interval"/>
+       <param name="codon_seq_col" value="8"/>
+       <param name="snp_chrom_col" value="17"/>
+       <param name="snp_start_col" value="18"/>
+       <param name="snp_end_col" value="19"/>
+       <param name="snp_strand_col" value="22"/>
+       <param name="snp_observed_col" value="25"/>
+       <output name="output1" file="mutate_snp_codon_out.interval" />
+     </test>
+   </tests>
+  <help>
+This tool takes an interval file as input.  This input should contain a set of codon locations and corresponding DNA sequence (such as from the *Extract Genomic DNA* tool) joined to SNP locations with observed values (such as *all fields from selected table* from the snp130 table of hg18 at the UCSC Table browser).  This interval file should have the metadata (chromosome, start, end, strand) set for the columns containing the locations of the codons. The user needs to specify the columns containing the sequence for the codon as well as the genomic positions and observed values (values should be split by '/') for the SNP data as tool input; SNPs positions and sequence substitutes must have a length of exactly 1. Only genomic intervals which yield a different sequence string are output. All sequence characters are converted to uppercase during processing.
+  
+  For example, using these settings:
+  
+  * **metadata** **chromosome**, **start**, **end** and **strand** set to **1**, **2**, **3** and **6**, respectively
+  * **Codon Sequence column** set to **c8**
+  * **SNP chromosome column** set to **c17**
+  * **SNP start column** set to **c18**
+  * **SNP end column** set to **c19**
+  * **SNP strand column** set to **c22**
+  * **SNP observed column** set to **c25**
+  
+  with the following input::
+  
+    chr1	58995	58998	NM_001005484	0	+	GAA	GAA	Glu	GAA	1177632	28.96	0	2787607	0.422452662804	585	chr1	58996	58997	rs1638318	0	+	A	A	A/G	genomic	single	by-submitter	0	0	unknown	exact	3
+    chr1	59289	59292	NM_001005484	0	+	TTT	TTT	Phe	TTT	714298	17.57	0	1538990	0.464134269878	585	chr1	59290	59291	rs71245814	0	+	T	T	G/T	genomic	single	unknown	0	0	unknown	exact	3
+    chr1	59313	59316	NM_001005484	0	+	AAG	AAG	Lys	AAG	1295568	31.86	0	2289189	0.565950648898	585	chr1	59315	59316	rs2854682	0	-	G	G	C/T	genomic	single	by-submitter	0	0	unknown	exact	3
+    chr1	59373	59376	NM_001005484	0	+	ACA	ACA	Thr	ACA	614523	15.11	0	2162384	0.284187729839	585	chr1	59373	59374	rs2691305	0	-	A	A	C/T	genomic	single	unknown	0	0	unknown	exact	3
+    chr1	59412	59415	NM_001005484	0	+	GCG	GCG	Ala	GCG	299495	7.37	0	2820741	0.106176001271	585	chr1	59414	59415	rs2531266	0	+	G	G	C/G	genomic	single	by-submitter	0	0	unknown	exact	3
+    chr1	59412	59415	NM_001005484	0	+	GCG	GCG	Ala	GCG	299495	7.37	0	2820741	0.106176001271	585	chr1	59414	59415	rs55874132	0	+	G	G	C/G	genomic	single	unknown	0	0	coding-synon	exact	1
+  
+  
+  will produce::
+  
+    chr1	58995	58998	NM_001005484	0	+	GAA	GAA	Glu	GAA	1177632	28.96	0	2787607	0.422452662804	585	chr1	58996	58997	rs1638318	0	+	A	A	A/G	genomic	single	by-submitter	0	0	unknown	exact	3	GGA
+    chr1	59289	59292	NM_001005484	0	+	TTT	TTT	Phe	TTT	714298	17.57	0	1538990	0.464134269878	585	chr1	59290	59291	rs71245814	0	+	T	T	G/T	genomic	single	unknown	0	0	unknown	exact	3	TGT
+    chr1	59313	59316	NM_001005484	0	+	AAG	AAG	Lys	AAG	1295568	31.86	0	2289189	0.565950648898	585	chr1	59315	59316	rs2854682	0	-	G	G	C/T	genomic	single	by-submitter	0	0	unknown	exact	3	AAA
+    chr1	59373	59376	NM_001005484	0	+	ACA	ACA	Thr	ACA	614523	15.11	0	2162384	0.284187729839	585	chr1	59373	59374	rs2691305	0	-	A	A	C/T	genomic	single	unknown	0	0	unknown	exact	3	GCA
+    chr1	59412	59415	NM_001005484	0	+	GCG	GCG	Ala	GCG	299495	7.37	0	2820741	0.106176001271	585	chr1	59414	59415	rs2531266	0	+	G	G	C/G	genomic	single	by-submitter	0	0	unknown	exact	3	GCC
+    chr1	59412	59415	NM_001005484	0	+	GCG	GCG	Ala	GCG	299495	7.37	0	2820741	0.106176001271	585	chr1	59414	59415	rs55874132	0	+	G	G	C/G	genomic	single	unknown	0	0	coding-synon	exact	1	GCC
+  </help>
+</tool>
