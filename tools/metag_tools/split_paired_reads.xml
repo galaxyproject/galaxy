@@ -4,7 +4,7 @@
     split_paired_reads.py $input $output1 $output2
   </command>
     <inputs>
-        <param name="input" type="data" format="fastqsolexa" label="Your paired-end file" />
+        <param name="input" type="data" format="fastqsolexa,fastqsanger" label="Your paired-end file" />
     </inputs>
     <outputs>
         <data name="output1" format="fastqsolexa"/>
@@ -20,7 +20,7 @@
         
 **What it does**
  
-Splits a single fastq datasret representing paired-end run into two datasets (one for each end). This tool works only for datasets where both ends have **the same** length.  
+Splits a single fastq dataset representing paired-end run into two datasets (one for each end). This tool works only for datasets where both ends have **the same** length.  
 
 -----
 
