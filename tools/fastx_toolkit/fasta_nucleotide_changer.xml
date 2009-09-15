@@ -10,21 +10,21 @@
 		</param>
 	</inputs>
 
+    <!-- 
+    Functional tests with param value starting with - fail.
 	<tests>
 		<test>
-			<!-- DNA-to-RNA -->
 			<param name="input" value="fasta_nuc_changer1.fasta" /> 
 			<param name="mode" value="-r" /> 
 			<output name="output" file="fasta_nuc_change1.out" />
 		</test>
 		<test>
-			<!-- RNA-to-DNA -->
 			<param name="input" value="fasta_nuc_changer2.fasta" /> 
 			<param name="mode" value="-d" /> 
 			<output name="output" file="fasta_nuc_change2.out" />
 		</test>
 	</tests>
-
+     -->
   
 	<outputs>
 		<data format="input" name="output" metadata_source="input" />
