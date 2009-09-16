@@ -465,7 +465,9 @@ FormDefinition.table = Table('form_definition', metadata,
             Integer, 
             ForeignKey( "form_definition_current.id", name='for_def_form_def_current_id_fk', use_alter=True ), 
             index=True ),
-    Column( "fields", JSONType() ) )
+    Column( "fields", JSONType() ),
+    Column( "type", TrimmedString( 255 ), index=True ),
+    Column( "layout", JSONType() ), )
 
 RequestType.table = Table('request_type', metadata,
     Column( "id", Integer, primary_key=True),
@@ -494,6 +496,7 @@ Request.table = Table('request', metadata,
     Column( "request_type_id", Integer, ForeignKey( "request_type.id" ), index=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "library_id", Integer, ForeignKey( "library.id" ), index=True ),
+    Column( "folder_id", Integer, ForeignKey( "library_folder.id" ), index=True ),
     Column( "state", TrimmedString( 255 ),  index=True ),
     Column( "deleted", Boolean, index=True, default=False ) )
 
@@ -612,8 +615,10 @@ assign_mapper( context, Request, Request.table,
                                                backref="requests" ),
                                 samples=relation( Sample,
                                                   primaryjoin=( Request.table.c.id == Sample.table.c.request_id ) ),
+                                folder=relation( LibraryFolder,
+                                                 primaryjoin=( Request.table.c.folder_id == LibraryFolder.table.c.id ) ),                 
                                 library=relation( Library,
-                                                  primaryjoin=( Request.table.c.library_id == Library.table.c.id ) ),                 
+                                                  primaryjoin=( Request.table.c.library_id == Library.table.c.id ) )
                               ) )
 
 assign_mapper( context, RequestType, RequestType.table,               

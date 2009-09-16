@@ -41,14 +41,17 @@ class TestFormsAndRequests( TwillTestCase ):
         global form_one_name
         name = form_one_name
         desc = "This is Form One's description"
-        self.create_form( name=name, desc=desc )
+        formtype = 'Sequencing Request Form'
+        self.create_form( name=name, desc=desc, formtype=formtype )
         self.home()
         self.visit_page( 'forms/manage' )
         self.check_page_for_string( name )
         self.check_page_for_string( desc )
+        self.check_page_for_string( formtype )
         # Get the form_definition object for later tests
         form_one = galaxy.model.FormDefinition.filter( and_( galaxy.model.FormDefinition.table.c.name==name,
-                                                             galaxy.model.FormDefinition.table.c.desc==desc ) ).all()[-1]
+                                                             galaxy.model.FormDefinition.table.c.desc==desc,
+                                                             galaxy.model.FormDefinition.table.c.type==formtype ) ).all()[-1]
         assert form_one is not None, 'Problem retrieving form named "%s" from the database' % name
         # edit form & add few more fields
         new_name = "Request Form (Renamed)"
@@ -86,15 +89,18 @@ class TestFormsAndRequests( TwillTestCase ):
         global form_two_name
         name = form_two_name
         desc = "This is Form One's description"
-        self.create_form( name=name, desc=desc )
+        formtype = 'Sequencing Sample Form'
+        self.create_form( name=name, desc=desc, formtype=formtype )
         self.home()
         self.visit_page( 'forms/manage' )
         self.check_page_for_string( name )
         self.check_page_for_string( desc )
+        self.check_page_for_string( formtype )
     def test_020_create_request_type( self ):
         """Testing creating a new requestype"""
         request_form = get_latest_form(form_one_name)
         sample_form = get_latest_form(form_two_name)
+        print request_form.id, sample_form.id
         self.create_request_type(request_type_name, "test request type", 
                                  str(request_form.id), str(sample_form.id), sample_states )
         global request_type
@@ -147,6 +153,17 @@ class TestFormsAndRequests( TwillTestCase ):
         # Role one members are: admin_user, regular_user1.  Each of these users will be permitted to
         # LIBRARY_ADD, LIBRARY_MODIFY, LIBRARY_MANAGE for library items.
         self.set_library_permissions( str( library_one.id ), library_one.name, str( regular_user1_private_role.id ), permissions_in, permissions_out )
+        # create a folder in the library
+        root_folder = library_one.root_folder
+        name = "Folder One"
+        self.add_folder( str( library_one.id ), str( root_folder.id ), name=name, description='' )
+        global folder_one
+        folder_one = galaxy.model.LibraryFolder.filter( and_( galaxy.model.LibraryFolder.table.c.parent_id==root_folder.id,
+                                                              galaxy.model.LibraryFolder.table.c.name==name ) ).first()
+        assert folder_one is not None, 'Problem retrieving library folder named "%s" from the database' % name
+        self.home()
+        self.visit_url( '%s/library_admin/browse_library?id=%s' % ( self.url, str( library_one.id ) ) )
+        self.check_page_for_string( name )
         # create address
         #self.create_address( user_address1 )
         #self.check_page_for_string( 'Address <b>%s</b> has been added' % user_address1[ 'short_desc' ] )
@@ -175,7 +192,7 @@ class TestFormsAndRequests( TwillTestCase ):
         fields = ['field one value', 'field two value', str(user_address.id)] 
         # create the request
         request_name, request_desc = 'Request One', 'Request One Description'
-        self.create_request(request_type.id, request_name, request_desc, library_one.id, fields)
+        self.create_request(request_type.id, request_name, request_desc, library_one.id, folder_one.id, fields)
         self.check_page_for_string( request_name )
         self.check_page_for_string( request_desc )
         global request_one
@@ -195,7 +212,7 @@ class TestFormsAndRequests( TwillTestCase ):
                 self.check_page_for_string( field_value )
         # edit this request
         fields = ['field one value (editted)', 'field two value (editted)', str(user_address.id)]
-        self.edit_request(request_one.id, request_one.name, request_one.name+' (Renamed)', request_one.desc+' (Re-described)', library_one.id, fields)
+        self.edit_request(request_one.id, request_one.name, request_one.name+' (Renamed)', request_one.desc+' (Re-described)', library_one.id, folder_one.id, fields)
         request_one.refresh()
         self.check_page_for_string( request_name+' (Renamed)' )
         self.check_page_for_string( request_desc+' (Re-described)' )

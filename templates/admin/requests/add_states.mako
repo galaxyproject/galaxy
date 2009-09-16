@@ -7,7 +7,7 @@
 
 <div class="toolForm">
     <div class="toolFormTitle">Create ${num_states} states for the '${request_type_name}' request type</div>
-    <form name="new_form_fields" action="${h.url_for( controller='admin', action='request_type', name=request_type_name, description=desc, num_states=num_states, request_form_id=request_form_id, sample_form_id=sample_form_id)}" method="post" >
+    <form name="new_form_fields" action="${h.url_for( controller='requests_admin', action='request_type', name=request_type_name, description=desc, num_states=num_states, request_form_id=request_form_id, sample_form_id=sample_form_id)}" method="post" >
         <div class="toolFormBody">
             %for element_count in range( num_states ):
                 <div class="form-row">

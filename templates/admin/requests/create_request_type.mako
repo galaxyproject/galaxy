@@ -8,11 +8,11 @@
 
 <div class="toolForm">
     <div class="toolFormTitle">Create a new request type</div>
-    %if not forms:
-        Create a form definition first to create a new request type.
+    %if not request_forms or not sample_forms:
+        Create a request & sample form definition first to create a new request type.
     %else:
         <div class="toolFormBody">
-            <form name="create_request_type" action="${h.url_for( controller='admin', action='request_type')}" method="post" >
+            <form name="create_request_type" action="${h.url_for( controller='requests_admin', action='request_type')}" method="post" >
                 <div class="form-row">
                     <label>Name:</label>
                     <div style="float: left; width: 250px; margin-right: 10px;">
@@ -32,7 +32,7 @@
                         Request Form definition:
                     </label>
                     <select name="request_form_id">
-                        %for form in forms:
+                        %for form in request_forms:
                             <option value="${form.id}">${form.name}</option>
                         %endfor
                     </select>
@@ -42,7 +42,7 @@
                         Sample Form definition:
                     </label>
                     <select name="sample_form_id">
-                        %for form in forms:
+                        %for form in sample_forms:
                             <option value="${form.id}">${form.name}</option>
                         %endfor
                     </select>

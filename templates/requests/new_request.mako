@@ -58,9 +58,9 @@ $( function() {
                         <div class="form-row">
                             <label>${field['label']}</label>
                             ${field['widget'].get_html()}
-                            %if field['label'] == 'Data library' and new_library:
-                                ${new_library.get_html()}
-                            %endif
+                            ##%if field['label'] == 'Data library' and new_library:
+                            ##    ${new_library.get_html()}
+                            ##%endif
                             <div class="toolParamHelp" style="clear: both;">
                                 ${field['helptext']}
                             </div>

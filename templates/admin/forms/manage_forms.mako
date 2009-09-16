@@ -29,6 +29,7 @@
             %endif
         </td>
         <td><i>${form.desc}</i></td>
+        <td>${form.type}</td>
     </tr>
 </%def>
 
@@ -41,7 +42,7 @@
     </li>
 </ul>
 
-%if not fdc_list:
+%if not all_forms:
     There are no forms.
 %else:
     <div class="grid-header">
@@ -61,6 +62,7 @@
             <tr>
                 <th>Name</th>
                 <th>Description</th>
+                <th>Type</th>
             </tr>
         </thead>
         <tbody>

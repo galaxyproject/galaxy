@@ -148,7 +148,7 @@ class Requests( BaseController ):
         request_details.append(dict(label='Date created', 
                                     value=request.create_time, 
                                     helptext=''))
-        # library associated
+        # library associated        
         if request.library:
             value = request.library.name
         else:
@@ -156,6 +156,14 @@ class Requests( BaseController ):
         request_details.append( dict( label='Data library', 
                                       value=value, 
                                       helptext='Data library where the resultant dataset will be stored' ) )
+        # folder associated
+        if request.folder:
+            value = request.folder.name
+        else:
+            value = None
+        request_details.append( dict( label='Data library folder', 
+                                      value=value, 
+                                      helptext='Data library folder where the resultant dataset will be stored' ) )
         # form fields
         for index, field in enumerate(request.type.request_form.fields):
             if field['required']:
@@ -230,7 +238,7 @@ class Requests( BaseController ):
                 return trans.response.send_redirect( web.url_for( controller='requests',
                                                                   action='list',
                                                                   status='error',
-                                                                  message='Error in importing <b>%s</b> samples file' % file_obj.file,
+                                                                  message='Error in importing samples file',
                                                                   **kwd))
         elif params.get('add_sample_button', False) == 'Add New':
             # save the all (saved+unsaved) sample info in 'current_samples'
@@ -488,7 +496,9 @@ class Requests( BaseController ):
     def __library_ui(self, libraries, request=None, **kwd):
         params = util.Params( kwd )
         lib_id = params.get( 'library_id', 'none'  )
-        lib_list = SelectField( 'library_id', refresh_on_change=True, refresh_on_change_values=['new'] )
+        lib_id_list = ['new'] + [str(lib.id) for lib in libraries.keys()]
+        lib_list = SelectField( 'library_id', refresh_on_change=True, refresh_on_change_values=lib_id_list )
+        folders = []
         if request and lib_id == 'none':
             if request.library:
                 lib_id = str(request.library.id)
@@ -499,23 +509,48 @@ class Requests( BaseController ):
         for lib, hidden_folder_ids in libraries.items():
             if str(lib.id) == lib_id:
                 lib_list.add_option(lib.name, lib.id, selected=True)
+                folders.append( lib.root_folder )
+                for f in lib.root_folder.folders:
+                    if str(f.id) not in hidden_folder_ids.split(','):
+                        folders.append( f )
             else:
                 lib_list.add_option(lib.name, lib.id)
+            lib_list.refresh_on_change_values.append(lib.id)
         if lib_id == 'new':
             lib_list.add_option('Create a new data library', 'new', selected=True)
         else:
             lib_list.add_option('Create a new data library', 'new')
-        widget = dict(label='Data library', 
-                      widget=lib_list, 
-                      helptext='Data library where the resultant dataset will be stored.')
+        lib_widget = dict(label='Data library', 
+                          widget=lib_list, 
+                          helptext='Data library where the resultant dataset will be stored.')
+        if folders:
+            if request:
+                if request.folder:
+                    current_fid = request.folder.id
+                else:
+                    current_fid = request.library.root_folder.id
+            else:
+                current_fid = params.get( 'folder_id', 'none'  )
+            folder_list = SelectField( 'folder_id')
+            for f in folders:
+                if str(f.id) == current_fid:
+                    folder_list.add_option(f.name, f.id, selected=True)
+                else:
+                    folder_list.add_option(f.name, f.id)
+            folder_widget = dict(label='Folder', 
+                                 widget=folder_list, 
+                                 helptext='Folder of the selected data library where the resultant dataset will be stored.')
         if lib_id == 'new':
             new_lib = dict(label='Create a new data library', 
                            widget=TextField('new_library_name', 40,
                                      util.restore_text( params.get( 'new_library_name', ''  ) )), 
                            helptext='Enter a name here to request a new data library')
-            return [widget, new_lib]
+            return [lib_widget, new_lib]
         else:
-            return [widget]
+            if folders:
+                return [lib_widget, folder_widget]
+            else:
+                return [lib_widget]
     def __validate(self, trans, request):
         '''
         Validates the request entered by the user 
@@ -546,6 +581,13 @@ class Requests( BaseController ):
             library = trans.app.model.Library.get(int(params.get('library_id', None)))
         except:
             library = None
+        try:
+            folder = trans.app.model.LibraryFolder.get(int(params.get('folder_id', None)))
+        except:
+            if library:
+                folder = library.root_folder
+            else:
+                folder = None
         # fields
         values = []
         for index, field in enumerate(request_type.request_form.fields):
@@ -577,7 +619,7 @@ class Requests( BaseController ):
         if not request:
             request = trans.app.model.Request(name, desc, request_type, 
                                               trans.user, form_values,
-                                              library=library, 
+                                              library=library, folder=folder, 
                                               state=trans.app.model.Request.states.UNSUBMITTED)
             request.flush()
         else:
@@ -587,6 +629,7 @@ class Requests( BaseController ):
             request.user = trans.user
             request.values = form_values
             request.library = library
+            request.folder = folder
             request.state = trans.app.model.Request.states.UNSUBMITTED
             request.flush()
         return request

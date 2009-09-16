@@ -8,6 +8,7 @@ import logging, tempfile, zipfile, tarfile, os, sys
 from galaxy.web.form_builder import * 
 from datetime import datetime, timedelta
 from galaxy.web.controllers.forms import get_form_widgets
+from galaxy.web.controllers.forms import get_all_forms
 
 log = logging.getLogger( __name__ )
 
@@ -100,6 +101,7 @@ class Requests( BaseController ):
             else:
                 self.request_grid.default_filter = dict(state=kwargs['show_filter'], deleted=False)   
         self.request_grid.show_filter = kwargs.get('show_filter', trans.app.model.Request.states.SUBMITTED)
+        self.__update_request_state(trans)
         # Render the list view
         return self.request_grid( trans, **kwargs )
     @web.expose
@@ -553,8 +555,17 @@ class Requests( BaseController ):
         else:
 			value = None
         request_details.append(dict(label='Data library', 
-                            value=value, 
-                            helptext='Data library where the resultant dataset will be stored'))
+                                    value=value, 
+                                    helptext='Data library where the resultant dataset will be stored'))
+        # folder associated
+        if request.folder:
+            value = request.folder.name
+        else:
+            value = None
+        request_details.append( dict( label='Data library folder', 
+                                      value=value, 
+                                      helptext='Data library folder where the resultant dataset will be stored' ) )
+
         # form fields
         for index, field in enumerate(request.type.request_form.fields):
             if field['required']:
@@ -714,26 +725,31 @@ class Requests( BaseController ):
         """
         params = util.Params( kwd )
         lib_id = params.get( 'library_id', 'none'  )
-        all_libraries = trans.app.model.Library.filter( trans.app.model.Library.table.c.deleted == False ) \
-                                               .order_by( trans.app.model.Library.name ).all()
-        roles = user.all_roles()
-        actions_to_check = [ trans.app.security_agent.permitted_actions.LIBRARY_ADD ]
-        # The libraries dictionary looks like: { library : '1,2' }, library : '3' }
-        # Its keys are the libraries that should be displayed for the current user and whose values are a
-        # string of comma-separated folder ids, of the associated folders the should NOT be displayed.
-        # The folders that should not be displayed may not be a complete list, but it is ultimately passed
-        # to the calling method to keep from re-checking the same folders when the library / folder
-        # select lists are rendered.
-        #
-        # TODO: RC, when you add the folders select list to your request form, take advantage of the hidden_folder_ids
-        # so that you do not need to check those same folders yet again when populating the select list.
-        #
-        libraries = {}
-        for library in all_libraries:
-            can_show, hidden_folder_ids = trans.app.security_agent.show_library_item( user, roles, library, actions_to_check )
-            if can_show:
-                libraries[ library ] = hidden_folder_ids
-        lib_list = SelectField( 'library_id', refresh_on_change=True, refresh_on_change_values=['new'] )
+        if not user:
+            libraries = {}
+        else:
+            all_libraries = trans.app.model.Library.filter( trans.app.model.Library.table.c.deleted == False ) \
+                                                   .order_by( trans.app.model.Library.name ).all()
+            roles = user.all_roles()
+            actions_to_check = [ trans.app.security_agent.permitted_actions.LIBRARY_ADD ]
+            # The libraries dictionary looks like: { library : '1,2' }, library : '3' }
+            # Its keys are the libraries that should be displayed for the current user and whose values are a
+            # string of comma-separated folder ids, of the associated folders the should NOT be displayed.
+            # The folders that should not be displayed may not be a complete list, but it is ultimately passed
+            # to the calling method to keep from re-checking the same folders when the library / folder
+            # select lists are rendered.
+            #
+            # TODO: RC, when you add the folders select list to your request form, take advantage of the hidden_folder_ids
+            # so that you do not need to check those same folders yet again when populating the select list.
+            #
+            libraries = {}
+            for library in all_libraries:
+                can_show, hidden_folder_ids = trans.app.security_agent.show_library_item( user, roles, library, actions_to_check )
+                if can_show:
+                    libraries[ library ] = hidden_folder_ids
+        lib_id_list = ['new'] + [str(lib.id) for lib in libraries.keys()]
+        lib_list = SelectField( 'library_id', refresh_on_change=True, refresh_on_change_values=lib_id_list )
+        folders = []
         if request and lib_id == 'none':
             if request.library:
                 lib_id = str(request.library.id)
@@ -744,23 +760,48 @@ class Requests( BaseController ):
         for lib, hidden_folder_ids in libraries.items():
             if str(lib.id) == lib_id:
                 lib_list.add_option(lib.name, lib.id, selected=True)
+                folders.append( lib.root_folder )
+                for f in lib.root_folder.folders:
+                    if str(f.id) not in hidden_folder_ids.split(','):
+                        folders.append( f )
             else:
                 lib_list.add_option(lib.name, lib.id)
+            lib_list.refresh_on_change_values.append(lib.id)
         if lib_id == 'new':
             lib_list.add_option('Create a new data library', 'new', selected=True)
         else:
             lib_list.add_option('Create a new data library', 'new')
-        widget = dict(label='Data library', 
-                      widget=lib_list, 
-                      helptext='Data library where the resultant dataset will be stored.')
+        lib_widget = dict(label='Data library', 
+                          widget=lib_list, 
+                          helptext='Data library where the resultant dataset will be stored.')
+        if folders:
+            if request:
+                if request.folder:
+                    current_fid = request.folder.id
+                else:
+                    current_fid = request.library.root_folder.id
+            else:
+                current_fid = params.get( 'folder_id', 'none'  )
+            folder_list = SelectField( 'folder_id')
+            for f in folders:
+                if str(f.id) == current_fid:
+                    folder_list.add_option(f.name, f.id, selected=True)
+                else:
+                    folder_list.add_option(f.name, f.id)
+            folder_widget = dict(label='Folder', 
+                                 widget=folder_list, 
+                                 helptext='Folder of the selected data library where the resultant dataset will be stored.')
         if lib_id == 'new':
-            new_lib = dict(label='Create a new Library', 
+            new_lib = dict(label='Create a new data library', 
                            widget=TextField('new_library_name', 40,
                                      util.restore_text( params.get( 'new_library_name', ''  ) )), 
-                           helptext='Enter a library name here to request a new library')
-            return [widget, new_lib]
+                           helptext='Enter a name here to request a new data library')
+            return [lib_widget, new_lib]
         else:
-            return [widget]
+            if folders:
+                return [lib_widget, folder_widget]
+            else:
+                return [lib_widget]
     def __validate(self, trans, request):
         '''
         Validates the request entered by the user 
@@ -795,6 +836,13 @@ class Requests( BaseController ):
             library = trans.app.model.Library.get(int(params.get('library_id', None)))
         except:
             library = None
+        try:
+            folder = trans.app.model.LibraryFolder.get(int(params.get('folder_id', None)))
+        except:
+            if library:
+                folder = library.root_folder
+            else:
+                folder = None
         # fields
         values = []
         for index, field in enumerate(request_type.request_form.fields):
@@ -826,7 +874,7 @@ class Requests( BaseController ):
         if not request:
             request = trans.app.model.Request(name, desc, request_type, 
                                               user, form_values,
-                                              library=library, 
+                                              library=library, folder=folder, 
                                               state=trans.app.model.Request.states.UNSUBMITTED)
             request.flush()
         else:
@@ -836,6 +884,7 @@ class Requests( BaseController ):
             request.user = user
             request.values = form_values
             request.library = library
+            request.folder = folder
             request.flush()
         return request
     @web.expose
@@ -934,6 +983,13 @@ class Requests( BaseController ):
                                                           request_id=request.id,
                                                           msg='Bar codes has been saved for this request',
                                                           messagetype='done'))
+
+    def __update_request_state(self, trans):
+        requests = trans.app.model.Request.query.filter_by(deleted=False, 
+                                                          state=trans.app.model.Request.states.SUBMITTED)
+        for request in requests:
+            self.__set_request_state(request)
+                    
     def __set_request_state(self, request):
         # check if all the samples of the current request are in the final state
         complete = True 
@@ -1014,3 +1070,127 @@ class Requests( BaseController ):
                                     events_list=events_list,
                                     sample=sample, widgets=widgets, title=title)
     
+    # Request Type Stuff
+    @web.expose
+    @web.require_admin
+    def manage_request_types( self, trans, **kwd ):       
+        params = util.Params( kwd )
+        msg = util.restore_text( params.get( 'msg', ''  ) )
+        messagetype = params.get( 'messagetype', 'done' )
+        show_filter = util.restore_text( params.get( 'show_filter', 'Active'  ) )
+        forms = get_all_forms(trans, all_versions=True)
+        request_types_list = trans.app.model.RequestType.query().all()
+        if show_filter == 'All':
+            request_types = request_types_list
+        elif show_filter == 'Deleted':
+            request_types = [rt for rt in request_types_list if rt.deleted]
+        else:
+            request_types = [rt for rt in request_types_list if not rt.deleted]
+        return trans.fill_template( '/admin/requests/manage_request_types.mako', 
+                                    request_types=request_types,
+                                    forms=forms,
+                                    show_filter=show_filter,
+                                    msg=msg,
+                                    messagetype=messagetype )
+    @web.expose
+    @web.require_admin
+    def request_type( self, trans, **kwd ):
+        params = util.Params( kwd )
+        msg = util.restore_text( params.get( 'msg', ''  ) )
+        messagetype = params.get( 'messagetype', 'done' )   
+        if params.get( 'create', False ):
+            return trans.fill_template( '/admin/requests/create_request_type.mako', 
+                                        request_forms=get_all_forms( trans, 
+                                                             filter=dict(deleted=False),
+                                                             form_type=trans.app.model.FormDefinition.types.REQUEST ),
+                                        sample_forms=get_all_forms( trans, 
+                                                             filter=dict(deleted=False),
+                                                             form_type=trans.app.model.FormDefinition.types.SAMPLE ),
+                                        msg=msg,
+                                        messagetype=messagetype)
+        elif params.get( 'define_states_button', False ):
+            return trans.fill_template( '/admin/requests/add_states.mako',
+                                        request_type_name=util.restore_text( params.name ),
+                                        desc=util.restore_text( params.description ),
+                                        num_states=int(util.restore_text( params.num_states )),
+                                        request_form_id=int(util.restore_text( params.request_form_id )),
+                                        sample_form_id=int(util.restore_text( params.sample_form_id )),
+                                        msg=msg,
+                                        messagetype=messagetype)            
+        elif params.get( 'save_request_type', False ):
+            st, msg = self.__save_request_type(trans, **kwd)
+            if not st:
+                return trans.fill_template( '/admin/requests/create_request_type.mako', 
+                                            forms=get_all_forms( trans ),
+                                            msg=msg,
+                                            messagetype='error')
+            return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                              action='manage_request_types',
+                                                              msg='Request type <b>%s</b> has been created' % st.name,
+                                                              messagetype='done') )
+        elif params.get('view', False):
+            rt = trans.app.model.RequestType.get(int(util.restore_text( params.id )))
+            ss_list = trans.app.model.SampleState.filter(trans.app.model.SampleState.table.c.request_type_id == rt.id).all()
+            return trans.fill_template( '/admin/requests/view_request_type.mako', 
+                                        request_type=rt,
+                                        forms=get_all_forms( trans ),
+                                        states_list=ss_list,
+                                        deleted=False,
+                                        show_deleted=False,
+                                        msg=msg,
+                                        messagetype=messagetype )
+    def __save_request_type(self, trans, **kwd):
+        params = util.Params( kwd )
+        num_states = int( util.restore_text( params.get( 'num_states', 0 ) ))
+        proceed = True
+        for i in range( num_states ):
+            if not util.restore_text( params.get( 'state_name_%i' % i, None ) ):
+                proceed = False
+                break
+        if not proceed:
+            msg = "All the state name(s) must be completed."
+            return None, msg
+        rt = trans.app.model.RequestType() 
+        rt.name = util.restore_text( params.name ) 
+        rt.desc = util.restore_text( params.description ) or ""
+        rt.request_form = trans.app.model.FormDefinition.get(int( params.request_form_id ))
+        rt.sample_form = trans.app.model.FormDefinition.get(int( params.sample_form_id ))
+        rt.flush()
+        # set sample states
+        ss_list = trans.app.model.SampleState.filter(trans.app.model.SampleState.table.c.request_type_id == rt.id).all()
+        for ss in ss_list:
+            ss.delete()
+            ss.flush()
+        for i in range( num_states ):
+            name = util.restore_text( params.get( 'state_name_%i' % i, None ))
+            desc = util.restore_text( params.get( 'state_desc_%i' % i, None ))
+            ss = trans.app.model.SampleState(name, desc, rt) 
+            ss.flush()
+        msg = "The new request type named '%s' with %s state(s) has been created" % (rt.name, num_states)
+        return rt, msg
+    @web.expose
+    @web.require_admin
+    def delete_request_type( self, trans, **kwd ):
+        params = util.Params( kwd )
+        msg = util.restore_text( params.get( 'msg', ''  ) )
+        messagetype = params.get( 'messagetype', 'done' )
+        rt = trans.app.model.RequestType.get(int(util.restore_text( params.request_type_id )))
+        rt.deleted = True
+        rt.flush()
+        return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                          action='manage_request_types',
+                                                          msg='Request type <b>%s</b> has been deleted' % rt.name,
+                                                          messagetype='done') )
+    @web.expose
+    @web.require_admin
+    def undelete_request_type( self, trans, **kwd ):
+        params = util.Params( kwd )
+        msg = util.restore_text( params.get( 'msg', ''  ) )
+        messagetype = params.get( 'messagetype', 'done' )
+        rt = trans.app.model.RequestType.get(int(util.restore_text( params.request_type_id )))
+        rt.deleted = False
+        rt.flush()
+        return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                          action='manage_request_types',
+                                                          msg='Request type <b>%s</b> has been undeleted' % rt.name,
+                                                          messagetype='done') )

@@ -11,7 +11,7 @@
 <div class="toolForm">
     <div class="toolFormTitle">View request type details</div>
     <div class="toolFormBody">
-        <form name="library" action="${h.url_for( controller='admin', action='request_type', save_changes=True, create=False, id=request_type.id, num_states=num_states )}" method="post" >
+        <form name="library">
             <div class="form-row">
                 <label>Name</label>
                 ${request_type.name}

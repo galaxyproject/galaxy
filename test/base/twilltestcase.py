@@ -972,15 +972,13 @@ class TwillTestCase( unittest.TestCase ):
         self.home()
 
     # Form stuff
-    def create_form( self, name='Form One', desc='This is Form One', num_fields=1 ):
+    def create_form( self, name, desc, formtype, num_fields=1 ):
         """
         Create a new form definition.  Testing framework is still limited to only testing
         one instance for each repeat. This has to do with the 'flat' nature of defining
         test param values.  Using same-named parameters down different branches (having
         different scope in the tool) cannot be properly tested when they both exist at the
         same time.
-        TODO: RC: create an edit_form() method that will test the addition of a new field
-        of a specified type.
         """
         # TODO: RC: enhance this so that all supported field types can be passed in
         # and tested.  If nothing is passed, all fields are TextField.
@@ -988,7 +986,8 @@ class TwillTestCase( unittest.TestCase ):
         self.visit_url( "%s/forms/new" % self.url )
         self.check_page_for_string( 'Create a new form definition' )
         tc.fv( "1", "name", name ) # form field 1 is the field named name...
-        tc.fv( "1", "description", desc ) # form field 1 is the field named name...
+        tc.fv( "1", "description", desc ) # form field 1 is the field named desc...
+        tc.fv( "1", "form_type_selectbox", formtype )
         tc.submit( "create_form_button" )
         for index in range( num_fields ):
             field_name = 'field_name_%i' % index
@@ -1053,7 +1052,7 @@ class TwillTestCase( unittest.TestCase ):
     # Requests stuff
     def create_request_type( self, name, desc, request_form_id, sample_form_id, states ):
         self.home()
-        self.visit_url( "%s/admin/request_type?create=True" % self.url )
+        self.visit_url( "%s/requests_admin/request_type?create=True" % self.url )
         self.check_page_for_string( 'Create a new request type' )
         tc.fv( "1", "name", name )
         tc.fv( "1", "description", desc )
@@ -1067,13 +1066,14 @@ class TwillTestCase( unittest.TestCase ):
             tc.fv("1", "state_desc_%i" % index, state[1])
         tc.submit( "save_request_type" )
         self.check_page_for_string( "Request type <b>%s</b> has been created" % name )
-    def create_request( self, request_type_id, name, desc, library_id, fields ):
+    def create_request( self, request_type_id, name, desc, library_id, folder_id, fields ):
         self.home()
         self.visit_url( "%s/requests/new?create=True&select_request_type=%i" % (self.url, request_type_id) )
         self.check_page_for_string( 'Add a new request' )
         tc.fv( "1", "name", name )
         tc.fv( "1", "desc", desc )
         tc.fv( "1", "library_id", str(library_id) )
+        #tc.fv( "1", "folder_id", str(folder_id) )
         for index, field_value in enumerate(fields):
             tc.fv( "1", "field_%i" % index, field_value )
         tc.submit( "create_request_button" )
@@ -1088,13 +1088,14 @@ class TwillTestCase( unittest.TestCase ):
         for index, field_value in enumerate(fields):
             tc.fv( "1", "field_%i" % index, field_value )
         tc.submit( "create_request_button" )
-    def edit_request( self, request_id, name, new_name, new_desc, new_library_id, new_fields):
+    def edit_request( self, request_id, name, new_name, new_desc, new_library_id, new_folder_id, new_fields):
         self.home()
         self.visit_url( "%s/requests/edit?request_id=%i&show=True" % (self.url, request_id) )
         self.check_page_for_string( 'Edit request "%s"' % name )
         tc.fv( "1", "name", new_name )
         tc.fv( "1", "desc", new_desc )
         tc.fv( "1", "library_id", str(new_library_id) )
+        tc.fv( "1", "folder_id", str(new_folder_id) )
         for index, field_value in enumerate(new_fields):
             tc.fv( "1", "field_%i" % index, field_value )
         tc.submit( "save_changes_request_button" )

@@ -69,6 +69,16 @@ $( function() {
    </div>
 </%def>
 
+<%def name="render_layout( index, widget )">
+    <div class="repeat-group-item">
+        <div class="form-row">
+            <b> ${index+1}</b>
+            ${widget.get_html()}
+            <input type="submit" name="remove_layout_grid_button" value="Remove grid ${index+1}"/>
+        </div>
+   </div>
+</%def>
+
 <div class="toolForm">
     <div class="toolFormTitle">Edit form definition "${form.name}"</div>
     <form id="edit_form" name="edit_form" action="${h.url_for( controller='forms', action='edit', form_id=form.id, num_fields=len(form.fields)  )}" method="post" >
@@ -81,6 +91,18 @@ $( function() {
                 <div style="clear: both"></div>
             </div>
         %endfor
+        %if current_form_type == trans.app.model.FormDefinition.types.SAMPLE:
+            <div class="toolFormTitle">Form Layout</div>
+            <div class="form-row">
+                <label>Layout grid names</label>
+            </div>
+            %for index, lg in enumerate(layout_grids):
+                ${render_layout( index, lg )}
+            %endfor
+            <div class="form-row">
+                <input type="submit" name="add_layout_grid" value="Add layout grid"/>
+            </div>
+        %endif
         <div class="toolFormTitle">Fields (${len(form.fields)})</div>
         %for ctr, field in enumerate(field_details):
             ${render_field( ctr, field )}

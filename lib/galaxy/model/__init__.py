@@ -1005,11 +1005,31 @@ class MetadataFile( object ):
         return os.path.abspath( os.path.join( path, "metadata_%d.dat" % self.id ) )
 
 class FormDefinition( object ):
-    def __init__(self, name=None, desc=None, fields=[], current_form=None):
+    types = Bunch(  REQUEST = 'Sequencing Request Form',
+                    SAMPLE = 'Sequencing Sample Form',
+                    LIBRARY_INFO_TEMPLATE = 'Library information template'  )
+    def __init__(self, name=None, desc=None, fields=[], current_form=None, form_type=None, layout=None):
         self.name = name
         self.desc = desc
         self.fields = fields 
         self.form_definition_current = current_form
+        self.type = form_type
+        self.layout = layout
+    def fields_of_grid(self, layout_grid_name):
+        fields_dict = {}
+        if not layout_grid_name:
+            for i, f in enumerate(self.fields):
+                fields_dict[i] = f
+        else:
+            layout_index = -1
+            for index, lg_name in enumerate(self.layout):
+                if lg_name == layout_grid_name:
+                    layout_index = index
+                    break
+            for i, f in enumerate(self.fields):
+                if f['layout'] == str(layout_index):
+                    fields_dict[i] = f
+        return fields_dict
         
 class FormDefinitionCurrent( object ):
     def __init__(self, form_definition=None):
@@ -1025,13 +1045,14 @@ class Request( object ):
                     SUBMITTED = 'Submitted',
                     COMPLETE = 'Complete')
     def __init__(self, name=None, desc=None, request_type=None, user=None, 
-                 form_values=None, library=None, state=False):
+                 form_values=None, library=None, folder=None, state=False):
         self.name = name
         self.desc = desc
         self.type = request_type
         self.values = form_values
         self.user = user
         self.library = library
+        self.folder = folder
         self.state = state
         self.samples_list = []
     def add_sample(self, sample_name=None, sample_desc=None, sample_values=None):

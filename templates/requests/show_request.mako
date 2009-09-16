@@ -26,18 +26,40 @@
 
 
 
-<%def name="render_sample_form( index, sample_name, sample_values )">
-    <td>
-        <input type="text" name=sample_${index}_name value="${sample_name}" size="10"/>
-        <div class="toolParamHelp" style="clear: both;">
-            <i>${' (required)' }</i>
-        </div>
-    </td>
-    <td>
-    </td>
-    %for field_index, field in enumerate(request.type.sample_form.fields):
+<%def name="render_sample_form( index, sample_name, sample_values, grid_index, fields_dict )">
+    %if grid_index == 0:
         <td>
-            <input type="text" name=sample_${index}_field_${field_index} value="${sample_values[field_index]}" size="7"/>
+            <input type="text" name=sample_${index}_name value="${sample_name}" size="10"/>
+            <div class="toolParamHelp" style="clear: both;">
+                <i>${' (required)' }</i>
+            </div>
+        </td>
+        <td>
+        </td>
+    %else:
+        <td>
+            ${sample_name}
+        </td>
+    %endif
+    %for field_index, field in fields_dict.items():
+        <td>
+            %if field['type'] == 'TextField':
+                <input type="text" name="sample_${index}_field_${field_index}" value="${sample_values[field_index]}" size="7"/>
+            %elif field['type'] == 'SelectField':
+                <select name="sample_${index}_field_${field_index}" last_selected_value="2">
+                    %for option_index, option in enumerate(field['selectlist']):
+                        %if option == sample_values[field_index]:
+                            <option value="${option}" selected>${option}</option>
+                        %else:
+                            <option value="${option}">${option}</option>
+                        %endif
+                    %endfor
+                </select>
+            %elif field['type'] == 'CheckboxField':
+                <input type="checkbox" name="sample_${index}_field_${field_index}" value="Yes"/>
+            %elif field['type'] == 'NumberField':
+                <input type=int name="sample_${index}_field_${field_index}" value="${sample_values[field_index]}" size="7"/>
+            %endif
             <div class="toolParamHelp" style="clear: both;">
                 <i>${'('+field['required']+')' }</i>
             </div>
@@ -45,18 +67,20 @@
     %endfor   
 </%def>
 
-<%def name="render_sample( index, sample )">
+<%def name="render_sample( index, sample, grid_index, fields_dict )">
     <td>
         ${sample.name}
     </td>
-    <td>
-        %if sample.request.unsubmitted():
-            Unsubmitted
-        %else:    
-            <a href="${h.url_for( controller='requests', action='show_events', sample_id=sample.id)}">${sample.current_state().name}</a>
-        %endif    
-    </td>
-    %for field_index, field in enumerate(request.type.sample_form.fields):
+    %if grid_index == 0:
+        <td>
+            %if sample.request.unsubmitted():
+                Unsubmitted
+            %else:    
+                <a href="${h.url_for( controller='requests', action='show_events', sample_id=sample.id)}">${sample.current_state().name}</a>
+            %endif    
+        </td>
+    %endif
+    %for field_index, field in fields_dict.items():
         <td>
             %if sample.values.content[field_index]:
                 ${sample.values.content[field_index]}
@@ -105,65 +129,81 @@
     </div>
 </div>
 
+<%def name="render_grid( grid_index, grid_name, fields_dict )">
+    %if grid_name:
+        <div class="toolFormTitle">${grid_name}</div>
+    %endif
+    <div style="clear: both"></div>
+    <table class="grid">
+        <thead>
+            <tr>
+                <th>No.</th>
+                <th>Sample Name</th>
+                %if grid_index == 0:
+                    <th>State</th>
+                %endif
+                %for index, field in fields_dict.items():
+                    <th>
+                        ${field['label']}
+                        <div class="toolParamHelp" style="clear: both;">
+                            <i>${field['helptext']}</i>
+                        </div>
+                    </th>
+                %endfor
+                <th></th>
+            </tr>
+        <thead>
+        <tbody>
+            <%
+            request.refresh()
+            %>
+            %for sample_index, sample in enumerate(current_samples):
+                %if edit_mode:
+                    <tr>
+                        <td>${sample_index+1}</td>
+                        ${render_sample_form( sample_index, sample[0], sample[1], grid_index, fields_dict)}
+                        <td>
+                            %if request.unsubmitted() and grid_index == 0:
+                                <a class="action-button" href="${h.url_for( controller='requests', action='delete_sample', request_id=request.id, sample_id=sample_index)}">
+                                <img src="${h.url_for('/static/images/delete_icon.png')}" />
+                                <span></span></a>
+                            %endif
+                        </td>
+                    </tr>      
+                %else:
+                    <tr>
+                        <td>${sample_index+1}</td>
+                        %if sample_index in range(len(request.samples)):
+                            ${render_sample( sample_index, request.samples[sample_index], grid_index, fields_dict )}
+                        %else:                                                            
+                            ${render_sample_form( sample_index, sample[0], sample[1], grid_index, fields_dict)}
+                        %endif
+                        <td>
+                            %if request.unsubmitted() and grid_index == 0:
+                                <a class="action-button" href="${h.url_for( controller='requests', action='delete_sample', request_id=request.id, sample_id=sample_index)}">
+                                <img src="${h.url_for('/static/images/delete_icon.png')}" />
+                                <span></span></a>
+                            %endif
+                        </td>
+                    </tr>  
+                %endif
+            %endfor
+        </tbody>
+    </table>
+</%def>
+
 <div class="toolForm">
     ##<div class="toolFormTitle">Samples (${len(request.samples)})</div>
     <form id="show_request" name="show_request" action="${h.url_for( controller='requests', action='show_request' )}" enctype="multipart/form-data" method="post" >
         <div class="form-row">
-            %if current_samples: 
-                <table class="grid">
-                    <thead>
-                        <tr>
-                            <th>No.</th>
-                            <th>Sample Name</th>
-                            <th>State</th>
-                            %for field_index, field in enumerate(request.type.sample_form.fields):
-                                <th>
-                                    ${field['label']}
-                                    <div class="toolParamHelp" style="clear: both;">
-                                        <i>${field['helptext']}</i>
-                                    </div>
-                                </th>
-                            %endfor
-                            <th></th>
-                        </tr>
-                    <thead>
-                    <tbody>
-                    <%
-                    request.refresh()
-                    %>
-                        %for sample_index, sample in enumerate(current_samples):
-                            %if edit_mode:
-                                <tr>
-                                    <td>${sample_index+1}</td>
-                                    ${render_sample_form( sample_index, sample[0], sample[1])}
-                                    <td>
-                                        %if request.unsubmitted():
-                                            <a class="action-button" href="${h.url_for( controller='requests', action='delete_sample', request_id=request.id, sample_id=sample_index)}">
-                                            <img src="${h.url_for('/static/images/delete_icon.png')}" />
-                                            <span></span></a>
-                                        %endif
-                                    </td>
-                                </tr>      
-                            %else:
-                                <tr>
-                                    <td>${sample_index+1}</td>
-                                    %if sample_index in range(len(request.samples)):
-                                        ${render_sample( sample_index, request.samples[sample_index] )}
-                                    %else:                                                            
-                                        ${render_sample_form( sample_index, sample[0], sample[1])}
-                                    %endif
-                                    <td>
-                                        %if request.unsubmitted():
-                                            <a class="action-button" href="${h.url_for( controller='requests', action='delete_sample', request_id=request.id, sample_id=sample_index)}">
-                                            <img src="${h.url_for('/static/images/delete_icon.png')}" />
-                                            <span></span></a>
-                                        %endif
-                                    </td>
-                                </tr>  
-                            %endif                         
-                        %endfor
-                    </tbody>
-                </table>
+            %if current_samples:
+                %if not request.type.sample_form.layout:
+                    ${render_grid( 0, "", request.type.sample_form.fields_of_grid( None ) )}
+                %else:
+                    %for grid_index, grid_name in enumerate(request.type.sample_form.layout):
+                        ${render_grid( grid_index, grid_name, request.type.sample_form.fields_of_grid( grid_name ) )}
+                    %endfor
+                %endif
             %else:
                 <div class="form-row">
                     <label>There are no samples.</label>

@@ -13,7 +13,7 @@
 
 <ul class="manage-table-actions">
     <li>
-        <a class="action-button" href="${h.url_for( controller='admin', action='request_type', create=True )}"><span>Create a new request type</span></a>
+        <a class="action-button" href="${h.url_for( controller='requests_admin', action='request_type', create=True )}"><span>Create a new request type</span></a>
     </li>
 </ul>
 
@@ -24,9 +24,9 @@
             <span>|</span>
         %endif
         %if show_filter == filter:
-            <span class="filter"><a href="${h.url_for( controller='admin', action='manage_request_types', show_filter=filter )}"><b>${filter}</b></a></span>
+            <span class="filter"><a href="${h.url_for( controller='requests_admin', action='manage_request_types', show_filter=filter )}"><b>${filter}</b></a></span>
         %else:
-            <span class="filter"><a href="${h.url_for( controller='admin', action='manage_request_types', show_filter=filter )}">${filter}</a></span>
+            <span class="filter"><a href="${h.url_for( controller='requests_admin', action='manage_request_types', show_filter=filter )}">${filter}</a></span>
         %endif
     %endfor
 </div>
@@ -46,7 +46,7 @@
             %for request_type in request_types:    
                 <tr>
                     <td>
-                        <a href="${h.url_for( controller='admin', action='request_type', view='True', id=request_type.id)}">${request_type.name}</a>
+                        <a href="${h.url_for( controller='requests_admin', action='request_type', view='True', id=request_type.id)}">${request_type.name}</a>
                         <a id="request_type-${request_type.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
                         %if request_type.deleted:
                             <div popupmenu="request_type-${request_type.id}-popup">
