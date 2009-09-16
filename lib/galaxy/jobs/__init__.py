@@ -495,8 +495,14 @@ class JobWrapper( object ):
                     shutil.move( dataset_path.false_path, dataset_path.real_path )
                     log.debug( "finish(): Moved %s to %s" % ( dataset_path.false_path, dataset_path.real_path ) )
                 except ( IOError, OSError ):
-                    self.fail( "Job %s's output dataset(s) could not be read" % job.id )
-                    return
+                    # this can happen if Galaxy is restarted during the job's
+                    # finish method - the false_path file has already moved,
+                    # and when the job is recovered, it won't be found.
+                    if os.path.exists( dataset_path.real_path ) and os.stat( dataset_path.real_path ).st_size > 0:
+                        log.warning( "finish(): %s not found, but %s is not empty, so it will be used instead" % ( dataset_path.false_path, dataset_path.real_path ) )
+                    else:
+                        self.fail( "Job %s's output dataset(s) could not be read" % job.id )
+                        return
         job_context = ExpressionContext( dict( stdout = stdout, stderr = stderr ) )
         for dataset_assoc in job.output_datasets:
             context = self.get_dataset_finish_context( job_context, dataset_assoc.dataset.dataset )
