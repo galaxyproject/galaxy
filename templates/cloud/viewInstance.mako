@@ -74,6 +74,14 @@
 			<td> ${liveInstance.state} </td>
 	   </tr>
 	   <tr>
+	   		<td> Type:</td>
+			<td> ${liveInstance.type} </td>
+	   </tr>
+	   <tr>
+	   		<td> Storage size:</td>
+			<td> ${liveInstance.uci.total_size} </td>
+	   </tr>
+	   <tr>
 	   		<td> Public DNS:</td>
 			<td> ${liveInstance.public_dns} </td>
 	   </tr>

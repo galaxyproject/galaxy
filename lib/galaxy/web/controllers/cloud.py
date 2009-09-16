@@ -178,6 +178,7 @@ class CloudController( BaseController ):
             log.debug( "Detaching volume '%s' to instance '%s'." % ( store.volume_id, dbInstances.instance_id ) )
             mntDevice = store.device
             volStat = None
+#            Detaching volume does not work with Eucalyptus Public Cloud, so comment it out
 #            try:
 #                volStat = conn.detach_volume( store.volume_id, dbInstances.instance_id, mntDevice )
 #            except:
@@ -194,7 +195,7 @@ class CloudController( BaseController ):
         dbInstances.stop_time = datetime.utcnow()
         while cloudInstance.state != 'terminated':
             log.debug( "Stopping instance %s state; current state: %s" % ( str( cloudInstance ).split(":")[1], cloudInstance.state ) )
-            time.sleep(2)
+            time.sleep(3)
             cloudInstance.update()
         dbInstances.state = cloudInstance.state
         
@@ -214,13 +215,39 @@ class CloudController( BaseController ):
         return self.list( trans )
     
     @web.expose
-    @web.require_login( "delete Galaxy cloud instance" )
+    @web.require_login( "delete user configured Galaxy cloud instance" )
     def deleteInstance( self, trans, id ):
-        instance = get_uci( trans, id )
+        """
+        Deletes User Configured Instance (UCI) from the cloud and local database. NOTE that this implies deletion of 
+        any and all storage associated with this UCI!
+        """
+        uci = get_uci( trans, id )
+        dbInstances = get_instances( trans, uci ) #TODO: handle list!
         
+        conn = get_connection( trans )
+        session = trans.sa_session
         
-        error( "Deleting instance '%s' is not supported yet." % instance.name )
-                    
+        # Delete volume(s) associated with given uci 
+        stores = get_stores( trans, uci )
+        for i, store in enumerate( stores ):
+            log.debug( "Deleting volume '%s' that is associated with UCI '%s'." % ( store.volume_id, uci.name ) )
+            volStat = None
+            try:
+                volStat = conn.delete_volume( store.volume_id )
+            except:
+                log.debug ( 'Error deleting volume %s' % store.volume_id )
+            
+            if volStat:
+                session.delete( store )
+            
+        # Delete UCI from table
+        uciName = uci.name # Store name for logging
+        session.delete( uci )
+        
+        session.flush()
+        trans.log_event( "User deleted cloud instance '%s'" % uciName )
+        trans.set_message( "Galaxy instance '%s' deleted." % uciName )
+                   
         return self.list( trans )
     
     @web.expose
