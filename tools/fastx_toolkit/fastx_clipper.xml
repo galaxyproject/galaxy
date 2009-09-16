@@ -52,7 +52,6 @@
 	#functional test with param value starting with - fails.	
 	<tests>
 		<test>
-			<!-- Clip a FASTQ file -->
 			<param name="input" value="fastx_clipper1.fastq" />
 			<param name="maxmismatches" value="2" />
 			<param name="minlength" value="15" />
