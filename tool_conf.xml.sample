@@ -336,6 +336,7 @@
    <tool file="metag_tools/blat_wrapper.xml" />
    <tool file="metag_tools/mapping_to_ucsc.xml" />
    <tool file="sr_mapping/bowtie_wrapper.xml" />
+   <tool file="sr_mapping/bwa_wrapper.xml" />
   </section>
   <section name="Tracks" id="tracks">
    <tool file="visualization/genetrack.xml" />
