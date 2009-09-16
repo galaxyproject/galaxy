@@ -1,0 +1,96 @@
+<tool id="sam_bw_filter" name="Filter SAM" version="1.0.0">
+  <description>on bitwise flag values</description>
+  <command interpreter="python">
+    sam_bitwise_flag_filter.py  
+      --input_sam_file=$input1
+      --flag_column=2
+      #for $bit in $bits
+       '${bit.flags}=${bit.states}'
+      #end for
+      > $out_file1
+  </command>
+  <inputs>
+    <param format="sam" name="input1" type="data" label="Select dataset to filter"/>
+    <repeat name="bits" title="Flag">
+      <param name="flags" type="select" label="Type">
+        <option value="--0x0001">Read is paired</option>
+        <option value="--0x0002">Read is mapped in a proper pair</option>
+        <option value="--0x0004">The read is unmapped</option>
+        <option value="--0x0008">The mate is unmapped</option>
+        <option value="--0x0010">Read strand</option>
+        <option value="--0x0020">Mate strand</option>
+        <option value="--0x0040">Read is the first in a pair</option>
+        <option value="--0x0080">Read is the second in a pair</option>
+        <option value="--0x0100">The alignment or this read is not primary</option>
+        <option value="--0x0200">The read fails platform/vendor quality checks</option>
+        <option value="--0x0400">The read is a PCR or optical duplicate</option>
+      </param>
+      <param name="states" type="select" display="radio" label="Set the states for this flag">
+         <option value="0">No</option>
+         <option value="1">Yes</option>
+       </param>
+    </repeat>
+  </inputs>
+  <outputs>
+    <data format="sam" name="out_file1" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="input1" value="sam_bw_filter.sam" ftype="sam"/>
+      <param name="flags" value="Read is mapped in a proper pair"/>
+      <param name="states" value="1"/>
+      <output name="out_file1" file="sam_bw_filter_0002-yes.sam" ftype="sam"/>
+    </test>
+  </tests>
+  <help>
+
+**What it does**
+
+Allows parsing SAM datasets using bitwise flag (the second column). The bits in the flag are defined as follows::
+
+    Bit Info
+ ------ --------------------------------------------------------------------------   
+ 0x0001 the read is paired in sequencing, no matter whether it is mapped in a pair 
+ 0x0002 the read is mapped in a proper pair (depends on the protocol, normally 
+        inferred during alignment) 1 
+ 0x0004 the query sequence itself is unmapped 
+ 0x0008 the mate is unmapped 1 
+ 0x0010 strand of the query (0 for forward; 1 for reverse strand) 
+ 0x0020 strand of the mate 1 
+ 0x0040 the read is the first read in a pair (see below)
+ 0x0080 the read is the second read in a pair (see below) 
+ 0x0100 the alignment is not primary (a read having split hits may 
+        have multiple primary alignment records) 
+ 0x0200 the read fails platform/vendor quality checks 
+ 0x0400 the read is either a PCR duplicate or an optical duplicate
+
+Note the following:
+
+- Flag 0x02, 0x08, 0x20, 0x40 and 0x80 are only meaningful when flag 0x01 is present. 
+- If in a read pair the information on which read is the first in the pair is lost in the upstream analysis, flag 0x01 should be present and 0x40 and 0x80 are both zero.
+
+-----
+
+**Example**
+
+Suppose the following dataset was generated with BWA mapper::
+
+ r001 163 ref  7 30 8M2I4M1D3M = 37  39 TTAGATAAAGGATACTA *
+ r002   0 ref  9 30 3S6M1P1I4M *  0   0 AAAAGATAAGGATA    *
+ r003   0 ref  9 30       5H6M *  0   0 AGCTAA            * NM:i:1
+ r004   0 ref 16 30    6M14N5M *  0   0 ATAGCTTCAGC       *
+ r003  16 ref 29 30       6H5M *  0   0 TAGGC             * NM:i:0
+ r001  83 ref 37 30         9M =  7 -39 CAGCGCCAT         *
+
+To select properly mapped pairs click the **Add new Flag** button and set *Read mapped in a proper pair* to **Yes**. The following two reads will be returned::
+
+ r001 163 ref  7 30 8M2I4M1D3M = 37  39 TTAGATAAAGGATACTA *
+ r001  83 ref 37 30         9M =  7 -39 CAGCGCCAT         *
+
+For more information please consult the `SAM format description`__.
+
+.. __: http://www.ncbi.nlm.nih.gov/pubmed/19505943
+
+
+  </help>
+</tool>
