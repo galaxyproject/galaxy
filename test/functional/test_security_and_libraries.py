@@ -70,11 +70,11 @@ class TestSecurityAndLibraries( TwillTestCase ):
             raise AssertionError( 'The DefaultHistoryPermission.action for history id %d is "%s", but it should be "%s"' \
                                   % ( latest_history.id, dhp.action, galaxy.model.Dataset.permitted_actions.DATASET_MANAGE_PERMISSIONS.action ) )
         self.home()
-        self.visit_url( "%s/admin/user?user_id=%s" % ( self.url, admin_user.id ) )
+        self.visit_url( "%s/admin/user?id=%s" % ( self.url, self.security.encode_id( admin_user.id ) ) )
         self.check_page_for_string( admin_user.email )
         # Try deleting the admin_user's private role
         check_str = "You cannot eliminate a user's private role association."
-        self.associate_roles_and_groups_with_user( str( admin_user.id ), admin_user.email,
+        self.associate_roles_and_groups_with_user( self.security.encode_id( admin_user.id ), admin_user.email,
                                                    out_role_ids=str( admin_user_private_role.id ),
                                                    check_str=check_str )
         self.logout()
@@ -158,6 +158,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
                 raise AssertionError( 'DatasetPermissionss "%s" for dataset id %d differ from DefaultHistoryPermissions "%s" for history id %d' \
                                       % ( str( dps ), latest_dataset.id, str( dhps ), latest_history.id ) )
         self.logout()
+
     def test_015_login_as_regular_user2( self ):
         """Testing logging in as regular user test2@bx.psu.edu - tests changing DefaultHistoryPermissions for the current history"""
         self.login( email='test2@bx.psu.edu' ) # This will not be an admin user
@@ -248,7 +249,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
     def test_025_reset_password_as_admin( self ):
         """Testing reseting a user password as admin"""
         email = 'test3@bx.psu.edu'
-        self.reset_password_as_admin( user_id=regular_user3.id, password='testreset' )
+        self.reset_password_as_admin( user_id=self.security.encode_id( regular_user3.id ), password='testreset' )
         self.logout()
     def test_030_login_after_password_reset( self ):
         """Testing logging in after an admin reset a password - tests DefaultHistoryPermissions for accounts created by an admin"""
@@ -281,17 +282,17 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.logout()
         # Reset the password to the default for later tests
         self.login( email='test@bx.psu.edu' )
-        self.reset_password_as_admin( user_id=regular_user3.id, password='testuser' )
+        self.reset_password_as_admin( user_id=self.security.encode_id( regular_user3.id ), password='testuser' )
     def test_035_mark_user_deleted( self ):
         """Testing marking a user account as deleted"""
-        self.mark_user_deleted( user_id=regular_user3.id, email=regular_user3.email )
+        self.mark_user_deleted( user_id=self.security.encode_id( regular_user3.id ), email=regular_user3.email )
         # Deleting a user should not delete any associations
         regular_user3.refresh()
         if not regular_user3.active_histories:
             raise AssertionError( 'HistoryDatasetAssociations for regular_user3 were incorrectly deleted when the user was marked deleted' )
     def test_040_undelete_user( self ):
         """Testing undeleting a user account"""
-        self.undelete_user( user_id=regular_user3.id, email=regular_user3.email )
+        self.undelete_user( user_id=self.security.encode_id( regular_user3.id ), email=regular_user3.email )
     def test_045_create_role( self ):
         """Testing creating new role with 3 members ( and a new group named the same ), then renaming the role"""
         name = 'Role One'
@@ -436,7 +437,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         for uga in admin_user.groups:
             group_ids.append( str( uga.group_id ) )
         check_str = "User '%s' has been updated with %d associated roles and %d associated groups" % ( admin_user.email, len( role_ids ), len( group_ids ) )
-        self.associate_roles_and_groups_with_user( str( admin_user.id ), str( admin_user.email ),
+        self.associate_roles_and_groups_with_user( self.security.encode_id( admin_user.id ), str( admin_user.email ),
                                                    in_role_ids=role_ids, in_group_ids=group_ids, check_str=check_str )
         admin_user.refresh()
         # admin_user should now be associated with 4 roles: private, role_one, role_two, role_three
@@ -1610,9 +1611,9 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.home()
     def test_250_purge_user( self ):
         """Testing purging a user account"""
-        self.mark_user_deleted( user_id=regular_user3.id, email=regular_user3.email )
+        self.mark_user_deleted( user_id=self.security.encode_id( regular_user3.id ), email=regular_user3.email )
         regular_user3.refresh()
-        self.purge_user( str( regular_user3.id ), regular_user3.email )
+        self.purge_user( self.security.encode_id( regular_user3.id ), regular_user3.email )
         regular_user3.refresh()
         if not regular_user3.purged:
             raise AssertionError( 'User %s was not marked as purged.' % regular_user3.email )

@@ -53,9 +53,6 @@ class RequestsListGrid( grids.Grid ):
     def get_request_type(self, trans, request):
         request_type = trans.app.model.RequestType.get(request.request_type_id)
         return request_type.name
-#    def apply_default_filter( self, trans, query ):
-#        return query.filter(or_(self.model_class.state==self.model_class.states.SUBMITTED, 
-#                                self.model_class.state==self.model_class.states.COMPLETE))
     def number_of_samples(self, trans, request):
         return str(len(request.samples))
     

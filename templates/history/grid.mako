@@ -179,18 +179,20 @@
                 </tr>
             %endfor
         </tbody>
-        <tfoot>
-            <tr>
-                <td></td>
-                <td colspan="100">
-                    For <span class="grid-selected-count"></span> selected histories:
-                    %for operation in grid.operations:
-                        %if operation.allow_multiple:
-                            <input type="submit" name="operation" value="${operation.label}" class="action-button">
-                        %endif
-                    %endfor
-                </td>
-            </tr>
-        </tfoot>
+        %if grid.operations:
+            <tfoot>
+                <tr>
+                    <td></td>
+                    <td colspan="100">
+                        For <span class="grid-selected-count"></span> selected histories:
+                        %for operation in grid.operations:
+                            %if operation.allow_multiple:
+                                <input type="submit" name="operation" value="${operation.label}" class="action-button">
+                            %endif
+                        %endfor
+                    </td>
+                </tr>
+            </tfoot>
+        %endif
     </table>
 </form>

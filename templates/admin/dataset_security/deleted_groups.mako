@@ -40,7 +40,7 @@
 %else:
     <table class="manage-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
         <% 
-            render_quick_find = len( groups ) > 50
+            render_quick_find = len( groups ) > 200
             ctr = 0
         %>
         %if render_quick_find:

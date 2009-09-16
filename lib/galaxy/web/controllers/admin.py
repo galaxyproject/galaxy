@@ -4,10 +4,88 @@ from galaxy import util, datatypes
 from galaxy.web.base.controller import *
 from galaxy.model.orm import *
 from galaxy.web.controllers.forms import get_all_forms, get_form_widgets
+from galaxy.web.framework.helpers import time_ago, iff, grids
 import logging
 log = logging.getLogger( __name__ )
 
+class UserListGrid( grids.Grid ):
+    class EmailColumn( grids.GridColumn ):
+        def get_value( self, trans, grid, user ):
+            return user.email
+    class UserNameColumn( grids.GridColumn ):
+        def get_value( self, trans, grid, user ):
+            if user.username:
+                return user.username
+            return 'not set'
+    class GroupsColumn( grids.GridColumn ):
+        def get_value( self, trans, grid, user ):
+            if user.groups:
+                return len( user.groups )
+            return 0
+    class RolesColumn( grids.GridColumn ):
+        def get_value( self, trans, grid, user ):
+            if user.roles:
+                return len( user.roles )
+            return 0
+    class ExternalColumn( grids.GridColumn ):
+        def get_value( self, trans, grid, user ):
+            if user.external:
+                return 'yes'
+            return 'no'
+    class LastLoginColumn( grids.GridColumn ):
+        def get_value( self, trans, grid, user ):
+            if user.galaxy_sessions:
+                return self.format( user.galaxy_sessions[ 0 ].update_time )
+            return 'never'
+    # Grid definition
+    title = "Users"
+    model_class = model.User
+    template='/admin/user/grid.mako'
+    columns = [
+        EmailColumn( "Email", link=( lambda item: dict( operation="user", id=item.id ) ), attach_popup=True ),
+        UserNameColumn( "User Name", attach_popup=False ),
+        GroupsColumn( "Groups", attach_popup=False ),
+        RolesColumn( "Roles", attach_popup=False ),
+        ExternalColumn( "External", attach_popup=False ),
+        LastLoginColumn( "Last Login", format=time_ago ),
+        # Valid for filtering but invisible
+        grids.GridColumn( "Deleted", key="deleted", visible=False )
+    ]
+    operations = [
+        grids.GridOperation( "reset_password", condition=( lambda item: not item.deleted ), allow_multiple=True )
+    ]
+    #TODO: enhance to account for trans.app.config.allow_user_deletion here so that we can eliminate these operations if 
+    # the setting is False
+    operations.append( grids.GridOperation( "delete", condition=( lambda item: not item.deleted ), allow_multiple=True ) )
+    operations.append( grids.GridOperation( "undelete", condition=( lambda item: item.deleted ), allow_multiple=True ) )
+    operations.append( grids.GridOperation( "purge", condition=( lambda item: item.deleted ), allow_multiple=True ) )
+    standard_filters = [
+        grids.GridColumnFilter( "Active", args=dict( deleted=False ) ),
+        grids.GridColumnFilter( "Deleted", args=dict( deleted=True ) ),
+        grids.GridColumnFilter( "All", args=dict( deleted='All' ) )
+    ]
+    default_filter = dict( deleted=False )
+    def get_current_item( self, trans ):
+        return trans.user
+    def build_initial_query( self, session ):
+        return session.query( self.model_class )
+    def apply_default_filter( self, trans, query, **kwargs ):
+        email_filter = kwargs.get( "email_filter", None )
+        if email_filter:
+            if email_filter == 'all':
+                return query
+            else:
+                return query.filter( or_( trans.app.model.User.table.c.email.like( '%s' % email_filter.lower() + '%' ),
+                                          trans.app.model.User.table.c.email.like( '%s' % email_filter.upper() + '%' ) ) )
+        elif query.count() > 200:
+            return query.filter( or_( trans.app.model.User.table.c.email.like( 'A%' ),
+                                      trans.app.model.User.table.c.email.like( 'a%' ) ) )
+        return query
+
 class Admin( BaseController ):
+    
+    user_list_grid = UserListGrid()
+    
     @web.expose
     @web.require_admin
     def index( self, trans, **kwd ):
@@ -438,34 +516,41 @@ class Admin( BaseController ):
     # Galaxy User Stuff
     @web.expose
     @web.require_admin
-    def create_new_user( self, trans, **kwd ):
-        params = util.Params( kwd )
-        msg = util.restore_text( params.get( 'msg', ''  ) )
+    def create_new_user( self, trans, **kwargs ):
         email = ''
         password = ''
         confirm = ''
         subscribe = False
-        messagetype = params.get( 'messagetype', 'done' )
-        if 'user_create_button' in kwd:
-            if 'email' in kwd:
-                email = kwd[ 'email' ]
-            if 'password' in kwd:
-                password = kwd[ 'password' ]
-            if 'confirm' in kwd:
-                confirm = kwd[ 'confirm' ]
-            if 'subscribe' in kwd:
-                subscribe = kwd[ 'subscribe' ]
-            messagetype = 'error'
-            if len( email ) == 0 or "@" not in email or "." not in email:
-                msg = "Please enter a real email address"
+        email_filter = kwargs.get( 'email_filter', 'A' )
+        if 'user_create_button' in kwargs:
+            message = ''
+            status = ''
+            email = kwargs.get( 'email' , None )
+            password = kwargs.get( 'password', None )
+            confirm = kwargs.get( 'confirm', None )
+            subscribe = kwargs.get( 'subscribe', None )
+            if not email:
+                message = 'Enter a valid email address'
+            elif not password:
+                message = 'Enter a valid password'
+            elif not confirm:
+                message = 'Confirm the password'
+            elif len( email ) == 0 or "@" not in email or "." not in email:
+                message = 'Enter a real email address'
             elif len( email) > 255:
-                msg = "Email address exceeds maximum allowable length"
+                message = 'Email address exceeds maximum allowable length'
             elif trans.app.model.User.filter( trans.app.model.User.table.c.email==email ).first():
-                msg = "User with that email already exists"
+                message = 'A user with that email already exists'
             elif len( password ) < 6:
-                msg = "Please use a password of at least 6 characters"
+                message = 'Use a password of at least 6 characters'
             elif password != confirm:
-                msg = "Passwords do not match"
+                message = 'Passwords do not match'
+            if message:
+                trans.response.send_redirect( web.url_for( controller='admin',
+                                                           action='users',
+                                                           email_filter=email_filter,
+                                                           message=util.sanitize_text( message ),
+                                                           status='error' ) )
             else:
                 user = trans.app.model.User( email=email )
                 user.set_password_cleartext( password )
@@ -474,20 +559,22 @@ class Admin( BaseController ):
                 user.flush()
                 trans.app.security_agent.create_private_user_role( user )
                 trans.app.security_agent.user_set_default_permissions( user, history=False, dataset=False )
-                trans.log_event( "Admin created a new account for user %s" % email )
-                msg = 'Created new user account'
-                messagetype = 'done'
+                message = 'Created new user account (%s)' % user.email
+                status = 'done'
                 #subscribe user to email list
                 if subscribe:
                     mail = os.popen( "%s -t" % trans.app.config.sendmail_path, 'w' )
                     mail.write( "To: %s\nFrom: %s\nSubject: Join Mailing List\n\nJoin Mailing list." % ( trans.app.config.mailing_join_addr, email ) )
                     if mail.close():
-                        msg + ". However, subscribing to the mailing list has failed."
-                        messagetype = 'error'
-                trans.response.send_redirect( web.url_for( action='users', msg=util.sanitize_text( msg ), messagetype=messagetype ) )
+                        message + ". However, subscribing to the mailing list has failed."
+                        status = 'error'
+                trans.response.send_redirect( web.url_for( controller='admin',
+                                                           action='users',
+                                                           email_filter=email_filter,
+                                                           message=util.sanitize_text( message ),
+                                                           status=status ) )
         return trans.fill_template( '/admin/user/create.mako',
-                                    msg=msg,
-                                    messagetype=messagetype,
+                                    email_filter=email_filter,
                                     email=email,
                                     password=password,
                                     confirm=confirm,
@@ -495,56 +582,76 @@ class Admin( BaseController ):
     @web.expose
     @web.require_admin
     def reset_user_password( self, trans, **kwd ):
-        params = util.Params( kwd )
-        msg = util.restore_text( params.get( 'msg', ''  ) )
-        user_id = int( params.user_id )
-        user = trans.app.model.User.filter( trans.app.model.User.table.c.id==user_id ).first()
-        password = ''
-        confirm = ''
-        messagetype = params.get( 'messagetype', 'done' )
+        id = kwd.get( 'id', None )
+        if not id:
+            message = "No user ids received for resetting passwords"
+            trans.response.send_redirect( web.url_for( action='users', message=message, status='error' ) )
+        ids = util.listify( id )
         if 'reset_user_password_button' in kwd:
-            if 'password' in kwd:
-                password = kwd[ 'password' ]
-            if 'confirm' in kwd:
-                confirm = kwd[ 'confirm' ]
-            messagetype = 'error'
-            if len( password ) < 6:
-                msg = "Please use a password of at least 6 characters"
-            elif password != confirm:
-                msg = "Passwords do not match"
-            else:
-                user.set_password_cleartext( password )
-                user.flush()
-                trans.log_event( "Admin reset password for user %s" % user.email )
-                msg = 'Password reset'
-                messagetype = 'done'
-                trans.response.send_redirect( web.url_for( action='users', msg=util.sanitize_text( msg ), messagetype=messagetype ) )
+            message = ''
+            status = ''
+            for user_id in ids:
+                user = get_user( trans, user_id )
+                password = kwd.get( 'password', None )
+                confirm = kwd.get( 'confirm' , None )
+                if len( password ) < 6:
+                    message = "Please use a password of at least 6 characters"
+                    status = 'error'
+                    break
+                elif password != confirm:
+                    message = "Passwords do not match"
+                    status = 'error'
+                    break
+                else:
+                    user.set_password_cleartext( password )
+                    user.flush()
+            if not message and not status:
+                message = "Passwords reset for %d users" % len( ids )
+                status = 'done'
+            trans.response.send_redirect( web.url_for( action='users',
+                                                       message=util.sanitize_text( message ),
+                                                       status=status ) )
+        users = [ get_user( trans, user_id ) for user_id in ids ]
+        if len( ids ) > 1:
+            id=','.join( id )
         return trans.fill_template( '/admin/user/reset_password.mako',
-                                    msg=msg,
-                                    messagetype=messagetype,
-                                    user=user,
-                                    password=password,
-                                    confirm=confirm )
+                                    id=id,
+                                    users=users,
+                                    password='',
+                                    confirm='' )
     @web.expose
     @web.require_admin
     def mark_user_deleted( self, trans, **kwd ):
-        params = util.Params( kwd )
-        msg = util.restore_text( params.get( 'msg', ''  ) )
-        messagetype = params.get( 'messagetype', 'done' )
-        user = trans.app.model.User.get( int( params.user_id ) )
-        user.deleted = True
-        user.flush()
-        msg = "User '%s' has been marked as deleted." % user.email
-        trans.response.send_redirect( web.url_for( action='users', msg=util.sanitize_text( msg ), messagetype='done' ) )
+        id = kwd.get( 'id', None )
+        if not id:
+            message = "No user ids received for deleting"
+            trans.response.send_redirect( web.url_for( action='users', message=message, status='error' ) )
+        ids = util.listify( id )
+        for user_id in ids:
+            user = get_user( trans, user_id )
+            user.deleted = True
+            user.flush()
+        message = "Deleted %d users" % len( ids )
+        trans.response.send_redirect( web.url_for( action='users', message=util.sanitize_text( message ), status='done' ) )
     @web.expose
     @web.require_admin
     def undelete_user( self, trans, **kwd ):
-        params = util.Params( kwd )
-        user = trans.app.model.User.get( int( params.user_id ) )
-        user.deleted = False
-        user.flush()
-        msg = "User '%s' has been marked as not deleted." % user.email
-        trans.response.send_redirect( web.url_for( action='users', msg=util.sanitize_text( msg ), messagetype='done' ) )
+        id = kwd.get( 'id', None )
+        if not id:
+            message = "No user ids received for undeleting"
+            trans.response.send_redirect( web.url_for( action='users', message=message, status='error' ) )
+        ids = util.listify( id )
+        count = 0
+        for user_id in ids:
+            user = get_user( trans, user_id )
+            if user.deleted:
+                user.deleted = False
+                user.flush()
+                count += 1
+        message = "Undeleted %d users" % count
+        trans.response.send_redirect( web.url_for( action='users',
+                                                   message=util.sanitize_text( message ),
+                                                   status='done' ) )
     @web.expose
     @web.require_admin
     def purge_user( self, trans, **kwd ):
@@ -559,86 +666,111 @@ class Admin( BaseController ):
         # - UserGroupAssociation where user_id == User.id
         # - UserRoleAssociation where user_id == User.id EXCEPT FOR THE PRIVATE ROLE
         # Purging Histories and Datasets must be handled via the cleanup_datasets.py script
-        params = util.Params( kwd )
-        user = trans.app.model.User.get( int( params.user_id ) )
-        if not user.deleted:
-            # We should never reach here, but just in case there is a bug somewhere...
-            msg = "User '%s' has not been deleted, so it cannot be purged." % user.email
-            trans.response.send_redirect( web.url_for( action='users', msg=util.sanitize_text( msg ), messagetype='error' ) )
-        private_role = trans.app.security_agent.get_private_user_role( user )
-        # Delete History
-        for h in user.active_histories:
-            h.refresh()
-            for hda in h.active_datasets:
-                # Delete HistoryDatasetAssociation
-                d = trans.app.model.Dataset.get( hda.dataset_id )
-                # Delete Dataset
-                if not d.deleted:
-                    d.deleted = True
-                    d.flush()
-                hda.deleted = True
-                hda.flush()
-            h.deleted = True
-            h.flush()
-        # Delete UserGroupAssociations
-        for uga in user.groups:
-            uga.delete()
-            uga.flush()
-        # Delete UserRoleAssociations EXCEPT FOR THE PRIVATE ROLE
-        for ura in user.roles:
-            if ura.role_id != private_role.id:
-                ura.delete()
-                ura.flush()
-        # Purge the user
-        user.purged = True
-        user.flush()
-        msg = "User '%s' has been marked as purged." % user.email
-        trans.response.send_redirect( web.url_for( action='deleted_users', msg=util.sanitize_text( msg ), messagetype='done' ) )
+        id = kwd.get( 'id', None )
+        if not id:
+            message = "No user ids received for purging"
+            trans.response.send_redirect( web.url_for( action='users',
+                                                       message=util.sanitize_text( message ),
+                                                       status='error' ) )
+        ids = util.listify( id )
+        for user_id in ids:
+            user = get_user( trans, user_id )
+            if not user.deleted:
+                # We should never reach here, but just in case there is a bug somewhere...
+                message = "User '%s' has not been deleted, so it cannot be purged." % user.email
+                trans.response.send_redirect( web.url_for( action='users',
+                                                           message=util.sanitize_text( message ),
+                                                           status='error' ) )
+            private_role = trans.app.security_agent.get_private_user_role( user )
+            # Delete History
+            for h in user.active_histories:
+                h.refresh()
+                for hda in h.active_datasets:
+                    # Delete HistoryDatasetAssociation
+                    d = trans.app.model.Dataset.get( hda.dataset_id )
+                    # Delete Dataset
+                    if not d.deleted:
+                        d.deleted = True
+                        d.flush()
+                    hda.deleted = True
+                    hda.flush()
+                h.deleted = True
+                h.flush()
+            # Delete UserGroupAssociations
+            for uga in user.groups:
+                uga.delete()
+                uga.flush()
+            # Delete UserRoleAssociations EXCEPT FOR THE PRIVATE ROLE
+            for ura in user.roles:
+                if ura.role_id != private_role.id:
+                    ura.delete()
+                    ura.flush()
+            # Purge the user
+            user.purged = True
+            user.flush()
+        message = "Purged %d users" % len( ids )
+        trans.response.send_redirect( web.url_for( controller='admin',
+                                                   action='users',
+                                                   message=util.sanitize_text( message ),
+                                                   status='done' ) )
     @web.expose
     @web.require_admin
-    def deleted_users( self, trans, **kwd ):
-        params = util.Params( kwd )
-        msg = util.restore_text( params.get( 'msg', ''  ) )
-        messagetype = params.get( 'messagetype', 'done' )
-        users = trans.app.model.User.filter( and_( trans.app.model.User.table.c.deleted==True, trans.app.model.User.table.c.purged==False ) ) \
-                                    .order_by( trans.app.model.User.table.c.email ) \
-                                    .all()
-        return trans.fill_template( '/admin/user/deleted_users.mako', users=users, msg=msg, messagetype=messagetype )
-    @web.expose
-    @web.require_admin
-    def users( self, trans, **kwd ):
-        params = util.Params( kwd )
-        msg = util.restore_text( params.get( 'msg', ''  ) )
-        messagetype = params.get( 'messagetype', 'done' )
-        users = trans.app.model.User.filter( trans.app.model.User.table.c.deleted==False ).order_by( trans.app.model.User.table.c.email ).all()
-        return trans.fill_template( '/admin/dataset_security/users.mako',
-                                    users=users,
-                                    allow_user_deletion=trans.app.config.allow_user_deletion,
-                                    msg=msg,
-                                    messagetype=messagetype )
+    def users( self, trans, **kwargs ):      
+        if 'operation' in kwargs:
+            operation = kwargs['operation'].lower()
+            if operation == "user":
+                return self.user( trans, **kwargs )
+            if operation == "reset_password":
+                return self.reset_user_password( trans, **kwargs )
+            if operation == "delete":
+                return self.mark_user_deleted( trans, **kwargs )
+            if operation == "undelete":
+                return self.undelete_user( trans, **kwargs )
+            if operation == "purge":
+                return self.purge_user( trans, **kwargs )
+            if operation == "create":
+                return self.create_new_user( trans, **kwargs )
+        # Render the list view
+        return self.user_list_grid( trans, **kwargs )
     @web.expose
     @web.require_admin
     def user( self, trans, **kwd ):
-        params = util.Params( kwd )
-        msg = util.restore_text( params.get( 'msg', ''  ) )
-        messagetype = params.get( 'messagetype', 'done' )
-        user = trans.app.model.User.get( int( params.user_id ) )
+        user_id = kwd.get( 'id', None )
+        message = ''
+        status = ''
+        if not user_id:
+            message += "Invalid user id (%s) received" % str( user_id )
+            trans.response.send_redirect( web.url_for( controller='admin',
+                                                       action='users',
+                                                       message=util.sanitize_text( message ),
+                                                       status='error' ) )
+        user = get_user( trans, user_id )
         private_role = trans.app.security_agent.get_private_user_role( user )
-        if params.get( 'user_roles_groups_edit_button', False ):
+        if kwd.get( 'user_roles_groups_edit_button', False ):
             # Make sure the user is not dis-associating himself from his private role
-            out_roles = [ trans.app.model.Role.get( x ) for x in util.listify( params.out_roles ) ]
+            out_roles = kwd.get( 'out_roles', [] )
+            if out_roles:
+                out_roles = [ trans.app.model.Role.get( x ) for x in util.listify( out_roles ) ]
             if private_role in out_roles:
-                msg += "You cannot eliminate a user's private role association.  "
-                messagetype = 'error'
-            in_roles = [ trans.app.model.Role.get( x ) for x in util.listify( params.in_roles ) ]
-            out_groups = [ trans.app.model.Group.get( x ) for x in util.listify( params.out_groups ) ]
-            in_groups = [ trans.app.model.Group.get( x ) for x in util.listify( params.in_groups ) ]
+                message += "You cannot eliminate a user's private role association.  "
+                status = 'error'
+            in_roles = kwd.get( 'in_roles', [] )
+            if in_roles:
+                in_roles = [ trans.app.model.Role.get( x ) for x in util.listify( in_roles ) ]
+            out_groups = kwd.get( 'out_groups', [] )
+            if out_groups:
+                out_groups = [ trans.app.model.Group.get( x ) for x in util.listify( out_groups ) ]
+            in_groups = kwd.get( 'in_groups', [] )
+            if in_groups:
+                in_groups = [ trans.app.model.Group.get( x ) for x in util.listify( in_groups ) ]
             if in_roles:
                 trans.app.security_agent.set_entity_user_associations( users=[ user ], roles=in_roles, groups=in_groups )
                 user.refresh()
-                msg += "User '%s' has been updated with %d associated roles and %d associated groups (private roles are not displayed)" % \
+                message += "User '%s' has been updated with %d associated roles and %d associated groups (private roles are not displayed)" % \
                     ( user.email, len( in_roles ), len( in_groups ) )
-                trans.response.send_redirect( web.url_for( action='users', msg=util.sanitize_text( msg ), messagetype=messagetype ) )
+                trans.response.send_redirect( web.url_for( action='users',
+                                                           message=util.sanitize_text( message ),
+                                                           status='done' ) )
         in_roles = []
         out_roles = []
         in_groups = []
@@ -653,20 +785,24 @@ class Admin( BaseController ):
                 # role, which should always be in in_roles.  The check above is added as an additional
                 # precaution, since for a period of time we were including private roles in the form fields.
                 out_roles.append( ( role.id, role.name ) )
-        for group in trans.app.model.Group.filter( trans.app.model.Group.table.c.deleted==False ).order_by( trans.app.model.Group.table.c.name ).all():
+        for group in trans.app.model.Group.filter( trans.app.model.Group.table.c.deleted==False ) \
+                                          .order_by( trans.app.model.Group.table.c.name ).all():
             if group in [ x.group for x in user.groups ]:
                 in_groups.append( ( group.id, group.name ) )
             else:
                 out_groups.append( ( group.id, group.name ) )
-        msg += "User '%s' is currently associated with %d roles and is a member of %d groups" % ( user.email, len( in_roles ), len( in_groups ) )
-        return trans.fill_template( '/admin/dataset_security/user.mako',
+        message += "User '%s' is currently associated with %d roles and is a member of %d groups" % \
+            ( user.email, len( in_roles ), len( in_groups ) )
+        if not status:
+            status = 'done'
+        return trans.fill_template( '/admin/user/user.mako',
                                     user=user,
                                     in_roles=in_roles,
                                     out_roles=out_roles,
                                     in_groups=in_groups,
                                     out_groups=out_groups,
-                                    msg=msg,
-                                    messagetype=messagetype )
+                                    msg=message,
+                                    messagetype=status )
     @web.expose
     @web.require_admin
     def memdump( self, trans, ids = 'None', sorts = 'None', pages = 'None', new_id = None, new_sort = None, **kwd ):
@@ -749,3 +885,14 @@ class Admin( BaseController ):
             else:
                 last_updated[job.id] = '%s minutes' % int( delta.seconds / 60 )
         return trans.fill_template( '/admin/jobs.mako', jobs = jobs, last_updated = last_updated, cutoff = cutoff, msg = msg, messagetype = messagetype )
+
+## ---- Utility methods -------------------------------------------------------
+        
+def get_user( trans, id ):
+    """Get a User from the database by id."""
+    # Load user from database
+    id = trans.security.decode_id( id )
+    user = trans.sa_session.query( model.User ).get( id )
+    if not user:
+        err+msg( "User not found" )
+    return user

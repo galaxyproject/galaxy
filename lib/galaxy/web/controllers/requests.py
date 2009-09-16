@@ -51,14 +51,12 @@ class RequestsListGrid( grids.Grid ):
         return None
     def get_request_type(self, trans, request):
         return request.type.name
-    def apply_default_filter( self, trans, query ):
+    def apply_default_filter( self, trans, query, **kwargs ):
         return query.filter_by( user=trans.user )
     def number_of_samples(self, trans, request):
         return str(len(request.samples))
     def get_state(self, trans, request):
             return request.state
-    
-
 
 class Requests( BaseController ):
     request_grid = RequestsListGrid()
@@ -475,10 +473,6 @@ class Requests( BaseController ):
         # The folders that should not be displayed may not be a complete list, but it is ultimately passed
         # to the calling method to keep from re-checking the same folders when the library / folder
         # select lists are rendered.
-        #
-        # TODO: RC, when you add the folders select list to your request form, take advantage of the hidden_folder_ids
-        # so that you do not need to check those same folders yet again when populating the select list.
-        #
         libraries = odict()
         for library in all_libraries:
             can_show, hidden_folder_ids = trans.app.security_agent.show_library_item( user, roles, library, actions_to_check )
@@ -721,10 +715,6 @@ class Requests( BaseController ):
         # The folders that should not be displayed may not be a complete list, but it is ultimately passed
         # to the calling method to keep from re-checking the same folders when the library / folder
         # select lists are rendered.
-        #
-        # TODO: RC, when you add the folders select list to your request form, take advantage of the hidden_folder_ids
-        # so that you do not need to check those same folders yet again when populating the select list.
-        #
         libraries = {}
         for library in all_libraries:
             can_show, hidden_folder_ids = trans.app.security_agent.show_library_item( user, roles, library, actions_to_check )

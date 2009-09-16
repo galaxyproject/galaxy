@@ -84,7 +84,7 @@ class HistoryListGrid( grids.Grid ):
     default_filter = dict( deleted=False )
     def get_current_item( self, trans ):
         return trans.get_history()
-    def apply_default_filter( self, trans, query ):
+    def apply_default_filter( self, trans, query, **kwargs ):
         return query.filter_by( user=trans.user, purged=False )
 
 class SharedHistoryListGrid( grids.Grid ):
@@ -121,7 +121,7 @@ class SharedHistoryListGrid( grids.Grid ):
     standard_filters = []
     def build_initial_query( self, session ):
         return session.query( self.model_class ).join( 'users_shared_with' )
-    def apply_default_filter( self, trans, query ):
+    def apply_default_filter( self, trans, query, **kwargs ):
         return query.filter( model.HistoryUserShareAssociation.user == trans.user )
 
 class HistoryController( BaseController ):

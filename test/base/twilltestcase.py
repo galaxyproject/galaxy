@@ -779,8 +779,8 @@ class TwillTestCase( unittest.TestCase ):
     def create_new_account_as_admin( self, email='test4@bx.psu.edu', password='testuser' ):
         """Create a new account for another user"""
         self.home()
-        self.visit_url( "%s/admin/create_new_user?email=%s&password=%s&confirm=%s&user_create_button=%s" \
-                        % ( self.url, email, password, password, 'Create' ) )
+        self.visit_url( "%s/admin/create_new_user?email=%s&password=%s&confirm=%s&user_create_button=Create&subscribe=False" \
+                        % ( self.url, email, password, password ) )
         try:
             self.check_page_for_string( "Created new user account" )
             previously_created = False
@@ -790,34 +790,34 @@ class TwillTestCase( unittest.TestCase ):
             previously_created = True
         self.home()
         return previously_created
-    def reset_password_as_admin( self, user_id=4, password='testreset' ):
+    def reset_password_as_admin( self, user_id, password='testreset' ):
         """Reset a user password"""
         self.home()
-        self.visit_url( "%s/admin/reset_user_password?user_id=%s" % ( self.url, str( user_id ) ) )
+        self.visit_url( "%s/admin/reset_user_password?id=%s" % ( self.url, user_id ) )
         tc.fv( "1", "password", password )
         tc.fv( "1", "confirm", password )
         tc.submit( "reset_user_password_button" )
-        self.check_page_for_string( "Password reset" )
+        self.check_page_for_string( "Passwords reset for 1 users" )
         self.home()
-    def mark_user_deleted( self, user_id=4, email='' ):
+    def mark_user_deleted( self, user_id, email='' ):
         """Mark a user as deleted"""
         self.home()
-        self.visit_url( "%s/admin/mark_user_deleted?user_id=%s" % ( self.url, str( user_id ) ) )
-        check_str = "User '%s' has been marked as deleted." % email
+        self.visit_url( "%s/admin/mark_user_deleted?id=%s" % ( self.url, user_id ) )
+        check_str = "Deleted 1 users"
         self.check_page_for_string( check_str )
         self.home()
-    def undelete_user( self, user_id=4, email='' ):
+    def undelete_user( self, user_id, email='' ):
         """Undelete a user"""
         self.home()
-        self.visit_url( "%s/admin/undelete_user?user_id=%s" % ( self.url, user_id ) )
-        check_str = "User '%s' has been marked as not deleted" % email
+        self.visit_url( "%s/admin/undelete_user?id=%s" % ( self.url, user_id ) )
+        check_str = "Undeleted 1 users"
         self.check_page_for_string( check_str )
         self.home()
     def purge_user( self, user_id, email ):
         """Purge a user account"""
         self.home()
-        self.visit_url( "%s/admin/purge_user?user_id=%s" % ( self.url, user_id ) )
-        check_str = "User '%s' has been marked as purged." % email
+        self.visit_url( "%s/admin/purge_user?id=%s" % ( self.url, user_id ) )
+        check_str = "Purged 1 users"
         self.check_page_for_string( check_str )
         self.home()
     def associate_roles_and_groups_with_user( self, user_id, email,
@@ -825,7 +825,7 @@ class TwillTestCase( unittest.TestCase ):
                                               in_group_ids=[], out_group_ids=[],
                                               check_str='' ):
         self.home()
-        url = "%s/admin/user?user_id=%s&user_roles_groups_edit_button=Save" % ( self.url, user_id )
+        url = "%s/admin/user?id=%s&user_roles_groups_edit_button=Save" % ( self.url, user_id )
         if in_role_ids:
             url += "&in_roles=%s" % ','.join( in_role_ids )
         if out_role_ids:

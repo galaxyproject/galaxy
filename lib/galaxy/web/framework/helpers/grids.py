@@ -35,7 +35,7 @@ class Grid( object ):
         session = trans.sa_session
         # Build initial query
         query = self.build_initial_query( session )
-        query = self.apply_default_filter( trans, query )
+        query = self.apply_default_filter( trans, query, **kwargs )
         # Maintain sort state in generated urls
         extra_url_args = {}
         # Process filtering arguments

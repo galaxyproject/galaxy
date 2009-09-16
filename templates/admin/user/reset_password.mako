@@ -6,15 +6,17 @@
 %endif
 
 <div class="toolForm">
-    <div class="toolFormTitle">Reset user password</div>
+    <div class="toolFormTitle">Reset password for users</div>
     <div class="toolFormBody">
         <form name="form" action="${h.url_for( controller='admin', action='reset_user_password' )}" method="post" >
-            <input type="hidden" name="user_id" value="${user.id}" size="40">
-            <div class="form-row">
-                <label>Email:</label>
-                ${user.email}
-                <div style="clear: both"></div>
-            </div>
+            <input type="hidden" name="id" value="${id}" size="40">
+            %for user in users:
+                <div class="form-row">
+                    <label>Email:</label>
+                    ${user.email}
+                    <div style="clear: both"></div>
+                </div>
+            %endfor
             <div class="form-row">
                 <label>Password:</label>
                 <div style="float: left; width: 250px; margin-right: 10px;">
