@@ -52,7 +52,7 @@
   <tests>
     <test>
       <param name="type" value="sol2std" />
-      <param name="input" value="bwa_phiX_sanger.fastq" ftype="fastqsolexa" />
+      <param name="input" value="fastq_conv_in1.fastq" ftype="fastqsolexa" />
       <output name="outputFastqsanger" file="fastq_conv_out1.fastqsanger" />
     </test>
     <test>

@@ -1,7 +1,8 @@
-<tool id="bwa_wrapper" name="BWA" version="1.0.0">
+<tool id="bwa_wrapper" name="BWA" version="1.0.1">
   <description> fast mapping of reads against reference sequence</description>
   <command interpreter="python">
     bwa_wrapper.py 
+    --threads="8"
     #if $solidOrSolexa.solidRefGenomeSource.refGenomeSource == "history":
      --ref=$solidOrSolexa.solidRefGenomeSource.ownFile
     #else:
@@ -27,7 +28,6 @@
      --disallowIndel="None"
      --seed="None"
      --maxEditDistSeed="None"
-     --numThreads="None"
      --mismatchPenalty="None"
      --gapOpenPenalty="None"
      --gapExtensPenalty="None"
@@ -46,7 +46,6 @@
      --disallowIndel=$params.disallowIndel
      --seed=$params.seed
      --maxEditDistSeed=$params.maxEditDistSeed
-     --numThreads=$params.numThreads
      --mismatchPenalty=$params.mismatchPenalty
      --gapOpenPenalty=$params.gapOpenPenalty
      --gapExtensPenalty=$params.gapExtensPenalty
@@ -57,9 +56,14 @@
      --maxInsertSize=$params.maxInsertSize
      --maxOccurPairing=$params.maxOccurPairing
     #end if
+    #if $solidOrSolexa.solidRefGenomeSource.refGenomeSource == "history":
+     --dbkey=$dbkey
+    #else:
+     --dbkey="None"
+    #end if
   </command>
   <inputs>
-	<conditional name="solidOrSolexa">
+    <conditional name="solidOrSolexa">
    	  <param name="solidSolexa" type="select" label="Select SOLiD or Solexa format for the original dataset">
 	    <option value="solexa">Solexa</option>
 	    <option value="solid">SOLiD</option>
@@ -70,18 +74,18 @@
 	        <option value="indexed">Use a built-in index</option>
 	        <option value="history">Use one from the history</option>
 	      </param>
-	      <when value="history">
-	        <param name="ownFile" type="data" format="fasta" label="Select a reference genome" />
-	      </when>
 	      <when value="indexed">
  	    	<param name="indices" type="select" label="Select a reference genome">
  	  	      <options from_file="sequence_index_color.loc">
   	  	        <column name="value" index="1" />
 	  	        <column name="name" index="0" />
-	  	        <filter type="sort_by" column="0" /> 
+	  	        <filter type="sort_by" column="0" />
 	  	      </options>
 	  	    </param>
 	  	  </when>
+	      <when value="history">
+	        <param name="ownFile" type="data" format="fasta" metadata_name="dbkey" label="Select a reference genome" />
+	      </when>
 	  	</conditional>
 	  </when>
 	  <when value="solexa">
@@ -90,39 +94,39 @@
 	        <option value="indexed">Use a built-in index</option>
 	        <option value="history">Use one from the history</option>
 	      </param>
-	      <when value="history">
-	        <param name="ownFile" type="data" format="fasta" label="Select a reference genome" />
-	      </when>
 	      <when value="indexed">
  	        <param name="indices" type="select" label="Select a reference genome">
  	  	      <options from_file="sequence_index_base.loc">
   	  	        <column name="value" index="1" />
 	  	        <column name="name" index="0" />
-	  	        <filter type="sort_by" column="0" /> 
+ 	  	        <filter type="sort_by" column="0" />
 	  	      </options>
 	        </param>
+	      </when>
+	      <when value="history">
+	        <param name="ownFile" type="data" format="fasta" metadata_name="dbkey" label="Select a reference genome" />
 	      </when>
 	    </conditional>
 	  </when>
 	</conditional>
-	<conditional name="paired">
-	  <param name="sPaired" type="select" label="Is this library mate-paired?">
-	    <option value="single">Single-end</option>
-	    <option value="paired">Paired-end</option>
-	  </param>
-	  <when value="single">
-        <param name="input1" type="data" format="fastqsanger" label="FASTQ file" />	
-	  </when>
-	  <when value="paired">
-	    <param name="input1" type="data" format="fastqsanger" label="Forward FASTQ file" />
-	    <param name="input2" type="data" format="fastqsanger" label="Reverse FASTQ file" />
-	  </when>
-    </conditional>
-	<conditional name="params">
+    <conditional name="paired">
+      <param name="sPaired" type="select" label="Is this library mate-paired?">
+        <option value="single">Single-end</option>
+        <option value="paired">Paired-end</option>
+      </param>
+      <when value="single">
+        <param name="input1" type="data" format="fastqsanger" label="FASTQ file" />
+      </when>
+      <when value="paired">
+        <param name="input1" type="data" format="fastqsanger" label="Forward FASTQ file" />
+        <param name="input2" type="data" format="fastqsanger" label="Reverse FASTQ file" />
+      </when>
+    </conditional>	
+    <conditional name="params">
       <param name="source_select" type="select" label="BWA settings to use" help="For most mapping needs use Commonly used settings. If you want full control use Full List">
-		<option value="pre_set">Commonly used</option>
-		<option value="full">Full Parameter List</option>
-	  </param>
+        <option value="pre_set">Commonly used</option>
+        <option value="full">Full Parameter List</option>
+      </param>
       <when value="pre_set" />
       <when value="full">
         <param name="maxEditDist" type="integer" value="0" label="Maximum edit distance" help="Enter this value OR a fraction of missing alignments, not both" />  
@@ -133,9 +137,8 @@
         <param name="disallowIndel" type="integer" value="5" label="Disallow insertion/deletion within [value] bp towards the end" />
         <param name="seed" type="integer" value="-1" label="Number of first subsequences to take as seed" help="Enter -1 for infinity" />
         <param name="maxEditDistSeed" type="integer" value="2" label="Maximum edit distance in the seed" />
-        <param name="numThreads" type="integer" value="1" label="Number of threads, in multi-threading mode" />
         <param name="mismatchPenalty" type="integer" value="3" label="Mismatch penalty" help="BWA will not search for suboptimal hits with a score lower than [value]" />
-        <param name="gapOpenPenalty" type="integer" value="1" label="Gap open penalty" />
+        <param name="gapOpenPenalty" type="integer" value="11" label="Gap open penalty" />
         <param name="gapExtensPenalty" type="integer" value="4" label="Gap extension penalty" />
         <param name="colorSpaceRev" type="select" label="Reverse query but don't compement it" help="Reverse query for all alignment in color space">
           <option value="false">Don't reverse query</option>
@@ -150,34 +153,33 @@
     </conditional>
   </inputs>
   <outputs>
-    <data format="tabular" name="output" />
+    <data format="sam" name="output" />
   </outputs>
-<!-- Tests all fail because of problem with nested conditionals in test framework
   <tests>
     <test>
       <param name="solidSolexa" value="solexa" />
       <param name="refGenomeSource" value="indexed" />
       <param name="indices" value="phiX" />
       <param name="sPaired" value="single" />
-      <param name="input1" value="bwa_phiX_sanger.fastq" />
+      <param name="input1" value="bwa_wrapper_in1.fastq" />
       <param name="source_select" value="pre_set" />
-      <output name="output" file="bwa_wrapper_out0.tabular" />
+      <output name="output" file="bwa_wrapper_out0.sam" ftype="sam" />
     </test>
     <test>
       <param name="solidSolexa" value="solid" />
       <param name="refGenomeSource" value="history" />
       <param name="ownFile" value="phiX.fa" />
       <param name="sPaired" value="single" />
-      <param name="input1" value="bwa_phiX_sanger.fastq" />
+      <param name="input1" value="bwa_wrapper_in0.fastq" />
       <param name="source_select" value="pre_set" />
-      <output name="output" file="bwa_wrapper_out0b.tabular" />
+      <output name="output" file="bwa_wrapper_out0b.sam" ftype="sam" />
     </test>
     <test>
       <param name="solidSolexa" value="solid" />
       <param name="refGenomeSource" value="indexed" />
       <param name="indices" value="phiX" />
       <param name="sPaired" value="single" />
-      <param name="input1" value="bwa_solid.fastq" />
+      <param name="input1" value="bwa_wrapper_in2.fastq" />
       <param name="source_select" value="full" />
       <param name="maxEditDist" value="0" />  
       <param name="fracMissingAligns" value="0.04" />  
@@ -187,9 +189,8 @@
       <param name="disallowIndel" value="5" />
       <param name="seed" value="-1" />
       <param name="maxEditDistSeed" value="2" />
-      <param name="numThreads" value="1" />
       <param name="mismatchPenalty" value="3" />
-      <param name="gapOpenPenalty" value="1" />
+      <param name="gapOpenPenalty" value="11" />
       <param name="gapExtensPenalty" value="4" />
       <param name="colorSpaceRev" value="true" />
       <param name="suboptAlign" value="true" />
@@ -197,15 +198,15 @@
       <param name="outputTopN" value="-1" />
       <param name="maxInsertSize" value="500" />
       <param name="maxOccurPairing" value="100000" />
-      <output name="output" file="bwa_wrapper_out1.tabular" />
+      <output name="output" file="bwa_wrapper_out1.sam" ftype="sam" />
     </test>
     <test>
       <param name="solidSolexa" value="solid" />
       <param name="refGenomeSource" value="indexed" />
       <param name="indices" value="phiX" />
       <param name="sPaired" value="paired" />
-      <param name="input1" value="bwa_solid_f.fastq" />
-      <param name="input2" value="bwa_solid_r.fastq" />
+      <param name="input1" value="bwa_wrapper_in3.fastq" />
+      <param name="input2" value="bwa_wrapper_in4.fastq" />
       <param name="source_select" value="full" />
       <param name="maxEditDist" value="0" />  
       <param name="fracMissingAligns" value="0.04" />  
@@ -215,9 +216,8 @@
       <param name="disallowIndel" value="5" />
       <param name="seed" value="-1" />
       <param name="maxEditDistSeed" value="2" />
-      <param name="numThreads" value="1" />
       <param name="mismatchPenalty" value="3" />
-      <param name="gapOpenPenalty" value="1" />
+      <param name="gapOpenPenalty" value="11" />
       <param name="gapExtensPenalty" value="4" />
       <param name="colorSpaceRev" value="true" />
       <param name="suboptAlign" value="true" />
@@ -225,14 +225,14 @@
       <param name="outputTopN" value="-1" />
       <param name="maxInsertSize" value="500" />
       <param name="maxOccurPairing" value="100000" />
-      <output name="output" file="bwa_wrapper_out2.tabular" />
+      <output name="output" file="bwa_wrapper_out2.sam" ftype="sam" />
     </test> 
     <test>
       <param name="solidSolexa" value="solexa" />
       <param name="refGenomeSource" value="indexed" />
       <param name="indices" value="phiX" />
       <param name="sPaired" value="single" />
-      <param name="input1" value="bwa_phiX_sanger.fastq" />
+      <param name="input1" value="bwa_wrapper_in1.fastq" />
       <param name="source_select" value="full" />
       <param name="maxEditDist" value="0" />  
       <param name="fracMissingAligns" value="0.04" />  
@@ -242,9 +242,8 @@
       <param name="disallowIndel" value="5" />
       <param name="seed" value="-1" />
       <param name="maxEditDistSeed" value="2" />
-      <param name="numThreads" value="1" />
       <param name="mismatchPenalty" value="3" />
-      <param name="gapOpenPenalty" value="1" />
+      <param name="gapOpenPenalty" value="11" />
       <param name="gapExtensPenalty" value="4" />
       <param name="colorSpaceRev" value="false" />
       <param name="suboptAlign" value="true" />
@@ -252,15 +251,15 @@
       <param name="outputTopN" value="-1" />
       <param name="maxInsertSize" value="500" />
       <param name="maxOccurPairing" value="100000" />
-      <output name="output" file="bwa_wrapper_out3.tabular" />
+      <output name="output" file="bwa_wrapper_out3.sam" ftype="sam" />
     </test> 
     <test>
       <param name="solidSolexa" value="solexa" />
       <param name="refGenomeSource" value="indexed" />
       <param name="indices" value="phiX" />
       <param name="sPaired" value="paired" />
-      <param name="input1" value="bwa_phiX_sanger_f.fastq" />
-      <param name="input2" value="bwa_phiX_sanger_r.fastq" />
+      <param name="input1" value="bwa_wrapper_in5.fastq" />
+      <param name="input2" value="bwa_wrapper_in6.fastq" />
       <param name="source_select" value="full" />
       <param name="maxEditDist" value="0" />  
       <param name="fracMissingAligns" value="0.04" />  
@@ -270,9 +269,8 @@
       <param name="disallowIndel" value="5" />
       <param name="seed" value="-1" />
       <param name="maxEditDistSeed" value="2" />
-      <param name="numThreads" value="1" />
       <param name="mismatchPenalty" value="3" />
-      <param name="gapOpenPenalty" value="1" />
+      <param name="gapOpenPenalty" value="11" />
       <param name="gapExtensPenalty" value="4" />
       <param name="colorSpaceRev" value="false" />
       <param name="suboptAlign" value="true" />
@@ -280,11 +278,10 @@
       <param name="outputTopN" value="-1" />
       <param name="maxInsertSize" value="500" />
       <param name="maxOccurPairing" value="100000" />
-      <output name="output" file="bwa_wrapper_out4.tabular" />
-    </test> 
+      <output name="output" file="bwa_wrapper_out4.sam" ftype="sam" />
+    </test>
   </tests> 
--->
- <help>
+  <help>
     	
 **What it does**   	
     	
@@ -294,7 +291,7 @@
 
 **Input formats**
 
-BWA accepts files in FASTQ format. 
+BWA accepts files in Sanger FASTQ format. 
 
 ------
 
@@ -336,7 +333,7 @@ It looks like this (scroll sideways to see the entire example)::
 
 -------
 
-**BWA Settings**
+**BWA settings**
 
 All of the options have a default value. You can change any of them. All of the options in BWA have been implemented here.
 
@@ -390,9 +387,9 @@ For **sampe**::
   -o INT  Maximum occurrences of a read for pairing. A read with more 
           occurrences will be treated as a single-end read. Reducing this 
           parameter helps faster pairing. [100000]
-
 	
-	</help>
+  </help>
+  <code file="bwa_wrapper_code.py" />
 </tool>
 
 
