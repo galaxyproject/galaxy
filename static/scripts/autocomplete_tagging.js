@@ -49,7 +49,7 @@ jQuery.fn.autocomplete_tagging = function(options) {
   
   // Tag area.
   var area_id = "tag-area-" + (ac_tag_area_id_gen)++;
-  var tag_area = $("<div></div>").attr("id", area_id).addClass("tag-area");
+  var tag_area = $("<div>").attr("id", area_id).addClass("tag-area");
   this.append(tag_area);
   
   //
@@ -72,7 +72,7 @@ jQuery.fn.autocomplete_tagging = function(options) {
   var build_toggle_link = function()
   {
     var link_text = settings.get_toggle_link_text_fn(settings.tags);
-    var toggle_link = $("<a href='/history/tags'>" + link_text + "</a>").addClass("toggle-link");
+    var toggle_link = $("<a href='/history/tags'>").text(link_text).addClass("toggle-link");
     // Link toggles the display state of the tag area.
     toggle_link.click( function() 
     { 
@@ -238,7 +238,7 @@ jQuery.fn.autocomplete_tagging = function(options) {
     });
 
     // Build tag button.
-    var tag_name_elt = $("<span>" + tag_str + "</span>").addClass("tag-name");
+    var tag_name_elt = $("<span>").text(tag_str).addClass("tag-name");
     tag_name_elt.click( function()
 		       {
 			  settings.tag_click_fn(tag_str);
@@ -261,10 +261,10 @@ jQuery.fn.autocomplete_tagging = function(options) {
     var t;
     if (settings.in_form)
       t = $( "<textarea id='history-tag-input' rows='1' cols='" +
-	    settings.input_size + "' value='" + tag_text + "'></textarea>" );
+	    settings.input_size + "' value='" + escape(tag_text) + "'></textarea>" );
     else // element not in form.
       t = $( "<input id='history-tag-input' type='text' size='" +
-	    settings.input_size + "' value='" + tag_text + "'></input>" );
+	    settings.input_size + "' value='" + escape(tag_text) + "'></input>" );
     t.keyup( function( e ) 
     {
       if ( e.keyCode == 27 ) 

@@ -7,13 +7,13 @@
         //
         <%
             ## Build string of tag name, values.
-            tag_names_and_values = list()
+            tag_names_and_values = dict()
             for tag in tagged_item.tags:
                 tag_name = tag.user_tname
                 tag_value = ""
                 if tag.value is not None:
                     tag_value = tag.user_value
-                tag_names_and_values.append( ("\"" + tag_name + "\" : \"" + tag_value + "\"") )
+                tag_names_and_values[unicode(tag_name, 'utf-8')] = unicode(tag_value, 'utf-8')
         %>
         //    
         // Returns the number of keys (elements) in an array/dictionary.
@@ -71,20 +71,20 @@
         
         var options =
         {
-          tags : {${unicode(", ".join(tag_names_and_values), 'utf-8')}},
-          get_toggle_link_text_fn: get_toggle_link_text,
-          tag_click_fn: function(tag) { /* Do nothing. */ },
-          <% tagged_item_id = trans.security.encode_id(tagged_item.id) %>
-          ajax_autocomplete_tag_url: "${h.url_for( controller='tag', action='tag_autocomplete_data', id=tagged_item_id, item_class=tagged_item.__class__.__name__ )}",
-          ajax_add_tag_url: "${h.url_for( controller='tag', action='add_tag_async', id=tagged_item_id, item_class=tagged_item.__class__.__name__ )}",
-          ajax_delete_tag_url: "${h.url_for( controller='tag', action='remove_tag_async', id=tagged_item_id, item_class=tagged_item.__class__.__name__ )}",
-          delete_tag_img: "${h.url_for('/static/images/delete_tag_icon_gray.png')}",
-          delete_tag_img_rollover: "${h.url_for('/static/images/delete_tag_icon_white.png')}",
-          add_tag_img: "${h.url_for('/static/images/add_icon.png')}",
-          add_tag_img_rollover: "${h.url_for('/static/images/add_icon_dark.png')}",
-          input_size: ${input_size},
-          in_form: ${in_form},
-          use_toggle_link: ${use_toggle_link}
+            tags : ${h.to_json_string(tag_names_and_values)},
+            get_toggle_link_text_fn: get_toggle_link_text,
+            tag_click_fn: function(tag) { /* Do nothing. */ },
+            <% tagged_item_id = trans.security.encode_id(tagged_item.id) %>
+            ajax_autocomplete_tag_url: "${h.url_for( controller='tag', action='tag_autocomplete_data', id=tagged_item_id, item_class=tagged_item.__class__.__name__ )}",
+            ajax_add_tag_url: "${h.url_for( controller='tag', action='add_tag_async', id=tagged_item_id, item_class=tagged_item.__class__.__name__ )}",
+            ajax_delete_tag_url: "${h.url_for( controller='tag', action='remove_tag_async', id=tagged_item_id, item_class=tagged_item.__class__.__name__ )}",
+            delete_tag_img: "${h.url_for('/static/images/delete_tag_icon_gray.png')}",
+            delete_tag_img_rollover: "${h.url_for('/static/images/delete_tag_icon_white.png')}",
+            add_tag_img: "${h.url_for('/static/images/add_icon.png')}",
+            add_tag_img_rollover: "${h.url_for('/static/images/add_icon_dark.png')}",
+            input_size: ${input_size},
+            in_form: ${in_form},
+            use_toggle_link: ${use_toggle_link}
          };
          
         $("#${elt_id}").autocomplete_tagging(options)
