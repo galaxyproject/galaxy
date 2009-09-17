@@ -95,7 +95,7 @@
     No users were returned for the current query.  Click the Show all users button or a letter below.
 %endif:
 <%
-    letters = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z', '0']
+    letters = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z']
 %>
 <div class="toolFormBody">
     <div class="form-row">

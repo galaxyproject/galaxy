@@ -177,8 +177,7 @@ class User( BaseController ):
                 email_error = "Please enter a real email address"
             elif len( email ) > 255:
                 email_error = "Email address exceeds maximum allowable length"
-            elif trans.app.model.User.filter( and_( trans.app.model.User.table.c.email==email,
-                                                    trans.app.model.User.table.c.deleted==False ) ).first():
+            elif trans.app.model.User.filter_by( email=email ).all():
                 email_error = "User with that email already exists"
             elif len( password ) < 6:
                 password_error = "Please use a password of at least 6 characters"

@@ -539,8 +539,8 @@ class Admin( BaseController ):
                 message = 'Enter a real email address'
             elif len( email) > 255:
                 message = 'Email address exceeds maximum allowable length'
-            elif trans.app.model.User.filter( trans.app.model.User.table.c.email==email ).first():
-                message = 'A user with that email already exists'
+            elif trans.app.model.User.filter_by( email=email ).all():
+                message = 'User with that email already exists'
             elif len( password ) < 6:
                 message = 'Use a password of at least 6 characters'
             elif password != confirm:
