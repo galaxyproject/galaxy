@@ -1,4 +1,4 @@
-<tool id="MAF_Reverse_Complement_1" name="Reverse Compliment" version="1.0.1">
+<tool id="MAF_Reverse_Complement_1" name="Reverse Complement" version="1.0.1">
   <description>a MAF file</description>
   <command interpreter="python">maf_reverse_complement.py $input1 $out_file1 $species</command>
   <inputs>

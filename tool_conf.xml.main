@@ -40,6 +40,7 @@
     <tool file="fasta_tools/fasta_to_tabular.xml" />
     <tool file="filters/gff2bed.xml" />
     <tool file="maf/maf_to_bed.xml" />
+    <tool file="maf/maf_to_interval.xml" />
     <tool file="maf/maf_to_fasta.xml" />
     <tool file="fasta_tools/tabular_to_fasta.xml" />
   </section>
