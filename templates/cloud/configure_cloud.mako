@@ -129,7 +129,7 @@
 						## TODO: Once more instances will be running under the same liveInstance, additional logic will need to be added to account for that
 							%if instance.state == "running":
 								<a class="action-button" href="http://${instance.public_dns}" target="_blank">
-								<span>Connect to!</span>
+								<span>Access Galaxy</span>
 								<img src="${h.url_for('/static/images/silk/resultset_next.png')}" /></a></div>
 							%endif
 						%endfor
