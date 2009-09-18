@@ -3,7 +3,10 @@ Array tree data provider for Galaxy track browser.
 """
 
 import pkg_resources; pkg_resources.require( "bx-python" )
-from bx.arrays.array_tree import FileArrayTreeDict
+try:
+    from bx.arrays.array_tree import FileArrayTreeDict
+except:
+    pass
 from math import floor, ceil, log
 
 # Maybe this should be included in the datatype itself, so users can add their
