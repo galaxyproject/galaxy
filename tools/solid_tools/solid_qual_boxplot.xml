@@ -1,7 +1,7 @@
 <tool id="solid_qual_boxplot" name="Quality Boxplot" version="1.0.0">
 	<description>for SOLiD data</description>
 	
-	<command>qualsolid_boxplot_graph.sh -t '$input.name' -i $input -o $output</command>
+	<command interpreter="bash">qualsolid_boxplot_graph.sh -t '$input.name' -i $input -o $output</command>
 	
 	<inputs>
 		<param format="txt" name="input" type="data" label="Statistics report file (output of 'Quality Statistics for SOLiD data' tool)" />
