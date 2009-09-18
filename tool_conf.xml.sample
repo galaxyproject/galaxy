@@ -192,7 +192,6 @@
   <section name="SOLiD: QC" id="solid_tools">
     <tool file="solid_tools/solid_qual_stats.xml" />
     <tool file="solid_tools/solid_qual_boxplot.xml" />
-    <tool file="solid_tools/maq_cs_wrapper.xml" />    
   </section>
   <section name="NGS: Mapping" id="solexa_tools">
    <tool file="sr_mapping/lastz_wrapper.xml" />
