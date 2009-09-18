@@ -58,8 +58,9 @@
     <datatype extension="blastxml" type="galaxy.datatypes.xml:BlastXml" display_in_upload="true"/>
     <datatype extension="txtseq.zip" type="galaxy.datatypes.images:Txtseq" mimetype="application/zip" display_in_upload="true"/>
     <datatype extension="wig" type="galaxy.datatypes.interval:Wiggle" display_in_upload="true">
-      <indexer file="wiggle.xml" />
+      <converter file="wiggle_to_array_tree_converter.xml" target_datatype="array_tree"/>
     </datatype>
+    <datatype extension="array_tree" type="galaxy.datatypes.data:Data" />
     <!-- EMBOSS TOOLS -->
     <datatype extension="acedb" type="galaxy.datatypes.data:Text"/>
     <datatype extension="asn1" type="galaxy.datatypes.data:Text"/>

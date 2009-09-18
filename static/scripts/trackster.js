@@ -1,5 +1,9 @@
 var DENSITY = 1000;
 
+var BLOCK_SIZE = 1000;
+
+var log = function( x, b ) { return Math.log( x ) / Math.log( b ) }
+
 var View = function( chr, length, low, high ) {
     this.chr = chr;
     this.length = length;
@@ -83,9 +87,12 @@ $.extend( TiledTrack.prototype, Track.prototype, {
             high = this.view.high,
             range = high - low;
 
-        var resolution = Math.pow( 10, Math.ceil( Math.log( range / DENSITY ) / Math.log( 10 ) ) );
+        var resolution = Math.pow( BLOCK_SIZE, Math.floor( log( range, BLOCK_SIZE ) ) );
+	// Math.pow( 10, Math.ceil( Math.log( range / DENSITY ) / Math.log( 10 ) ) );
+	
+	console//.log( "resolution:", resolution );
         resolution = Math.max( resolution, 1 );
-        resolution = Math.min( resolution, 100000 );
+        resolution = Math.min( resolution, 1000000 );
 
 	var parent_element = $("<div style='position: relative;'></div>");
         this.content_div.children( ":first" ).remove();
@@ -155,7 +162,7 @@ $.extend( DataCache.prototype, {
 	    // use closure to preserve this and parameters for getJSON
 	    var fetcher = function (ref) {
 	      return function () {
-		$.getJSON( TRACKSTER_DATA_URL + ref.type, { chrom: ref.view.chr, low: low, high: high, dataset_id: ref.track.dataset_id }, function ( data ) {
+		$.getJSON( TRACKSTER_DATA_URL, { track_type: ref.type, chrom: ref.view.chr, low: low, high: high, dataset_id: ref.track.dataset_id }, function ( data ) {
 		  if( data == "pending" ) {
 		    setTimeout( fetcher, 5000 );
 		  } else {
@@ -175,7 +182,7 @@ var LineTrack = function ( name, view, parent_element, dataset_id ) {
     Track.call( this, name, view, parent_element );
     this.container_div.addClass( "line-track" );
     this.dataset_id = dataset_id;
-    this.cache = new DataCache( "", this, view );
+    this.cache = new DataCache( "line", this, view );
 };
 $.extend( LineTrack.prototype, TiledTrack.prototype, {
     make_container: function () {
@@ -209,35 +216,37 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
         var canvas = element;
         canvas.get(0).width = canvas.width();
         canvas.get(0).height = canvas.height();
-        var ctx = canvas.get(0).getContext("2d");
-        var in_path = false;
-        ctx.beginPath();
-        var data = chunk.values;
-        for ( var i = 0; i < data.length - 1; i++ ) {
-            var x1 = data[i][0] - tile_low;
-            var y1 = data[i][1];
-            var x2 = data[i+1][0] - tile_low;
-            var y2 = data[i+1][1];
-	    console.log( x1, y1, x2, y2 );
-            // Missing data causes us to stop drawing
-            if ( isNaN( y1 ) || isNaN( y2 ) ) {
-                in_path = false;
-            } else {
-                // Translate
-                x1 = x1 * w_scale;
-                x2 = x2 * w_scale;
-                y1 = h_scale - y1 * ( h_scale );
-                y2 = h_scale - y2 * ( h_scale );
-                if ( in_path ) {
-                    ctx.lineTo( x1, y1, x2, y2 );
-                } else {
-                    ctx.moveTo( x1, y1, x2, y2 );
-                    in_path = true;
-                }
-           }
-        }
-        ctx.stroke();
-        return element;
+	var data = chunk.values;
+	if ( data ) {
+	    var ctx = canvas.get(0).getContext("2d");
+	    var in_path = false;
+	    ctx.beginPath();
+	    // console.log( "Drawing tile" );
+	    for ( var i = 0; i < data.length - 1; i++ ) {
+		var x1 = data[i][0] - tile_low;
+		var y1 = data[i][1];
+		var x2 = data[i+1][0] - tile_low;
+		var y2 = data[i+1][1];
+		// Missing data causes us to stop drawing
+		if ( isNaN( y1 ) || isNaN( y2 ) ) {
+		    in_path = false;
+		} else {
+		    // Translate
+		    x1 = x1 * w_scale;
+		    x2 = x2 * w_scale;
+		    y1 = h_scale - y1 * ( h_scale );
+		    y2 = h_scale - y2 * ( h_scale );
+		    if ( in_path ) {
+			ctx.lineTo( x1, y1, x2, y2 );
+		    } else {
+			ctx.moveTo( x1, y1, x2, y2 );
+			in_path = true;
+		    }
+	       }
+	    }
+	    ctx.stroke();
+	}
+	return element;
     }
 });
 
