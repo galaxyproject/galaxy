@@ -1,0 +1,186 @@
+<tool id="pileup_interval" name="Pileup-to-Interval" version="1.0.0">
+  <description>condenses pileup format into ranges of bases</description>
+  <command interpreter="python">
+    pileup_interval.py 
+      --input=$input 
+      --output=$output 
+      --coverage=$coverage
+      --format=$format_type.format
+      #if $format_type.format == "ten":
+       --base=$format_type.which_base
+       --seq_column="None"
+       --loc_column="None"
+       --base_column="None"
+       --cvrg_column="None"
+      #elif $format_type.format == "manual":
+       --base="None"
+       --seq_column=$format_type.seq_column
+       --loc_column=$format_type.loc_column
+       --base_column=$format_type.base_column
+       --cvrg_column=$format_type.cvrg_column
+      #else:
+       --base="None"
+       --seq_column="None"
+       --loc_column="None"
+       --base_column="None"
+       --cvrg_column="None"
+      #end if
+  </command>
+  <inputs>
+    <param name="input" type="data" format="tabular" label="Choose a pileup file to condense:" />
+    <conditional name="format_type">
+      <param name="format" type="select" label="which contains:" help="See &quot;Types of pileup datasets&quot; below for examples">
+        <option value="six" selected="true">Pileup with six columns (simple)</option>
+        <option value="ten">Pileup with ten columns (with consensus)</option>
+        <option value="manual">Set columns manually</option>
+      </param>
+      <when value="six" />
+      <when value="ten">
+        <param name="which_base" type="select" label="Which base do you want to concatenate">
+          <option value="first" selected="true">Reference base (first)</option>
+          <option value="second">Consensus base (second)</option>
+        </param>
+      </when>
+      <when value="manual">
+        <param name="seq_column" label="Select column with sequence name" type="data_column" numerical="false" data_ref="input" />
+        <param name="loc_column" label="Select column with base location" type="data_column" numerical="false" data_ref="input" />
+        <param name="base_column" label="Select column with base to concatenate" type="data_column" numerical="false" data_ref="input" />
+        <param name="cvrg_column" label="Select column with coverage" type="data_column" numerical="true" data_ref="input" />
+      </when>
+    </conditional>
+    <param name="coverage" type="integer" value="3" label="Do not report bases with coverage less than:" />
+  </inputs>
+  <outputs>
+    <data format="tabular" name="output" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="input" value="pileup_interval_in1.tabular" />
+      <param name="format" value="six" />
+      <param name="coverage" value="3" />
+      <output name="output" file="pileup_interval_out1.tabular" />
+    </test>
+    <test>
+      <param name="input" value="pileup_interval_in2.tabular" />
+      <param name="format" value="ten" />
+      <param name="which_base" value="first" />
+      <param name="coverage" value="3" />
+      <output name="output" file="pileup_interval_out2.tabular" />
+    </test>
+    <test>
+      <param name="input" value="pileup_interval_in2.tabular" />
+      <param name="format" value="manual" />
+      <param name="seq_column" value="1" />
+      <param name="loc_column" value="2" />
+      <param name="base_column" value="3" />
+      <param name="cvrg_column" value="8" />
+      <param name="coverage" value="3" />
+      <output name="output" file="pileup_interval_out2.tabular" />
+    </test>
+  </tests> 
+  <help>
+    	
+**What is does**
+
+Reduces the size of a results set by taking a pileup file and producing a condensed version showing consecutive sequences of bases meeting coverage criteria. The tool works on six and ten column pileup formats produced with *samtools pileup* command. You also can specify columns for the input file manually. The tool assumes that the pileup dataset was produced by *samtools pileup* command (although you can override this by setting column assignments manually).
+
+--------
+
+**Types of pileup datasets**
+
+The description of pileup format below is largely based on information that can be found on SAMTools_ documentation page. The 6- and 10-column variants are described below.
+
+.. _SAMTools: http://samtools.sourceforge.net/pileup.shtml
+
+**Six column pileup**::
+
+    1    2  3  4        5        6
+ ---------------------------------   
+ chrM  412  A  2       .,       II
+ chrM  413  G  4     ..t,     IIIH
+ chrM  414  C  4     ...a     III2
+ chrM  415  C  4     TTTt     III7
+   
+where::
+
+ Column Definition
+ ------ ----------------------------
+      1 Chromosome
+      2 Position (1-based)
+      3 Reference base at that position
+      4 Coverage (# reads aligning over that position)
+      5 Bases within reads where (see Galaxy wiki for more info)
+      6 Quality values (phred33 scale, see Galaxy wiki for more)
+       
+**Ten column pileup**
+
+The `ten-column`__ pileup incorporates additional consensus information generated with *-c* option of *samtools pileup* command::
+
+
+    1    2  3  4   5   6   7   8       9       10
+ ------------------------------------------------
+ chrM  412  A  A  75   0  25  2       .,       II
+ chrM  413  G  G  72   0  25  4     ..t,     IIIH
+ chrM  414  C  C  75   0  25  4     ...a     III2
+ chrM  415  C  T  75  75  25  4     TTTt     III7
+
+where::
+
+  Column Definition
+ ------- ----------------------------
+       1 Chromosome
+       2 Position (1-based)
+       3 Reference base at that position
+       4 Consensus bases
+       5 Consensus quality
+       6 SNP quality
+       7 Maximum mapping quality
+       8 Coverage (# reads aligning over that position)
+       9 Bases within reads where (see Galaxy wiki for more info)
+      10 Quality values (phred33 scale, see Galaxy wiki for more)
+
+
+.. __: http://samtools.sourceforge.net/cns0.shtml
+
+------
+
+**The output format**
+
+The output file condenses the information in the pileup file so that consecutive bases are listed together as sequences. The starting and ending points of the sequence range are listed, with the starting value converted to a 0-based value. 
+
+Given the following input with minimum coverage set to 3::
+
+    1    2  3  4        5        6
+ ---------------------------------   
+ chr1  112  G  3     ..Ta     III6
+ chr1  113  T  2     aT..     III5
+ chr1  114  A  5     ,,..     IIH2
+ chr1  115  C  4      ,.,      III
+ chrM  412  A  2       .,       II
+ chrM  413  G  4     ..t,     IIIH
+ chrM  414  C  4     ...a     III2
+ chrM  415  C  4     TTTt     III7
+ chrM  490  T  3        a        I
+ 
+the following would be the output::
+ 
+    1    2    3  4
+ -------------------
+ chr1  111  112  G
+ chr1  113  115  AC
+ chrM  412  415  GCC
+ chrM  489  490  T
+
+where::
+
+  Column Definition
+ ------- ----------------------------
+       1 Chromosome
+       2 Starting position (0-based)
+       3 Ending position (1-based)
+       4 Sequence of bases
+ 	
+  </help>
+</tool>
+
+
