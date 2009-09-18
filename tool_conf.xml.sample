@@ -207,6 +207,7 @@
    <tool file="samtools/sam_merge.xml" />
    <tool file="samtools/sam_pileup.xml" />
    <tool file="samtools/pileup_parser.xml" />
+   <tool file="samtools/pileup_interval.xml" />
   </section>
   <section name="Rg Data" id="rgData1">
     <tool file="rgenetics/rgenetics_import.xml"/>
