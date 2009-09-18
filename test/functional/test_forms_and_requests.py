@@ -247,6 +247,8 @@ class TestFormsAndRequests( TwillTestCase ):
         self.home()
         request_one.refresh()
         # check if the request's state is now set to 'complete'
+        self.visit_url('%s/requests_admin/list?show_filter=Complete' % self.url)
+        self.check_page_for_string( request_one.name )
         assert request_one.state is not request_one.states.COMPLETE, "The state of the request '%s' should be set to '%s'" % ( request_one.name, request_one.states.COMPLETE )
 #    def test_40_admin_create_request_on_behalf_of_regular_user( self ):
 #        """Testing creating and submitting a request as an admin on behalf of a regular user"""

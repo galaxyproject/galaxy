@@ -121,7 +121,7 @@ class Grid( object ):
         return None
     def build_initial_query( self, session ):
         return session.query( self.model_class )
-    def apply_default_filter( self, trans, query ):
+    def apply_default_filter( self, trans, query, **kwargs):
         return query
     
 class GridColumn( object ):

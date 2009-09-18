@@ -240,3 +240,22 @@ ucsc_table_direct1 = local:///
 ucsc_table_direct_archaea1 = local:///
 ucsc_table_direct_test1 = local:///
 upload1 = local:///
+
+
+# Galaxy Message Queue
+# Galaxy uses AMQ protocol to receive messages from external sources like 
+# bar code scanners. Galaxy has been tested against RabbitMQ AMQP implementation.
+# For Galaxy to receive messages from a message queue the RabbitMQ server has 
+# to be set up with a user account and other parameters listed below. The 'host'
+# and 'port' fields should point to where the RabbitMQ server is running. 
+
+#[galaxy:amqp]
+#host = 127.0.0.1
+#port = 5672
+#userid = galaxy
+#password = galaxy
+#virtual_host = galaxy_messaging_engine
+#queue = galaxy_queue
+#exchange = galaxy_exchange
+#routing_key = bar_code_scanner
+

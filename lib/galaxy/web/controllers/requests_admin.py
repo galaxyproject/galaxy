@@ -98,7 +98,6 @@ class Requests( BaseController ):
             else:
                 self.request_grid.default_filter = dict(state=kwargs['show_filter'], deleted=False)   
         self.request_grid.show_filter = kwargs.get('show_filter', trans.app.model.Request.states.SUBMITTED)
-        self.__update_request_state(trans)
         # Render the list view
         return self.request_grid( trans, **kwargs )
     @web.expose
@@ -980,12 +979,6 @@ class Requests( BaseController ):
                                                           request_id=request.id,
                                                           msg='Bar codes has been saved for this request',
                                                           messagetype='done'))
-
-    def __update_request_state(self, trans):
-        requests = trans.app.model.Request.query.filter_by(deleted=False, 
-                                                          state=trans.app.model.Request.states.SUBMITTED)
-        for request in requests:
-            self.__set_request_state(request)
                     
     def __set_request_state(self, request):
         # check if all the samples of the current request are in the final state
