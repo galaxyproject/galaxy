@@ -21,7 +21,7 @@
 			<!-- Re-format a FASTA file into a single line -->
 			<param name="input" value="fasta_formatter1.fasta" /> 
 			<param name="width" value="0" />
-			<output name="output" file="fastx_formatter1.out" />
+			<output name="output" file="fasta_formatter1.out" />
 		</test>
 		<test>
 			<!-- Re-format a FASTA file into multiple lines wrapping at 60 charactes -->
