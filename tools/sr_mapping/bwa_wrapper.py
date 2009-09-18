@@ -41,6 +41,7 @@ def __main__():
     parser.add_option('', '--maxInsertSize', dest='maxInsertSize', help='Maximum insert size for a read pair to be considered mapped good')
     parser.add_option('', '--maxOccurPairing', dest='maxOccurPairing', help='Maximum occurrences of a read for pairings')
     parser.add_option('', '--dbkey', dest='dbkey', help='')
+    parser.add_option('', '--suppressHeader', dest='suppressHeader', help='Suppress header')
     (options, args) = parser.parse_args()
        
     # index if necessary
@@ -119,5 +120,29 @@ def __main__():
     # clean up temp files
     tmp_align_out.close()
     tmp_align_out2.close()
+    # remove header if necessary
+    if options.suppressHeader == 'true':
+        tmp_out = tempfile.NamedTemporaryFile()
+        cmd4 = 'cp %s %s' % (options.output, tmp_out.name)
+        try:
+            os.system(cmd4)
+        except Exception, erf:
+            stop_err("Error copying output file before removing headers\n" + str(erf))
+        output = file(tmp_out.name, 'r')
+        fout = file(options.output, 'w')
+        header = True
+        line = output.readline()
+        while line.strip() != '':
+            if header:
+                if line.startswith('@HD') or line.startswith('@SQ') or line.startswith('@RG') or line.startswith('@PG') or line.startswith('@CO'):
+                    pass
+                else:
+                    header = False
+                    fout.write(line)
+            else:
+                fout.write(line)
+            line = output.readline()
+        fout.close()
+        tmp_out.close()
     
 if __name__=="__main__": __main__()

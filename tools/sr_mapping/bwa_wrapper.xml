@@ -61,6 +61,7 @@
     #else:
      --dbkey="None"
     #end if
+    --suppressHeader=$suppressHeader
   </command>
   <inputs>
     <conditional name="solidOrSolexa">
@@ -151,6 +152,7 @@
         <param name="maxOccurPairing" type="integer" value="100000" label="Maximum occurrences of a read for pairing" help="For paired-end reads only. A read with more occurrences will be treated as a single-end read. Reducing this parameter helps faster pairing" />
       </when>
     </conditional>
+    <param name="suppressHeader" type="boolean" truevalue="true" falsevalue="false" checked="true" label="Suppress the header in the output SAM file" help="BWA produces SAM with several lines of header information" />
   </inputs>
   <outputs>
     <data format="sam" name="output" />
@@ -163,6 +165,7 @@
       <param name="sPaired" value="single" />
       <param name="input1" value="bwa_wrapper_in1.fastq" />
       <param name="source_select" value="pre_set" />
+      <param name="suppressHeader" value="true" />
       <output name="output" file="bwa_wrapper_out0.sam" ftype="sam" />
     </test>
     <test>
@@ -172,6 +175,7 @@
       <param name="sPaired" value="single" />
       <param name="input1" value="bwa_wrapper_in0.fastq" />
       <param name="source_select" value="pre_set" />
+      <param name="suppressHeader" value="true" />
       <output name="output" file="bwa_wrapper_out0b.sam" ftype="sam" />
     </test>
     <test>
@@ -198,6 +202,7 @@
       <param name="outputTopN" value="-1" />
       <param name="maxInsertSize" value="500" />
       <param name="maxOccurPairing" value="100000" />
+      <param name="suppressHeader" value="true" />
       <output name="output" file="bwa_wrapper_out1.sam" ftype="sam" />
     </test>
     <test>
@@ -225,6 +230,7 @@
       <param name="outputTopN" value="-1" />
       <param name="maxInsertSize" value="500" />
       <param name="maxOccurPairing" value="100000" />
+      <param name="suppressHeader" value="true" />
       <output name="output" file="bwa_wrapper_out2.sam" ftype="sam" />
     </test> 
     <test>
@@ -251,6 +257,7 @@
       <param name="outputTopN" value="-1" />
       <param name="maxInsertSize" value="500" />
       <param name="maxOccurPairing" value="100000" />
+      <param name="suppressHeader" value="true" />
       <output name="output" file="bwa_wrapper_out3.sam" ftype="sam" />
     </test> 
     <test>
@@ -278,8 +285,9 @@
       <param name="outputTopN" value="-1" />
       <param name="maxInsertSize" value="500" />
       <param name="maxOccurPairing" value="100000" />
+      <param name="suppressHeader" value="true" />
       <output name="output" file="bwa_wrapper_out4.sam" ftype="sam" />
-    </test>
+    </test> 
   </tests> 
   <help>
     	
