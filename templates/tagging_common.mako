@@ -13,7 +13,11 @@
                 tag_value = ""
                 if tag.value is not None:
                     tag_value = tag.user_value
-                tag_names_and_values[unicode(tag_name, 'utf-8')] = unicode(tag_value, 'utf-8')
+                ## Tag names and values may be string or unicode object.
+                if isinstance( tag_name, str ):
+                    tag_names_and_values[unicode(tag_name, 'utf-8')] = unicode(tag_value, 'utf-8')
+                else: ## isInstance( tag_name, unicode ):
+                    tag_names_and_values[tag_name] = tag_value
         %>
         //    
         // Returns the number of keys (elements) in an array/dictionary.
