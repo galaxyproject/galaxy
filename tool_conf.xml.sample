@@ -20,14 +20,6 @@
     <tool file="data_source/hbvar.xml" /> 
     <tool file="validation/fix_errors.xml" />
   </section>
-  <section name="Get ENCODE Data" id="encode">
-    <tool file="data_source/encode_import_chromatin_and_chromosomes.xml"/>
-    <tool file="data_source/encode_import_genes_and_transcripts.xml"/>
-    <tool file="data_source/encode_import_multi-species_sequence_analysis.xml"/>
-    <tool file="data_source/encode_import_transcription_regulation.xml"/>
-    <tool file="data_source/encode_import_all_latest_datasets.xml" />
-    <tool file="data_source/encode_import_gencode.xml" />
-  </section>
   <section name="Send Data" id="send">
     <tool file="data_destination/epigraph.xml" />
     <tool file="data_destination/epigraph_test.xml" />
@@ -167,17 +159,63 @@
     <tool file="taxonomy/lca.xml" />
     <tool file="taxonomy/poisson2test.xml" />
   </section>
-  <section name="Solexa tools" id="solexa_tools">
-    <tool file="sr_mapping/fastq_statistics.xml" />
-    <tool file="sr_mapping/lastz_wrapper.xml" />
-  </section> 
-  <!--
+  <section name="FASTA manipulation" id="fasta_manipulation">
+    <tool file="fasta_tools/fasta_compute_length.xml" />
+    <tool file="fasta_tools/fasta_filter_by_length.xml" />
+    <tool file="fasta_tools/fasta_concatenate_by_species.xml" />
+    <tool file="fasta_tools/fasta_to_tabular.xml" />
+    <tool file="fasta_tools/tabular_to_fasta.xml" />
+    <tool file="fastx_toolkit/fasta_formatter.xml" />
+    <tool file="fastx_toolkit/fasta_nucleotide_changer.xml" />
+    <tool file="fastx_toolkit/fastx_collapser.xml" />
+  </section>
+  <section name="NGS: FASTQ QC and manipulation" id="cshl_library_information">
+    <tool file="fastx_toolkit/fastx_quality_statistics.xml" />
+    <tool file="fastx_toolkit/fastq_quality_boxplot.xml" />
+    <tool file="fastx_toolkit/fastx_nucleotides_distribution.xml" />
+    <!-- <tool file="fastx_toolkit/fasta_clipping_histogram.xml" /> -->
+    <tool file="fastx_toolkit/fastq_to_fasta.xml" />
+    <tool file="fastx_toolkit/fastq_quality_converter.xml" />
+    <!-- <tool file="fastx_toolkit/fastx_clipper.xml" /> -->
+    <tool file="fastx_toolkit/fastx_trimmer.xml" />
+    <tool file="fastx_toolkit/fastx_renamer.xml" />
+    <tool file="fastx_toolkit/fastx_reverse_complement.xml" />
+    <tool file="fastx_toolkit/fastx_artifacts_filter.xml" />
+    <tool file="fastx_toolkit/fastq_quality_filter.xml" />
+    <!--<tool file="fastx_toolkit/fastx_barcode_splitter.xml" />-->
+    <tool file="metag_tools/split_paired_reads.xml" />
+  </section>
+  <section name="454: QC" id="short_read_analysis">
+    <tool file="metag_tools/short_reads_figure_score.xml" />
+    <tool file="metag_tools/short_reads_trim_seq.xml" />
+  </section>
+  <section name="SOLiD: QC" id="solid_tools">
+    <tool file="solid_tools/solid_qual_stats.xml" />
+    <tool file="solid_tools/solid_qual_boxplot.xml" />
+    <tool file="solid_tools/maq_cs_wrapper.xml" />    
+  </section>
+  <section name="NGS: Mapping" id="solexa_tools">
+   <tool file="sr_mapping/lastz_wrapper.xml" />
+   <tool file="metag_tools/megablast_wrapper.xml" />
+   <tool file="metag_tools/megablast_xml_parser.xml" />
+   <tool file="sr_mapping/bowtie_wrapper.xml" />
+   <tool file="sr_mapping/bwa_wrapper.xml" />
+  </section>
+  <section name="NGS: SAM Tools" id="samtools">
+   <tool file="samtools/sam_bitwise_flag_filter.xml" />
+   <tool file="samtools/sam2interval.xml" />
+   <tool file="samtools/sam_to_bam.xml" />
+   <tool file="samtools/sam_merge.xml" />
+   <tool file="samtools/sam_pileup.xml" />
+   <tool file="samtools/pileup_parser.xml" />
+  </section>
+<!--
   TODO: uncomment the following EMBOSS section whenever 
   moving to test, but comment it in .sample to eliminate 
   it from buildbot functional tests since these tools 
   rarely change.
-  -->
-  <!-- 
+-->
+<!-- 
   <section name="EMBOSS" id="EMBOSSLite">
     <tool file="emboss_5/emboss_antigenic.xml" />
     <tool file="emboss_5/emboss_backtranseq.xml" />
@@ -287,6 +325,9 @@
     <tool file="emboss_5/emboss_wordcount.xml" />
     <tool file="emboss_5/emboss_wordmatch.xml" /> 
   </section> 
+<<<<<<< local
+-->
+=======
   -->
   <section name="SOLiD Data Analysis" id="solid_tools">
     <tool file="solid_tools/solid_qual_stats.xml" />
@@ -351,4 +392,5 @@
    <tool file="samtools/pileup_parser.xml" />
    <tool file="samtools/pileup_interval.xml" />
   </section>
+>>>>>>> other
 </toolbox>

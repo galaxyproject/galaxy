@@ -31,7 +31,7 @@
 
 **What it does**
 
-Converts positional information from a SAM dataset into interval format with 0-based start and 1-based end. To calculate the end position the tool uses the CIGAR string.
+Converts positional information from a SAM dataset into interval format with 0-based start and 1-based end. CIGAR string of SAM format is usd to compute the end coordinate.
 
 -----
 
