@@ -275,7 +275,7 @@
         <param name="input1" type="data" format="fastqsanger" label="Forward FASTQ file" />
         <param name="input2" type="data" format="fastqsanger" label="Reverse FASTQ file" />
         <conditional name="params">
-          <param name="settings_type" type="select" label="BWA settings to use" help="For most mapping needs use Commonly used settings. If you want full control use Full parameter list">
+          <param name="settings_type" type="select" label="Bowtie settings to use" help="For most mapping needs use Commonly used settings. If you want full control use Full parameter list">
 		    <option value="pre_set">Commonly used</option>
    		    <option value="full">Full parameter list</option>
 	      </param>
