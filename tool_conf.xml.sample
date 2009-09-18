@@ -209,6 +209,25 @@
    <tool file="samtools/sam_pileup.xml" />
    <tool file="samtools/pileup_parser.xml" />
   </section>
+  <section name="Rg Data" id="rgData1">
+    <tool file="rgenetics/rgenetics_import.xml"/>
+    <tool file="rgenetics/rgLpedPbed.xml"/>
+    <tool file="rgenetics/rgClean.xml"/>
+    <tool file="rgenetics/rgQC.xml"/>
+  </section>
+  <section name="Rg Simulate" id="rgSim1">
+    <tool file="rgenetics/rgfakePhe.xml"/>
+  </section>
+   <section name="Rg Visualise" id="rgVis1">
+    <tool file="rgenetics/rgQC.xml"/>
+    <tool file="rgenetics/rgEigPCA2.xml"/>
+    <tool file="rgenetics/rgQQ.xml"/>
+  </section>
+  <section name="Rg Model Data" id="rgModel1">
+    <tool file="rgenetics/rgGLM.xml"/>
+    <tool file="rgenetics/rgCaCo.xml"/>
+    <tool file="rgenetics/rgTDT.xml"/>
+  </section>
 <!--
   TODO: uncomment the following EMBOSS section whenever 
   moving to test, but comment it in .sample to eliminate 
@@ -325,72 +344,5 @@
     <tool file="emboss_5/emboss_wordcount.xml" />
     <tool file="emboss_5/emboss_wordmatch.xml" /> 
   </section> 
-<<<<<<< local
 -->
-=======
-  -->
-  <section name="SOLiD Data Analysis" id="solid_tools">
-    <tool file="solid_tools/solid_qual_stats.xml" />
-    <tool file="solid_tools/solid_qual_boxplot.xml" />
-    <tool file="solid_tools/maq_cs_wrapper.xml" />    
-  </section>
-  <section name="FASTA manipulation" id="fasta_manipulation">
-    <tool file="fasta_tools/fasta_compute_length.xml" />
-    <tool file="fasta_tools/fasta_filter_by_length.xml" />
-    <tool file="fasta_tools/fasta_concatenate_by_species.xml" />
-    <tool file="fasta_tools/fasta_to_tabular.xml" />
-    <tool file="fasta_tools/tabular_to_fasta.xml" />
-  </section>
-  <section name="FASTA/Q Information" id="cshl_library_information">
-    <tool file="fastx_toolkit/fastx_quality_statistics.xml" />
-    <tool file="fastx_toolkit/fastq_quality_boxplot.xml" />
-    <tool file="fastx_toolkit/fastx_nucleotides_distribution.xml" />
-    <tool file="fastx_toolkit/fasta_clipping_histogram.xml" />
-  </section>
-
-  <section name="FASTA/Q Preprocessing" id="cshl_fastx_manipulation">
-    <tool file="fastx_toolkit/fastq_to_fasta.xml" />
-    <tool file="fastx_toolkit/fastq_quality_converter.xml" />
-    <tool file="fastx_toolkit/fastx_clipper.xml" />
-    <tool file="fastx_toolkit/fastx_trimmer.xml" />
-    <tool file="fastx_toolkit/fastx_renamer.xml" />
-    <tool file="fastx_toolkit/fastx_reverse_complement.xml" />
-    <tool file="fastx_toolkit/fasta_formatter.xml" />
-    <tool file="fastx_toolkit/fasta_nucleotide_changer.xml" />
-    <tool file="fastx_toolkit/fastx_artifacts_filter.xml" />
-    <tool file="fastx_toolkit/fastq_quality_filter.xml" />
-    <tool file="fastx_toolkit/fastx_collapser.xml" />
-    <!--<tool file="fastx_toolkit/fastx_barcode_splitter.xml" />-->
-  </section>
-  <section name="Short Read QC and Manipulation" id="short_read_analysis">
-    <tool file="metag_tools/short_reads_figure_score.xml" />
-    <tool file="metag_tools/short_reads_figure_high_quality_length.xml" />
-    <tool file="metag_tools/short_reads_trim_seq.xml" />
-    <tool file="metag_tools/blat_coverage_report.xml" />
-    <tool file="metag_tools/split_paired_reads.xml" />
-  </section>
-  <section name="Short Read Mapping" id="solexa_tools">
-   <tool file="metag_tools/shrimp_color_wrapper.xml" />
-   <tool file="metag_tools/shrimp_wrapper.xml" />
-   <tool file="sr_mapping/lastz_wrapper.xml" />
-   <tool file="metag_tools/megablast_wrapper.xml" />
-   <tool file="metag_tools/megablast_xml_parser.xml" />
-   <tool file="metag_tools/blat_wrapper.xml" />
-   <tool file="metag_tools/mapping_to_ucsc.xml" />
-   <tool file="sr_mapping/bowtie_wrapper.xml" />
-   <tool file="sr_mapping/bwa_wrapper.xml" />
-  </section>
-  <section name="Tracks" id="tracks">
-   <tool file="visualization/genetrack.xml" />
-  </section>
-  <section name="SAM Tools" id="samtools">
-   <tool file="samtools/sam_bitwise_flag_filter.xml" />
-   <tool file="samtools/sam2interval.xml" />
-   <tool file="samtools/sam_to_bam.xml" />
-   <tool file="samtools/sam_merge.xml" />
-   <tool file="samtools/sam_pileup.xml" />
-   <tool file="samtools/pileup_parser.xml" />
-   <tool file="samtools/pileup_interval.xml" />
-  </section>
->>>>>>> other
 </toolbox>
