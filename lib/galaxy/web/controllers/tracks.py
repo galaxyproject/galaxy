@@ -4,7 +4,7 @@ Support for constructing and viewing custom "track" browsers within Galaxy.
 Track browsers are currently transient -- nothing is stored to the database
 when a browser is created. Building a browser consists of selecting a set
 of datasets associated with the same dbkey to display. Once selected, jobs
-are started to create any neccesary indexes in the background, and the user
+are started to create any necessary indexes in the background, and the user
 is redirected to the browser interface, which loads the appropriate datasets.
 
 Problems
@@ -105,7 +105,7 @@ class TracksController( BaseController ):
             dbkey = dataset.dbkey
         chrom_lengths = self._chroms( trans, dbkey )
         if chrom_lengths is None:
-            error( "No chromosome lengths file found for '%s'" )
+            error( "No chromosome lengths file found for '%s'" % dataset.name )
         return trans.fill_template( 'tracks/browser.mako', 
                                     dataset_ids=dataset_ids,
                                     tracks=tracks,
@@ -186,7 +186,7 @@ class TracksController( BaseController ):
             return dataset
         # See if we can convert the dataset
         if type not in dataset.get_converter_types():
-            log.debug( "Converstion from '%s' to '%d' not possible", dataset.extension, type )
+            log.debug( "Conversion from '%s' to '%d' not possible", dataset.extension, type )
             return None
         # See if converted dataset already exists
         converted_datasets = dataset.get_converted_files_by_type( type )
