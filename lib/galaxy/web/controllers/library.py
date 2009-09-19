@@ -3,7 +3,7 @@ from galaxy.model.orm import *
 from galaxy.datatypes import sniff
 from galaxy import util
 from galaxy.util.odict import odict
-from galaxy.web.controllers.forms import get_all_forms, get_form_widgets
+from galaxy.web.controllers.forms import get_all_forms
 from galaxy.util.streamball import StreamBall
 import logging, tempfile, zipfile, tarfile, os, sys
 
@@ -149,16 +149,7 @@ class Library( BaseController ):
                                                               messagetype='error' ) )
         if action == 'information':
             # See if we have any associated templates
-            if library.info_association:
-                template = library.info_association[0].template
-                # See if we have any field contents
-                info = library.info_association[0].info
-                if info:
-                    widgets = get_form_widgets( trans, template, info.content )
-                else:
-                    widgets = get_form_widgets( trans, template )
-            else:
-                widgets = []
+            widgets = library.get_template_widgets( trans )
             if params.get( 'rename_library_button', False ):
                 old_name = library.name
                 new_name = util.restore_text( params.name )
@@ -479,17 +470,7 @@ class Library( BaseController ):
                                                                   msg=util.sanitize_text( msg ),
                                                                   messagetype='error' ) )
             # See if we have any associated templates
-            info_association = ldda.get_info_association()
-            if info_association:
-                template = info_association.template
-                # See if we have any field contents
-                info = info_association.info
-                if info:
-                    widgets = get_form_widgets( trans, template, info.content )
-                else:
-                    widgets = get_form_widgets( trans, template )
-            else:
-                widgets = []
+            widgets = ldda.get_template_widgets( trans )
             if action == 'permissions':
                 if params.get( 'update_roles_button', False ):
                     # The user clicked the Save button on the 'Associate With Roles' form
@@ -782,6 +763,8 @@ class Library( BaseController ):
                                                                msg=util.sanitize_text( msg ), 
                                                                messagetype='error' ) )
         if not id or replace_dataset:
+            # See if we have any inherited templates, but do not inherit contents.
+            widgets = folder.get_template_widgets( trans, get_contents=False )
             upload_option = params.get( 'upload_option', 'upload_file' )
             # No dataset(s) specified, so display the upload form.  Send list of data formats to the form
             # so the "extension" select list can be populated dynamically
@@ -806,6 +789,7 @@ class Library( BaseController ):
                                         last_used_build=last_used_build,
                                         roles=roles,
                                         history=history,
+                                        widgets=widgets,
                                         msg=msg,
                                         messagetype=messagetype,
                                         replace_dataset=replace_dataset )
@@ -968,17 +952,7 @@ class Library( BaseController ):
                                         messagetype=messagetype )
         elif action == 'information':
             # See if we have any associated templates
-            info_association = folder.get_info_association()
-            if info_association:
-                template = info_association.template
-                # See if we have any field contents
-                info = info_association.info
-                if info:
-                    widgets = get_form_widgets( trans, template, info.content )
-                else:
-                    widgets = get_form_widgets( trans, template )
-            else:
-                widgets = []
+            widgets = folder.get_template_widgets( trans )
             if params.get( 'rename_folder_button', False ):
                 if trans.app.security_agent.can_modify_library_item( user, roles, folder ):
                     old_name = folder.name

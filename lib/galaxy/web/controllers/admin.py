@@ -3,7 +3,6 @@ from datetime import datetime, timedelta
 from galaxy import util, datatypes
 from galaxy.web.base.controller import *
 from galaxy.model.orm import *
-from galaxy.web.controllers.forms import get_all_forms, get_form_widgets
 from galaxy.web.framework.helpers import time_ago, iff, grids
 import logging
 log = logging.getLogger( __name__ )
@@ -242,7 +241,7 @@ class Admin( BaseController ):
         # whose DatasetPermissions is associated with the Role
         # [ ( LibraryDatasetDatasetAssociation [ action, action ] ) ]
         library_dataset_actions = {}
-        for dp in role.actions:
+        for dp in role.dataset_actions:
             for ldda in trans.app.model.LibraryDatasetDatasetAssociation \
                             .filter( trans.app.model.LibraryDatasetDatasetAssociation.dataset_id==dp.dataset_id ) \
                             .all():

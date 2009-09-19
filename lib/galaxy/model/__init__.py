@@ -14,6 +14,7 @@ import galaxy.datatypes.registry
 from galaxy.datatypes.metadata import MetadataCollection
 from galaxy.security import RBACAgent, get_permitted_actions
 from galaxy.util.hash_util import *
+from galaxy.web.form_builder import *
 import logging
 log = logging.getLogger( __name__ )
 
@@ -686,10 +687,23 @@ class Library( object ):
         self.name = name or "Unnamed library"
         self.description = description
         self.root_folder = root_folder
-    def get_info_association( self, restrict=False ):
+    def get_info_association( self, restrict=False, inherited=False ):
         if self.info_association:
-            return self.info_association[0]
-        return None
+            return self.info_association[0], inherited
+        return None, inherited
+    def get_template_widgets( self, trans, get_contents=True ):
+        # See if we have any associated templates - the returned value for
+        # inherited is not applicable at the library level
+        info_association, inherited = self.get_info_association()
+        if info_association:
+            template = info_association.template
+            if get_contents:
+                # See if we have any field contents
+                info = info_association.info
+                if info:
+                    return template.get_widgets( trans.user, contents=info.content )
+            return template.get_widgets( trans.user )
+        return []
 
 class LibraryFolder( object ):
     def __init__( self, name=None, description=None, item_count=0, order_id=None ):
@@ -708,19 +722,35 @@ class LibraryFolder( object ):
         folder.parent_id = self.id
         folder.order_id = self.item_count
         self.item_count += 1
-    def get_info_association( self, restrict=False ):
+    def get_info_association( self, restrict=False, inherited=False ):
         # If restrict is True, we will return this folder's info_association, not inheriting.
         # If restrict is False, we'll return the next available info_association in the
-        # inheritable hierarchy
+        # inheritable hierarchy.  True is also returned if the info_association was inherited,
+        # and False if not.  This enables us to eliminate displaying the any contents of the inherited
+        # template.
         if self.info_association:
-            return self.info_association[0]
+            return self.info_association[0], inherited
         if restrict:
-            return None
+            return None, inherited
         if self.parent:
-            return self.parent.get_info_association()
+            return self.parent.get_info_association( inherited=True )
         if self.library_root:
-            return self.library_root[0].get_info_association()
-        return None
+            return self.library_root[0].get_info_association( inherited=True )
+        return None, inherited
+    def get_template_widgets( self, trans, get_contents=True ):
+        # See if we have any associated templates
+        info_association, inherited = self.get_info_association()
+        if info_association:
+            template = info_association.template
+            # See if we have any field contents, but only if the info_association was
+            # not inherited ( we do not want to display the inherited contents ).
+            if not inherited and get_contents:
+                info = info_association.info
+                if info:
+                    return template.get_widgets( trans.user, info.content )
+            else:
+                return template.get_widgets( trans.user )
+        return []
     @property
     def active_library_datasets( self ):
          # This needs to be a list
@@ -839,15 +869,31 @@ class LibraryDatasetDatasetAssociation( DatasetInstance ):
         return ldda
     def clear_associated_files( self, metadata_safe = False, purge = False ):
         return
-    def get_info_association( self, restrict=False ):
+    def get_info_association( self, restrict=False, inherited=False ):
         # If restrict is True, we will return this ldda's info_association whether it
         # exists or not.  If restrict is False, we'll return the next available info_association
-        # in the inheritable hierarchy
+        # in the inheritable hierarchy.   True is also returned if the info_association was inherited,
+        # and False if not.  This enables us to eliminate displaying the any contents of the inherited
+        # template.
         if self.info_association:
-            return self.info_association[0]
+            return self.info_association[0], inherited
         if restrict:
-            return None
-        return self.library_dataset.folder.get_info_association()
+            return None, inherited
+        return self.library_dataset.folder.get_info_association( inherited=True )
+    def get_template_widgets( self, trans, get_contents=True ):
+        # See if we have any associated templates
+        info_association, inherited = self.get_info_association()
+        if info_association:
+            template = info_association.template
+            # See if we have any field contents, but only if the info_association was
+            # not inherited ( we do not want to display the inherited contents ).
+            if not inherited and get_contents:
+                info = info_association.info
+                if info:
+                    return template.get_widgets( trans.user, info.content )
+            else:
+                return template.get_widgets( trans.user )
+        return []
 
 class LibraryInfoAssociation( object ):
     def __init__( self, library, form_definition, info ):
@@ -1030,6 +1076,62 @@ class FormDefinition( object ):
                 if f['layout'] == str(layout_index):
                     fields_dict[i] = f
         return fields_dict
+    def get_widgets( self, user, contents=[], **kwd ):
+        '''
+        Return the list of widgets that comprise a form definition,
+        including field contents if any.
+        '''
+        params = util.Params( kwd )
+        widgets = []
+        for index, field in enumerate( self.fields ):
+            field_name = 'field_%i' % index
+            # determine the value of the field
+            if field_name in kwd:
+                # the user had already filled out this field and the same form is re-rendered 
+                # due to some reason like required fields have been left out.
+                if field[ 'type' ] == 'CheckboxField':
+                    value = CheckboxField.is_checked( util.restore_text( params.get( field_name, False ) ) )
+                else:
+                    value = util.restore_text( params.get( field_name, '' ) )
+            elif contents:
+                # this field has a saved value
+                value = str( contents[ index ] )
+            else:
+                # if none of the above, then leave the field empty
+                if field[ 'type' ] == 'CheckboxField':
+                    # Since we do not have contents, set checkbox value to False
+                    value = False
+                else:
+                    # Set other field types to empty string
+                    value = ''
+            # create the field widget
+            field_widget = eval( field[ 'type' ] )( field_name )
+            if field[ 'type' ] == 'TextField':
+                field_widget.set_size( 40 )
+                field_widget.value = value
+            elif field[ 'type' ] == 'TextArea':
+                field_widget.set_size( 3, 40 )
+                field_widget.value = value
+            elif field['type'] == 'AddressField':
+                field_widget.user = user
+                field_widget.value = value
+                field_widget.params = params
+            elif field[ 'type' ] == 'SelectField':
+                for option in field[ 'selectlist' ]:
+                    if option == value:
+                        field_widget.add_option( option, option, selected=True )
+                    else:
+                        field_widget.add_option( option, option )
+            elif field[ 'type' ] == 'CheckboxField':
+                field_widget.checked = value
+            if field[ 'required' ] == 'required':
+                req = 'Required'
+            else:
+                req = 'Optional'
+            widgets.append( dict( label=field[ 'label' ],
+                                  widget=field_widget,
+                                  helptext='%s (%s)' % ( field[ 'helptext' ], req ) ) )
+        return widgets
         
 class FormDefinitionCurrent( object ):
     def __init__(self, form_definition=None):

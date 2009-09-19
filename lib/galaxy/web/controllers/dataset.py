@@ -36,6 +36,9 @@ ${stdout}
 job info:
 ${info}
 -----------------------------------------------------------------------------
+job traceback:
+${traceback}
+-----------------------------------------------------------------------------
 (This is an automated message).
 """
 
@@ -76,6 +79,7 @@ class DatasetInterface( BaseController ):
                               tool_id=job.tool_id,
                               stderr=job.stderr,
                               stdout=job.stdout,
+                              traceback=job.traceback,
                               info=job.info ) )
         frm = to_address
         # Check email a bit

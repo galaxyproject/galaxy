@@ -91,52 +91,53 @@ class RowCounter( object ):
             uploaded_by = 'anonymous'
         if ldda == library_dataset.library_dataset_dataset_association:
             current_version = True
+            can_modify_library_dataset = trans.app.security_agent.can_modify_library_item( user, roles, library_dataset )
+            can_manage_library_dataset = trans.app.security_agent.can_manage_library_item( user, roles, library_dataset )
         else:
             current_version = False
-        can_modify_library_dataset = trans.app.security_agent.can_modify_library_item( user, roles, library_dataset )
-        can_manage_library_dataset = trans.app.security_agent.can_manage_library_item( user, roles, library_dataset )
     %>
-
-    <tr class="datasetRow"
-    %if parent is not None:
-        parent="${parent}"
-        style="display: none;"
-    %endif
-    >
-        <td style="padding-left: ${pad+20}px;">
-            %if selected:
-                <input type="checkbox" name="ldda_ids" value="${ldda.id}" checked/>
-            %else:
-                <input type="checkbox" name="ldda_ids" value="${ldda.id}"/>
-            %endif
-            <a href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library.id, folder_id=folder.id, id=ldda.id, info=True )}"><b>${ldda.name[:60]}</b></a>
-            <a id="dataset-${ldda.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
-            <div popupmenu="dataset-${ldda.id}-popup">
-                %if can_modify_library_dataset:
-                    <a class="action-button" href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library.id, folder_id=folder.id, id=ldda.id, edit_info=True )}">Edit this dataset's information</a>
+    %if current_version:
+        <tr class="datasetRow"
+        %if parent is not None:
+            parent="${parent}"
+            style="display: none;"
+        %endif
+        >
+            <td style="padding-left: ${pad+20}px;">
+                %if selected:
+                    <input type="checkbox" name="ldda_ids" value="${ldda.id}" checked/>
                 %else:
-                    <a class="action-button" href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library.id, folder_id=folder.id, id=ldda.id, information=True )}">View this dataset's information</a>
+                    <input type="checkbox" name="ldda_ids" value="${ldda.id}"/>
                 %endif
-                %if can_manage_library_dataset:
-                    <a class="action-button" href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library.id, folder_id=folder.id, id=ldda.id, permissions=True )}">Edit this dataset's permissions</a>
-                %endif
-                %if current_version and can_modify_library_dataset:
-                    <a class="action-button" href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library.id, folder_id=folder.id, replace_id=library_dataset.id )}">Upload a new version of this dataset</a>
-                %endif
-                %if ldda.has_data:
-                    <a class="action-button" href="${h.url_for( controller='library', action='datasets', library_id=library.id, ldda_ids=str( ldda.id ), do_action='add' )}">Import this dataset into your current history</a>
-                    <a class="action-button" href="${h.url_for( controller='library', action='download_dataset_from_folder', id=ldda.id, library_id=library.id )}">Download this dataset</a>
-                %endif
-            </div>
-        </td>
-        <td>${ldda.message}</td>
-        <td>${uploaded_by}</td>
-        <td>${ldda.create_time.strftime( "%Y-%m-%d" )}</td>
-    </tr>     
-    <%
-        my_row = row_counter.count
-        row_counter.increment()
-    %>
+                <a href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library.id, folder_id=folder.id, id=ldda.id, info=True )}"><b>${ldda.name[:60]}</b></a>
+                <a id="dataset-${ldda.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
+                <div popupmenu="dataset-${ldda.id}-popup">
+                    %if can_modify_library_dataset:
+                        <a class="action-button" href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library.id, folder_id=folder.id, id=ldda.id, edit_info=True )}">Edit this dataset's information</a>
+                    %else:
+                        <a class="action-button" href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library.id, folder_id=folder.id, id=ldda.id, information=True )}">View this dataset's information</a>
+                    %endif
+                    %if can_manage_library_dataset:
+                        <a class="action-button" href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library.id, folder_id=folder.id, id=ldda.id, permissions=True )}">Edit this dataset's permissions</a>
+                    %endif
+                    %if can_modify_library_dataset:
+                        <a class="action-button" href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library.id, folder_id=folder.id, replace_id=library_dataset.id )}">Upload a new version of this dataset</a>
+                    %endif
+                    %if ldda.has_data:
+                        <a class="action-button" href="${h.url_for( controller='library', action='datasets', library_id=library.id, ldda_ids=str( ldda.id ), do_action='add' )}">Import this dataset into your current history</a>
+                        <a class="action-button" href="${h.url_for( controller='library', action='download_dataset_from_folder', id=ldda.id, library_id=library.id )}">Download this dataset</a>
+                    %endif
+                </div>
+            </td>
+            <td>${ldda.message}</td>
+            <td>${uploaded_by}</td>
+            <td>${ldda.create_time.strftime( "%Y-%m-%d" )}</td>
+        </tr>     
+        <%
+            my_row = row_counter.count
+            row_counter.increment()
+        %>
+    %endif
 </%def>
 
 <%def name="render_folder( folder, folder_pad, created_ldda_ids, library_id, hidden_folder_ids, parent=None, row_counter=None, root_folder=False )">

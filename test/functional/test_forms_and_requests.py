@@ -41,7 +41,7 @@ class TestFormsAndRequests( TwillTestCase ):
         global form_one_name
         name = form_one_name
         desc = "This is Form One's description"
-        formtype = 'Sequencing Request Form'
+        formtype = galaxy.model.FormDefinition.types.REQUEST
         self.create_form( name=name, desc=desc, formtype=formtype )
         self.home()
         self.visit_page( 'forms/manage' )

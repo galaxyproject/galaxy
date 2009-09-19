@@ -500,10 +500,6 @@ def get_all_forms( trans, all_versions=False, filter=None, form_type='All' ):
     Return all the latest forms from the form_definition_current table 
     if all_versions is set to True. Otherwise return all the versions
     of all the forms from the form_definition table.
-    
-    TODO: when we add the concept of a form_definition_type ( e.g., 
-    'request_header', 'request_sample', 'library_template' ), filter
-    the query if received filter is not None.
     '''
     if all_versions:
         return trans.app.model.FormDefinition.query().all()
@@ -515,64 +511,3 @@ def get_all_forms( trans, all_versions=False, filter=None, form_type='All' ):
         return [ fdc.latest_form for fdc in fdc_list ]
     else:
         return [ fdc.latest_form for fdc in fdc_list if fdc.latest_form.type == form_type ]
-    
-
-
-def get_form_widgets( trans, form, contents=[], user=None, **kwd ):
-    '''
-    Return the list of widgets that comprise a form definition,
-    including field contents if any.
-    '''
-    params = util.Params( kwd )
-    if not user:
-        user = trans.user
-    widgets = []
-    for index, field in enumerate( form.fields ):
-        field_name = 'field_%i' % index
-        # determine the value of the field
-        if field_name in kwd:
-            # the user had already filled out this field and the same form is re-rendered 
-            # due to some reason like required fields have been left out.
-            if field[ 'type' ] == 'CheckboxField':
-                value = CheckboxField.is_checked( util.restore_text( params.get( field_name, False ) ) )
-            else:
-                value = util.restore_text( params.get( field_name, ''  ) )
-        elif contents:
-            # this field has a saved value
-            value = str(contents[ index ])
-        else:
-            # if none of the above, then leave the field empty
-            if field[ 'type' ] == 'CheckboxField':
-                # Since we do not have contents, set checkbox value to False
-                value = False
-            else:
-                # Set other field types to empty string
-                value = ''
-        # create the field widget
-        field_widget = eval( field[ 'type' ] )( field_name )
-        if field[ 'type' ] == 'TextField':
-            field_widget.set_size( 40 )
-            field_widget.value = value
-        elif field[ 'type' ] == 'TextArea':
-            field_widget.set_size( 3, 40 )
-            field_widget.value = value
-        elif field['type'] == 'AddressField':
-            field_widget.user = user
-            field_widget.value = value
-            field_widget.params = params
-        elif field[ 'type' ] == 'SelectField':
-            for option in field[ 'selectlist' ]:
-                if option == value:
-                    field_widget.add_option( option, option, selected=True )
-                else:
-                    field_widget.add_option( option, option )
-        elif field[ 'type' ] == 'CheckboxField':
-            field_widget.checked = value
-        if field[ 'required' ] == 'required':
-            req = 'Required'
-        else:
-            req = 'Optional'
-        widgets.append( dict( label=field[ 'label' ],
-                              widget=field_widget,
-                              helptext='%s (%s)' % ( field[ 'helptext' ], req ) ) )
-    return widgets

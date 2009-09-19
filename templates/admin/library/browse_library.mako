@@ -85,48 +85,48 @@
         else:
             current_version = False
     %>
-    <div class="historyItemWrapper historyItem historyItem-${ldda.state}" id="libraryItem-${ldda.id}">
-        ## Header row for library items (name, state, action buttons)
-        <div class="historyItemTitleBar">     
-            <table cellspacing="0" cellpadding="0" border="0" width="100%">
-                <tr>
-                    <td width="*">
-                        %if selected:
-                            <input type="checkbox" name="ldda_ids" value="${ldda.id}" checked/>
-                        %else:
-                            <input type="checkbox" name="ldda_ids" value="${ldda.id}"/>
-                        %endif
-                        <span class="libraryItemDeleted-${ldda.deleted}">
-                            <a href="${h.url_for( controller='library_admin', action='library_dataset_dataset_association', library_id=library.id, folder_id=folder.id, id=ldda.id, info=True, deleted=deleted, show_deleted=show_deleted )}"><b>${ldda.name[:50]}</b></a>
-                        </span>
-                        <a id="dataset-${ldda.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
-                        %if not library.deleted and not folder.deleted and not library_dataset.deleted:
-                            <div popupmenu="dataset-${ldda.id}-popup">
-                                <a class="action-button" href="${h.url_for( controller='library_admin', action='library_dataset_dataset_association', library_id=library.id, folder_id=folder.id, id=ldda.id, edit_info=True )}">Edit this dataset's information</a>
-                                ## We're disabling the ability to add templates at the LDDA and LibraryDataset level, but will leave this here for possible future use
-                                ##<a class="action-button" href="${h.url_for( controller='library_admin', action='info_template', library_id=library.id, library_dataset_id=library_dataset.id, new_template=True )}">Add an information template to this dataset</a>
-                                <a class="action-button" href="${h.url_for( controller='library_admin', action='library_dataset_dataset_association', library_id=library.id, folder_id=folder.id, id=ldda.id, permissions=True )}">Edit this dataset's permissions</a>
-                                %if current_version:
+    %if current_version:
+        <div class="historyItemWrapper historyItem historyItem-${ldda.state}" id="libraryItem-${ldda.id}">
+            ## Header row for library items (name, state, action buttons)
+            <div class="historyItemTitleBar"> 
+                <table cellspacing="0" cellpadding="0" border="0" width="100%">
+                    <tr>
+                        <td width="*">
+                            %if selected:
+                                <input type="checkbox" name="ldda_ids" value="${ldda.id}" checked/>
+                            %else:
+                                <input type="checkbox" name="ldda_ids" value="${ldda.id}"/>
+                            %endif
+                            <span class="libraryItemDeleted-${ldda.deleted}">
+                                <a href="${h.url_for( controller='library_admin', action='library_dataset_dataset_association', library_id=library.id, folder_id=folder.id, id=ldda.id, info=True, deleted=deleted, show_deleted=show_deleted )}"><b>${ldda.name[:50]}</b></a>
+                            </span>
+                            <a id="dataset-${ldda.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
+                            %if not library.deleted and not folder.deleted and not library_dataset.deleted:
+                                <div popupmenu="dataset-${ldda.id}-popup">
+                                    <a class="action-button" href="${h.url_for( controller='library_admin', action='library_dataset_dataset_association', library_id=library.id, folder_id=folder.id, id=ldda.id, edit_info=True )}">Edit this dataset's information</a>
+                                    ## We're disabling the ability to add templates at the LDDA and LibraryDataset level, but will leave this here for possible future use
+                                    ##<a class="action-button" href="${h.url_for( controller='library_admin', action='info_template', library_id=library.id, library_dataset_id=library_dataset.id, new_template=True )}">Add an information template to this dataset</a>
+                                    <a class="action-button" href="${h.url_for( controller='library_admin', action='library_dataset_dataset_association', library_id=library.id, folder_id=folder.id, id=ldda.id, permissions=True )}">Edit this dataset's permissions</a>
                                     <a class="action-button" href="${h.url_for( controller='library_admin', action='library_dataset_dataset_association', library_id=library.id, folder_id=folder.id, replace_id=library_dataset.id )}">Upload a new version of this dataset</a>
-                                %endif
-                                %if ldda.has_data:
-                                    <a class="action-button" href="${h.url_for( controller='library_admin', action='download_dataset_from_folder', id=ldda.id, library_id=library.id )}">Download this dataset</a>
-                                %endif
-                                <a class="action-button" confirm="Click OK to delete dataset '${ldda.name}'." href="${h.url_for( controller='library_admin', action='delete_library_item', library_id=library.id, library_item_id=library_dataset.id, library_item_type='library_dataset' )}">Delete this dataset</a>
-                            </div>
-                        %elif not library.deleted and not folder.deleted and library_dataset.deleted:
-                            <div popupmenu="dataset-${ldda.id}-popup">
-                                <a class="action-button" href="${h.url_for( controller='library_admin', action='undelete_library_item', library_id=library.id, library_item_id=library_dataset.id, library_item_type='library_dataset' )}">Undelete this dataset</a>
-                            </div>
-                        %endif
-                    </td>
-                    <td width="300">${ldda.message}</td>
-                    <td width="150">${uploaded_by}</td>
-                    <td width="60">${ldda.create_time.strftime( "%Y-%m-%d" )}</td>
-                </tr>
-            </table>
+                                    %if ldda.has_data:
+                                        <a class="action-button" href="${h.url_for( controller='library_admin', action='download_dataset_from_folder', id=ldda.id, library_id=library.id )}">Download this dataset</a>
+                                    %endif
+                                    <a class="action-button" confirm="Click OK to delete dataset '${ldda.name}'." href="${h.url_for( controller='library_admin', action='delete_library_item', library_id=library.id, library_item_id=library_dataset.id, library_item_type='library_dataset' )}">Delete this dataset</a>
+                                </div>
+                            %elif not library.deleted and not folder.deleted and library_dataset.deleted:
+                                <div popupmenu="dataset-${ldda.id}-popup">
+                                    <a class="action-button" href="${h.url_for( controller='library_admin', action='undelete_library_item', library_id=library.id, library_item_id=library_dataset.id, library_item_type='library_dataset' )}">Undelete this dataset</a>
+                                </div>
+                            %endif
+                        </td>
+                        <td width="300">${ldda.message}</td>
+                        <td width="150">${uploaded_by}</td>
+                        <td width="60">${ldda.create_time.strftime( "%Y-%m-%d" )}</td>
+                    </tr>
+                </table>
+            </div>
         </div>
-    </div>
+    %endif
 </%def>
 
 <%def name="render_folder( folder, folder_pad, deleted, show_deleted, created_ldda_ids, library_id, root_folder=False )">

@@ -980,8 +980,6 @@ class TwillTestCase( unittest.TestCase ):
         different scope in the tool) cannot be properly tested when they both exist at the
         same time.
         """
-        # TODO: RC: enhance this so that all supported field types can be passed in
-        # and tested.  If nothing is passed, all fields are TextField.
         self.home()
         self.visit_url( "%s/forms/new" % self.url )
         self.check_page_for_string( 'Create a new form definition' )
@@ -1253,21 +1251,13 @@ class TwillTestCase( unittest.TestCase ):
         self.check_page_for_string( check_str )
         self.home()
     def add_library_dataset( self, filename, library_id, folder_id, folder_name, file_format='auto',
-                             dbkey='hg18', roles=[], message='', root=False, check_template_str1='', check_template_str2='',
-                             check_template_str3='' ):
+                             dbkey='hg18', roles=[], message='', root=False, template_field_name1='', template_field_contents1='' ):
         """Add a dataset to a folder"""
         filename = self.get_filename( filename )
         self.home()
         self.visit_url( "%s/library_admin/library_dataset_dataset_association?upload_option=upload_file&library_id=%s&folder_id=%s&message=%s" % \
                         ( self.url, library_id, folder_id, message ) )
         self.check_page_for_string( 'Upload files' )
-        # If we've been sent some template labels, make sure they are included in the upload form
-        if check_template_str1:
-            self.check_page_for_string( check_template_str1 )
-        if check_template_str2:
-            self.check_page_for_string( check_template_str2 )
-        if check_template_str3:
-            self.check_page_for_string( check_template_str3 )
         tc.fv( "1", "folder_id", folder_id )
         tc.formfile( "1", "file_data", filename )
         tc.fv( "1", "file_format", file_format )
@@ -1275,6 +1265,9 @@ class TwillTestCase( unittest.TestCase ):
         tc.fv( "1", "message", message.replace( '+', ' ' ) )
         for role_id in roles:
             tc.fv( "1", "roles", role_id ) # form field 7 is the select list named out_groups, note the buttons...
+        # Add template field contents, if any...
+        if template_field_name1:
+            tc.fv( "1", template_field_name1, template_field_contents1 )
         tc.submit( "new_dataset_button" )
         if root:
             check_str = "Added 1 datasets to the library '%s' ( each is selected )." % folder_name
@@ -1347,7 +1340,7 @@ class TwillTestCase( unittest.TestCase ):
         self.check_page_for_string( check_str )
         self.home()
     def upload_new_dataset_version( self, filename, library_id, folder_id, folder_name, library_dataset_id, ldda_name, file_format='auto',
-                                    dbkey='hg18', message='', check_template_str1='', check_template_str2='', check_template_str3='' ):
+                                    dbkey='hg18', message='', template_field_name1='', template_field_contents1='' ):
         """Upload new version(s) of a dataset"""
         self.home()
         filename = self.get_filename( filename )      
@@ -1356,40 +1349,32 @@ class TwillTestCase( unittest.TestCase ):
         self.check_page_for_string( 'Upload files' )
         self.check_page_for_string( 'You are currently selecting a new file to replace' )
         self.check_page_for_string( ldda_name )
-        # If we've been sent some template labels, make sure they are included in the upload form
-        if check_template_str1:
-            self.check_page_for_string( check_template_str1 )
-        if check_template_str2:
-            self.check_page_for_string( check_template_str2 )
-        if check_template_str3:
-            self.check_page_for_string( check_template_str3 )
         tc.formfile( "1", "file_data", filename )
         tc.fv( "1", "file_format", file_format )
         tc.fv( "1", "dbkey", dbkey )
         tc.fv( "1", "message", message.replace( '+', ' ' ) )
+        # Add template field contents, if any...
+        if template_field_name1:
+            tc.fv( "1", template_field_name1, template_field_contents1 )
         tc.submit( "new_dataset_button" )
         check_str = "Added 1 dataset versions to the library dataset '%s' in the folder '%s'." % ( ldda_name, folder_name )
         self.check_page_for_string( check_str )
         self.home()
     def upload_new_dataset_versions( self, library_id, folder_id, folder_name, library_dataset_id, ldda_name, file_format='auto',
-                                    dbkey='hg18', message='', check_template_str1='', check_template_str2='', check_template_str3='' ):
+                                    dbkey='hg18', message='', template_field_name1='', template_field_contents1='' ):
         """Upload new version(s) of a dataset using a directory of files"""
         self.home()
         self.visit_url( "%s/library_admin/library_dataset_dataset_association?upload_option=upload_directory&library_id=%s&folder_id=%s&replace_id=%s" \
                         % ( self.url, library_id, folder_id, library_dataset_id ) )
         self.check_page_for_string( 'Upload a directory of files' )
         self.check_page_for_string( 'You are currently selecting a new file to replace' )
-        # If we've been sent some template labels, make sure they are included in the upload form
-        if check_template_str1:
-            self.check_page_for_string( check_template_str1 )
-        if check_template_str2:
-            self.check_page_for_string( check_template_str2 )
-        if check_template_str3:
-            self.check_page_for_string( check_template_str3 )
         tc.fv( "1", "file_format", file_format )
         tc.fv( "1", "dbkey", dbkey )
         tc.fv( "1", "message", message.replace( '+', ' ' ) )
         tc.fv( "1", "server_dir", "library" )
+        # Add template field contents, if any...
+        if template_field_name1:
+            tc.fv( "1", template_field_name1, template_field_contents1 )
         tc.submit( "new_dataset_button" )
         check_str = "Added 3 dataset versions to the library dataset '%s' in the folder '%s'." % ( ldda_name, folder_name )
         self.check_page_for_string( check_str )
@@ -1406,19 +1391,12 @@ class TwillTestCase( unittest.TestCase ):
         self.check_page_for_string( check_str )
         self.home()
     def add_dir_of_files_from_admin_view( self, library_id, folder_id, file_format='auto', dbkey='hg18', roles_tuple=[],
-                                          message='', check_str_after_submit='', check_str1='', check_str2='', check_str3='' ):
+                                          message='', check_str_after_submit='', template_field_name1='', template_field_contents1='' ):
         """Add a directory of datasets to a folder"""
         # roles is a list of tuples: [ ( role_id, role_description ) ]
         self.home()
         self.visit_url( "%s/library_admin/library_dataset_dataset_association?upload_option=upload_directory&library_id=%s&folder_id=%s" % ( self.url, library_id, folder_id ) )
         self.check_page_for_string( 'Upload a directory of files' )
-        # If we've been sent some template labels, make sure they are included in the upload form
-        if check_str1:
-            self.check_page_for_string( check_str1 )
-        if check_str2:
-            self.check_page_for_string( check_str2 )
-        if check_str3:
-            self.check_page_for_string( check_str3 )
         tc.fv( "1", "folder_id", folder_id )
         tc.fv( "1", "file_format", file_format )
         tc.fv( "1", "dbkey", dbkey )
@@ -1426,24 +1404,20 @@ class TwillTestCase( unittest.TestCase ):
         tc.fv( "1", "server_dir", "library" )
         for role_tuple in roles_tuple:
             tc.fv( "1", "roles", role_tuple[1] ) # role_tuple[1] is the role name
+        # Add template field contents, if any...
+        if template_field_name1:
+            tc.fv( "1", template_field_name1, template_field_contents1 )
         tc.submit( "new_dataset_button" )
         if check_str_after_submit:
             self.check_page_for_string( check_str_after_submit )
         self.home()
     def add_dir_of_files_from_libraries_view( self, library_id, folder_id, selected_dir, file_format='auto', dbkey='hg18', roles_tuple=[],
-                                              message='', check_str_after_submit='', check_str1='', check_str2='', check_str3='' ):
+                                              message='', check_str_after_submit='', template_field_name1='', template_field_contents1='' ):
         """Add a directory of datasets to a folder"""
         # roles is a list of tuples: [ ( role_id, role_description ) ]
         self.home()
         self.visit_url( "%s/library/library_dataset_dataset_association?upload_option=upload_directory&library_id=%s&folder_id=%s" % ( self.url, library_id, folder_id ) )
         self.check_page_for_string( 'Upload a directory of files' )
-        # If we've been sent some template labels, make sure they are included in the upload form
-        if check_str1:
-            self.check_page_for_string( check_str1 )
-        if check_str2:
-            self.check_page_for_string( check_str2 )
-        if check_str3:
-            self.check_page_for_string( check_str3 )
         tc.fv( "1", "folder_id", folder_id )
         tc.fv( "1", "file_format", file_format )
         tc.fv( "1", "dbkey", dbkey )
@@ -1451,6 +1425,9 @@ class TwillTestCase( unittest.TestCase ):
         tc.fv( "1", "server_dir", selected_dir )
         for role_tuple in roles_tuple:
             tc.fv( "1", "roles", role_tuple[1] ) # role_tuple[1] is the role name
+        # Add template field contents, if any...
+        if template_field_name1:
+            tc.fv( "1", template_field_name1, template_field_contents1 )
         tc.submit( "new_dataset_button" )
         if check_str_after_submit:
             self.check_page_for_string( check_str_after_submit )

@@ -9,7 +9,6 @@ import logging, tempfile, zipfile, tarfile, os, sys
 from galaxy.web.form_builder import * 
 from datetime import datetime, timedelta
 from cgi import escape, FieldStorage
-from galaxy.web.controllers.forms import get_form_widgets
 
 log = logging.getLogger( __name__ )
 
@@ -480,7 +479,7 @@ class Requests( BaseController ):
                 libraries[ library ] = hidden_folder_ids
         libui = self.__library_ui(libraries, **kwd)
         widgets = widgets + libui
-        widgets = widgets + get_form_widgets(trans, request_type.request_form, contents=[], **kwd)
+        widgets = widgets + request_type.request_form.get_widgets( user, **kwd )
         return trans.fill_template( '/requests/new_request.mako',
                                     select_request_type=select_request_type,
                                     request_type=request_type,                                    
@@ -722,7 +721,7 @@ class Requests( BaseController ):
                 libraries[ library ] = hidden_folder_ids
         libui = self.__library_ui(libraries, request, **kwd)
         widgets = widgets + libui
-        widgets = widgets + get_form_widgets(trans, request.type.request_form, request.values.content, **kwd)
+        widgets = widgets + request.type.request_form.get_widgets( user, request.values.content, **kwd )
         return trans.fill_template( '/requests/edit_request.mako',
                                     select_request_type=select_request_type,
                                     request_type=request.type,

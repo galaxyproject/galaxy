@@ -170,7 +170,7 @@
                 </div>
                 <div style="clear: both"></div>
                 <% folder = trans.app.model.LibraryFolder.get( folder_id ) %>
-                %if widgets:
+                %if upload_option == 'upload_file' and widgets:
                     ${render_template_info( folder, library_id, widgets )}
                 %endif
                 <div class="form-row">

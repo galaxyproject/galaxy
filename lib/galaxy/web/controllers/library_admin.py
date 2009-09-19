@@ -2,7 +2,7 @@ import sys
 from galaxy import util
 from galaxy.web.base.controller import *
 from galaxy.model.orm import *
-from galaxy.web.controllers.forms import get_all_forms, get_form_widgets
+from galaxy.web.controllers.forms import get_all_forms
 # Older py compatibility
 try:
     set()
@@ -96,17 +96,7 @@ class LibraryAdmin( BaseController ):
             return trans.fill_template( '/admin/library/new_library.mako', msg=msg, messagetype=messagetype )
         elif action == 'information':
             # See if we have any associated templates
-            info_association = library.get_info_association()
-            if info_association:
-                template = info_association.template
-                # See if we have any field contents
-                info = info_association.info
-                if info:
-                    widgets = get_form_widgets( trans, template, info.content )
-                else:
-                    widgets = get_form_widgets( trans, template )
-            else:
-                widgets = []
+            widgets = library.get_template_widgets( trans )
             if params.get( 'rename_library_button', False ):
                 old_name = library.name
                 new_name = util.restore_text( params.name )
@@ -293,17 +283,7 @@ class LibraryAdmin( BaseController ):
                                         messagetype=messagetype )
         elif action == 'information':
             # See if we have any associated templates
-            info_association = folder.get_info_association()
-            if info_association:
-                template = info_association.template
-                # See if we have any field contents
-                info = info_association.info
-                if info:
-                    widgets = get_form_widgets( trans, template, info.content )
-                else:
-                    widgets = get_form_widgets( trans, template )
-            else:
-                widgets = []
+            widgets = folder.get_template_widgets( trans )
             if params.get( 'rename_folder_button', False ):
                 old_name = folder.name
                 new_name = util.restore_text( params.name )
@@ -478,13 +458,8 @@ class LibraryAdmin( BaseController ):
                                                        msg=util.sanitize_text( msg ),
                                                        messagetype=messagetype ) )
         elif not id or replace_dataset:
-            # See if we have any associated templates
-            info_association = folder.get_info_association()
-            if info_association:
-                template = info_association.template
-                widgets = get_form_widgets( trans, template )
-            else:
-                widgets = []
+            # See if we have any inherited templates, but do not inherit contents.
+            widgets = folder.get_template_widgets( trans, get_contents=False )
             upload_option = params.get( 'upload_option', 'upload_file' )
             # No dataset(s) specified, so display the upload form.  Send list of data formats to the form
             # so the "extension" select list can be populated dynamically
@@ -536,17 +511,7 @@ class LibraryAdmin( BaseController ):
                                                                   msg=util.sanitize_text( msg ),
                                                                   messagetype='error' ) )
             # See if we have any associated templates
-            info_association = ldda.get_info_association()
-            if info_association:
-                template = info_association.template
-                # See if we have any field contents
-                info = info_association.info
-                if info:
-                    widgets = get_form_widgets( trans, template, info.content )
-                else:
-                    widgets = get_form_widgets( trans, template )
-            else:
-                widgets = []
+            widgets = ldda.get_template_widgets( trans )
             if action == 'permissions':
                 if params.get( 'update_roles_button', False ):
                     permissions = {}
@@ -1019,8 +984,9 @@ class LibraryAdmin( BaseController ):
             # Since information templates are inherited, the template fields can be displayed on the information
             # page for a folder or library dataset when it has no info_association object.  If the user has added
             # field contents on an inherited template via a parent's info_association, we'll need to create a new
-            # form_values and info_association for the current object.
-            info_association = library_item.get_info_association( restrict=True )
+            # form_values and info_association for the current object.  The value for the returned inherited variable
+            # is not applicable at this level.
+            info_association, inherited = library_item.get_info_association( restrict=True )
             if info_association:
                 template = info_association.template
                 info = info_association.info
@@ -1031,7 +997,7 @@ class LibraryAdmin( BaseController ):
                     form_values.flush()
             else:
                 # Inherit the next available info_association so we can get the template
-                info_association = library_item.get_info_association()
+                info_association, inherited = library_item.get_info_association()
                 template = info_association.template
                 # Create a new FormValues object
                 form_values = trans.app.model.FormValues( template, field_contents )

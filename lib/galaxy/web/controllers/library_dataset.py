@@ -205,7 +205,7 @@ class UploadLibraryDataset( BaseController ):
         template_field_contents = []
         template = None
         folder = trans.app.model.LibraryFolder.get( folder_id )
-        info_association = folder.get_info_association()
+        info_association, inherited = folder.get_info_association()
         if info_association:
             template = info_association.template
             for field_index in range( len( template.fields ) ):
