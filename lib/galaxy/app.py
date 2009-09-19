@@ -1,7 +1,7 @@
 import sys, os, atexit
 
 from galaxy import config, jobs, util, tools, web
-from galaxy.tracks import store
+## from galaxy.tracks import store
 from galaxy.web import security
 import galaxy.model
 import galaxy.datatypes.registry
@@ -69,7 +69,7 @@ class UniverseApplication( object ):
         self.job_queue = self.job_manager.job_queue
         self.job_stop_queue = self.job_manager.job_stop_queue
         # Track Store
-        self.track_store = store.TrackStoreManager( self.config.track_store_path )
+        ## self.track_store = store.TrackStoreManager( self.config.track_store_path )
         
     def shutdown( self ):
         self.job_manager.shutdown()
