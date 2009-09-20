@@ -488,7 +488,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
                                                  .order_by( galaxy.model.FormDefinitionCurrent.table.c.create_time.desc() ) \
                                                  .all()
         for fdc in fdcs:
-            if form_name == fdc.latest_form.name:
+            if form_name == fdc.latest_form.name and form_type == fdc.latest_form.type:
                 form_one = fdc.latest_form
                 break
         assert form_one is not None, 'Problem retrieving form named (%s) from the database' % form_name

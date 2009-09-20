@@ -693,7 +693,10 @@ class Library( object ):
         return None, inherited
     def get_template_widgets( self, trans, get_contents=True ):
         # See if we have any associated templates - the returned value for
-        # inherited is not applicable at the library level
+        # inherited is not applicable at the library level.  The get_contents
+        # param is passed by callers that are inheriting a template - these
+        # are usually new library datsets for which we want to include template
+        # fields on the upload form.
         info_association, inherited = self.get_info_association()
         if info_association:
             template = info_association.template
@@ -738,10 +741,16 @@ class LibraryFolder( object ):
             return self.library_root[0].get_info_association( inherited=True )
         return None, inherited
     def get_template_widgets( self, trans, get_contents=True ):
-        # See if we have any associated templates
+        # See if we have any associated templates.  The get_contents
+        # param is passed by callers that are inheriting a template - these
+        # are usually new library datsets for which we want to include template
+        # fields on the upload form.
         info_association, inherited = self.get_info_association()
         if info_association:
-            template = info_association.template
+            if inherited:
+                template = info_association.template.current.latest_form
+            else:
+                template = info_association.template
             # See if we have any field contents, but only if the info_association was
             # not inherited ( we do not want to display the inherited contents ).
             if not inherited and get_contents:
@@ -881,10 +890,16 @@ class LibraryDatasetDatasetAssociation( DatasetInstance ):
             return None, inherited
         return self.library_dataset.folder.get_info_association( inherited=True )
     def get_template_widgets( self, trans, get_contents=True ):
-        # See if we have any associated templates
+        # See if we have any associated templatesThe get_contents
+        # param is passed by callers that are inheriting a template - these
+        # are usually new library datsets for which we want to include template
+        # fields on the upload form.
         info_association, inherited = self.get_info_association()
         if info_association:
-            template = info_association.template
+            if inherited:
+                template = info_association.template.current.latest_form
+            else:
+                template = info_association.template
             # See if we have any field contents, but only if the info_association was
             # not inherited ( we do not want to display the inherited contents ).
             if not inherited and get_contents:

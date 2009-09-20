@@ -203,16 +203,20 @@ class UploadLibraryDataset( BaseController ):
         err_redirect = False
         # See if we have any template field contents
         template_field_contents = []
-        template = None
+        template_id = params.get( 'template_id', None )
         folder = trans.app.model.LibraryFolder.get( folder_id )
-        info_association, inherited = folder.get_info_association()
-        if info_association:
-            template = info_association.template
+        # We are inheriting the folder's info_association, so we did not
+        # receive any inherited contents, but we may have redirected here
+        # after the user entered template contents ( due to errors ).
+        if template_id:
+            template = trans.app.model.FormDefinition.get( template_id )
             for field_index in range( len( template.fields ) ):
                 field_name = 'field_%i' % field_index
                 if params.get( field_name, False ):
                     field_value = util.restore_text( params.get( field_name, ''  ) )
                     template_field_contents.append( field_value )
+        else:
+            template = None
         if upload_option == 'upload_file' and data_file == '' and url_paste == '':
                 msg = 'Select a file, enter a URL or enter text'
                 err_redirect = True

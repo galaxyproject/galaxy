@@ -169,9 +169,18 @@
                     </div>
                 </div>
                 <div style="clear: both"></div>
-                <% folder = trans.app.model.LibraryFolder.get( folder_id ) %>
-                %if upload_option == 'upload_file' and widgets:
-                    ${render_template_info( folder, library_id, widgets )}
+                %if widgets:
+                    <p/>
+                    %for i, field in enumerate( widgets ):
+                        <div class="form-row">
+                            <label>${field[ 'label' ]}</label>
+                            ${field[ 'widget' ].get_html()}
+                            <div class="toolParamHelp" style="clear: both;">
+                                ${field[ 'helptext' ]}
+                            </div>
+                            <div style="clear: both"></div>
+                        </div>
+                    %endfor 
                 %endif
                 <div class="form-row">
                     <input type="submit" class="primary-button" name="new_dataset_button" value="Upload to library"/>

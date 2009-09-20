@@ -429,11 +429,21 @@ class LibraryAdmin( BaseController ):
         ldatatypes = [ dtype_name for dtype_name, dtype_value in trans.app.datatypes_registry.datatypes_by_extension.iteritems() if dtype_value.allow_datatype_change ]
         ldatatypes.sort()
         if params.get( 'new_dataset_button', False ):
+            # See if we have any inherited templates, but do not inherit contents.
+            info_association, inherited = folder.get_info_association( inherited=True )
+            if info_association:
+                template_id = str( info_association.template.id )
+                widgets = folder.get_template_widgets( trans, get_contents=False )
+            else:
+                template_id = None
+                widgets = []
             upload_option = params.get( 'upload_option', 'upload_file' )
             created_ldda_ids = trans.webapp.controllers[ 'library_dataset' ].upload_dataset( trans,
                                                                                              controller='library_admin',
                                                                                              library_id=library_id,
                                                                                              folder_id=folder_id,
+                                                                                             template_id=template_id,
+                                                                                             widgets=widgets,
                                                                                              replace_dataset=replace_dataset,
                                                                                              **kwd )
             if created_ldda_ids:
@@ -915,7 +925,9 @@ class LibraryAdmin( BaseController ):
             library_item_desc = 'library'
             response_action = 'browse_library'
             response_id = library_id
-        forms = get_all_forms( trans, filter=dict(deleted=False) )
+        forms = get_all_forms( trans,
+                               filter=dict( deleted=False ),
+                               form_type=trans.app.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE )
         if not forms:
             msg = "There are no forms on which to base the template, so create a form and "
             msg += "try again to add the information template to the %s." % library_item_desc
