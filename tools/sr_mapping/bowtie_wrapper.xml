@@ -336,7 +336,7 @@
                 </param>
               </when>
             </conditional>
-            <param name="offrate" type="integer" value="-1" label="Override the offrate of the index to n -o)" help="-1 for default" />
+            <param name="offrate" type="integer" value="-1" label="Override the offrate of the index to n (-o)" help="-1 for default" />
             <param name="seed" type="integer" value="-1" label="Seed for pseudo-random number generator (--seed)" help="-1 for default" />
           </when> <!-- full -->
         </conditional> <!-- params -->
@@ -443,31 +443,34 @@ Bowtie accepts files in Sanger FASTQ format.
 
 The output is in SAM format, and has the following columns::
 
-  1  QNAME  -  Query (pair) NAME
-  2  FLAG   -  bitwise FLAG
-  3  RNAME  -  Reference sequence NAME
-  4  POS    -  1-based leftmost POSition/coordinate of clipped sequence
-  5  MAPQ   -  MAPping Quality (Phred-scaled)
-  6  CIGAR  -  extended CIGAR string
-  7  MRNM   -  Mate Reference sequence NaMe ('=' if same as RNAME)
-  8  MPOS   -  1-based Mate POSition
-  9  ISIZE  -  Inferred insert SIZE
-  10 SEQ    -  query SEQuence on the same strand as the reference
-  11 QUAL   -  query QUALity (ASCII-33 gives the Phred base quality)
-  12 OPT    -  variable OPTional fields in the format TAG:VTYPE:VALU
+    Column  Description
+  --------  --------------------------------------------------------   
+   1 QNAME  Query (pair) NAME
+   2 FLAG   bitwise FLAG
+   3 RNAME  Reference sequence NAME
+   4 POS    1-based leftmost POSition/coordinate of clipped sequence
+   5 MAPQ   MAPping Quality (Phred-scaled)
+   6 CIGAR  extended CIGAR string
+   7 MRNM   Mate Reference sequence NaMe ('=' if same as RNAME)
+   8 MPOS   1-based Mate POSition
+   9 ISIZE  Inferred insert SIZE
+  10 SEQ    query SEQuence on the same strand as the reference
+  11 QUAL   query QUALity (ASCII-33 gives the Phred base quality)
+  12 OPT    variable OPTional fields in the format TAG:VTYPE:VALUE
   
 The flags are as follows::
 
-  Flag    -  Description
-  0x0001  -  the read is paired in sequencing
-  0x0002  -  the read is mapped in a proper pair
-  0x0004  -  the query sequence itself is unmapped
-  0x0008  -  the mate is unmapped
-  0x0010  -  strand of the query (1 for reverse)
-  0x0020  -  strand of the mate
-  0x0040  -  the read is the first read in a pair
-  0x0080  -  the read is the second read in a pair
-  0x0100  -  the alignment is not primary
+    Flag  Description
+  ------  -------------------------------------
+  0x0001  the read is paired in sequencing
+  0x0002  the read is mapped in a proper pair
+  0x0004  the query sequence itself is unmapped
+  0x0008  the mate is unmapped
+  0x0010  strand of the query (1 for reverse)
+  0x0020  strand of the mate
+  0x0040  the read is the first read in a pair
+  0x0080  the read is the second read in a pair
+  0x0100  the alignment is not primary
 
 It looks like this (scroll sideways to see the entire example)::
 

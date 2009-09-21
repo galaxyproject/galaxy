@@ -135,7 +135,7 @@ options (listed below) default to 'None' if omitted
 
     for line in infile:
         line = line.rstrip( '\r\n' )
-        if line and not line.startswith( '#' ):
+        if line and not line.startswith( '#' ) and not line.startswith( '@' ) :
             fields = line.split( '\t' )
             sam_states = []
             sam_states.append( bool( int( fields[ int( options.flag_col ) - 1 ] ) & 0x0001 ) )

@@ -169,29 +169,28 @@
     <tool file="fastx_toolkit/fasta_nucleotide_changer.xml" />
     <tool file="fastx_toolkit/fastx_collapser.xml" />
   </section>
-  <section name="NGS: FASTQ QC and manipulation" id="cshl_library_information">
-    <tool file="fastx_toolkit/fastx_quality_statistics.xml" />
-    <tool file="fastx_toolkit/fastq_quality_boxplot.xml" />
-    <tool file="fastx_toolkit/fastx_nucleotides_distribution.xml" />
-    <!-- <tool file="fastx_toolkit/fasta_clipping_histogram.xml" /> -->
-    <tool file="fastx_toolkit/fastq_to_fasta.xml" />
-    <tool file="fastx_toolkit/fastq_quality_converter.xml" />
-    <!-- <tool file="fastx_toolkit/fastx_clipper.xml" /> -->
-    <tool file="fastx_toolkit/fastx_trimmer.xml" />
-    <tool file="fastx_toolkit/fastx_renamer.xml" />
-    <tool file="fastx_toolkit/fastx_reverse_complement.xml" />
-    <tool file="fastx_toolkit/fastx_artifacts_filter.xml" />
-    <tool file="fastx_toolkit/fastq_quality_filter.xml" />
-    <!--<tool file="fastx_toolkit/fastx_barcode_splitter.xml" />-->
-    <tool file="metag_tools/split_paired_reads.xml" />
-  </section>
-  <section name="454: QC" id="short_read_analysis">
-    <tool file="metag_tools/short_reads_figure_score.xml" />
-    <tool file="metag_tools/short_reads_trim_seq.xml" />
-  </section>
-  <section name="SOLiD: QC" id="solid_tools">
-    <tool file="solid_tools/solid_qual_stats.xml" />
-    <tool file="solid_tools/solid_qual_boxplot.xml" />
+  <section name="NGS: QC and manipulation" id="cshl_library_information">
+    <label text="Genetic FASTQ data" id="fastq" />
+        <tool file="fastx_toolkit/fastx_quality_statistics.xml" />
+        <tool file="fastx_toolkit/fastq_quality_boxplot.xml" />
+        <tool file="fastx_toolkit/fastx_nucleotides_distribution.xml" />
+        <!-- <tool file="fastx_toolkit/fasta_clipping_histogram.xml" /> -->
+        <tool file="fastx_toolkit/fastq_to_fasta.xml" />
+        <tool file="fastx_toolkit/fastq_quality_converter.xml" />
+        <!-- <tool file="fastx_toolkit/fastx_clipper.xml" /> -->
+        <tool file="fastx_toolkit/fastx_trimmer.xml" />
+        <tool file="fastx_toolkit/fastx_renamer.xml" />
+        <tool file="fastx_toolkit/fastx_reverse_complement.xml" />
+        <tool file="fastx_toolkit/fastx_artifacts_filter.xml" />
+        <tool file="fastx_toolkit/fastq_quality_filter.xml" />
+        <!--<tool file="fastx_toolkit/fastx_barcode_splitter.xml" />-->
+        <tool file="metag_tools/split_paired_reads.xml" />
+    <label text="Roche-454 Specific" id="454" />
+        <tool file="metag_tools/short_reads_figure_score.xml" />
+        <tool file="metag_tools/short_reads_trim_seq.xml" />
+    <label text="AB-SOLiD Specific" id="solid" />
+        <tool file="solid_tools/solid_qual_stats.xml" />
+        <tool file="solid_tools/solid_qual_boxplot.xml" />
   </section>
   <section name="NGS: Mapping" id="solexa_tools">
    <!-- <tool file="sr_mapping/lastz_wrapper.xml" /> -->
