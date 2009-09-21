@@ -55,7 +55,7 @@ into Interval format will produce the following if *Print all?* is set to **Yes*
  ref 28 33 - r003  16 ref 29 30 6H5M       *  0   0 TAGGC             * NM:i:0
  ref 36 45 - r001  83 ref 37 30 9M         =  7 -39 CAGCGCCAT         *
  
-Setting  *Print all?* is set to **No** will generate the following::
+Setting  *Print all?* to **No** will generate the following::
 
  ref  6 22 + r001
  ref  8 19 + r002
