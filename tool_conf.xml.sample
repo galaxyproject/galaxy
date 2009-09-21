@@ -170,7 +170,7 @@
     <tool file="fastx_toolkit/fastx_collapser.xml" />
   </section>
   <section name="NGS: QC and manipulation" id="cshl_library_information">
-    <label text="Genetic FASTQ data" id="fastq" />
+    <label text="Generic FASTQ data" id="fastq" />
         <tool file="fastx_toolkit/fastx_quality_statistics.xml" />
         <tool file="fastx_toolkit/fastq_quality_boxplot.xml" />
         <tool file="fastx_toolkit/fastx_nucleotides_distribution.xml" />
@@ -185,10 +185,10 @@
         <tool file="fastx_toolkit/fastq_quality_filter.xml" />
         <!--<tool file="fastx_toolkit/fastx_barcode_splitter.xml" />-->
         <tool file="metag_tools/split_paired_reads.xml" />
-    <label text="Roche-454 Specific" id="454" />
+    <label text="Roche-454 data" id="454" />
         <tool file="metag_tools/short_reads_figure_score.xml" />
         <tool file="metag_tools/short_reads_trim_seq.xml" />
-    <label text="AB-SOLiD Specific" id="solid" />
+    <label text="AB-SOLiD data" id="solid" />
         <tool file="solid_tools/solid_qual_stats.xml" />
         <tool file="solid_tools/solid_qual_boxplot.xml" />
   </section>
