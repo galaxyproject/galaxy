@@ -45,9 +45,10 @@ class HistoryListGrid( grids.Grid ):
 
         def get_value( self, trans, grid, history ):
             self.tag_elt_id_gen += 1
-            return trans.fill_template( "/tagging_common.mako", trans=trans,
-                                        tagged_item=history,
-                                        elt_id="tagging-elt" + str(self.tag_elt_id_gen) )
+            elt_id="tagging-elt" + str( self.tag_elt_id_gen )
+            div_elt = "<div id=%s></div>" % elt_id
+            return div_elt + trans.fill_template( "/tagging_common.mako", trans=trans,
+                                        tagged_item=history, elt_id = elt_id, in_form="true", input_size="20" )
 
     # Grid definition
     title = "Stored histories"
@@ -59,7 +60,7 @@ class HistoryListGrid( grids.Grid ):
                           link=( lambda item: iff( item.deleted, None, dict( operation="switch", id=item.id ) ) ),
                           attach_popup=True ),
         DatasetsByStateColumn( "Datasets (by state)", ncells=4 ),
-        #TagsColumn( "Tags" ),
+        TagsColumn( "Tags"),
         StatusColumn( "Status", attach_popup=False ),
         grids.GridColumn( "Created", key="create_time", format=time_ago ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),

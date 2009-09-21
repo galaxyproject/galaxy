@@ -23,7 +23,7 @@ jQuery.fn.autocomplete_tagging = function(options) {
 	text = "Add tags";
     return text;
   },
-  tag_click_fn : function (tag) { },
+  tag_click_fn : function (name, value) { },
   input_size: 20,
   in_form: false,
   tags : {},
@@ -240,10 +240,11 @@ jQuery.fn.autocomplete_tagging = function(options) {
     // Build tag button.
     var tag_name_elt = $("<span>").text(tag_str).addClass("tag-name");
     tag_name_elt.click( function()
-		       {
-			  settings.tag_click_fn(tag_str);
-			  return true;
-		       });
+    {
+        tag_name_and_value = tag_str.split(":")
+        settings.tag_click_fn(tag_name_and_value[0], tag_name_and_value[1]);
+        return true;
+	});
 
     var tag_button = $("<span></span>").addClass("tag-button");
     tag_button.append(tag_name_elt);
