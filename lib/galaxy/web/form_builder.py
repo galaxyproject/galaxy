@@ -384,8 +384,9 @@ class AddressField(BaseField):
         from galaxy import util
         address_html = ''
         add_ids = ['none']
-        for a in self.user.addresses:
-            add_ids.append(str(a.id))
+        if self.user:
+            for a in self.user.addresses:
+                add_ids.append(str(a.id))
         add_ids.append('new')
         self.select_address = SelectField(self.name, 
                                           refresh_on_change=True, 
@@ -394,16 +395,17 @@ class AddressField(BaseField):
             self.select_address.add_option('Select one', 'none', selected=True)
         else:
             self.select_address.add_option('Select one', 'none')
-        for a in self.user.addresses:
-            if not a.deleted:
-                if self.value == str(a.id):
-                    self.select_address.add_option(a.desc, str(a.id), selected=True)
-                    # display this address
-                    address_html = '''<div class="form-row">
-                                      %s
-                                      </div>''' % a.get_html()
-                else:
-                    self.select_address.add_option(a.desc, str(a.id))
+        if self.user:
+            for a in self.user.addresses:
+                if not a.deleted:
+                    if self.value == str(a.id):
+                        self.select_address.add_option(a.desc, str(a.id), selected=True)
+                        # display this address
+                        address_html = '''<div class="form-row">
+                                          %s
+                                          </div>''' % a.get_html()
+                    else:
+                        self.select_address.add_option(a.desc, str(a.id))
         if self.value == 'new':
             self.select_address.add_option('Add a new address', 'new', selected=True)
             for field_name, label in self.fields():
