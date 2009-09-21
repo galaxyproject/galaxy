@@ -26,6 +26,10 @@ pkg_resources.require( "amqplib" )
 
 from amqplib import client_0_8 as amqp
 
+import logging
+logging.basicConfig(level=logging.DEBUG)
+log = logging.getLogger( 'GalaxyAMQP' )
+
 
 galaxy_config_file = 'universe_wsgi.ini'
 global dbconnstr
@@ -42,16 +46,16 @@ def get_value(dom, tag_name):
     return rc
 
 def recv_callback(msg):
-    #print 'Received: ' + msg.body + ' from channel #' + str(msg.channel.channel_id)
     dom = xml.dom.minidom.parseString(msg.body)
     barcode = get_value(dom, 'barcode')
     state = get_value(dom, 'state')
-    print barcode, state
+    log.debug('Barcode: '+barcode)
+    log.debug('State: '+state)
     # update the galaxy db
     galaxy = GalaxyDbInterface(dbconnstr)
     sample_id = galaxy.get_sample_id(field_name='bar_code', value=barcode)
     if sample_id == -1:
-       print 'Invalid barcode.' 
+       log.debug('Invalid barcode.') 
        return
     galaxy.change_state(sample_id, state)
 
@@ -63,7 +67,7 @@ def main():
     amqp_config = {}
     for option in config.options("galaxy:amqp"):
         amqp_config[option] = config.get("galaxy:amqp", option)
-    print amqp_config
+    log.debug(str(amqp_config))
     conn = amqp.Connection(host=amqp_config['host']+":"+amqp_config['port'], 
                            userid=amqp_config['userid'], 
                            password=amqp_config['password'], 
