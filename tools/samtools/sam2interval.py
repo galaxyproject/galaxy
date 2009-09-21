@@ -78,7 +78,7 @@ options (listed below) default to 'None' if omitted
 
     for line in infile:
         line = line.rstrip( '\r\n' )
-        if line and not line.startswith( '#,@' ):
+        if line and not line.startswith( '#' ) and not line.startswith( '@' ) :
             fields = line.split( '\t' )
             start = int( fields[ int( options.start_col ) - 1 ] ) - 1
             end = 0

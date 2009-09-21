@@ -1,6 +1,8 @@
 #! /usr/bin/perl -w
 
 use strict;
+use POSIX;
+
 
 die "Usage: pileup_parser.pl <in_file> <ref_base_column> <read_bases_column> <base_quality_column> <coverage column> <qv cutoff> <coverage cutoff> <SNPs only?> <output bed?> <coord_column> <out_file>\n" unless @ARGV == 11;
 
@@ -28,10 +30,12 @@ open (OUT, ">$out_file") or die "Cannot open $out_file $!\n";
 
 while (<IN>) {
 	chop;
+	next if m/^\#/;
 	my @fields = split /\t/;
 	next if $fields[ $ref_base_column ] eq "*"; # skip indel lines
-	next if $fields[ $cvrg_column ] < $cvrg_cutoff; # skip low coverage lines
-	my $read_bases   = $fields[ $read_bases_column ];
+ 	my $read_bases   = $fields[ $read_bases_column ];
+ 	die "Coverage column" . ($cvrg_column+1) . " contains non-numeric values. Check your input parameters as well as format of input dataset." if ( not isdigit $fields[ $cvrg_column ] );
+    next if $fields[ $cvrg_column ] < $cvrg_cutoff;
 	my $base_quality = $fields[ $base_quality_column ];
 	
 	if ($read_bases =~ m/[\$\^\+-]/) {
@@ -42,11 +46,8 @@ while (<IN>) {
 			$read_bases =~ s/[\+-]{1}$indel_len.{$indel_len}//; # remove indel info from read base field
 		}
 	}
-	if ( length($read_bases) != length($base_quality) ) {
-		
-		$first_skipped_line = $_ if $invalid_line_counter == 0;
-		++$invalid_line_counter;
-	}
+	die "Error parsing read bases and qualities in line $.. Last processed line conatined these values: " . join("\t", @fields) . "\n" if ( length($read_bases) != length($base_quality) );
+
 	# after removing read block and indel data the length of read_base 
 	# field should identical to the length of base_quality field
 	
