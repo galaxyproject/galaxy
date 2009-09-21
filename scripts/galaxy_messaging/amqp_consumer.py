@@ -9,13 +9,23 @@ Once the RabbitMQ server has been setup and started with the given parameters,
 this script can be run to receive messages and update the Galaxy database accordingly
 '''
 
-
-from amqplib import client_0_8 as amqp
 import ConfigParser
-import sys
+import sys, os
 import optparse
 import xml.dom.minidom
 from galaxydb_interface import GalaxyDbInterface
+
+assert sys.version_info[:2] >= ( 2, 4 )
+new_path = [ os.path.join( os.getcwd(), "lib" ) ]
+new_path.extend( sys.path[1:] ) # remove scripts/ from the path
+sys.path = new_path
+
+from galaxy import eggs
+import pkg_resources
+pkg_resources.require( "amqplib" )
+
+from amqplib import client_0_8 as amqp
+
 
 galaxy_config_file = 'universe_wsgi.ini'
 global dbconnstr
