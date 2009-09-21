@@ -1,113 +1,32 @@
-# Filename: sorter.py
-# Author: Ian N. Schenck
-# Version: 8/22/2005
-#
 # This script sorts a file based on the inputs: 
 # -cols		- column to sort on
-# -order	- ASC or DESC-ing order
+# -order	- ASC- or DESCending order
 # -i		- input filename 
 # -o		- output filename
 
-import string
-import sys
-import re
-import commands
-from os import environ
+import os, re, string, sys
 
-def getopts(argv):
-    opts = {}
-    while argv:
-	if argv[0][0] == '-':
-	    opts[argv[0]] = argv[1]
-	    argv = argv[2:]
-	else:
-	    argv = argv[1:]
-    return opts
+def stop_err( msg ):
+    sys.stderr.write( "%s\n" % msg )
+    sys.exit()
 
 def main():
-    args = sys.argv[1:]
-
     try:
-	opts = getopts(args)
-    except IndexError:
-	print "Usage:"
-	print " -o	Output filename"
-	print " -i	Input filename"
-	print " -cols	Column to sort (base 1)"
-	print " -order  ASC or DESC"
-        print " -style  num or alpha"
-	return 0
+        inputfile = sys.argv[1]
+        outputfile = '-o %s' % sys.argv[2]
+        order = ('', '-r')[sys.argv[3] == 'DESC']
+        sort_type = ('','-n')[sys.argv[4] == 'num']
+        columns = sys.argv[5:]
+        cols = [ '-k%s,%s'%(n, n) for n in columns ]
+    except Exception, ex:
+        stop_err('Error parsing input parameters\n' + str(ex))
 
-    outputfile = opts.get("-o")
-    if outputfile == None:
-	print "No output file specified."
-	return -1
-
-    inputfile = opts.get("-i")
-    if inputfile == None:
-	print "No input file specified."
-	return -2
-
-    column = opts.get("-cols")
-    if column == None or column == 'None':
-	print "Sort column not specified."
-	return -3
-
-    order = opts.get("-order")
-    if order == None:
-	print "Sort order not specified."
-	return -4
-
-    style = opts.get("-style")
-    if style == None:
-        style = "num"
-
-    # At this point, all command line options have been collected.
-    # Verify arguments are valid.
-
-    fileRegEx = re.compile("^[A-Za-z0-9./\-_]+$")
-    numberRegEx = re.compile("^[0-9]+$")
-    sortRegEx = re.compile("^(ASC|DESC)$")
-    if not fileRegEx.match(outputfile):
-	print "Illegal output filename."
-	return -5
-    if not fileRegEx.match(inputfile):
-	print "Illegal input filename."
-	return -6
-    if not numberRegEx.match(column):
-	print "Column number not an integer."
-	return -7
-    if not sortRegEx.match(order):
-	print "Sort order must be ASCending or DESCending."
-	return -8
-
-    # Check sort column against max columns in input file.
-    
-    column = string.atoi(column)
-    if column > len( open(inputfile).readline().split('\t') ):
-	print "Column "+str(column)+" does not exist."
-	return -9
-
-    # Everything is kosher.
-
-    if order == "DESC":
-	order = " -r"
-    else:
-	order = ""
-
-    if style == "num":
-        style = " -n "
-    else:
-        style = " "
-        
     # Launch sort.
-    
-    environ['LC_ALL'] = 'POSIX'
-    commandline = "sort -f"+style+"-k "+str(column)+" -t $'\t' -o "+outputfile+" "+inputfile+order
-
-    errorcode, stdout = commands.getstatusoutput(commandline)
-
-    return errorcode
+    cmd = "sort -f -t $'\t' %s %s %s %s %s" % (sort_type, ' '.join(cols), order, outputfile, inputfile)
+    try:
+        os.system(cmd)
+    except Exception, ex:
+        stop_err('Error running sort command\n' + str(ex))
 
 if __name__ == "__main__":
     main()

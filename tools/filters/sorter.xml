@@ -1,14 +1,27 @@
 <tool id="sort1" name="Sort" version="1.0.1">
   <description>data in ascending or descending order</description>
-  <command interpreter="python">sorter.py -i $input -o $out_file1 -cols $column -order $order -style $style</command>
+  <command interpreter="python">
+    sorter.py 
+      $input 
+      $out_file1 
+      $order 
+      $style
+      $firstcol
+      #for $col in $column_set:
+        ${col.column}
+      #end for
+  </command>
   <inputs>
     <param format="tabular" name="input" type="data" label="Sort Query" />
-    <param name="column" label="on column" type="data_column" data_ref="input" accept_default="true" />
+    <param name="firstcol" label="on column" type="data_column" data_ref="input" accept_default="true" />
+    <repeat name="column_set" title="Column selection">
+      <param name="column" label="on column" type="data_column" data_ref="input" accept_default="true" />
+    </repeat>
     <param name="order" type="select" label="in">
       <option value="DESC">Descending order</option>
       <option value="ASC">Ascending order</option>
     </param>
-    <param name="style" type="select" label="Flavor">
+    <param name="style" type="select" label="with flavor">
       <option value="num">Numerical sort</option>
       <option value="alpha">Alphabetical sort</option>
     </param>
@@ -18,18 +31,20 @@
   </outputs>
   <tests>
     <test>
-      <param name="input" value="1.bed"/>
-      <param name="column" value="1"/>
+      <param name="input" value="sort_in1.bed"/>
+      <param name="firstcol" value="1"/>
+      <param name="column" value="3" />
       <param name="order" value="ASC"/>
       <param name="style" value="num"/>
-      <output name="out_file1" file="sort1_num.bed"/>
+      <output name="out_file1" file="sort_out1.bed"/>
     </test>
     <test>
-      <param name="input" value="7.bed"/>
+      <param name="input" value="sort_in1.bed"/>
+      <param name="firstcol" value="3" />
       <param name="column" value="1"/>
       <param name="order" value="ASC"/>
       <param name="style" value="alpha"/>
-      <output name="out_file1" file="sort1_alpha.bed"/>
+      <output name="out_file1" file="sort_out2.bed"/>
     </test>
   </tests>
   <help>
@@ -42,7 +57,7 @@
 
 **Syntax**
 
-This tool sorts the dataset on any column in either ascending or descending order.
+This tool sorts the dataset on any number of columns in either ascending or descending order (all columns will be ascending or descending).
 
 * Numerical sort orders numbers by their magnitude, ignores all characters besides numbers, and evaluates a string of numbers to the value they signify.  
 * Alphabetical sort is a phonebook type sort based on the conventional order of letters in an alphabet. Each nth letter is compared with the nth letter of other words in the list, starting at the first letter of each word and advancing to the second, third, fourth, and so on, until the order is established. Therefore, in an alphabetical sort, 2 comes after 100 (1 &lt; 2).
