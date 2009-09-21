@@ -83,10 +83,12 @@
         //
         var tag_click_fn = function(tag_name, tag_value)
         {
+            /*
             alert(tag_name);
           
             // Do URL request to get histories tag.
             self.location = "http://www.yahoo.com";
+            */
         };
         
         var options =
