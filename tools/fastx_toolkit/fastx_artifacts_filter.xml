@@ -1,9 +1,9 @@
-<tool id="cshl_fastx_artifacts_filter" name="Artifacts Filter">
+<tool id="cshl_fastx_artifacts_filter" name="Remove sequencing artifacts">
 	<description></description>
 	<command>zcat -f '$input' | fastx_artifacts_filter -v -o "$output"</command>
 
 	<inputs>
-		<param format="fasta,fastqsolexa" name="input" type="data" label="Library to filter" />
+		<param format="fasta,fastqsanger" name="input" type="data" label="Library to filter" />
 
 	</inputs>
 
@@ -74,7 +74,12 @@ This tool filters sequencing artifacts (reads with all but 3 identical bases).
     AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAA
     AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAA
     AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAA
+    
+------
 
+This tool is based on `FASTX-toolkit`__ by Assaf Gordon.
+
+ .. __: http://hannonlab.cshl.edu/fastx_toolkit/
 </help>
 </tool>
 <!-- FASTX-Artifacts-filter is part of the FASTX-toolkit, by A.Gordon (gordon@cshl.edu) -->

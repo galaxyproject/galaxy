@@ -1,4 +1,4 @@
-<tool id="solid_qual_stats" name="Quality Statistics" version="1.0.0">
+<tool id="solid_qual_stats" name="Compute quality statistics" version="1.0.0">
     <description>for SOLiD data</description>
     <command interpreter="python">solid_qual_stats.py $input $output1</command>
 
@@ -60,6 +60,10 @@ Creates quality statistics report for the given SOLiD quality score file.
     34  6362991 2  29  140638447   12.10   3  10  25  22  2  29
     35  6362991 2  29  138910532   11.83   3  10  25  22  2  29
     
+------
 
+This tool is based on `FASTX-toolkit`__ by Assaf Gordon.
+
+ .. __: http://hannonlab.cshl.edu/fastx_toolkit/
 </help>
 </tool>

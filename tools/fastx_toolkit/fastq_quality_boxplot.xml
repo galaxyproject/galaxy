@@ -1,10 +1,10 @@
-<tool id="cshl_fastq_quality_boxplot" name="Quality Score">
-	<description>chart</description>
+<tool id="cshl_fastq_quality_boxplot" name="Draw quality score boxplot">
+	<description></description>
 	
 	<command>fastq_quality_boxplot_graph.sh -t '$input.name' -i $input -o $output</command>
 	
 	<inputs>
-		<param format="txt" name="input" type="data" label="Statistics report file (output of 'FASTQ Statistics' tool)" />
+		<param format="txt" name="input" type="data" label="Statistics report file"  help="output of 'FASTQ Statistics' tool" />
 	</inputs>
 
 	<outputs>
@@ -41,6 +41,14 @@ A relatively good quality library (median quality degrades towards later cycles)
 A low quality library (median drops quickly):
 
 .. image:: ../static/fastx_icons/fastq_quality_boxplot_3.png
+
+------
+
+This tool is based on `FASTX-toolkit`__ by Assaf Gordon.
+
+ .. __: http://hannonlab.cshl.edu/fastx_toolkit/
+
+
 
 </help>
 </tool>

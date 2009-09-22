@@ -1,5 +1,5 @@
-<tool id="bwa_wrapper" name="BWA" version="1.0.1">
-  <description> fast mapping of reads against reference sequence</description>
+<tool id="bwa_wrapper" name="Map with BWA" version="1.0.1">
+  <description></description>
   <command interpreter="python">
     bwa_wrapper.py 
     --threads="8"
@@ -76,7 +76,7 @@
 	        <option value="history">Use one from the history</option>
 	      </param>
 	      <when value="indexed">
- 	    	<param name="indices" type="select" label="Select a reference genome">
+ 	    	<param name="indices" type="select" label="Select a reference genome" help="if your genome of interest is not listed - contact Galaxy team">
  	  	      <options from_file="sequence_index_color.loc">
   	  	        <column name="value" index="1" />
 	  	        <column name="name" index="0" />
@@ -116,11 +116,11 @@
         <option value="paired">Paired-end</option>
       </param>
       <when value="single">
-        <param name="input1" type="data" format="fastqsanger" label="FASTQ file" />
+        <param name="input1" type="data" format="fastqsanger" label="FASTQ file" help="Must have Sanger-scaled quality values with ASCII offset 33"/>
       </when>
       <when value="paired">
-        <param name="input1" type="data" format="fastqsanger" label="Forward FASTQ file" />
-        <param name="input2" type="data" format="fastqsanger" label="Reverse FASTQ file" />
+        <param name="input1" type="data" format="fastqsanger" label="Forward FASTQ file" help="Must have Sanger-scaled quality values with ASCII offset 33"/>
+        <param name="input2" type="data" format="fastqsanger" label="Reverse FASTQ file" help="Must have Sanger-scaled quality values with ASCII offset 33"/>
       </when>
     </conditional>	
     <conditional name="params">

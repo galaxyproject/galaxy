@@ -1,4 +1,4 @@
-<tool id="cshl_fastq_quality_filter" name="Quality Filter">
+<tool id="cshl_fastq_quality_filter" name="Filter by quality">
 	<description></description>
 
 	<command>zcat -f '$input' | fastq_quality_filter -q $quality -p $percent -v -o $output</command>
@@ -67,7 +67,11 @@ Using **percent = 90** and **cut-off = 30** - This read will be discarded (90% o
 
 Using **percent = 100** and **cut-off = 20** - This read will be discarded (not all cycles have quality equal to / higher than 20).
 
-	    
+------
+
+This tool is based on `FASTX-toolkit`__ by Assaf Gordon.
+
+ .. __: http://hannonlab.cshl.edu/fastx_toolkit/	    
 	</help>
 </tool>
 <!-- FASTQ-Quality-Filter is part of the FASTX-toolkit, by A.Gordon (gordon@cshl.edu) -->

@@ -85,7 +85,12 @@ FASTQ with ASCII quality scores::
     +CSHL__2_FC042AGWWWXX:8:1:103:1185
     hhhhhca_hhh`^Vh@IVQNHdObVLWCJ@HBDY^B
 
+------
 
+This tool is based on `FASTX-toolkit`__ by Assaf Gordon.
+
+ .. __: http://hannonlab.cshl.edu/fastx_toolkit/
+ 
 </help>
 </tool>
 <!-- FASTQ-Quality-Converter is part of the FASTX-toolkit, by A.Gordon (gordon@cshl.edu) -->

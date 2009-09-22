@@ -1,5 +1,5 @@
-<tool id="split_paired_reads" name="Split" version="1.0.0">
-  <description>paired-end reads into two ends</description>
+<tool id="split_paired_reads" name="Split paired end reads" version="1.0.0">
+  <description></description>
   <command interpreter="python">
     split_paired_reads.py $input $output1 $output2
   </command>

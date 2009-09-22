@@ -65,6 +65,11 @@ Will be converted to FASTA (with 'rename sequence names' = YES)::
     >1
     GGTCAATGATGAGTTGGCACTGTAGGCACCATCAAT
     
+------
+
+This tool is based on `FASTX-toolkit`__ by Assaf Gordon.
+
+ .. __: http://hannonlab.cshl.edu/fastx_toolkit/    
 </help>
 </tool>
 <!-- FASTQ-to-FASTA is part of the FASTX-toolkit, by A.Gordon (gordon@cshl.edu) -->

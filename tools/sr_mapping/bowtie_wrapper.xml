@@ -1,5 +1,5 @@
-<tool id="bowtie_wrapper" name="Bowtie" version="1.0.0">
-  <description> fast alignment of reads against reference sequence </description>
+<tool id="bowtie_wrapper" name="Map with Bowtie" version="1.0.0">
+  <description></description>
   <command interpreter="python">
     bowtie_wrapper.py 
     --threads="8"
@@ -148,7 +148,7 @@
         <option value="history">Use one from the history</option>
       </param>
       <when value="indexed">
-    	<param name="indices" type="select" label="Select a reference genome">
+    	<param name="indices" type="select" label="Select a reference genome" help="if your genome of interest is not listed - contact Galaxy team">
   	      <options from_file="bowtie_indices.loc">
   	        <column name="value" index="1" />
   	        <column name="name" index="0" />
@@ -215,7 +215,7 @@
         <option value="paired">Paired-end</option>
       </param>
       <when value="single">
-        <param name="input1" type="data" format="fastqsanger" label="FASTQ file" />
+        <param name="input1" type="data" format="fastqsanger" label="FASTQ file" help="Must have Sanger-scaled quality values with ASCII offset 33"/>
         <conditional name="params">
           <param name="settings_type" type="select" label="Bowtie settings to use" help="For most mapping needs use Commonly used settings. If you want full control use Full parameter list">
 		    <option value="pre_set">Commonly used</option>
@@ -272,8 +272,8 @@
         </conditional> <!-- params -->
       </when> <!-- single -->
       <when value="paired">
-        <param name="input1" type="data" format="fastqsanger" label="Forward FASTQ file" />
-        <param name="input2" type="data" format="fastqsanger" label="Reverse FASTQ file" />
+        <param name="input1" type="data" format="fastqsanger" label="Forward FASTQ file" help="Must have Sanger-scaled quality values with ASCII offset 33"/>
+        <param name="input2" type="data" format="fastqsanger" label="Reverse FASTQ file" help="Must have Sanger-scaled quality values with ASCII offset 33"/>
         <conditional name="params">
           <param name="settings_type" type="select" label="Bowtie settings to use" help="For most mapping needs use Commonly used settings. If you want full control use Full parameter list">
 		    <option value="pre_set">Commonly used</option>

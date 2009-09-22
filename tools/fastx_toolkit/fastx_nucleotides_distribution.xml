@@ -1,9 +1,9 @@
-<tool id="cshl_fastx_nucleotides_distribution" name="Nucleotides Distribution">
-	<description>chart</description>
+<tool id="cshl_fastx_nucleotides_distribution" name="Draw nucleotides distribution chart">
+	<description></description>
 	<command>fastx_nucleotide_distribution_graph.sh -t '$input.name' -i $input -o $output</command>
 	
 	<inputs>
-		<param format="txt" name="input" type="data" label="Statistics Text File (output of 'FASTX Statistics' tool)" />
+		<param format="txt" name="input" type="data" label="Statistics Text File" help="output of 'FASTX Statistics' tool" />
 	</inputs>
 	
 	<outputs>
@@ -23,43 +23,27 @@ Creates a stacked-histogram graph for the nucleotide distribution in the Solexa 
 
 **Output Examples**
 
- 
- 
 The following chart clearly shows the barcode used at the 5'-end of the library: **GATCT**
 
 .. image:: ./static/fastx_icons/fastq_nucleotides_distribution_1.png
  
- 
- 
- 
-   
-
-
 In the following chart, one can almost 'read' the most abundant sequence by looking at the dominant values: **TGATA TCGTA TTGAT GACTG AA...**
 
 .. image:: ./static/fastx_icons/fastq_nucleotides_distribution_2.png
-
-
- 
- 
-   
- 
- 
 
 The following chart shows a growing number of unknown (N) nucleotides towards later cycles (which might indicate a sequencing problem):
 
 .. image:: ./static/fastx_icons/fastq_nucleotides_distribution_3.png
 
-
- 
- 
-   
- 
- 
-
 But most of the time, the chart will look rather random:
 
 .. image:: ./static/fastx_icons/fastq_nucleotides_distribution_4.png
+
+------
+
+This tool is based on `FASTX-toolkit`__ by Assaf Gordon.
+
+ .. __: http://hannonlab.cshl.edu/fastx_toolkit/
 
 </help>
 </tool>

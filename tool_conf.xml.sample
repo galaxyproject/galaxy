@@ -70,8 +70,10 @@
     <tool file="maf/maf_to_interval.xml" />
     <tool file="maf/maf_to_fasta.xml" />
     <tool file="fasta_tools/tabular_to_fasta.xml" />
+    <tool file="fastx_toolkit/fastq_to_fasta.xml" />
     <tool file="next_gen_conversion/solid_to_fastq.xml" />
     <tool file="next_gen_conversion/fastq_conversions.xml" />
+    <tool file="fastx_toolkit/fastq_quality_converter.xml" />
   </section>
   <section name="Extract Features" id="features">
     <tool file="filters/ucsc_gene_bed_to_exon_bed.xml" />
@@ -175,8 +177,6 @@
         <tool file="fastx_toolkit/fastq_quality_boxplot.xml" />
         <tool file="fastx_toolkit/fastx_nucleotides_distribution.xml" />
         <!-- <tool file="fastx_toolkit/fasta_clipping_histogram.xml" /> -->
-        <tool file="fastx_toolkit/fastq_to_fasta.xml" />
-        <tool file="fastx_toolkit/fastq_quality_converter.xml" />
         <!-- <tool file="fastx_toolkit/fastx_clipper.xml" /> -->
         <tool file="fastx_toolkit/fastx_trimmer.xml" />
         <tool file="fastx_toolkit/fastx_renamer.xml" />

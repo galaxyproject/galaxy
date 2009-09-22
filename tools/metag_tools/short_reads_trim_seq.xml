@@ -1,5 +1,5 @@
 <tool id="trim_reads" name="Select high quality segments" version="1.0.0">
-<description>from short reads</description>
+<description></description>
 
 <command interpreter="python">
  short_reads_trim_seq.py $trim $length $output1 $input1 $input2 $sequencing_method_choice.input3

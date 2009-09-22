@@ -1,5 +1,5 @@
-<tool id="cshl_fastx_renamer" name="Rename" version="0.0.11" >
-	<description>sequence identifiers</description>
+<tool id="cshl_fastx_renamer" name="Rename sequences" version="0.0.11" >
+	<description></description>
 	<command>zcat -f $input | fastx_renamer -n $TYPE -o $output -v </command>
 
 	<inputs>
@@ -50,7 +50,11 @@ Renamed to **numeric counter**::
     +1
     40 40 40 40 40 40 40 40 40 40 38 40 40 40 40 40 14 40 40 40 40 40 36 40 13 14 24 24 9 24 9 40 10 10 15 40
 
-    
+------
+
+This tool is based on `FASTX-toolkit`__ by Assaf Gordon.
+
+ .. __: http://hannonlab.cshl.edu/fastx_toolkit/   
 </help>
 </tool>
 <!-- FASTQ-to-FASTA is part of the FASTX-toolkit, by A.Gordon (gordon@cshl.edu) -->
