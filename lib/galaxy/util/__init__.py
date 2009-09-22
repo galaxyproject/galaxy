@@ -334,12 +334,16 @@ def get_ucsc_by_build(build):
         if build in site['builds']:
             sites.append((site['name'],site['url']))
     return sites
-
 def get_gbrowse_sites_by_build(build):
     sites = []
     for site in gbrowse_build_sites:
         if build in site['builds']:
             sites.append((site['name'],site['url']))
+    return sites
+def get_genetrack_sites():
+    sites = []
+    for site in genetrack_sites:
+        sites.append( ( site['name'], site['url'] ) )
     return sites
 
 def read_dbnames(filename):
@@ -392,7 +396,7 @@ def read_dbnames(filename):
         db_names = DBNames( [( db_names.default_value,  db_names.default_name )] )
     return db_names
 
-def read_build_sites(filename):
+def read_build_sites( filename, check_builds=True ):
     """ read db names to ucsc mappings from file, this file should probably be merged with the one above """
     build_sites = []
     try:
@@ -402,8 +406,11 @@ def read_build_sites(filename):
                 fields = line.replace("\r","").replace("\n","").split("\t")
                 site_name = fields[0]
                 site = fields[1]
-                site_builds = fields[2].split(",")
-                site_dict = {'name':site_name, 'url':site, 'builds':site_builds}
+                if check_builds:
+                    site_builds = fields[2].split(",")
+                    site_dict = {'name':site_name, 'url':site, 'builds':site_builds}
+                else:
+                    site_dict = {'name':site_name, 'url':site}
                 build_sites.append( site_dict )
             except: continue
     except:
@@ -475,9 +482,11 @@ def mkstemp_ln( src, prefix='mkstemp_ln_' ):
     raise IOError, (errno.EEXIST, "No usable temporary file name found")
 
 galaxy_root_path = os.path.join(__path__[0], "..","..","..")
-dbnames = read_dbnames( os.path.join( galaxy_root_path, "tool-data", "shared", "ucsc", "builds.txt" ) ) #this list is used in edit attributes and the upload tool
-ucsc_build_sites = read_build_sites( os.path.join( galaxy_root_path, "tool-data", "shared", "ucsc", "ucsc_build_sites.txt" ) ) #this list is used in history.tmpl
-gbrowse_build_sites = read_build_sites( os.path.join( galaxy_root_path, "tool-data", "shared", "gbrowse", "gbrowse_build_sites.txt" ) ) #this list is used in history.tmpl
+# The dbnames list is used in edit attributes and the upload tool
+dbnames = read_dbnames( os.path.join( galaxy_root_path, "tool-data", "shared", "ucsc", "builds.txt" ) )
+ucsc_build_sites = read_build_sites( os.path.join( galaxy_root_path, "tool-data", "shared", "ucsc", "ucsc_build_sites.txt" ) )
+gbrowse_build_sites = read_build_sites( os.path.join( galaxy_root_path, "tool-data", "shared", "gbrowse", "gbrowse_build_sites.txt" ) )
+genetrack_sites = read_build_sites( os.path.join( galaxy_root_path, "tool-data", "shared", "genetrack", "genetrack_sites.txt" ), check_builds=False )
 
 if __name__ == '__main__':
     import doctest, sys

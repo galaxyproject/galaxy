@@ -1,0 +1,3 @@
+# GeneTrack sites
+main	http://www.genetrack.org/
+test	http://www.test.genetrack.org/

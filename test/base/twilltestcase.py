@@ -1250,7 +1250,7 @@ class TwillTestCase( unittest.TestCase ):
         check_str = "Folder '%s' has been renamed to '%s'" % ( old_name, name )
         self.check_page_for_string( check_str )
         self.home()
-    def add_library_dataset( self, filename, library_id, folder_id, folder_name, file_format='auto',
+    def add_library_dataset( self, filename, library_id, folder_id, folder_name, file_type='auto',
                              dbkey='hg18', roles=[], message='', root=False, template_field_name1='', template_field_contents1='' ):
         """Add a dataset to a folder"""
         filename = self.get_filename( filename )
@@ -1259,8 +1259,8 @@ class TwillTestCase( unittest.TestCase ):
                         ( self.url, library_id, folder_id, message ) )
         self.check_page_for_string( 'Upload files' )
         tc.fv( "1", "folder_id", folder_id )
-        tc.formfile( "1", "file_data", filename )
-        tc.fv( "1", "file_format", file_format )
+        tc.formfile( "1", "files_0|file_data", filename )
+        tc.fv( "1", "file_type", file_type )
         tc.fv( "1", "dbkey", dbkey )
         tc.fv( "1", "message", message.replace( '+', ' ' ) )
         for role_id in roles:
@@ -1268,7 +1268,7 @@ class TwillTestCase( unittest.TestCase ):
         # Add template field contents, if any...
         if template_field_name1:
             tc.fv( "1", template_field_name1, template_field_contents1 )
-        tc.submit( "new_dataset_button" )
+        tc.submit( "runtool_btn" )
         if root:
             check_str = "Added 1 datasets to the library '%s' ( each is selected )." % folder_name
         else:
@@ -1339,7 +1339,7 @@ class TwillTestCase( unittest.TestCase ):
         check_str = 'Edit attributes of %s' % new_ldda_name
         self.check_page_for_string( check_str )
         self.home()
-    def upload_new_dataset_version( self, filename, library_id, folder_id, folder_name, library_dataset_id, ldda_name, file_format='auto',
+    def upload_new_dataset_version( self, filename, library_id, folder_id, folder_name, library_dataset_id, ldda_name, file_type='auto',
                                     dbkey='hg18', message='', template_field_name1='', template_field_contents1='' ):
         """Upload new version(s) of a dataset"""
         self.home()
@@ -1349,18 +1349,18 @@ class TwillTestCase( unittest.TestCase ):
         self.check_page_for_string( 'Upload files' )
         self.check_page_for_string( 'You are currently selecting a new file to replace' )
         self.check_page_for_string( ldda_name )
-        tc.formfile( "1", "file_data", filename )
-        tc.fv( "1", "file_format", file_format )
+        tc.formfile( "1", "files_0|file_data", filename )
+        tc.fv( "1", "file_type", file_type )
         tc.fv( "1", "dbkey", dbkey )
         tc.fv( "1", "message", message.replace( '+', ' ' ) )
         # Add template field contents, if any...
         if template_field_name1:
             tc.fv( "1", template_field_name1, template_field_contents1 )
-        tc.submit( "new_dataset_button" )
+        tc.submit( "runtool_btn" )
         check_str = "Added 1 dataset versions to the library dataset '%s' in the folder '%s'." % ( ldda_name, folder_name )
         self.check_page_for_string( check_str )
         self.home()
-    def upload_new_dataset_versions( self, library_id, folder_id, folder_name, library_dataset_id, ldda_name, file_format='auto',
+    def upload_new_dataset_versions( self, library_id, folder_id, folder_name, library_dataset_id, ldda_name, file_type='auto',
                                     dbkey='hg18', message='', template_field_name1='', template_field_contents1='' ):
         """Upload new version(s) of a dataset using a directory of files"""
         self.home()
@@ -1368,14 +1368,14 @@ class TwillTestCase( unittest.TestCase ):
                         % ( self.url, library_id, folder_id, library_dataset_id ) )
         self.check_page_for_string( 'Upload a directory of files' )
         self.check_page_for_string( 'You are currently selecting a new file to replace' )
-        tc.fv( "1", "file_format", file_format )
+        tc.fv( "1", "file_type", file_type )
         tc.fv( "1", "dbkey", dbkey )
         tc.fv( "1", "message", message.replace( '+', ' ' ) )
         tc.fv( "1", "server_dir", "library" )
         # Add template field contents, if any...
         if template_field_name1:
             tc.fv( "1", template_field_name1, template_field_contents1 )
-        tc.submit( "new_dataset_button" )
+        tc.submit( "runtool_btn" )
         check_str = "Added 3 dataset versions to the library dataset '%s' in the folder '%s'." % ( ldda_name, folder_name )
         self.check_page_for_string( check_str )
         self.home()
@@ -1390,7 +1390,7 @@ class TwillTestCase( unittest.TestCase ):
             check_str = "Added 1 datasets to the folder '%s' ( each is selected )." % folder_name
         self.check_page_for_string( check_str )
         self.home()
-    def add_dir_of_files_from_admin_view( self, library_id, folder_id, file_format='auto', dbkey='hg18', roles_tuple=[],
+    def add_dir_of_files_from_admin_view( self, library_id, folder_id, file_type='auto', dbkey='hg18', roles_tuple=[],
                                           message='', check_str_after_submit='', template_field_name1='', template_field_contents1='' ):
         """Add a directory of datasets to a folder"""
         # roles is a list of tuples: [ ( role_id, role_description ) ]
@@ -1398,7 +1398,7 @@ class TwillTestCase( unittest.TestCase ):
         self.visit_url( "%s/library_admin/library_dataset_dataset_association?upload_option=upload_directory&library_id=%s&folder_id=%s" % ( self.url, library_id, folder_id ) )
         self.check_page_for_string( 'Upload a directory of files' )
         tc.fv( "1", "folder_id", folder_id )
-        tc.fv( "1", "file_format", file_format )
+        tc.fv( "1", "file_type", file_type )
         tc.fv( "1", "dbkey", dbkey )
         tc.fv( "1", "message", message.replace( '+', ' ' ) )
         tc.fv( "1", "server_dir", "library" )
@@ -1407,19 +1407,20 @@ class TwillTestCase( unittest.TestCase ):
         # Add template field contents, if any...
         if template_field_name1:
             tc.fv( "1", template_field_name1, template_field_contents1 )
-        tc.submit( "new_dataset_button" )
+        tc.submit( "runtool_btn" )
         if check_str_after_submit:
             self.check_page_for_string( check_str_after_submit )
         self.home()
-    def add_dir_of_files_from_libraries_view( self, library_id, folder_id, selected_dir, file_format='auto', dbkey='hg18', roles_tuple=[],
+    def add_dir_of_files_from_libraries_view( self, library_id, folder_id, selected_dir, file_type='auto', dbkey='hg18', roles_tuple=[],
                                               message='', check_str_after_submit='', template_field_name1='', template_field_contents1='' ):
         """Add a directory of datasets to a folder"""
         # roles is a list of tuples: [ ( role_id, role_description ) ]
         self.home()
-        self.visit_url( "%s/library/library_dataset_dataset_association?upload_option=upload_directory&library_id=%s&folder_id=%s" % ( self.url, library_id, folder_id ) )
+        self.visit_url( "%s/library/library_dataset_dataset_association?upload_option=upload_directory&library_id=%s&folder_id=%s" % \
+                        ( self.url, library_id, folder_id ) )
         self.check_page_for_string( 'Upload a directory of files' )
         tc.fv( "1", "folder_id", folder_id )
-        tc.fv( "1", "file_format", file_format )
+        tc.fv( "1", "file_type", file_type )
         tc.fv( "1", "dbkey", dbkey )
         tc.fv( "1", "message", message.replace( '+', ' ' ) )
         tc.fv( "1", "server_dir", selected_dir )
@@ -1428,7 +1429,7 @@ class TwillTestCase( unittest.TestCase ):
         # Add template field contents, if any...
         if template_field_name1:
             tc.fv( "1", template_field_name1, template_field_contents1 )
-        tc.submit( "new_dataset_button" )
+        tc.submit( "runtool_btn" )
         if check_str_after_submit:
             self.check_page_for_string( check_str_after_submit )
         self.home()

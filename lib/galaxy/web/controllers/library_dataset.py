@@ -12,7 +12,7 @@ class UploadLibraryDataset( BaseController ):
             os.unlink( filename )
         except:
             log.exception( 'failure removing temporary file: %s' % filename )
-    def add_file( self, trans, folder, file_obj, name, file_format, dbkey, roles,
+    def add_file( self, trans, folder, file_obj, name, file_type, dbkey, roles,
                   info='no info', space_to_tab=False, replace_dataset=None,
                   template=None, template_field_contents=[], message=None ):
         data_type = None
@@ -58,15 +58,15 @@ class UploadLibraryDataset( BaseController ):
                     raise BadFileException( "you attempted to upload an inappropriate file." )
                 elif is_zipped and is_valid:
                     # Currently, we force specific tools to handle this case.  We also require the user
-                    # to manually set the incoming file_format
-                    if ( test_ext == 'ab1' or test_ext == 'scf' ) and file_format != 'binseq.zip':
+                    # to manually set the incoming file_type
+                    if ( test_ext == 'ab1' or test_ext == 'scf' ) and file_type != 'binseq.zip':
                         raise BadFileException( "Invalid 'File Format' for archive consisting of binary files - use 'Binseq.zip'." )
-                    elif test_ext == 'txt' and file_format != 'txtseq.zip':
+                    elif test_ext == 'txt' and file_type != 'txtseq.zip':
                         raise BadFileException( "Invalid 'File Format' for archive consisting of text files - use 'Txtseq.zip'." )
-                    if not ( file_format == 'binseq.zip' or file_format == 'txtseq.zip' ):
+                    if not ( file_type == 'binseq.zip' or file_type == 'txtseq.zip' ):
                         raise BadFileException( "you must manually set the 'File Format' to either 'Binseq.zip' or 'Txtseq.zip' when uploading zip files." )
                     data_type = 'zip'
-                    ext = file_format
+                    ext = file_type
             if not data_type:
                 if self.check_binary( temp_name ):
                     try:
@@ -78,13 +78,13 @@ class UploadLibraryDataset( BaseController ):
                     except:
                         is_pdf = False #file failed to open or contents are smaller than pdf header
                     if is_pdf:
-                        file_format = 'pdf' #allow the upload of PDFs to library via the admin interface.
+                        file_type = 'pdf' #allow the upload of PDFs to library via the admin interface.
                     else:
                         if not( ext == 'ab1' or ext == 'scf' ):
                             raise BadFileException( "you attempted to upload an inappropriate file." )
-                        if ext == 'ab1' and file_format != 'ab1':
+                        if ext == 'ab1' and file_type != 'ab1':
                             raise BadFileException( "you must manually set the 'File Format' to 'Ab1' when uploading ab1 files." )
-                        elif ext == 'scf' and file_format != 'scf':
+                        elif ext == 'scf' and file_type != 'scf':
                             raise BadFileException( "you must manually set the 'File Format' to 'Scf' when uploading scf files." )
                     data_type = 'binary'
             if not data_type:
@@ -101,17 +101,17 @@ class UploadLibraryDataset( BaseController ):
                         line_count = sniff.convert_newlines( temp_name )
                     else:
                         line_count = None
-                if file_format == 'auto':
+                if file_type == 'auto':
                     ext = sniff.guess_ext( temp_name, sniff_order=trans.app.datatypes_registry.sniff_order )    
                 else:
-                    ext = file_format
+                    ext = file_type
                 data_type = ext
         if info is None:
             info = 'uploaded %s file' % data_type
-        if file_format == 'auto':
+        if file_type == 'auto':
             data_type = sniff.guess_ext( temp_name, sniff_order=trans.app.datatypes_registry.sniff_order )    
         else:
-            data_type = file_format
+            data_type = file_type
         if replace_dataset:
             # The replace_dataset param ( when not None ) refers to a LibraryDataset that is being replaced with a new version.
             library_dataset = replace_dataset
@@ -190,11 +190,11 @@ class UploadLibraryDataset( BaseController ):
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
         dbkey = params.get( 'dbkey', '?' )
-        file_format = params.get( 'file_format', 'auto' )
-        data_file = params.get( 'file_data', '' )
-        url_paste = params.get( 'url_paste', '' )
+        file_type = params.get( 'file_type', 'auto' )
+        data_file = params.get( 'files_0|file_data', '' )
+        url_paste = params.get( 'files_0|url_paste', '' )
         server_dir = util.restore_text( params.get( 'server_dir', '' ) )
-        if replace_dataset is not None:
+        if replace_dataset not in [ None, 'None' ]:
             replace_id = replace_dataset.id
         else:
             replace_id = None
@@ -208,7 +208,7 @@ class UploadLibraryDataset( BaseController ):
         # We are inheriting the folder's info_association, so we did not
         # receive any inherited contents, but we may have redirected here
         # after the user entered template contents ( due to errors ).
-        if template_id:
+        if template_id not in [ None, 'None' ]:
             template = trans.app.model.FormDefinition.get( template_id )
             for field_index in range( len( template.fields ) ):
                 field_name = 'field_%i' % field_index
@@ -243,7 +243,7 @@ class UploadLibraryDataset( BaseController ):
                                                        upload_option=upload_option,
                                                        msg=util.sanitize_text( msg ),
                                                        messagetype='error' ) )
-        space_to_tab = params.get( 'space_to_tab', False )
+        space_to_tab = params.get( 'files_0|space_to_tab', False )
         if space_to_tab and space_to_tab not in [ "None", None ]:
             space_to_tab = True
         roles = []
@@ -260,7 +260,7 @@ class UploadLibraryDataset( BaseController ):
                                               folder,
                                               data_file.file,
                                               file_name,
-                                              file_format,
+                                              file_type,
                                               dbkey,
                                               roles,
                                               info="uploaded file",
@@ -288,7 +288,7 @@ class UploadLibraryDataset( BaseController ):
                                                           folder,
                                                           urllib.urlopen( line ),
                                                           line,
-                                                          file_format,
+                                                          file_type,
                                                           dbkey,
                                                           roles,
                                                           info="uploaded url",
@@ -314,7 +314,7 @@ class UploadLibraryDataset( BaseController ):
                                                       folder,
                                                       StringIO.StringIO( url_paste ),
                                                       'Pasted Entry',
-                                                      file_format,
+                                                      file_type,
                                                       dbkey,
                                                       roles,
                                                       info="pasted entry",
@@ -365,7 +365,7 @@ class UploadLibraryDataset( BaseController ):
                                                   folder,
                                                   open( full_file, 'rb' ),
                                                   file,
-                                                  file_format,
+                                                  file_type,
                                                   dbkey,
                                                   roles,
                                                   info="imported file",
@@ -402,7 +402,7 @@ class UploadLibraryDataset( BaseController ):
         zip_file = zipfile.ZipFile( temp_name, "r" )
         # Make sure the archive consists of valid files.  The current rules are:
         # 1. Archives can only include .ab1, .scf or .txt files
-        # 2. All file file_formats within an archive must be the same
+        # 2. All file file_types within an archive must be the same
         name = zip_file.namelist()[0]
         test_ext = name.split( "." )[1].strip().lower()
         if not ( test_ext == 'scf' or test_ext == 'ab1' or test_ext == 'txt' ):

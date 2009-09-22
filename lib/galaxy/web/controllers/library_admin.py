@@ -418,7 +418,7 @@ class LibraryAdmin( BaseController ):
         if folder and last_used_build in [ 'None', None, '?' ]:
             last_used_build = folder.genome_build
         replace_id = params.get( 'replace_id', None )
-        if replace_id:
+        if replace_id not in [ None, 'None' ]:
             replace_dataset = trans.app.model.LibraryDataset.get( int( replace_id ) )
             if not last_used_build:
                 last_used_build = replace_dataset.library_dataset_dataset_association.dbkey
@@ -428,14 +428,14 @@ class LibraryAdmin( BaseController ):
         # The built-in 'id' is overwritten in lots of places as well
         ldatatypes = [ dtype_name for dtype_name, dtype_value in trans.app.datatypes_registry.datatypes_by_extension.iteritems() if dtype_value.allow_datatype_change ]
         ldatatypes.sort()
-        if params.get( 'new_dataset_button', False ):
+        if params.get( 'runtool_btn', False ):
             # See if we have any inherited templates, but do not inherit contents.
             info_association, inherited = folder.get_info_association( inherited=True )
             if info_association:
                 template_id = str( info_association.template.id )
                 widgets = folder.get_template_widgets( trans, get_contents=False )
             else:
-                template_id = None
+                template_id = 'None'
                 widgets = []
             upload_option = params.get( 'upload_option', 'upload_file' )
             created_ldda_ids = trans.webapp.controllers[ 'library_dataset' ].upload_dataset( trans,
@@ -484,11 +484,11 @@ class LibraryAdmin( BaseController ):
             # Send the current history to the form to enable importing datasets from history to library
             history = trans.get_history()
             history.refresh()
-            return trans.fill_template( '/admin/library/new_dataset.mako',
+            return trans.fill_template( '/admin/library/upload.mako',
                                         upload_option=upload_option,
                                         library_id=library_id,
                                         folder_id=folder_id,
-                                        replace_id=replace_id,
+                                        replace_dataset=replace_dataset,
                                         file_formats=file_formats,
                                         dbkeys=dbkeys,
                                         last_used_build=last_used_build,
@@ -496,8 +496,7 @@ class LibraryAdmin( BaseController ):
                                         history=history,
                                         widgets=widgets,
                                         msg=msg,
-                                        messagetype=messagetype,
-                                        replace_dataset=replace_dataset )
+                                        messagetype=messagetype )
         else:
             if params.get( 'permissions', False ):
                 action = 'permissions'
@@ -886,17 +885,17 @@ class LibraryAdmin( BaseController ):
                 dbkeys = get_dbkey_options( last_used_build )
                 # Send list of roles to the form so the dataset can be associated with 1 or more of them.
                 roles = trans.app.model.Role.filter( trans.app.model.Role.table.c.deleted==False ).order_by( trans.app.model.Role.c.name ).all()
-                return trans.fill_template( "/admin/library/new_dataset.mako",
+                return trans.fill_template( "/admin/library/upload.mako",
                                             upload_option=upload_option,
                                             library_id=library_id,
                                             folder_id=folder_id,
-                                            replace_id=replace_id,
+                                            replace_dataset=replace_dataset,
                                             file_formats=file_formats,
                                             dbkeys=dbkeys,
                                             last_used_build=last_used_build,
                                             roles=roles,
                                             history=history,
-                                            widgets=widgets,
+                                            widgets=[],
                                             msg=msg,
                                             messagetype=messagetype )
     @web.expose

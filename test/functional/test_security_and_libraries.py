@@ -543,7 +543,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
                                   str( library_one.id ),
                                   str( library_one.root_folder.id ),
                                   library_one.root_folder.name,
-                                  file_format='bed',
+                                  file_type='bed',
                                   dbkey='hg18',
                                   message=message.replace( ' ', '+' ),
                                   root=True,
@@ -690,7 +690,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
                                   str( library_one.id ),
                                   str( folder_two.id ),
                                   folder_two.name,
-                                  file_format='bed',
+                                  file_type='bed',
                                   dbkey='hg18',
                                   message=message.replace( ' ', '+' ),
                                   root=False,
@@ -721,7 +721,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
                                   str( library_one.id ),
                                   str( folder_two.id ),
                                   folder_two.name,
-                                  file_format='bed',
+                                  file_type='bed',
                                   dbkey='hg18',
                                   message=message.replace( ' ', '+' ),
                                   root=False,
@@ -763,7 +763,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
                                   str( library_one.id ),
                                   str( folder_one.id ),
                                   folder_one.name,
-                                  file_format='bed',
+                                  file_type='bed',
                                   dbkey='hg18',
                                   roles=[ str( regular_user1_private_role.id ) ],
                                   message=message.replace( ' ', '+' ),
@@ -870,7 +870,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
                                   str( library_one.id ),
                                   str( folder_one.id ),
                                   folder_one.name,
-                                  file_format='bed',
+                                  file_type='bed',
                                   dbkey='hg17',
                                   roles=[ str( role_two.id ) ],
                                   message=message.replace( ' ', '+' ),
@@ -1029,7 +1029,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
                                          str( subfolder_one.name ),
                                          str( ldda_six.library_dataset.id ),
                                          ldda_six.name,
-                                         file_format='auto',
+                                         file_type='auto',
                                          dbkey='hg18',
                                          message=message.replace( ' ', '+' ),
                                          template_field_name1=form_one_field_name,
@@ -1093,7 +1093,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
                                          str( subfolder_one.name ),
                                          str( ldda_six_version_two.library_dataset.id ),
                                          ldda_six_version_two.name,
-                                         file_format='auto',
+                                         file_type='auto',
                                          dbkey='hg18',
                                          message=message.replace( ' ', '+' ),
                                          template_field_name1=form_one_field_name,
@@ -1549,7 +1549,43 @@ class TestSecurityAndLibraries( TwillTestCase ):
                     raise AssertionError( 'The library_dataset id %s named "%s" has not been marked as deleted.' % \
                                           ( str( library_dataset.id ), library_dataset.name ) )
         check_folder( library_one.root_folder )
-    def test_260_reset_data_for_later_test_runs( self ):
+    def test_260_no_library_template( self ):
+        """Test library features when library has no template"""
+        name = "Library Two"
+        description = "This is Library Two"
+        # Create a library, adding no template
+        self.create_library( name=name, description=description )
+        self.visit_page( 'library_admin/browse_libraries' )
+        self.check_page_for_string( name )
+        self.check_page_for_string( description )
+        library_two = galaxy.model.Library.filter( and_( galaxy.model.Library.table.c.name==name,
+                                                         galaxy.model.Library.table.c.description==description,
+                                                         galaxy.model.Library.table.c.deleted==False ) ).first()
+        assert library_two is not None, 'Problem retrieving library named "%s" from the database' % name
+        # Add a dataset to the library
+        self.add_library_dataset( '7.bed',
+                                  str( library_two.id ),
+                                  str( library_two.root_folder.id ),
+                                  library_two.root_folder.name,
+                                  file_type='bed',
+                                  dbkey='hg18',
+                                  message='',
+                                  root=True )
+        ldda_seven = galaxy.model.LibraryDatasetDatasetAssociation.query() \
+            .order_by( desc( galaxy.model.LibraryDatasetDatasetAssociation.table.c.create_time ) ).first()
+        assert ldda_seven is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda_seven from the database'
+        self.home()
+        self.visit_url( '%s/library_admin/browse_library?id=%s' % ( self.url, str( library_two.id ) ) )
+        self.check_page_for_string( "7.bed" )
+        self.check_page_for_string( admin_user.email )
+        # TODO: add a functional test to cover adding a library dataset via url_paste here...
+        # TODO: Add a functional test to cover checking the space_to_tab checkbox here...
+        # Delete and purge the library
+        self.home()
+        self.delete_library_item( str( library_two.id ), str( library_two.id ), library_two.name, library_item_type='library' )
+        self.purge_library( str( library_two.id ), library_two.name )
+        self.home()
+    def test_265_reset_data_for_later_test_runs( self ):
         """Reseting data to enable later test runs to pass"""
         ##################
         # Eliminate all non-private roles
