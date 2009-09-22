@@ -57,23 +57,3 @@ class UploadData( TwillTestCase ):
         self.check_history_for_string( 'Pasted Entry' )
         self.check_history_for_string( 'hello world' )
         self.delete_history( id=self.security.encode_id( history2.id ) )
-    def test_010_upload_encode_data( self ):
-        """Test uploading encode data"""
-        # Deleting the current history should have created a new history
-        self.check_history_for_string( 'Your history is empty' )
-        history3 = galaxy.model.History.filter( and_( galaxy.model.History.table.c.deleted==False,
-                                                      galaxy.model.History.table.c.user_id==admin_user.id ) ) \
-            .order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
-        self.run_tool( 'encode_import_chromatin_and_chromosomes1', hg17=['cc.EarlyRepSeg.20051216.bed'] )
-        self.wait()
-        hda7 = galaxy.model.HistoryDatasetAssociation.query() \
-            .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ).first()
-        assert hda7 is not None, "Problem retrieving hda7 from database"
-        self.verify_dataset_correctness( 'cc.EarlyRepSeg.20051216.bed', hid=str( hda7.hid ) )
-        self.run_tool('encode_import_gencode1', hg17=['gencode.CDS.20051206.bed'])
-        self.wait()
-        hda8 = galaxy.model.HistoryDatasetAssociation.query() \
-            .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ).first()
-        assert hda8 is not None, "Problem retrieving hda8 from database"
-        self.verify_dataset_correctness( 'sc_3D_cds.bed', hid=str( hda8.hid ) )
-        self.delete_history( id=self.security.encode_id( history3.id ) )
