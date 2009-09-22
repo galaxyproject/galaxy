@@ -27,3 +27,6 @@ run_functional_tests.html
 
 # Project files
 *.kpf
+
+# Chrom len files
+*.len

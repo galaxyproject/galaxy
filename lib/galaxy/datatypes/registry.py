@@ -211,7 +211,7 @@ class Registry( object ):
         except KeyError:
             #datatype was never declared
             mimetype = 'application/octet-stream'
-            self.log.warning('unkown mimetype in data factory %s' % ext)
+            self.log.warning('unknown mimetype in data factory %s' % ext)
         return mimetype
     
     def get_datatype_by_extension(self, ext ):
@@ -326,7 +326,7 @@ class Registry( object ):
         return None
 
     def find_conversion_destination_for_dataset_by_extensions( self, dataset, accepted_formats, converter_safe = True ):
-        """Returns ( target_ext, exisiting converted dataset )"""
+        """Returns ( target_ext, existing converted dataset )"""
         for convert_ext in self.get_converters_by_datatype( dataset.ext ):
             if isinstance( self.get_datatype_by_extension( convert_ext ), accepted_formats ):
                 datasets = dataset.get_converted_files_by_type( convert_ext )

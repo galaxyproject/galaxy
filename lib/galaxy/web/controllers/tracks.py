@@ -33,7 +33,7 @@ messages = Bunch(
 )
 
 # Dataset type required for each track type. This needs to be more flexible,
-# there might be mutliple types of indexes that suffice for a given track type.
+# there might be multiple types of indexes that suffice for a given track type.
 track_type_to_dataset_type = {
     "line": "array_tree"
 }
@@ -158,7 +158,7 @@ class TracksController( BaseController ):
         converted_dataset_type = track_type_to_dataset_type[track_type]    
         converted_dataset = self.__dataset_as_type( trans, dataset, converted_dataset_type )
         # If at this point we still don't have an `array_tree_dataset`, there
-        # is now way we can display this data as an array tree
+        # is no way we can display this data as an array tree
         if converted_dataset is None:
             return messages.NO_DATA
         # Need to check states again for the converted version
@@ -186,7 +186,7 @@ class TracksController( BaseController ):
             return dataset
         # See if we can convert the dataset
         if type not in dataset.get_converter_types():
-            log.debug( "Conversion from '%s' to '%d' not possible", dataset.extension, type )
+            log.debug( "Conversion from '%s' to '%s' not possible", dataset.extension, type )
             return None
         # See if converted dataset already exists
         converted_datasets = dataset.get_converted_files_by_type( type )

@@ -3,7 +3,7 @@
 from __future__ import division
 
 import sys
-
+from galaxy import eggs
 import pkg_resources; pkg_resources.require( "bx-python" )
 from bx.arrays.array_tree import *
 from bx.arrays.wiggle import IntervalReader
