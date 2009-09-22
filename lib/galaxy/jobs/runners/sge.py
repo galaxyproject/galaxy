@@ -297,7 +297,7 @@ class SGEJobRunner( object ):
             self.ds.control( job.job_runner_external_id, DRMAA.Session.TERMINATE )
             log.debug( "(%s/%s) Removed from SGE queue at user's request" % ( job.id, job.job_runner_external_id ) )
         except DRMAA.InvalidJobError:
-            log.debug( "(%s/%s) User killed running job, but it was already dead" ( job.id, job.job_runner_external_id ) )
+            log.debug( "(%s/%s) User killed running job, but it was already dead" % ( job.id, job.job_runner_external_id ) )
 
     def recover( self, job, job_wrapper ):
         """Recovers jobs stuck in the queued/running state when Galaxy started"""
