@@ -87,7 +87,7 @@ def main():
             #Extract DNA on neg strand codons will have positions reversed relative to interval positions; i.e. position 0 == position 2
             if codon_strand == '-':
                 offset = 2 - offset
-            if offset < 0 and offset > 2: #assert offset >= 0 and offset <= 2, ValueError( 'Impossible offset determined: %s' % offset )
+            if offset < 0 or offset > 2: #assert offset >= 0 and offset <= 2, ValueError( 'Impossible offset determined: %s' % offset )
                 #codon and snp do not overlap
                 skipped_lines += 1
                 errors[ 'no_overlap' ]['count'] += 1
