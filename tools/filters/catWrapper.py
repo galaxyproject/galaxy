@@ -11,29 +11,19 @@ def stop_err(msg):
 def main():
     outfile = sys.argv[1]
     infile = sys.argv[2]
-    
+    catfiles = sys.argv[3:]
     try:
         fout = open(sys.argv[1],'w')
-    except:
-        stop_err("Output file cannot be opened for writing.")
-        
+    except Exxception, ex:
+        stop_err("Output file cannot be opened for writing\n" + str(ex))
     try:
         fin = open(sys.argv[2],'r')
-    except:
-        stop_err("Input file cannot be opened for reading.")
-    
-    if len(sys.argv) < 4:
-        os.system("cp %s %s" %(infile,outfile))
-        sys.exit()
-    
-    cmdline = "cat %s " %(infile)
-    for inp in sys.argv[3:]:
-        cmdline = cmdline + inp + " "
-    cmdline = cmdline + ">" + outfile
+    except Exception, ex:
+        stop_err("Input file cannot be opened for reading\n" + str(ex))
+    cmdline = "cat %s %s > %s" % (infile, ' '.join(catfiles), outfile)
     try:
         os.system(cmdline)
-    except:
-        stop_err("Error encountered with cat.")
+    except Exception, ex:
+        stop_err("Error encountered with cat\n" + str(ex))
         
-if __name__ == "__main__": 
-    main()
+if __name__ == "__main__": main()
