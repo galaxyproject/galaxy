@@ -406,6 +406,7 @@ class Maf( Alignment ):
         """
         #these metadata values are not accessable by users, always overwrite
         indexes, species, species_chromosomes = COPIED_build_maf_index_species_chromosomes( dataset.file_name )
+        if indexes is None: return #this is not a MAF file
         
         dataset.metadata.species = species
         #only overwrite the contents if our newly determined chromosomes don't match stored

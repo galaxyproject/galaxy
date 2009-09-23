@@ -504,7 +504,7 @@ def sort_block_components_by_block( block1, block2 ):
 
 def get_species_in_maf( maf_filename ):
     species = []
-    for block in maf.Reader( open( maf_filename ) ):
+    for block in bx.align.maf.Reader( open( maf_filename ) ):
         for spec in get_species_in_block( block ):
             if spec not in species:
                 species.append( spec )
