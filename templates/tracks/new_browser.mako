@@ -22,7 +22,7 @@ $( function() {
                         %for tmp_dbkey in dbkey_set:
                         <option value="${tmp_dbkey}"
                         %if tmp_dbkey == dbkey:
-                        selected="true"
+                        selected="selected"
                         %endif
                         >${tmp_dbkey}</option>
                         %endfor

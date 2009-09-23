@@ -99,7 +99,7 @@ ${h.js( "jquery", "jquery.event.drag", "jquery.mousewheel", "trackster" )}
         });
         (function () {
             $.getJSON( "${h.url_for( action='chroms' )}", { dbkey: "${dbkey}" }, function ( data ) {
-                var chrom_options = '<option value=""></option>';
+                var chrom_options = '<option value="">Select Chrom/Contig</option>';
                 for (i in data) {
                     chrom = data[i]['chrom']
                     if( chrom == view.chrom ) {
@@ -133,18 +133,15 @@ ${h.js( "jquery", "jquery.event.drag", "jquery.mousewheel", "trackster" )}
     <div id="nav-labeltrack"></div>
     <div id="nav-controls">
         <form name="chr" id="chr" method="get">
-            <input type="hidden" name="dataset_ids" value="${dataset_ids}" />
-            <a href="#" onclick="javascript:view.left(5);view.redraw();">&lt;&lt;</a>
-            <a href="#" onclick="javascript:view.left(2);view.redraw();">&lt;</a>
             <select id="chrom" name="chrom">
                 <option value="">Loading</option>
             </select>
+            <input type="hidden" name="dataset_ids" value="${dataset_ids}" />
+            <a href="#" onclick="javascript:view.left(5);view.redraw();">&lt;&lt;</a>
+            <a href="#" onclick="javascript:view.left(2);view.redraw();">&lt;</a>
             <span id="low">0</span>&mdash;<span id="high">${LEN}</span>
-            <span style="display: inline-block; width: 10em;">
-                <a href="#" onclick="javascript:view.zoom_in(2);view.redraw();">+</a>
-                <a href="#" onclick="javascript:view.zoom_out(2);view.redraw();">-</a>
-            </span>
-
+            <a href="#" onclick="javascript:view.zoom_in(2);view.redraw();">+</a>
+            <a href="#" onclick="javascript:view.zoom_out(2);view.redraw();">-</a>
             <a href="#" onclick="javascript:view.right(2);view.redraw();">&gt;</a>
             <a href="#" onclick="javascript:view.right(5);view.redraw();">&gt;&gt;</a>
         </form>

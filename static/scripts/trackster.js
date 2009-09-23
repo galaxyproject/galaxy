@@ -67,7 +67,6 @@ $.extend( View.prototype, {
         this.high = Math.min( this.length, Math.ceil( new_high ) );
     },
     zoom_in: function ( factor, point ) {
-        console.log(this.max_high);
         if (this.max_high == 0) return;
         
         var range = this.high - this.low;
