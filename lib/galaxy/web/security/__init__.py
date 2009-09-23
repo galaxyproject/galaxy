@@ -34,15 +34,15 @@ class SecurityHelper( object ):
     def __init__( self, **config ):
         self.id_secret = config['id_secret']
         self.id_cipher = Blowfish.new( self.id_secret )
-    def encode_id( self, id ):
+    def encode_id( self, obj_id ):
         # Convert to string
-        s = str( id )
+        s = str( obj_id )
         # Pad to a multiple of 8 with leading "!" 
         s = ( "!" * ( 8 - len(s) % 8 ) ) + s
         # Encrypt
         return self.id_cipher.encrypt( s ).encode( 'hex' )
-    def decode_id( self, id ):
-        return int( self.id_cipher.decrypt( id.decode( 'hex' ) ).lstrip( "!" ) )
+    def decode_id( self, obj_id ):
+        return int( self.id_cipher.decrypt( obj_id.decode( 'hex' ) ).lstrip( "!" ) )
     def encode_session_key( self, session_key ):
         # Session keys are strings
         # Pad to a multiple of 8 with leading "!" 
