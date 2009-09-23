@@ -462,31 +462,16 @@ class Requests( BaseController ):
                             helptext='(Optional)'))
        
         # libraries selectbox
-        all_libraries = trans.app.model.Library.filter( trans.app.model.Library.table.c.deleted == False ) \
-                                               .order_by( trans.app.model.Library.name ).all()
-        user, roles = trans.get_user_and_roles()
-        actions_to_check = [ trans.app.security_agent.permitted_actions.LIBRARY_ADD ]
-        # The libraries dictionary looks like: { library : '1,2' }, library : '3' }
-        # Its keys are the libraries that should be displayed for the current user and whose values are a
-        # string of comma-separated folder ids, of the associated folders the should NOT be displayed.
-        # The folders that should not be displayed may not be a complete list, but it is ultimately passed
-        # to the calling method to keep from re-checking the same folders when the library / folder
-        # select lists are rendered.
-        libraries = odict()
-        for library in all_libraries:
-            can_show, hidden_folder_ids = trans.app.security_agent.show_library_item( user, roles, library, actions_to_check )
-            if can_show:
-                libraries[ library ] = hidden_folder_ids
-        libui = self.__library_ui(trans, libraries, **kwd)
+        libui = self.__library_ui(trans, request=None, **kwd)
         widgets = widgets + libui
-        widgets = widgets + request_type.request_form.get_widgets( user, **kwd )
+        widgets = widgets + request_type.request_form.get_widgets( trans.user, **kwd )
         return trans.fill_template( '/requests/new_request.mako',
                                     select_request_type=select_request_type,
                                     request_type=request_type,
                                     widgets=widgets,
                                     msg=msg,
                                     messagetype=messagetype)
-    def __library_ui(self, trans, libraries, request=None, **kwd):
+    def __library_ui(self, trans, request=None, **kwd):
         params = util.Params( kwd )
         lib_id = params.get( 'library_id', 'none'  )
         # if editing a request
@@ -497,6 +482,16 @@ class Requests( BaseController ):
         else:
             # new request
             selected_lib = None
+        # get all permitted libraries for this user
+        all_libraries = trans.app.model.Library.filter( trans.app.model.Library.table.c.deleted == False ) \
+                                               .order_by( trans.app.model.Library.name ).all()
+        user, roles = trans.get_user_and_roles()
+        actions_to_check = [ trans.app.security_agent.permitted_actions.LIBRARY_ADD ]
+        libraries = odict()
+        for library in all_libraries:
+            can_show, hidden_folder_ids = trans.app.security_agent.show_library_item( user, roles, library, actions_to_check )
+            if can_show:
+                libraries[ library ] = hidden_folder_ids
         lib_id_list = ['new'] + [str(lib.id) for lib in libraries.keys()]
         lib_list = SelectField( 'library_id', refresh_on_change=True, refresh_on_change_values=lib_id_list )
         # fill up the options in the Library selectfield
@@ -513,7 +508,7 @@ class Requests( BaseController ):
             else:
                 lib_list.add_option(lib.name, lib.id)
             lib_list.refresh_on_change_values.append(lib.id)
-        # new library
+        # new library option
         if lib_id == 'new':
             lib_list.add_option('Create a new data library', 'new', selected=True)
         else:
@@ -539,8 +534,6 @@ class Requests( BaseController ):
             else:
                 folder_list.add_option('Select one', 'none')
             # get all show-able folders for the selected library
-            user, roles = trans.get_user_and_roles()
-            actions_to_check = [ trans.app.security_agent.permitted_actions.LIBRARY_ADD ]
             showable_folders = trans.app.security_agent.get_showable_folders( user, roles, 
                                                                               selected_lib, 
                                                                               actions_to_check, 
@@ -724,25 +717,9 @@ class Requests( BaseController ):
                             widget=TextField('desc', 40, desc), 
                             helptext='(Optional)'))
         # libraries selectbox
-        all_libraries = trans.app.model.Library.filter( trans.app.model.Library.table.c.deleted == False ) \
-                                               .order_by( trans.app.model.Library.name ).all()
-        user, roles = trans.get_user_and_roles()
-        actions_to_check = [ trans.app.security_agent.permitted_actions.LIBRARY_ADD ]
-        # The libraries dictionary looks like:
-        # { library : '1,2' }, library : '3' }
-        # Its keys are the libraries that should be displayed for the current user and whose values are a
-        # string of comma-separated folder ids, of the associated folders the should NOT be displayed.
-        # The folders that should not be displayed may not be a complete list, but it is ultimately passed
-        # to the calling method to keep from re-checking the same folders when the library / folder
-        # select lists are rendered.
-        libraries = {}
-        for library in all_libraries:
-            can_show, hidden_folder_ids = trans.app.security_agent.show_library_item( user, roles, library, actions_to_check )
-            if can_show:
-                libraries[ library ] = hidden_folder_ids
-        libui = self.__library_ui(trans, libraries, request, **kwd)
+        libui = self.__library_ui(trans, request, **kwd)
         widgets = widgets + libui
-        widgets = widgets + request.type.request_form.get_widgets( user, request.values.content, **kwd )
+        widgets = widgets + request.type.request_form.get_widgets( trans.user, request.values.content, **kwd )
         return trans.fill_template( '/requests/edit_request.mako',
                                     select_request_type=select_request_type,
                                     request_type=request.type,

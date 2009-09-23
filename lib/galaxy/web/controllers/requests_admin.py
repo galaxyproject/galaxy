@@ -720,9 +720,20 @@ class Requests( BaseController ):
         """
         params = util.Params( kwd )
         lib_id = params.get( 'library_id', 'none'  )
+        # if editing a request
+        if request and lib_id == 'none':
+            if request.library:
+                lib_id = str(request.library.id)
+                selected_lib = request.library
+        else:
+            # new request
+            selected_lib = None
+        # if new request no user is selected initially, none of the libraries are 
+        # listed in the selectfield
         if not user:
             libraries = {}
         else:
+            # get all permitted libraries for this user
             all_libraries = trans.app.model.Library.filter( trans.app.model.Library.table.c.deleted == False ) \
                                                    .order_by( trans.app.model.Library.name ).all()
             roles = user.all_roles()
@@ -733,43 +744,38 @@ class Requests( BaseController ):
             # The folders that should not be displayed may not be a complete list, but it is ultimately passed
             # to the calling method to keep from re-checking the same folders when the library / folder
             # select lists are rendered.
-            #
-            # TODO: RC, when you add the folders select list to your request form, take advantage of the hidden_folder_ids
-            # so that you do not need to check those same folders yet again when populating the select list.
-            #
             libraries = {}
             for library in all_libraries:
                 can_show, hidden_folder_ids = trans.app.security_agent.show_library_item( user, roles, library, actions_to_check )
                 if can_show:
                     libraries[ library ] = hidden_folder_ids
+        # create the selectfield
         lib_id_list = ['new'] + [str(lib.id) for lib in libraries.keys()]
         lib_list = SelectField( 'library_id', refresh_on_change=True, refresh_on_change_values=lib_id_list )
-        folders = []
-        if request and lib_id == 'none':
-            if request.library:
-                lib_id = str(request.library.id)
+        # first option
         if lib_id == 'none':
             lib_list.add_option('Select one', 'none', selected=True)
         else:
             lib_list.add_option('Select one', 'none')
+        # all the libraries available to the selected user
         for lib, hidden_folder_ids in libraries.items():
             if str(lib.id) == lib_id:
                 lib_list.add_option(lib.name, lib.id, selected=True)
-                folders.append( lib.root_folder )
-                for f in lib.root_folder.folders:
-                    if str(f.id) not in hidden_folder_ids.split(','):
-                        folders.append( f )
+                selected_lib, selected_hidden_folder_ids = lib, hidden_folder_ids.split(',')
             else:
                 lib_list.add_option(lib.name, lib.id)
             lib_list.refresh_on_change_values.append(lib.id)
+        # new data library option
         if lib_id == 'new':
             lib_list.add_option('Create a new data library', 'new', selected=True)
         else:
             lib_list.add_option('Create a new data library', 'new')
+        # widget
         lib_widget = dict(label='Data library', 
                           widget=lib_list, 
                           helptext='Data library where the resultant dataset will be stored.')
-        if folders:
+        if selected_lib:
+            # when editing a request
             if request:
                 if request.folder:
                     current_fid = request.folder.id
@@ -778,11 +784,22 @@ class Requests( BaseController ):
             else:
                 current_fid = params.get( 'folder_id', 'none'  )
             folder_list = SelectField( 'folder_id')
-            for f in folders:
-                if str(f.id) == current_fid:
+            # first option
+            if lib_id == 'none':
+                folder_list.add_option('Select one', 'none', selected=True)
+            else:
+                folder_list.add_option('Select one', 'none')
+            # get all show-able folders for the selected library
+            showable_folders = trans.app.security_agent.get_showable_folders( user, roles, 
+                                                                              selected_lib, 
+                                                                              actions_to_check, 
+                                                                              selected_hidden_folder_ids )
+            for f in showable_folders:
+                if str(f.id) == str(current_fid):
                     folder_list.add_option(f.name, f.id, selected=True)
                 else:
                     folder_list.add_option(f.name, f.id)
+            # folder widget
             folder_widget = dict(label='Folder', 
                                  widget=folder_list, 
                                  helptext='Folder of the selected data library where the resultant dataset will be stored.')
@@ -793,7 +810,7 @@ class Requests( BaseController ):
                            helptext='Enter a name here to request a new data library')
             return [lib_widget, new_lib]
         else:
-            if folders:
+            if selected_lib:
                 return [lib_widget, folder_widget]
             else:
                 return [lib_widget]
