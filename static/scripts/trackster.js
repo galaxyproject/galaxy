@@ -67,6 +67,9 @@ $.extend( View.prototype, {
         this.high = Math.min( this.length, Math.ceil( new_high ) );
     },
     zoom_in: function ( factor, point ) {
+        console.log(this.max_high);
+        if (this.max_high == 0) return;
+        
         var range = this.high - this.low;
         var diff = range / factor / 2;
         
@@ -92,6 +95,7 @@ $.extend( View.prototype, {
         }
     },
     zoom_out: function ( factor ) {
+        if (this.max_high == 0) return;
         var center = ( this.low + this.high ) / 2;
         var range = this.high - this.low;
         var diff = range * factor / 2;

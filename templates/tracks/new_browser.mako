@@ -32,10 +32,10 @@ $( function() {
             </div>
             <div class="form-row">
                 <label for="dataset_ids">Datasets to include: </label>
-                %for key,value in datasets.items():
+                %for dataset_id, dataset_name in datasets.items():
                 <div>
-                    <input type="checkbox" name="dataset_ids" value="${key}" />
-                    ${value}
+                    <input type="checkbox" id="${dataset_id}" name="dataset_ids" value="${dataset_id}" />
+                    <label style="display:inline; font-weight: normal" for="${dataset_id}">${dataset_name}</label>
                 </div>
                 %endfor
 

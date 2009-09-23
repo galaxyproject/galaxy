@@ -15,7 +15,7 @@ Problems
    need to support that, but need to make user defined build support better)
 """
 
-import math, logging
+import math, re, logging
 log = logging.getLogger(__name__)
 
 from galaxy.util.json import to_json_string
@@ -48,6 +48,9 @@ dataset_type_to_data_provider = {
 # FIXME: hardcoding this for now, but it should be derived from the available
 #        converters
 browsable_types = set( ["wig" ] )
+
+# For natural sort
+NUM_RE = re.compile('([0-9]+)')
 
 class TracksController( BaseController ):
     """
@@ -116,10 +119,16 @@ class TracksController( BaseController ):
     
     @web.json
     def chroms(self, trans, dbkey=None ):
+        """
+        Returns a naturally sorted list of chroms/contigs for the given dbkey
+        """
+        def split_by_number(s):
+            return [ int(c) if c.isdigit() else c for c in NUM_RE.split(s) ]
+        
         chroms = self._chroms( trans, dbkey )
-        unsorted = [{ 'chrom': chrom, 'len': length } for chrom, length in chroms.iteritems()]
-        unsorted.sort( lambda a,b: cmp(a['chrom'], b['chrom']) )
-        return unsorted
+        to_sort = [{ 'chrom': chrom, 'len': length } for chrom, length in chroms.iteritems()]
+        to_sort.sort(lambda a,b: cmp( split_by_number(a['chrom']), split_by_number(b['chrom']) ))
+        return to_sort
         
     def _chroms( self, trans, dbkey ):
         """
