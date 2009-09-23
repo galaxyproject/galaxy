@@ -474,45 +474,57 @@ class Requests( BaseController ):
         # select lists are rendered.
         libraries = odict()
         for library in all_libraries:
-            showable_folders = trans.app.security_agent.get_showable_folders( user, roles, library, actions_to_check )
-            if showable_folders:
-                libraries[ library ] = showable_folders
-        libui = self.__library_ui(libraries, **kwd)
+            can_show, hidden_folder_ids = trans.app.security_agent.show_library_item( user, roles, library, actions_to_check )
+            if can_show:
+                libraries[ library ] = hidden_folder_ids
+        libui = self.__library_ui(trans, libraries, **kwd)
         widgets = widgets + libui
         widgets = widgets + request_type.request_form.get_widgets( user, **kwd )
         return trans.fill_template( '/requests/new_request.mako',
                                     select_request_type=select_request_type,
-                                    request_type=request_type,                                    
+                                    request_type=request_type,
                                     widgets=widgets,
                                     msg=msg,
                                     messagetype=messagetype)
-    def __library_ui(self, libraries, request=None, **kwd):
+    def __library_ui(self, trans, libraries, request=None, **kwd):
         params = util.Params( kwd )
         lib_id = params.get( 'library_id', 'none'  )
-        lib_id_list = ['new'] + [str(lib.id) for lib in libraries.keys()]
-        lib_list = SelectField( 'library_id', refresh_on_change=True, refresh_on_change_values=lib_id_list )
+        # if editing a request
         if request and lib_id == 'none':
             if request.library:
                 lib_id = str(request.library.id)
+                selected_lib = request.library
+        else:
+            # new request
+            selected_lib = None
+        lib_id_list = ['new'] + [str(lib.id) for lib in libraries.keys()]
+        lib_list = SelectField( 'library_id', refresh_on_change=True, refresh_on_change_values=lib_id_list )
+        # fill up the options in the Library selectfield
+        # first option
         if lib_id == 'none':
             lib_list.add_option('Select one', 'none', selected=True)
         else:
             lib_list.add_option('Select one', 'none')
-        for lib, folders in libraries.items():
+        # all the libraries available to the user
+        for lib, hidden_folder_ids in libraries.items():
             if str(lib.id) == lib_id:
                 lib_list.add_option(lib.name, lib.id, selected=True)
+                selected_lib, selected_hidden_folder_ids = lib, hidden_folder_ids.split(',')
             else:
                 lib_list.add_option(lib.name, lib.id)
             lib_list.refresh_on_change_values.append(lib.id)
+        # new library
         if lib_id == 'new':
             lib_list.add_option('Create a new data library', 'new', selected=True)
         else:
             lib_list.add_option('Create a new data library', 'new')
+        # data library widget
         lib_widget = dict(label='Data library', 
                           widget=lib_list, 
                           helptext='Data library where the resultant dataset will be stored.')
-        selected, value = lib_widget[ 'widget' ].get_selected()
-        if selected not in [ 'new', 'none' ]:
+        # show the folder widget only if the user has selected a valid library above
+        if selected_lib:
+            # when editing a request
             if request:
                 if request.folder:
                     current_fid = request.folder.id
@@ -521,11 +533,24 @@ class Requests( BaseController ):
             else:
                 current_fid = params.get( 'folder_id', 'none'  )
             folder_list = SelectField( 'folder_id')
-            for f in folders:
-                if str(f.id) == current_fid:
+            # first option
+            if lib_id == 'none':
+                folder_list.add_option('Select one', 'none', selected=True)
+            else:
+                folder_list.add_option('Select one', 'none')
+            # get all show-able folders for the selected library
+            user, roles = trans.get_user_and_roles()
+            actions_to_check = [ trans.app.security_agent.permitted_actions.LIBRARY_ADD ]
+            showable_folders = trans.app.security_agent.get_showable_folders( user, roles, 
+                                                                              selected_lib, 
+                                                                              actions_to_check, 
+                                                                              selected_hidden_folder_ids )
+            for f in showable_folders:
+                if str(f.id) == str(current_fid):
                     folder_list.add_option(f.name, f.id, selected=True)
                 else:
                     folder_list.add_option(f.name, f.id)
+            # folder widget
             folder_widget = dict(label='Folder', 
                                  widget=folder_list, 
                                  helptext='Folder of the selected data library where the resultant dataset will be stored.')
@@ -536,7 +561,7 @@ class Requests( BaseController ):
                            helptext='Enter a name here to request a new data library')
             return [lib_widget, new_lib]
         else:
-            if folders:
+            if selected_lib:
                 return [lib_widget, folder_widget]
             else:
                 return [lib_widget]
@@ -715,7 +740,7 @@ class Requests( BaseController ):
             can_show, hidden_folder_ids = trans.app.security_agent.show_library_item( user, roles, library, actions_to_check )
             if can_show:
                 libraries[ library ] = hidden_folder_ids
-        libui = self.__library_ui(libraries, request, **kwd)
+        libui = self.__library_ui(trans, libraries, request, **kwd)
         widgets = widgets + libui
         widgets = widgets + request.type.request_form.get_widgets( user, request.values.content, **kwd )
         return trans.fill_template( '/requests/edit_request.mako',

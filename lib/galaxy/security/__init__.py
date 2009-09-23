@@ -443,19 +443,21 @@ class GalaxyRBACAgent( RBACAgent ):
                 else:
                     hidden_folder_ids = '%d' % folder.id
         return False, hidden_folder_ids
-    def get_showable_folders( self, user, roles, library_item, actions_to_check, showable_folders=[] ):
+    def get_showable_folders( self, user, roles, library_item, actions_to_check, hidden_folder_ids=[], showable_folders=[] ):
         """
         This method must be sent an instance of Library(), all the folders of which are scanned to determine if
-        user is allowed to perform any action in actions_to_check.  A list of showable folders is generated.
-        This method scans the entire library.
+        user is allowed to perform any action in actions_to_check. The param hidden_folder_ids, if passed, should 
+        contain a list of folder IDs which was generated when the library was previously scanned 
+        using the same actions_to_check. A list of showable folders is generated. This method scans the entire library.
         """
         if isinstance( library_item, self.model.Library ):
-            return self.get_showable_folders( user, roles, library_item.root_folder, actions_to_check, showable_folders=showable_folders )
+            return self.get_showable_folders( user, roles, library_item.root_folder, actions_to_check, showable_folders=[] )
         if isinstance( library_item, self.model.LibraryFolder ):
-            for action in actions_to_check:
-                if self.allow_library_item_action( user, roles, action, library_item ):
-                    showable_folders.append( library_item )
-                    break
+            if library_item.id not in hidden_folder_ids:
+                for action in actions_to_check:
+                    if self.allow_library_item_action( user, roles, action, library_item ):
+                        showable_folders.append( library_item )
+                        break
             for folder in library_item.active_folders:
                 self.get_showable_folders( user, roles, folder, actions_to_check, showable_folders=showable_folders )
         return showable_folders
