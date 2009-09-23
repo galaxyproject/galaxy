@@ -474,9 +474,9 @@ class Requests( BaseController ):
         # select lists are rendered.
         libraries = odict()
         for library in all_libraries:
-            can_show, hidden_folder_ids = trans.app.security_agent.show_library_item( user, roles, library, actions_to_check )
-            if can_show:
-                libraries[ library ] = hidden_folder_ids
+            showable_folders = trans.app.security_agent.get_showable_folders( user, roles, library, actions_to_check )
+            if showable_folders:
+                libraries[ library ] = showable_folders
         libui = self.__library_ui(libraries, **kwd)
         widgets = widgets + libui
         widgets = widgets + request_type.request_form.get_widgets( user, **kwd )
@@ -491,7 +491,6 @@ class Requests( BaseController ):
         lib_id = params.get( 'library_id', 'none'  )
         lib_id_list = ['new'] + [str(lib.id) for lib in libraries.keys()]
         lib_list = SelectField( 'library_id', refresh_on_change=True, refresh_on_change_values=lib_id_list )
-        folders = []
         if request and lib_id == 'none':
             if request.library:
                 lib_id = str(request.library.id)
@@ -499,13 +498,9 @@ class Requests( BaseController ):
             lib_list.add_option('Select one', 'none', selected=True)
         else:
             lib_list.add_option('Select one', 'none')
-        for lib, hidden_folder_ids in libraries.items():
+        for lib, folders in libraries.items():
             if str(lib.id) == lib_id:
                 lib_list.add_option(lib.name, lib.id, selected=True)
-                folders.append( lib.root_folder )
-                for f in lib.root_folder.folders:
-                    if str(f.id) not in hidden_folder_ids.split(','):
-                        folders.append( f )
             else:
                 lib_list.add_option(lib.name, lib.id)
             lib_list.refresh_on_change_values.append(lib.id)
@@ -516,7 +511,8 @@ class Requests( BaseController ):
         lib_widget = dict(label='Data library', 
                           widget=lib_list, 
                           helptext='Data library where the resultant dataset will be stored.')
-        if folders:
+        selected, value = lib_widget[ 'widget' ].get_selected()
+        if selected not in [ 'new', 'none' ]:
             if request:
                 if request.folder:
                     current_fid = request.folder.id

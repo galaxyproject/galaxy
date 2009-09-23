@@ -425,7 +425,8 @@ class GalaxyRBACAgent( RBACAgent ):
         comma-separated string of folder ids whose folders do NOT meet the criteria for showing. Along with
         the string, True is returned if the current user has permission to perform any 1 of actions_to_check
         on library_item. Otherwise, cycle through all sub-folders in library_item until one is found that meets
-        this criteria, if it exists.
+        this criteria, if it exists.  This method does not necessarily scan the entire library as it returns
+        when it finds the first library_item that allows user to perform any one action in actions_to_check.
         """        
         for action in actions_to_check:
             if self.allow_library_item_action( user, roles, action, library_item ):
@@ -442,6 +443,22 @@ class GalaxyRBACAgent( RBACAgent ):
                 else:
                     hidden_folder_ids = '%d' % folder.id
         return False, hidden_folder_ids
+    def get_showable_folders( self, user, roles, library_item, actions_to_check, showable_folders=[] ):
+        """
+        This method must be sent an instance of Library(), all the folders of which are scanned to determine if
+        user is allowed to perform any action in actions_to_check.  A list of showable folders is generated.
+        This method scans the entire library.
+        """
+        if isinstance( library_item, self.model.Library ):
+            return self.get_showable_folders( user, roles, library_item.root_folder, actions_to_check, showable_folders=showable_folders )
+        if isinstance( library_item, self.model.LibraryFolder ):
+            for action in actions_to_check:
+                if self.allow_library_item_action( user, roles, action, library_item ):
+                    showable_folders.append( library_item )
+                    break
+            for folder in library_item.active_folders:
+                self.get_showable_folders( user, roles, folder, actions_to_check, showable_folders=showable_folders )
+        return showable_folders
     def set_entity_user_associations( self, users=[], roles=[], groups=[], delete_existing_assocs=True ):
         for user in users:
             if delete_existing_assocs:
@@ -495,6 +512,8 @@ class GalaxyRBACAgent( RBACAgent ):
         comma-separated string of folder ids whose folders do NOT meet the criteria for showing.  Along
         with the string, True is returned if the current user has permission to access folder. Otherwise,
         cycle through all sub-folders in folder until one is found that meets this criteria, if it exists.
+        This method does not necessarily scan the entire library as it returns when it finds the first
+        folder that is accessible to user.
         """
         action = self.permitted_actions.DATASET_ACCESS
         lddas = self.sa_session.query( self.model.LibraryDatasetDatasetAssociation ) \
