@@ -15,7 +15,8 @@ Problems
    need to support that, but need to make user defined build support better)
 """
 
-import math
+import math, logging
+log = logging.getLogger(__name__)
 
 from galaxy.util.json import to_json_string
 from galaxy.web.base.controller import *
@@ -100,7 +101,7 @@ class TracksController( BaseController ):
             tracks.append( {
                 "type": dataset.datatype.get_track_type(),
                 "name": dataset.name,
-                "id": dataset.id
+                "dataset_id": dataset.id
             } )
             dbkey = dataset.dbkey
         chrom_lengths = self._chroms( trans, dbkey )
@@ -111,18 +112,20 @@ class TracksController( BaseController ):
                                     tracks=tracks,
                                     chrom=chrom,
                                     dbkey=dbkey,
-                                    LEN=chrom_lengths.get( chrom, 0 ) )
+                                    LEN=chrom_lengths.get(chrom, 0) )
     
     @web.json
     def chroms(self, trans, dbkey=None ):
-        return self._chroms( trans, dbkey )
+        chroms = self._chroms( trans, dbkey )
+        unsorted = [{ 'chrom': chrom, 'len': length } for chrom, length in chroms.iteritems()]
+        unsorted.sort( lambda a,b: cmp(a['chrom'], b['chrom']) )
+        return unsorted
         
     def _chroms( self, trans, dbkey ):
         """
         Called by the browser to get a list of valid chromosomes and lengths
         """
-        # If there is any dataset in the history of extension `len`, this will
-        # use it
+        # If there is any dataset in the history of extension `len`, this will use it
         db_manifest = trans.db_dataset_for( dbkey )
         if not db_manifest:
             db_manifest = os.path.join( trans.app.config.tool_data_path, 'shared','ucsc','chrom', "%s.len" % dbkey )
@@ -139,7 +142,7 @@ class TracksController( BaseController ):
         return manifest
                         
     @web.json    
-    def data( self, trans, dataset_id, track_type, chrom, low, high ):
+    def data( self, trans, dataset_id, track_type, chrom, low, high, stats=False ):
         """
         Called by the browser to request a block of data
         """
@@ -169,6 +172,10 @@ class TracksController( BaseController ):
         # We have a dataset in the right format that is ready to use, wrap in
         # a data provider that knows how to access it
         data_provider = dataset_type_to_data_provider[ converted_dataset_type ]( converted_dataset )
+        
+        # Return stats if we need them
+        if stats: return data_provider.get_stats( chrom )
+        
         # Get the requested chunk of data
         data = data_provider.get_data( chrom, low, high )
         # Pack into a dictionary and return

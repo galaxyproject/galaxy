@@ -3,7 +3,7 @@ body {
     padding: 0;
     font-family: verdana;
     font-size: 75%;
-    overflow-y: scroll;
+    overflow-y: hidden;
 }
 
 #content {
@@ -15,21 +15,18 @@ body {
 }
 
 #nav {
-    padding: 1em;
     position: fixed;
     bottom: 0;
     width: 100%;
-    background: rgb( 64, 64, 64 );
+    background: #333;
     color: white;
     font-weight: bold;
     text-align: center;
 }
 
-#nav > div
-{
-    margin: 0 0;
+#nav-controls {
+    padding: 15px 0;
 }
-
 #nav-controls a {
     color: white;
     padding: 0.1em 0.4em;
@@ -42,26 +39,30 @@ body {
 
 #overview {
     width: 100%;
-    padding: 1em 0;
-    background: rgb( 64, 64, 64 );
+    padding: 10px 0 0 0;
+    margin: 0px;
+    background: #333;
     color: white;
     font-weight: bold;
 }
 
 #overview-viewport {
-    position: relative;
     height: 10px;
-    border-top: solid gray 1px;
-    border-bottom: solid gray 1px;
+    border-top: solid #666 1px;
+    border-bottom: solid #666 1px;
+    background: #888;
 }
 #overview-box {
     position: absolute;
     height: 10px;
-    background: white;
+    background: #ddd;
 }
 
 #viewport {
-    min-height: 100%;
+    overflow: hidden;
+    background-color: #fff;
+/*    overflow: scroll;*/
+/*    border-bottom: 2px solid black;*/
 }
 
 #viewport-canvas {
@@ -70,14 +71,12 @@ body {
 }
 
 .track {
-    border-top: solid gray 1px;
+/*    border-top: solid gray 1px;*/
     border-bottom: solid gray 1px;
-    margin: 5px 0;
 }
 
 .track-header {
     text-align: center;
-    padding: 0.1 0 0.3em 0;
 }
 
 .track-content {
@@ -92,12 +91,12 @@ body {
 }
 
 .label-track .label {
-    border-left: solid grey 1px;
+    border-left: solid gray 1px;
     padding-left: 2px;
 }
 
 .feature-track .feature {
-    background: brown;
+
 }
 
 .feature-track .feature .forward { 

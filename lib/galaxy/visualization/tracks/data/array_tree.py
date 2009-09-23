@@ -18,6 +18,17 @@ BLOCK_SIZE = 1000
 class ArrayTreeDataProvider( object ):
     def __init__( self, dataset ):
         self.dataset = dataset
+    
+    def get_stats( self, chrom ):
+        d = FileArrayTreeDict( open( self.dataset.file_name ) )
+        try:
+            chrom_array_tree = d[chrom]
+        except KeyError:
+            return None
+        
+        root_summary = chrom_array_tree.get_summary( 0, chrom_array_tree.levels )
+        return { 'max': float( max(root_summary.maxs) ), 'min': float( min(root_summary.mins) ) }
+    
     def get_data( self, chrom, start, end ):
         start = int( start )
         end = int( end )
