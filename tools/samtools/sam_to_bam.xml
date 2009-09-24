@@ -51,7 +51,7 @@
 
 **What it does**
 
-This tool uses the SAMTools_ toolkit to produce a BAM file based on a sorted input SAM file.
+This tool uses the SAMTools_ toolkit to produce a indexed BAM file based on a sorted input SAM file.
 
 .. _SAMTools: http://samtools.sourceforge.net/samtools.shtml
 
