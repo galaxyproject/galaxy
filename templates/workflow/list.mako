@@ -21,13 +21,13 @@
     <li>
         <a class="action-button" href="${h.url_for( action='create' )}">
             <img src="${h.url_for('/static/images/silk/add.png')}" />
-            <span>Add a new workflow</span>
+            <span>Create new workflow</span>
         </a>
     </li>
 </ul>
   
 %if workflows:
-    <table class="mange-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
+    <table class="manage-table colored" border="0" cellspacing="0" cellpadding="0" style="width:100%;">
         <tr class="header">
             <th>Name</th>
             <th># of Steps</th>

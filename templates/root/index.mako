@@ -96,7 +96,7 @@
     <div class="unified-panel-header" unselectable="on">
         <div class="unified-panel-header-inner">
             <div style="float: right">
-                <a id="history-options-button" class='panel-header-button' href="${h.url_for( controller='root', action='history_options' )}" target="galaxy_main"><span>${_('Options')}<span>&#9660;</span></span></a>
+                <a id="history-options-button" class='panel-header-button' href="${h.url_for( controller='root', action='history_options' )}" target="galaxy_main"><span style="padding:0 20px 0 5px;background:url(/images/dropdownarrow.png) no-repeat right center;">${_('Options')}</span></a>
             </div>
             <div class="panel-header-text">${_('History')}</div>
         </div>
