@@ -203,6 +203,7 @@ def purge_folders( app, cutoff_time, remove_from_disk, info_only = False, force_
     print "Elapsed time: ", stop - start, "\n"
 
 def delete_datasets( app, cutoff_time, remove_from_disk, info_only = False, force_retry = False ):
+    import sqlalchemy as sa
     # Marks datasets as deleted if associated items are all deleted.
     print "######### Starting delete_datasets #########\n"
     start = time.clock()
@@ -211,23 +212,33 @@ def delete_datasets( app, cutoff_time, remove_from_disk, info_only = False, forc
                                             .filter( app.model.HistoryDatasetAssociation.table.c.update_time < cutoff_time ).all()
         library_datasets = app.model.Dataset.options( eagerload( "library_associations" ) ) \
                                             .filter( app.model.LibraryDatasetDatasetAssociation.table.c.update_time < cutoff_time ).all()
-    else:                                    
-        history_datasets = app.model.Dataset.filter_by( deleted = False ) \
-                                            .options( eagerload( "history_associations" ) ) \
-                                            .filter( and_( app.model.HistoryDatasetAssociation.table.c.update_time < cutoff_time,
-                                                           app.model.HistoryDatasetAssociation.table.c.deleted==True ) ).all()
-        library_datasets = app.model.Dataset.filter_by( deleted = False ) \
-                                            .options( eagerload( "library_associations" ) ) \
-                                            .filter( and_( app.model.LibraryDatasetDatasetAssociation.table.c.update_time < cutoff_time,
-                                                           app.model.LibraryDatasetDatasetAssociation.table.c.deleted==True ) ).all()
-    print "Time to query history and library datasets: ",  time.clock() - start, "\n"
-    print "Processing ", len( history_datasets ), " history datasets and ", len( library_datasets ), " library datasets...\n\n"
-    datasets = history_datasets + library_datasets
+    else:                                  
+        # We really only need the id column here, but sqlalchemy barfs when trying to select only 1 column
+        history_dataset_ids_query = sa.select( ( app.model.Dataset.table.c.id,
+                                                 app.model.Dataset.table.c.state ),
+                                               whereclause = sa.and_( app.model.Dataset.table.c.deleted == False,
+                                                                      app.model.HistoryDatasetAssociation.table.c.update_time < cutoff_time,
+                                                                      app.model.HistoryDatasetAssociation.table.c.deleted == True ),
+                                               from_obj = [ sa.outerjoin( app.model.Dataset.table,
+                                                                          app.model.HistoryDatasetAssociation.table ) ] )
+        history_dataset_ids = [ row.id for row in history_dataset_ids_query.execute() ]
+        print "Time to retrieve ", len( history_dataset_ids ), " history dataset ids: ", time.clock() - start
+        library_dataset_ids_query = sa.select( ( app.model.Dataset.table.c.id,
+                                                 app.model.Dataset.table.c.state ),
+                                                whereclause = sa.and_( app.model.Dataset.table.c.deleted == False,
+                                                                       app.model.LibraryDatasetDatasetAssociation.table.c.update_time < cutoff_time,
+                                                                       app.model.LibraryDatasetDatasetAssociation.table.c.deleted == True ),
+                                                from_obj = [ sa.outerjoin( app.model.Dataset.table,
+                                                                           app.model.LibraryDatasetDatasetAssociation.table ) ] )                       
+        library_dataset_ids = [ row.id for row in library_dataset_ids_query.execute() ]
+        print "Time to retrieve ", len( library_dataset_ids ), " library dataset ids: ", time.clock() - start
+    dataset_ids = history_dataset_ids + library_dataset_ids
     skip = []
     deleted_dataset_count = 0
     deleted_instance_count = 0
-    for dataset in datasets:
-        print "Processing dataset id:", dataset.id, "\n"
+    for dataset_id in dataset_ids:
+        print "Processing dataset id:", dataset_id, "\n"
+        dataset = app.model.Dataset.get( id )
         if dataset.id not in skip and _dataset_is_deletable( dataset ):
             deleted_dataset_count += 1
             for dataset_instance in dataset.history_associations + dataset.library_associations:
@@ -375,6 +386,13 @@ class CleanupDatasetsApplication( object ):
         self.file_path = file_path
         # Setup the database engine and ORM
         self.model = galaxy.model.mapping.init( self.file_path, self.database_connection, engine_options={}, create_tables=False )
+    @property
+    def sa_session( self ):
+        """
+        Returns a SQLAlchemy session -- currently just gets the current
+        session from the threadlocal session context, but this is provided
+        to allow migration toward a more SQLAlchemy 0.4 style of use.
+        """
+        return self.model.context.current
 
-if __name__ == "__main__":
-    main()
+if __name__ == "__main__": main()
