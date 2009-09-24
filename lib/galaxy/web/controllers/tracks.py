@@ -49,9 +49,6 @@ dataset_type_to_data_provider = {
 #        converters
 browsable_types = set( ["wig" ] )
 
-# For natural sort
-NUM_RE = re.compile('([0-9]+)')
-
 class TracksController( BaseController ):
     """
     Controller for track browser interface. Handles building a new browser from
@@ -122,8 +119,14 @@ class TracksController( BaseController ):
         """
         Returns a naturally sorted list of chroms/contigs for the given dbkey
         """
+        def check_int(s):
+            if s.isdigit():
+                return int(s)
+            else:
+                return s
+            
         def split_by_number(s):
-            return [ int(c) if c.isdigit() else c for c in NUM_RE.split(s) ]
+            return [ check_int(c) for c in re.split('([0-9]+)', s) ]
         
         chroms = self._chroms( trans, dbkey )
         to_sort = [{ 'chrom': chrom, 'len': length } for chrom, length in chroms.iteritems()]

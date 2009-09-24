@@ -81,7 +81,7 @@ $(function() {
 // Functionized so AJAX'd datasets can call them
 function initShowHide() {
 
-    // Load saved state and show as neccesary
+    // Load saved state and show as necessary
     try {
         var stored = $.jStore.store("history_expand_state");
         if (stored) {
