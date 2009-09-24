@@ -1,5 +1,5 @@
 from galaxy.web.base.controller import *
-from galaxy.web.framework.helpers import *
+from galaxy.web.framework.helpers import time_ago, grids
 from galaxy.util.sanitize_html import sanitize_html
 
 import re
