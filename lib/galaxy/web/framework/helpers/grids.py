@@ -38,19 +38,27 @@ class Grid( object ):
         query = self.apply_default_filter( trans, query, **kwargs )
         # Maintain sort state in generated urls
         extra_url_args = {}
-        # Process filtering arguments
-        filter_args = {}
-        if self.default_filter:
-            filter_args.update( self.default_filter )
+        # Process filtering arguments to (a) build a query that actuates the filter and (b) builds a
+        # dictionary that denotes the current filter.
+        cur_filter_dict = {}
         for column in self.columns:
             if column.key:
+                # Look for filter criterion in kwargs; if not found, look in default filter.
+                column_filter = None
                 if "f-" + column.key in kwargs:
                     column_filter = kwargs.get( "f-" + column.key )
-                    query = column.filter( query, column_filter, filter_args )
-                    # Carry filter along to newly generated urls
-                    extra_url_args[ "f-" + column.key ] = column_filter
-        if filter_args:
-            query = query.filter_by( **filter_args )
+                elif ( self.default_filter ) and ( column.key in self.default_filter ):
+                    column_filter = self.default_filter.get( column.key )
+
+                # If column filter found, apply it.
+                if column_filter is not None:
+                    # Update query.
+                    query = column.filter( trans.sa_session, query, column_filter )
+                    # Upate current filter dict.
+                    cur_filter_dict[ column.key ] = column_filter
+                    # Carry filter along to newly generated urls.
+                    extra_url_args[ "f-" + column.key ] = column_filter.encode("utf-8")
+                  
         # Process sort arguments
         sort_key = sort_order = None
         if 'sort' in kwargs:
@@ -92,6 +100,7 @@ class Grid( object ):
         return trans.fill_template( self.template,
                                     grid=self,
                                     query=query,
+                                    cur_filter_dict=cur_filter_dict,
                                     sort_key=sort_key,
                                     encoded_sort_key=encoded_sort_key,
                                     sort_order=sort_order,
@@ -125,7 +134,7 @@ class Grid( object ):
         return query
     
 class GridColumn( object ):
-    def __init__( self, label, key=None, method=None, format=None, link=None, attach_popup=False, visible=True, ncells=1 ):
+    def __init__( self, label, key=None, method=None, format=None, link=None, attach_popup=False, visible=True, ncells=1, filterable=False ):
         self.label = label
         self.key = key
         self.method = method
@@ -134,6 +143,7 @@ class GridColumn( object ):
         self.attach_popup = attach_popup
         self.visible = visible
         self.ncells = ncells
+        self.filterable = filterable
         # Currently can only sort of columns that have a database
         # representation, not purely derived.
         if self.key:
@@ -154,20 +164,23 @@ class GridColumn( object ):
         if self.link and self.link( item ):
             return self.link( item )
         return None
-    def filter( self, query, column_filter, filter_args ):
-        """
-        Must modify filter_args for carrying forward, and return query
-        (possibly filtered).
-        """
+    def filter( self, db_session, query, column_filter ):
+        """ Modify query to reflect the column filter. """
+        if column_filter == "All":
+            pass
         if column_filter == "True":
-            filter_args[self.key] = True
             query = query.filter_by( **{ self.key: True } )
         elif column_filter == "False":
-            filter_args[self.key] = False
             query = query.filter_by( **{ self.key: False } )
-        elif column_filter == "All":
-            del filter_args[self.key]
         return query
+    def get_accepted_filters( self ):
+        """ Returns a list of accepted filters for this column. """
+        accepted_filters_vals = [ "False", "True", "All" ]
+        accepted_filters = []
+        for val in accepted_filters_vals:
+            args = { self.key: val }
+            accepted_filters.append( GridColumnFilter( val, args) )
+        return accepted_filters
 
 class GridOperation( object ):
     def __init__( self, label, key=None, condition=None, allow_multiple=True, target=None, url_args=None ):

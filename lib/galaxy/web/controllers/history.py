@@ -2,8 +2,11 @@ from galaxy.web.base.controller import *
 from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy import util
 from galaxy.model.mapping import desc
+from galaxy.model import History
 from galaxy.model.orm import *
 from galaxy.util.json import *
+from galaxy.tags.tag_handler import TagHandler
+from sqlalchemy.sql.expression import ClauseElement
 import webhelpers, logging, operator
 from datetime import datetime
 from cgi import escape
@@ -39,16 +42,55 @@ class HistoryListGrid( grids.Grid ):
                 return dict( operation="sharing" )
             return None
     class TagsColumn( grids.GridColumn ):
-        def __init__(self, col_name):
-            grids.GridColumn.__init__(self, col_name)
+        def __init__(self, col_name, key, filterable):
+            grids.GridColumn.__init__(self, col_name, key=key, filterable=filterable)
+            # Tags cannot be sorted.
+            self.sortable = False
             self.tag_elt_id_gen = 0
-
         def get_value( self, trans, grid, history ):
             self.tag_elt_id_gen += 1
             elt_id="tagging-elt" + str( self.tag_elt_id_gen )
             div_elt = "<div id=%s></div>" % elt_id
-            return div_elt + trans.fill_template( "/tagging_common.mako", trans=trans,
-                                        tagged_item=history, elt_id = elt_id, in_form="true", input_size="20" )
+            return div_elt + trans.fill_template( "/tagging_common.mako", trans=trans, tagged_item=history, 
+                                                    elt_id = elt_id, in_form="true", input_size="20", tag_click_fn="add_tag_to_grid_filter" )
+        def filter( self, db_session, query, column_filter ):
+            """ Modify query to include only histories with tags in column_filter. """
+            if column_filter == "All":
+                pass
+            elif column_filter:
+                # Parse filter to extract multiple tags.
+                tag_handler = TagHandler()
+                raw_tags = tag_handler.parse_tags( column_filter.encode("utf-8") )
+                for name, value in raw_tags.items():
+                    tag = tag_handler.get_tag_by_name( db_session, name )
+                    if tag:
+                        query = query.filter( History.tags.any( tag_id=tag.id ) )
+                        if value:
+                            query = query.filter( History.tags.any( value=value.lower() ) )
+                    else: 
+                        # Tag doesn't exist; unclear what to do here, but the literal thing to do is add the criterion, which
+                        # will then yield a query that returns no results.
+                        query = query.filter( History.tags.any( user_tname=name ) )
+            return query
+        def get_accepted_filters( self ):
+               """ Returns a list of accepted filters for this column. """
+               accepted_filter_labels_and_vals = { "All": "All" }
+               accepted_filters = []
+               for label, val in accepted_filter_labels_and_vals.items():
+                   args = { self.key: val }
+                   accepted_filters.append( grids.GridColumnFilter( label, args) )
+               return accepted_filters
+            
+    
+    class DeletedColumn( grids.GridColumn ):
+       def get_accepted_filters( self ):
+           """ Returns a list of accepted filters for this column. """
+           accepted_filter_labels_and_vals = { "Active" : "False", "Deleted" : "True", "All": "All" }
+           accepted_filters = []
+           for label, val in accepted_filter_labels_and_vals.items():
+               args = { self.key: val }
+               accepted_filters.append( grids.GridColumnFilter( label, args) )
+           return accepted_filters
 
     # Grid definition
     title = "Stored histories"
@@ -60,12 +102,12 @@ class HistoryListGrid( grids.Grid ):
                           link=( lambda item: iff( item.deleted, None, dict( operation="switch", id=item.id ) ) ),
                           attach_popup=True ),
         DatasetsByStateColumn( "Datasets (by state)", ncells=4 ),
-        TagsColumn( "Tags"),
+        TagsColumn( "Tags", key="tags", filterable=True),
         StatusColumn( "Status", attach_popup=False ),
         grids.GridColumn( "Created", key="create_time", format=time_ago ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
         # Valid for filtering but invisible
-        grids.GridColumn( "Deleted", key="deleted", visible=False )
+        DeletedColumn( "Status", key="deleted", visible=False, filterable=True )
     ]
     operations = [
         grids.GridOperation( "Switch", allow_multiple=False, condition=( lambda item: not item.deleted ) ),
@@ -80,9 +122,9 @@ class HistoryListGrid( grids.Grid ):
     standard_filters = [
         grids.GridColumnFilter( "Active", args=dict( deleted=False ) ),
         grids.GridColumnFilter( "Deleted", args=dict( deleted=True ) ),
-        grids.GridColumnFilter( "All", args=dict( deleted='All' ) )
+        grids.GridColumnFilter( "All", args=dict( deleted='All' ) ),
     ]
-    default_filter = dict( deleted=False )
+    default_filter = dict( deleted="False", tags="All" )
     def get_current_item( self, trans ):
         return trans.get_history()
     def apply_default_filter( self, trans, query, **kwargs ):

@@ -242,6 +242,25 @@ var updater_callback = function ( tracked_datasets ) {
         }
     });
 };
+ 
+    //
+    // Function provides text for tagging toggle link.
+    //
+    var get_toggle_link_text = function(tags)
+    {
+        var text = "";
+        var num_tags = array_length(tags);
+        if (num_tags != 0)
+          {
+            text = num_tags + (num_tags != 1 ? " Tags" : " Tag");
+          }
+        else
+          {
+            // No tags.
+            text = "Add tags to history";
+          }
+        return text;
+    };
 </script>
 
 <style>
@@ -289,7 +308,7 @@ var updater_callback = function ( tracked_datasets ) {
 
 %if trans.get_user() is not None:
     <div id='history-tag-area' class="tag-element"></div>
-    ${render_tagging_element(history, "history-tag-area")}
+    ${render_tagging_element(history, "history-tag-area", get_toggle_link_text_fn='get_toggle_link_text')}
 %endif
 
 %if not datasets:

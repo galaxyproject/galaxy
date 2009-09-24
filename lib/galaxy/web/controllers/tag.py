@@ -34,7 +34,7 @@ class TagsController ( BaseController ):
         
         self._do_security_check(trans, item)
         
-        self.tag_handler.apply_item_tags( trans.sa_session, item, unicode(new_tag).encode('utf-8') )
+        self.tag_handler.apply_item_tags( trans.sa_session, item, new_tag.encode('utf-8') )
         trans.sa_session.flush()
         
     @web.expose
@@ -45,7 +45,7 @@ class TagsController ( BaseController ):
         
         self._do_security_check(trans, item)
         
-        self.tag_handler.remove_item_tag( item, unicode(tag_name).encode('utf-8') )
+        self.tag_handler.remove_item_tag( item, tag_name.encode('utf-8') )
         #print tag_name
         #print unicode(tag_name)
         trans.sa_session.flush()
@@ -60,41 +60,53 @@ class TagsController ( BaseController ):
         self._do_security_check(trans, item)
         
         tag_handler.delete_item_tags(item)
-        self.tag_handler.apply_item_tags( trans.sa_session, item, unicode(new_tags).encode('utf-8') )
+        self.tag_handler.apply_item_tags( trans.sa_session, item, new_tags.encode('utf-8') )
         trans.sa_session.flush()
                 
     @web.expose
     @web.require_login( "get autocomplete data for an item's tags" )
-    def tag_autocomplete_data(self, trans, id=None, item_class=None, q=None, limit=None, timestamp=None):
+    def tag_autocomplete_data( self, trans, q=None, limit=None, timestamp=None, id=None, item_class=None ):
         """ Get autocomplete data for an item's tags. """
-        
+
         #
         # Get item, do security check, and get autocomplete data.
         #
-        item = self._get_item(trans, item_class, trans.security.decode_id(id))
+        item = None
+        if id is not None:
+            item = self._get_item(trans, item_class, trans.security.decode_id(id))
+            self._do_security_check(trans, item)
+            
+        # Get item class. TODO: we should have a mapper that goes from class_name to class object.
+        if item_class == 'History':
+            item_class = History
+        elif item_class == 'HistoryDatasetAssociation':
+            item_class = HistoryDatasetAssociation
         
-        self._do_security_check(trans, item)
-        
-        q = unicode(q).encode('utf-8')
+        q = q.encode('utf-8')
         if q.find(":") == -1:
-            return self._get_tag_autocomplete_names(trans, item, q, limit, timestamp)
+            return self._get_tag_autocomplete_names(trans, q, limit, timestamp, item, item_class)
         else:
-            return self._get_tag_autocomplete_values(trans, item, q, limit, timestamp)
+            return self._get_tag_autocomplete_values(trans, q, limit, timestamp, item, item_class)
     
-    def _get_tag_autocomplete_names(self, trans, item, q, limit, timestamp):
+    def _get_tag_autocomplete_names( self, trans, q, limit, timestamp, item=None, item_class=None ):
         """Returns autocomplete data for tag names ordered from most frequently used to
             least frequently used."""
         #    
         # Get user's item tags and usage counts.
         #
         
-        # Get item-tag association class.
-        item_tag_assoc_class = self.tag_handler.get_tag_assoc_class(item.__class__)
+        # Get item's class object and item-tag association class.
+        if item is None and item_class is None:
+            raise RuntimeError("Both item and item_class cannot be None")
+        elif item is not None:
+            item_class = item.__class__
+        
+        item_tag_assoc_class = self.tag_handler.get_tag_assoc_class(item_class)
         
         # Build select statement.
         cols_to_select = [ item_tag_assoc_class.table.c.tag_id, func.count('*') ] 
-        from_obj = item_tag_assoc_class.table.join(item.table).join(Tag)
-        where_clause = and_(self._get_column_for_filtering_item_by_user_id(item.__class__)==trans.get_user().id,
+        from_obj = item_tag_assoc_class.table.join(item_class.table).join(Tag)
+        where_clause = and_(self._get_column_for_filtering_item_by_user_id(item_class)==trans.get_user().id,
                             Tag.table.c.name.like(q + "%"))
         order_by = [ func.count("*").desc() ]
         group_by = item_tag_assoc_class.table.c.tag_id
@@ -109,18 +121,18 @@ class TagsController ( BaseController ):
         for row in result_set:
             tag = self.tag_handler.get_tag_by_id(trans.sa_session, row[0])
                 
-            # Exclude tags that are already applied to the history.    
-            if self.tag_handler.item_has_tag(item, tag):
+            # Exclude tags that are already applied to the item.    
+            if ( item is not None ) and ( self.tag_handler.item_has_tag(item, tag) ):
                 continue
             # Add tag to autocomplete data. Use the most frequent name that user
             # has employed for the tag.
             tag_names = self._get_usernames_for_tag(trans.sa_session, trans.get_user(),
-                                                    tag, item.__class__, item_tag_assoc_class)
+                                                    tag, item_class, item_tag_assoc_class)
             ac_data += tag_names[0] + "|" + tag_names[0] + "\n"
         
         return ac_data
         
-    def _get_tag_autocomplete_values(self, trans, item, q, limit, timestamp):
+    def _get_tag_autocomplete_values(self, trans, q, limit, timestamp, item=None, item_class=None):
         """Returns autocomplete data for tag values ordered from most frequently used to
             least frequently used."""
             
@@ -132,13 +144,18 @@ class TagsController ( BaseController ):
         if tag is None:
             return ""
                 
-        # Get item-tag association class.
-        item_tag_assoc_class = self.tag_handler.get_tag_assoc_class(item.__class__)
+        # Get item's class object and item-tag association class.
+        if item is None and item_class is None:
+            raise RuntimeError("Both item and item_class cannot be None")
+        elif item is not None:
+            item_class = item.__class__
+
+        item_tag_assoc_class = self.tag_handler.get_tag_assoc_class(item_class)
         
         # Build select statement.
         cols_to_select = [ item_tag_assoc_class.table.c.value, func.count('*') ] 
-        from_obj = item_tag_assoc_class.table.join(item.table).join(Tag)
-        where_clause = and_(self._get_column_for_filtering_item_by_user_id(item.__class__)==trans.get_user().id,
+        from_obj = item_tag_assoc_class.table.join(item_class.table).join(Tag)
+        where_clause = and_(self._get_column_for_filtering_item_by_user_id(item_class)==trans.get_user().id,
                             Tag.table.c.id==tag.id,
                             item_tag_assoc_class.table.c.value.like(tag_value + "%"))
         order_by = [ func.count("*").desc(),  item_tag_assoc_class.table.c.value ]
