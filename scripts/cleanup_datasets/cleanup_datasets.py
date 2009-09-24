@@ -204,32 +204,42 @@ def purge_folders( app, cutoff_time, remove_from_disk, info_only = False, force_
 
 def delete_datasets( app, cutoff_time, remove_from_disk, info_only = False, force_retry = False ):
     # Marks datasets as deleted if associated items are all deleted.
-    print '# The following datasets have been marked deleted'
+    print "######### Starting delete_datasets #########\n"
     start = time.clock()
     if force_retry:
-        datasets = app.model.Dataset.filter( app.model.LibraryDatasetDatasetAssociation.table.c.update_time < cutoff_time ).all() + app.model.Dataset.filter( app.model.HistoryDatasetAssociation.table.c.update_time < cutoff_time ).all()
-    else:
-        datasets = app.model.Dataset.filter( and_( app.model.HistoryDatasetAssociation.table.c.deleted==True,
-                                    app.model.Dataset.table.c.deleted == False,
-                                    app.model.HistoryDatasetAssociation.table.c.update_time < cutoff_time ) ).all()
-        datasets = datasets + app.model.Dataset.filter( and_( app.model.LibraryDatasetDatasetAssociation.table.c.deleted==True,
-                                    app.model.Dataset.table.c.deleted == False,
-                                    app.model.LibraryDatasetDatasetAssociation.table.c.update_time < cutoff_time ) ).all()
+        history_datasets = app.model.Dataset.options( eagerload( "history_associations" ) ) \
+                                            .filter( app.model.HistoryDatasetAssociation.table.c.update_time < cutoff_time ).all()
+        library_datasets = app.model.Dataset.options( eagerload( "library_associations" ) ) \
+                                            .filter( app.model.LibraryDatasetDatasetAssociation.table.c.update_time < cutoff_time ).all()
+    else:                                    
+        history_datasets = app.model.Dataset.filter_by( deleted = False ) \
+                                            .options( eagerload( "history_associations" ) ) \
+                                            .filter( and_( app.model.HistoryDatasetAssociation.table.c.update_time < cutoff_time,
+                                                           app.model.HistoryDatasetAssociation.table.c.deleted==True ) ).all()
+        library_datasets = app.model.Dataset.filter_by( deleted = False ) \
+                                            .options( eagerload( "library_associations" ) ) \
+                                            .filter( and_( app.model.LibraryDatasetDatasetAssociation.table.c.update_time < cutoff_time,
+                                                           app.model.LibraryDatasetDatasetAssociation.table.c.deleted==True ) ).all()
+    print "Time to query history and library datasets: ",  time.clock() - start, "\n"
+    print "Processing ", len( history_datasets ), " history datasets and ", len( library_datasets ), " library datasets...\n\n"
+    datasets = history_datasets + library_datasets
     skip = []
     deleted_dataset_count = 0
     deleted_instance_count = 0
     for dataset in datasets:
+        print "Processing dataset id:", dataset.id, "\n"
         if dataset.id not in skip and _dataset_is_deletable( dataset ):
             deleted_dataset_count += 1
-            print "Dataset:", dataset.id
             for dataset_instance in dataset.history_associations + dataset.library_associations:
-                print "\tAssociated Dataset instance:", dataset_instance.__class__.__name__, dataset_instance.id
-                _purge_dataset_instance( dataset_instance, app, remove_from_disk, include_children = True, info_only = info_only )
+                print "Associated Dataset instance: ", dataset_instance.__class__.__name__, dataset_instance.id, "\n"
+                _purge_dataset_instance( dataset_instance, app, remove_from_disk, include_children=True, info_only=info_only, is_deletable=True )
                 deleted_instance_count += 1
         skip.append( dataset.id )
-    print
-    print '# Examined %d datasets, marked %d as deleted and purged %d dataset instances\n' % ( len( skip ), deleted_dataset_count, deleted_instance_count )
-    print "Elapsed time: ", time.clock() - start, "\n"
+        print "Time to process dataset id: ", dataset.id, " - ", time.clock() - start, "\n\n"
+    print "Time to mark datasets deleted: ", time.clock() - start, "\n\n"
+    print "Examined %d datasets, marked %d as deleted and purged %d dataset instances\n" % ( len( skip ), deleted_dataset_count, deleted_instance_count )
+    print "Total elapsed time: ", time.clock() - start, "\n"
+    print "######### Finished delete_datasets #########\n"
 
 def purge_datasets( app, cutoff_time, remove_from_disk, info_only = False, force_retry = False ):
     # Purges deleted datasets whose update_time is older than cutoff_time.  Files may or may
@@ -262,15 +272,16 @@ def purge_datasets( app, cutoff_time, remove_from_disk, info_only = False, force
     print "Elapsed time: ", stop - start, "\n"
 
 
-def _purge_dataset_instance( dataset_instance, app, remove_from_disk, include_children = True, info_only = False ):
-    #purging a dataset instance marks the instance as deleted, 
-    #and marks the dataset as deleted if it is not associated with another DatsetInstance that is not deleted
+def _purge_dataset_instance( dataset_instance, app, remove_from_disk, include_children=True, info_only=False, is_deletable=False ):
+    # A dataset_instance is either a HDA or an LDDA.  Purging a dataset instance marks the instance as deleted, 
+    # and marks the associated dataset as deleted if it is not associated with another active DatsetInstance.
     if not info_only:
         dataset_instance.mark_deleted( include_children = include_children )
         dataset_instance.clear_associated_files()
         dataset_instance.flush()
         dataset_instance.dataset.refresh()
-    if _dataset_is_deletable( dataset_instance.dataset ):
+    if is_deletable or _dataset_is_deletable( dataset_instance.dataset ):
+        # Calling methods may have already checked _dataset_is_deletable, if so, is_deletable should be True
         _delete_dataset( dataset_instance.dataset, app, remove_from_disk, info_only = info_only )
     #need to purge children here
     if include_children:
