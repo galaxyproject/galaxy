@@ -85,9 +85,9 @@ Uses SAMTools_' pileup command to produce a pileup dataset from a provided BAM d
 
 **Types of pileup datasets**
 
-The description of pileup format below is largely based on information that can be found on SAMTools_ documentation page. The 6- and 10-column variants are described below.
+The description of pileup format below is largely based on information that can be found on SAMTools Pileup_ documentation page. The 6- and 10-column variants are described below.
 
-.. _SAMTools: http://samtools.sourceforge.net/pileup.shtml
+.. _Pileup: http://samtools.sourceforge.net/pileup.shtml
 
 **Six column pileup**::
 
@@ -111,7 +111,7 @@ where::
        
 **Ten column pileup**
 
-The `ten-column`__ pileup incorporates additional consensus information generated with *-c* option of *samtools pileup* command::
+The `ten-column` (consensus_) pileup incorporates additional consensus information generated with *-c* option of *samtools pileup* command::
 
 
     1    2  3  4   5   6   7   8       9       10
@@ -137,7 +137,7 @@ where::
       10 Quality values (phred33 scale, see Galaxy wiki for more)
 
 
-.. __: http://samtools.sourceforge.net/cns0.shtml
+.. _consensus: http://samtools.sourceforge.net/cns0.shtml
 
 
   </help>
