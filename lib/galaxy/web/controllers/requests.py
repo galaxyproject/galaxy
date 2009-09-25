@@ -51,7 +51,11 @@ class RequestsListGrid( grids.Grid ):
     def get_request_type(self, trans, request):
         return request.type.name
     def apply_default_filter( self, trans, query, **kwargs ):
-        return query.filter_by( user=trans.user )
+        query = query.filter_by( user=trans.user )
+        if self.default_filter:
+            return query.filter_by( **self.default_filter )
+        else:
+            return query
     def number_of_samples(self, trans, request):
         return str(len(request.samples))
     def get_state(self, trans, request):
@@ -475,6 +479,7 @@ class Requests( BaseController ):
         params = util.Params( kwd )
         lib_id = params.get( 'library_id', 'none'  )
         # if editing a request
+        selected_lib = None
         if request and lib_id == 'none':
             if request.library:
                 lib_id = str(request.library.id)
