@@ -169,14 +169,10 @@
             <li><a href="${app.config.get( "bugs_email", "mailto:galaxy-bugs@bx.psu.edu"  )}">Email comments, bug reports, or suggestions</a></li>
             <li><a target="_blank" href="${app.config.get( "wiki_url", "http://bitbucket.org/galaxy/galaxy-central/wiki" )}">Galaxy Wiki</a></li>             
             <li><a target="_blank" href="${app.config.get( "screencasts_url", "http://galaxycast.org" )}">Video tutorials (screencasts)</a></li>
+            <li><a target="_blank" href="${app.config.get( "citation_url", "http://bitbucket.org/galaxy/galaxy-central/wiki/Citations" )}">How to Cite Galaxy</a></li>
         </ul>
         </div>
     </td>
-    
-    <td class="tab">
-        <a target="_blank" href="${app.config.get( "citation_url", "http://bitbucket.org/galaxy/galaxy-central/wiki/Citations" )}">Cite</a>
-    </td>
-
     
     <td class="tab">
         <a>User</a>
