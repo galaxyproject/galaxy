@@ -1,7 +1,7 @@
 .libraryRow{background-color:#ebd9b2;}
 .datasetHighlighted{background-color:#C1C9E5;}
 .libraryItemDeleted-True{font-style:italic;}
-div.historyItemBody{padding:4px 4px 2px 4px;}
+div.libraryItemBody{padding:4px 4px 2px 4px;}
 li.folderRow,li.datasetRow{border-top:solid 1px #ddd;}
 li.folderRow:hover,li.datasetRow:hover{background-color:#C1C9E5;}
 img.expanderIcon{padding-right:4px;}
@@ -15,3 +15,6 @@ a.expandLink{text-decoration:none;}
 span.expandLink{width:16px;height:16px;display:inline-block;vertical-align:middle;background:url(../images/silk/resultset_next.png);}
 .folderRow.expanded span.expandLink{background:url(../images/silk/resultset_bottom.png);}
 .folderRow span.rowIcon{width:16px;height:16px;display:inline-block;vertical-align:middle;background:url(../images/silk/folder.png);}
+.libraryItem-error{margin-right:2px;padding:0 2px 0 2px;border:1px solid #AA6666;background:#FFCCCC;}
+.libraryItem-queued{margin-right:2px;padding:0 2px 0 2px;border:1px solid #888888;background:#EEEEEE;}
+.libraryItem-running{margin-right:2px;padding:0 2px 0 2px;border:1px solid #AAAA66;background:#FFFFCC;}

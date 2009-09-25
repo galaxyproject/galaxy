@@ -438,16 +438,16 @@ class LibraryAdmin( BaseController ):
                 template_id = 'None'
                 widgets = []
             upload_option = params.get( 'upload_option', 'upload_file' )
-            created_ldda_ids = trans.webapp.controllers[ 'library_dataset' ].upload_dataset( trans,
-                                                                                             controller='library_admin',
-                                                                                             library_id=library_id,
-                                                                                             folder_id=folder_id,
-                                                                                             template_id=template_id,
-                                                                                             widgets=widgets,
-                                                                                             replace_dataset=replace_dataset,
-                                                                                             **kwd )
-            if created_ldda_ids:
-                total_added = len( created_ldda_ids.split( ',' ) )
+            created_outputs = trans.webapp.controllers[ 'library_dataset' ].upload_dataset( trans,
+                                                                                            controller='library_admin',
+                                                                                            library_id=library_id,
+                                                                                            folder_id=folder_id,
+                                                                                            template_id=template_id,
+                                                                                            widgets=widgets,
+                                                                                            replace_dataset=replace_dataset,
+                                                                                            **kwd )
+            if created_outputs:
+                total_added = len( created_outputs.values() )
                 if replace_dataset:
                     msg = "Added %d dataset versions to the library dataset '%s' in the folder '%s'." % ( total_added, replace_dataset.name, folder.name )
                 else:
@@ -464,7 +464,7 @@ class LibraryAdmin( BaseController ):
             trans.response.send_redirect( web.url_for( controller='library_admin',
                                                        action='browse_library',
                                                        id=library_id,
-                                                       created_ldda_ids=created_ldda_ids,
+                                                       created_ldda_ids=",".join( [ str( v.id ) for v in created_outputs.values() ] ),
                                                        msg=util.sanitize_text( msg ),
                                                        messagetype=messagetype ) )
         elif not id or replace_dataset:

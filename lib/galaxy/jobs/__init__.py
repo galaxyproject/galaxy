@@ -357,13 +357,14 @@ class JobWrapper( object ):
         # Restore input / output data lists
         inp_data = dict( [ ( da.name, da.dataset ) for da in job.input_datasets ] )
         out_data = dict( [ ( da.name, da.dataset ) for da in job.output_datasets ] )
+        out_data.update( [ ( da.name, da.dataset ) for da in job.output_library_datasets ] )
         # These can be passed on the command line if wanted as $userId $userEmail
-        if job.history.user: # check for anonymous user!
-             userId = '%d' % job.history.user.id
-             userEmail = str(job.history.user.email)
+        if job.history and job.history.user: # check for anonymous user!
+            userId = '%d' % job.history.user.id
+            userEmail = str(job.history.user.email)
         else:
-             userId = 'Anonymous'
-             userEmail = 'Anonymous'
+            userId = 'Anonymous'
+            userEmail = 'Anonymous'
         incoming['userId'] = userId
         incoming['userEmail'] = userEmail
         # Build params, done before hook so hook can use
@@ -424,7 +425,7 @@ class JobWrapper( object ):
                         log.debug( "fail(): Moved %s to %s" % ( dataset_path.false_path, dataset_path.real_path ) )
                     except ( IOError, OSError ), e:
                         log.error( "fail(): Missing output file in working directory: %s" % e )
-            for dataset_assoc in job.output_datasets:
+            for dataset_assoc in job.output_datasets + job.output_library_datasets:
                 dataset = dataset_assoc.dataset
                 dataset.refresh()
                 dataset.state = dataset.states.ERROR
@@ -444,7 +445,7 @@ class JobWrapper( object ):
     def change_state( self, state, info = False ):
         job = model.Job.get( self.job_id )
         job.refresh()
-        for dataset_assoc in job.output_datasets:
+        for dataset_assoc in job.output_datasets + job.output_library_datasets:
             dataset = dataset_assoc.dataset
             dataset.refresh()
             dataset.state = state
@@ -504,10 +505,10 @@ class JobWrapper( object ):
                         self.fail( "Job %s's output dataset(s) could not be read" % job.id )
                         return
         job_context = ExpressionContext( dict( stdout = stdout, stderr = stderr ) )
-        for dataset_assoc in job.output_datasets:
+        for dataset_assoc in job.output_datasets + job.output_library_datasets:
             context = self.get_dataset_finish_context( job_context, dataset_assoc.dataset.dataset )
             #should this also be checking library associations? - can a library item be added from a history before the job has ended? - lets not allow this to occur
-            for dataset in dataset_assoc.dataset.dataset.history_associations: #need to update all associated output hdas, i.e. history was shared with job running
+            for dataset in dataset_assoc.dataset.dataset.history_associations + dataset_assoc.dataset.dataset.library_associations: #need to update all associated output hdas, i.e. history was shared with job running
                 dataset.blurb = 'done'
                 dataset.peek  = 'no peek'
                 dataset.info  = context['stdout'] + context['stderr']
@@ -576,6 +577,7 @@ class JobWrapper( object ):
         # custom post process setup
         inp_data = dict( [ ( da.name, da.dataset ) for da in job.input_datasets ] )
         out_data = dict( [ ( da.name, da.dataset ) for da in job.output_datasets ] )
+        out_data.update( [ ( da.name, da.dataset ) for da in job.output_library_datasets ] )
         param_dict = dict( [ ( p.name, p.value ) for p in job.parameters ] ) # why not re-use self.param_dict here? ##dunno...probably should, this causes tools.parameters.basic.UnvalidatedValue to be used in following methods instead of validated and transformed values during i.e. running workflows
         param_dict = self.tool.params_from_strings( param_dict, self.app )
         # Check for and move associated_files
@@ -647,11 +649,11 @@ class JobWrapper( object ):
         job = model.Job.get( self.job_id )
         if self.app.config.outputs_to_working_directory:
             self.output_paths = []
-            for name, data in [ ( da.name, da.dataset.dataset ) for da in job.output_datasets ]:
+            for name, data in [ ( da.name, da.dataset.dataset ) for da in job.output_datasets + job.output_library_datasets ]:
                 false_path = os.path.abspath( os.path.join( self.working_directory, "galaxy_dataset_%d.dat" % data.id ) )
                 self.output_paths.append( DatasetPath( data.id, data.file_name, false_path ) )
         else:
-            self.output_paths = [ DatasetPath( da.dataset.dataset.id, da.dataset.file_name ) for da in job.output_datasets ]
+            self.output_paths = [ DatasetPath( da.dataset.dataset.id, da.dataset.file_name ) for da in job.output_datasets + job.output_library_datasets ]
         return self.output_paths
 
     def get_output_file_id( self, file ):

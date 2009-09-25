@@ -137,7 +137,7 @@ def add_file( dataset, json_file, output_path ):
 
     # See if we have an empty file
     if not os.path.exists( dataset.path ):
-        file_err( 'Uploaded temporary file (%s) does not exist.  Please' % dataset.path, dataset, json_file )
+        file_err( 'Uploaded temporary file (%s) does not exist.' % dataset.path, dataset, json_file )
         return
     if not os.path.getsize( dataset.path ) > 0:
         file_err( 'The uploaded file is empty', dataset, json_file )
@@ -237,7 +237,10 @@ def add_file( dataset, json_file, output_path ):
     if ext == 'auto':
         ext = 'data'
     # Move the dataset to its "real" path
-    shutil.move( dataset.path, output_path )
+    if dataset.type == 'server_dir':
+        shutil.copy( dataset.path, output_path )
+    else:
+        shutil.move( dataset.path, output_path )
     # Write the job info
     info = dict( type = 'dataset',
                  dataset_id = dataset.dataset_id,
