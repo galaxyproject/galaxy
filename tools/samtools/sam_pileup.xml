@@ -1,5 +1,5 @@
-<tool id="sam_pileup" name="SAM Pileup Format" version="1.0.0">
-  <description>generates the pileup format for a provided BAM file</description>
+<tool id="sam_pileup" name="Generate pileup" version="1.0.0">
+  <description>from BAM dataset</description>
   <command interpreter="python">
     sam_pileup.py 
 	    --input1=$input1

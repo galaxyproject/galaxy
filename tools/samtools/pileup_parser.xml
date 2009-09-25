@@ -1,5 +1,5 @@
-<tool id="pileup_parser" name="Parse pileup">
-  <description>to find variants</description>
+<tool id="pileup_parser" name="Filter pileup">
+  <description>on coverage and SNPs</description>
   <command interpreter="perl">
     #if   $pileup_type.type_select == "six":    #pileup_parser.pl $input "3" "5" "6" "4" $qv_cutoff $cvrg_cutoff $snps_only $interval "2" $out_file1
     #elif $pileup_type.type_select == "ten":    #pileup_parser.pl $input "3" "9" "10" "8" $qv_cutoff $cvrg_cutoff $snps_only $interval "2" $out_file1
