@@ -24,6 +24,7 @@ from galaxy.web.framework import simplejson
 from galaxy.util.bunch import Bunch
 
 from galaxy.visualization.tracks.data.array_tree import ArrayTreeDataProvider
+from galaxy.visualization.tracks.data.interval_index import IntervalIndexDataProvider
 
 # Message strings returned to browser
 messages = Bunch(
@@ -36,18 +37,20 @@ messages = Bunch(
 # Dataset type required for each track type. This needs to be more flexible,
 # there might be multiple types of indexes that suffice for a given track type.
 track_type_to_dataset_type = {
-    "line": "array_tree"
+    "line": "array_tree",
+    "feature": "interval_index"
 }
 
 # Mapping from dataset type to a class that can fetch data from a file of that
 # type. This also needs to be more flexible.
 dataset_type_to_data_provider = {
-    "array_tree": ArrayTreeDataProvider
+    "array_tree": ArrayTreeDataProvider,
+    "interval_index": IntervalIndexDataProvider
 }
 
 # FIXME: hardcoding this for now, but it should be derived from the available
 #        converters
-browsable_types = set( ["wig" ] )
+browsable_types = set( ["wig", "bed" ] )
 
 class TracksController( BaseController ):
     """
@@ -66,7 +69,7 @@ class TracksController( BaseController ):
         to 'index' once datasets to browse have been selected.
         """
         session = trans.sa_session
-        # If the user clicked the submit button explicately, try to build the browser
+        # If the user clicked the submit button explicitly, try to build the browser
         if browse and dataset_ids:
             if not isinstance( dataset_ids, list ):
                 dataset_ids = [ dataset_ids ]    
@@ -183,7 +186,7 @@ class TracksController( BaseController ):
             return messages.PENDING
         # We have a dataset in the right format that is ready to use, wrap in
         # a data provider that knows how to access it
-        data_provider = dataset_type_to_data_provider[ converted_dataset_type ]( converted_dataset )
+        data_provider = dataset_type_to_data_provider[ converted_dataset_type ]( converted_dataset, dataset )
         
         # Return stats if we need them
         if stats: return data_provider.get_stats( chrom )

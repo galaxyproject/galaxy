@@ -364,7 +364,8 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
     
     init: function() {
         var track = this;
-        $.getJSON( "getfeature", { 'start': this.view.max_low, 'end': this.view.max_high, 'dataset_id': this.dataset_id, 'chrom': this.view.chrom }, function ( data ) {
+        $.getJSON( data_url, { track_type: track.track_type, low: track.view.max_low, high: track.view.max_high,
+                               dataset_id: track.dataset_id, chrom: track.view.chrom }, function ( data ) {
             track.values = data;
             track.calc_slots();
             track.slots = track.zo_slots;
@@ -402,7 +403,6 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
             position: "absolute",
             top: 0,
             left: ( tile_low - this.view.low ) * w_scale,
-            "border-right": "1px solid #ddd"
         });
         new_canvas.get(0).width = width;
         new_canvas.get(0).height = height;

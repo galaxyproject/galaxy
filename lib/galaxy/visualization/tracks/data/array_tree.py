@@ -1,5 +1,5 @@
 """
-Array tree data provider for Galaxy track browser. 
+Array tree data provider for the Galaxy track browser. 
 """
 
 import pkg_resources; pkg_resources.require( "bx-python" )
@@ -16,7 +16,7 @@ from math import floor, ceil, log
 BLOCK_SIZE = 1000
 
 class ArrayTreeDataProvider( object ):
-    def __init__( self, dataset ):
+    def __init__( self, dataset, original_dataset ):
         self.dataset = dataset
     
     def get_stats( self, chrom ):

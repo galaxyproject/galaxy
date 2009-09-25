@@ -1,3 +1,3 @@
 """
-Package for track style visulization using the trackster UI.
+Package for track style visualization using the trackster UI.
 """

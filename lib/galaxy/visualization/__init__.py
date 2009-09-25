@@ -1,3 +1,3 @@
 """
-Package for Galaxy visulization plugins.
+Package for Galaxy visualization plugins.
 """
