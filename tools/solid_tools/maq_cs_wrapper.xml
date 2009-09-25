@@ -71,7 +71,7 @@
 
 **What it does**
 
-This tool maps SOLiD colour-space reads against the target genome using MAQ. It produces three output datasets: 
+This tool maps SOLiD color-space reads against the target genome using MAQ. It produces three output datasets: 
 
 
 **ALIGNMENT INFO** : contains the read alignment information, 

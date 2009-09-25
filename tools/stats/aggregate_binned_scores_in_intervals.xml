@@ -62,7 +62,7 @@
 
 .. class:: warningmark
 
-This tool currently only has cached data for genome builds hg16, hg17 and hg18. However, you may use your own data point (wiggle) data, such as is available from UCSC. If you are trying to use your own data point file and it is not appearing as an option, make sure that the builds for your history items are the same.
+This tool currently only has cached data for genome builds hg16, hg17 and hg18. However, you may use your own data point (wiggle) data, such as those available from UCSC. If you are trying to use your own data point file and it is not appearing as an option, make sure that the builds for your history items are the same.
 
 .. class:: warningmark
 

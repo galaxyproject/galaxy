@@ -181,7 +181,7 @@
                 <param name="dcv" type="integer" value="1024" label="The period for the difference-cover sample (--dcv)" />
               </when>
             </conditional>
-            <param name="nodc" type="select" label="Whether or not to disable the use of the difference-cover sample (--nodc)" help="Suffix sorting becomes quadratic-time in the worst case (a very repetetive reference)">
+            <param name="nodc" type="select" label="Whether or not to disable the use of the difference-cover sample (--nodc)" help="Suffix sorting becomes quadratic-time in the worst case (a very repetitive reference)">
               <option value="dc">Use difference-cover sample</option>
               <option value="nodc">Disable difference-cover sample</option>
             </param>

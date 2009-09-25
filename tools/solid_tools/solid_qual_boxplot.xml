@@ -26,7 +26,7 @@ Creates a boxplot graph for the quality scores in the library.
 
 * Black horizontal lines are medians
 * Rectangular red boxes show the Inter-quartile Range (IQR) (top value is Q3, bottom value is Q1)
-* Whiskers show outlier at max. 1.5*IQR
+* Whiskers show outliers at max. 1.5*IQR
 
 
 .. image:: ../static/images/solid_qual.png

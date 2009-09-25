@@ -43,7 +43,7 @@
 
 **What it does**
 
-This tool takes a pairwise MAF file as input and estimates substitution rate according to Jukes-Cantor JC69 model. The 3 new columns appended to the output are explanied below:
+This tool takes a pairwise MAF file as input and estimates substitution rate according to Jukes-Cantor JC69 model. The 3 new columns appended to the output are explained below:
 
 - L: number of nucleotides compared
 - N: number of different nucleotides

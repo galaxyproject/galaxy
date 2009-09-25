@@ -18,7 +18,7 @@
 
 This tool converts wiggle data into interval type.
 
-- **Wiggle format**: The .wig format is line-oriented. Wiggle data is preceeded by a UCSC track definition line.  Following the track definition line is the track data, which can be entered in three different formats described below.
+- **Wiggle format**: The .wig format is line-oriented. Wiggle data is preceded by a UCSC track definition line.  Following the track definition line is the track data, which can be entered in three different formats described below.
 
   - **BED format** with no declaration line and four columns of data::
 

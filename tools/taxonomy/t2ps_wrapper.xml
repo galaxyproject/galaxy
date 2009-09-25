@@ -108,7 +108,7 @@ Here the tree is automatically trimmed at a taxonomic rank that will only have 3
 
 **Explanation of phylogenetic tree markup** 
 
-Branches of the tree are colored according to the heatmap below.  The "bluer" the branch the lesser the numer of leaves it leads to and vice versa. 
+Branches of the tree are colored according to the heatmap below.  The "bluer" the branch the lesser the number of leaves it leads to and vice versa. 
 
 .. image:: ../static/images/t2ps_heatmap.png 
 

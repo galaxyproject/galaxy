@@ -70,7 +70,7 @@
 
 .. class:: infomark
 
-**TIP:** If your query does not appear in the pulldown menu -> it is not in interval format. Use "edit attributes" to set chromosome, start, end, and strand columns
+**TIP:** If your query does not appear in the pulldown menu, it means that it is not in interval format. Use "edit attributes" to set chromosome, start, end, and strand columns.
 
 -----
 
@@ -85,7 +85,7 @@ See Galaxy Interval Operation Screencasts_ (right click to open this link in ano
 **Syntax**
 
 - **Where overlap** specifies the minimum overlap between intervals that allows them to be joined.
-- **Return only records that are joined** returns only the records of the first query that join to a recond in the second query.  This is analogous to an INNER JOIN.
+- **Return only records that are joined** returns only the records of the first query that join to a record in the second query.  This is analogous to an INNER JOIN.
 - **Return all records of first query (fill null with &quot;.&quot;)** returns all intervals of the first query, and any intervals that do not join an interval from the second query are filled in with a period(.).  This is analogous to a LEFT JOIN.
 - **Return all records of second query (fill null with &quot;.&quot;)** returns all intervals of the second query, and any intervals that do not join an interval from the first query are filled in with a period(.).  **Note that this may produce an invalid interval file, since a period(.) is not a valid chrom, start, end or strand.**
 - **Return all records of both queries (fill nulls with &quot;.&quot;)** returns all records from both queries, and fills on either the right or left with periods.  **Note that this may produce an invalid interval file, since a period(.) is not a valid chrom, start, end or strand.**

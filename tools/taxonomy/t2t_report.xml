@@ -30,19 +30,39 @@ Given taxonomy representation (produced by *Taxonomy manipulation->Fetch Taxonom
 
 Suppose the *Taxonomy manipulation->Fetch Taxonomic Ranks* generated the following taxonomy representation::
 
-    9916 2      root Eukaryota Metazoa n n Chordata Craniata Gnathostomata Mammalia n Laurasiatheria   n        Ruminantia  n           Bovidae  Bovinae n n Bos  n Bos taurus   n    9606 12585	root Eukaryota Metazoa n n Chordata Craniata Gnathostomata Mammalia n Euarchontoglires Primates	Haplorrhini Hominoidea Hominidae n       n n Homo n Homo sapiens n
+    9916 2      root Eukaryota Metazoa n n Chordata Craniata Gnathostomata Mammalia n Laurasiatheria   n        Ruminantia  n           Bovidae  Bovinae n n Bos  n Bos taurus   n
+    9606 12585	root Eukaryota Metazoa n n Chordata Craniata Gnathostomata Mammalia n Euarchontoglires Primates	Haplorrhini Hominoidea Hominidae n       n n Homo n Homo sapiens n
 
 Running this tool will generate the following output::
     
     Rank         Rank Name          Count
     -------------------------------------
-    root         root               2    superkingdom Eukaryota          2    kingdom      Metazoa            2    phylum       Chordata           2    subphylum	 Craniata           2    superclass	 Gnathostomata      2    class        Mammalia           2    superorder   Euarchontoglires   1    superorder   Laurasiatheria     1    order        Primates           1    suborder     Haplorrhini        1    suborder     Ruminantia         1    superfamily  Hominoidea         1    family       Bovidae            1    family       Hominidae          1    subfamily    Bovinae            1    genus        Bos                1    genus        Homo               1    species      Bos taurus         1    species      Homo sapiens       1
+    root         root               2
+    superkingdom Eukaryota          2
+    kingdom      Metazoa            2
+    phylum       Chordata           2
+    subphylum	 Craniata           2
+    superclass	 Gnathostomata      2
+    class        Mammalia           2
+    superorder   Euarchontoglires   1
+    superorder   Laurasiatheria     1
+    order        Primates           1
+    suborder     Haplorrhini        1
+    suborder     Ruminantia         1
+    superfamily  Hominoidea         1
+    family       Bovidae            1
+    family       Hominidae          1
+    subfamily    Bovinae            1
+    genus        Bos                1
+    genus        Homo               1
+    species      Bos taurus         1
+    species      Homo sapiens       1
     
-The outoput is sorted on Rank and then on Rank Name.  
+The output is sorted on Rank and then on Rank Name.  
 
 .. class:: warningmark
 
-**Note** that this tool omits "**n**" corresponding to ranks missing from NCBI taxonomy. In the above example *Home sapiens* conatains the order name (Primates) while *Bos taurus* does not.
+**Note** that this tool omits "**n**" corresponding to ranks missing from NCBI taxonomy. In the above example *Home sapiens* contains the order name (Primates) while *Bos taurus* does not.
 
 
 </help>

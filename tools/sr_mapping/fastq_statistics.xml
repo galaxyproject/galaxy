@@ -2,7 +2,7 @@
   <description>for Solexa file</description>
   <command>cat $input | solexa_quality_statistics -o $output</command>
   <inputs>
-    <param format="fastqsolexa" name="input" type="data" label="Library to analyse" />
+    <param format="fastqsolexa" name="input" type="data" label="Library to analyze" />
   </inputs>
   <outputs>
     <data format="txt" name="output" />

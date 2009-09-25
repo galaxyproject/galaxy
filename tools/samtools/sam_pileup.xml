@@ -77,7 +77,7 @@
     	
 **What it does**   	
 
-Uses SAMTools_' pileup command to produce a pileup dataset from a provided BAM dataset. It generated two types of pileup datasets depending on chosen options. If *Call consensus according to MAQ model?* option is set to **No**, the tool produces simple pileup. If the option is set to **Yes**, a ten column pileup dataset with consensus is generated. Both types of datasets are briefly summarized below.
+Uses SAMTools_' pileup command to produce a pileup dataset from a provided BAM dataset. It generates two types of pileup datasets depending on the specified options. If *Call consensus according to MAQ model?* option is set to **No**, the tool produces simple pileup. If the option is set to **Yes**, a ten column pileup dataset with consensus is generated. Both types of datasets are briefly summarized below.
 
 .. _SAMTools: http://samtools.sourceforge.net/samtools.shtml
 
@@ -111,7 +111,7 @@ where::
        
 **Ten column pileup**
 
-The `ten-column`__ pileup incoroporates additional consensus information generated with *-c* option of *samtools pileup* command::
+The `ten-column`__ pileup incorporates additional consensus information generated with *-c* option of *samtools pileup* command::
 
 
     1    2  3  4   5   6   7   8       9       10

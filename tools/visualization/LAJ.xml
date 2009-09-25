@@ -15,7 +15,7 @@
     <data name="out_file1" format="laj"/>
   </outputs>
 <help>
-You can use this tool to view a set of LAV alignments.  You may include FASTA formated sequences for both species.
+You can use this tool to view a set of LAV alignments.  You may include FASTA formatted sequences for both species.
 
 For detailed information on LAJ, click here_.
 

@@ -45,7 +45,7 @@ Suppose you have BLAST output that looks like this::
    | 1L_EYKX4VC01BXWX1_265 |  1430919 |    90.09 |             212 |         15 |    6 | 252.00 | 
    +-----------------------+----------+----------+-----------------+------------+------+--------+
 
-and you want to obtain full taxonomic representation for GIs listed in *targetGI* column. If you set paramenters as shown here:
+and you want to obtain full taxonomic representation for GIs listed in *targetGI* column. If you set parameters as shown here:
 
 .. image:: ../static/images/fetchTax.png
 

@@ -34,7 +34,7 @@
 
 .. class:: infomark
 
-**TIP:** If your query does not appear in the pulldown menu -> it is not in interval format. Use "edit attributes" to set chromosome, start, end, and strand columns
+**TIP:** If your query does not appear in the pulldown menu -> it is not in interval format. Use "edit attributes" to set chromosome, start, end, and strand columns.
 
 Find the coverage of intervals in the first query on intervals in the second query.  The coverage is added as two columns, the first being bases covered, and the second being the fraction of bases covered by that interval.
 

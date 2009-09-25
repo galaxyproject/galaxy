@@ -118,11 +118,11 @@
     	
 **What it does**   	
     	
-**LASTZ** is a high perfomance pairwise sequence aligner derived from BLASTZ. It is written by Bob Harris in Webb Miller's laboratory at Penn State. Special scoring sets were derived to improve the performance, both in runtime and quality. The Galaxy version of LASTZ is geared towards aligning of short (Illumina/Solexa, AB/SOLiD) and medium (Roche/454) reads against a reference sequence. 
+**LASTZ** is a high performance pairwise sequence aligner derived from BLASTZ. It is written by Bob Harris in Webb Miller's laboratory at Penn State. Special scoring sets were derived to improve runtime performance and quality. The Galaxy version of LASTZ is geared towards aligning of short (Illumina/Solexa, AB/SOLiD) and medium (Roche/454) reads against a reference sequence. 
  
 .. class:: warningmark
  
-At present this tools supports aligning reads against a single reference sequence no longer than 1 Megabase. This limitation will be lifted in the coming months as our short read analysis hardware capacity is expanding. 
+This tool presently supports aligning reads against a single reference sequence no longer than 1 Megabase. This limitation will be lifted in the coming months as our short read analysis hardware capacity expands. 
 
 ------
 

@@ -67,7 +67,7 @@ Running this tool with the following parameters:
 
   * *Select column with sequence id* set to **c1**
   * *Select taxonomic ranks* with **order**, and **genus** checked
-  * *Output format* set to **Dignostic read list**
+  * *Output format* set to **Diagnostic read list**
   
 will return::
 
@@ -89,7 +89,7 @@ Note that **read1** is omitted because it is non-unique: it hits Mammals and Ins
 
 .. class:: warningmark
 
-This tool omits "**n**" corresponding to ranks missing from NCBI taxonomy. In the above example *Home sapiens* conatains the order name (Primates) while *Bos taurus* does not.
+This tool omits "**n**" corresponding to ranks missing from NCBI taxonomy. In the above example *Home sapiens* contains the order name (Primates) while *Bos taurus* does not.
 
 
 </help>

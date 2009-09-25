@@ -46,7 +46,7 @@
 
 **What it does**
 
-Allows parsing SAM datasets using bitwise flag (the second column). The bits in the flag are defined as follows::
+Allows parsing of SAM datasets using bitwise flag (the second column). The bits in the flag are defined as follows::
 
     Bit Info
  ------ --------------------------------------------------------------------------   
@@ -67,7 +67,7 @@ Allows parsing SAM datasets using bitwise flag (the second column). The bits in 
 Note the following:
 
 - Flag 0x02, 0x08, 0x20, 0x40 and 0x80 are only meaningful when flag 0x01 is present. 
-- If in a read pair the information on which read is the first in the pair is lost in the upstream analysis, flag 0x01 should be present and 0x40 and 0x80 are both zero.
+- If in a read pair the information on which read is the first in the pair is lost in the upstream analysis, flag 0x01 should be set, while 0x40 and 0x80 should both be zero.
 
 -----
 
@@ -82,12 +82,12 @@ Suppose the following dataset was generated with BWA mapper::
  r003  16 ref 29 30       6H5M *  0   0 TAGGC             * NM:i:0
  r001  83 ref 37 30         9M =  7 -39 CAGCGCCAT         *
 
-To select properly mapped pairs click the **Add new Flag** button and set *Read mapped in a proper pair* to **Yes**. The following two reads will be returned::
+To select properly mapped pairs, click the **Add new Flag** button and set *Read mapped in a proper pair* to **Yes**. The following two reads will be returned::
 
  r001 163 ref  7 30 8M2I4M1D3M = 37  39 TTAGATAAAGGATACTA *
  r001  83 ref 37 30         9M =  7 -39 CAGCGCCAT         *
 
-For more information please consult the `SAM format description`__.
+For more information, please consult the `SAM format description`__.
 
 .. __: http://www.ncbi.nlm.nih.gov/pubmed/19505943
 

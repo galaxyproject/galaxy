@@ -48,7 +48,7 @@
    </requirements>
  <help>
 This tool takes the input Fit Data and creates a peak and curve plot
-showing the reads and fitness on each basepair.  Features can be
+showing the reads and fitness on each base pair.  Features can be
 plotted below as tracks.  Fit data is coverage output from tools like
 the Lastz tool.  Features are simply interval datasets that may be
 plotted as tracks below the optional fit data.  Both the fit data and
@@ -62,7 +62,7 @@ to generate a track.
 - **Track Label** is the name of the generated track.
 
 - **Fit Data** is the dataset to calculate coverage/reads across
-    basepairs and generate a curve.  This is optional, and tracks may
+    base pairs and generate a curve.  This is optional, and tracks may
     be created simply showing features.
 
 - **Features** are datasets (interval format) to be plotted as tracks.

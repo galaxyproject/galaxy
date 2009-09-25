@@ -141,7 +141,7 @@
         <param name="mismatchPenalty" type="integer" value="3" label="Mismatch penalty" help="BWA will not search for suboptimal hits with a score lower than [value]" />
         <param name="gapOpenPenalty" type="integer" value="11" label="Gap open penalty" />
         <param name="gapExtensPenalty" type="integer" value="4" label="Gap extension penalty" />
-        <param name="colorSpaceRev" type="select" label="Reverse query but don't compement it" help="Reverse query for all alignment in color space">
+        <param name="colorSpaceRev" type="select" label="Reverse query but don't complement it" help="Reverse query for all alignment in color space">
           <option value="false">Don't reverse query</option>
           <option value="true">Reverse query</option>
         </param>
@@ -293,7 +293,7 @@
     	
 **What it does**   	
     	
-**BWA** is a high performance sequence aligner that succeeds MAQ. It is based on BWT-SW but uses a completely different algorithm, and it is aimed toward short read alignments. It is fast--it can map the human genome in only 15-25 minutes. Heng Li of the Sanger Institute wrote the majority of the code, with contributions by Chi-Kwong Wong at the University of Hong Kong, Nong Ge at Sun Yat-Sen University, and Yuta Mori. 
+**BWA** is a high performance sequence aligner that succeeds MAQ. It is based on BWT-SW but uses a completely different algorithm and is aimed towards short read alignments. It is fast--it can map the human genome in only 15-25 minutes. Heng Li of the Sanger Institute wrote the majority of the code, with contributions by Chi-Kwong Wong at the University of Hong Kong, Nong Ge at Sun Yat-Sen University, and Yuta Mori. 
 
 ------
 

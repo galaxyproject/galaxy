@@ -42,7 +42,7 @@ Double equal signs, ==, must be used as *"equal to"* (e.g., **c1 == 'chr22'**)
 
 **Syntax**
 
-The filter tool allows you to restrict the datset using simple conditional statements 
+The filter tool allows you to restrict the dataset using simple conditional statements.
 
 - Columns are referenced with **c** and a **number**. For example, **c1** refers to the first column of a tab-delimited file
 - Make sure that multi-character operators contain no white space ( e.g., **&lt;=** is valid while **&lt; =** is not valid )

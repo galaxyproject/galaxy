@@ -99,18 +99,18 @@
  </tests>
 <help>
 
-**What is does**
+**What it does**
 
-Allows to find sequence variants and/or sites covered by specified number of reads with bases above a set quality threshold. The tool works on six  and ten column pileup formats produced with *samtools pileup* command. However, it also allows you to specify columns in the input file manually. The tool assumes the following:
+Allows one to find sequence variants and/or sites covered by a specified number of reads with bases above a set quality threshold. The tool works on six and ten column pileup formats produced with *samtools pileup* command. However, it also allows you to specify columns in the input file manually. The tool assumes the following:
 
 - the quality scores follow phred33 convention, where input qualities are ASCII characters equal to the Phred quality plus 33.
-- the pileup dataset was produced by *samtools pileup* command (although you can override this by setting column assignments manually).
+- the pileup dataset was produced by the *samtools pileup* command (although you can override this by setting column assignments manually).
 
 --------
 
 **Types of pileup datasets**
 
-The description of pileup format below is largely based on information that can be found on SAMTools_ documentation page. The 6- and 10-column variants are described below.
+The descriptions of the following pileup formats are largely based on information that can be found on the SAMTools_ documentation page. The 6- and 10-column variants are described below.
 
 .. _SAMTools: http://samtools.sourceforge.net/pileup.shtml
 
@@ -136,7 +136,7 @@ where::
        
 **Ten column pileup**
 
-The `ten-column`__ pileup incoroporates additional consensus information generated with *-c* option of *samtools pileup* command::
+The `ten-column`__ pileup incorporates additional consensus information generated with the *-c* option of the *samtools pileup* command::
 
 
     1    2  3  4   5   6   7   8       9       10
@@ -187,7 +187,7 @@ For example, if you are calling variants with base quality above 20 on this data
  chrM  414  C  4     ...a     III2
  chrM  415  C  4     TTTt     III7
 
-you will get this::
+you will get::
 
  chrM  413  G  4  ..t,  IIIH  0  0  0  1  3
  chrM  415  C  4  TTTt  III7  0  0  0  4  4
@@ -232,26 +232,26 @@ where::
       12 Quality adjusted coverage
 
 
-Note that in this case coordinates of SNPs were converted to intervals, where the start coordinate is 0-based and the end coordinate in 1-based using the UCSC Table Browser convention. 
+Note that in this case the coordinates of SNPs were converted to intervals, where the start coordinate is 0-based and the end coordinate in 1-based using the UCSC Table Browser convention. 
  
-Although three positions have variants in the original file (413, 414, and 415), only 413 and 415 are reported, because the quality values associated with these two SNPs are above threshold of 20. In the case of 414 the **a** allele has quality value of 17 ( ord("2")-33 ), and therefore it is not reported. In each of the reported lines the program added five columns. Let's take a look at this line::
+Although three positions have variants in the original file (413, 414, and 415), only 413 and 415 are reported because the quality values associated with these two SNPs are above the threshold of 20. In the case of 414 the **a** allele has a quality value of 17 ( ord("2")-33 ), and is therefore not reported. Note that five columns have been added to each of the reported lines::
 
   chrM  413  G  4  ..t,  IIIH  0  0  0  1  3
   
-here there is one variant, and it is a **t**. Because the fourth column represents **T** counts, it is incremented by 1. The last column shows that at this position three reads has bases above the quality threshold of 20.
+Here, there is one variant, **t**. Because the fourth column represents **T** counts, it is incremented by 1. The last column shows that at this position, three reads have bases above the quality threshold of 20.
 
 -----
 
 **Example 1**: Just variants
 
-In this mode the tool outputs only those lines from the input datasets where at least one read contains a sequence variant with quality above the limit set by the **Do not consider read bases with quality lower than** option. For example, suppose one has a pileup dataset like this::
+In this mode, the tool only outputs the lines from the input datasets where at least one read contains a sequence variant with quality above the threshold set by the **Do not consider read bases with quality lower than** option. For example, suppose one has a pileup dataset like the following::
 
  chrM  412  A  2       .,       II
  chrM  413  G  4     ..t,     III2
  chrM  414  C  4     ...a     III2
  chrM  415  C  4     TTTt     III7
  
-to call all variants (with no restriction by coverage) with quality above phred value of 20 we will need to set parameters as follows:
+To call all variants (with no restriction by coverage) with quality above phred value of 20, we will need to set the parameters as follows:
 
 .. image:: ../static/images/pileup_parser_help1.png 
 
@@ -260,13 +260,13 @@ Running the tool with these parameters will return::
  chrM  413  G  4  ..t,  IIIH  0  0  0  1  3
  chrM  415  C  4  TTTt  III7  0  0  0  4  4
  
-**Note** that position 414 is not reported because the *a* variant has associated quality value of 17 (because ord('2')-33 = 17) in is below the phred threshold 20 set by the **Count variants with quality above this value** parameter.
+**Note** that position 414 is not reported because the *a* variant has associated quality value of 17 (because ord('2')-33 = 17) and is below the phred threshold of 20 set by the **Count variants with quality above this value** parameter.
 
 -----
 
 **Example 2**: Report everything
 
-In addition to calling variants it is often useful to know the quality adjusted coverage. Running the tool with these parameters:
+In addition to calling variants, it is often useful to know the quality adjusted coverage. Running the tool with these parameters:
 
 .. image:: ../static/images/pileup_parser_help2.png 
 
@@ -277,10 +277,9 @@ will report everything from the original file::
  chrM  414  C  4  ...a  III2  0  0  0  0  3
  chrM  415  C  4  TTTt  III7  0  0  0  4  4
  
-Here, for instance,  you can see that although the total coverage at position 414 is 4 (column 4) the quality adjusted coverage is 3 (last column). This is because inly three reads out of four have bases with quality above the set threshold of 20 (the actual qualities are III2 or, after conversion,  40, 40, 40, 17).
+Here, you can see that although the total coverage at position 414 is 4 (column 4), the quality adjusted coverage is 3 (last column). This is because only three out of four reads have bases with quality above the set threshold of 20 (the actual qualities are III2 or, after conversion,  40, 40, 40, 17).
 
-Now, one can use the last column of this dataset to filter out (using Galaxy's filter tool) positions where quality adjusted coverage (last column) is below a set threshold.
-
+One can use the last column of this dataset to filter out (using Galaxy's **Filter** tool) positions where quality adjusted coverage (last column) is below a set threshold.
  
 </help>
 </tool>
