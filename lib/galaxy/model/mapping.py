@@ -107,7 +107,7 @@ Dataset.table = Table( "dataset", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, index=True, default=now, onupdate=now ),
-    Column( "state", TrimmedString( 64 ) ),
+    Column( "state", TrimmedString( 64 ), index=True ),
     Column( "deleted", Boolean, index=True, default=False ),
     Column( "purged", Boolean, index=True, default=False ),
     Column( "purgable", Boolean, default=True ),
@@ -307,6 +307,7 @@ Job.table = Table( "job", metadata,
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "history_id", Integer, ForeignKey( "history.id" ), index=True ),
+    Column( "library_folder_id", Integer, ForeignKey( "library_folder.id" ), index=True ),
     Column( "tool_id", String( 255 ) ),
     Column( "tool_version", TEXT, default="1.0.0" ),
     Column( "state", String( 64 ), index=True ),
@@ -337,6 +338,12 @@ JobToOutputDatasetAssociation.table = Table( "job_to_output_dataset", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "job_id", Integer, ForeignKey( "job.id" ), index=True ),
     Column( "dataset_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True ),
+    Column( "name", String(255) ) )
+    
+JobToOutputLibraryDatasetAssociation.table = Table( "job_to_output_library_dataset", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "job_id", Integer, ForeignKey( "job.id" ), index=True ),
+    Column( "ldda_id", Integer, ForeignKey( "library_dataset_dataset_association.id" ), index=True ),
     Column( "name", String(255) ) )
     
 JobExternalOutputMetadata.table = Table( "job_external_output_metadata", metadata,
@@ -914,6 +921,9 @@ assign_mapper( context, JobToInputDatasetAssociation, JobToInputDatasetAssociati
 assign_mapper( context, JobToOutputDatasetAssociation, JobToOutputDatasetAssociation.table,
     properties=dict( job=relation( Job ), dataset=relation( HistoryDatasetAssociation, lazy=False ) ) )
 
+assign_mapper( context, JobToOutputLibraryDatasetAssociation, JobToOutputLibraryDatasetAssociation.table,
+    properties=dict( job=relation( Job ), dataset=relation( LibraryDatasetDatasetAssociation, lazy=False ) ) )
+
 assign_mapper( context, JobParameter, JobParameter.table )
 
 assign_mapper( context, JobExternalOutputMetadata, JobExternalOutputMetadata.table,
@@ -924,9 +934,11 @@ assign_mapper( context, JobExternalOutputMetadata, JobExternalOutputMetadata.tab
 assign_mapper( context, Job, Job.table, 
     properties=dict( galaxy_session=relation( GalaxySession ),
                      history=relation( History ),
+                     library_folder=relation( LibraryFolder ),
                      parameters=relation( JobParameter, lazy=False ),
                      input_datasets=relation( JobToInputDatasetAssociation, lazy=False ),
                      output_datasets=relation( JobToOutputDatasetAssociation, lazy=False ),
+                     output_library_datasets=relation( JobToOutputLibraryDatasetAssociation, lazy=False ),
                      external_output_metadata = relation( JobExternalOutputMetadata, lazy = False ) ) )
 
 assign_mapper( context, Event, Event.table,

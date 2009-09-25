@@ -167,8 +167,9 @@
         <div class="submenu">
         <ul>            
             <li><a href="${app.config.get( "bugs_email", "mailto:galaxy-bugs@bx.psu.edu"  )}">Email comments, bug reports, or suggestions</a></li>
-            <li><a target="_blank" href="${app.config.get( "wiki_url", "http://g2.trac.bx.psu.edu/" )}">Galaxy Wiki</a></li>             
-            <li><a target="_blank" href="${app.config.get( "screencasts_url", "http://g2.trac.bx.psu.edu/wiki/ScreenCasts" )}">Video tutorials (screencasts)</a></li>
+            <li><a target="_blank" href="${app.config.get( "wiki_url", "http://bitbucket.org/galaxy/galaxy-central/wiki" )}">Galaxy Wiki</a></li>             
+            <li><a target="_blank" href="${app.config.get( "screencasts_url", "http://galaxycast.org" )}">Video tutorials (screencasts)</a></li>
+            <li><a target="_blank" href="${app.config.get( "citation_url", "http://bitbucket.org/galaxy/galaxy-central/wiki/Citations" )}">How to Cite Galaxy</a></li>
         </ul>
         </div>
     </td>
@@ -282,7 +283,7 @@
     </head>
     
     <body scroll="no" class="${self.body_class}">
-	<div id="everything" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; min-width: 600px;">
+	<div id="everything" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; min-width: 960px;">
         ## Background displays first
         <div id="background"></div>
         ## Layer iframes over backgrounds

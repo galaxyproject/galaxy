@@ -1274,6 +1274,7 @@ class TwillTestCase( unittest.TestCase ):
         else:
             check_str = "Added 1 datasets to the folder '%s' ( each is selected )." % folder_name
         self.check_page_for_string( check_str )
+        self.library_wait( library_id )
         self.home()
     def set_library_dataset_permissions( self, library_id, folder_id, ldda_id, ldda_name, role_id, permissions_in, permissions_out ):
         url = "library_admin/library_dataset_dataset_association?library_id=%s&folder_id=%s&&id=%s&permissions=True&update_roles_button=Save" % \
@@ -1359,25 +1360,7 @@ class TwillTestCase( unittest.TestCase ):
         tc.submit( "runtool_btn" )
         check_str = "Added 1 dataset versions to the library dataset '%s' in the folder '%s'." % ( ldda_name, folder_name )
         self.check_page_for_string( check_str )
-        self.home()
-    def upload_new_dataset_versions( self, library_id, folder_id, folder_name, library_dataset_id, ldda_name, file_type='auto',
-                                    dbkey='hg18', message='', template_field_name1='', template_field_contents1='' ):
-        """Upload new version(s) of a dataset using a directory of files"""
-        self.home()
-        self.visit_url( "%s/library_admin/library_dataset_dataset_association?upload_option=upload_directory&library_id=%s&folder_id=%s&replace_id=%s" \
-                        % ( self.url, library_id, folder_id, library_dataset_id ) )
-        self.check_page_for_string( 'Upload a directory of files' )
-        self.check_page_for_string( 'You are currently selecting a new file to replace' )
-        tc.fv( "1", "file_type", file_type )
-        tc.fv( "1", "dbkey", dbkey )
-        tc.fv( "1", "message", message.replace( '+', ' ' ) )
-        tc.fv( "1", "server_dir", "library" )
-        # Add template field contents, if any...
-        if template_field_name1:
-            tc.fv( "1", template_field_name1, template_field_contents1 )
-        tc.submit( "runtool_btn" )
-        check_str = "Added 3 dataset versions to the library dataset '%s' in the folder '%s'." % ( ldda_name, folder_name )
-        self.check_page_for_string( check_str )
+        self.library_wait( library_id )
         self.home()
     def add_history_datasets_to_library( self, library_id, folder_id, folder_name, hda_id, root=False ):
         """Copy a dataset from the current history to a library folder"""
@@ -1410,6 +1393,7 @@ class TwillTestCase( unittest.TestCase ):
         tc.submit( "runtool_btn" )
         if check_str_after_submit:
             self.check_page_for_string( check_str_after_submit )
+        self.library_wait( library_id )
         self.home()
     def add_dir_of_files_from_libraries_view( self, library_id, folder_id, selected_dir, file_type='auto', dbkey='hg18', roles_tuple=[],
                                               message='', check_str_after_submit='', template_field_name1='', template_field_contents1='' ):
@@ -1432,6 +1416,7 @@ class TwillTestCase( unittest.TestCase ):
         tc.submit( "runtool_btn" )
         if check_str_after_submit:
             self.check_page_for_string( check_str_after_submit )
+        self.library_wait( library_id, controller='library' )
         self.home()
     def delete_library_item( self, library_id, library_item_id, library_item_name, library_item_type='library_dataset' ):
         """Mark a library item as deleted"""
@@ -1464,3 +1449,18 @@ class TwillTestCase( unittest.TestCase ):
         check_str = "Library '%s' and all of its contents have been purged" % library_name
         self.check_page_for_string( check_str )
         self.home()
+    def library_wait( self, library_id, controller='library_admin', maxiter=20 ):
+        """Waits for the tools to finish"""
+        count = 0
+        sleep_amount = 1
+        self.home()
+        while count < maxiter:
+            count += 1
+            self.visit_url( "%s/%s/browse_library?id=%s" % ( self.url, controller, library_id ) )
+            page = tc.browser.get_html()
+            if page.find( '<!-- running: do not change this comment, used by TwillTestCase.library_wait -->' ) > -1:
+                time.sleep( sleep_amount )
+                sleep_amount += 1
+            else:
+                break
+        self.assertNotEqual(count, maxiter)

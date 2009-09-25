@@ -1,10 +1,11 @@
-<tool id="Grouping1" name="Group" version="1.7.0">
+<tool id="Grouping1" name="Group" version="1.8.0">
   <description>data by a column and perform aggregate operation on other columns.</description>
   <command interpreter="python">
     grouping.py 
       $out_file1
       $input1
       $groupcol
+      $ignorecase
       #for $op in $operations
        '${op.optype}
         ${op.opcol}
@@ -14,6 +15,9 @@
   <inputs>
     <param format="tabular" name="input1" type="data" label="Select data" help="Query missing? See TIP below."/>
     <param name="groupcol" label="Group by column" type="data_column" data_ref="input1" />
+    <param name="ignorecase" type="boolean" truevalue="1" falsevalue="0">
+      <label>Ignore case while grouping?</label>
+    </param>
     <repeat name="operations" title="Operation">
       <param name="optype" type="select" label="Type">
         <option value="mean">Mean</option>
@@ -44,6 +48,7 @@
     <test>
       <param name="input1" value="1.bed"/>
       <param name="groupcol" value="1"/>
+      <param name="ignorecase" value="true"/>
       <param name="optype" value="mean"/>
       <param name="opcol" value="2"/>
       <param name="opround" value="no"/>
@@ -54,6 +59,7 @@
     <test>
       <param name="input1" value="1.tabular"/>
       <param name="groupcol" value="1"/>
+      <param name="ignorecase" value="true"/>
       <param name="optype" value="mean"/>
       <param name="opcol" value="2"/>
       <param name="opround" value="no"/>
@@ -80,15 +86,22 @@ This tool allows you to group the input dataset by a particular column and perfo
 
 - For the following input::
 
-   chr22  1000  NM_17
-   chr22  2000  NM_18
-   chr10  2200  NM_10
-   chr10  1200  NM_11
-   chr22  1600  NM_19
+   chr22  1000  1003  TTT
+   chr22  2000  2003  aaa
+   chr10  2200  2203  TTT
+   chr10  1200  1203  ttt
+   chr22  1600  1603  AAA
 
-- running this tool with **Group by column 1**, Operations **Mean on column 2** and **Concatenate on column 3** will return::
+- **Grouping on column 4** while ignoring case, and performing operation **Count on column 1** will return::
 
-   chr10    1700.00 NM_11,NM_10
-   chr22    1533.33 NM_17,NM_19,NM_18
+   AAA    2
+   TTT    3
+   
+- **Grouping on column 4** while not ignoring case, and performing operation **Count on column 1** will return::
+
+   aaa    1
+   AAA    1
+   ttt    1
+   TTT    2
   </help>
 </tool>

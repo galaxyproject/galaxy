@@ -29,7 +29,9 @@
                 </div>
               <div style="clear: both"></div>
             </div>
-            <input type="submit" name="create_library_button" value="Create"/>
+            <div class="form-row">
+                <input type="submit" name="create_library_button" value="Create"/>
+            </div>
         </form>
     </div>
 </div>

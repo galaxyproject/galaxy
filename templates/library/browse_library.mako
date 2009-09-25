@@ -1,5 +1,6 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
+<%namespace file="/library/library_item_info.mako" import="render_library_item_info" />
 <% 
     from galaxy import util
     from galaxy.web.controllers.library import active_folders
@@ -12,6 +13,8 @@
     <link href="${h.url_for('/static/style/base.css')}" rel="stylesheet" type="text/css" />
     <link href="${h.url_for('/static/style/library.css')}" rel="stylesheet" type="text/css" />
 </%def>
+
+<% tracked_datasets = {} %>
 
 <%
 class RowCounter( object ):
@@ -77,6 +80,54 @@ class RowCounter( object ):
            });
         });
     });
+    // Looks for changes in dataset state using an async request. Keeps
+    // calling itself (via setTimeout) until all datasets are in a terminal
+    // state.
+    var updater = function ( tracked_datasets ) {
+        // Check if there are any items left to track
+        var empty = true;
+        for ( i in tracked_datasets ) {
+            empty = false;
+            break;
+        }
+        if ( ! empty ) {
+            setTimeout( function() { updater_callback( tracked_datasets ) }, 3000 );
+        }
+    };
+    var updater_callback = function ( tracked_datasets ) {
+        // Build request data
+        var ids = []
+        var states = []
+        $.each( tracked_datasets, function ( id, state ) {
+            ids.push( id );
+            states.push( state );
+        });
+        // Make ajax call
+        $.ajax( {
+            type: "POST",
+            url: "${h.url_for( controller='library_dataset', action='library_item_updates' )}",
+            dataType: "json",
+            data: { ids: ids.join( "," ), states: states.join( "," ) },
+            success : function ( data ) {
+                $.each( data, function( id, val ) {
+                    // Replace HTML
+                    var cell = $("#libraryItem-" + id).find("#libraryItemInfo");
+                    cell.html( val.html );
+                    // If new state was terminal, stop tracking
+                    if (( val.state == "ok") || ( val.state == "error") || ( val.state == "empty") || ( val.state == "deleted" ) || ( val.state == "discarded" )) {
+                        delete tracked_datasets[ parseInt(id) ];
+                    } else {
+                        tracked_datasets[ parseInt(id) ] = val.state;
+                    }
+                });
+                updater( tracked_datasets ); 
+            },
+            error: function() {
+                // Just retry, like the old method, should try to be smarter
+                updater( tracked_datasets );
+            }
+        });
+    };
 </script>
 
 <%def name="render_dataset( ldda, library_dataset, selected, library, folder, pad, parent, row_conter )">
@@ -95,6 +146,8 @@ class RowCounter( object ):
             can_manage_library_dataset = trans.app.security_agent.can_manage_library_item( user, roles, library_dataset )
         else:
             current_version = False
+        if current_version and ldda.state not in ( 'ok', 'error', 'empty', 'deleted', 'discarded' ):
+            tracked_datasets[ldda.id] = ldda.state
     %>
     %if current_version:
         <tr class="datasetRow"
@@ -102,7 +155,7 @@ class RowCounter( object ):
             parent="${parent}"
             style="display: none;"
         %endif
-        >
+        id="libraryItem-${ldda.id}">
             <td style="padding-left: ${pad+20}px;">
                 %if selected:
                     <input type="checkbox" name="ldda_ids" value="${ldda.id}" checked/>
@@ -129,7 +182,7 @@ class RowCounter( object ):
                     %endif
                 </div>
             </td>
-            <td>${ldda.message}</td>
+            <td id="libraryItemInfo">${render_library_item_info( ldda )}</td>
             <td>${uploaded_by}</td>
             <td>${ldda.create_time.strftime( "%Y-%m-%d" )}</td>
         </tr>     
@@ -304,6 +357,14 @@ class RowCounter( object ):
         </tfoot>
     </table>
 </form>
+
+%if tracked_datasets:
+    <script type="text/javascript">
+        // Updater
+        updater({${ ",".join( [ '"%s" : "%s"' % ( k, v ) for k, v in tracked_datasets.iteritems() ] ) }});
+    </script>
+    <!-- running: do not change this comment, used by TwillTestCase.library_wait -->
+%endif
 
 ## Help about compression types
 

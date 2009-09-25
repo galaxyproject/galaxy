@@ -10,7 +10,7 @@
     font-style: italic;
 }
 
-div.historyItemBody {
+div.libraryItemBody {
     padding: 4px 4px 2px 4px;
 }
 
@@ -86,5 +86,26 @@ span.expandLink {
     display: inline-block;
     vertical-align: middle;
     background: url(../images/silk/folder.png);
+}
+
+.libraryItem-error {
+    margin-right: 2px;
+    padding: 0 2px 0 2px;
+    border: 1px solid $history_error_border;
+    background: $history_error_bg;
+}
+
+.libraryItem-queued {
+    margin-right: 2px;
+    padding: 0 2px 0 2px;
+    border: 1px solid $history_queued_border;
+    background: $history_queued_bg;
+}
+
+.libraryItem-running {
+    margin-right: 2px;
+    padding: 0 2px 0 2px;
+    border: 1px solid $history_running_border;
+    background: $history_running_bg;
 }
 

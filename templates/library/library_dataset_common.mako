@@ -40,7 +40,8 @@
                         <div class="form-row">
                             <label>File:</label>
                             <div class="form-row-input">
-                                <input type="file" name="files_0|file_data" galaxy-ajax-upload="true"/>
+                                ##<input type="file" name="files_0|file_data" galaxy-ajax-upload="true"/>
+                                <input type="file" name="files_0|file_data"/>
                             </div>
                             <div style="clear: both"></div>
                         </div>
@@ -109,11 +110,16 @@
                             Convert spaces to tabs:
                         </label>
                         <div class="form-row-input">
-                            <input type="checkbox" name="files_0|space_to_tab" value="Yes"/>Yes
+                            ## The files grouping only makes sense in the upload_file context.
+                            %if upload_option == 'upload_file':
+                                <input type="checkbox" name="files_0|space_to_tab" value="Yes"/>Yes
+                            %else:
+                                <input type="checkbox" name="space_to_tab" value="Yes"/>Yes
+                            %endif
                         </div>
-                    </div>
-                    <div class="toolParamHelp" style="clear: both;">
-                        Use this option if you are entering intervals by hand.
+                        <div class="toolParamHelp" style="clear: both;">
+                            Use this option if you are entering intervals by hand.
+                        </div>
                     </div>
                     <div style="clear: both"></div>
                     <div class="form-row">

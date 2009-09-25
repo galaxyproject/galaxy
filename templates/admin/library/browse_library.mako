@@ -1,5 +1,6 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
+<%namespace file="/library/library_item_info.mako" import="render_library_item_info" />
 <%
     from time import strftime
     from galaxy import util
@@ -10,6 +11,8 @@
     <link href="${h.url_for('/static/style/base.css')}" rel="stylesheet" type="text/css" />
     <link href="${h.url_for('/static/style/library.css')}" rel="stylesheet" type="text/css" />
 </%def>
+
+<% tracked_datasets = {} %>
 
 <script type="text/javascript">
     $( document ).ready( function () {
@@ -35,29 +38,6 @@
                 $(this).children().find("img.rowIcon").each( function() { this.src = icon_open; });
             }
         });
-        // Hide all dataset bodies
-        $("div.historyItemBody").hide();
-        // Handle the dataset body hide/show link.
-        $("div.historyItemWrapper").each( function() {
-            var id = this.id;
-            var li = $(this).parent();
-            var body = $(this).children( "div.historyItemBody" );
-            var peek = body.find( "pre.peek" )
-            $(this).children( ".historyItemTitleBar" ).find( ".historyItemTitle" ).wrap( "<a href='#'></a>" ).click( function() {
-                if ( body.is(":visible") ) {
-                    if ( $.browser.mozilla ) { peek.css( "overflow", "hidden" ) }
-                    body.slideUp( "fast" );
-                    li.removeClass( "datasetHighlighted" );
-                } 
-                else {
-                    body.slideDown( "fast", function() { 
-                        if ( $.browser.mozilla ) { peek.css( "overflow", "auto" ); } 
-                    });
-                    li.addClass( "datasetHighlighted" );
-                }
-                return false;
-            });
-        });
     });
     function checkForm() {
         if ( $("select#action_on_datasets_select option:selected").text() == "delete" ) {
@@ -68,6 +48,54 @@
             }
         }
     }
+    // Looks for changes in dataset state using an async request. Keeps
+    // calling itself (via setTimeout) until all datasets are in a terminal
+    // state.
+    var updater = function ( tracked_datasets ) {
+        // Check if there are any items left to track
+        var empty = true;
+        for ( i in tracked_datasets ) {
+            empty = false;
+            break;
+        }
+        if ( ! empty ) {
+            setTimeout( function() { updater_callback( tracked_datasets ) }, 3000 );
+        }
+    };
+    var updater_callback = function ( tracked_datasets ) {
+        // Build request data
+        var ids = []
+        var states = []
+        $.each( tracked_datasets, function ( id, state ) {
+            ids.push( id );
+            states.push( state );
+        });
+        // Make ajax call
+        $.ajax( {
+            type: "POST",
+            url: "${h.url_for( controller='library_dataset', action='library_item_updates' )}",
+            dataType: "json",
+            data: { ids: ids.join( "," ), states: states.join( "," ) },
+            success : function ( data ) {
+                $.each( data, function( id, val ) {
+                    // Replace HTML
+                    var cell = $("#libraryItem-" + id).find("#libraryItemInfo");
+                    cell.html( val.html );
+                    // If new state was terminal, stop tracking
+                    if (( val.state == "ok") || ( val.state == "error") || ( val.state == "empty") || ( val.state == "deleted" ) || ( val.state == "discarded" )) {
+                        delete tracked_datasets[ parseInt(id) ];
+                    } else {
+                        tracked_datasets[ parseInt(id) ] = val.state;
+                    }
+                });
+                updater( tracked_datasets ); 
+            },
+            error: function() {
+                // Just retry, like the old method, should try to be smarter
+                updater( tracked_datasets );
+            }
+        });
+    };
 </script>
 
 <%def name="render_dataset( ldda, library_dataset, selected, library, folder, deleted, show_deleted )">
@@ -84,11 +112,13 @@
             current_version = True
         else:
             current_version = False
+        if current_version and ldda.state not in ( 'ok', 'error', 'empty', 'deleted', 'discarded' ):
+            tracked_datasets[ldda.id] = ldda.state
     %>
     %if current_version:
-        <div class="historyItemWrapper historyItem historyItem-${ldda.state}" id="libraryItem-${ldda.id}">
+        <div class="libraryItemWrapper libraryItem" id="libraryItem-${ldda.id}">
             ## Header row for library items (name, state, action buttons)
-            <div class="historyItemTitleBar"> 
+            <div class="libraryItemTitleBar"> 
                 <table cellspacing="0" cellpadding="0" border="0" width="100%">
                     <tr>
                         <td width="*">
@@ -119,7 +149,7 @@
                                 </div>
                             %endif
                         </td>
-                        <td width="300">${ldda.message}</td>
+                        <td width="300" id="libraryItemInfo">${render_library_item_info( ldda )}</td>
                         <td width="150">${uploaded_by}</td>
                         <td width="60">${ldda.create_time.strftime( "%Y-%m-%d" )}</td>
                     </tr>
@@ -287,3 +317,11 @@
         </p>
     %endif
 </form>
+
+%if tracked_datasets:
+    <script type="text/javascript">
+        // Updater
+        updater({${ ",".join( [ '"%s" : "%s"' % ( k, v ) for k, v in tracked_datasets.iteritems() ] ) }});
+    </script>
+    <!-- running: do not change this comment, used by TwillTestCase.library_wait -->
+%endif
