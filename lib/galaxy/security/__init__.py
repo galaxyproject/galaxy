@@ -33,7 +33,7 @@ class RBACAgent:
     def get_actions( self ):
         """Get all permitted actions as a list of Action objects"""
         return self.permitted_actions.__dict__.values()
-    def get_item_action( self, action, item ):
+    def get_item_actions( self, action, item ):
         raise 'No valid method of retrieving action (%s) for item %s.' % ( action, item )
     def guess_derived_permissions_for_datasets( self, datasets = [] ):
         raise "Unimplemented Method"
@@ -102,10 +102,15 @@ class GalaxyRBACAgent( RBACAgent ):
         Returns true when user has permission to perform an action on an
         instance of Dataset.
         """
-        dataset_action = self.get_item_action( action, dataset )
-        if dataset_action is None:
+        dataset_actions = self.get_item_actions( action, dataset )
+        if not dataset_actions:
             return action.model == 'restrict'
-        return dataset_action.role in roles
+        ret_val = False
+        for dataset_action in dataset_actions:
+            if dataset_action.role in roles:
+                ret_val = True
+                break
+        return ret_val
     def can_access_dataset( self, roles, dataset ):
         return self.allow_dataset_action( roles, self.permitted_actions.DATASET_ACCESS, dataset )
     def can_manage_dataset( self, roles, dataset ):
@@ -120,23 +125,25 @@ class GalaxyRBACAgent( RBACAgent ):
             # All permissions are granted, so non-users cannot have permissions
             return False
         # Check to see if user has access to any of the roles associated with action
-        item_action = self.get_item_action( action, item )
-        if item_action is None:
+        item_actions = self.get_item_actions( action, item )
+        if not item_actions:
             # All permissions are granted, so item must have action
             return False
-        return item_action.role in roles
+        ret_val = False
+        for item_action in item_actions:
+            if item_action.role in roles:
+                ret_val = True
+                break
+        return ret_val
     def can_add_library_item( self, user, roles, item ):
         return self.allow_library_item_action( user, roles, self.permitted_actions.LIBRARY_ADD, item )
     def can_modify_library_item( self, user, roles, item ):
         return self.allow_library_item_action( user, roles, self.permitted_actions.LIBRARY_MODIFY, item )
     def can_manage_library_item( self, user, roles, item ):
         return self.allow_library_item_action( user, roles, self.permitted_actions.LIBRARY_MANAGE, item )
-    def get_item_action( self, action, item ):
+    def get_item_actions( self, action, item ):
         # item must be one of: Dataset, Library, LibraryFolder, LibraryDataset, LibraryDatasetDatasetAssociation
-        for permission in item.actions:
-            if permission.action == action.action:
-                return permission
-        return None
+        return [ permission for permission in item.actions if permission.action == action.action ]
     def guess_derived_permissions_for_datasets( self, datasets=[] ):
         """Returns a dict of { action : [ role, role, ... ] } for the output dataset based upon provided datasets"""
         perms = {}
@@ -427,12 +434,12 @@ class GalaxyRBACAgent( RBACAgent ):
         on library_item. Otherwise, cycle through all sub-folders in library_item until one is found that meets
         this criteria, if it exists.  This method does not necessarily scan the entire library as it returns
         when it finds the first library_item that allows user to perform any one action in actions_to_check.
-        """        
+        """
         for action in actions_to_check:
             if self.allow_library_item_action( user, roles, action, library_item ):
                 return True, hidden_folder_ids
         if isinstance( library_item, self.model.Library ):
-            return self.show_library_item( user, roles, library_item.root_folder, actions_to_check, hidden_folder_ids=hidden_folder_ids )
+            return self.show_library_item( user, roles, library_item.root_folder, actions_to_check, hidden_folder_ids='' )
         if isinstance( library_item, self.model.LibraryFolder ):
             for folder in library_item.active_folders:
                 can_show, hidden_folder_ids = self.show_library_item( user, roles, folder, actions_to_check, hidden_folder_ids=hidden_folder_ids )
@@ -525,13 +532,14 @@ class GalaxyRBACAgent( RBACAgent ):
             .options( eagerload_all( "dataset.actions" ) ) \
             .all()
         for ldda in lddas:
-            ldda_access = self.get_item_action( action, ldda.dataset )
-            if ldda_access is None:
+            ldda_access_permissions = self.get_item_actions( action, ldda.dataset )
+            if not ldda_access_permissions:
                 # Dataset is public
                 return True, hidden_folder_ids
-            if ldda_access.role in roles:
-                # The current user has access permission on the dataset
-                return True, hidden_folder_ids
+            for ldda_access_permission in ldda_access_permissions:
+                if ldda_access_permission.role in roles:
+                    # The current user has access permission on the dataset
+                    return True, hidden_folder_ids
         for sub_folder in folder.active_folders:
             can_access, hidden_folder_ids = self.check_folder_contents( user, roles, sub_folder, hidden_folder_ids=hidden_folder_ids )
             if can_access:
