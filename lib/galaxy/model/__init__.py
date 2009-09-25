@@ -1306,6 +1306,12 @@ class HistoryDatasetAssociationTagAssociation ( ItemTagAssociation ):
 
 class PageTagAssociation ( ItemTagAssociation ):
     pass
+    
+class UserPreference ( object ):
+    def __init( self, user_id=None, name=None, value=None ):
+        self.user_id = user_id
+        self.name = name
+        self.value = value
 
 
 ## ---- Utility methods -------------------------------------------------------

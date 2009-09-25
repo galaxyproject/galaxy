@@ -585,7 +585,13 @@ PageTagAssociation.table = Table( "page_tag_association", metadata,
     Column( "user_tname", TrimmedString(255), index=True),
     Column( "value", TrimmedString(255), index=True),
     Column( "user_value", TrimmedString(255), index=True) )
-
+    
+UserPreference.table = Table( "user_preference", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+    Column( "name", Unicode( 255 ), index=True),
+    Column( "value", Unicode( 1024 ) ) )
+    
 # With the tables defined we can define the mappers and setup the 
 # relationships between the model objects.
 
@@ -741,6 +747,7 @@ assign_mapper( context, User, User.table,
                      stored_workflow_menu_entries=relation( StoredWorkflowMenuEntry, backref="user",
                                                             cascade="all, delete-orphan",
                                                             collection_class=ordering_list( 'order_index' ) ),
+                     preferences=relation( UserPreference, backref="user", order_by=UserPreference.table.c.id),
 #                     addresses=relation( UserAddress,
 #                                         primaryjoin=( User.table.c.id == UserAddress.table.c.user_id ) )
                      ) )
@@ -1010,6 +1017,10 @@ assign_mapper( context, PageTagAssociation, PageTagAssociation.table,
     properties=dict( tag=relation(Tag, backref="tagged_pages") ),
                      primary_key=[PageTagAssociation.table.c.page_id, PageTagAssociation.table.c.tag_id]
                )
+               
+assign_mapper( context, UserPreference, UserPreference.table, 
+    properties = {}
+              )
 
 def db_next_hid( self ):
     """

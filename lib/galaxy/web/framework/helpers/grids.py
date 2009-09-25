@@ -2,6 +2,7 @@ from galaxy.model import *
 from galaxy.model.orm import *
 
 from galaxy.web import url_for
+from galaxy.util.json import from_json_string, to_json_string
 
 import sys, logging
 
@@ -21,6 +22,10 @@ class Grid( object ):
     standard_filters = []
     default_filter = None
     default_sort_key = None
+    preserve_state = True
+    # Set preference names.
+    cur_filter_pref_name = ".filter"
+    cur_sort_key_pref_name = ".sort_key"    
     pass_through_operations = {}
     def __init__( self ):
         # Determine if any multiple row operations are defined
@@ -29,26 +34,47 @@ class Grid( object ):
             if operation.allow_multiple:
                 self.has_multiple_item_operations = True
                 break
+                
     def __call__( self, trans, **kwargs ):
         status = kwargs.get( 'status', None )
         message = kwargs.get( 'message', None )
         session = trans.sa_session
+        
+        # Build a base filter and sort key that is the combination of the saved state and defaults. Saved state takes preference over defaults.
+        base_filter = {}
+        if self.default_filter:
+            base_filter = self.default_filter.copy()
+        base_sort_key = self.default_sort_key            
+        if self.preserve_state:
+            saved_filter_pref = trans.sa_session.query( UserPreference ).\
+                                    filter_by( name=self.__class__.__name__ + self.cur_filter_pref_name, user_id=trans.get_user().id ).first()
+            if saved_filter_pref:
+                saved_filter = from_json_string( saved_filter_pref.value )
+                base_filter.update( saved_filter )
+            
+            saved_sort_key_pref = trans.sa_session.query( UserPreference ).\
+                                    filter_by( name=self.__class__.__name__ + self.cur_sort_key_pref_name, user_id=trans.get_user().id ).first()
+            if saved_sort_key_pref:
+                base_sort_key = from_json_string( saved_sort_key_pref.value )
+        
         # Build initial query
         query = self.build_initial_query( session )
         query = self.apply_default_filter( trans, query, **kwargs )
+        
         # Maintain sort state in generated urls
         extra_url_args = {}
-        # Process filtering arguments to (a) build a query that actuates the filter and (b) builds a
+        
+        # Process filtering arguments to (a) build a query that represents the filter and (b) builds a
         # dictionary that denotes the current filter.
         cur_filter_dict = {}
         for column in self.columns:
             if column.key:
-                # Look for filter criterion in kwargs; if not found, look in default filter.
+                # Look for filter criterion in kwargs; if not found, look in base filter.
                 column_filter = None
                 if "f-" + column.key in kwargs:
                     column_filter = kwargs.get( "f-" + column.key )
-                elif ( self.default_filter ) and ( column.key in self.default_filter ):
-                    column_filter = self.default_filter.get( column.key )
+                elif column.key in base_filter:
+                    column_filter = base_filter.get( column.key )
 
                 # If column filter found, apply it.
                 if column_filter is not None:
@@ -61,13 +87,13 @@ class Grid( object ):
                     if not isinstance( column_filter, basestring ):
                         column_filter = unicode(column_filter)
                     extra_url_args[ "f-" + column.key ] = column_filter.encode("utf-8")
-                  
+                    
         # Process sort arguments
         sort_key = sort_order = None
         if 'sort' in kwargs:
             sort_key = kwargs['sort']
-        elif self.default_sort_key:
-            sort_key = self.default_sort_key
+        elif base_sort_key:
+            sort_key = base_sort_key
         encoded_sort_key = sort_key
         if sort_key:
             if sort_key.startswith( "-" ):
@@ -78,9 +104,26 @@ class Grid( object ):
                 sort_order = 'asc'
                 query = query.order_by( self.model_class.c.get( sort_key ).asc() )
         extra_url_args['sort'] = encoded_sort_key
+        
         # There might be a current row
         current_item = self.get_current_item( trans )
-        # Render
+        
+        # Save current filter and sort key.
+        if self.preserve_state:
+            pref_name = self.__class__.__name__ + self.cur_filter_pref_name
+            if not saved_filter_pref:
+                saved_filter_pref = UserPreference( name=pref_name )
+                trans.get_user().preferences.append( saved_filter_pref )
+            saved_filter_pref.value = to_json_string( cur_filter_dict )
+            if not saved_sort_key_pref:
+                pref_name = self.__class__.__name__ + self.cur_sort_key_pref_name
+                if not saved_sort_key_pref:
+                    saved_sort_key_pref = UserPreference( name=pref_name )
+                    trans.get_user().preferences.append( saved_sort_key_pref )
+            saved_sort_key_pref.value = to_json_string( sort_key )
+            trans.sa_session.flush()
+        
+        # Render grid.
         def url( *args, **kwargs ):
             # Only include sort/filter arguments if not linking to another
             # page. This is a bit of a hack.

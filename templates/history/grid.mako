@@ -167,7 +167,7 @@
 
     ## Print grid filter.
     <form name="history_actions" action="javascript:add_tag_to_grid_filter($('#input-tag-filter').attr('value'))" method="get" >
-        <strong>Filter:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</strong>
+        <strong>Filter:&nbsp;&nbsp;&nbsp;</strong>
         %for column in grid.columns:
             %if column.filterable:
                 <span> by ${column.label.lower()}:</span>
@@ -194,14 +194,14 @@
                         <span class="filter"><a href="${url( filter.get_url_args() )}">${filter.label}</a></span>
                     %endif
                 %endfor
-                <span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+                <span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
             %endif
         %endfor
         
-        ## Link to clear all filters.
+        ## Link to clear all filters. TODO: this should be the default filter or an empty filter.
         <%
             args = { "deleted" : "False", "tags" : "All" }
-            no_filter = GridColumnFilter("Clear", args)
+            no_filter = GridColumnFilter("Clear Filter", args)
         %>
         <span><a href="${url( no_filter.get_url_args() )}">${no_filter.label}</a></span>
     </form>
