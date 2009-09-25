@@ -56,7 +56,10 @@ class Grid( object ):
                     query = column.filter( trans.sa_session, query, column_filter )
                     # Upate current filter dict.
                     cur_filter_dict[ column.key ] = column_filter
-                    # Carry filter along to newly generated urls.
+                    # Carry filter along to newly generated urls; make sure filter is a string so 
+                    # that we can encode to UTF-8 and thus handle user input to filters.
+                    if not isinstance( column_filter, basestring ):
+                        column_filter = unicode(column_filter)
                     extra_url_args[ "f-" + column.key ] = column_filter.encode("utf-8")
                   
         # Process sort arguments
