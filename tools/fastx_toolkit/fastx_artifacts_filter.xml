@@ -3,7 +3,7 @@
 	<command>zcat -f '$input' | fastx_artifacts_filter -v -o "$output"</command>
 
 	<inputs>
-		<param format="fasta,fastqsanger" name="input" type="data" label="Library to filter" />
+		<param format="fasta,fastqsanger,fastqsolexa" name="input" type="data" label="Library to filter" />
 
 	</inputs>
 
@@ -15,7 +15,7 @@
 		</test>
 		<test>
 			<!-- Filter FASTQ file -->
-			<param name="input" value="fastx_artifacts2.fastq" />
+			<param name="input" value="fastx_artifacts2.fastq" ftype="fastqsanger" />
 			<output name="output" file="fastx_artifacts2.out" />
 		</test>
 	</tests>
