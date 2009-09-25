@@ -12,13 +12,13 @@ def stop_err(msg):
 
 def main():
     inputfile = sys.argv[2]
-    
+    ignorecase = int(sys.argv[4])
     ops = []
     cols = []
     rounds = []
     elems = []
     
-    for var in sys.argv[4:]:
+    for var in sys.argv[5:]:
         ops.append(var.split()[0])
         cols.append(var.split()[1])
         rounds.append(var.split()[2])
@@ -71,7 +71,10 @@ def main():
         we need to add 1 to group_col.
         if POS2 is not specified, the newer versions of sort will consider the entire line for sorting. To prevent this, we set POS2=POS1.
         """
-        command_line = "sort -f -k " + str(group_col+1) +"," + str(group_col+1) + " -o " + tmpfile.name + " " + inputfile
+        case = ''
+        if ignorecase == 1:
+            case = '-f' 
+        command_line = "sort -t $'\t' " + case + " -k" + str(group_col+1) +"," + str(group_col+1) + " -o " + tmpfile.name + " " + inputfile
     except Exception, exc:
         stop_err( 'Initialization error -> %s' %str(exc) )
     
@@ -95,6 +98,8 @@ def main():
             try:
                 fields = line.split("\t")
                 item = fields[group_col]
+                if ignorecase == 1:
+                    item = item.lower()
                 if prev_item != "":
                     # At this level, we're grouping on values (item and prev_item) in group_col
                     if item == prev_item:
