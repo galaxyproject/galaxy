@@ -22,7 +22,7 @@ class Grid( object ):
     standard_filters = []
     default_filter = None
     default_sort_key = None
-    preserve_state = True
+    preserve_state = False
     # Set preference names.
     cur_filter_pref_name = ".filter"
     cur_sort_key_pref_name = ".sort_key"    
