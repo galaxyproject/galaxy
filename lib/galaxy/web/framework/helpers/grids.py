@@ -4,7 +4,7 @@ from galaxy.model.orm import *
 from galaxy.web import url_for
 from galaxy.util.json import from_json_string, to_json_string
 
-import sys, logging
+import sys, logging, math
 
 log = logging.getLogger( __name__ )
 
@@ -23,6 +23,10 @@ class Grid( object ):
     default_filter = None
     default_sort_key = None
     preserve_state = False
+    
+    use_paging = False
+    num_rows_per_page = 5
+    
     # Set preference names.
     cur_filter_pref_name = ".filter"
     cur_sort_key_pref_name = ".sort_key"    
@@ -90,7 +94,7 @@ class Grid( object ):
                         column_filter = unicode(column_filter)
                     extra_url_args[ "f-" + column.key ] = column_filter.encode("utf-8")
                     
-        # Process sort arguments
+        # Process sort arguments.
         sort_key = sort_order = None
         if 'sort' in kwargs:
             sort_key = kwargs['sort']
@@ -110,7 +114,26 @@ class Grid( object ):
         # There might be a current row
         current_item = self.get_current_item( trans )
         
-        # Save current filter and sort key.
+        # Process page number.
+        if self.use_paging:
+            if 'page' in kwargs:
+                page_num = int( kwargs['page'] )
+            else:
+                page_num = 1
+                
+            # Before modifying query, get the total number of rows that query returns so that the total number of pages can
+            # be computed.
+            total_num_rows = query.count()
+            query = query.limit( self.num_rows_per_page ).offset( ( page_num-1 ) * self.num_rows_per_page )
+
+            num_pages = int ( math.ceil( float( total_num_rows ) / self.num_rows_per_page ) )
+        else:
+            # Defaults.
+            page_num = 1
+            num_pages = 1
+        
+        
+        # Preserve grid state: save current filter and sort key.
         if self.preserve_state:
             pref_name = unicode( self.__class__.__name__ + self.cur_filter_pref_name )
             if not saved_filter_pref:
@@ -146,9 +169,13 @@ class Grid( object ):
                 else:
                     new_kwargs[ 'id' ] = trans.security.encode_id( id )
             return url_for( **new_kwargs )
+        
+        
         return trans.fill_template( self.template,
                                     grid=self,
                                     query=query,
+                                    cur_page_num = page_num,
+                                    num_pages = num_pages,
                                     cur_filter_dict=cur_filter_dict,
                                     sort_key=sort_key,
                                     encoded_sort_key=encoded_sort_key,

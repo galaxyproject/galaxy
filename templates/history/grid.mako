@@ -299,20 +299,36 @@
                 </tr>
             %endfor
         </tbody>
-        %if grid.operations:
-            <tfoot>
-                <tr>
-                    <td></td>
-                    <td colspan="100">
-                        For <span class="grid-selected-count"></span> selected histories:
-                        %for operation in grid.operations:
-                            %if operation.allow_multiple:
-                                <input type="submit" name="operation" value="${operation.label}" class="action-button">
-                            %endif
-                        %endfor
-                    </td>
-                </tr>
-            </tfoot>
+        <tfoot>
+            %if num_pages > 1:
+            <tr>
+                <td></td>
+                <td colspan="100" style="font-size: 90%; text-align: right">
+                    Page: 
+                    %for page_index in range(1, num_pages + 1):
+                        %if page_index == cur_page_num:
+                            <span style="font-style: italic">${page_index}</span>
+                        %else:
+                            <% args = { "page" : page_index } %>
+                            <span><a href="${url( args )}">${page_index}</a></span>
+                        %endif
+                    %endfor
+                </td>
+            </tr>    
+            %endif
+            %if grid.operations:
+            <tr>
+                <td></td>
+                <td colspan="100">
+                    For <span class="grid-selected-count"></span> selected histories:
+                    %for operation in grid.operations:
+                        %if operation.allow_multiple:
+                            <input type="submit" name="operation" value="${operation.label}" class="action-button">
+                        %endif
+                    %endfor
+                </td>
+            </tr>
+        </tfoot>
         %endif
     </table>
 </form>
