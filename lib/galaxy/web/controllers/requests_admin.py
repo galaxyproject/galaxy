@@ -710,7 +710,11 @@ class Requests( BaseController ):
             select_user.add_option('Select one', 'none', selected=True)
         else:
             select_user.add_option('Select one', 'none')
-        for user in trans.app.model.User.query().all():
+        def __get_email(user):
+            return user.email
+        user_list = trans.app.model.User.query().all()
+        user_list.sort(key=__get_email)
+        for user in user_list:
             if not user.deleted:
                 if userid == str(user.id):
                     select_user.add_option(user.email, user.id, selected=True)

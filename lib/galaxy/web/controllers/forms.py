@@ -307,7 +307,7 @@ class Forms( BaseController ):
                 fields.append(self.__get_field(i, **kwd))
             fields = fields
         else:
-            fields = self.__import_fields(trans, csv_file, form_type)
+            fields, layout = self.__import_fields(trans, csv_file, form_type)
         return name, desc, form_type, layout, fields
     def __update_current_form(self, trans, **kwd):
         name, desc, form_type, layout, fields = self.__get_form(trans, **kwd)
@@ -325,6 +325,7 @@ class Forms( BaseController ):
         '''
         import csv
         fields = []
+        layouts = set()
         try:
             reader = csv.reader(csv_file.file)
             if form_type == trans.app.model.FormDefinition.types.SAMPLE:
@@ -337,6 +338,7 @@ class Forms( BaseController ):
                                    'type': row[4],
                                    'selectlist': options,
                                    'layout':row[6]})
+                    layouts.add(row[6])
             else:
                 for row in reader:
                     options = row[5].split(',')
@@ -353,7 +355,7 @@ class Forms( BaseController ):
                                                               message='Error in importing <b>%s</b> file' % csv_file,
                                                               **kwd))
         self.__imported_from_file = True
-        return fields
+        return fields, list(layouts)
 
     def __save_form(self, trans, fdc_id=None, **kwd):
         '''
