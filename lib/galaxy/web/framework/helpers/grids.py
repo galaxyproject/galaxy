@@ -25,7 +25,7 @@ class Grid( object ):
     preserve_state = False
     
     use_paging = False
-    num_rows_per_page = 5
+    num_rows_per_page = 10
     
     # Set preference names.
     cur_filter_pref_name = ".filter"
@@ -51,18 +51,14 @@ class Grid( object ):
         base_sort_key = self.default_sort_key
         if self.preserve_state:
             pref_name = unicode( self.__class__.__name__ + self.cur_filter_pref_name )
-            saved_filter_pref = trans.sa_session.query( UserPreference ).\
-                                    filter_by( name=pref_name, user_id=trans.get_user().id ).first()
-            if saved_filter_pref:
-                saved_filter = from_json_string( saved_filter_pref.value )
+            if pref_name in trans.get_user().preferences:
+                saved_filter = from_json_string( trans.get_user().preferences[pref_name] )
                 base_filter.update( saved_filter )
             
             pref_name = unicode( self.__class__.__name__ + self.cur_sort_key_pref_name )
-            saved_sort_key_pref = trans.sa_session.query( UserPreference ).\
-                                    filter_by( name=pref_name, user_id=trans.get_user().id ).first()
-            if saved_sort_key_pref:
-                base_sort_key = from_json_string( saved_sort_key_pref.value )
-                        
+            if pref_name in trans.get_user().preferences:
+                base_sort_key = from_json_string( trans.get_user().preferences[pref_name] )
+
         # Build initial query
         query = self.build_initial_query( session )
         query = self.apply_default_filter( trans, query, **kwargs )
@@ -70,14 +66,23 @@ class Grid( object ):
         # Maintain sort state in generated urls
         extra_url_args = {}
         
+        # Determine whether use_default_filter flag is set.
+        use_default_filter_str = kwargs.get( 'use_default_filter' )
+        use_default_filter = False
+        if use_default_filter_str:
+            use_default_filter = use_default_filter_str.lower() == 'true'
+            
         # Process filtering arguments to (a) build a query that represents the filter and (b) builds a
-        # dictionary that denotes the current filter.
+        # dictionary that denotes the current filter.        
         cur_filter_dict = {}
         for column in self.columns:
             if column.key:
-                # Look for filter criterion in kwargs; if not found, look in base filter.
+                # Get the filter criterion for the column. Precedence is (a) if using default filter, look there; (b) look in kwargs; and (c) look in 
+                # base filter.
                 column_filter = None
-                if "f-" + column.key in kwargs:
+                if use_default_filter and self.default_filter:
+                    column_filter = self.default_filter.get( column.key )
+                elif "f-" + column.key in kwargs:
                     column_filter = kwargs.get( "f-" + column.key )
                 elif column.key in base_filter:
                     column_filter = base_filter.get( column.key )
@@ -136,17 +141,11 @@ class Grid( object ):
         # Preserve grid state: save current filter and sort key.
         if self.preserve_state:
             pref_name = unicode( self.__class__.__name__ + self.cur_filter_pref_name )
-            if not saved_filter_pref:
-                saved_filter_pref = UserPreference( name=pref_name )
-                trans.get_user().preferences.append( saved_filter_pref )
-            saved_filter_pref.value = unicode( to_json_string( cur_filter_dict ) )
+            trans.get_user().preferences[pref_name] = unicode( to_json_string( cur_filter_dict ) )
+            
             if sort_key:
-                if not saved_sort_key_pref:
-                    pref_name = unicode( self.__class__.__name__ + self.cur_sort_key_pref_name )
-                    if not saved_sort_key_pref:
-                        saved_sort_key_pref = UserPreference( name=pref_name )
-                        trans.get_user().preferences.append( saved_sort_key_pref )
-                saved_sort_key_pref.value = unicode( to_json_string( sort_key ) )
+                pref_name = unicode( self.__class__.__name__ + self.cur_sort_key_pref_name )
+                trans.get_user().preferences[pref_name] = unicode( to_json_string( sort_key ) )
             trans.sa_session.flush()
             
         # Render grid.

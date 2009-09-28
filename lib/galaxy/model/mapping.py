@@ -14,6 +14,8 @@ from galaxy.model.orm.ext.assignmapper import *
 from galaxy.model.custom_types import *
 from galaxy.util.bunch import Bunch
 from galaxy.security import GalaxyRBACAgent
+from sqlalchemy.orm.collections import attribute_mapped_collection
+from sqlalchemy.ext.associationproxy import association_proxy
 
 metadata = MetaData()
 context = Session = scoped_session( sessionmaker( autoflush=False, transactional=False ) )
@@ -754,10 +756,14 @@ assign_mapper( context, User, User.table,
                      stored_workflow_menu_entries=relation( StoredWorkflowMenuEntry, backref="user",
                                                             cascade="all, delete-orphan",
                                                             collection_class=ordering_list( 'order_index' ) ),
-                     preferences=relation( UserPreference, backref="user", order_by=UserPreference.table.c.id),
+                     _preferences=relation( UserPreference, backref="user", collection_class=attribute_mapped_collection('name')),
 #                     addresses=relation( UserAddress,
 #                                         primaryjoin=( User.table.c.id == UserAddress.table.c.user_id ) )
                      ) )
+                     
+# Set up proxy so that this syntax is possible:
+# <user_obj>.preferences[pref_name] = pref_value
+User.preferences = association_proxy('_preferences', 'value', creator=UserPreference)
 
 assign_mapper( context, Group, Group.table,
     properties=dict( users=relation( UserGroupAssociation ) ) )

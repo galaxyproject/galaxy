@@ -1316,11 +1316,9 @@ class PageTagAssociation ( ItemTagAssociation ):
     pass
     
 class UserPreference ( object ):
-    def __init( self, user_id=None, name=None, value=None ):
-        self.user_id = user_id
+    def __init__( self, name=None, value=None ):
         self.name = name
         self.value = value
-
 
 ## ---- Utility methods -------------------------------------------------------
 

@@ -125,6 +125,8 @@ class HistoryListGrid( grids.Grid ):
         grids.GridColumnFilter( "All", args=dict( deleted='All' ) ),
     ]
     default_filter = dict( deleted="False", tags="All" )
+    preserve_state = False
+    use_paging = True
     def get_current_item( self, trans ):
         return trans.get_history()
     def apply_default_filter( self, trans, query, **kwargs ):
