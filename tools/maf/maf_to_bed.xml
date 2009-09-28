@@ -36,12 +36,12 @@ The interface for this tool contains two pages (steps):
  * **Step 2 of 2**. Choose species from the alignment to be included in the output and specify how to deal with alignment blocks that lack one or more species:
 
    *  **Choose species** - the tool reads the alignment provided during Step 1 and generates a list of species contained within that alignment. Using checkboxes you can specify taxa to be included in the output (only reference genome, shown in **bold**, is selected by default). If you select more than one species, then more than one history item will be created.
-   *  **Choose to include/exclude blocks with missing species** - if an alignment block does not contain any one of the species you selected within **Choose species** menu and this option is set to **exclude blocks with missing species**, then coordiantes of such a block **will not** be included in the output (see **Example 2** below).  
+   *  **Choose to include/exclude blocks with missing species** - if an alignment block does not contain any one of the species you selected within **Choose species** menu and this option is set to **exclude blocks with missing species**, then coordinates of such a block **will not** be included in the output (see **Example 2** below).  
 
 
 -----
 
-**Example 1**: **Include only refernce genome** (hg18 in this case) and **include blocks with missing species**:
+**Example 1**: **Include only reference genome** (hg18 in this case) and **include blocks with missing species**:
 
 For the following alignment::
 

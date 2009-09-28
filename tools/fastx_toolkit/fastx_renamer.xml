@@ -23,7 +23,7 @@ This tool renames the sequence identifiers in a FASTQ/A file.
 
 .. class:: infomark
 
-Use this tool at the beginning of your workflow, as a way to keep the original sequence (before trimming,clipping,barcode-removal, etc).
+Use this tool at the beginning of your workflow, as a way to keep the original sequence (before trimming, clipping, barcode-removal, etc).
 
 --------
 

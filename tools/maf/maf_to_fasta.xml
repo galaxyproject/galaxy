@@ -71,7 +71,7 @@ The interface for this tool contains two pages (steps):
    Multiple Block output has additional options:
    
    *  **Choose species** - the tool reads the alignment provided during Step 1 and generates a list of species contained within that alignment. Using checkboxes you can specify taxa to be included in the output (all species are selected by default). 
-   *  **Choose to include/exclude blocks with missing species** - if an alignment block does not contain any one of the species you selected within **Choose species** menu and this option is set to **exclude blocks with missing species**, then such a block **will not** be included in the output (see **Example 2** below).  For example, if you want to extact human, mouse, and rat from a series of alignments and one of the blocks does not contain mouse sequence, then this block will not be converted to FASTA and will not be returned.
+   *  **Choose to include/exclude blocks with missing species** - if an alignment block does not contain any one of the species you selected within **Choose species** menu and this option is set to **exclude blocks with missing species**, then such a block **will not** be included in the output (see **Example 2** below).  For example, if you want to extract human, mouse, and rat from a series of alignments and one of the blocks does not contain mouse sequence, then this block will not be converted to FASTA and will not be returned.
 
 
 -----

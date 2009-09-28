@@ -55,7 +55,7 @@
     
 .. class:: warningmark 
 
-To use this tool your dataset needs to be in *csfasta* (as ABI SOLiD color-space sequences) format. Click pencil icon next to your dataset to set datatype to *csfasta*.   
+To use this tool your dataset needs to be in the *csfasta* (as ABI SOLiD color-space sequences) format. Click pencil icon next to your dataset to set the datatype to *csfasta*.   
 
 
 -----
@@ -166,8 +166,8 @@ The commonly used parameters with default value setting::
     -h    S-W Full Hit Threshold                  (default: 68.00%)
           In letter-space, this parameter determines the threshold 
           score for both vectored and full Smith-Waterman alignments. 
-          Any values less than this quanitity will be thrown away.
-          *Note* This option differs slightly in meaning between letter-space and colour-space.
+          Any values less than this quantity will be thrown away.
+          *Note* This option differs slightly in meaning between letter-space and color-space.
     -v
     
 

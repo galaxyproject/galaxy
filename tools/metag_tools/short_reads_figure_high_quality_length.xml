@@ -32,7 +32,7 @@
 
 .. class:: warningmark
 
- To use this tool your dataset needs to be in *Quality Score* format. Click pencil icon next to your dataset to set datatype to *Quality Score* (see below for examples of quality scores).
+To use this tool, your dataset needs to be in the *Quality Score* format. Click the pencil icon next to your dataset to set the datatype to *Quality Score* (see below for examples).
 
 -----
 
@@ -62,7 +62,7 @@ Illumina (Solexa) data::
 	&gt;seq1
 	23 33 34 25 28 28 28 32 23 34 27 4 28 28 31 21 28
 
-- If the threshold was set to 20:
+- If the threshold is set to 20:
 
   - a low quality score 4 in the middle separated two segments of lengths 11 and 5.
 

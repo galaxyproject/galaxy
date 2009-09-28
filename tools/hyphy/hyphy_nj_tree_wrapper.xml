@@ -16,7 +16,7 @@
                 <option value="K2P">Kimura 2 parameter</option>
                 <option value="JC69">Jukes-Cantor</option>
                 <!-- <option value="T3P">Tamura 3-parameter (correction for GC content bias and transition/trasversion bias)</option> -->
-                <!-- <option value="p_Distance">Number of observed substituions per site</option> -->
+                <!-- <option value="p_Distance">Number of observed substitutions per site</option> -->
                 <!-- <option value="Unaligned_LZ">Distance measure for unaligned sequences based on Lempel Ziv measure of information content</option> -->
                 <!-- <option value="Unaligned_LZ_FR">Distance measure for unaligned sequences based on Lempel Ziv measure of information content using the best choice forward and reverse string orientations</option> -->
             </param>

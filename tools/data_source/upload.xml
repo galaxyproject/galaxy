@@ -94,7 +94,7 @@ A zipped archive consisting of binary sequence files in either 'ab1' or 'scf' fo
 
 **Fasta**
 
-A sequence in FASTA format consists of a single-line description, followed by lines of sequence data.  The first character of the description line is a greater-than (">") symbol in the first column.  All lines should be shorter than 80 charcters::
+A sequence in FASTA format consists of a single-line description, followed by lines of sequence data.  The first character of the description line is a greater-than (">") symbol in the first column.  All lines should be shorter than 80 characters::
 
     >sequence1
     atgcgtttgcgtgc
@@ -195,7 +195,7 @@ A zipped archive consisting of flat text sequence files.  All files in this arch
 
 **Wig**
 
-The wiggle format is line-oriented.  Wiggle data is preceeded by a track definition line, which adds a number of options for controlling the default display of this track.
+The wiggle format is line-oriented.  Wiggle data is preceded by a track definition line, which adds a number of options for controlling the default display of this track.
 
 -----
 

@@ -42,8 +42,8 @@
 	</param>
 
 	<param name="DISCARD_OPTIONS" type="select" label="Output options">
-		<option value="-c">Output only clipped seqeunces (i.e. sequences which contained the adapter)</option>
-		<option value="-C">Output only non-clipped seqeunces (i.e. sequences which did not contained the adapter)</option>
+		<option value="-c">Output only clipped sequences (i.e. sequences which contained the adapter)</option>
+		<option value="-C">Output only non-clipped sequences (i.e. sequences which did not contained the adapter)</option>
 		<option value="">Output both clipped and non-clipped sequences</option>
 	</param>
 

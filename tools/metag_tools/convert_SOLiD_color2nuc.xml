@@ -25,13 +25,13 @@
 
 .. class:: warningmark
 
- The tool was designed for color space files generated from ABI SOLiD sequencer. The file format must be fasta-like: the title starts with a ">" sign, and each color space sequence starts with a leading nucleotide.
+The tool was designed for color space files generated from an ABI SOLiD sequencer. The file format must be fasta-like: the title starts with a ">" character, and each color space sequence starts with a leading nucleotide.
  
 -----
 
 **What it does**
 
- This tool convert a color space sequence to nucleotides. The leading character must be one of the nucleotides: A, C, G, T. 
+This tool converts a color space sequence to nucleotides. The leading character must be a nucleotide: A, C, G, or T. 
  
 -----
 

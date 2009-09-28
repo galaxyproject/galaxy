@@ -1,5 +1,5 @@
 <tool id="lav_to_bed1" name="LAV to BED">
-  <description>Converts a LAV formated file to BED format</description>
+  <description>Converts a LAV formatted file to BED format</description>
   <command interpreter="python">lav_to_bed.py $lav_file $bed_file1 $bed_file2</command>
   <inputs>
     <param name="lav_file" type="data" format="lav" label="LAV File" optional="False"/>
@@ -19,7 +19,7 @@
 
 **Syntax**
 
-This tool converts a LAV formated file to the BED format.
+This tool converts a LAV formatted file to the BED format.
 
 - **LAV format** LAV is an alignment format developed by Webb Miller's group at Penn State University. It is the primary output format for BLASTZ.
 
@@ -54,7 +54,7 @@ This tool converts a LAV formated file to the BED format.
     }
     #:eof
 
-- To two BED formated files::
+- To two BED formatted files::
 
     chr19	3001011	3001075	hg16_0	0	+
     chr19	3008278	3008357	hg16_1	0	+

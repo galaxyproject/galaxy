@@ -53,7 +53,7 @@
 
 **What it does**
 
-Converts a solexa FASTQ file to/from numeric or ASCII quality format.
+Converts a Solexa FASTQ file to/from numeric or ASCII quality format.
 
 .. class:: warningmark 
 

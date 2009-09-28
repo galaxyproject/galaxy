@@ -1,5 +1,5 @@
 <tool id="axt_to_concat_fasta" name="AXT to concatenated FASTA">
-  <description>Converts an AXT formated file to a concatenated FASTA alignment</description>
+  <description>Converts an AXT formatted file to a concatenated FASTA alignment</description>
   <command interpreter="python">axt_to_concat_fasta.py $dbkey_1 $dbkey_2 &lt; $axt_input &gt; $out_file1</command>
   <inputs>
     <param format="axt" name="axt_input" type="data" label="AXT file"/>
@@ -27,7 +27,7 @@
 
 **Syntax**
 
-This tool converts an AXT formated file to the FASTA format, and concatenates the results in the same build.
+This tool converts an AXT formatted file to the FASTA format, and concatenates the results in the same build.
 
 - **AXT format** The alignments are produced from Blastz, an alignment tool available from Webb Miller's lab at Penn State University. The lav format Blastz output, which does not include the sequence, was converted to AXT format with lavToAxt. Each alignment block in an AXT file contains three lines: a summary line and 2 sequence lines. Blocks are separated from one another by blank lines. 
 

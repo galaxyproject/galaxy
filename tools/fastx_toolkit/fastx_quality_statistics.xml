@@ -36,7 +36,7 @@ Creates quality statistics report for the given Solexa/FASTQ library.
 
 **The output file will contain the following fields:**
 
-* column	= column number (1 to 36 for a 36-cycles read solexa file)
+* column	= column number (1 to 36 for a 36-cycles read Solexa file)
 * count   = number of bases found in this column.
 * min     = Lowest quality score value found in this column.
 * max     = Highest quality score value found in this column.

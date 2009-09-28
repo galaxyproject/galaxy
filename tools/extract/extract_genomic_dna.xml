@@ -55,7 +55,7 @@ All of the following will cause a line from the input dataset to be skipped and 
 
 .. class:: infomark
 
- **Extract genomic DNA using coordinates from ASSEMBLED genomes and UNassembled genomes** previously were achieved by two seperate tools. 
+ **Extract genomic DNA using coordinates from ASSEMBLED genomes and UNassembled genomes** previously were achieved by two separate tools. 
 
 -----
 

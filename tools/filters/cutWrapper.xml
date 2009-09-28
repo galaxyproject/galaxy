@@ -33,7 +33,7 @@
 
 .. class:: infomark
 
-The output of this tool is always in tabular format (e.g., if your original delimeter was comma, it will be replaced with tab). For example:
+The output of this tool is always in tabular format (e.g., if your original delimiters are commas, they will be replaced with tabs). For example:
 
   Cutting columns 1 and 3 from::
 

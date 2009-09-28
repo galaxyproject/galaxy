@@ -57,7 +57,7 @@
   
 .. class:: warningmark
 
- To use this tool your quality score dataset needs to be in *Quality Score* format. Click pencil icon next to your dataset to set datatype to *Quality Score*.
+To use this tool, your dataset needs to be in the *Quality Score* format. Click the pencil icon next to your dataset to set the datatype to *Quality Score* (see below for examples).
  
 -----
 

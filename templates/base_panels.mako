@@ -283,7 +283,7 @@
     </head>
     
     <body scroll="no" class="${self.body_class}">
-	<div id="everything" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; min-width: 960px;">
+	<div id="everything" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; min-width: 600px;">
         ## Background displays first
         <div id="background"></div>
         ## Layer iframes over backgrounds

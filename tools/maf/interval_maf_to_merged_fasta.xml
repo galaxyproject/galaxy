@@ -49,7 +49,7 @@
               </param>
             </when>
         </conditional>
-        <param name="overwrite_with_gaps" type="select" label="Split into Gapless MAF blocks" help="When set to Yes, blocks are divided around gaps appearing in any species. This will prevent gaps occuring in the interior of the sequence for an aligning species from overwriting a nucleotide found for the same position in a lower-scoring block.">
+        <param name="overwrite_with_gaps" type="select" label="Split into Gapless MAF blocks" help="When set to Yes, blocks are divided around gaps appearing in any species. This will prevent gaps occurring in the interior of the sequence for an aligning species from overwriting a nucleotide found for the same position in a lower-scoring block.">
           <option value="True" selected="true">No</option>
           <option value="False">Yes</option>
         </param>

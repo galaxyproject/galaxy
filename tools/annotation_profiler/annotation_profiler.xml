@@ -43,9 +43,9 @@
 
 Takes an input set of intervals and for each interval determines the base coverage of the interval by a set of features (tables) available from UCSC.
 
-By default, this tool will check the coverage of your intervals against all available features; you may, however, choose to select only those tables that you want to include. Selecting a section heading will effectively cause all of it's children to be selected.
+By default, this tool will check the coverage of your intervals against all available features; you may, however, choose to select only those tables that you want to include. Selecting a section heading will effectively cause all of its children to be selected.
 
-You may alternatively choose to recieve a summary across all of the intervals that you provide.
+You may alternatively choose to receive a summary across all of the intervals that you provide.
 
 -----
 
@@ -118,14 +118,14 @@ Where::
  allIntervalCount is the number of provided intervals
  allIntervalSize is the sum of the lengths of the provided interval file
  allCoverage is the sum of the coverage for each provided interval
- allTableRegionsOverlaped is the sum of the number of regions of the table (non-unique) that were overlaped for each interval
- allIntervalsOverlapingTable is the number of provided intervals which overlap the table
+ allTableRegionsOverlapped is the sum of the number of regions of the table (non-unique) that were overlapped for each interval
+ allIntervalsOverlappingTable is the number of provided intervals which overlap the table
  
  nrIntervalCount is the number of non-redundant intervals
  nrIntervalSize is the sum of the lengths of non-redundant intervals
  nrCoverage is the sum of the coverage of non-redundant intervals
- nrTableRegionsOverlaped is the number of regions of the table (unique) that were overlaped by the non-redundant intervals
- nrIntervalsOverlapingTable is the number of non-redundant intervals which overlap the table
+ nrTableRegionsOverlapped is the number of regions of the table (unique) that were overlapped by the non-redundant intervals
+ nrIntervalsOverlappingTable is the number of non-redundant intervals which overlap the table
  
 
 .. class:: infomark

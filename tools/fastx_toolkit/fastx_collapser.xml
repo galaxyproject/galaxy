@@ -63,7 +63,7 @@ Example Output file::
 
 Original Sequence Names / Lane descriptions (e.g. "CSHL_2_FC0042AGLLOO_1_1_742_502") are discarded. 
 
-The output seqeunce name is composed of two numbers: the first is the sequence's number, the second is the multiplicity value.
+The output sequence name is composed of two numbers: the first is the sequence's number, the second is the multiplicity value.
 
 The following output::
 

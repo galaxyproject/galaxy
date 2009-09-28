@@ -45,17 +45,17 @@
 	
 .. class:: warningmark 
 
- Use a smaller word size (*Minimal Size of Exact Match*) will increase the computational time.
+Using a smaller word size (*Minimal Size of Exact Match*) will increase the computational time.
 
 .. class:: warningmark 
 
-Use a larger mismatch number (*Number of Mismatch in the Word*) will increase the computational time.
+Using a larger mismatch number (*Number of Mismatch in the Word*) will increase the computational time.
 
 -----
 	
 **What it does**
  
-This tool currently uses alignment program **BLAT**. Your short reads file is searched against a genome build or another uploaded file. 
+This tool currently uses the **BLAT** alignment program. Your short reads file is searched against a genome build or another uploaded file. 
  
 -----
  
@@ -66,13 +66,13 @@ This tool currently uses alignment program **BLAT**. Your short reads file is se
 	&gt;seq1
 	TGGTAATGGTGGTTTTTTTTTTTTTTTTTTATTTTT
 
-- Use default settings:
+- Use the default settings:
 
   - alignment identity must be higher than or equal to 90%.
   
   - minimal size of exact match to trigger an alignment is 11.
   
-  - allow 0 mismatch in the above exact match size.
+  - allow 0 mismatches in the above exact match size.
   
 - Search against ce2 (C. elegans March 2004), partial result::
 

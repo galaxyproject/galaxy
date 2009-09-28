@@ -1,5 +1,5 @@
 <tool id="MAF_To_Interval1" name="MAF to Interval" force_history_refresh="True">
-  <description>Converts a MAF formated file to the Interval format</description>
+  <description>Converts a MAF formatted file to the Interval format</description>
   <command interpreter="python">maf_to_interval.py $input1 $out_file1 $out_file1.id $__new_file_path__ $input1.dbkey $species $input1.metadata.species $complete_blocks $remove_gaps</command>
   <inputs>
     <param format="maf" name="input1" type="data" label="MAF file to convert"/>

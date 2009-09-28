@@ -36,7 +36,7 @@
 
 **What it does**
 
-This tool splits a solexa library (FASTQ file) or a regular FASTA file to several files, using barcodes as the split criteria.
+This tool splits a Solexa library (FASTQ file) or a regular FASTA file into several files, using barcodes as the split criteria.
 
 --------
 

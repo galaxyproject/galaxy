@@ -219,7 +219,7 @@ The commonly used parameters with default value setting::
           running time. Higher values will have the opposite effect.
     -t    Seed Hit Taboo Length                   (default: 4)
           The seed taboo length specifies how many target genome bases 
-          or colours must exist prior to a previous seed match in order 
+          or colors must exist prior to a previous seed match in order 
           to count another seed match as a hit.
     -9    Seed Generation Taboo Length            (default: 0)
           
@@ -265,8 +265,8 @@ The commonly used parameters with default value setting::
     -h    S-W Hit Threshold                       (default: 68.00%)
           In letter-space, this parameter determines the threshold 
           score for both vectored and full Smith-Waterman alignments. 
-          Any values less than this quanitity will be thrown away.
-          *Note* This option differs slightly in meaning between letter-space and colour-space.
+          Any values less than this quantity will be thrown away.
+          *Note* This option differs slightly in meaning between letter-space and color-space.
 
 
 -----
