@@ -214,19 +214,19 @@ def inherit(context):
             %endfor
         </tbody>
         %if grid.has_multiple_item_operations:
-        <tfoot>
-            <tr>
-                <td></td>
-                <td colspan="100">
-                    For <span class="grid-selected-count"></span> selected items:
-                    %for operation in grid.operations:
-                        %if operation.allow_multiple:
-                            <input type="submit" name="operation" value="${operation.label}" class="action-button">
-                        %endif
-                    %endfor
-                </td>
-            </tr>
-        </tfoot>
+            <tfoot>
+                <tr>
+                    <td></td>
+                    <td colspan="100">
+                        For <span class="grid-selected-count"></span> selected items:
+                        %for operation in grid.operations:
+                            %if operation.allow_multiple:
+                                <input type="submit" name="operation" value="${operation.label}" class="action-button">
+                            %endif
+                        %endfor
+                    </td>
+                </tr>
+            </tfoot>
         %endif
     </table>
 </form>
