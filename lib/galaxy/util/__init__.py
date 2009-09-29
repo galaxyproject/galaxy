@@ -23,7 +23,7 @@ import docutils.core
 from galaxy.util.docutils_ext.htmlfrag import Writer as HTMLFragWriter
 
 pkg_resources.require( 'elementtree' )
-from elementtree import ElementTree
+from elementtree import ElementTree, ElementInclude
 
 pkg_resources.require( "wchartype" )
 import wchartype
@@ -87,7 +87,7 @@ def file_reader(fp, chunk_size=65536):
 
 def unique_id(KEY_SIZE=128):
     """
-    Genenerates a unique ids
+    Generates an unique id
     
     >>> ids = [ unique_id() for i in range(1000) ]
     >>> len(set(ids))
@@ -97,8 +97,10 @@ def unique_id(KEY_SIZE=128):
     return md5(id).hexdigest()
 
 def parse_xml(fname):
-    """Returns an parsed xml tree"""
+    """Returns a parsed xml tree"""
     tree = ElementTree.parse(fname)
+    root = tree.getroot()
+    ElementInclude.include(root)
     return tree
 
 def xml_to_string(elem):
@@ -152,7 +154,7 @@ def sanitize_param(value):
 class Params:
     """
     Stores and 'sanitizes' parameters. Alphanumeric characters and the  
-    non-alpahnumeric ones that are deemed safe are let to pass through (see L{valid_chars}).
+    non-alphanumeric ones that are deemed safe are let to pass through (see L{valid_chars}).
     Some non-safe characters are escaped to safe forms for example C{>} becomes C{__lt__} 
     (see L{mapped_chars}). All other characters are replaced with C{X}.
     
