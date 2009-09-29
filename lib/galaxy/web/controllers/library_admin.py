@@ -49,8 +49,11 @@ class LibraryAdmin( BaseController ):
                                                               msg=util.sanitize_text( msg ),
                                                               messagetype='error' ) )
         created_ldda_ids = params.get( 'created_ldda_ids', '' )
+        if created_ldda_ids and not msg:
+            msg = "%d datasets are now uploading in the background to the library '%s' ( each is selected ).  Please do not navigate away from Galaxy or use the browser's \"stop\" or \"reload\" buttons (on this tab) until the upload(s) change from the \"uploading\" state." % ( len( created_ldda_ids.split(',') ), library.name )
+            messagetype = "info"
         return trans.fill_template( '/admin/library/browse_library.mako', 
-                                    library=trans.app.model.Library.get( id ),
+                                    library=library,
                                     deleted=deleted,
                                     created_ldda_ids=created_ldda_ids,
                                     forms=get_all_forms( trans, filter=dict(deleted=False) ),
@@ -428,7 +431,7 @@ class LibraryAdmin( BaseController ):
         # The built-in 'id' is overwritten in lots of places as well
         ldatatypes = [ dtype_name for dtype_name, dtype_value in trans.app.datatypes_registry.datatypes_by_extension.iteritems() if dtype_value.allow_datatype_change ]
         ldatatypes.sort()
-        if params.get( 'runtool_btn', False ):
+        if params.get( 'runtool_btn', False ) or params.get( 'ajax_upload', False ):
             # See if we have any inherited templates, but do not inherit contents.
             info_association, inherited = folder.get_info_association( inherited=True )
             if info_association:

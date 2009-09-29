@@ -15,14 +15,12 @@ class UploadToolAction( ToolAction ):
 
         precreated_datasets = upload_common.get_precreated_datasets( trans, incoming, trans.app.model.HistoryDatasetAssociation )
         incoming = upload_common.persist_uploads( incoming )
-        json_file_path, data_list = upload_common.create_paramfile( trans, incoming, precreated_datasets, dataset_upload_inputs )
+        uploaded_datasets = upload_common.get_uploaded_datasets( trans, incoming, precreated_datasets, dataset_upload_inputs )
         upload_common.cleanup_unused_precreated_datasets( precreated_datasets )
         
-        if not data_list:
-            try:
-                os.remove( json_file_path )
-            except:
-                pass
+        if not uploaded_datasets:
             return 'No data was entered in the upload form, please go back and choose data to upload.'
         
+        json_file_path = upload_common.create_paramfile( uploaded_datasets )
+        data_list = [ ud.data for ud in uploaded_datasets ]
         return upload_common.create_job( trans, incoming, tool, json_file_path, data_list )

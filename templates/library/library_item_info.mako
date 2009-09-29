@@ -5,6 +5,8 @@
                                 <div class="libraryItem-${ldda.state}">This job is queued</div>
                             %elif ldda.state == 'running':
                                 <div class="libraryItem-${ldda.state}">This job is running</div>
+                            %elif ldda.state == 'upload':
+                                <div class="libraryItem-${ldda.state}">This dataset is uploading</div>
                             %else:
                                 ${ldda.message}
                             %endif

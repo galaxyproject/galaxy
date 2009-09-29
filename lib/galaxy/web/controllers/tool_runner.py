@@ -6,6 +6,7 @@ from galaxy.web.base.controller import *
 from galaxy.util.bunch import Bunch
 from galaxy.tools import DefaultToolState
 from galaxy.tools.parameters.basic import UnvalidatedValue
+from galaxy.tools.actions import upload_common
 
 import logging
 log = logging.getLogger( __name__ )
@@ -137,20 +138,24 @@ class ToolRunner( BaseController ):
         Precreate datasets for asynchronous uploading.
         """
         permissions = trans.app.security_agent.history_get_default_permissions( trans.history )
-        def create_dataset( name, history ):
-            data = trans.app.model.HistoryDatasetAssociation( create_dataset = True )
-            data.name = name
-            data.state = data.states.UPLOAD
-            data.history = history
-            data.flush()
-            history.add_dataset( data )
-            trans.app.security_agent.set_all_dataset_permissions( data.dataset, permissions )
-            return data
+        def create_dataset( name ):
+            ud = Bunch( name=name, file_type=None, dbkey=None )
+            # Okay, time to make this crap actually use the upload_common functions, which means making them get called from outside the json_paramfile method.
+            if nonfile_params.get( 'folder_id', False ):
+                replace_id = nonfile_params.get( 'replace_id', None )
+                if replace_id not in [ None, 'None' ]:
+                    replace_dataset = trans.app.model.LibraryDataset.get( int( replace_id ) )
+                else:
+                    replace_dataset = None
+                library_bunch = upload_common.handle_library_params( trans, nonfile_params, nonfile_params.folder_id, replace_dataset )
+            else:
+                library_bunch = None
+            return upload_common.new_upload( trans, ud, library_bunch=library_bunch, state=trans.app.model.HistoryDatasetAssociation.states.UPLOAD )
         tool = self.get_toolbox().tools_by_id.get( tool_id, None )
         if not tool:
             return False # bad tool_id
-        #params = util.Params( kwd, sanitize=tool.options.sanitize, tool=tool )
-        if "tool_state" in kwd:
+        nonfile_params = util.Params( kwd, sanitize=tool.options.sanitize, tool=tool )
+        if kwd.get( 'tool_state', None ) not in ( None, 'None' ):
             encoded_state = util.string_to_object( kwd["tool_state"] )
             tool_state = DefaultToolState()
             tool_state.decode( encoded_state, tool, trans.app )
@@ -167,7 +172,7 @@ class ToolRunner( BaseController ):
             d_type = dataset_upload_input.get_datatype( trans, kwd )
             
             if d_type.composite_type is not None:
-                datasets.append( create_dataset( 'Uploaded Composite Dataset (%s)' % dataset_upload_input.get_datatype_ext( trans, kwd ), trans.history ) )
+                datasets.append( create_dataset( 'Uploaded Composite Dataset (%s)' % dataset_upload_input.get_datatype_ext( trans, kwd ) ) )
             else:
                 params = Bunch( ** tool_state.inputs[dataset_upload_input.name][0] )
                 if params.file_data not in [ None, "" ]:
@@ -176,7 +181,7 @@ class ToolRunner( BaseController ):
                         name = name.rsplit('/',1)[1]
                     if name.count('\\'):
                         name = name.rsplit('\\',1)[1]
-                    datasets.append( create_dataset( name, trans.history ) )
+                    datasets.append( create_dataset( name ) )
                 if params.url_paste not in [ None, "" ]:
                     url_paste = params.url_paste.replace( '\r', '' ).split( '\n' )
                     url = False
@@ -186,13 +191,13 @@ class ToolRunner( BaseController ):
                             continue
                         elif line.lower().startswith( 'http://' ) or line.lower().startswith( 'ftp://' ):
                             url = True
-                            datasets.append( create_dataset( line, trans.history ) )
+                            datasets.append( create_dataset( line ) )
                         else:
                             if url:
                                 continue # non-url when we've already processed some urls
                             else:
                                 # pasted data
-                                datasets.append( create_dataset( 'Pasted Entry', trans.history ) )
+                                datasets.append( create_dataset( 'Pasted Entry' ) )
                                 break
         if datasets:
             trans.model.flush()

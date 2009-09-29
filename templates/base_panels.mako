@@ -70,12 +70,28 @@
     ## Handle AJAX (actually hidden iframe) upload tool
     <![if !IE]>
     <script type="text/javascript">
+        var upload_form_error = function( msg ) {
+            if ( ! $("iframe#galaxy_main").contents().find("body").find("div[name='upload_error']").size() ) {
+                $("iframe#galaxy_main").contents().find("body").prepend( '<div class="errormessage" name="upload_error">' + msg + '</div><p/>' );
+            } else {
+                $("iframe#galaxy_main").contents().find("body").find("div[name='upload_error']").text( msg );
+            }
+        }
         jQuery( function() {
             $("iframe#galaxy_main").load( function() {
                 $(this).contents().find("form").each( function() { 
                     if ( $(this).find("input[galaxy-ajax-upload]").length > 0 ){
                         $(this).submit( function() {
-                            var error_set = false;
+                            // Only bother using a hidden iframe if there's a file (e.g. big data) upload
+                            var file_upload = false;
+                            $(this).find("input[galaxy-ajax-upload]").each( function() {
+                                if ( $(this).val() != '' ) {
+                                    file_upload = true;
+                                }
+                            });
+                            if ( ! file_upload ) {
+                                return true;
+                            }
                             // Make a synchronous request to create the datasets first
                             var async_datasets;
                             $.ajax( {
@@ -87,10 +103,7 @@
                                 success:    function( d, s ) { async_datasets = d.join() }
                             } );
                             if (async_datasets == '') {
-                                if (! error_set) {
-                                    $("iframe#galaxy_main").contents().find("body").prepend( '<div class="errormessage">No data was entered in the upload form.  You may choose to upload a file, paste some data directly in the data box, or enter URL(s) to fetch from.</div><p/>' );
-                                    error_set = true;
-                                }
+                                upload_form_error( 'No data was entered in the upload form.  You may choose to upload a file, paste some data directly in the data box, or enter URL(s) to fetch from.' );
                                 return false;
                             } else {
                                 $(this).find("input[name=async_datasets]").val( async_datasets );
@@ -98,7 +111,16 @@
                             }
                             // iframe submit is required for nginx (otherwise the encoding is wrong)
                             $(this).ajaxSubmit( { iframe: true } );
-                            $("iframe#galaxy_main").attr("src","${h.url_for(controller='tool_runner', action='upload_async_message')}");
+                            if ( $(this).find("input[name='folder_id']").val() != undefined ) {
+                                var library_id = $(this).find("input[name='library_id']").val();
+                                if ( location.pathname.indexOf( 'library_admin' ) ) {
+                                    $("iframe#galaxy_main").attr("src","${h.url_for(controller='library_admin', action='browse_library' )}?id=" + library_id + "&created_ldda_ids=" + async_datasets);
+                                } else {
+                                    $("iframe#galaxy_main").attr("src","${h.url_for(controller='library', action='browse_library' )}?id=" + library_id + "&created_ldda_ids=" + async_datasets);
+                                }
+                            } else {
+                                $("iframe#galaxy_main").attr("src","${h.url_for(controller='tool_runner', action='upload_async_message')}");
+                            }
                             return false;
                         });
                     }

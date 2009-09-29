@@ -8,9 +8,10 @@
                 <div class="toolFormTitle">Upload a directory of files</div>
             %endif
             <div class="toolFormBody">
-                <form name="upload_library_dataset" action="${h.url_for( controller=controller, action='library_dataset_dataset_association', library_id=library_id )}" enctype="multipart/form-data" method="post">
-                    <input type="hidden" name="tool_id" value="upload_library_dataset"/>
+                <form name="upload_library_dataset" action="${h.url_for( controller=controller, action='library_dataset_dataset_association' )}" enctype="multipart/form-data" method="post">
+                    <input type="hidden" name="tool_id" value="upload1"/>
                     <input type="hidden" name="tool_state" value="None"/>
+                    <input type="hidden" name="library_id" value="${library_id}"/>
                     <input type="hidden" name="folder_id" value="${folder_id}"/>
                     <input type="hidden" name="upload_option" value="${upload_option}"/>
                     %if replace_dataset not in [ None, 'None' ]:
@@ -40,8 +41,7 @@
                         <div class="form-row">
                             <label>File:</label>
                             <div class="form-row-input">
-                                ##<input type="file" name="files_0|file_data" galaxy-ajax-upload="true"/>
-                                <input type="file" name="files_0|file_data"/>
+                                <input type="file" name="files_0|file_data" galaxy-ajax-upload="true"/>
                             </div>
                             <div style="clear: both"></div>
                         </div>

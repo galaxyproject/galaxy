@@ -114,8 +114,11 @@ class Library( BaseController ):
                                                               messagetype='error' ) )
         created_ldda_ids = params.get( 'created_ldda_ids', '' )
         hidden_folder_ids = util.listify( util.restore_text( params.get( 'hidden_folder_ids', '' ) ) )
+        if created_ldda_ids and not msg:
+            msg = "%d datasets are now uploading in the background to the library '%s' ( each is selected ).  Please do not navigate away from Galaxy or use the browser's \"stop\" or \"reload\" buttons (on this tab) until the upload(s) change from the \"uploading\" state." % ( len( created_ldda_ids.split(',') ), library.name )
+            messagetype = "info"
         return trans.fill_template( '/library/browse_library.mako', 
-                                    library=trans.app.model.Library.get( id ),
+                                    library=library,
                                     created_ldda_ids=created_ldda_ids,
                                     hidden_folder_ids=hidden_folder_ids,
                                     default_action=params.get( 'default_action', None ),
@@ -716,7 +719,7 @@ class Library( BaseController ):
                                             messagetype=messagetype )
         if trans.app.security_agent.can_add_library_item( user, roles, folder ) or \
              ( replace_dataset and trans.app.security_agent.can_modify_library_item( user, roles, replace_dataset ) ):
-            if params.get( 'runtool_btn', False ):
+            if params.get( 'runtool_btn', False ) or params.get( 'ajax_upload', False ):
                 # See if we have any inherited templates, but do not inherit contents.
                 info_association, inherited = folder.get_info_association( inherited=True )
                 if info_association:

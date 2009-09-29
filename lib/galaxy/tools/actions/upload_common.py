@@ -31,7 +31,32 @@ def persist_uploads( params ):
         params['files'] = new_files
     return params
 
-def get_precreated_datasets( trans, params, data_obj ):
+def handle_library_params( trans, params, folder_id, replace_dataset=None ):
+    library_bunch = util.bunch.Bunch()
+    library_bunch.replace_dataset = replace_dataset
+    library_bunch.message = params.get( 'message', '' )
+    # See if we have any template field contents
+    library_bunch.template_field_contents = []
+    template_id = params.get( 'template_id', None )
+    library_bunch.folder = trans.app.model.LibraryFolder.get( folder_id )
+    # We are inheriting the folder's info_association, so we did not
+    # receive any inherited contents, but we may have redirected here
+    # after the user entered template contents ( due to errors ).
+    if template_id not in [ None, 'None' ]:
+        library_bunch.template = trans.app.model.FormDefinition.get( template_id )
+        for field_index in range( len( library_bunch.template.fields ) ):
+            field_name = 'field_%i' % field_index
+            if params.get( field_name, False ):
+                field_value = util.restore_text( params.get( field_name, ''  ) )
+                library_bunch.template_field_contents.append( field_value )
+    else:
+        library_bunch.template = None
+    library_bunch.roles = []
+    for role_id in util.listify( params.get( 'roles', [] ) ):
+            library_bunch.roles.append( trans.app.model.Role.get( role_id ) )
+    return library_bunch
+
+def get_precreated_datasets( trans, params, data_obj, controller='root' ):
     """
     Get any precreated datasets (when using asynchronous uploads).
     """
@@ -54,7 +79,7 @@ def get_precreated_datasets( trans, params, data_obj ):
             else:
                 rval.append( data )
         elif data_obj is trans.app.model.LibraryDatasetDatasetAssociation:
-            if not trans.app.security_agent.can_add_library_item( user, roles, data.library_dataset.folder ):
+            if controller == 'library' and not trans.app.security_agent.can_add_library_item( user, roles, data.library_dataset.folder ):
                 log.error( 'Got a precreated dataset (%s) but this user (%s) is not allowed to write to it' % ( data.id, user.id ) )
             else:
                 rval.append( data )
@@ -78,127 +103,143 @@ def cleanup_unused_precreated_datasets( precreated_datasets ):
         data.state = data.states.ERROR
         data.info = 'No file contents were available.'
 
-def new_history_upload( trans, uploaded_dataset ):
+def new_history_upload( trans, uploaded_dataset, state=None ):
     hda = trans.app.model.HistoryDatasetAssociation( name = uploaded_dataset.name,
                                                      extension = uploaded_dataset.file_type,
                                                      dbkey = uploaded_dataset.dbkey, 
                                                      history = trans.history,
                                                      create_dataset = True )
-    hda.state = hda.states.QUEUED
+    if state:
+        hda.state = state
+    else:
+        hda.state = hda.states.QUEUED
     hda.flush()
     trans.history.add_dataset( hda, genome_build = uploaded_dataset.dbkey )
     permissions = trans.app.security_agent.history_get_default_permissions( trans.history )
     trans.app.security_agent.set_all_dataset_permissions( hda.dataset, permissions )
     return hda
 
-def new_library_upload( trans, uploaded_dataset, replace_dataset, folder,
-                        template, template_field_contents, roles, message ):
-    if replace_dataset:
-        ld = replace_dataset
+def new_library_upload( trans, uploaded_dataset, library_bunch, state=None ):
+    user, roles = trans.get_user_and_roles()
+    if not ( trans.app.security_agent.can_add_library_item( user, roles, library_bunch.folder ) \
+             or trans.user.email in trans.app.config.get( "admin_users", "" ).split( "," ) ):
+        # This doesn't have to be pretty - the only time this should happen is if someone's being malicious.
+        raise Exception( "User is not authorized to add datasets to this library." )
+    if library_bunch.replace_dataset:
+        ld = library_bunch.replace_dataset
     else:
-        ld = trans.app.model.LibraryDataset( folder=folder, name=uploaded_dataset.name )
+        ld = trans.app.model.LibraryDataset( folder=library_bunch.folder, name=uploaded_dataset.name )
         ld.flush()
-        trans.app.security_agent.copy_library_permissions( folder, ld )
+        trans.app.security_agent.copy_library_permissions( library_bunch.folder, ld )
     ldda = trans.app.model.LibraryDatasetDatasetAssociation( name = uploaded_dataset.name,
                                                              extension = uploaded_dataset.file_type,
                                                              dbkey = uploaded_dataset.dbkey,
                                                              library_dataset = ld,
                                                              user = trans.user,
                                                              create_dataset = True )
-    ldda.state = ldda.states.QUEUED
-    ldda.message = message
+    if state:
+        ldda.state = state
+    else:
+        ldda.state = ldda.states.QUEUED
+    ldda.message = library_bunch.message
     ldda.flush()
     # Permissions must be the same on the LibraryDatasetDatasetAssociation and the associated LibraryDataset
     trans.app.security_agent.copy_library_permissions( ld, ldda )
-    if replace_dataset:
+    if library_bunch.replace_dataset:
         # Copy the Dataset level permissions from replace_dataset to the new LibraryDatasetDatasetAssociation.dataset
-        trans.app.security_agent.copy_dataset_permissions( replace_dataset.library_dataset_dataset_association.dataset, ldda.dataset )
+        trans.app.security_agent.copy_dataset_permissions( library_bunch.replace_dataset.library_dataset_dataset_association.dataset, ldda.dataset )
     else:
         # Copy the current user's DefaultUserPermissions to the new LibraryDatasetDatasetAssociation.dataset
         trans.app.security_agent.set_all_dataset_permissions( ldda.dataset, trans.app.security_agent.user_get_default_permissions( trans.user ) )
-        folder.add_library_dataset( ld, genome_build=uploaded_dataset.dbkey )
-        folder.flush()
+        library_bunch.folder.add_library_dataset( ld, genome_build=uploaded_dataset.dbkey )
+        library_bunch.folder.flush()
     ld.library_dataset_dataset_association_id = ldda.id
     ld.flush()
     # Handle template included in the upload form, if any
-    if template and template_field_contents:
+    if library_bunch.template and library_bunch.template_field_contents:
         # Since information templates are inherited, the template fields can be displayed on the upload form.
         # If the user has added field contents, we'll need to create a new form_values and info_association
         # for the new library_dataset_dataset_association object.
         # Create a new FormValues object, using the template we previously retrieved
-        form_values = trans.app.model.FormValues( template, template_field_contents )
+        form_values = trans.app.model.FormValues( library_bunch.template, library_bunch.template_field_contents )
         form_values.flush()
         # Create a new info_association between the current ldda and form_values
-        info_association = trans.app.model.LibraryDatasetDatasetInfoAssociation( ldda, template, form_values )
+        info_association = trans.app.model.LibraryDatasetDatasetInfoAssociation( ldda, library_bunch.template, form_values )
         info_association.flush()
     # If roles were selected upon upload, restrict access to the Dataset to those roles
-    if roles:
-        for role in roles:
+    if library_bunch.roles:
+        for role in library_bunch.roles:
             dp = trans.app.model.DatasetPermissions( trans.app.security_agent.permitted_actions.DATASET_ACCESS.action, ldda.dataset, role )
             dp.flush()
     return ldda
 
-def create_paramfile( trans, params, precreated_datasets, dataset_upload_inputs,
-                      replace_dataset=None, folder=None, template=None,
-                      template_field_contents=None, roles=None, message=None ):
+def new_upload( trans, uploaded_dataset, library_bunch=None, state=None ):
+    if library_bunch:
+        return new_library_upload( trans, uploaded_dataset, library_bunch, state )
+    else:
+        return new_history_upload( trans, uploaded_dataset, state )
+
+def get_uploaded_datasets( trans, params, precreated_datasets, dataset_upload_inputs, library_bunch=None ):
+    uploaded_datasets = []
+    for dataset_upload_input in dataset_upload_inputs:
+        uploaded_datasets.extend( dataset_upload_input.get_uploaded_datasets( trans, params ) )
+    for uploaded_dataset in uploaded_datasets:
+        data = get_precreated_dataset( precreated_datasets, uploaded_dataset.name )
+        if not data:
+            data = new_upload( trans, uploaded_dataset, library_bunch )
+        else:
+            data.extension = uploaded_dataset.file_type
+            data.dbkey = uploaded_dataset.dbkey
+            data.flush()
+            if library_bunch:
+                library_bunch.folder.genome_build = uploaded_dataset.dbkey
+                library_bunch.folder.flush()
+            else:
+                trans.history.genome_build = uploaded_dataset.dbkey
+        uploaded_dataset.data = data
+    return uploaded_datasets
+
+def create_paramfile( uploaded_datasets ):
     """
     Create the upload tool's JSON "param" file.
     """
-    data_list = []
     json_file = tempfile.mkstemp()
     json_file_path = json_file[1]
     json_file = os.fdopen( json_file[0], 'w' )
-    for dataset_upload_input in dataset_upload_inputs:
-        uploaded_datasets = dataset_upload_input.get_uploaded_datasets( trans, params )
-        for uploaded_dataset in uploaded_datasets:
-            data = get_precreated_dataset( precreated_datasets, uploaded_dataset.name )
-            if not data:
-                if folder:
-                    data = new_library_upload( trans, uploaded_dataset, replace_dataset, folder, template, template_field_contents, roles, message )
-                else:
-                    data = new_history_upload( trans, uploaded_dataset )
-            else:
-                data.extension = uploaded_dataset.file_type
-                data.dbkey = uploaded_dataset.dbkey
-                data.flush()
-                if folder:
-                    folder.genome_build = uploaded_dataset.dbkey
-                    folder.flush()
-                else:
-                    trans.history.genome_build = uploaded_dataset.dbkey
-            if uploaded_dataset.type == 'composite':
-                # we need to init metadata before the job is dispatched
-                data.init_meta()
-                for meta_name, meta_value in uploaded_dataset.metadata.iteritems():
-                    setattr( data.metadata, meta_name, meta_value )
-                data.flush()
-                json = dict( file_type = uploaded_dataset.file_type,
-                             dataset_id = data.dataset.id,
-                             dbkey = uploaded_dataset.dbkey,
-                             type = uploaded_dataset.type,
-                             metadata = uploaded_dataset.metadata,
-                             primary_file = uploaded_dataset.primary_file,
-                             extra_files_path = data.extra_files_path,
-                             composite_file_paths = uploaded_dataset.composite_files,
-                             composite_files = dict( [ ( k, v.__dict__ ) for k, v in data.datatype.get_composite_files( data ).items() ] ) )
-            else:
-                try:
-                    is_binary = uploaded_dataset.datatype.is_binary
-                except:
-                    is_binary = None
-                json = dict( file_type = uploaded_dataset.file_type,
-                             ext = uploaded_dataset.ext,
-                             name = uploaded_dataset.name,
-                             dataset_id = data.dataset.id,
-                             dbkey = uploaded_dataset.dbkey,
-                             type = uploaded_dataset.type,
-                             is_binary = is_binary,
-                             space_to_tab = uploaded_dataset.space_to_tab,
-                             path = uploaded_dataset.path )
-            json_file.write( to_json_string( json ) + '\n' )
-            data_list.append( data )
+    for uploaded_dataset in uploaded_datasets:
+        data = uploaded_dataset.data
+        if uploaded_dataset.type == 'composite':
+            # we need to init metadata before the job is dispatched
+            data.init_meta()
+            for meta_name, meta_value in uploaded_dataset.metadata.iteritems():
+                setattr( data.metadata, meta_name, meta_value )
+            data.flush()
+            json = dict( file_type = uploaded_dataset.file_type,
+                         dataset_id = data.dataset.id,
+                         dbkey = uploaded_dataset.dbkey,
+                         type = uploaded_dataset.type,
+                         metadata = uploaded_dataset.metadata,
+                         primary_file = uploaded_dataset.primary_file,
+                         extra_files_path = data.extra_files_path,
+                         composite_file_paths = uploaded_dataset.composite_files,
+                         composite_files = dict( [ ( k, v.__dict__ ) for k, v in data.datatype.get_composite_files( data ).items() ] ) )
+        else:
+            try:
+                is_binary = uploaded_dataset.datatype.is_binary
+            except:
+                is_binary = None
+            json = dict( file_type = uploaded_dataset.file_type,
+                         ext = uploaded_dataset.ext,
+                         name = uploaded_dataset.name,
+                         dataset_id = data.dataset.id,
+                         dbkey = uploaded_dataset.dbkey,
+                         type = uploaded_dataset.type,
+                         is_binary = is_binary,
+                         space_to_tab = uploaded_dataset.space_to_tab,
+                         path = uploaded_dataset.path )
+        json_file.write( to_json_string( json ) + '\n' )
     json_file.close()
-    return ( json_file_path, data_list )
+    return json_file_path
 
 def create_job( trans, params, tool, json_file_path, data_list, folder=None ):
     """
