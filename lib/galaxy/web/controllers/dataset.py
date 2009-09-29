@@ -1,6 +1,8 @@
 import logging, os, string, shutil, re, socket, mimetypes, smtplib, urllib
 
 from galaxy.web.base.controller import *
+from galaxy.tags.tag_handler import TagHandler
+from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy import util, datatypes, jobs, web, model
 from cgi import escape, FieldStorage
 
@@ -42,7 +44,97 @@ ${traceback}
 (This is an automated message).
 """
 
+class HistoryDatasetAssociationListGrid( grids.Grid ):
+    class StatusColumn( grids.GridColumn ):
+        def get_value( self, trans, grid, hda ):
+            if hda.deleted:
+                return "deleted"
+            return ""
+        def get_link( self, trans, grid, hda ):
+            return None
+    class TagsColumn( grids.GridColumn ):
+        def __init__(self, col_name, key, filterable):
+            grids.GridColumn.__init__(self, col_name, key=key, filterable=filterable)
+            # Tags cannot be sorted.
+            self.sortable = False
+            self.tag_elt_id_gen = 0
+        def get_value( self, trans, grid, hda ):
+            self.tag_elt_id_gen += 1
+            elt_id="tagging-elt" + str( self.tag_elt_id_gen )
+            div_elt = "<div id=%s></div>" % elt_id
+            return div_elt + trans.fill_template( "/tagging_common.mako", trans=trans, tagged_item=hda, 
+                                                    elt_id = elt_id, in_form="true", input_size="20", tag_click_fn="add_tag_to_grid_filter" )
+        def filter( self, db_session, query, column_filter ):
+            """ Modify query to include only hdas with tags in column_filter. """
+            if column_filter == "All":
+                pass
+            elif column_filter:
+                # Parse filter to extract multiple tags.
+                tag_handler = TagHandler()
+                raw_tags = tag_handler.parse_tags( column_filter.encode("utf-8") )
+                for name, value in raw_tags.items():
+                    tag = tag_handler.get_tag_by_name( db_session, name )
+                    if tag:
+                        query = query.filter( model.HistoryDatasetAssociation.tags.any( tag_id=tag.id ) )
+                        if value:
+                            query = query.filter( model.HistoryDatasetAssociation.tags.any( value=value.lower() ) )
+                    else: 
+                        # Tag doesn't exist; unclear what to do here, but the literal thing to do is add the criterion, which
+                        # will then yield a query that returns no results.
+                        query = query.filter( model.HistoryDatasetAssociation.tags.any( user_tname=name ) )
+            return query
+        def get_accepted_filters( self ):
+               """ Returns a list of accepted filters for this column. """
+               accepted_filter_labels_and_vals = { "All": "All" }
+               accepted_filters = []
+               for label, val in accepted_filter_labels_and_vals.items():
+                   args = { self.key: val }
+                   accepted_filters.append( grids.GridColumnFilter( label, args) )
+               return accepted_filters
+             
+    class StatusColumn( grids.GridColumn ):
+        def get_value( self, trans, grid, hda ):
+            if hda.deleted:
+                return "deleted"
+            return ""
+        def get_accepted_filters( self ):
+            """ Returns a list of accepted filters for this column. """
+            accepted_filter_labels_and_vals = { "Active" : "False", "Deleted" : "True", "All": "All" }
+            accepted_filters = []
+            for label, val in accepted_filter_labels_and_vals.items():
+               args = { self.key: val }
+               accepted_filters.append( grids.GridColumnFilter( label, args) )
+            return accepted_filters
+
+    # Grid definition
+    title = "Stored datasets"
+    model_class = model.HistoryDatasetAssociation
+    template='/dataset/grid.mako'
+    default_sort_key = "-create_time"
+    columns = [
+         grids.GridColumn( "Name", key="name",
+                                # Link name to dataset's history.
+                              link=( lambda item: iff( item.history.deleted, None, dict( operation="switch", id=item.id ) ) ) ),
+        TagsColumn( "Tags", key="tags", filterable=True ),
+        StatusColumn( "Status", key="deleted", attach_popup=False ),
+        grids.GridColumn( "Created", key="create_time", format=time_ago ),
+        grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
+    ]
+    operations = []
+    standard_filters = []
+    default_filter = dict( deleted="False", tags="All" )
+    preserve_state = False
+    use_paging = True
+    num_rows_per_page = 10
+    def apply_default_filter( self, trans, query, **kwargs ):
+        # This is a somewhat obtuse way to join the History and HDA tables. However, it's necessary 
+        # because the initial query in build_initial_query is specificied on the HDA table (this is reasonable) 
+        # and there's no simple property in the HDA to do the join.
+        return query.select_from( model.HistoryDatasetAssociation.table.join( model.History.table ) ).filter( model.History.user == trans.user )
+
 class DatasetInterface( BaseController ):
+        
+    stored_list_grid = HistoryDatasetAssociationListGrid()
 
     @web.expose
     def errors( self, trans, id ):
@@ -136,7 +228,50 @@ class DatasetInterface( BaseController ):
                     raise paste.httpexceptions.HTTPNotFound( "File Not Found (%s)." % ( filename ) )
         else:
             return trans.show_error_message( "You are not allowed to access this dataset" )
-    
+            
+    @web.expose
+    @web.require_login( "see all available datasets" )
+    def list( self, trans, **kwargs ):
+        """List all available datasets"""
+        status = message = None
+
+        if 'operation' in kwargs:
+            operation = kwargs['operation'].lower()
+            hda_ids = util.listify( kwargs.get( 'id', [] ) )
+            
+            # Display no message by default
+            status, message = None, None
+
+            # Load the hdas and ensure they all belong to the current user
+            hdas = []
+            for encoded_hda_id in hda_ids:
+                hda_id = trans.security.decode_id( encoded_hda_id )
+                hda = trans.sa_session.query( model.HistoryDatasetAssociation ).filter_by( id=hda_id ).first()
+                if hda:
+                    # Ensure history is owned by current user
+                    if hda.history.user_id != None and trans.user:
+                        assert trans.user.id == hda.history.user_id, "HistoryDatasetAssocation does not belong to current user"
+                    hdas.append( hda )
+                else:
+                    log.warn( "Invalid history_dataset_association id '%r' passed to list", hda_id )
+
+            if hdas:
+                
+                if operation == "switch":
+                    # Convert hda to histories.
+                    histories = []
+                    for hda in hdas:
+                        histories.append( hda.history )
+                        
+                    # Use history controller to switch the history. TODO: is this reasonable?
+                    status, message = trans.webapp.controllers['history']._list_switch( trans, histories )
+                    
+                    # Current history changed, refresh history frame
+                    trans.template_context['refresh_frames'] = ['history']        
+
+        # Render the list view
+        return self.stored_list_grid( trans, status=status, message=message, **kwargs )
+
     @web.expose
     def display_at( self, trans, dataset_id, filename=None, **kwd ):
         """Sets up a dataset permissions so it is viewable at an external site"""
@@ -222,7 +357,7 @@ class DatasetInterface( BaseController ):
                     new_history = trans.app.model.History()
                     if new_history_name:
                         new_history.name = new_history_name
-                    new_history.user = user
+                    new_history_name = user
                     new_history.flush()
                     target_history_ids.append( new_history.id )
                 if user:

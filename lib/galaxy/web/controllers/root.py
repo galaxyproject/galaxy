@@ -46,6 +46,13 @@ class RootController( BaseController ):
         yield "</body></html>"
 
     ## ---- Root history display ---------------------------------------------
+    
+    @web.expose
+    def my_data( self, trans ):
+        """
+        Display user's data.
+        """
+        return trans.fill_template_mako( "/my_data.mako" )
 
     @web.expose
     def history( self, trans, as_xml=False, show_deleted=False ):

@@ -217,6 +217,7 @@
         </ul>
         <ul class="loggedin-only" style="${style2}">
             <li>Logged in as <span id="user-email">${user_email}</span></li>
+            <li><a target="galaxy_main" href="${h.url_for( controller='root', action='my_data' )}">My Data</a></li>
             %if app.config.use_remote_user:
                 %if app.config.remote_user_logout_href:
                     <li><a href="${app.config.remote_user_logout_href}" target="_top">Logout</a></li>

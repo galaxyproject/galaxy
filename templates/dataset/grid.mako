@@ -90,7 +90,7 @@
             var autocomplete_options = 
                 { selectFirst: false, formatItem : format_item_func, autoFill: false, highlight: false, mustMatch: true };
 
-            t.autocomplete("${h.url_for( controller='tag', action='tag_autocomplete_data', item_class='History' )}", autocomplete_options);
+            t.autocomplete("${h.url_for( controller='tag', action='tag_autocomplete_data', item_class='HistoryDatasetAssociation' )}", autocomplete_options);
 
             //t.addClass("tag-input");
 
@@ -166,7 +166,7 @@
     <h2>${grid.title}</h2>
 
     ## Print grid filter.
-    <form name="history_actions" action="javascript:add_tag_to_grid_filter($('#input-tag-filter').attr('value'))" method="get" >
+    <form name="dataset_actions" action="javascript:add_tag_to_grid_filter($('#input-tag-filter').attr('value'))" method="get" >
         <strong>Filter:&nbsp;&nbsp;&nbsp;</strong>
         %for column in grid.columns:
             %if column.filterable:
@@ -197,20 +197,12 @@
                 <span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
             %endif
         %endfor
-        
-        ## Link to clear all filters. TODO: this should be the default filter or an empty filter.
-        <%
-            args = { "deleted" : "False", "tags" : "All" }
-            no_filter = GridColumnFilter("Clear Filter", args)
-        %>
-        <span><a href="${url( no_filter.get_url_args() )}">${no_filter.label}</a></span>
     </form>
 </div>
-<form name="history_actions" action="${url()}" method="post" >
+<form name="dataset_actions" action="${url()}" method="post" >
     <table class="grid">
         <thead>
             <tr>
-                <th></th>
                 %for column in grid.columns:
                     %if column.visible:
                         <%
@@ -251,10 +243,6 @@
                     class="current" \
                 %endif
                 > 
-                    ## Item selection column
-                    <td style="width: 1.5em;">
-                        <input type="checkbox" name="id" value=${trans.security.encode_id( item.id )} class="grid-row-select-checkbox" />
-                    </td>
                     ## Data columns
                     %for column in grid.columns:
                         %if column.visible:

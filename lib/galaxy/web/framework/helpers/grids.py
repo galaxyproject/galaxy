@@ -70,18 +70,19 @@ class Grid( object ):
         use_default_filter_str = kwargs.get( 'use_default_filter' )
         use_default_filter = False
         if use_default_filter_str:
-            use_default_filter = use_default_filter_str.lower() == 'true'
+            use_default_filter = ( use_default_filter_str.lower() == 'true' )
             
         # Process filtering arguments to (a) build a query that represents the filter and (b) builds a
         # dictionary that denotes the current filter.        
         cur_filter_dict = {}
         for column in self.columns:
             if column.key:
-                # Get the filter criterion for the column. Precedence is (a) if using default filter, look there; (b) look in kwargs; and (c) look in 
-                # base filter.
+                # Get the filter criterion for the column. Precedence is (a) if using default filter, only look there; otherwise, 
+                # (b) look in kwargs; and (c) look in base filter.
                 column_filter = None
-                if use_default_filter and self.default_filter:
-                    column_filter = self.default_filter.get( column.key )
+                if use_default_filter:
+                    if self.default_filter:
+                        column_filter = self.default_filter.get( column.key )
                 elif "f-" + column.key in kwargs:
                     column_filter = kwargs.get( "f-" + column.key )
                 elif column.key in base_filter:
@@ -130,7 +131,6 @@ class Grid( object ):
             # be computed.
             total_num_rows = query.count()
             query = query.limit( self.num_rows_per_page ).offset( ( page_num-1 ) * self.num_rows_per_page )
-
             num_pages = int ( math.ceil( float( total_num_rows ) / self.num_rows_per_page ) )
         else:
             # Defaults.
