@@ -14,7 +14,7 @@
         ${output.dataset.dataset.id}:${output}
     #end while
   </command>
-  <inputs>
+  <inputs nginx_upload="true">
     <param name="file_type" type="select" label="File Format" help="Which format? See help below">
       <options from_parameter="tool.app.datatypes_registry.upload_file_formats" transform_lines="[ &quot;%s%s%s&quot; % ( line, self.separator, line ) for line in obj ]">
         <column name="value" index="1"/>

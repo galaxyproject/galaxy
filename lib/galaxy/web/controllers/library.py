@@ -792,8 +792,13 @@ class Library( BaseController ):
             # Send the current history to the form to enable importing datasets from history to library
             history = trans.get_history()
             history.refresh()
+            # If we're using nginx upload, override the form action
+            action = web.url_for( controller='library', action='library_dataset_dataset_association' )
+            if upload_option == 'upload_file' and trans.app.config.nginx_upload_path:
+                action = web.url_for( trans.app.config.nginx_upload_path ) + '?nginx_redir=' + action
             return trans.fill_template( '/library/upload.mako',
                                         upload_option=upload_option,
+                                        action=action,
                                         library_id=library_id,
                                         folder_id=folder_id,
                                         replace_dataset=replace_dataset,

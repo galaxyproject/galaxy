@@ -32,4 +32,4 @@
     ${render_msg( msg, messagetype )}
 %endif
 
-${render_upload_form( 'library_admin', upload_option, library_id, folder_id, replace_dataset, file_formats, dbkeys, roles, history, )}
+${render_upload_form( 'library_admin', upload_option, action, library_id, folder_id, replace_dataset, file_formats, dbkeys, roles, history, )}

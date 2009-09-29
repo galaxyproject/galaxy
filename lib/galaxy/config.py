@@ -89,9 +89,10 @@ class Configuration( object ):
             raise ConfigurationError( "user_library_import_dir specified in config (%s) does not exist" % self.user_library_import_dir )
         # Configuration options for taking advantage of nginx features
         self.nginx_x_accel_redirect_base = kwargs.get( 'nginx_x_accel_redirect_base', False )
-        self.nginx_upload_location = kwargs.get( 'nginx_upload_store', False )
-        if self.nginx_upload_location:
-            self.nginx_upload_location = os.path.abspath( self.nginx_upload_location )
+        self.nginx_upload_store = kwargs.get( 'nginx_upload_store', False )
+        self.nginx_upload_path = kwargs.get( 'nginx_upload_path', False )
+        if self.nginx_upload_store:
+            self.nginx_upload_store = os.path.abspath( self.nginx_upload_store )
         # Parse global_conf and save the parser
         global_conf = kwargs.get( 'global_conf', None )
         global_conf_parser = ConfigParser.ConfigParser()

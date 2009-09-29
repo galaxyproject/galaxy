@@ -464,7 +464,11 @@ class Tool:
         if input_elem:
             # Handle properties of the input form
             self.check_values = util.string_as_bool( input_elem.get("check_values", "true") )
-            self.action = input_elem.get( "action", "/tool_runner/index")
+            self.nginx_upload = util.string_as_bool( input_elem.get( "nginx_upload", "false" ) )
+            if self.nginx_upload and self.app.config.nginx_upload_path:
+                self.action = input_elem.get( "action", self.app.config.nginx_upload_path + "?nginx_redir=/tool_runner/index" )
+            else:
+                self.action = input_elem.get( "action", "/tool_runner/index")
             self.target = input_elem.get( "target", "galaxy_main" )
             self.method = input_elem.get( "method", "post" )
             # Parse the actual parameters

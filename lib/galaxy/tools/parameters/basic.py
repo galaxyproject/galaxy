@@ -304,22 +304,21 @@ class FileToolParameter( ToolParameter ):
     def get_html_field( self, trans=None, value=None, other_values={}  ):
         return form_builder.FileField( self.name, ajax = self.ajax, value = value )
     def from_html( self, value, trans=None, other_values={} ):
-        # TODO: Fix nginx upload module support
         # Middleware or proxies may encode files in special ways (TODO: this
         # should be pluggable)
-        #if type( value ) == dict:
-        #    upload_location = self.tool.app.config.nginx_upload_location
-        #    assert upload_location, \
-        #        "Request appears to have been processed by nginx_upload_module \
-        #        but Galaxy is not configured to recgonize it"
-        #    # Check that the file is in the right location
-        #    local_filename = os.path.abspath( value['path'] )
-        #    assert local_filename.startswith( upload_location ), \
-        #        "Filename provided by nginx is not in correct directory"
-        #    value = Bunch(
-        #        filename = value["name"],
-        #        local_filename = local_filename
-        #    )
+        if type( value ) == dict:
+            upload_store = self.tool.app.config.nginx_upload_store
+            assert upload_store, \
+                "Request appears to have been processed by nginx_upload_module \
+                but Galaxy is not configured to recognize it"
+            # Check that the file is in the right location
+            local_filename = os.path.abspath( value['path'] )
+            assert local_filename.startswith( upload_store ), \
+                "Filename provided by nginx is not in correct directory"
+            value = dict(
+                filename = value["name"],
+                local_filename = local_filename
+            )
         return value
     def get_required_enctype( self ):
         """

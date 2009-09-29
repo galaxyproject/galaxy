@@ -1,4 +1,4 @@
-<%def name="render_upload_form( controller, upload_option, library_id, folder_id, replace_dataset, file_formats, dbkeys, roles, history )">
+<%def name="render_upload_form( controller, upload_option, action, library_id, folder_id, replace_dataset, file_formats, dbkeys, roles, history )">
     <% import os, os.path %>
     %if upload_option in [ 'upload_file', 'upload_directory' ]:
         <div class="toolForm" id="upload_library_dataset">
@@ -8,7 +8,7 @@
                 <div class="toolFormTitle">Upload a directory of files</div>
             %endif
             <div class="toolFormBody">
-                <form name="upload_library_dataset" action="${h.url_for( controller=controller, action='library_dataset_dataset_association' )}" enctype="multipart/form-data" method="post">
+                <form name="upload_library_dataset" action="${action}" enctype="multipart/form-data" method="post">
                     <input type="hidden" name="tool_id" value="upload1"/>
                     <input type="hidden" name="tool_state" value="None"/>
                     <input type="hidden" name="library_id" value="${library_id}"/>
