@@ -14,7 +14,7 @@
 
 <ul class="manage-table-actions">
     <li>
-        <a class="action-button" href="${h.url_for( controller='library', action='browse_library', id=library_id )}"><span>Browse this data library</span></a>
+        <a class="action-button" href="${h.url_for( controller='library', action='browse_library', obj_id=library_id )}"><span>Browse this data library</span></a>
     </li>
 </ul>
 
@@ -22,9 +22,9 @@
     ${render_msg( msg, messagetype )}
 %endif
 
-<%def name="datatype( ldda, datatypes )">
+<%def name="datatype( ldda, file_formats )">
     <select name="datatype">
-        %for ext in datatypes:
+        %for ext in file_formats:
             %if ldda.ext == ext:
                 <option value="${ext}" selected="yes">${ext}</option>
             %else:
@@ -38,8 +38,8 @@
     <div class="toolForm">
         <div class="toolFormTitle">Edit attributes of ${ldda.name}</div>
         <div class="toolFormBody">
-            <form name="edit_attributes" action="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library_id, folder_id=ldda.library_dataset.folder.id, edit_info=True )}" method="post">
-                <input type="hidden" name="id" value="${ldda.id}"/>
+            <form name="edit_attributes" action="${h.url_for( controller='library', action='ldda_edit_info', library_id=library_id, folder_id=ldda.library_dataset.folder.id )}" method="post">
+                <input type="hidden" name="obj_id" value="${ldda.id}"/>
                 <div class="form-row">
                     <label>Name:</label>
                     <input type="text" name="name" value="${ldda.name}" size="40"/>
@@ -75,7 +75,7 @@
                     <input type="submit" name="save" value="Save"/>
                 </div>
             </form>
-            <form name="auto_detect" action="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library_id, folder_id=ldda.library_dataset.folder.id, edit_info=True )}" method="post">
+            <form name="auto_detect" action="${h.url_for( controller='library', action='ldda_edit_info', library_id=library_id, folder_id=ldda.library_dataset.folder.id )}" method="post">
                 <div class="form-row">
                     <input type="hidden" name="id" value="${ldda.id}"/>
                     <input type="submit" name="detect" value="Auto-detect"/>
@@ -91,11 +91,11 @@
         <div class="toolFormTitle">Change data type</div>
         <div class="toolFormBody">
             %if ldda.datatype.allow_datatype_change:
-                <form name="change_datatype" action="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library_id, folder_id=ldda.library_dataset.folder.id, edit_info=True )}" method="post">
+                <form name="change_datatype" action="${h.url_for( controller='library', action='ldda_edit_info', library_id=library_id, folder_id=ldda.library_dataset.folder.id )}" method="post">
                     <input type="hidden" name="id" value="${ldda.id}"/>
                     <div class="form-row">
                         <label>New Type:</label>
-                        ${datatype( ldda, datatypes )}
+                        ${datatype( ldda, file_formats )}
                         <div class="toolParamHelp" style="clear: both;">
                             This will change the datatype of the existing dataset
                             but <i>not</i> modify its contents. Use this if Galaxy
@@ -147,5 +147,5 @@
     </div>
 %endif
 %if widgets:
-    ${render_template_info( ldda, library_id, widgets )}
+    ${render_template_info( ldda, library_id, 'ldda_edit_info', widgets )}
 %endif

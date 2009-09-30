@@ -4,7 +4,7 @@
 <br/<br/>
 <ul class="manage-table-actions">
     <li>
-        <a class="action-button" href="${h.url_for( controller='library_admin', action='browse_library', id=library_id )}"><span>Browse this data library</span></a>
+        <a class="action-button" href="${h.url_for( controller='library_admin', action='browse_library', obj_id=library_id )}"><span>Browse this data library</span></a>
     </li>
 </ul>
 
@@ -15,7 +15,7 @@
 <div class="toolForm">
     <div class="toolFormTitle">Create a new folder</div>
     <div class="toolFormBody">
-        <form name="folder" action="${h.url_for( controller='library_admin', action='folder', id=folder.id, library_id=library_id )}" method="post" >
+        <form name="folder" action="${h.url_for( controller='library_admin', action='folder', obj_id=folder.id, library_id=library_id )}" method="post" >
             <div class="form-row">
                 <label>Name:</label>
                 <div style="float: left; width: 250px; margin-right: 10px;">

@@ -13,7 +13,7 @@
 
 <ul class="manage-table-actions">
     <li>
-        <a class="action-button" href="${h.url_for( controller='library', action='browse_library', id=library_id )}"><span>Browse this data library</span></a>
+        <a class="action-button" href="${h.url_for( controller='library', action='browse_library', obj_id=library_id )}"><span>Browse this data library</span></a>
     </li>
 </ul>
 
@@ -25,7 +25,7 @@
     <div class="toolForm">
         <div class="toolFormTitle">Edit attributes of ${library_dataset.name}</div>
         <div class="toolFormBody">
-            <form name="edit_attributes" action="${h.url_for( controller='library', action='library_dataset', id=library_dataset.id, library_id=library_id, information=True )}" method="post">
+            <form name="edit_attributes" action="${h.url_for( controller='library', action='library_dataset', obj_id=library_dataset.id, library_id=library_id, information=True )}" method="post">
                 <div class="form-row">
                     <label>Name:</label>
                     <div style="float: left; width: 250px; margin-right: 10px;">
@@ -64,5 +64,5 @@
 %endif
 
 %if widgets:
-    ${render_template_info( library_dataset, library_id, widgets )}
+    ${render_template_info( library_dataset, library_id, '', widgets )}
 %endif

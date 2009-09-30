@@ -5,7 +5,7 @@
 <br/><br/>
 <ul class="manage-table-actions">
     <li>
-        <a class="action-button" href="${h.url_for( controller='library_admin', action='browse_library', id=library_id )}"><span>Browse this data library</span></a>
+        <a class="action-button" href="${h.url_for( controller='library_admin', action='browse_library', obj_id=library_id )}"><span>Browse this data library</span></a>
     </li>
 </ul>
 
@@ -16,7 +16,7 @@
 <div class="toolForm">
     <div class="toolFormTitle">Edit folder name and description</div>
     <div class="toolFormBody">
-        <form name="folder" action="${h.url_for( controller='library_admin', action='folder', information=True, id=folder.id, library_id=library_id )}" method="post" >
+        <form name="folder" action="${h.url_for( controller='library_admin', action='folder', information=True, obj_id=folder.id, library_id=library_id )}" method="post" >
             <div class="form-row">
                 <label>Name:</label>
                 <input type="text" name="name" value="${folder.name}" size="40"/>
@@ -35,5 +35,5 @@
 </div>
 
 %if widgets:
-    ${render_template_info( folder, library_id, widgets )}
+    ${render_template_info( folder, library_id, 'folder', widgets )}
 %endif

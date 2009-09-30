@@ -17,7 +17,7 @@
                     %if replace_dataset not in [ None, 'None' ]:
                         <input type="hidden" name="replace_id" value="${replace_dataset.id}"/>
                         <div class="form-row">
-                            You are currently selecting a new file to replace '<a href="${h.url_for( controller=controller, action='library_dataset_dataset_association', library_id=library_id, folder_id=folder_id, id=replace_dataset.library_dataset_dataset_association.id )}">${replace_dataset.name}</a>'.
+                            You are currently selecting a new file to replace '<a href="${h.url_for( controller=controller, action='ldda_display_info', library_id=library_id, folder_id=folder_id, obj_id=replace_dataset.library_dataset_dataset_association.id )}">${replace_dataset.name}</a>'.
                             <div style="clear: both"></div>
                         </div>
                     %endif
@@ -194,7 +194,7 @@
                         %if replace_dataset not in [ None, 'None' ]:
                             <input type="hidden" name="replace_id" value="${replace_dataset.id}"/>
                             <div class="form-row">
-                                You are currently selecting a new file to replace '<a href="${h.url_for( controller=controller, action='library_dataset_dataset_association', library_id=library_id, folder_id=folder_id, id=replace_dataset.library_dataset_dataset_association.id )}">${replace_dataset.name}</a>'.
+                                You are currently selecting a new file to replace '<a href="${h.url_for( controller=controller, action='ldda_display_info', library_id=library_id, folder_id=folder_id, obj_id=replace_dataset.library_dataset_dataset_association.id )}">${replace_dataset.name}</a>'.
                                 <div style="clear: both"></div>
                             </div>
                         %endif

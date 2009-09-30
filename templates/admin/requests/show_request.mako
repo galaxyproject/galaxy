@@ -102,7 +102,7 @@
                         <i>None</i>
                     %else:                      
                         %if rd['label'] == 'Data library':
-                            <a href="${h.url_for( controller='library_admin', action='browse_library', id=request.library.id )}">${rd['value']}</a>
+                            <a href="${h.url_for( controller='library_admin', action='browse_library', obj_id=request.library.id )}">${rd['value']}</a>
                         %else:
                             ${rd['value']}     
                         %endif

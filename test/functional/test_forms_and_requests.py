@@ -162,7 +162,7 @@ class TestFormsAndRequests( TwillTestCase ):
                                                               galaxy.model.LibraryFolder.table.c.name==name ) ).first()
         assert folder_one is not None, 'Problem retrieving library folder named "%s" from the database' % name
         self.home()
-        self.visit_url( '%s/library_admin/browse_library?id=%s' % ( self.url, str( library_one.id ) ) )
+        self.visit_url( '%s/library_admin/browse_library?obj_id=%s' % ( self.url, str( library_one.id ) ) )
         self.check_page_for_string( name )
         # create address
         #self.create_address( user_address1 )

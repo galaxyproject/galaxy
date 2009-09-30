@@ -37,7 +37,7 @@
                 users (a library item is one of: a data library, a library folder, a library dataset).
                 <p/>
                 <ul>
-                    <li><strong>add library item</strong> - Role members can add library items to this library or folder</li>
+                    <li><strong>add library item</strong> - Role members can add library items to this data library or folder</li>
                     <li><strong>modify library item</strong> - Role members can modify this library item</li>
                     <li><strong>manage library permissions</strong> - Role members can manage permissions applied to this library item</li>
                 </ul>

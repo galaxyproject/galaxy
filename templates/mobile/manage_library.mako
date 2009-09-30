@@ -30,7 +30,7 @@
                 </div>
                 <div class="form-row">
                     <div style="float: left; width: 250px; margin-right: 10px;">
-                        <input type="hidden" name="id" value="${library.id}"/>
+                        <input type="hidden" name="obj_id" value="${library.id}"/>
                     </div>
                     <div style="clear: both"></div>
                 </div>
@@ -51,7 +51,7 @@
             </div>
         </div>
         <div class="toolForm">
-            ${render_template_info( library, library.id )}
+            ${render_template_info( library, library.id, 'library' )}
         </div>
     </div>
 %endif
@@ -63,5 +63,5 @@
 %endif
 
 %if widgets:
-    ${render_template_info( library, library_id, widgets )}
+    ${render_template_info( library, library_id, 'library', widgets )}
 %endif

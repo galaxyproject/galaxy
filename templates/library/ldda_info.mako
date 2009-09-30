@@ -20,7 +20,7 @@
 
 <ul class="manage-table-actions">
     <li>
-        <a class="action-button" href="${h.url_for( controller='library', action='browse_library', id=library_id )}"><span>Browse this data library</span></a>
+        <a class="action-button" href="${h.url_for( controller='library', action='browse_library', obj_id=library_id )}"><span>Browse this data library</span></a>
     </li>
 </ul>
 
@@ -41,19 +41,19 @@
         <a id="dataset-${ldda.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
         <div popupmenu="dataset-${ldda.id}-popup">
             %if trans.app.security_agent.can_modify_library_item( user, roles, ldda.library_dataset ):
-                <a class="action-button" href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library_id, folder_id=ldda.library_dataset.folder.id, id=ldda.id, edit_info=True )}">Edit this dataset's information</a>
+                <a class="action-button" href="${h.url_for( controller='library', action='ldda_edit_info', library_id=library_id, folder_id=ldda.library_dataset.folder.id, obj_id=ldda.id )}">Edit this dataset's information</a>
             %else:
-                <a class="action-button" href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library_id, folder_id=ldda.library_dataset.folder.id, id=ldda.id, information=True )}">View this dataset's information</a>
+                <a class="action-button" href="${h.url_for( controller='library', action='ldda_display_info', library_id=library_id, folder_id=ldda.library_dataset.folder.id, obj_id=ldda.id )}">View this dataset's information</a>
             %endif
             %if trans.app.security_agent.can_manage_dataset( roles, ldda.dataset ) and trans.app.security_agent.can_manage_library_item( user, roles, ldda.library_dataset ):
-                <a class="action-button" href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library_id, folder_id=ldda.library_dataset.folder.id, id=ldda.id, permissions=True )}">Edit this dataset's permissions</a>
+                <a class="action-button" href="${h.url_for( controller='library', action='ldda_manage_permissions', library_id=library_id, folder_id=ldda.library_dataset.folder.id, obj_id=ldda.id, permissions=True )}">Edit this dataset's permissions</a>
             %endif
             %if current_version and trans.app.security_agent.can_modify_library_item( user, roles, ldda.library_dataset ):
-                <a class="action-button" href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library_id, folder_id=ldda.library_dataset.folder.id, replace_id=ldda.library_dataset.id )}">Upload a new version of this dataset</a>
+                <a class="action-button" href="${h.url_for( controller='library', action='upload_library_dataset', library_id=library_id, folder_id=ldda.library_dataset.folder.id, replace_id=ldda.library_dataset.id )}">Upload a new version of this dataset</a>
             %endif
             %if ldda.has_data:
                 <a class="action-button" href="${h.url_for( controller='library', action='datasets', library_id=library_id, ldda_ids=str( ldda.id ), do_action='add' )}">Import this dataset into your current history</a>
-                <a class="action-button" href="${h.url_for( controller='library', action='download_dataset_from_folder', id=ldda.id, library_id=library_id )}">Download this dataset</a>
+                <a class="action-button" href="${h.url_for( controller='library', action='download_dataset_from_folder', obj_id=ldda.id, library_id=library_id )}">Download this dataset</a>
             %endif
         </div>
     </div>
@@ -96,7 +96,7 @@
         %endif
     </div>
     %if widgets:
-        ${render_template_info( ldda, library_id, widgets, editable=False )}
+        ${render_template_info( ldda, library_id, 'ldda_display_info', widgets, editable=False )}
     %endif
     %if current_version:
         <% expired_lddas = [ e_ldda for e_ldda in ldda.library_dataset.expired_datasets ] %>
@@ -104,7 +104,7 @@
             <div class="toolFormTitle">Expired versions of ${ldda.name}</div>
             %for expired_ldda in expired_lddas:
                 <div class="form-row">
-                    <a href="${h.url_for( controller='library', action='library_dataset_dataset_association', library_id=library_id, folder_id=expired_ldda.library_dataset.folder.id, id=expired_ldda.id, info=True )}">${expired_ldda.name}</a>
+                    <a href="${h.url_for( controller='library', action='ldda_display_info', library_id=library_id, folder_id=expired_ldda.library_dataset.folder.id, obj_id=expired_ldda.id )}">${expired_ldda.name}</a>
                 </div>
             %endfor
         %endif

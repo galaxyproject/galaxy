@@ -30,7 +30,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.check_page_for_string( not_logged_in_security_msg )
         self.visit_url( "%s/library_admin/library" % self.url )
         self.check_page_for_string( not_logged_in_security_msg )
-        self.visit_url( "%s/library_admin/folder?id=1&new=True" % self.url )
+        self.visit_url( "%s/library_admin/folder?obj_id=1&new=True" % self.url )
         self.check_page_for_string( not_logged_in_security_msg )
     def test_005_login_as_admin_user( self ):
         """Testing logging in as an admin user test@bx.psu.edu - tests initial settings for DefaultUserPermissions and DefaultHistoryPermissions"""
@@ -494,7 +494,8 @@ class TestSecurityAndLibraries( TwillTestCase ):
         assert form_one is not None, 'Problem retrieving form named (%s) from the database' % form_name
         # Add a new information template to the library
         template_name = 'Library Template 1'
-        self.add_library_info_template( str( library_one.id ),
+        self.add_library_info_template( 'library_admin',
+                                        str( library_one.id ),
                                         library_one.name,
                                         str( form_one.id ),
                                         form_one.name )
@@ -510,14 +511,13 @@ class TestSecurityAndLibraries( TwillTestCase ):
         global form_one_field_name
         form_one_field_name = 'field_0'
         contents = '%s library contents' % form_one_field_label
-        self.visit_url( '%s/library_admin/library?id=%s&information=True' % ( self.url, str( library_one.id ) ) )
+        self.visit_url( '%s/library_admin/library?obj_id=%s&information=True' % ( self.url, str( library_one.id ) ) )
         # There are 2 forms on this page and the template is the 2nd form
         tc.fv( '2', form_one_field_name, contents )
         tc.submit( 'edit_info_button' )
         # For some reason, the following check:
         # self.check_page_for_string ( 'The information has been updated.' )
         # ...throws the following exception - I have not idea why!
-        # self.check_page_for_string ( 'The information has been updated.' )
         # TypeError: 'str' object is not callable
         # The work-around is to not make ANY self.check_page_for_string() calls until the next method
     def test_080_edit_template_contents_admin_view( self ):
@@ -525,7 +525,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         # First make sure the templlate contents from the previous method were correctly saved
         contents = '%s library contents' % form_one_field_label
         contents_edited = contents + ' edited'
-        self.visit_url( '%s/library_admin/library?id=%s&information=True' % ( self.url, str( library_one.id ) ) )
+        self.visit_url( '%s/library_admin/library?obj_id=%s&information=True' % ( self.url, str( library_one.id ) ) )
         self.check_page_for_string( contents )
         # Edit the contents and then save them
         tc.fv( '2', form_one_field_name, contents_edited )
@@ -554,7 +554,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
             .order_by( desc( galaxy.model.LibraryDatasetDatasetAssociation.table.c.create_time ) ).first()
         assert ldda_one is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda_one from the database'
         self.home()
-        self.visit_url( '%s/library_admin/browse_library?id=%s' % ( self.url, str( library_one.id ) ) )
+        self.visit_url( '%s/library_admin/browse_library?obj_id=%s' % ( self.url, str( library_one.id ) ) )
         self.check_page_for_string( "1.bed" )
         self.check_page_for_string( message )
         self.check_page_for_string( admin_user.email )
@@ -576,14 +576,14 @@ class TestSecurityAndLibraries( TwillTestCase ):
                                   % ( ldda_one.dataset.id, dp.action ) )
         # Make sure the library template contents were correctly saved
         self.home()
-        self.visit_url( "%s/library_admin/library_dataset_dataset_association?edit_info=True&library_id=%s&folder_id=%s&id=%s" % \
+        self.visit_url( "%s/library_admin/ldda_edit_info?library_id=%s&folder_id=%s&obj_id=%s" % \
                         ( self.url, str( library_one.id ), str( library_one.root_folder.id ), str( ldda_one.id ) ) )
         self.check_page_for_string( template_contents )
         # Make sure other users can access the dataset from the Libraries view
         self.logout()
         self.login( email=regular_user2.email )
         self.home()
-        self.visit_url( '%s/library/browse_library?id=%s' % ( self.url, str( library_one.id ) ) )
+        self.visit_url( '%s/library/browse_library?obj_id=%s' % ( self.url, str( library_one.id ) ) )
         self.check_page_for_string( "1.bed" )
         self.logout()
         self.login( email=admin_user.email )
@@ -600,11 +600,11 @@ class TestSecurityAndLibraries( TwillTestCase ):
                                                               galaxy.model.LibraryFolder.table.c.description==description ) ).first()
         assert folder_one is not None, 'Problem retrieving library folder named "%s" from the database' % name
         self.home()
-        self.visit_url( '%s/library_admin/browse_library?id=%s' % ( self.url, str( library_one.id ) ) )
+        self.visit_url( '%s/library_admin/browse_library?obj_id=%s' % ( self.url, str( library_one.id ) ) )
         self.check_page_for_string( name )
         self.check_page_for_string( description )
         self.home()
-        self.visit_url( '%s/library_admin/folder?id=%s&library_id=%s&information=True' % ( self.url, str( folder_one.id ), str( library_one.id ) ) )
+        self.visit_url( '%s/library_admin/folder?obj_id=%s&library_id=%s&information=True' % ( self.url, str( folder_one.id ), str( library_one.id ) ) )
         # Make sure the template was inherited
         self.check_page_for_string( form_one_field_name )
         # Make sure the template contents were NOT inherited
@@ -632,11 +632,11 @@ class TestSecurityAndLibraries( TwillTestCase ):
                                                                  galaxy.model.LibraryFolder.table.c.description==description ) ).first()
         assert subfolder_one is not None, 'Problem retrieving library folder named "Folder Ones Subfolder" from the database'
         self.home()
-        self.visit_url( '%s/library_admin/browse_library?id=%s' % ( self.url, str( library_one.id ) ) )
+        self.visit_url( '%s/library_admin/browse_library?obj_id=%s' % ( self.url, str( library_one.id ) ) )
         self.check_page_for_string( name )
         self.check_page_for_string( description )
         self.home()
-        self.visit_url( '%s/library_admin/folder?id=%s&library_id=%s&information=True' % ( self.url, str( subfolder_one.id ), str( library_one.id ) ) )
+        self.visit_url( '%s/library_admin/folder?obj_id=%s&library_id=%s&information=True' % ( self.url, str( subfolder_one.id ), str( library_one.id ) ) )
         # Make sure the template was inherited
         self.check_page_for_string( form_one_field_name )
         # Make sure the template contents were NOT inherited
@@ -665,11 +665,11 @@ class TestSecurityAndLibraries( TwillTestCase ):
                                                               galaxy.model.LibraryFolder.table.c.description==description ) ).first()
         assert folder_two is not None, 'Problem retrieving library folder named "%s" from the database' % name
         self.home()
-        self.visit_url( '%s/library_admin/browse_library?id=%s' % ( self.url, str( library_one.id ) ) )
+        self.visit_url( '%s/library_admin/browse_library?obj_id=%s' % ( self.url, str( library_one.id ) ) )
         self.check_page_for_string( name )
         self.check_page_for_string( description )
         self.home()
-        self.visit_url( '%s/library_admin/folder?id=%s&library_id=%s&information=True' % ( self.url, str( subfolder_one.id ), str( library_one.id ) ) )
+        self.visit_url( '%s/library_admin/folder?obj_id=%s&library_id=%s&information=True' % ( self.url, str( subfolder_one.id ), str( library_one.id ) ) )
         # Make sure the template was inherited
         self.check_page_for_string( form_one_field_name )
         # Make sure the template contents were NOT inherited
@@ -701,13 +701,13 @@ class TestSecurityAndLibraries( TwillTestCase ):
             .order_by( desc( galaxy.model.LibraryDatasetDatasetAssociation.table.c.create_time ) ).first()
         assert ldda_two is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda_two from the database'
         self.home()
-        self.visit_url( '%s/library_admin/browse_library?id=%s' % ( self.url, str( library_one.id ) ) )
+        self.visit_url( '%s/library_admin/browse_library?obj_id=%s' % ( self.url, str( library_one.id ) ) )
         self.check_page_for_string( "2.bed" )
         self.check_page_for_string( message )
         self.check_page_for_string( admin_user.email )
         # Make sure the library template contents were correctly saved
         self.home()
-        self.visit_url( "%s/library_admin/library_dataset_dataset_association?edit_info=True&library_id=%s&folder_id=%s&id=%s" % \
+        self.visit_url( "%s/library_admin/ldda_edit_info?library_id=%s&folder_id=%s&obj_id=%s" % \
                         ( self.url, str( library_one.id ), str( folder_two.id ), str( ldda_two.id ) ) )
         self.check_page_for_string( template_contents )
     def test_110_add_2nd_public_dataset_to_root_folders_2nd_subfolder( self ):
@@ -732,13 +732,13 @@ class TestSecurityAndLibraries( TwillTestCase ):
             .order_by( desc( galaxy.model.LibraryDatasetDatasetAssociation.table.c.create_time ) ).first()
         assert ldda_three is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda_three from the database'
         self.home()
-        self.visit_url( '%s/library_admin/browse_library?id=%s' % ( self.url, str( library_one.id ) ) )
+        self.visit_url( '%s/library_admin/browse_library?obj_id=%s' % ( self.url, str( library_one.id ) ) )
         self.check_page_for_string( "3.bed" )
         self.check_page_for_string( message )
         self.check_page_for_string( admin_user.email )
         # Make sure the library template contents were correctly saved
         self.home()
-        self.visit_url( "%s/library_admin/library_dataset_dataset_association?edit_info=True&library_id=%s&folder_id=%s&id=%s" % \
+        self.visit_url( "%s/library_admin/ldda_edit_info?library_id=%s&folder_id=%s&obj_id=%s" % \
                         ( self.url, str( library_one.id ), str( folder_two.id ), str( ldda_three.id ) ) )
         self.check_page_for_string( template_contents )
     def test_115_add_dataset_with_private_role_restriction_to_folder( self ):
@@ -775,21 +775,21 @@ class TestSecurityAndLibraries( TwillTestCase ):
             .order_by( desc( galaxy.model.LibraryDatasetDatasetAssociation.table.c.create_time ) ).first()
         assert ldda_four is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda_four from the database'
         self.home()
-        self.visit_url( '%s/library_admin/browse_library?id=%s' % ( self.url, str( library_one.id ) ) )
+        self.visit_url( '%s/library_admin/browse_library?obj_id=%s' % ( self.url, str( library_one.id ) ) )
         self.check_page_for_string( "4.bed" )
         self.check_page_for_string( message )
         self.check_page_for_string( admin_user.email )
         self.home()
         # Make sure the library template contents were correctly saved
         self.home()
-        self.visit_url( "%s/library_admin/library_dataset_dataset_association?edit_info=True&library_id=%s&folder_id=%s&id=%s" % \
+        self.visit_url( "%s/library_admin/ldda_edit_info?library_id=%s&folder_id=%s&obj_id=%s" % \
                         ( self.url, str( library_one.id ), str( folder_one.id ), str( ldda_four.id ) ) )
         self.check_page_for_string( template_contents )
     def test_120_accessing_dataset_with_private_role_restriction( self ):
         """Testing accessing a dataset with a private role restriction"""
         # admin_user should not be able to see 2.bed from the analysis view's access libraries
         self.home()
-        self.visit_url( '%s/library/browse_library?id=%s' % ( self.url, str( library_one.id ) ) )
+        self.visit_url( '%s/library/browse_library?obj_id=%s' % ( self.url, str( library_one.id ) ) )
         try:
             self.check_page_for_string( folder_one.name )
             raise AssertionError( '%s can see library folder %s when it contains only datasets restricted by role %s' \
@@ -807,7 +807,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         # since it was associated with regular_user1's private role
         self.login( email='test1@bx.psu.edu' )
         self.home()
-        self.visit_url( '%s/library/browse_library?id=%s' % ( self.url, str( library_one.id ) ) )
+        self.visit_url( '%s/library/browse_library?obj_id=%s' % ( self.url, str( library_one.id ) ) )
         self.check_page_for_string( folder_one.name )
         self.check_page_for_string( '4.bed' )
         self.logout()
@@ -854,7 +854,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
                                               role_ids, permissions_in, permissions_out )
         # admin_user should now be able to see 4.bed from the analysis view's access libraries
         self.home()
-        self.visit_url( '%s/library/browse_library?id=%s' % ( self.url, str( library_one.id ) ) )
+        self.visit_url( '%s/library/browse_library?obj_id=%s' % ( self.url, str( library_one.id ) ) )
         self.check_page_for_string( ldda_four.name )
         self.home()
     def test_130_add_dataset_with_role_associated_with_group_and_users( self ):
@@ -882,28 +882,28 @@ class TestSecurityAndLibraries( TwillTestCase ):
             .order_by( desc( galaxy.model.LibraryDatasetDatasetAssociation.table.c.create_time ) ).first()
         assert ldda_five is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda_five from the database'
         self.home()
-        self.visit_url( '%s/library_admin/browse_library?id=%s' % ( self.url, str( library_one.id ) ) )
+        self.visit_url( '%s/library_admin/browse_library?obj_id=%s' % ( self.url, str( library_one.id ) ) )
         self.check_page_for_string( "5.bed" )
         self.check_page_for_string( message )
         self.check_page_for_string( admin_user.email )
         self.home()
         # Make sure the library template contents were correctly saved
         self.home()
-        self.visit_url( "%s/library_admin/library_dataset_dataset_association?edit_info=True&library_id=%s&folder_id=%s&id=%s" % \
+        self.visit_url( "%s/library_admin/ldda_edit_info?library_id=%s&folder_id=%s&obj_id=%s" % \
                         ( self.url, str( library_one.id ), str( folder_one.id ), str( ldda_five.id ) ) )
         self.check_page_for_string( template_contents )
     def test_135_accessing_dataset_with_role_associated_with_group_and_users( self ):
         """Testing accessing a dataset with a role that is associated with a group and users"""
         # admin_user should be able to see 5.bed since she is associated with role_two
         self.home()
-        self.visit_url( '%s/library/browse_library?id=%s' % ( self.url, str( library_one.id ) ) )
+        self.visit_url( '%s/library/browse_library?obj_id=%s' % ( self.url, str( library_one.id ) ) )
         self.check_page_for_string( "5.bed" )
         self.check_page_for_string( admin_user.email )
         self.logout()
         # regular_user1 should be able to see 5.bed since she is associated with group_two
         self.login( email = 'test1@bx.psu.edu' )
         self.home()
-        self.visit_url( '%s/library/browse_library?id=%s' % ( self.url, str( library_one.id ) ) )
+        self.visit_url( '%s/library/browse_library?obj_id=%s' % ( self.url, str( library_one.id ) ) )
         self.check_page_for_string( folder_one.name )
         self.check_page_for_string( '5.bed' )
         self.check_page_for_string( admin_user.email )
@@ -920,7 +920,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         # LIBRARY_MANAGE = Role One
         #                  Role One aassociations: test@bx.psu.edu, test1@bx.psu.edu, test3@bx.psu.edu
         self.home()
-        self.visit_url( '%s/library/library_dataset_dataset_association?edit_info=True&library_id=%s&folder_id=%s&id=%s' \
+        self.visit_url( '%s/library/ldda_edit_info?library_id=%s&folder_id=%s&obj_id=%s' \
                         % ( self.url, str( library_one.id ), str( folder_one.id ), str( ldda_five.id ) ) )
         self.check_page_for_string( '5.bed' )
         self.check_page_for_string( 'This is the latest version of this library dataset' )
@@ -937,7 +937,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         # regular_user2 should not be able to see 5.bed
         self.login( email = 'test2@bx.psu.edu' )
         self.home()
-        self.visit_url( '%s/library/browse_library?id=%s' % ( self.url, str( library_one.id ) ) )
+        self.visit_url( '%s/library/browse_library?obj_id=%s' % ( self.url, str( library_one.id ) ) )
         try:
             self.check_page_for_string( folder_one.name )
             raise AssertionError( '%s can see library folder %s when it contains only datasets restricted by role %s' \
@@ -954,7 +954,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         # can access ) since she has Role One, and Role One has all library permissions ( see above ).
         self.login( email = 'test3@bx.psu.edu' )
         self.home()
-        self.visit_url( '%s/library/browse_library?id=%s' % ( self.url, str( library_one.id ) ) )
+        self.visit_url( '%s/library/browse_library?obj_id=%s' % ( self.url, str( library_one.id ) ) )
         self.check_page_for_string( folder_one.name )
         # regular_user3 should not be able to see 5.bed since users must have every role associated
         # with the dataset in order to access it, and regular_user3 isnot associated with Role Two
@@ -989,7 +989,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         assert ldda_six is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda_six from the database'
         self.home()
         # Make sure the correct template was inherited
-        self.visit_url( '%s/library/library_dataset_dataset_association?edit_info=True&library_id=%s&folder_id=%s&id=%s' \
+        self.visit_url( '%s/library/ldda_edit_info?library_id=%s&folder_id=%s&obj_id=%s' \
                         % ( self.url, str( library_one.id ), str( subfolder_one.id ), str( ldda_six.id ) ) )
         self.check_page_for_string( form_one_field_name )
         # Make sure the template contents were NOT inherited
@@ -1005,11 +1005,11 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.edit_ldda_attribute_info( str( library_one.id ), str( subfolder_one.id ), str( ldda_six.id ), ldda_six.name, new_ldda_name )
         self.home()
         ldda_six.refresh()
-        self.visit_url( '%s/library_admin/browse_library?id=%s' % ( self.url, str( library_one.id ) ) )
+        self.visit_url( '%s/library_admin/browse_library?obj_id=%s' % ( self.url, str( library_one.id ) ) )
         self.check_page_for_string( ldda_six.name )
         self.home()
         # Make sure the template contents were NOT inherited
-        self.visit_url( '%s/library/library_dataset_dataset_association?edit_info=True&library_id=%s&folder_id=%s&id=%s' \
+        self.visit_url( '%s/library/ldda_edit_info?library_id=%s&folder_id=%s&obj_id=%s' \
                         % ( self.url, str( library_one.id ), str( subfolder_one.id ), str( ldda_six.id ) ) )
         self.check_page_for_string( form_one_field_name )
         contents = "%s contents for Folder One's Subfolder" % form_one_field_label
@@ -1019,7 +1019,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         except:
             pass
     def test_150_uploading_new_dataset_version( self ):
-        """Testing uploading a new version of a dataset"""
+        """Testing uploading a new version of a library dataset"""
         message = 'Testing uploading a new version of a dataset'
         # The form_one template should be inherited to the library dataset upload form.
         template_contents = "%s contents for %s new version of 6.bed" % ( form_one_field_label, folder_one.name )
@@ -1039,7 +1039,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
             .order_by( desc( galaxy.model.LibraryDatasetDatasetAssociation.table.c.create_time ) ).first()
         assert ldda_six_version_two is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda_six_version_two from the database'
         self.home()
-        self.visit_url( "%s/library_admin/library_dataset_dataset_association?edit_info=True&library_id=%s&folder_id=%s&id=%s" % \
+        self.visit_url( "%s/library_admin/ldda_edit_info?library_id=%s&folder_id=%s&obj_id=%s" % \
                         ( self.url, str( library_one.id ), str( subfolder_one.id ), str( ldda_six_version_two.id ) ) )
         self.check_page_for_string( 'This is the latest version of this library dataset' )
         # Make sure the correct template was inherited
@@ -1069,21 +1069,19 @@ class TestSecurityAndLibraries( TwillTestCase ):
             raise AssertionError( 'ldda.dataset "%s" actions "%s" != ldda.dataset "%s" actions "%s"' \
                 % ( ldda_six.name, str( ldda_six.dataset.actions ), ldda_six_version_two.name, str( ldda_six_version_two.dataset.actions ) ) )
         # Check the previous version
-        self.visit_url( "%s/library_admin/library_dataset_dataset_association?info=True&library_id=%s&folder_id=%s&id=%s" % \
+        self.visit_url( "%s/library_admin/ldda_display_info?library_id=%s&folder_id=%s&obj_id=%s" % \
                         ( self.url, str( library_one.id ), str( subfolder_one.id ), str( ldda_six.id ) ) )
         self.check_page_for_string( 'This is an expired version of this library dataset' )
         self.home()
         # Make sure ldda_six is no longer displayed in the library
-        self.visit_url( '%s/library_admin/browse_library?id=%s' % ( self.url, str( library_one.id ) ) )
+        self.visit_url( '%s/library_admin/browse_library?obj_id=%s' % ( self.url, str( library_one.id ) ) )
         try:
             self.check_page_for_string( ldda_six.name )
             raise AssertionError, "Old version of library dataset %s is displayed in library" % ldda_six.name
         except:
             pass
         self.home()
-    def test_155_uploading_new_dataset_versions( self ):
-        """Testing uploading new versions of a dataset using a directory of files"""
-        message = 'Testing uploading new versions of a dataset using a directory of files'
+        message = 'Testing uploading a new version of a library dataset'
         # The form_one template should be inherited to the library dataset upload form.
         template_contents = "%s contents for %s 5th new version of 6.bed" % ( form_one_field_label, folder_one.name )
         ldda_six_version_two.refresh()
@@ -1103,7 +1101,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
             .order_by( desc( galaxy.model.LibraryDatasetDatasetAssociation.table.c.create_time ) ).first()
         assert ldda_six_version_five is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda_six_version_five from the database'
         self.home()
-        self.visit_url( "%s/library_admin/library_dataset_dataset_association?edit_info=True&library_id=%s&folder_id=%s&id=%s" % \
+        self.visit_url( "%s/library_admin/ldda_edit_info?library_id=%s&folder_id=%s&obj_id=%s" % \
                         ( self.url, str( library_one.id ), str( subfolder_one.id ), str( ldda_six_version_five.id ) ) )
         self.check_page_for_string( 'This is the latest version of this library dataset' )
         # Make sure the correct template was inherited
@@ -1120,13 +1118,13 @@ class TestSecurityAndLibraries( TwillTestCase ):
         tc.submit( 'edit_info_button' )
         self.check_page_for_string( 'The information has been updated.' )
         self.check_page_for_string( template_contents )
-        self.visit_url( "%s/library_admin/library_dataset_dataset_association?info=True&library_id=%s&folder_id=%s&id=%s" % \
+        self.visit_url( "%s/library_admin/ldda_display_info?library_id=%s&folder_id=%s&obj_id=%s" % \
                         ( self.url, str( library_one.id ), str( subfolder_one.id ), str( ldda_six_version_five.id ) ) )
         check_str = 'Expired versions of %s' % ldda_six_version_five.name
         self.check_page_for_string( check_str )
         self.check_page_for_string( ldda_six.name )
         self.home()
-        # Make sure th permissions are the same
+        # Make sure the permissions are the same
         ldda_six.refresh()
         if len( ldda_six.actions ) != len( ldda_six_version_five.actions ):
             raise AssertionError( 'ldda "%s" actions "%s" != ldda "%s" actions "%s"' \
@@ -1139,11 +1137,11 @@ class TestSecurityAndLibraries( TwillTestCase ):
             raise AssertionError( 'ldda.dataset "%s" actions "%s" != ldda.dataset "%s" actions "%s"' \
                 % ( ldda_six.name, str( ldda_six.dataset.actions ), ldda_six_version_five.name, str( ldda_six_version_five.dataset.actions ) ) )
         # Check the previous version
-        self.visit_url( "%s/library_admin/library_dataset_dataset_association?info=True&library_id=%s&folder_id=%s&id=%s" % \
+        self.visit_url( "%s/library_admin/ldda_display_info?library_id=%s&folder_id=%s&obj_id=%s" % \
                         ( self.url, str( library_one.id ), str( subfolder_one.id ), str( ldda_six_version_two.id ) ) )
         self.check_page_for_string( 'This is an expired version of this library dataset' )
         self.home()
-    def test_160_upload_directory_of_files_from_admin_view( self ):
+    def test_155_upload_directory_of_files_from_admin_view( self ):
         """Testing uploading a directory of files to a root folder from the Admin view"""
         message = 'This is a test for uploading a directory of files'
         template_contents = "%s contents for directory of 3 datasets in %s" % ( form_one_field_label, folder_one.name )
@@ -1156,11 +1154,11 @@ class TestSecurityAndLibraries( TwillTestCase ):
                                                template_field_name1=form_one_field_name,
                                                template_field_contents1=template_contents )
         self.home()
-        self.visit_page( 'library_admin/browse_library?id=%s' % ( str( library_one.id ) ) )
+        self.visit_page( 'library_admin/browse_library?obj_id=%s' % ( str( library_one.id ) ) )
         self.check_page_for_string( admin_user.email )
         self.check_page_for_string( message )
         self.home()
-    def test_165_change_permissions_on_datasets_uploaded_from_library_dir( self ):
+    def test_160_change_permissions_on_datasets_uploaded_from_library_dir( self ):
         """Testing changing the permissions on datasets uploaded from a directory"""
         # It would be nice if twill functioned such that the above test resulted in a
         # form with the uploaded datasets selected, but it does not ( they're not checked ),
@@ -1176,7 +1174,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         def build_url( permissions, role ):
             # We'll bypass the library_admin/datasets method and directly call the library_admin/dataset method, setting
             # access, manage permissions, and edit metadata permissions to role_one
-            url = '/library_admin/library_dataset_dataset_association?permissions=True&id=%s&library_id=%s&folder_id=%s&update_roles_button=Save' % ( ldda_ids, str( library_one.id ), str( folder_one.id ) )
+            url = '/library_admin/ldda_manage_permissions?obj_id=%s&library_id=%s&folder_id=%s&update_roles_button=Save' % ( ldda_ids, str( library_one.id ), str( folder_one.id ) )
             for p in permissions:
                 url += '&%s_in=%s' % ( p, str( role.id ) )
             return url
@@ -1213,7 +1211,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         # access to any of the 3 datasets, so she will not see folder_one on the libraries page
         self.login( email='test2@bx.psu.edu' )
         self.home()
-        self.visit_url( '%s/library/browse_library?id=%s' % ( self.url, str( library_one.id ) ) )
+        self.visit_url( '%s/library/browse_library?obj_id=%s' % ( self.url, str( library_one.id ) ) )
         try:
             self.check_page_for_string( folder_one.name )
             raise AssertionError( '%s can access folder %s even though all contained datasets should be restricted from access by her' \
@@ -1268,7 +1266,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
                     pass
         check_edit_page2( latest_3_lddas )
         self.home()
-    def test_170_upload_directory_of_files_from_libraries_view( self ):
+    def test_165_upload_directory_of_files_from_libraries_view( self ):
         """Testing uploading a directory of files to a root folder from the Data Libraries view"""
         # admin_user will not have the option sto upload a directory of files from the
         # Libraries view since a sub-directory named the same as their email is not contained
@@ -1287,7 +1285,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
                                                    check_str_after_submit=check_str_after_submit,
                                                    message=message.replace( '+', ' ' ) )
         self.home()
-        self.visit_page( 'library/browse_library?id=%s' % ( str( library_one.id ) ) )
+        self.visit_page( 'library/browse_library?obj_id=%s' % ( str( library_one.id ) ) )
         self.check_page_for_string( regular_user1.email )
         self.check_page_for_string( message )
         self.logout()
@@ -1302,14 +1300,14 @@ class TestSecurityAndLibraries( TwillTestCase ):
                                                    check_str_after_submit=check_str_after_submit,
                                                    message=message.replace( '+', ' ' ) )
         self.home()
-        self.visit_page( 'library/browse_library?id=%s' % ( str( library_one.id ) ) )
+        self.visit_page( 'library/browse_library?obj_id=%s' % ( str( library_one.id ) ) )
         self.check_page_for_string( regular_user3.email )
         self.check_page_for_string( message )
         self.home()
         self.logout()
         self.login( email=admin_user.email )
 
-    def test_175_mark_group_deleted( self ):
+    def test_170_mark_group_deleted( self ):
         """Testing marking a group as deleted"""
         self.home()
         self.visit_url( '%s/admin/groups' % self.url )
@@ -1323,13 +1321,13 @@ class TestSecurityAndLibraries( TwillTestCase ):
             raise AssertionError( '%s incorrectly lost all members when it was marked as deleted.' % group_two.name )
         if not group_two.roles:
             raise AssertionError( '%s incorrectly lost all role associations when it was marked as deleted.' % group_two.name )
-    def test_180_undelete_group( self ):
+    def test_175_undelete_group( self ):
         """Testing undeleting a deleted group"""
         self.undelete_group( str( group_two.id ), group_two.name )
         group_two.refresh()
         if group_two.deleted:
             raise AssertionError( '%s was not correctly marked as not deleted.' % group_two.name )
-    def test_185_mark_role_deleted( self ):
+    def test_180_mark_role_deleted( self ):
         """Testing marking a role as deleted"""
         self.home()
         self.visit_url( '%s/admin/roles' % self.url )
@@ -1343,15 +1341,15 @@ class TestSecurityAndLibraries( TwillTestCase ):
             raise AssertionError( '%s incorrectly lost all user associations when it was marked as deleted.' % role_two.name )
         if not role_two.groups:
             raise AssertionError( '%s incorrectly lost all group associations when it was marked as deleted.' % role_two.name )
-    def test_190_undelete_role( self ):
+    def test_185_undelete_role( self ):
         """Testing undeleting a deleted role"""
         self.undelete_role( str( role_two.id ), role_two.name )
-    def test_195_mark_dataset_deleted( self ):
+    def test_190_mark_dataset_deleted( self ):
         """Testing marking a library dataset as deleted"""
         self.home()
         self.delete_library_item( str( library_one.id ), str( ldda_two.library_dataset.id ), ldda_two.name, library_item_type='library_dataset' )
         self.home()
-        self.visit_page( 'library_admin/browse_library?id=%s' % ( str( library_one.id ) ) )
+        self.visit_page( 'library_admin/browse_library?obj_id=%s' % ( str( library_one.id ) ) )
         try:
             # 2.bed was only contained in the library in 1 place, so it should no longer display
             self.check_page_for_string( ldda_two.name )
@@ -1359,40 +1357,40 @@ class TestSecurityAndLibraries( TwillTestCase ):
         except:
             pass
         self.home()
-    def test_200_display_deleted_dataset( self ):
+    def test_195_display_deleted_dataset( self ):
         """Testing displaying deleted dataset"""
         self.home()
-        self.visit_url( "%s/library_admin/browse_library?id=%s&show_deleted=True" % ( self.url, str( library_one.id ) ) )
+        self.visit_url( "%s/library_admin/browse_library?obj_id=%s&show_deleted=True" % ( self.url, str( library_one.id ) ) )
         self.check_page_for_string( ldda_two.name )
         self.home()
-    def test_205_hide_deleted_dataset( self ):
+    def test_200_hide_deleted_dataset( self ):
         """Testing hiding deleted dataset"""
         self.home()
-        self.visit_url( "%s/library_admin/browse_library?id=%s&show_deleted=False" % ( self.url, str( library_one.id ) ) )
+        self.visit_url( "%s/library_admin/browse_library?obj_id=%s&show_deleted=False" % ( self.url, str( library_one.id ) ) )
         try:
             self.check_page_for_string( ldda_two.name )
             raise AssertionError( "Dataset '%s' is incorrectly displayed in the library after it has been deleted." % ldda_two.name )
         except:
             pass
         self.home()
-    def test_210_mark_folder_deleted( self ):
+    def test_205_mark_folder_deleted( self ):
         """Testing marking a library folder as deleted"""
         self.home()
         self.delete_library_item( str( library_one.id ), str( folder_two.id ), folder_two.name, library_item_type='folder' )
         self.home()
-        self.visit_page( 'library_admin/browse_library?id=%s' % ( str( library_one.id ) ) )
+        self.visit_page( 'library_admin/browse_library?obj_id=%s' % ( str( library_one.id ) ) )
         try:
             self.check_page_for_string( folder_two.name )
             raise AssertionError( "Folder '%s' is incorrectly displayed in the library after it has been deleted." % folder_two.name )
         except:
             pass
         self.home()
-    def test_215_mark_folder_undeleted( self ):
+    def test_210_mark_folder_undeleted( self ):
         """Testing marking a library folder as undeleted"""
         self.home()
         self.undelete_library_item( str( library_one.id ), str( folder_two.id ), folder_two.name, library_item_type='folder' )
         self.home()
-        self.visit_page( 'library_admin/browse_library?id=%s' % ( str( library_one.id ) ) )
+        self.visit_page( 'library_admin/browse_library?obj_id=%s' % ( str( library_one.id ) ) )
         self.check_page_for_string( folder_two.name )
         try:
             # 2.bed was deleted before the folder was deleted, so state should have been saved.  In order
@@ -1402,7 +1400,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         except:
             pass
         self.home()
-    def test_220_mark_library_deleted( self ):
+    def test_215_mark_library_deleted( self ):
         """Testing marking a library as deleted"""
         self.home()
         # First mark folder_two as deleted to further test state saving when we undelete the library
@@ -1412,12 +1410,12 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.visit_page( 'library_admin/deleted_libraries' )
         self.check_page_for_string( library_one.name )
         self.home()
-    def test_225_mark_library_undeleted( self ):
+    def test_220_mark_library_undeleted( self ):
         """Testing marking a library as undeleted"""
         self.home()
         self.undelete_library_item( str( library_one.id ), str( library_one.id ), library_one.name, library_item_type='library' )
         self.home()
-        self.visit_page( 'library_admin/browse_library?id=%s' % ( str( library_one.id ) ) )
+        self.visit_page( 'library_admin/browse_library?obj_id=%s' % ( str( library_one.id ) ) )
         self.check_page_for_string( library_one.name )
         try:
             # folder_two was marked deleted before the library was deleted, so it should not be displayed
@@ -1426,7 +1424,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         except:
             pass
         self.home()
-    def test_230_purge_user( self ):
+    def test_225_purge_user( self ):
         """Testing purging a user account"""
         self.mark_user_deleted( user_id=self.security.encode_id( regular_user3.id ), email=regular_user3.email )
         regular_user3.refresh()
@@ -1458,7 +1456,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
             role = galaxy.model.Role.get( ura.role_id )
             if role.type != 'private':
                 raise AssertionError( 'UserRoleAssociations for user %s are not related with the private role.' % regular_user3.email )
-    def test_235_manually_unpurge_user( self ):
+    def test_230_manually_unpurge_user( self ):
         """Testing manually un-purging a user account"""
         # Reset the user for later test runs.  The user's private Role and DefaultUserPermissions for that role
         # should have been preserved, so all we need to do is reset purged and deleted.
@@ -1466,7 +1464,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         regular_user3.purged = False
         regular_user3.deleted = False
         regular_user3.flush()
-    def test_240_purge_group( self ):
+    def test_235_purge_group( self ):
         """Testing purging a group"""
         group_id = str( group_two.id )
         self.mark_group_deleted( group_id, group_two.name )
@@ -1481,7 +1479,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
             raise AssertionError( "Purging the group did not delete the GroupRoleAssociations for group_id '%s'" % group_id )
         # Undelete the group for later test runs
         self.undelete_group( group_id, group_two.name )
-    def test_245_purge_role( self ):
+    def test_240_purge_role( self ):
         """Testing purging a role"""
         role_id = str( role_two.id )
         self.mark_role_deleted( role_id, role_two.name )
@@ -1506,14 +1504,14 @@ class TestSecurityAndLibraries( TwillTestCase ):
         dp = galaxy.model.DatasetPermissions.filter( galaxy.model.DatasetPermissions.table.c.role_id == role_id ).all()
         if dp:
             raise AssertionError( "Purging the role did not delete the DatasetPermissionss for role_id '%s'" % role_id )
-    def test_250_manually_unpurge_role( self ):
+    def test_245_manually_unpurge_role( self ):
         """Testing manually un-purging a role"""
         # Manually unpurge, then undelete the role for later test runs
         # TODO: If we decide to implement the GUI feature for un-purging a role, replace this with a method call
         role_two.purged = False
         role_two.flush()
         self.undelete_role( str( role_two.id ), role_two.name )
-    def test_255_purge_library( self ):
+    def test_250_purge_library( self ):
         """Testing purging a library"""
         self.home()
         self.delete_library_item( str( library_one.id ), str( library_one.id ), library_one.name, library_item_type='library' )
@@ -1549,7 +1547,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
                     raise AssertionError( 'The library_dataset id %s named "%s" has not been marked as deleted.' % \
                                           ( str( library_dataset.id ), library_dataset.name ) )
         check_folder( library_one.root_folder )
-    def test_260_no_library_template( self ):
+    def test_255_no_library_template( self ):
         """Test library features when library has no template"""
         name = "Library Two"
         description = "This is Library Two"
@@ -1575,7 +1573,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
             .order_by( desc( galaxy.model.LibraryDatasetDatasetAssociation.table.c.create_time ) ).first()
         assert ldda_seven is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda_seven from the database'
         self.home()
-        self.visit_url( '%s/library_admin/browse_library?id=%s' % ( self.url, str( library_two.id ) ) )
+        self.visit_url( '%s/library_admin/browse_library?obj_id=%s' % ( self.url, str( library_two.id ) ) )
         self.check_page_for_string( "7.bed" )
         self.check_page_for_string( admin_user.email )
         # TODO: add a functional test to cover adding a library dataset via url_paste here...
@@ -1585,6 +1583,23 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.delete_library_item( str( library_two.id ), str( library_two.id ), library_two.name, library_item_type='library' )
         self.purge_library( str( library_two.id ), library_two.name )
         self.home()
+    def test_260_library_permissions( self ):
+        """Test library permissions"""
+        name = "Library Three"
+        description = "This is Library Three"
+        # Create a library, adding no template
+        self.create_library( name=name, description=description )
+        self.visit_page( 'library_admin/browse_libraries' )
+        self.check_page_for_string( name )
+        self.check_page_for_string( description )
+        library_three = galaxy.model.Library.filter( and_( galaxy.model.Library.table.c.name==name,
+                                                           galaxy.model.Library.table.c.description==description,
+                                                           galaxy.model.Library.table.c.deleted==False ) ).first()
+        assert library_three is not None, 'Problem retrieving library named "%s" from the database' % name
+        # TODO: add tests here...
+        self.home()
+        self.delete_library_item( str( library_three.id ), str( library_three.id ), library_three.name, library_item_type='library' )
+        self.purge_library( str( library_three.id ), library_three.name )
     def test_265_reset_data_for_later_test_runs( self ):
         """Reseting data to enable later test runs to pass"""
         ##################

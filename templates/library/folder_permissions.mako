@@ -7,7 +7,7 @@
 <br/><br/>
 <ul class="manage-table-actions">
     <li>
-        <a class="action-button" href="${h.url_for( controller='library', action='browse_library', id=library_id )}"><span>Browse this data library</span></a>
+        <a class="action-button" href="${h.url_for( controller='library', action='browse_library', obj_id=library_id )}"><span>Browse this data library</span></a>
     </li>
 </ul>
 
@@ -16,5 +16,5 @@
 %endif
 
 %if trans.app.security_agent.can_manage_library_item( user, roles, folder ):
-    ${render_permission_form( folder, folder.name, h.url_for( controller='library', action='folder', id=folder.id, library_id=library_id, permissions=True ), trans.user.all_roles() )}
+    ${render_permission_form( folder, folder.name, h.url_for( controller='library', action='folder', obj_id=folder.id, library_id=library_id, permissions=True ), trans.user.all_roles() )}
 %endif

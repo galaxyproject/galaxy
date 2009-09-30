@@ -4,7 +4,7 @@
 <%
     from time import strftime
     from galaxy import util
-    from galaxy.web.controllers.library import active_folders_and_lddas, activatable_folders_and_lddas
+    from galaxy.web.controllers.library_common import active_folders_and_lddas, activatable_folders_and_lddas
 %>
 
 <%def name="stylesheets()">
@@ -128,18 +128,16 @@
                                 <input type="checkbox" name="ldda_ids" value="${ldda.id}"/>
                             %endif
                             <span class="libraryItemDeleted-${ldda.deleted}">
-                                <a href="${h.url_for( controller='library_admin', action='library_dataset_dataset_association', library_id=library.id, folder_id=folder.id, id=ldda.id, info=True, deleted=deleted, show_deleted=show_deleted )}"><b>${ldda.name[:50]}</b></a>
+                                <a href="${h.url_for( controller='library_admin', action='ldda_display_info', library_id=library.id, folder_id=folder.id, obj_id=ldda.id, deleted=deleted, show_deleted=show_deleted )}"><b>${ldda.name[:50]}</b></a>
                             </span>
                             <a id="dataset-${ldda.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
                             %if not library.deleted and not folder.deleted and not library_dataset.deleted:
                                 <div popupmenu="dataset-${ldda.id}-popup">
-                                    <a class="action-button" href="${h.url_for( controller='library_admin', action='library_dataset_dataset_association', library_id=library.id, folder_id=folder.id, id=ldda.id, edit_info=True )}">Edit this dataset's information</a>
-                                    ## We're disabling the ability to add templates at the LDDA and LibraryDataset level, but will leave this here for possible future use
-                                    ##<a class="action-button" href="${h.url_for( controller='library_admin', action='info_template', library_id=library.id, library_dataset_id=library_dataset.id, new_template=True )}">Add an information template to this dataset</a>
-                                    <a class="action-button" href="${h.url_for( controller='library_admin', action='library_dataset_dataset_association', library_id=library.id, folder_id=folder.id, id=ldda.id, permissions=True )}">Edit this dataset's permissions</a>
-                                    <a class="action-button" href="${h.url_for( controller='library_admin', action='library_dataset_dataset_association', library_id=library.id, folder_id=folder.id, replace_id=library_dataset.id )}">Upload a new version of this dataset</a>
+                                    <a class="action-button" href="${h.url_for( controller='library_admin', action='ldda_edit_info', library_id=library.id, folder_id=folder.id, obj_id=ldda.id )}">Edit this dataset's information</a>
+                                    <a class="action-button" href="${h.url_for( controller='library_admin', action='ldda_manage_permissions', library_id=library.id, folder_id=folder.id, obj_id=ldda.id, permissions=True )}">Edit this dataset's permissions</a>
+                                    <a class="action-button" href="${h.url_for( controller='library_admin', action='upload_library_dataset', library_id=library.id, folder_id=folder.id, replace_id=library_dataset.id )}">Upload a new version of this dataset</a>
                                     %if ldda.has_data:
-                                        <a class="action-button" href="${h.url_for( controller='library_admin', action='download_dataset_from_folder', id=ldda.id, library_id=library.id )}">Download this dataset</a>
+                                        <a class="action-button" href="${h.url_for( controller='library_admin', action='download_dataset_from_folder', obj_id=ldda.id, library_id=library.id )}">Download this dataset</a>
                                     %endif
                                     <a class="action-button" confirm="Click OK to delete dataset '${ldda.name}'." href="${h.url_for( controller='library_admin', action='delete_library_item', library_id=library.id, library_item_id=library_dataset.id, library_item_type='library_dataset' )}">Delete this dataset</a>
                                 </div>
@@ -186,18 +184,18 @@
             %endif
             %if not folder.deleted:
                 <div popupmenu="folder-${folder.id}-popup">
-                    <a class="action-button" href="${h.url_for( controller='library_admin', action='library_dataset_dataset_association', library_id=library_id, folder_id=folder.id )}">Add datasets to this folder</a>
-                    <a class="action-button" href="${h.url_for( controller='library_admin', action='folder', new=True, id=folder.id, library_id=library_id )}">Create a new sub-folder in this folder</a>
-                    <a class="action-button" href="${h.url_for( controller='library_admin', action='folder', information=True, id=folder.id, library_id=library_id )}">Edit this folder's information</a>
+                    <a class="action-button" href="${h.url_for( controller='library_admin', action='upload_library_dataset', library_id=library_id, folder_id=folder.id )}">Add datasets to this folder</a>
+                    <a class="action-button" href="${h.url_for( controller='library_admin', action='folder', new=True, obj_id=folder.id, library_id=library_id )}">Create a new sub-folder in this folder</a>
+                    <a class="action-button" href="${h.url_for( controller='library_admin', action='folder', information=True, obj_id=folder.id, library_id=library_id )}">Edit this folder's information</a>
                     ## Editing templates disabled until we determine optimal approach to re-linking library item to new version of form definition
                     ##%if folder.info_association:
                     ##    <% form_id = folder.info_association[0].template.id %>
                     ##    <a class="action-button" href="${h.url_for( controller='forms', action='edit', form_id=form_id, show_form=True )}">Edit this folder's information template</a>
                     ##%else:
                     %if not folder.info_association:
-                        <a class="action-button" href="${h.url_for( controller='library_admin', action='info_template', library_id=library.id, folder_id=folder.id, add=True )}">Add an information template to this folder</a>
+                        <a class="action-button" href="${h.url_for( controller='library_common', action='info_template', cntrller='library_admin', library_id=library.id, response_action='folder', folder_id=folder.id )}">Add an information template to this folder</a>
                     %endif
-                    <a class="action-button" href="${h.url_for( controller='library_admin', action='folder', permissions=True, id=folder.id, library_id=library_id )}">Edit this folder's permissions</a>
+                    <a class="action-button" href="${h.url_for( controller='library_admin', action='folder', permissions=True, obj_id=folder.id, library_id=library_id )}">Edit this folder's permissions</a>
                     <a class="action-button" confirm="Click OK to delete the folder '${folder.name}.'" href="${h.url_for( controller='library_admin', action='delete_library_item', library_id=library_id, library_item_id=folder.id, library_item_type='folder' )}">Delete this folder and its contents</a>
                 </div>
             %elif not deleted and folder.deleted and not folder.purged:
@@ -246,10 +244,10 @@
 <ul class="manage-table-actions">
     %if not deleted:
         <li>
-            <a class="action-button" href="${h.url_for( controller='library_admin', action='library_dataset_dataset_association', library_id=library.id, folder_id=library.root_folder.id )}"><span>Add datasets to this data library</span></a>
+            <a class="action-button" href="${h.url_for( controller='library_admin', action='upload_library_dataset', library_id=library.id, folder_id=library.root_folder.id )}"><span>Add datasets to this data library</span></a>
         </li>
         <li>
-            <a class="action-button" href="${h.url_for( controller='library_admin', action='folder', new=True, id=library.root_folder.id, library_id=library.id )}">Add a folder to this data library</a>
+            <a class="action-button" href="${h.url_for( controller='library_admin', action='folder', new=True, obj_id=library.root_folder.id, library_id=library.id )}">Add a folder to this data library</a>
         </li>
     %endif
 </ul>
@@ -274,21 +272,21 @@
                         <a id="library-${library.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
                         <div popupmenu="library-${library.id}-popup">
                         %if not deleted:
-                            <a class="action-button" href="${h.url_for( controller='library_admin', action='library', id=library.id, information=True )}">Edit this data library's information</a>
+                            <a class="action-button" href="${h.url_for( controller='library_admin', action='library', obj_id=library.id, information=True )}">Edit this data library's information</a>
                             ## Editing templates disabled until we determine optimal approach to re-linking library item to new version of form definition
                             ##%if library.info_association:
                             ##    <% form_id = library.info_association[0].template.id %>
                             ##    <a class="action-button" href="${h.url_for( controller='forms', action='edit', form_id=form_id, show_form=True )}">Edit this data library's information template</a>
                             ##%else:
                             %if not library.info_association:
-                                <a class="action-button" href="${h.url_for( controller='library_admin', action='info_template', library_id=library.id, add=True )}">Add an information template to this data library</a>
+                                <a class="action-button" href="${h.url_for( controller='library_common', action='info_template', cntrller='library_admin', library_id=library.id, response_action='browse_library' )}">Add an information template to this data library</a>
                             %endif
-                            <a class="action-button" href="${h.url_for( controller='library_admin', action='library', id=library.id, permissions=True )}">Edit this data library's permissions</a>
+                            <a class="action-button" href="${h.url_for( controller='library_admin', action='library', obj_id=library.id, permissions=True )}">Edit this data library's permissions</a>
                             <a class="action-button" confirm="Click OK to delete the library named '${library.name}'." href="${h.url_for( controller='library_admin', action='delete_library_item', library_id=library.id, library_item_id=library.id, library_item_type='library' )}">Delete this data library and its contents</a>
                             %if show_deleted:
-                            	<a class="action-button" href="${h.url_for( controller='library_admin', action='browse_library', id=library.id, show_deleted=False )}">Hide deleted data library items</a>
+                            	<a class="action-button" href="${h.url_for( controller='library_admin', action='browse_library', obj_id=library.id, show_deleted=False )}">Hide deleted data library items</a>
                             %else:
-                            	<a class="action-button" href="${h.url_for( controller='library_admin', action='browse_library', id=library.id, show_deleted=True )}">Show deleted data library items</a>
+                            	<a class="action-button" href="${h.url_for( controller='library_admin', action='browse_library', obj_id=library.id, show_deleted=True )}">Show deleted data library items</a>
                             %endif
                         %elif not library.purged:
                               <a class="action-button" href="${h.url_for( controller='library_admin', action='undelete_library_item', library_id=library.id, library_item_id=library.id, library_item_type='library' )}">Undelete this data library</a>
@@ -310,7 +308,7 @@
         <p>
             <b>Perform action on selected datasets:</b>
             <select name="action" id="action_on_datasets_select">
-                <option value="edit">Edit selected datasets' permissions</option>
+                <option value="manage_permissions">Edit selected datasets' permissions</option>
                 <option value="delete">Delete selected datasets</option>
             </select>
             <input type="submit" class="primary-button" name="action_on_datasets_button" id="action_on_datasets_button" value="Go"/>

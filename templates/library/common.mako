@@ -1,4 +1,4 @@
-<%def name="render_template_info( library_item, library_id, widgets, editable=True )">
+<%def name="render_template_info( library_item, library_id, response_action, widgets, editable=True )">
     <%
         library_item_type = 'unknown type'
         library_item_desc = ''
@@ -22,7 +22,7 @@
             <div class="toolFormTitle">Other information about ${library_item_desc} ${library_item.name}</div>
             <div class="toolFormBody">
                 %if editable and trans.app.security_agent.can_modify_library_item( user, roles, library_item ):
-                    <form name="edit_info" action="${h.url_for( controller='library', action='edit_template_info', library_id=library_id, num_widgets=len( widgets ) )}" method="post">
+                    <form name="edit_info" action="${h.url_for( controller='library_common', action='edit_template_info', cntrller='library', library_id=library_id, response_action=response_action, num_widgets=len( widgets ) )}" method="post">
                         <input type="hidden" name="library_item_id" value="${library_item.id}"/>
                         <input type="hidden" name="library_item_type" value="${library_item_type}"/>
                         %for i, field in enumerate( widgets ):

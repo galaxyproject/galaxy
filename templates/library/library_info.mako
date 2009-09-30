@@ -7,7 +7,7 @@
 <br/><br/>
 <ul class="manage-table-actions">
     <li>
-        <a class="action-button" href="${h.url_for( controller='library', action='browse_library', id=library.id )}"><span>Browse this data library</span></a>
+        <a class="action-button" href="${h.url_for( controller='library', action='browse_library', obj_id=library.id )}"><span>Browse this data library</span></a>
     </li>
 </ul>
 
@@ -36,7 +36,7 @@
                 </div>
                 <div class="form-row">
                     <div style="float: left; width: 250px; margin-right: 10px;">
-                        <input type="hidden" name="id" value="${library.id}"/>
+                        <input type="hidden" name="obj_id" value="${library.id}"/>
                     </div>
                     <div style="clear: both"></div>
                 </div>
@@ -60,5 +60,5 @@
 %endif
 
 %if widgets:
-    ${render_template_info( library, library.id, widgets )}
+    ${render_template_info( library, library.id, 'library', widgets )}
 %endif

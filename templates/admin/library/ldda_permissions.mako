@@ -5,17 +5,17 @@
 
 <%
     roles = trans.app.model.Role.filter( trans.app.model.Role.table.c.deleted==False ).order_by( trans.app.model.Role.table.c.name ).all()
-    lddas = util.listify( ldda )
     if len( lddas ) > 1:
         name_str = '%d selected datasets' % len( lddas )
     else:
+        ldda = lddas[0]
         name_str = ldda.name
 %>
 
 <br/><br/>
 <ul class="manage-table-actions">
     <li>
-        <a class="action-button" href="${h.url_for( controller='library_admin', action='browse_library', id=library_id )}"><span>Browse this data library</span></a>
+        <a class="action-button" href="${h.url_for( controller='library_admin', action='browse_library', obj_id=library_id )}"><span>Browse this data library</span></a>
     </li>
 </ul>
 
@@ -35,7 +35,7 @@
                         <a id="ldda-${ldd_assoc.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
                     </div>
                     <div popupmenu="ldd_assoc-${ldd_assoc.id}-popup">
-                        <a class="action-button" href="${h.url_for( controller='library_admin', action='library_dataset', id=ldd_assoc.library_dataset_id, library_id=library_id )}">Manage this dataset's versions</a>
+                        <a class="action-button" href="${h.url_for( controller='library_admin', action='library_dataset', obj_id=ldd_assoc.library_dataset_id, library_id=library_id )}">Manage this dataset's versions</a>
                     </div>
                 </td>
                 <td>
@@ -59,4 +59,4 @@
 %endif
 
 <% ldda_ids = ",".join( [ str( d.id ) for d in lddas ] ) %>
-${render_permission_form( lddas[0], name_str, h.url_for( controller='library_admin', action='library_dataset_dataset_association', library_id=library_id, folder_id=lddas[0].library_dataset.folder.id, id=ldda_ids, permissions=True ), roles )}
+${render_permission_form( lddas[0], name_str, h.url_for( controller='library_admin', action='ldda_manage_permissions', library_id=library_id, folder_id=lddas[0].library_dataset.folder.id, obj_id=ldda_ids ), roles )}

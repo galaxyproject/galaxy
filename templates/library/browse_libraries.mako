@@ -22,7 +22,7 @@
         <tbody>
             %for library, hidden_folder_ids in libraries.items():    
                 <tr class="libraryRow libraryOrFolderRow" id="libraryRow">
-                    <td><a href="${h.url_for( controller='library', action='browse_library', id=library.id, hidden_folder_ids=hidden_folder_ids )}">${library.name}</a></td>
+                    <td><a href="${h.url_for( controller='library', action='browse_library', obj_id=library.id, hidden_folder_ids=hidden_folder_ids )}">${library.name}</a></td>
                     <td><i>${library.description}</i></td>
                 </tr>             
             %endfor

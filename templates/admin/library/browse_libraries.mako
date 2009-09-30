@@ -42,7 +42,7 @@
         <tbody>
             %for library in libraries:    
                 <tr class="libraryRow libraryOrFolderRow" id="libraryRow">
-                    <td><a href="${h.url_for( controller='library_admin', action='browse_library', id=library.id, deleted=deleted, show_deleted=show_deleted )}">${library.name}</a></td>
+                    <td><a href="${h.url_for( controller='library_admin', action='browse_library', obj_id=library.id, deleted=deleted, show_deleted=show_deleted )}">${library.name}</a></td>
                     <td><i>${library.description}</i></td>
                 </tr>             
             %endfor
