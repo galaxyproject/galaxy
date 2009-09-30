@@ -32,7 +32,7 @@ class SniffingAndMetaDataSettings( TwillTestCase ):
         self.check_metadata_for_string( 'value="1.bed" value="\?"' )
         self.check_metadata_for_string( 'Chrom column: <option value="1" selected> Start column: <option value="2" selected>' )
         self.check_metadata_for_string( 'End column: <option value="3" selected> Strand column <option value="6" selected>' )
-        self.check_metadata_for_string( 'Convert to new format <option value="bed">Genomic Intervals To BED <option value="gff">BED to GFF' )
+        self.check_metadata_for_string( 'Convert to new format value="bed">Convert Genomic Intervals To BED <option value="gff">Convert BED to GFF' )
         self.check_metadata_for_string( 'Change data type selected value="bed" selected="yes"' )
         latest_hda = galaxy.model.HistoryDatasetAssociation.query() \
             .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ).first()
@@ -97,7 +97,7 @@ class SniffingAndMetaDataSettings( TwillTestCase ):
         self.verify_dataset_correctness( '5.gff' )
         self.check_history_for_string( '5.gff format: <span class="gff">gff</span>, database: \? Info: uploaded file' )
         self.check_metadata_for_string( 'value="5.gff" value="\?"' )
-        self.check_metadata_for_string( 'Convert to new format <option value="bed">GFF to BED' )
+        self.check_metadata_for_string( 'Convert to new format <option value="bed">Convert GFF to BED' )
         self.check_metadata_for_string( 'Change data type selected value="gff" selected="yes"' )
         latest_hda = galaxy.model.HistoryDatasetAssociation.query() \
             .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ).first()
@@ -110,7 +110,7 @@ class SniffingAndMetaDataSettings( TwillTestCase ):
         self.verify_dataset_correctness( '5.gff3' )
         self.check_history_for_string( '5.gff3 format: <span class="gff3">gff3</span>, database: \? Info: uploaded file' )
         self.check_metadata_for_string( 'value="5.gff3" value="\?"' )
-        self.check_metadata_for_string( 'Convert to new format <option value="bed">GFF to BED' )
+        self.check_metadata_for_string( 'Convert to new format <option value="bed">Convert GFF to BED' )
         self.check_metadata_for_string( 'Change data type selected value="gff3" selected="yes"' )
         latest_hda = galaxy.model.HistoryDatasetAssociation.query() \
             .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ).first()
@@ -138,7 +138,7 @@ class SniffingAndMetaDataSettings( TwillTestCase ):
         self.check_metadata_for_string( 'value="1.interval" value="\?"' )
         self.check_metadata_for_string( 'Chrom column: <option value="1" selected> Start column: <option value="2" selected>' )
         self.check_metadata_for_string( 'End column: <option value="3" selected> Strand column <option value="6" selected>' )
-        self.check_metadata_for_string( 'Convert to new format <option value="bed">Genomic Intervals To BED' )
+        self.check_metadata_for_string( 'Convert to new format <option value="bed">Convert Genomic Intervals To BED' )
         self.check_metadata_for_string( 'Change data type selected value="interval" selected="yes"' )
         latest_hda = galaxy.model.HistoryDatasetAssociation.query() \
             .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ).first()
@@ -163,7 +163,7 @@ class SniffingAndMetaDataSettings( TwillTestCase ):
         self.verify_dataset_correctness( '3.maf' )
         self.check_history_for_string( '3.maf format: <span class="maf">maf</span>, database: \? Info: uploaded file' )
         self.check_metadata_for_string( 'value="3.maf" value="\?"' )
-        self.check_metadata_for_string( 'Convert to new format <option value="interval">MAF to Genomic Intervals <option value="fasta">MAF to Fasta' )
+        self.check_metadata_for_string( 'Convert to new format <option value="interval">Convert MAF to Genomic Intervals <option value="fasta">Convert MAF to Fasta' )
         self.check_metadata_for_string( 'Change data type selected value="maf" selected="yes"' )
         latest_hda = galaxy.model.HistoryDatasetAssociation.query() \
             .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ).first()
