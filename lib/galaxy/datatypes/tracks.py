@@ -27,6 +27,8 @@ class GeneTrack( data.Binary ):
     def __init__(self, **kwargs):
         super( GeneTrack, self ).__init__( **kwargs )
         self.add_display_app( 'genetrack', 'View in GeneTrack', '', 'genetrack_link' )
+    def get_display_links( self, dataset, type, app, base_url, target_frame='galaxy_main', **kwd ):
+        return data.Binary.get_display_links( self, dataset, type, app, base_url, target_frame=target_frame, **kwd )
     def genetrack_link( self, hda, type, app, base_url ):
         ret_val = []
         if hda.has_data:

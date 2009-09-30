@@ -83,11 +83,11 @@
                         <a href="${h.url_for( action='display', id=data.id, tofile='yes', toext=data.ext )}" target="_blank">save</a>
 			| <a href="${h.url_for( controller='tool_runner', action='rerun', id=data.id )}" target="galaxy_main">rerun</a>
                         %for display_app in data.datatype.get_display_types():
-                            <% display_links = data.datatype.get_display_links( data, display_app, app, request.base ) %>
+                            <% target_frame, display_links = data.datatype.get_display_links( data, display_app, app, request.base ) %>
                             %if len( display_links ) > 0:
                                 | ${data.datatype.get_display_label(display_app)}
 				%for display_name, display_link in display_links:
-				    <a target="_blank" href="${display_link}">${_(display_name)}</a> 
+				    <a target="${target_frame}" href="${display_link}">${_(display_name)}</a> 
 				%endfor
                             %endif
                         %endfor

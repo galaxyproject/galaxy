@@ -171,11 +171,11 @@ class Data( object ):
     def get_mime(self):
         """Returns the mime type of the datatype"""
         return 'application/octet-stream'
-    def add_display_app (self, app_id, label, file_function, links_function ):
+    def add_display_app ( self, app_id, label, file_function, links_function ):
         """
         Adds a display app to the datatype.
         app_id is a unique id
-        label is the primary display label, ie display at 'UCSC'
+        label is the primary display label, e.g., display at 'UCSC'
         file_function is a string containing the name of the function that returns a properly formatted display
         links_function is a string containing the name of the function that returns a list of (link_name,link)
         """
@@ -205,7 +205,7 @@ class Data( object ):
         except:
             log.exception('Function %s is referred to in datatype %s for displaying as type %s, but is not accessible' % (self.supported_display_apps[type]['file_function'], self.__class__.__name__, type) )
         return "This display type (%s) is not implemented for this datatype (%s)." % ( type, dataset.ext)
-    def get_display_links(self, dataset, type, app, base_url, **kwd):
+    def get_display_links( self, dataset, type, app, base_url, target_frame='_blank', **kwd ):
         """
         Returns a list of tuples of (name, link) for a particular display type.  No check on
         'access' permissions is done here - if you can view the dataset, you can also save it
@@ -214,7 +214,7 @@ class Data( object ):
         """
         try:
             if type in self.get_display_types():
-                return getattr (self, self.supported_display_apps[type]['links_function']) (dataset, type, app, base_url, **kwd)
+                return target_frame, getattr ( self, self.supported_display_apps[type]['links_function'] ) ( dataset, type, app, base_url, **kwd )
         except:
             log.exception( 'Function %s is referred to in datatype %s for generating links for type %s, but is not accessible' \
                            % ( self.supported_display_apps[type]['links_function'], self.__class__.__name__, type ) )
