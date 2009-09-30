@@ -80,6 +80,8 @@ def __main__():
         split_blocks_by_species = True
         if options.remove_all_gap_columns and options.remove_all_gap_columns == 'remove_all_gap_columns':
             remove_all_gap_columns = True
+    else:
+        remove_all_gap_columns = True
     #Finish parsing command line
     
     #Open indexed access to MAFs
@@ -113,6 +115,8 @@ def __main__():
             for block in blocks:
                 block = maf_utilities.chop_block_by_region( block, src, region )
                 if block is not None:
+                    if species is not None:
+                        block = block.limit_to_species( species )
                     block = maf_utilities.orient_block_by_region( block, src, region )
                     if remove_all_gap_columns:
                         block.remove_all_gap_columns()
