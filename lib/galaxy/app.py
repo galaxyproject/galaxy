@@ -1,6 +1,6 @@
 import sys, os, atexit
 
-from galaxy import config, jobs, util, tools, web, cloud
+from galaxy import config, jobs, util, tools, web
 from galaxy.tracks import store
 from galaxy.web import security
 import galaxy.model
@@ -68,8 +68,6 @@ class UniverseApplication( object ):
         # FIXME: These are exposed directly for backward compatibility
         self.job_queue = self.job_manager.job_queue
         self.job_stop_queue = self.job_manager.job_stop_queue
-        # Start the cloud manager
-        self.cloud_manager = cloud.CloudManager( self )
         # Track Store
         self.track_store = store.TrackStoreManager( self.config.track_store_path )
         

@@ -1,11 +1,12 @@
 import logging, threading, sys, os, time, subprocess, string, tempfile, re, traceback, shutil
 
-from galaxy import util, model
+from galaxy import util, model, config
 from galaxy.model import mapping
 from galaxy.model.orm import lazyload
 from galaxy.datatypes.tabular import *
 from galaxy.datatypes.interval import *
 from galaxy.datatypes import metadata
+#from util import Bunch
 
 import pkg_resources
 pkg_resources.require( "PasteDeploy" )
@@ -17,6 +18,10 @@ from Queue import Queue, Empty
 log = logging.getLogger( __name__ )
 
 # States for running a job. These are NOT the same as data states
+#messages = {
+#            JOB_WAIT
+#            
+#            }
 JOB_WAIT, JOB_ERROR, JOB_INPUT_ERROR, JOB_INPUT_DELETED, JOB_OK, JOB_READY, JOB_DELETED, JOB_ADMIN_DELETED = 'wait', 'error', 'input_error', 'input_deleted', 'ok', 'ready', 'deleted', 'admin_deleted'
 
 class CloudManager( object ):
@@ -29,19 +34,20 @@ class CloudManager( object ):
             # The dispatcher manager underlying cloud instances
             self.provider = DefaultCloudProvider( app )
             # Monitor for updating status of cloud instances
-            self.cloud_monitor = CloudMonitor( app, self.provider )
+#            self.cloud_monitor = CloudMonitor( self.config, self.provider )
 #            self.job_stop_queue = JobStopQueue( app, self.dispatcher )
         else:
             self.job_queue = self.job_stop_queue = NoopCloudMonitor()
+
     def shutdown( self ):
         self.cloud_monitor.shutdown()
 #        self.job_stop_queue.shutdown()
 
-    def createUCI( self, name, storage_size, zone=None):
+    def createUCI( self, user, name, storage_size, zone=None):
         """ 
         Createse User Configured Instance (UCI). Essentially, creates storage volume.
         """
-        self.provider.createUCI( name, storage_size, zone )
+        self.provider.createUCI( user, name, storage_size, zone )
         
     def deleteUCI( self, name ):
         """ 
@@ -104,7 +110,7 @@ class CloudMonitor( object ):
         self.provider = provider
         self.monitor_thread = threading.Thread( target=self.__monitor )
         self.monitor_thread.start()        
-        log.info( "cloud manager started" )
+        log.info( "Cloud manager started" )
 #        if app.config.get_bool( 'enable_job_recovery', True ):
 #            self.__check_jobs_at_startup()
 
@@ -143,11 +149,12 @@ class CloudMonitor( object ):
         
         while self.running:
             try:
-                self.__monitor_step()
+                #self.__monitor_step()
+                log.debug ( "would be calling monitor_step" )
             except:
                 log.exception( "Exception in cloud manager monitor_step" )
             # Sleep
-            self.sleeper.sleep( 1 )
+            self.sleeper.sleep( 2 )
 
     def __monitor_step( self ):
         """
@@ -636,39 +643,39 @@ class DefaultCloudProvider( object ):
 #        if app.config.start_job_runners is not None:
 #            start_cloud_provider.extend( app.config.start_job_runners.split(",") )
 #        for provider_name in start_cloud_provider:
-        provider_name = app.config.cloud_provider
-        if provider_name == "eucalyptus":
+        self.provider_name = app.config.cloud_provider
+        if self.provider_name == "eucalyptus":
             import providers.eucalyptus
-            self.cloud_provider[provider_name] = providers.eucalyptus.EucalyptusCloudProvider( app )
-        elif provider_name == "ec2":
+            self.cloud_provider[self.provider_name] = providers.eucalyptus.EucalyptusCloudProvider( app )
+        elif self.provider_name == "ec2":
             import providers.ec2
-            self.cloud_provider[provider_name] = providers.ec2.EC2CloudProvider( app )
+            self.cloud_provider[self.provider_name] = providers.ec2.EC2CloudProvider( app )
         else:
-            log.error( "Unable to start unknown cloud provider: %s" %provider_name )
+            log.error( "Unable to start unknown cloud provider: %s" %self.provider_name )
     
-    def createUCI( self, name, storage_size, zone=None):
+    def createUCI( self, user, uciName, storage_size, zone=None):
         """ 
         Createse User Configured Instance (UCI). Essentially, creates storage volume.
         """
-        log.debug( "Creating UCI %s" % name )
-        self.cloud_provider[name].createUCI( name, storage_size, zone )
+        log.debug( "Creating UCI %s" % uciName )
+        self.cloud_provider[self.provider_name].createUCI( user, uciName, storage_size, zone )
         
-    def deleteUCI( self, name ):
+    def deleteUCI( self, uciName ):
         """ 
         Deletes UCI. NOTE that this implies deletion of any and all data associated
         with this UCI from the cloud. All data will be deleted.
         """
     
-    def addStorageToUCI( self, name ):
+    def addStorageToUCI( self, uciName ):
         """ Adds more storage to specified UCI """
         
-    def startUCI( self, name, type ):
+    def startUCI( self, uciName, type ):
         """
         Starts an instance of named UCI on the cloud. This implies, mounting of
         storage and starting Galaxy instance. 
         """ 
         
-    def stopUCI( self, name ):
+    def stopUCI( self, uciName ):
         """ 
         Stops cloud instance associated with named UCI. This also implies 
         stopping of Galaxy and unmounting of the file system.

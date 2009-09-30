@@ -400,6 +400,7 @@ UCI.table = Table( "uci", metadata,
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True, nullable=False ),
+    Column( "credentials_id", Integer, ForeignKey( "cloud_user_credentials.id" ), index=True, nullable=False ),
     Column( "name", TEXT ),
     Column( "state", TEXT ),
     Column( "total_size", Integer ),
@@ -421,6 +422,7 @@ CloudInstance.table = Table( "cloud_instance", metadata,
     Column( "public_dns", TEXT ),
     Column( "private_dns", TEXT ),
     Column( "keypair_name", TEXT ),
+    Column( "keypair_material", TEXT ),
     Column( "availability_zone", TEXT ) )
 
 CloudStore.table = Table( "cloud_store", metadata, 
@@ -436,19 +438,18 @@ CloudStore.table = Table( "cloud_store", metadata,
     Column( "i_id", TEXT, ForeignKey( "cloud_instance.instance_id" ), index=True ),
     Column( "status", TEXT ),
     Column( "device", TEXT ),
-    Column( "space_consumed", Integer )
-    )
+    Column( "space_consumed", Integer ) )
 
 CloudUserCredentials.table = Table( "cloud_user_credentials", metadata, 
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True, nullable=False ),
-    Column( "name", TEXT),
-    Column( "access_key", TEXT),
-    Column( "secret_key", TEXT),
-    Column( "defaultCred", Boolean, default=False)
-    )
+    Column( "name", TEXT ),
+    Column( "access_key", TEXT ),
+    Column( "secret_key", TEXT ),
+    Column( "defaultCred", Boolean, default=False ),
+    Column( "provider_name", TEXT ) )
 # ***************************************************************************
 
 StoredWorkflow.table = Table( "stored_workflow", metadata,
@@ -962,6 +963,7 @@ assign_mapper( context, CloudImage, CloudImage.table )
 
 assign_mapper( context, UCI, UCI.table,
     properties=dict( user=relation( User ),
+                     credentials=relation( CloudUserCredentials ),
                      instance=relation( CloudInstance, backref='uci' ),
                      store=relation( CloudStore, backref='uci' ) 
                     ) )

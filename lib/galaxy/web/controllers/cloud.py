@@ -21,11 +21,15 @@ import galaxy.eggs
 galaxy.eggs.require("boto")
 from boto.ec2.connection import EC2Connection
 from boto.ec2.regioninfo import RegionInfo
+from galaxy.cloud import CloudManager
 
 import logging
 log = logging.getLogger( __name__ )
 
 class CloudController( BaseController ):
+    
+#    def __init__( self ):
+#        self.cloudManager = CloudManager()
     
     @web.expose
     def index( self, trans ):
@@ -262,12 +266,20 @@ class CloudController( BaseController ):
     
     @web.expose
     @web.require_login( "use Galaxy cloud" )
-    def configureNew( self, trans, instanceName='', volSize=''):
+    def configureNew( self, trans, instanceName='', credName='', volSize='', zone=''):
         """
         Configure and add new cloud instance to user's instance pool
         """
+        inst_error = vol_error = cred_error = None
         user = trans.get_user()
-        inst_error = vol_error = None
+        # TODO: Hack until present user w/ bullet list w/ registered  credentials
+        storedCreds = trans.sa_session.query( model.CloudUserCredentials ) \
+            .filter_by( user=user ).all()
+        credsMatch = False
+        for cred in storedCreds:
+            if cred.name == credName:
+                credsMatch = True
+        
         if instanceName:
             # Create new user configured instance
             try:
@@ -280,23 +292,30 @@ class CloudController( BaseController ):
                     vol_error = "Volume size cannot exceed 1000GB. You must specify an integer between 1 and 1000." 
                 elif int( volSize ) < 1:
                     vol_error = "Volume size cannot be less than 1GB. You must specify an integer between 1 and 1000." 
+                elif not credsMatch:
+                    cred_error = "You specified unknown credentials." 
                 else:
                     # Capture user configured instance information
                     uci = model.UCI()
                     uci.name = instanceName
+                    uci.credentials = trans.app.model.CloudUserCredentials.filter(
+                        trans.app.model.CloudUserCredentials.table.c.name==credName ).first()
                     uci.user= user
-                    uci.state = "available" # Valid states include: "available", "running" or "pending"
                     uci.total_size = volSize # This is OK now because new instance is being created. 
+                    # Need to flush because connection object accesses uci table
+                    uci.flush()
                     # Capture store related information
                     storage = model.CloudStore()
                     storage.user = user
                     storage.uci = uci
                     storage.size = volSize
                     storage.availability_zone = "us-east-1a" # TODO: Give user choice here. Also, enable region selection.
-                    conn = get_connection( trans )
+                    conn = get_connection( trans, credName )
                     #conn.create_volume( volSize, storage.availability_zone, snapshot=None )
                     # TODO: get correct value from AWS
                     storage.volume_id = "made up"
+                    # TODO: If volume creation was successfull, set state to available
+                    uci.state = "available" # Valid states include: "available", "running" or "pending"
                     # Persist
                     session = trans.sa_session
                     session.save_or_update( uci )
@@ -304,7 +323,7 @@ class CloudController( BaseController ):
                     session.flush()
                     # Log and display the management page
                     trans.log_event( "User configured new cloud instance" )
-                    trans.set_message( "New Galaxy instance '%s' configured." % uci.name )
+                    trans.set_message( "New Galaxy instance '%s' configured." % instanceName )
                     return self.list( trans )
             except ValueError:
                 vol_error = "Volume size must be specified as an integer value only, between 1 and 1000."
@@ -315,6 +334,7 @@ class CloudController( BaseController ):
         return trans.show_form( 
             web.FormBuilder( web.url_for(), "Configure new instance", submit_text="Add" )
                 .add_text( "instanceName", "Instance name", value="Unnamed instance", error=inst_error ) 
+                .add_text( "credName", "Name of registered credentials to use", value="", error=cred_error )
                 .add_text( "volSize", "Permanent storage size (1GB - 1000GB)"  
                     "<br />Note: you will be able to add more storage later", value='', error=vol_error ) )
         
@@ -347,7 +367,7 @@ class CloudController( BaseController ):
             
         return trans.show_form(
             web.FormBuilder( web.url_for(), "Add new cloud image", submit_text="Add" )
-                .add_text( "image_id", "Image ID", value='', error=error )
+                .add_text( "image_id", "Machine Image ID (AMI or EMI)", value='', error=error )
                 .add_text( "manifest", "Manifest", value='', error=error ) )
             
     @web.expose
@@ -378,18 +398,20 @@ class CloudController( BaseController ):
    
     @web.expose
     @web.require_login( "add credentials" )
-    def add( self, trans, credName='', accessKey='', secretKey='', defaultCred=True ):
+    def add( self, trans, credName='', accessKey='', secretKey='', providerName='' ):
         """
         Add user's cloud credentials stored under name `credName`.
         """
         user = trans.get_user()
-        cred_error = accessKey_error = secretKey_error = None
+        cred_error = accessKey_error = secretKey_error = provider_error = None
         if credName:
             if len( credName ) > 255:
                 cred_error = "Credentials name exceeds maximum allowable length."
             elif trans.app.model.CloudUserCredentials.filter(  
                     trans.app.model.CloudUserCredentials.table.c.name==credName ).first():
                 cred_error = "Credentials with that name already exist."
+            elif ( ( providerName.lower()!='ec2' ) and ( providerName.lower()!='eucalyptus' ) ):
+                provider_error = "You specified an unsupported cloud provider."
             else:
                 # Create new user stored credentials
                 credentials = model.CloudUserCredentials()
@@ -397,6 +419,7 @@ class CloudController( BaseController ):
                 credentials.user = user
                 credentials.access_key = accessKey
                 credentials.secret_key = secretKey
+                credentials.provider_name = providerName.lower()
                 # Persist
                 session = trans.sa_session
                 session.save_or_update( credentials )
@@ -404,15 +427,15 @@ class CloudController( BaseController ):
                 # Log and display the management page
                 trans.log_event( "User added new credentials" )
                 trans.set_message( "Credential '%s' created" % credentials.name )
-                if defaultCred:
-                    self.makeDefault( trans, credentials.id)
+#                if defaultCred:
+#                    self.makeDefault( trans, credentials.id)
                 return self.list( trans )
         return trans.show_form( 
             web.FormBuilder( web.url_for(), "Add credentials", submit_text="Add" )
                 .add_text( "credName", "Credentials name", value="Unnamed credentials", error=cred_error )
+                .add_text( "providerName", "Cloud provider name", value="ec2 or eucalyptus", error=provider_error )
                 .add_text( "accessKey", "Access key", value='', error=accessKey_error ) 
-                .add_password( "secretKey", "Secret key", value='', error=secretKey_error ) 
-                .add_input( "checkbox","Make default credentials","defaultCred", value='defaultCred' ) )
+                .add_password( "secretKey", "Secret key", value='', error=secretKey_error ) )
         
     @web.expose
     @web.require_login( "view credentials" )
@@ -443,8 +466,9 @@ class CloudController( BaseController ):
     @web.require_login( "delete credentials" )
     def delete( self, trans, id=None ):
         """
-        Delete user's cloud credentials 
-        """        
+        Delete user's cloud credentials
+        TODO: Because UCI's depend on specific credentials, need to handle case where given credentials are being used by a UCI 
+        """
         # Load credentials from database
         stored = get_stored_credentials( trans, id )
         # Delete and save
@@ -899,7 +923,7 @@ class CloudController( BaseController ):
         
 def get_stored_credentials( trans, id, check_ownership=True ):
     """
-    Get a StoredUserCredntials from the database by id, verifying ownership. 
+    Get StoredUserCredentials from the database by id, verifying ownership. 
     """
     # Check if 'id' is in int (i.e., it was called from this program) or
     #    it was passed from the web (in which case decode it)
@@ -997,21 +1021,21 @@ def get_cloud_instance( conn, instance_id ):
     cloudInstance = conn.get_all_instances( idLst )[0].instances[0]
     return cloudInstance
 
-def get_connection( trans ):
+def get_connection( trans, credName ):
     """
-    Establishes EC2 conncection using user's default credentials
+    Establishes EC2 connection using user's default credentials
     """
     log.debug( '##### Establishing cloud connection.' )
     user = trans.get_user()
-    creds = trans.sa_session.query(model.CloudUserCredentials).filter_by(user=user, defaultCred=True).first()
+    creds = trans.sa_session.query( model.CloudUserCredentials ).filter_by( user=user, name=credName ).first()
     if creds:
         a_key = creds.access_key
         s_key = creds.secret_key
         # Amazon EC2
         #conn = EC2Connection( a_key, s_key )
         # Eucalyptus Public Cloud
-        euca_region = RegionInfo(None, "eucalyptus", "mayhem9.cs.ucsb.edu")
-        conn = EC2Connection(aws_access_key_id=a_key, aws_secret_access_key=s_key, is_secure=False, port=8773, region=euca_region, path="/services/Eucalyptus")
+        euca_region = RegionInfo( None, "eucalyptus", "mayhem9.cs.ucsb.edu" )
+        conn = EC2Connection( aws_access_key_id=a_key, aws_secret_access_key=s_key, is_secure=False, port=8773, region=euca_region, path="/services/Eucalyptus" )
         return conn
     else:
         error( "You must specify default credentials before starting an instance." )
@@ -1031,6 +1055,8 @@ def get_keypair_name( trans ):
     except AttributeError: # No keypair under this name exists so create it
         log.debug( 'No keypair found, creating keypair' )
         key_pair = conn.create_key_pair( 'galaxy-keypair' )
+        # TODO: Store key_pair.material into instance table - this is the only time private key can be retrieved
+        #    Actually, probably return key_pair to calling method and store name & key from there...
         
     return key_pair.name
 

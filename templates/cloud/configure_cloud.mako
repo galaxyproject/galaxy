@@ -34,7 +34,7 @@
     <table class="mange-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
         <tr class="header">
             <th>Credentials name</th>
-            <th>Default</th>
+            <th>Provider</th>
             <th></th>
         </tr>
         %for i, cloudCredential in enumerate( cloudCredentials ):
@@ -43,15 +43,7 @@
                     ${cloudCredential.name}
                     <a id="cr-${i}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
                 </td>
-                ## Comment <td>${len(workflow.latest_workflow.steps)}</td>
-                ##<td>${str(cloudCredential.update_time)[:19]}</td>
-                <td>
-                	##${str(cloudCredential.defaultCred)}
-                	<%
-						if cloudCredential.defaultCred:
-							context.write('*')
-					%>
-				</td>
+                <td>${cloudCredential.provider_name}</td>
                 
 				<td>
                     <div popupmenu="cr-${i}-popup">
@@ -85,7 +77,7 @@
 		<colgroup width="25%"></colgroup>
 		<colgroup width="10%"></colgroup>
 		<tr class="header">
-            <th>Live instances</th>
+            <th>Your instances</th>
 			<th>Storage size (GB)</th>
 			<th>State</th>
             <th>Alive since</th>

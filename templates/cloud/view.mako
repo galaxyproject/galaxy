@@ -38,6 +38,10 @@
 			</td>
 	   </tr>
 	   <tr>
+	   		<td> Cloud provider: </td>
+			<td> ${str(credDetails.provider_name)[:16]}</td>
+	   </tr>
+	   <tr>
 	   		<td> Access key: </td>
 			<td> 
 				${credDetails.access_key}

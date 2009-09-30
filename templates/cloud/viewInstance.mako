@@ -103,6 +103,26 @@
 			<td> ${liveInstance.keypair_name} </td>
 	   </tr>
 	   %endif
+	   %if liveInstance.keypair_material != None:
+	   <tr>
+	   		<td> Keypair material:</td>
+			<div id="shortComment2">
+               <a onclick="document.getElementById('fullComment2').style.display = 'block'; 
+                document.getElementById('shortComment2').style.display = 'none'; return 0" 
+                href="javascript:void(0)">
+                + Show
+               </a>                    
+            </div>
+            <div id="fullComment2" style="DISPLAY: none">
+	      		<nobr><b>${liveInstance.keypair_material}</b></nobr><br/>
+                <a onclick="document.getElementById('shortComment2').style.display = 'block'; 
+                document.getElementById('fullComment2').style.display = 'none'; return 0;" 
+                href="javascript:void(0)">
+                - Hide
+                </a>            
+           </div>
+	   </tr>
+	   %endif
 	   
 	</table>
 %else:
