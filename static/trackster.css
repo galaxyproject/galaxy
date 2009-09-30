@@ -83,10 +83,18 @@ body {
     overflow: hidden;
 }
 
+.track-content.error {
+    text-align: center;
+    padding-top: 30px;
+    background-color: #600;
+}
+.track-content.nodata {
+    text-align: center;
+    padding-top: 30px;
+    background-color: #ddd;
+}
+
 .loading {
-    background-image: url("/static/images/loading_large_white_bg.gif");
-    background-position: center center;
-    background-repeat: no-repeat;
     min-height: 100px;
 }
 

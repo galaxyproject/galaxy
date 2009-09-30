@@ -101,13 +101,10 @@
             <form name="convert_data" action="${h.url_for( controller='root', action='edit' )}" method="post">
                 <input type="hidden" name="id" value="${data.id}"/>
                 <div class="form-row">
-                    <label>
-                        ${_('Convert to')}:
-                    </label>
                     <div style="float: left; width: 250px; margin-right: 10px;">
                         <select name="target_type">
                             %for key, value in converters.items():
-                                <option value="${key}">${value.name[8:]}</option>
+                                <option value="${key}">${value.name}</option>
                             %endfor
                         </select>
                     </div>

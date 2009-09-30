@@ -172,7 +172,6 @@ $.extend( TiledTrack.prototype, Track.prototype, {
         var tile_element;
         // Index of first tile that overlaps visible region
         var tile_index = Math.floor( low / resolution / DENSITY );
-        var max_height = 0;
         while ( ( tile_index * 1000 * resolution ) < high ) {
             // Check in cache
             if ( tile_index in old_tiles ) {
@@ -190,16 +189,38 @@ $.extend( TiledTrack.prototype, Track.prototype, {
             if ( tile_element ) {
                 // console.log( typeof(tile_element) );
                 new_tiles[tile_index] = tile_element;
-                max_height = Math.max( max_height, tile_element.height() );
             }
             tile_index += 1;
         }
-
-        parent_element.css( "height", max_height );
-
         this.last_resolution = resolution;
         this.last_w_scale = w_scale;
         this.tile_cache = new_tiles;
+    }
+});
+
+var LabelTrack = function ( parent_element ) {
+    Track.call( this, null, parent_element );
+    this.container_div.addClass( "label-track" );
+};
+$.extend( LabelTrack.prototype, Track.prototype, {
+    draw: function() {
+        var view = this.view,
+            range = view.high - view.low,
+            tickDistance = Math.floor( Math.pow( 10, Math.floor( Math.log( range ) / Math.log( 10 ) ) ) ),
+            position = Math.floor( view.low / tickDistance ) * tickDistance,
+            width = this.content_div.width(),
+            new_div = $("<div style='position: relative; height: 1.3em;'></div>");
+        while ( position < view.high ) {
+            var screenPosition = ( position - view.low ) / range * width;
+            new_div.append( $("<div class='label'>" + position + "</div>").css( {
+                position: "absolute",
+                // Reduce by one to account for border
+                left: screenPosition - 1
+            }));
+            position += tickDistance;
+        }
+        this.content_div.children( ":first" ).remove();
+        this.content_div.append( new_div );
     }
 });
 
@@ -209,24 +230,27 @@ var LineTrack = function ( name, dataset_id, height ) {
     this.track_type = "line";
     this.height_px = (height ? height : 100);
     this.container_div.addClass( "line-track" );
+    this.content_div.css( "height", this.height_px + "px" );
     this.dataset_id = dataset_id;
     this.cache = new DataCache( "", this );
 };
 $.extend( LineTrack.prototype, TiledTrack.prototype, {
-    make_container: function () {
-        Track.prototype.make_container.call(this);
-        // console.log("height:", this.height_px);
-        this.content_div.css( "height", this.height_px );
-    },
     init: function() {
-        track = this;
-        $.getJSON( data_url, { stats: true, track_type: track.track_type, chrom: this.view.chrom, low: null, high: null, dataset_id: this.dataset_id }, function ( data ) {
-            // console.log(data);
+        var track = this;
+        $.getJSON( data_url, {  stats: true, track_type: track.track_type, chrom: track.view.chrom, 
+                                low: null, high: null, dataset_id: track.dataset_id }, function ( data ) {
             if (data) {
-                track.min_value = data['min'];
-                track.max_value = data['max'];
-                track.vertical_range = track.max_value - track.min_value;
-                track.view.redraw();
+                if (data == "error") {
+                    track.content_div.addClass("error").text("There was an error in indexing this dataset.");
+                } else if (data == "no data") {
+                    // console.log(track.content_div);
+                    track.content_div.addClass("nodata").text("No data for this chrom/contig.");
+                } else {
+                    track.min_value = data['min'];
+                    track.max_value = data['max'];
+                    track.vertical_range = track.max_value - track.min_value;
+                    track.view.redraw();
+                }
             }
         });
     },
@@ -287,43 +311,14 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
     }
 });
 
-var LabelTrack = function ( parent_element ) {
-    Track.call( this, null, parent_element );
-    this.container_div.addClass( "label-track" );
-};
-$.extend( LabelTrack.prototype, Track.prototype, {
-    draw: function() {
-        var view = this.view,
-        range = view.high - view.low,
-        tickDistance = Math.floor( Math.pow( 10, Math.floor( Math.log( range ) / Math.log( 10 ) ) ) ),
-        position = Math.floor( view.low / tickDistance ) * tickDistance,
-        width = this.content_div.width(),
-        new_div = $("<div style='position: relative; height: 1.3em;'></div>");
-        while ( position < view.high ) {
-            var screenPosition = ( position - view.low ) / range * width;
-            new_div.append( $("<div class='label'>" + position + "</div>").css( {
-                position: "absolute",
-                // Reduce by one to account for border
-                left: screenPosition - 1
-            }));
-            position += tickDistance;
-        }
-        this.content_div.children( ":first" ).remove();
-        this.content_div.append( new_div );
-    }
-});
-
-var itemHeight = 13,
-    itemPad = 3,
-    thinHeight = 7,
-    thinOffset = 3;
-
-var FeatureTrack = function ( name, dataset_id ) {
+var FeatureTrack = function ( name, dataset_id, height ) {
     Track.call( this, name, $("#viewport") );
     this.track_type = "feature";
+    this.height_px = (height ? height : 100);
     this.container_div.addClass( "feature-track" );
+    this.content_div.css( "height", this.height_px + "px" );
     this.dataset_id = dataset_id;
-    this.zo_slots = new Object();
+    this.zo_slots = {};
     this.show_labels_scale = 0.01;
     this.showing_labels = false;
 };
@@ -331,7 +326,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
     
     calc_slots: function( include_labels ) {
         // console.log("num vals: " + this.values.length);
-        end_ary = new Array();
+        var end_ary = new Array();
         var scale = this.container_div.width() / (this.view.high - this.view.low);
         // console.log(scale);
         if (include_labels) this.zi_slots = new Object();

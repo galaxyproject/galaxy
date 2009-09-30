@@ -24,7 +24,7 @@ class ArrayTreeDataProvider( object ):
         try:
             chrom_array_tree = d[chrom]
         except KeyError:
-            return None
+            return "no data"
         
         root_summary = chrom_array_tree.get_summary( 0, chrom_array_tree.levels )
         return { 'max': float( max(root_summary.maxs) ), 'min': float( min(root_summary.mins) ) }
@@ -33,9 +33,8 @@ class ArrayTreeDataProvider( object ):
         start = int( start )
         end = int( end )
         level = int( ceil( log( end - start, BLOCK_SIZE ) ) ) - 1
-        print "!!!!", start, end,  level
+
         # Open the file
-        print self.dataset.file_name
         d = FileArrayTreeDict( open( self.dataset.file_name ) )
         # Get the right chromosome
         try:

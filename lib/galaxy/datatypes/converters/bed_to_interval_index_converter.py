@@ -16,7 +16,7 @@ def main():
     
     for line in open(input_fname, "r"):
         feature = line.split()
-        if feature[0] == "track":
+        if not feature or feature[0] == "track" or feature[0] == "#":
             offset += len(line)
             continue
         chrom = feature[0]
