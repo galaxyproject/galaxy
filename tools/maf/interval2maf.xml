@@ -88,6 +88,14 @@
        <param name="split_blocks_by_species" value="dont_split_blocks_by_species"/>
        <output name="out_file1" file="fsa_interval2maf.dat" />
      </test>
+     <test>
+       <param name="input1" value="1.bed" dbkey="hg18" ftype="bed"/>
+       <param name="maf_source" value="cached"/>
+       <param name="mafType" value="28_WAY_MULTIZ_hg18"/>
+       <param name="species" value="hg18,panTro2,mm8"/>
+       <param name="split_blocks_by_species" value="dont_split_blocks_by_species"/>
+       <output name="out_file1" file="interval2maf_3from28way.maf" />
+     </test>
    </tests>
    <help>
 **What it does**
