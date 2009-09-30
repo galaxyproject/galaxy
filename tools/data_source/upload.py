@@ -49,10 +49,11 @@ def check_html( temp_name, chunk=None ):
     regexp2 = re.compile( "<IFRAME[^>]*>", re.I )
     regexp3 = re.compile( "<FRAMESET[^>]*>", re.I )
     regexp4 = re.compile( "<META[^>]*>", re.I )
+    regexp5 = re.compile( "<SCRIPT[^>]*>", re.I )
     lineno = 0
     for line in temp:
         lineno += 1
-        matches = regexp1.search( line ) or regexp2.search( line ) or regexp3.search( line ) or regexp4.search( line )
+        matches = regexp1.search( line ) or regexp2.search( line ) or regexp3.search( line ) or regexp4.search( line ) or regexp5.search( line )
         if matches:
             if chunk is None:
                 temp.close()
