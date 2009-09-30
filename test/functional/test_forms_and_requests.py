@@ -12,14 +12,14 @@ sample_states = [  ( 'New', 'Sample entered into the system' ),
                    ( 'Received', 'Sample tube received' ), 
                    ( 'Done', 'Sequence run complete' ) ]
 address1 = dict(  short_desc="Office",
-                  name="James Bond",
+                  name="James+Bond",
                   institution="MI6" ,
-                  address1="MI6 Headquaters",
+                  address1="MI6+Headquarters",
                   address2="",
                   city="London",
                   state="London",
                   postal_code="007",
-                  country="United Kingdom",
+                  country="United+Kingdom",
                   phone="007-007-0007" )
 
 
@@ -165,26 +165,21 @@ class TestFormsAndRequests( TwillTestCase ):
         self.visit_url( '%s/library_admin/browse_library?obj_id=%s' % ( self.url, str( library_one.id ) ) )
         self.check_page_for_string( name )
         # create address
-        #self.create_address( user_address1 )
-        #self.check_page_for_string( 'Address <b>%s</b> has been added' % user_address1[ 'short_desc' ] )
-        ## TODO: FIX HACK
-        ## the user address creation should be done as a test. 
+        self.logout()
+        self.login( email='test1@bx.psu.edu' )
+        self.home()
+        url_str = '%s/user/new_address?short_desc=%s&name=%s&institution=%s&address1=%s&address2=%s&city=%s&state=%s&postal_code=%s&country=%s&phone=%s' \
+                   % ( self.url, address1[ 'short_desc' ], address1[ 'name' ], address1[ 'institution' ], 
+                       address1[ 'address1' ], address1[ 'address2' ], address1[ 'city' ], address1[ 'state' ], 
+                       address1[ 'postal_code' ], address1[ 'country' ], address1[ 'phone' ] )
+        print url_str
+        self.visit_url( url_str )
+        self.check_page_for_string( 'Address <b>%s</b> has been added' % address1[ 'short_desc' ] )
         global regular_user
         regular_user = galaxy.model.User.filter( galaxy.model.User.table.c.email=='test1@bx.psu.edu' ).first()
         global user_address
-        user_address = galaxy.model.UserAddress()
-        user_address.user = regular_user
-        user_address.desc = address1[ 'short_desc' ]
-        user_address.name = address1[ 'name' ]
-        user_address.institution = address1[ 'institution' ]
-        user_address.address = address1[ 'address1' ]+' '+address1[ 'address2' ]
-        user_address.city = address1[ 'city' ]
-        user_address.state = address1[ 'state' ]
-        user_address.postal_code = address1[ 'postal_code' ]
-        user_address.country = address1[ 'country' ]
-        user_address.phone = address1[ 'phone' ]
-        user_address.flush()
-        user_address.user.refresh()
+        user_address = galaxy.model.UserAddress.filter( and_( galaxy.model.UserAddress.table.c.desc==address1[ 'short_desc' ],
+                                                         galaxy.model.UserAddress.table.c.deleted==False ) ).first()    
     def test_030_create_request( self ):
         """Testing creating, editing and submitting a request as a regular user"""
         # login as a regular user
