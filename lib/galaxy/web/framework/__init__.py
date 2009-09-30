@@ -404,18 +404,17 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         except:
             users_last_session = None
             last_accessed = False
-        if users_last_session and users_last_session.current_history:
+        if prev_galaxy_session.current_history and prev_galaxy_session.current_history.datasets:
+            if prev_galaxy_session.current_history.user is None or prev_galaxy_session.current_history.user == user:
+                # If the previous galaxy session had a history, associate it with the new
+                # session, but only if it didn't belong to a different user.
+                history = prev_galaxy_session.current_history
+        elif self.galaxy_session.current_history:
+            history = self.galaxy_session.current_history
+        if not history and users_last_session and users_last_session.current_history:
             history = users_last_session.current_history
-        if not history:
-            if prev_galaxy_session.current_history:
-                if prev_galaxy_session.current_history.user is None or prev_galaxy_session.current_history.user == user:
-                    # If the previous galaxy session had a history, associate it with the new
-                    # session, but only if it didn't belong to a different user.
-                    history = prev_galaxy_session.current_history
-            elif self.galaxy_session.current_history:
-                history = self.galaxy_session.current_history
-            else:
-                history = self.get_history( create=True )
+        elif not history:
+            history = self.get_history( create=True )
         if history not in self.galaxy_session.histories:
             self.galaxy_session.add_history( history )
         if history.user is None:

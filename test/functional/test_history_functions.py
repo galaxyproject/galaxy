@@ -9,11 +9,28 @@ class TestHistory( TwillTestCase ):
         """Testing history behavior between logout and login"""
         self.logout()
         self.history_options()
-         # Make sure we have created the following 4 accounts
+        # Create a new, empty history named anonymous
+        name = 'anonymous'
+        self.new_history( name=name )
+        global anonymous_history
+        anonymous_history = galaxy.model.History \
+            .filter( and_( galaxy.model.History.table.c.deleted==False,
+                           galaxy.model.History.table.c.name==name ) ) \
+            .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
+            .first()
+        assert anonymous_history is not None, "Problem retrieving anonymous_history from database"
+        # Upload a dataset to anonymous_history so it will be set as the current history after login
+        self.upload_file( '1.bed', dbkey='hg18' )
         self.login( email='test1@bx.psu.edu' )
         global regular_user1
         regular_user1 = galaxy.model.User.filter( galaxy.model.User.table.c.email=='test1@bx.psu.edu' ).first()
         assert regular_user1 is not None, 'Problem retrieving user with email "test1@bx.psu.edu" from the database'
+        # Current history should be anonymous_history
+        self.check_history_for_string( name )
+        self.logout()
+        # Login as the same user again to ensure anonymous_history is still the current history
+        self.login( email=regular_user1.email )
+        self.check_history_for_string( name )
         self.logout()
         self.login( email='test2@bx.psu.edu' )
         global regular_user2
