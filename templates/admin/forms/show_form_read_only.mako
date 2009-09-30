@@ -62,7 +62,11 @@
 </%def>
 
 <div class="toolForm">
-    <div class="toolFormTitle">${form.name} - <i>${form.desc}</i></div>
+    %if form.desc:
+        <div class="toolFormTitle">${form.name} - <i>${form.desc}</i></div>
+    %else:
+        <div class="toolFormTitle">${form.name}</div>
+    %endif
     <form name="library" action="${h.url_for( controller='forms', action='manage' )}" method="post" >
         %if form.type == trans.app.model.FormDefinition.types.SAMPLE:
             %if not len(form.layout):

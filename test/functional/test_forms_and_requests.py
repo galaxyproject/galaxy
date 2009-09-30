@@ -169,9 +169,11 @@ class TestFormsAndRequests( TwillTestCase ):
         #self.check_page_for_string( 'Address <b>%s</b> has been added' % user_address1[ 'short_desc' ] )
         ## TODO: FIX HACK
         ## the user address creation should be done as a test. 
+        global regular_user
+        regular_user = galaxy.model.User.filter( galaxy.model.User.table.c.email=='test1@bx.psu.edu' ).first()
         global user_address
         user_address = galaxy.model.UserAddress()
-        user_address.user = galaxy.model.User.filter( galaxy.model.User.table.c.email=='test1@bx.psu.edu' ).first()
+        user_address.user = regular_user
         user_address.desc = address1[ 'short_desc' ]
         user_address.name = address1[ 'name' ]
         user_address.institution = address1[ 'institution' ]
@@ -211,14 +213,22 @@ class TestFormsAndRequests( TwillTestCase ):
             for field_value in fields:
                 self.check_page_for_string( field_value )
         # edit this request
-        fields = ['field one value (editted)', 'field two value (editted)', str(user_address.id)]
+        fields = ['field one value (edited)', 'field two value (edited)', str(user_address.id)]
         self.edit_request(request_one.id, request_one.name, request_one.name+' (Renamed)', request_one.desc+' (Re-described)', library_one.id, folder_one.id, fields)
         request_one.refresh()
         self.check_page_for_string( request_name+' (Renamed)' )
         self.check_page_for_string( request_desc+' (Re-described)' )
+        # check if the request is showing in the 'unsubmitted' filter
+        self.home()
+        self.visit_url( '%s/requests/list?show_filter=Unsubmitted' % self.url )
+        self.check_page_for_string( request_one.name )
         # submit the request
         self.submit_request( request_one.id, request_one.name )
         request_one.refresh()
+        # check if the request is showing in the 'submitted' filter
+        self.home()
+        self.visit_url( '%s/requests/list?show_filter=Submitted' % self.url )
+        self.check_page_for_string( request_one.name )
         # check if the request's state is now set to 'submitted'
         assert request_one.state is not request_one.states.SUBMITTED, "The state of the request '%s' should be set to '%s'" % ( request_one.name, request_one.states.SUBMITTED )
     def test_035_request_lifecycle( self ):
@@ -250,40 +260,50 @@ class TestFormsAndRequests( TwillTestCase ):
         self.visit_url('%s/requests_admin/list?show_filter=Complete' % self.url)
         self.check_page_for_string( request_one.name )
         assert request_one.state is not request_one.states.COMPLETE, "The state of the request '%s' should be set to '%s'" % ( request_one.name, request_one.states.COMPLETE )
-#    def test_40_admin_create_request_on_behalf_of_regular_user( self ):
-#        """Testing creating and submitting a request as an admin on behalf of a regular user"""
-#        self.logout()
-#        self.login( email='test@bx.psu.edu' )
-##        permissions_in = [ k for k, v in galaxy.model.Library.permitted_actions.items() ]
-##        permissions_out = []
-##        self.set_library_permissions( str( library_one.id ), library_one.name, str( admin_user_private_role.id ), permissions_in, permissions_out )
-#        # set field values
-#        fields = ['field one value', 'field two value', str(user_address.id)] 
-#        # create the request
-#        request_name, request_desc = 'Request Two', 'Request Two Description'
-#        self.create_request_admin(request_type.id, regular_user1.id, request_name, request_desc, library_one.id, fields)
-#        self.check_page_for_string( request_name )
-#        self.check_page_for_string( request_desc )
-#        global request_two
-#        request_one = galaxy.model.Request.filter( and_( galaxy.model.Request.table.c.name==request_name,
-#                                                         galaxy.model.Request.table.c.deleted==False ) ).first()        
-#        # check if the request's state is now set to 'unsubmitted'
-#        assert request_two.state is not request_two.states.UNSUBMITTED, "The state of the request '%s' should be set to '%s'" % ( request_two.name, request_two.states.UNSUBMITTED )
-#        # sample fields
-#        samples = [ ( 'Sample One', [ 'S1 Field 0 Value' ] ),
-#                    ( 'Sample Two', [ 'S2 Field 0 Value' ] ) ]
-#        # add samples to this request
-#        self.add_samples( request_two.id, request_two.name, samples )
-#        for sample_name, fields in samples:
-#            self.check_page_for_string( sample_name )
-#            self.check_page_for_string( 'Unsubmitted' )
-#            for field_value in fields:
-#                self.check_page_for_string( field_value )
-#        # submit the request
-#        self.submit_request( request_two.id, request_two.name )
-#        request_two.refresh()
-#        # check if the request's state is now set to 'submitted'
-#        assert request_two.state is not request_two.states.SUBMITTED, "The state of the request '%s' should be set to '%s'" % ( request_two.name, request_two.states.SUBMITTED )
+    def test_40_admin_create_request_on_behalf_of_regular_user( self ):
+        """Testing creating and submitting a request as an admin on behalf of a regular user"""
+        self.logout()
+        self.login( email='test@bx.psu.edu' )
+        request_name = "RequestTwo"
+        # simulate request creation
+        url_str = '%s/requests_admin/new?create=True&create_request_button=Save&select_request_type=%i&select_user=%i&name=%s&library_id=%i&folder_id=%i&refresh=True&field_1=%s&field_2=%i' \
+                  % ( self.url, request_type.id, regular_user.id, request_name, library_one.id, library_one.root_folder.id, "field_1_value", user_address.id )
+        self.home()
+        self.visit_url( url_str )
+        self.check_page_for_string( "The new request named %s has been created" % request_name )
+        global request_two
+        request_two = galaxy.model.Request.filter( and_( galaxy.model.Request.table.c.name==request_name,
+                                                         galaxy.model.Request.table.c.deleted==False ) ).first()        
+        # check if the request is showing in the 'unsubmitted' filter
+        self.home()
+        self.visit_url( '%s/requests_admin/list?show_filter=Unsubmitted' % self.url )
+        self.check_page_for_string( request_two.name )
+        # check if the request's state is now set to 'unsubmitted'
+        assert request_two.state is not request_two.states.UNSUBMITTED, "The state of the request '%s' should be set to '%s'" % ( request_two.name, request_two.states.UNSUBMITTED )
+        # sample fields
+        samples = [ ( 'Sample One', [ 'S1 Field 0 Value' ] ),
+                    ( 'Sample Two', [ 'S2 Field 0 Value' ] ) ]
+        # add samples to this request
+        self.add_samples( request_two.id, request_two.name, samples )
+        for sample_name, fields in samples:
+            self.check_page_for_string( sample_name )
+            self.check_page_for_string( 'Unsubmitted' )
+            for field_value in fields:
+                self.check_page_for_string( field_value )
+        # submit the request
+        self.submit_request( request_two.id, request_two.name )
+        request_two.refresh()
+        # check if the request is showing in the 'submitted' filter
+        self.home()
+        self.visit_url( '%s/requests_admin/list?show_filter=Submitted' % self.url )
+        self.check_page_for_string( request_two.name )
+        # check if the request's state is now set to 'submitted'
+        assert request_two.state is not request_two.states.SUBMITTED, "The state of the request '%s' should be set to '%s'" % ( request_two.name, request_two.states.SUBMITTED )
+        # check if both the requests is showing in the 'All' filter
+        self.home()
+        self.visit_url( '%s/requests_admin/list?show_filter=All' % self.url )
+        self.check_page_for_string( request_one.name )
+        self.check_page_for_string( request_two.name )
 
         
         
