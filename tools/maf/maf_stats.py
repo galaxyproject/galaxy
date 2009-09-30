@@ -54,7 +54,7 @@ def __main__():
         
     out = open(output_filename, 'w')
     
-    num_region = 0
+    num_region = None
     species_summary = {}
     total_length = 0
     #loop through interval file
@@ -97,7 +97,8 @@ def __main__():
         for spec in species_summary:
             out.write( "%s\t%s\t%.4f\n" % ( spec, species_summary[spec], float( species_summary[spec] ) / total_length ) )
     out.close()
-    print "%i regions were processed with a total length of %i." % ( num_region, total_length )
+    if num_region is not None:
+        print "%i regions were processed with a total length of %i." % ( num_region + 1, total_length )
     maf_utilities.remove_temp_index_file( index_filename )
 
 if __name__ == "__main__": __main__()
