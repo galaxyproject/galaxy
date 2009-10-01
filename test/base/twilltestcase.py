@@ -1144,14 +1144,15 @@ class TwillTestCase( unittest.TestCase ):
         tc.fv( "1", "2", description ) # form field 1 is the field named name...
         tc.submit( "create_library_button" )
         self.home()
-    def set_library_permissions( self, library_id, library_name, role_id, permissions_in, permissions_out ):
+    def set_library_permissions( self, library_id, library_name, role_ids_str, permissions_in, permissions_out ):
+        # role_ids_str must be a comma-separated string of role ids
         url = "library_admin/library?obj_id=%s&permissions=True&update_roles_button=Save" % ( library_id )
         for po in permissions_out:
             key = '%s_out' % po
-            url ="%s&%s=%s" % ( url, key, str( role_id ) )
+            url ="%s&%s=%s" % ( url, key, role_ids_str )
         for pi in permissions_in:
             key = '%s_in' % pi
-            url ="%s&%s=%s" % ( url, key, str( role_id ) )
+            url ="%s&%s=%s" % ( url, key, role_ids_str )
         self.home()
         self.visit_url( "%s/%s" % ( self.url, url ) )
         check_str = "Permissions updated for library '%s'" % library_name
@@ -1276,17 +1277,16 @@ class TwillTestCase( unittest.TestCase ):
         self.check_page_for_string( check_str )
         self.library_wait( library_id )
         self.home()
-    def set_library_dataset_permissions( self, library_id, folder_id, ldda_id, ldda_name, role_id, permissions_in, permissions_out ):
+    def set_library_dataset_permissions( self, library_id, folder_id, ldda_id, ldda_name, role_ids_str, permissions_in, permissions_out ):
+        # role_ids_str must be a comma-separated string of role ids
         url = "library_admin/ldda_manage_permissions?library_id=%s&folder_id=%s&obj_id=%s&update_roles_button=Save" % \
             ( library_id, folder_id, ldda_id )
-        #role_ids = util.listify( role_ids )
-        #for role_id in role_ids:
         for po in permissions_out:
             key = '%s_out' % po
-            url ="%s&%s=%s" % ( url, key, str( role_id ) )
+            url ="%s&%s=%s" % ( url, key, role_ids_str )
         for pi in permissions_in:
             key = '%s_in' % pi
-            url ="%s&%s=%s" % ( url, key, str( role_id ) )
+            url ="%s&%s=%s" % ( url, key, role_ids_str )
         self.home()
         self.visit_url( "%s/%s" % ( self.url, url ) )
         check_str = "Permissions have been updated on 1 datasets"

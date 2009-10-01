@@ -673,8 +673,11 @@ class LibraryAdmin( BaseController ):
             replace_dataset = trans.app.model.LibraryDataset.get( int( replace_id ) )
             if not last_used_build:
                 last_used_build = replace_dataset.library_dataset_dataset_association.dbkey
+            # Don't allow multiple datasets to be uploaded when replacing a dataset with a new version
+            upload_option = 'upload_file'
         else:
             replace_dataset = None
+            upload_option = params.get( 'upload_option', 'upload_file' )
         if params.get( 'runtool_btn', False ) or params.get( 'ajax_upload', False ):
             # See if we have any inherited templates, but do not inherit contents.
             info_association, inherited = folder.get_info_association( inherited=True )
@@ -684,15 +687,14 @@ class LibraryAdmin( BaseController ):
             else:
                 template_id = 'None'
                 widgets = []
-            upload_option = params.get( 'upload_option', 'upload_file' )
             created_outputs = trans.webapp.controllers[ 'library_common' ].upload_dataset( trans,
-                                                                                            controller='library_admin',
-                                                                                            library_id=library_id,
-                                                                                            folder_id=folder_id,
-                                                                                            template_id=template_id,
-                                                                                            widgets=widgets,
-                                                                                            replace_dataset=replace_dataset,
-                                                                                            **kwd )
+                                                                                           controller='library_admin',
+                                                                                           library_id=library_id,
+                                                                                           folder_id=folder_id,
+                                                                                           template_id=template_id,
+                                                                                           widgets=widgets,
+                                                                                           replace_dataset=replace_dataset,
+                                                                                           **kwd )
             if created_outputs:
                 total_added = len( created_outputs.values() )
                 if replace_dataset:
@@ -849,36 +851,6 @@ class LibraryAdmin( BaseController ):
                                             widgets=[],
                                             msg=msg,
                                             messagetype=messagetype )
-    @web.expose
-    @web.require_admin
-    def download_dataset_from_folder(self, trans, obj_id, library_id=None, **kwd):
-        """Catches the dataset id and displays file contents as directed"""
-        # id must refer to a LibraryDatasetDatasetAssociation object
-        ldda = trans.app.model.LibraryDatasetDatasetAssociation.get( obj_id )
-        if not ldda.dataset:
-            msg = 'Invalid LibraryDatasetDatasetAssociation id %s received for file downlaod' % str( obj_id )
-            return trans.response.send_redirect( web.url_for( controller='library_admin',
-                                                              action='browse_library',
-                                                              obj_id=library_id,
-                                                              msg=util.sanitize_text( msg ),
-                                                              messagetype='error' ) )
-        mime = trans.app.datatypes_registry.get_mimetype_by_extension( ldda.extension.lower() )
-        trans.response.set_content_type( mime )
-        fStat = os.stat( ldda.file_name )
-        trans.response.headers[ 'Content-Length' ] = int( fStat.st_size )
-        valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-        fname = ldda.name
-        fname = ''.join( c in valid_chars and c or '_' for c in fname )[ 0:150 ]
-        trans.response.headers[ "Content-Disposition" ] = "attachment; filename=GalaxyLibraryDataset-%s-[%s]" % ( str( obj_id ), fname )
-        try:
-            return open( ldda.file_name )
-        except: 
-            msg = 'This dataset contains no content'
-            return trans.response.send_redirect( web.url_for( controller='library_admin',
-                                                              action='browse_library',
-                                                              obj_id=library_id,
-                                                              msg=util.sanitize_text( msg ),
-                                                              messagetype='error' ) )
     @web.expose
     @web.require_admin
     def datasets( self, trans, library_id, **kwd ):

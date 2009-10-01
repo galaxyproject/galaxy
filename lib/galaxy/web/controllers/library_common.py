@@ -181,6 +181,35 @@ class LibraryCommon( BaseController ):
             return None, err_redirect, msg
         return uploaded_datasets, None, None
     @web.expose
+    def download_dataset_from_folder( self, trans, cntrller, obj_id, library_id=None, **kwd ):
+        """Catches the dataset id and displays file contents as directed"""
+        # id must refer to a LibraryDatasetDatasetAssociation object
+        ldda = trans.app.model.LibraryDatasetDatasetAssociation.get( obj_id )
+        if not ldda.dataset:
+            msg = 'Invalid LibraryDatasetDatasetAssociation id %s received for file downlaod' % str( obj_id )
+            return trans.response.send_redirect( web.url_for( controller=cntrller,
+                                                              action='browse_library',
+                                                              obj_id=library_id,
+                                                              msg=util.sanitize_text( msg ),
+                                                              messagetype='error' ) )
+        mime = trans.app.datatypes_registry.get_mimetype_by_extension( ldda.extension.lower() )
+        trans.response.set_content_type( mime )
+        fStat = os.stat( ldda.file_name )
+        trans.response.headers[ 'Content-Length' ] = int( fStat.st_size )
+        valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+        fname = ldda.name
+        fname = ''.join( c in valid_chars and c or '_' for c in fname )[ 0:150 ]
+        trans.response.headers[ "Content-Disposition" ] = "attachment; filename=GalaxyLibraryDataset-%s-[%s]" % ( str( obj_id ), fname )
+        try:
+            return open( ldda.file_name )
+        except: 
+            msg = 'This dataset contains no content'
+            return trans.response.send_redirect( web.url_for( controller=cntrller,
+                                                              action='browse_library',
+                                                              obj_id=library_id,
+                                                              msg=util.sanitize_text( msg ),
+                                                              messagetype='error' ) )
+    @web.expose
     def info_template( self, trans, cntrller, library_id, response_action='library', obj_id=None, folder_id=None, ldda_id=None, **kwd ):
         # Only adding a new templAte to a library or folder is currently allowed.  Editing an existing template is
         # a future enhancement.  The response_action param is the name of the method to which this method will redirect

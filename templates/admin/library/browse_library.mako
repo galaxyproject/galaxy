@@ -137,7 +137,7 @@
                                     <a class="action-button" href="${h.url_for( controller='library_admin', action='ldda_manage_permissions', library_id=library.id, folder_id=folder.id, obj_id=ldda.id, permissions=True )}">Edit this dataset's permissions</a>
                                     <a class="action-button" href="${h.url_for( controller='library_admin', action='upload_library_dataset', library_id=library.id, folder_id=folder.id, replace_id=library_dataset.id )}">Upload a new version of this dataset</a>
                                     %if ldda.has_data:
-                                        <a class="action-button" href="${h.url_for( controller='library_admin', action='download_dataset_from_folder', obj_id=ldda.id, library_id=library.id )}">Download this dataset</a>
+                                        <a class="action-button" href="${h.url_for( controller='library_admin', action='download_dataset_from_folder', cntrller='library_admin', obj_id=ldda.id, library_id=library.id )}">Download this dataset</a>
                                     %endif
                                     <a class="action-button" confirm="Click OK to delete dataset '${ldda.name}'." href="${h.url_for( controller='library_admin', action='delete_library_item', library_id=library.id, library_item_id=library_dataset.id, library_item_type='library_dataset' )}">Delete this dataset</a>
                                 </div>
