@@ -80,7 +80,6 @@
  	  	      <options from_file="sequence_index_color.loc">
   	  	        <column name="value" index="1" />
 	  	        <column name="name" index="0" />
-	  	        <filter type="sort_by" column="0" />
 	  	      </options>
 	  	    </param>
 	  	  </when>
@@ -100,7 +99,6 @@
  	  	      <options from_file="sequence_index_base.loc">
   	  	        <column name="value" index="1" />
 	  	        <column name="name" index="0" />
- 	  	        <filter type="sort_by" column="0" />
 	  	      </options>
 	        </param>
 	      </when>

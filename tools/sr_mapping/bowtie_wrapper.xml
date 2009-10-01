@@ -152,7 +152,6 @@
   	      <options from_file="bowtie_indices.loc">
   	        <column name="value" index="1" />
   	        <column name="name" index="0" />
-  	        <filter type="sort_by" column="0" />
   	      </options>
   	    </param>
   	  </when>
@@ -540,4 +539,5 @@ For aligning (bowtie)::
 	--seed &lt;int&gt;       Random seed. Use &lt;int&gt; as the seed for the pseudo-random number generator. [off]
 
   </help>
+  <code file="bowtie_wrapper_code.py" />
 </tool>
