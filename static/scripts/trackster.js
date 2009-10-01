@@ -2,7 +2,9 @@
     2009, James Taylor, Kanwei Li
 */
 
-var DENSITY = 1000;
+var DENSITY = 1000,
+    DATA_ERROR = "There was an error in indexing this dataset.",
+    DATA_NONE = "No data for this chrom/contig.";
 
 var DataCache = function( type, track ) {
     this.type = type;
@@ -239,18 +241,16 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
         var track = this;
         $.getJSON( data_url, {  stats: true, track_type: track.track_type, chrom: track.view.chrom, 
                                 low: null, high: null, dataset_id: track.dataset_id }, function ( data ) {
-            if (data) {
-                if (data == "error") {
-                    track.content_div.addClass("error").text("There was an error in indexing this dataset.");
-                } else if (data == "no data") {
-                    // console.log(track.content_div);
-                    track.content_div.addClass("nodata").text("No data for this chrom/contig.");
-                } else {
-                    track.min_value = data['min'];
-                    track.max_value = data['max'];
-                    track.vertical_range = track.max_value - track.min_value;
-                    track.view.redraw();
-                }
+            if (!data || data == "error") {
+                track.content_div.addClass("error").text(DATA_ERROR);
+            } else if (data == "no data") {
+                // console.log(track.content_div);
+                track.content_div.addClass("nodata").text(DATA_NONE);
+            } else {
+                track.min_value = data['min'];
+                track.max_value = data['max'];
+                track.vertical_range = track.max_value - track.min_value;
+                track.view.redraw();
             }
         });
     },
@@ -321,27 +321,28 @@ var FeatureTrack = function ( name, dataset_id, height ) {
     this.zo_slots = {};
     this.show_labels_scale = 0.01;
     this.showing_labels = false;
+    this.vertical_gap = 10;
 };
 $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
-    
     calc_slots: function( include_labels ) {
         // console.log("num vals: " + this.values.length);
-        var end_ary = new Array();
+        var end_ary = [];
         var scale = this.container_div.width() / (this.view.high - this.view.low);
-        // console.log(scale);
-        if (include_labels) this.zi_slots = new Object();
+        // console.log(scale, this.view.high, this.view.low);
+        if (include_labels) this.zi_slots = {};
         var dummy_canvas = $("<canvas></canvas>").get(0).getContext("2d");
         for (var i in this.values) {
 
-            feature = this.values[i];
-            f_start = Math.floor( Math.max(this.view.max_low, (feature.start - this.view.max_low) * scale) );
+            var feature = this.values[i];
+            var f_start = Math.floor( Math.max(this.view.max_low, (feature.start - this.view.max_low) * scale) );
             if (include_labels) {
                 f_start -= dummy_canvas.measureText(feature.name).width;
+                f_start -= 10; // Spacing between text and line
             }
 
-            f_end = Math.ceil( Math.min(this.view.max_high, (feature.end - this.view.max_low) * scale) );
+            var f_end = Math.ceil( Math.min(this.view.max_high, (feature.end - this.view.max_low) * scale) );
             // if (include_labels) { console.log(f_start, f_end); }
-            j = 0;
+            var j = 0;
             while (true) {
                 if (end_ary[j] == undefined || end_ary[j] < f_start) {
                     end_ary[j] = f_end;
@@ -355,17 +356,26 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                 j++;
             }
         }
+        this.height_px = end_ary.length * this.vertical_gap + 15;
+        this.content_div.css( "height", this.height_px + "px" );
     },
     
     init: function() {
         var track = this;
         $.getJSON( data_url, { track_type: track.track_type, low: track.view.max_low, high: track.view.max_high,
                                dataset_id: track.dataset_id, chrom: track.view.chrom }, function ( data ) {
-            track.values = data;
-            track.calc_slots();
-            track.slots = track.zo_slots;
-            // console.log(track.zo_slots);
-            track.draw();
+            if (data == "error") {
+                track.content_div.addClass("error").text(DATA_ERROR);
+            } else if (data.length == 0 || data == "no data") {
+                // console.log(track.content_div);
+                track.content_div.addClass("nodata").text(DATA_NONE);
+            } else {
+                track.values = data;
+                track.calc_slots();
+                track.slots = track.zo_slots;
+                // console.log(track.zo_slots);
+                track.draw();
+            }
         });
     },
     
@@ -391,7 +401,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
             range = view.high - view.low,
             width = Math.ceil( tile_length * w_scale ),
             slots = new Array(),
-            height = 200,
+            height = this.height_px,
             new_canvas = $("<canvas class='tile'></canvas>");
         
         new_canvas.css({
@@ -412,7 +422,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                 f_end   = Math.ceil( Math.min(width, (feature.end - tile_low) * w_scale) );
                 // console.log(feature.start, feature.end, f_start, f_end, j);
                 ctx.fillStyle = "#000";
-                ctx.fillRect(f_start, this.slots[feature.name] * 10 + 5, f_end - f_start, 1);
+                ctx.fillRect(f_start, this.slots[feature.name] * this.vertical_gap + 5, f_end - f_start, 1);
                 
                 if (this.showing_labels && ctx.fillText) {
                     ctx.font = "10px monospace";
@@ -435,7 +445,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                     if (exon_start && block_start >= exon_start && block_end <= exon_end) {
                         thickness = 5, y_start = 3;
                     }                    
-                    ctx.fillRect(exon_start, this.slots[feature.name] * 10 + y_start, block_end - block_start, thickness);
+                    ctx.fillRect(exon_start, this.slots[feature.name] * this.vertical_gap + y_start, block_end - block_start, thickness);
                     // console.log(block_start, block_end);
                 }
                 
