@@ -18,6 +18,9 @@
     %if trans.app.config.library_import_dir and os.path.exists( trans.app.config.library_import_dir ):
         <a class="action-button" href="${h.url_for( controller='library_admin', action='upload_library_dataset', library_id=library_id, folder_id=folder_id, replace_id=replace_id, upload_option='upload_directory' )}">Upload directory of files</a>
     %endif
+    %if trans.app.config.allow_library_path_paste:
+        <a class="action-button" href="${h.url_for( controller='library_admin', action='upload_library_dataset', library_id=library_id, folder_id=folder_id, replace_id=replace_id, upload_option='upload_paths' )}">Upload files from filesystem paths</a>
+    %endif
     <a class="action-button" href="${h.url_for( controller='library_admin', action='upload_library_dataset', library_id=library_id, folder_id=folder_id, replace_id=replace_id, upload_option='import_from_history' )}">Import datasets from your current history</a>
 </div>
 <br/><br/>

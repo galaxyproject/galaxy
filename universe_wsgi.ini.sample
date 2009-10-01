@@ -60,13 +60,22 @@ session_secret = changethisinproduction
 # Galaxy session security
 id_secret = changethisinproductiontoo
 
-# Directories of files contained in the following directory can be uploaded to a library from the Admin view
+# Directories of files contained in the following directory can be uploaded to
+# a library from the Admin view
 #library_import_dir = /var/opt/galaxy/import
-# The following can be configured to allow non-admin users to upload a directory of files.  The
-# configured directory must contain sub-directories named the same as the non-admin user's Galaxy
-# login ( email ).  The non-admin user is restricted to uploading files or sub-directories of files
-# contained in their directory.
-# user_library_import_dir = /var/opt/galaxy/import/users
+
+# The following can be configured to allow non-admin users to upload a
+# directory of files.  The configured directory must contain sub-directories
+# named the same as the non-admin user's Galaxy login ( email ).  The non-admin
+# user is restricted to uploading files or sub-directories of files contained
+# in their directory.
+#user_library_import_dir = /var/opt/galaxy/import/users
+
+# The admin library upload tool may contain a box allowing admins to paste
+# filesystem paths to files and directories to add to a library.  Set to True
+# to enable.  Please note the security implication that this will give Galaxy
+# Admins access to anything your Galaxy user has access to.
+#allow_library_path_paste = False
 
 # path to sendmail
 sendmail_path = /usr/sbin/sendmail

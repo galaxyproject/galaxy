@@ -1,11 +1,13 @@
 <%def name="render_upload_form( controller, upload_option, action, library_id, folder_id, replace_dataset, file_formats, dbkeys, roles, history )">
     <% import os, os.path %>
-    %if upload_option in [ 'upload_file', 'upload_directory' ]:
+    %if upload_option in [ 'upload_file', 'upload_directory', 'upload_paths' ]:
         <div class="toolForm" id="upload_library_dataset">
-            %if upload_option == 'upload_file':
-                <div class="toolFormTitle">Upload files</div>
-            %else:
+            %if upload_option == 'upload_directory':
                 <div class="toolFormTitle">Upload a directory of files</div>
+            %elif upload_option == 'upload_paths':
+                <div class="toolFormTitle">Upload files from filesystem paths</div>
+            %else:
+                <div class="toolFormTitle">Upload files</div>
             %endif
             <div class="toolFormBody">
                 <form name="upload_library_dataset" action="${action}" enctype="multipart/form-data" method="post">
@@ -103,6 +105,44 @@
                                 %endif
                             </div>
                             <div style="clear: both"></div>
+                        </div>
+                    %elif upload_option == 'upload_paths':
+                        <div class="form-row">
+                            <label>Paths to upload</label>
+                            <div class="form-row-input">
+                                <textarea name="filesystem_paths" rows="10" cols="35"></textarea>
+                            </div>
+                            <div class="toolParamHelp" style="clear: both;">
+                                Upload all files pasted in the box.  The (recursive) contents of any pasted directories will be added as well.
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <label>Preserve directory structure?</label>
+                            <div class="form-row-input">
+                                <input type="checkbox" name="dont_preserve_dirs" value="No"/>No
+                            </div>
+                            <div class="toolParamHelp" style="clear: both;">
+                                If checked, all files in subdirectories on the filesystem will be placed at the top level of the folder, instead of into subfolders.
+                            </div>
+                        </div>
+                    %endif
+                    %if upload_option in ( 'upload_directory', 'upload_paths' ):
+                        <div class="form-row">
+                            <label>Copy data into Galaxy?</label>
+                            <div class="form-row-input">
+                                <input type="checkbox" name="link_data_only" value="No"/>No
+                            </div>
+                            <div class="toolParamHelp" style="clear: both;">
+                                Normally data uploaded with this tool is copied into Galaxy's "files" directory
+                                so any later changes to the data will not affect Galaxy.  However, this may not
+                                be desired (especially for large NGS datasets), so use of this option will
+                                force Galaxy to always read the data from its original path.
+                                %if upload_option == 'upload_directory':
+                                    Any symlinks encountered in the upload directory will be dereferenced once -
+                                    that is, Galaxy will point directly to the file that is linked, but no other
+                                    symlinks further down the line will be dereferenced.
+                                %endif
+                            </div>
                         </div>
                     %endif
                     <div class="form-row">

@@ -105,7 +105,7 @@ class RowCounter( object ):
         // Make ajax call
         $.ajax( {
             type: "POST",
-            url: "${h.url_for( controller='library_dataset', action='library_item_updates' )}",
+            url: "${h.url_for( controller='library_common', action='library_item_updates' )}",
             dataType: "json",
             data: { ids: ids.join( "," ), states: states.join( "," ) },
             success : function ( data ) {
