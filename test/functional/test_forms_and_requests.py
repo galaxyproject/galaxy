@@ -156,7 +156,7 @@ class TestFormsAndRequests( TwillTestCase ):
         # create a folder in the library
         root_folder = library_one.root_folder
         name = "Folder One"
-        self.add_folder( str( library_one.id ), str( root_folder.id ), name=name, description='' )
+        self.add_folder( 'library_admin', str( library_one.id ), str( root_folder.id ), name=name, description='' )
         global folder_one
         folder_one = galaxy.model.LibraryFolder.filter( and_( galaxy.model.LibraryFolder.table.c.parent_id==root_folder.id,
                                                               galaxy.model.LibraryFolder.table.c.name==name ) ).first()
