@@ -1209,12 +1209,12 @@ class TwillTestCase( unittest.TestCase ):
         check_str = "Information template '%s' has been updated" % name
         self.check_page_for_string( check_str )
         self.home()
-    def add_folder_info_template( self, cntrller, library_id, library_name, folder_id, folder_name, num_fields='2',
+    def add_folder_info_template( self, controller, cntrller, library_id, library_name, folder_id, folder_name, num_fields='2',
                                   name='Folder Template 1', ele_name_0='Fu', ele_help_0='', ele_name_1='Bar', ele_help_1='' ):
         """Add a new info template to a folder"""
         self.home()
-        url = "%s/library_admin/info_template?cntrller=%s&library_id=%s&response_action='folder'&create_info_template_button=Go" % \
-            ( self.url, cntrller, library_id, folder_id )
+        url = "%s/%s/info_template?cntrller=%s&library_id=%s&response_action='folder'&create_info_template_button=Go" % \
+            ( self.url, controller, cntrller, library_id, folder_id )
         self.home()
         self.visit_url( url )
         check_str = "Create a new information template for folder '%s'" % folder_name
@@ -1229,14 +1229,27 @@ class TwillTestCase( unittest.TestCase ):
         tc.fv( '1', 'new_element_description_1', ele_help_1.replace( '+', ' ' ) )
         tc.submit( 'new_info_template_button' )
         self.home()
-    def add_folder( self, library_id, folder_id, name='Folder One', description='This is Folder One' ):
+    def add_folder( self, controller, library_id, folder_id, name='Folder One', description='This is Folder One' ):
         """Create a new folder"""
         self.home()
-        self.visit_url( "%s/library_admin/folder?library_id=%s&obj_id=%s&new=True" % ( self.url, library_id, folder_id ) )
+        self.visit_url( "%s/%s/folder?library_id=%s&obj_id=%s&new=True" % \
+                        ( self.url, controller, library_id, folder_id ) )
         self.check_page_for_string( 'Create a new folder' )
         tc.fv( "1", "name", name ) # form field 1 is the field named name...
         tc.fv( "1", "description", description ) # form field 2 is the field named description...
         tc.submit( "new_folder_button" )
+        self.home()
+    def edit_folder_info( self, controller, folder_id, library_id, name, new_name, description ):
+        """Add information to a library using an existing template with 2 elements"""
+        self.home()
+        self.visit_url( "%s/%s/folder?obj_id=%s&library_id=%s&information=True" % \
+                        ( self.url, controller, folder_id, library_id) )
+        self.check_page_for_string( "Edit folder name and description" )
+        tc.fv( '1', "name", new_name )
+        tc.fv( '1', "description", description )
+        tc.submit( 'rename_folder_button' )
+        check_str = "Folder '%s' has been renamed to '%s'" % ( name, new_name )
+        self.check_page_for_string( check_str )
         self.home()
     def rename_folder( self, library_id, folder_id, old_name, name='Folder One Renamed', description='This is Folder One Re-described' ):
         """Rename a Folder"""
@@ -1251,13 +1264,14 @@ class TwillTestCase( unittest.TestCase ):
         check_str = "Folder '%s' has been renamed to '%s'" % ( old_name, name )
         self.check_page_for_string( check_str )
         self.home()
-    def add_library_dataset( self, filename, library_id, folder_id, folder_name, file_type='auto',
-                             dbkey='hg18', roles=[], message='', root=False, template_field_name1='', template_field_contents1='' ):
+    def add_library_dataset( self, controller, filename, library_id, folder_id, folder_name,
+                             file_type='auto', dbkey='hg18', roles=[], message='', root=False,
+                             template_field_name1='', template_field_contents1='' ):
         """Add a dataset to a folder"""
         filename = self.get_filename( filename )
         self.home()
-        self.visit_url( "%s/library_admin/upload_library_dataset?upload_option=upload_file&library_id=%s&folder_id=%s&message=%s" % \
-                        ( self.url, library_id, folder_id, message ) )
+        self.visit_url( "%s/%s/upload_library_dataset?upload_option=upload_file&library_id=%s&folder_id=%s&message=%s" % \
+                        ( self.url, controller, library_id, folder_id, message ) )
         self.check_page_for_string( 'Upload files' )
         tc.fv( "1", "folder_id", folder_id )
         tc.formfile( "1", "files_0|file_data", filename )
@@ -1274,7 +1288,7 @@ class TwillTestCase( unittest.TestCase ):
             check_str = "Added 1 datasets to the library '%s' ( each is selected )." % folder_name
         else:
             check_str = "Added 1 datasets to the folder '%s' ( each is selected )." % folder_name
-        self.check_page_for_string( check_str )
+        data = self.last_page()
         self.library_wait( library_id )
         self.home()
     def set_library_dataset_permissions( self, library_id, folder_id, ldda_id, ldda_name, role_ids_str, permissions_in, permissions_out ):

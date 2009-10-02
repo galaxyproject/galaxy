@@ -266,7 +266,7 @@ class LibraryCommon( BaseController ):
         if cntrller == 'library_admin':
             tmplt = '/admin/library/select_info_template.mako'
         else:
-            tmplt = '/ibrary/select_info_template.mako'
+            tmplt = '/library/select_info_template.mako'
         return trans.fill_template( tmplt,
                                     library_item_name=library_item.name,
                                     library_item_desc=library_item_desc,

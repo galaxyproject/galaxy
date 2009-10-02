@@ -540,7 +540,8 @@ class TestSecurityAndLibraries( TwillTestCase ):
         message = 'Testing adding a public dataset to the root folder'
         # The form_one template should be inherited to the library dataset upload form.
         template_contents = "%s contents for root folder 1.bed" % form_one_field_label
-        self.add_library_dataset( '1.bed',
+        self.add_library_dataset( 'library_admin',
+                                  '1.bed',
                                   str( library_one.id ),
                                   str( library_one.root_folder.id ),
                                   library_one.root_folder.name,
@@ -594,7 +595,11 @@ class TestSecurityAndLibraries( TwillTestCase ):
         root_folder = library_one.root_folder
         name = "Root Folder's Folder One"
         description = "This is the root folder's Folder One"
-        self.add_folder( str( library_one.id ), str( root_folder.id ), name=name, description=description )
+        self.add_folder( 'library_admin',
+                         str( library_one.id ),
+                         str( root_folder.id ),
+                         name=name,
+                         description=description )
         global folder_one
         folder_one = galaxy.model.LibraryFolder.filter( and_( galaxy.model.LibraryFolder.table.c.parent_id==root_folder.id,
                                                               galaxy.model.LibraryFolder.table.c.name==name,
@@ -626,7 +631,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         """Testing adding a folder to a library folder"""
         name = "Folder One's Subfolder"
         description = "This is the Folder One's subfolder"
-        self.add_folder( str( library_one.id ), str( folder_one.id ), name=name, description=description )
+        self.add_folder( 'library_admin', str( library_one.id ), str( folder_one.id ), name=name, description=description )
         global subfolder_one
         subfolder_one = galaxy.model.LibraryFolder.filter( and_( galaxy.model.LibraryFolder.table.c.parent_id==folder_one.id,
                                                                  galaxy.model.LibraryFolder.table.c.name==name,
@@ -659,7 +664,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         root_folder = library_one.root_folder
         name = "Folder Two"
         description = "This is the root folder's Folder Two"
-        self.add_folder( str( library_one.id ), str( root_folder.id ), name=name, description=description )
+        self.add_folder( 'library_admin', str( library_one.id ), str( root_folder.id ), name=name, description=description )
         global folder_two
         folder_two = galaxy.model.LibraryFolder.filter( and_( galaxy.model.LibraryFolder.table.c.parent_id==root_folder.id,
                                                               galaxy.model.LibraryFolder.table.c.name==name,
@@ -687,7 +692,8 @@ class TestSecurityAndLibraries( TwillTestCase ):
         message = "Testing adding a public dataset to the folder named %s" % folder_two.name
         # The form_one template should be inherited to the library dataset upload form.
         template_contents = "%s contents for %s 2.bed" % ( form_one_field_label, folder_two.name )
-        self.add_library_dataset( '2.bed',
+        self.add_library_dataset( 'library_admin',
+                                  '2.bed',
                                   str( library_one.id ),
                                   str( folder_two.id ),
                                   folder_two.name,
@@ -718,7 +724,8 @@ class TestSecurityAndLibraries( TwillTestCase ):
         message = "Testing adding a 2nd public dataset to the folder named %s" % folder_two.name
         # The form_one template should be inherited to the library dataset upload form.
         template_contents = "%s contents for %s 3.bed" % ( form_one_field_label, folder_two.name )
-        self.add_library_dataset( '3.bed',
+        self.add_library_dataset( 'library_admin',
+                                  '3.bed',
                                   str( library_one.id ),
                                   str( folder_two.id ),
                                   folder_two.name,
@@ -760,7 +767,8 @@ class TestSecurityAndLibraries( TwillTestCase ):
         message ='This is a test of the fourth dataset uploaded'
         # The form_one template should be inherited to the library dataset upload form.
         template_contents = "%s contents for %s 4.bed" % ( form_one_field_label, folder_one.name )
-        self.add_library_dataset( '4.bed',
+        self.add_library_dataset( 'library_admin',
+                                  '4.bed',
                                   str( library_one.id ),
                                   str( folder_one.id ),
                                   folder_one.name,
@@ -867,7 +875,8 @@ class TestSecurityAndLibraries( TwillTestCase ):
         message = 'Testing adding a dataset with a role that is associated with a group and users'
         # The form_one template should be inherited to the library dataset upload form.
         template_contents = "%s contents for %s 5.bed" % ( form_one_field_label, folder_one.name )
-        self.add_library_dataset( '5.bed',
+        self.add_library_dataset( 'library_admin',
+                                  '5.bed',
                                   str( library_one.id ),
                                   str( folder_one.id ),
                                   folder_one.name,
@@ -1580,7 +1589,8 @@ class TestSecurityAndLibraries( TwillTestCase ):
                                                          galaxy.model.Library.table.c.deleted==False ) ).first()
         assert library_two is not None, 'Problem retrieving library named "%s" from the database' % name
         # Add a dataset to the library
-        self.add_library_dataset( '7.bed',
+        self.add_library_dataset( 'library_admin',
+                                  '7.bed',
                                   str( library_two.id ),
                                   str( library_two.root_folder.id ),
                                   library_two.root_folder.name,
@@ -1628,11 +1638,57 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.visit_url( '%s/library/browse_libraries' % self.url )
         self.check_page_for_string( name )
         self.logout()
-        # Login as regular_user1 and make sure they can see the library
+        # Login as regular_user2 and make sure they can see the library
         self.login( email=regular_user2.email )
         self.visit_url( '%s/library/browse_libraries' % self.url )
         self.check_page_for_string( name )
-        # TODO: add more tests here to cover adding, modifying, managing permissions from the Librarys persoective as a regular user
+        # Add a dataset to the library
+        message = 'Testing adding 1.bed to Library Three root folder'
+        self.add_library_dataset( 'library',
+                                  '1.bed',
+                                  str( library_three.id ),
+                                  str( library_three.root_folder.id ),
+                                  library_three.root_folder.name,
+                                  file_type='bed',
+                                  dbkey='hg18',
+                                  message=message.replace( ' ', '+' ),
+                                  root=True )
+        # Add a folder to the library
+        name = "Root Folder's Folder X"
+        description = "This is the root folder's Folder X"
+        self.add_folder( 'library',
+                         str( library_three.id ),
+                         str( library_three.root_folder.id ),
+                         name=name,
+                         description=description )
+        folder_x = galaxy.model.LibraryFolder.filter( and_( galaxy.model.LibraryFolder.table.c.parent_id==library_three.root_folder.id,
+                                                            galaxy.model.LibraryFolder.table.c.name==name,
+                                                            galaxy.model.LibraryFolder.table.c.description==description ) ).first()
+        # Modify the folder's information
+        new_name = "Root Folder's Folder Y"
+        new_description = "This is the root folder's Folder Y"
+        self.edit_folder_info( 'library', str( folder_x.id ), str( library_three.id ), name, new_name, new_description )
+        folder_x.refresh()
+        # Add a dataset to the folder
+        name2 = "Folder Y subfolder"
+        description2 = "Folder Y subfolder description"
+        self.add_library_dataset( 'library',
+                                  '2.bed',
+                                  str( library_three.id ),
+                                  str( folder_x.id ),
+                                  folder_x.name,
+                                  file_type='bed',
+                                  dbkey='hg18',
+                                  message=message.replace( ' ', '+' ),
+                                  root=False )
+        ldda_x = galaxy.model.LibraryDatasetDatasetAssociation.query() \
+            .order_by( desc( galaxy.model.LibraryDatasetDatasetAssociation.table.c.create_time ) ).first()
+        assert ldda_x is not None, 'Problem retrieving ldda_x from the database'
+        # Log in as regular_user1
+        self.logout()
+        self.login( email=regular_user1.email )
+        self.visit_url( '%s/library/browse_library?obj_id=%s' % ( self.url, str( library_three.id ) ) )
+        self.check_page_for_string( ldda_x.name )
         self.logout()
         self.login( email=admin_user.email )
         self.delete_library_item( str( library_three.id ), str( library_three.id ), library_three.name, library_item_type='library' )
@@ -1671,11 +1727,11 @@ class TestSecurityAndLibraries( TwillTestCase ):
         # Reset DefaultHistoryPermissions for regular_user1
         #####################
         self.logout()
-        self.login( email='test1@bx.psu.edu' )
+        self.login( email=regular_user1.email )
         # Change DefaultHistoryPermissions for regular_user1 back to the default
         permissions_in = [ 'DATASET_MANAGE_PERMISSIONS' ]
         permissions_out = [ 'DATASET_ACCESS' ]
         role_id = str( regular_user1_private_role.id )
         self.user_set_default_permissions( permissions_in=permissions_in, permissions_out=permissions_out, role_id=role_id )
         self.logout()
-        self.login( email='test@bx.psu.edu' )
+        self.login( email=admin_user.email )
