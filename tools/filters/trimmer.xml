@@ -9,8 +9,8 @@
         <param name="start" type="integer" size="10" value="1" label="Trim from the beginning to this position" help="1 = do not trim the beginning"/>
         <param name="end" type="integer" size="10" value="0" label="Remove everything from this position to the end" help="0 = do not trim the end"/>
         <param name="fastq" type="select" label="Is input dataset in fastq format?" help="If set to YES, the tool will not trim evenly numbered lines (0, 2, 4, etc...)">
+            <option selected="true" value="">No</option>
             <option value="-q">Yes</option>
-            <option value="">No</option>
         </param>
         <param name="ignore" type="select" display="checkboxes" multiple="True" label="Ignore lines beginning with these characters" help="lines beginning with these are not trimmed">
             <option value="62">&gt;</option>
