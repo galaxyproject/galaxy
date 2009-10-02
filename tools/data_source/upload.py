@@ -238,7 +238,9 @@ def add_file( dataset, json_file, output_path ):
     if ext == 'auto':
         ext = 'data'
     # Move the dataset to its "real" path
-    if dataset.type == 'server_dir':
+    if dataset.get( 'link_data_only', False ):
+        pass # data will remain in place
+    elif dataset.type in ( 'server_dir', 'path_paste' ):
         shutil.copy( dataset.path, output_path )
     else:
         shutil.move( dataset.path, output_path )

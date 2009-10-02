@@ -113,7 +113,7 @@
                             $(this).ajaxSubmit( { iframe: true } );
                             if ( $(this).find("input[name='folder_id']").val() != undefined ) {
                                 var library_id = $(this).find("input[name='library_id']").val();
-                                if ( location.pathname.indexOf( 'library_admin' ) ) {
+                                if ( location.pathname.indexOf( 'library_admin' ) != -1 ) {
                                     $("iframe#galaxy_main").attr("src","${h.url_for( controller='library_admin', action='browse_library' )}?obj_id=" + library_id + "&created_ldda_ids=" + async_datasets);
                                 } else {
                                     $("iframe#galaxy_main").attr("src","${h.url_for( controller='library', action='browse_library' )}?obj_id=" + library_id + "&created_ldda_ids=" + async_datasets);

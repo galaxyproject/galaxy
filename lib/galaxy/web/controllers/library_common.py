@@ -39,7 +39,7 @@ class LibraryCommon( BaseController ):
         tool_id = 'upload1'
         tool = trans.app.toolbox.tools_by_id[ tool_id ]
         state = tool.new_state( trans )
-        errors = tool.update_state( trans, tool.inputs_by_page[0], state.inputs, kwd, changed_dependencies={} )
+        errors = tool.update_state( trans, tool.inputs_by_page[0], state.inputs, kwd )
         tool_params = state.inputs
         dataset_upload_inputs = []
         for input_name, input in tool.inputs.iteritems():
@@ -81,7 +81,9 @@ class LibraryCommon( BaseController ):
             tool_params = upload_common.persist_uploads( tool_params )
             uploaded_datasets = upload_common.get_uploaded_datasets( trans, tool_params, precreated_datasets, dataset_upload_inputs, library_bunch=library_bunch )
         elif upload_option == 'upload_directory':
-            uploaded_datasets = self.get_server_dir_uploaded_datasets( trans, params, full_dir, import_dir_desc, library_bunch, err_redirect, msg )
+            uploaded_datasets, err_redirect, msg = self.get_server_dir_uploaded_datasets( trans, params, full_dir, import_dir_desc, library_bunch, err_redirect, msg )
+        elif upload_option == 'upload_paths':
+            uploaded_datasets, err_redirect, msg = self.get_path_paste_uploaded_datasets( trans, params, library_bunch, err_redirect, msg )
         upload_common.cleanup_unused_precreated_datasets( precreated_datasets )
         if upload_option == 'upload_file' and not uploaded_datasets:
             msg = 'Select a file, enter a URL or enter text'
@@ -98,37 +100,115 @@ class LibraryCommon( BaseController ):
         json_file_path = upload_common.create_paramfile( uploaded_datasets )
         data_list = [ ud.data for ud in uploaded_datasets ]
         return upload_common.create_job( trans, tool_params, tool, json_file_path, data_list, folder=library_bunch.folder )
+    def make_library_uploaded_dataset( self, trans, params, name, path, type, library_bunch, in_folder=None ):
+        library_bunch.replace_dataset = None # not valid for these types of upload
+        uploaded_dataset = util.bunch.Bunch()
+        uploaded_dataset.name = name
+        uploaded_dataset.path = path
+        uploaded_dataset.type = type
+        uploaded_dataset.ext = None
+        uploaded_dataset.file_type = params.file_type
+        uploaded_dataset.dbkey = params.dbkey
+        uploaded_dataset.space_to_tab = params.space_to_tab
+        if in_folder:
+            uploaded_dataset.in_folder = in_folder
+        uploaded_dataset.data = upload_common.new_upload( trans, uploaded_dataset, library_bunch )
+        if params.get( 'link_data_only', False ):
+            uploaded_dataset.link_data_only = True
+            uploaded_dataset.data.file_name = os.path.abspath( path )
+            uploaded_dataset.data.flush()
+        return uploaded_dataset
     def get_server_dir_uploaded_datasets( self, trans, params, full_dir, import_dir_desc, library_bunch, err_redirect, msg ):
         files = []
         try:
             for entry in os.listdir( full_dir ):
                 # Only import regular files
-                if os.path.isfile( os.path.join( full_dir, entry ) ):
-                    files.append( entry )
+                path = os.path.join( full_dir, entry )
+                if os.path.islink( path ) and os.path.isfile( path ) and params.get( 'link_data_only', False ):
+                    # If we're linking instead of copying, link the file the link points to, not the link itself.
+                    link_path = os.readlink( path )
+                    if os.path.isabs( link_path ):
+                        path = link_path
+                    else:
+                        path = os.path.abspath( os.path.join( os.path.dirname( path ), link_path ) )
+                if os.path.isfile( path ):
+                    files.append( path )
         except Exception, e:
             msg = "Unable to get file list for configured %s, error: %s" % ( import_dir_desc, str( e ) )
             err_redirect = True
-            return None
+            return None, err_redirect, msg
         if not files:
             msg = "The directory '%s' contains no valid files" % full_dir
             err_redirect = True
-            return None
+            return None, err_redirect, msg
         uploaded_datasets = []
         for file in files:
-            library_bunch.replace_dataset = None
-            uploaded_dataset = util.bunch.Bunch()
-            uploaded_dataset.path = os.path.join( full_dir, file )
-            if not os.path.isfile( uploaded_dataset.path ):
+            name = os.path.basename( file )
+            uploaded_datasets.append( self.make_library_uploaded_dataset( trans, params, name, file, 'server_dir', library_bunch ) )
+        return uploaded_datasets, None, None
+    def get_path_paste_uploaded_datasets( self, trans, params, library_bunch, err_redirect, msg ):
+        if params.get( 'filesystem_paths', '' ) == '':
+            msg = "No paths entered in the upload form"
+            err_redirect = True
+            return None, err_redirect, msg
+        preserve_dirs = True
+        if params.get( 'dont_preserve_dirs', False ):
+            preserve_dirs = False
+        # locate files
+        bad_paths = []
+        uploaded_datasets = []
+        for line in [ l.strip() for l in params.filesystem_paths.splitlines() if l.strip() ]:
+            path = os.path.abspath( line )
+            if not os.path.exists( path ):
+                bad_paths.append( path )
                 continue
-            uploaded_dataset.type = 'server_dir'
-            uploaded_dataset.name = file
-            uploaded_dataset.ext = None
-            uploaded_dataset.file_type = params.file_type
-            uploaded_dataset.dbkey = params.dbkey
-            uploaded_dataset.space_to_tab = params.space_to_tab
-            uploaded_dataset.data = upload_common.new_upload( trans, uploaded_dataset, library_bunch )
-            uploaded_datasets.append( uploaded_dataset )
-        return uploaded_datasets
+            # don't bother processing if we're just going to return an error
+            if not bad_paths:
+                if os.path.isfile( path ):
+                    name = os.path.basename( path )
+                    uploaded_datasets.append( self.make_library_uploaded_dataset( trans, params, name, path, 'path_paste', library_bunch ) )
+                for basedir, dirs, files in os.walk( line ):
+                    for file in files:
+                        file_path = os.path.abspath( os.path.join( basedir, file ) )
+                        if preserve_dirs:
+                            in_folder = os.path.dirname( file_path.replace( path, '', 1 ).lstrip( '/' ) )
+                        else:
+                            in_folder = None
+                        uploaded_datasets.append( self.make_library_uploaded_dataset( trans, params, file, file_path, 'path_paste', library_bunch, in_folder ) )
+        if bad_paths:
+            msg = "Invalid paths:<br><ul><li>%s</li></ul>" % "</li><li>".join( bad_paths )
+            err_redirect = True
+            return None, err_redirect, msg
+        return uploaded_datasets, None, None
+    @web.expose
+    def download_dataset_from_folder( self, trans, cntrller, obj_id, library_id=None, **kwd ):
+        """Catches the dataset id and displays file contents as directed"""
+        # id must refer to a LibraryDatasetDatasetAssociation object
+        ldda = trans.app.model.LibraryDatasetDatasetAssociation.get( obj_id )
+        if not ldda.dataset:
+            msg = 'Invalid LibraryDatasetDatasetAssociation id %s received for file downlaod' % str( obj_id )
+            return trans.response.send_redirect( web.url_for( controller=cntrller,
+                                                              action='browse_library',
+                                                              obj_id=library_id,
+                                                              msg=util.sanitize_text( msg ),
+                                                              messagetype='error' ) )
+        mime = trans.app.datatypes_registry.get_mimetype_by_extension( ldda.extension.lower() )
+        trans.response.set_content_type( mime )
+        fStat = os.stat( ldda.file_name )
+        trans.response.headers[ 'Content-Length' ] = int( fStat.st_size )
+        valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+        fname = ldda.name
+        fname = ''.join( c in valid_chars and c or '_' for c in fname )[ 0:150 ]
+        trans.response.headers[ "Content-Disposition" ] = "attachment; filename=GalaxyLibraryDataset-%s-[%s]" % ( str( obj_id ), fname )
+        try:
+            return open( ldda.file_name )
+        except: 
+            msg = 'This dataset contains no content'
+            return trans.response.send_redirect( web.url_for( controller=cntrller,
+                                                              action='browse_library',
+                                                              obj_id=library_id,
+                                                              msg=util.sanitize_text( msg ),
+                                                              messagetype='error' ) )
     @web.expose
     def info_template( self, trans, cntrller, library_id, response_action='library', obj_id=None, folder_id=None, ldda_id=None, **kwd ):
         # Only adding a new templAte to a library or folder is currently allowed.  Editing an existing template is
@@ -186,7 +266,7 @@ class LibraryCommon( BaseController ):
         if cntrller == 'library_admin':
             tmplt = '/admin/library/select_info_template.mako'
         else:
-            tmplt = '/ibrary/select_info_template.mako'
+            tmplt = '/library/select_info_template.mako'
         return trans.fill_template( tmplt,
                                     library_item_name=library_item.name,
                                     library_item_desc=library_item_desc,

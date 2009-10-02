@@ -176,6 +176,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         actions_in = [ 'manage permissions' ]
         permissions_out = [ 'DATASET_ACCESS' ]
         actions_out = [ 'access' ]
+        global regular_user2_private_role
         regular_user2_private_role = None
         for role in regular_user2.all_roles():
             if role.name == regular_user2.email and role.description == 'Private Role for %s' % regular_user2.email:
@@ -539,7 +540,8 @@ class TestSecurityAndLibraries( TwillTestCase ):
         message = 'Testing adding a public dataset to the root folder'
         # The form_one template should be inherited to the library dataset upload form.
         template_contents = "%s contents for root folder 1.bed" % form_one_field_label
-        self.add_library_dataset( '1.bed',
+        self.add_library_dataset( 'library_admin',
+                                  '1.bed',
                                   str( library_one.id ),
                                   str( library_one.root_folder.id ),
                                   library_one.root_folder.name,
@@ -593,7 +595,11 @@ class TestSecurityAndLibraries( TwillTestCase ):
         root_folder = library_one.root_folder
         name = "Root Folder's Folder One"
         description = "This is the root folder's Folder One"
-        self.add_folder( str( library_one.id ), str( root_folder.id ), name=name, description=description )
+        self.add_folder( 'library_admin',
+                         str( library_one.id ),
+                         str( root_folder.id ),
+                         name=name,
+                         description=description )
         global folder_one
         folder_one = galaxy.model.LibraryFolder.filter( and_( galaxy.model.LibraryFolder.table.c.parent_id==root_folder.id,
                                                               galaxy.model.LibraryFolder.table.c.name==name,
@@ -625,7 +631,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         """Testing adding a folder to a library folder"""
         name = "Folder One's Subfolder"
         description = "This is the Folder One's subfolder"
-        self.add_folder( str( library_one.id ), str( folder_one.id ), name=name, description=description )
+        self.add_folder( 'library_admin', str( library_one.id ), str( folder_one.id ), name=name, description=description )
         global subfolder_one
         subfolder_one = galaxy.model.LibraryFolder.filter( and_( galaxy.model.LibraryFolder.table.c.parent_id==folder_one.id,
                                                                  galaxy.model.LibraryFolder.table.c.name==name,
@@ -658,7 +664,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         root_folder = library_one.root_folder
         name = "Folder Two"
         description = "This is the root folder's Folder Two"
-        self.add_folder( str( library_one.id ), str( root_folder.id ), name=name, description=description )
+        self.add_folder( 'library_admin', str( library_one.id ), str( root_folder.id ), name=name, description=description )
         global folder_two
         folder_two = galaxy.model.LibraryFolder.filter( and_( galaxy.model.LibraryFolder.table.c.parent_id==root_folder.id,
                                                               galaxy.model.LibraryFolder.table.c.name==name,
@@ -686,7 +692,8 @@ class TestSecurityAndLibraries( TwillTestCase ):
         message = "Testing adding a public dataset to the folder named %s" % folder_two.name
         # The form_one template should be inherited to the library dataset upload form.
         template_contents = "%s contents for %s 2.bed" % ( form_one_field_label, folder_two.name )
-        self.add_library_dataset( '2.bed',
+        self.add_library_dataset( 'library_admin',
+                                  '2.bed',
                                   str( library_one.id ),
                                   str( folder_two.id ),
                                   folder_two.name,
@@ -717,7 +724,8 @@ class TestSecurityAndLibraries( TwillTestCase ):
         message = "Testing adding a 2nd public dataset to the folder named %s" % folder_two.name
         # The form_one template should be inherited to the library dataset upload form.
         template_contents = "%s contents for %s 3.bed" % ( form_one_field_label, folder_two.name )
-        self.add_library_dataset( '3.bed',
+        self.add_library_dataset( 'library_admin',
+                                  '3.bed',
                                   str( library_one.id ),
                                   str( folder_two.id ),
                                   folder_two.name,
@@ -759,7 +767,8 @@ class TestSecurityAndLibraries( TwillTestCase ):
         message ='This is a test of the fourth dataset uploaded'
         # The form_one template should be inherited to the library dataset upload form.
         template_contents = "%s contents for %s 4.bed" % ( form_one_field_label, folder_one.name )
-        self.add_library_dataset( '4.bed',
+        self.add_library_dataset( 'library_admin',
+                                  '4.bed',
                                   str( library_one.id ),
                                   str( folder_one.id ),
                                   folder_one.name,
@@ -849,9 +858,9 @@ class TestSecurityAndLibraries( TwillTestCase ):
         permissions_in = [ k for k, v in galaxy.model.Dataset.permitted_actions.items() ] + \
                          [ k for k, v in galaxy.model.Library.permitted_actions.items() ]
         permissions_out = []
-        role_ids = "%s,%s" % ( str( role_one.id ), str( admin_user_private_role.id ) )
+        role_ids_str = '%s,%s' % ( str( role_one.id ), str( admin_user_private_role.id ) )
         self.set_library_dataset_permissions( str( library_one.id ), str( folder_one.id ), str( ldda_four.id ), ldda_four.name,
-                                              role_ids, permissions_in, permissions_out )
+                                              role_ids_str, permissions_in, permissions_out )
         # admin_user should now be able to see 4.bed from the analysis view's access libraries
         self.home()
         self.visit_url( '%s/library/browse_library?obj_id=%s' % ( self.url, str( library_one.id ) ) )
@@ -866,7 +875,8 @@ class TestSecurityAndLibraries( TwillTestCase ):
         message = 'Testing adding a dataset with a role that is associated with a group and users'
         # The form_one template should be inherited to the library dataset upload form.
         template_contents = "%s contents for %s 5.bed" % ( form_one_field_label, folder_one.name )
-        self.add_library_dataset( '5.bed',
+        self.add_library_dataset( 'library_admin',
+                                  '5.bed',
                                   str( library_one.id ),
                                   str( folder_one.id ),
                                   folder_one.name,
@@ -1309,6 +1319,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
 
     def test_170_mark_group_deleted( self ):
         """Testing marking a group as deleted"""
+        # Logged in as admin_user
         self.home()
         self.visit_url( '%s/admin/groups' % self.url )
         self.check_page_for_string( group_two.name )
@@ -1323,12 +1334,14 @@ class TestSecurityAndLibraries( TwillTestCase ):
             raise AssertionError( '%s incorrectly lost all role associations when it was marked as deleted.' % group_two.name )
     def test_175_undelete_group( self ):
         """Testing undeleting a deleted group"""
+        # Logged in as admin_user
         self.undelete_group( str( group_two.id ), group_two.name )
         group_two.refresh()
         if group_two.deleted:
             raise AssertionError( '%s was not correctly marked as not deleted.' % group_two.name )
     def test_180_mark_role_deleted( self ):
         """Testing marking a role as deleted"""
+        # Logged in as admin_user
         self.home()
         self.visit_url( '%s/admin/roles' % self.url )
         self.check_page_for_string( role_two.name )
@@ -1343,9 +1356,11 @@ class TestSecurityAndLibraries( TwillTestCase ):
             raise AssertionError( '%s incorrectly lost all group associations when it was marked as deleted.' % role_two.name )
     def test_185_undelete_role( self ):
         """Testing undeleting a deleted role"""
+        # Logged in as admin_user
         self.undelete_role( str( role_two.id ), role_two.name )
     def test_190_mark_dataset_deleted( self ):
         """Testing marking a library dataset as deleted"""
+        # Logged in as admin_user
         self.home()
         self.delete_library_item( str( library_one.id ), str( ldda_two.library_dataset.id ), ldda_two.name, library_item_type='library_dataset' )
         self.home()
@@ -1359,12 +1374,14 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.home()
     def test_195_display_deleted_dataset( self ):
         """Testing displaying deleted dataset"""
+        # Logged in as admin_user
         self.home()
         self.visit_url( "%s/library_admin/browse_library?obj_id=%s&show_deleted=True" % ( self.url, str( library_one.id ) ) )
         self.check_page_for_string( ldda_two.name )
         self.home()
     def test_200_hide_deleted_dataset( self ):
         """Testing hiding deleted dataset"""
+        # Logged in as admin_user
         self.home()
         self.visit_url( "%s/library_admin/browse_library?obj_id=%s&show_deleted=False" % ( self.url, str( library_one.id ) ) )
         try:
@@ -1375,6 +1392,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.home()
     def test_205_mark_folder_deleted( self ):
         """Testing marking a library folder as deleted"""
+        # Logged in as admin_user
         self.home()
         self.delete_library_item( str( library_one.id ), str( folder_two.id ), folder_two.name, library_item_type='folder' )
         self.home()
@@ -1387,6 +1405,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.home()
     def test_210_mark_folder_undeleted( self ):
         """Testing marking a library folder as undeleted"""
+        # Logged in as admin_user
         self.home()
         self.undelete_library_item( str( library_one.id ), str( folder_two.id ), folder_two.name, library_item_type='folder' )
         self.home()
@@ -1402,6 +1421,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.home()
     def test_215_mark_library_deleted( self ):
         """Testing marking a library as deleted"""
+        # Logged in as admin_user
         self.home()
         # First mark folder_two as deleted to further test state saving when we undelete the library
         self.delete_library_item( str( library_one.id ), str( folder_two.id ), folder_two.name, library_item_type='folder' )
@@ -1412,6 +1432,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.home()
     def test_220_mark_library_undeleted( self ):
         """Testing marking a library as undeleted"""
+        # Logged in as admin_user
         self.home()
         self.undelete_library_item( str( library_one.id ), str( library_one.id ), library_one.name, library_item_type='library' )
         self.home()
@@ -1426,6 +1447,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.home()
     def test_225_purge_user( self ):
         """Testing purging a user account"""
+        # Logged in as admin_user
         self.mark_user_deleted( user_id=self.security.encode_id( regular_user3.id ), email=regular_user3.email )
         regular_user3.refresh()
         self.purge_user( self.security.encode_id( regular_user3.id ), regular_user3.email )
@@ -1458,6 +1480,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
                 raise AssertionError( 'UserRoleAssociations for user %s are not related with the private role.' % regular_user3.email )
     def test_230_manually_unpurge_user( self ):
         """Testing manually un-purging a user account"""
+        # Logged in as admin_user
         # Reset the user for later test runs.  The user's private Role and DefaultUserPermissions for that role
         # should have been preserved, so all we need to do is reset purged and deleted.
         # TODO: If we decide to implement the GUI feature for un-purging a user, replace this with a method call
@@ -1466,6 +1489,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         regular_user3.flush()
     def test_235_purge_group( self ):
         """Testing purging a group"""
+        # Logged in as admin_user
         group_id = str( group_two.id )
         self.mark_group_deleted( group_id, group_two.name )
         self.purge_group( group_id, group_two.name )
@@ -1481,6 +1505,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.undelete_group( group_id, group_two.name )
     def test_240_purge_role( self ):
         """Testing purging a role"""
+        # Logged in as admin_user
         role_id = str( role_two.id )
         self.mark_role_deleted( role_id, role_two.name )
         self.purge_role( role_id, role_two.name )
@@ -1506,6 +1531,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
             raise AssertionError( "Purging the role did not delete the DatasetPermissionss for role_id '%s'" % role_id )
     def test_245_manually_unpurge_role( self ):
         """Testing manually un-purging a role"""
+        # Logged in as admin_user
         # Manually unpurge, then undelete the role for later test runs
         # TODO: If we decide to implement the GUI feature for un-purging a role, replace this with a method call
         role_two.purged = False
@@ -1513,6 +1539,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.undelete_role( str( role_two.id ), role_two.name )
     def test_250_purge_library( self ):
         """Testing purging a library"""
+        # Logged in as admin_user
         self.home()
         self.delete_library_item( str( library_one.id ), str( library_one.id ), library_one.name, library_item_type='library' )
         self.purge_library( str( library_one.id ), library_one.name )
@@ -1549,6 +1576,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         check_folder( library_one.root_folder )
     def test_255_no_library_template( self ):
         """Test library features when library has no template"""
+        # Logged in as admin_user
         name = "Library Two"
         description = "This is Library Two"
         # Create a library, adding no template
@@ -1561,7 +1589,8 @@ class TestSecurityAndLibraries( TwillTestCase ):
                                                          galaxy.model.Library.table.c.deleted==False ) ).first()
         assert library_two is not None, 'Problem retrieving library named "%s" from the database' % name
         # Add a dataset to the library
-        self.add_library_dataset( '7.bed',
+        self.add_library_dataset( 'library_admin',
+                                  '7.bed',
                                   str( library_two.id ),
                                   str( library_two.root_folder.id ),
                                   library_two.root_folder.name,
@@ -1585,6 +1614,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.home()
     def test_260_library_permissions( self ):
         """Test library permissions"""
+        # Logged in as admin_user
         name = "Library Three"
         description = "This is Library Three"
         # Create a library, adding no template
@@ -1596,12 +1626,76 @@ class TestSecurityAndLibraries( TwillTestCase ):
                                                            galaxy.model.Library.table.c.description==description,
                                                            galaxy.model.Library.table.c.deleted==False ) ).first()
         assert library_three is not None, 'Problem retrieving library named "%s" from the database' % name
-        # TODO: add tests here...
-        self.home()
+        # Set library permissions for regular_user1 and regular_user2.  Each of these users will be permitted to
+        # LIBRARY_ADD, LIBRARY_MODIFY, LIBRARY_MANAGE for library items.
+        permissions_in = [ k for k, v in galaxy.model.Library.permitted_actions.items() ]
+        permissions_out = []
+        role_ids_str = '%s,%s' % ( str( regular_user1_private_role.id ), str( regular_user2_private_role.id ) )
+        self.set_library_permissions( str( library_three.id ), library_three.name, role_ids_str, permissions_in, permissions_out )
+        self.logout()
+        # Login as regular_user1 and make sure they can see the library
+        self.login( email=regular_user1.email )
+        self.visit_url( '%s/library/browse_libraries' % self.url )
+        self.check_page_for_string( name )
+        self.logout()
+        # Login as regular_user2 and make sure they can see the library
+        self.login( email=regular_user2.email )
+        self.visit_url( '%s/library/browse_libraries' % self.url )
+        self.check_page_for_string( name )
+        # Add a dataset to the library
+        message = 'Testing adding 1.bed to Library Three root folder'
+        self.add_library_dataset( 'library',
+                                  '1.bed',
+                                  str( library_three.id ),
+                                  str( library_three.root_folder.id ),
+                                  library_three.root_folder.name,
+                                  file_type='bed',
+                                  dbkey='hg18',
+                                  message=message.replace( ' ', '+' ),
+                                  root=True )
+        # Add a folder to the library
+        name = "Root Folder's Folder X"
+        description = "This is the root folder's Folder X"
+        self.add_folder( 'library',
+                         str( library_three.id ),
+                         str( library_three.root_folder.id ),
+                         name=name,
+                         description=description )
+        folder_x = galaxy.model.LibraryFolder.filter( and_( galaxy.model.LibraryFolder.table.c.parent_id==library_three.root_folder.id,
+                                                            galaxy.model.LibraryFolder.table.c.name==name,
+                                                            galaxy.model.LibraryFolder.table.c.description==description ) ).first()
+        # Modify the folder's information
+        new_name = "Root Folder's Folder Y"
+        new_description = "This is the root folder's Folder Y"
+        self.edit_folder_info( 'library', str( folder_x.id ), str( library_three.id ), name, new_name, new_description )
+        folder_x.refresh()
+        # Add a dataset to the folder
+        name2 = "Folder Y subfolder"
+        description2 = "Folder Y subfolder description"
+        self.add_library_dataset( 'library',
+                                  '2.bed',
+                                  str( library_three.id ),
+                                  str( folder_x.id ),
+                                  folder_x.name,
+                                  file_type='bed',
+                                  dbkey='hg18',
+                                  message=message.replace( ' ', '+' ),
+                                  root=False )
+        ldda_x = galaxy.model.LibraryDatasetDatasetAssociation.query() \
+            .order_by( desc( galaxy.model.LibraryDatasetDatasetAssociation.table.c.create_time ) ).first()
+        assert ldda_x is not None, 'Problem retrieving ldda_x from the database'
+        # Log in as regular_user1
+        self.logout()
+        self.login( email=regular_user1.email )
+        self.visit_url( '%s/library/browse_library?obj_id=%s' % ( self.url, str( library_three.id ) ) )
+        self.check_page_for_string( ldda_x.name )
+        self.logout()
+        self.login( email=admin_user.email )
         self.delete_library_item( str( library_three.id ), str( library_three.id ), library_three.name, library_item_type='library' )
         self.purge_library( str( library_three.id ), library_three.name )
     def test_265_reset_data_for_later_test_runs( self ):
         """Reseting data to enable later test runs to pass"""
+        # Logged in as admin_user
         ##################
         # Eliminate all non-private roles
         ##################
@@ -1633,11 +1727,11 @@ class TestSecurityAndLibraries( TwillTestCase ):
         # Reset DefaultHistoryPermissions for regular_user1
         #####################
         self.logout()
-        self.login( email='test1@bx.psu.edu' )
+        self.login( email=regular_user1.email )
         # Change DefaultHistoryPermissions for regular_user1 back to the default
         permissions_in = [ 'DATASET_MANAGE_PERMISSIONS' ]
         permissions_out = [ 'DATASET_ACCESS' ]
         role_id = str( regular_user1_private_role.id )
         self.user_set_default_permissions( permissions_in=permissions_in, permissions_out=permissions_out, role_id=role_id )
         self.logout()
-        self.login( email='test@bx.psu.edu' )
+        self.login( email=admin_user.email )

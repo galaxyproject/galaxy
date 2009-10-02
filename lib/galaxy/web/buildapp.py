@@ -64,7 +64,12 @@ def app_factory( global_conf, **kwargs ):
             sys.exit( 1 )
     atexit.register( app.shutdown )
     # Create the universe WSGI application
-    webapp = galaxy.web.framework.WebApplication( app, session_cookie='galaxysession' )
+    if app.config.log_memory_usage:
+        from galaxy.web.framework.memdebug import MemoryLoggingWebApplication
+        webapp = MemoryLoggingWebApplication( app, session_cookie='galaxysession' )
+    else:
+        webapp = galaxy.web.framework.WebApplication( app, session_cookie='galaxysession' )
+    # Find controllers
     add_controllers( webapp, app )
     # Force /history to go to /root/history -- needed since the tests assume this
     webapp.add_route( '/history', controller='root', action='history' )

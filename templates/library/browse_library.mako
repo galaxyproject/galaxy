@@ -105,7 +105,7 @@ class RowCounter( object ):
         // Make ajax call
         $.ajax( {
             type: "POST",
-            url: "${h.url_for( controller='library_dataset', action='library_item_updates' )}",
+            url: "${h.url_for( controller='library_common', action='library_item_updates' )}",
             dataType: "json",
             data: { ids: ids.join( "," ), states: states.join( "," ) },
             success : function ( data ) {
@@ -178,7 +178,7 @@ class RowCounter( object ):
                     %endif
                     %if ldda.has_data:
                         <a class="action-button" href="${h.url_for( controller='library', action='datasets', library_id=library.id, ldda_ids=str( ldda.id ), do_action='add' )}">Import this dataset into your current history</a>
-                        <a class="action-button" href="${h.url_for( controller='library', action='download_dataset_from_folder', obj_id=ldda.id, library_id=library.id )}">Download this dataset</a>
+                        <a class="action-button" href="${h.url_for( controller='library', action='download_dataset_from_folder', cntrller='library', obj_id=ldda.id, library_id=library.id )}">Download this dataset</a>
                     %endif
                 </div>
             </td>

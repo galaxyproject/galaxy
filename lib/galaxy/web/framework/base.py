@@ -122,7 +122,7 @@ class WebApplication( object ):
         # Special key for AJAX debugging, remove to avoid confusing methods
         kwargs.pop( '_', None )
         try:
-            body = method( trans, **kwargs )
+            body = self.call_body_method( method, trans, kwargs )
         except Exception, e:
             body = self.handle_controller_exception( e, trans, **kwargs )
             if not body:
@@ -139,6 +139,9 @@ class WebApplication( object ):
             start_response( trans.response.wsgi_status(), 
                             trans.response.wsgi_headeritems() )
             return self.make_body_iterable( trans, body )
+        
+    def call_body_method( self, method, trans, kwargs ):
+        return method( trans, **kwargs )
         
     def make_body_iterable( self, trans, body ):
         if isinstance( body, ( types.GeneratorType, list, tuple ) ):

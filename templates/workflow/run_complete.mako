@@ -14,7 +14,7 @@ if ( parent.frames && parent.frames.galaxy_history ) {
 <body>
     <div class="donemessage">
         <p>
-            Sucesfully ran workflow "${workflow.name}", the following datasets have
+            Successfully ran workflow "${workflow.name}", the following datasets have
             been added to the queue.
         </p>
     

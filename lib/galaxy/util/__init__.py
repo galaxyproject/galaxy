@@ -178,7 +178,7 @@ class Params:
     #       better solution I think is to more responsibility for 
     #       sanitizing into the tool parameters themselves so that
     #       different parameters can be sanitized in different ways.
-    NEVER_SANITIZE = ['file_data', 'url_paste', 'URL']
+    NEVER_SANITIZE = ['file_data', 'url_paste', 'URL', 'filesystem_paths']
     
     def __init__( self, params, safe=True, sanitize=True, tool=None ):
         if safe:

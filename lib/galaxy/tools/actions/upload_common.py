@@ -3,6 +3,7 @@ from cgi import FieldStorage
 from galaxy import datatypes, util
 from galaxy.datatypes import sniff
 from galaxy.util.json import to_json_string
+from galaxy.model.orm import eagerload_all
 
 import logging
 log = logging.getLogger( __name__ )
@@ -127,12 +128,29 @@ def new_library_upload( trans, uploaded_dataset, library_bunch, state=None ):
              or trans.user.email in trans.app.config.get( "admin_users", "" ).split( "," ) ):
         # This doesn't have to be pretty - the only time this should happen is if someone's being malicious.
         raise Exception( "User is not authorized to add datasets to this library." )
+    folder = library_bunch.folder
+    if uploaded_dataset.get( 'in_folder', False ):
+        # Create subfolders if desired
+        for name in uploaded_dataset.in_folder.split( os.path.sep ):
+            folder.refresh()
+            matches = filter( lambda x: x.name == name, active_folders( trans, folder ) )
+            if matches:
+                log.debug( 'DEBUGDEBUG: In %s, found a folder name match: %s:%s' % ( folder.name, matches[0].id, matches[0].name ) )
+                folder = matches[0]
+            else:
+                new_folder = trans.app.model.LibraryFolder( name=name, description='Automatically created by upload tool' )
+                new_folder.genome_build = util.dbnames.default_value
+                folder.add_folder( new_folder )
+                new_folder.flush()
+                trans.app.security_agent.copy_library_permissions( folder, new_folder )
+                log.debug( 'DEBUGDEBUG: In %s, created a new folder: %s:%s' % ( folder.name, new_folder.id, new_folder.name ) )
+                folder = new_folder
     if library_bunch.replace_dataset:
         ld = library_bunch.replace_dataset
     else:
-        ld = trans.app.model.LibraryDataset( folder=library_bunch.folder, name=uploaded_dataset.name )
+        ld = trans.app.model.LibraryDataset( folder=folder, name=uploaded_dataset.name )
         ld.flush()
-        trans.app.security_agent.copy_library_permissions( library_bunch.folder, ld )
+        trans.app.security_agent.copy_library_permissions( folder, ld )
     ldda = trans.app.model.LibraryDatasetDatasetAssociation( name = uploaded_dataset.name,
                                                              extension = uploaded_dataset.file_type,
                                                              dbkey = uploaded_dataset.dbkey,
@@ -153,8 +171,8 @@ def new_library_upload( trans, uploaded_dataset, library_bunch, state=None ):
     else:
         # Copy the current user's DefaultUserPermissions to the new LibraryDatasetDatasetAssociation.dataset
         trans.app.security_agent.set_all_dataset_permissions( ldda.dataset, trans.app.security_agent.user_get_default_permissions( trans.user ) )
-        library_bunch.folder.add_library_dataset( ld, genome_build=uploaded_dataset.dbkey )
-        library_bunch.folder.flush()
+        folder.add_library_dataset( ld, genome_build=uploaded_dataset.dbkey )
+        folder.flush()
     ld.library_dataset_dataset_association_id = ldda.id
     ld.flush()
     # Handle template included in the upload form, if any
@@ -230,6 +248,10 @@ def create_paramfile( uploaded_datasets ):
                 is_binary = uploaded_dataset.datatype.is_binary
             except:
                 is_binary = None
+            try:
+                link_data_only = uploaded_dataset.link_data_only
+            except:
+                link_data_only = False
             json = dict( file_type = uploaded_dataset.file_type,
                          ext = uploaded_dataset.ext,
                          name = uploaded_dataset.name,
@@ -237,6 +259,7 @@ def create_paramfile( uploaded_datasets ):
                          dbkey = uploaded_dataset.dbkey,
                          type = uploaded_dataset.type,
                          is_binary = is_binary,
+                         link_data_only = link_data_only,
                          space_to_tab = uploaded_dataset.space_to_tab,
                          path = uploaded_dataset.path )
         json_file.write( to_json_string( json ) + '\n' )
@@ -276,3 +299,13 @@ def create_job( trans, params, tool, json_file_path, data_list, folder=None ):
     trans.app.job_queue.put( job.id, tool )
     trans.log_event( "Added job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id )
     return dict( [ ( 'output%i' % i, v ) for i, v in enumerate( data_list ) ] )
+
+def active_folders( trans, folder ):
+    # Stolen from galaxy.web.controllers.library_common (importing from which causes a circular issues).
+    # Much faster way of retrieving all active sub-folders within a given folder than the
+    # performance of the mapper.  This query also eagerloads the permissions on each folder.
+    return trans.sa_session.query( trans.app.model.LibraryFolder ) \
+                           .filter_by( parent=folder, deleted=False ) \
+                           .options( eagerload_all( "actions" ) ) \
+                           .order_by( trans.app.model.LibraryFolder.table.c.name ) \
+                           .all()

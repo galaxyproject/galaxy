@@ -32,7 +32,6 @@ class ToolParameter( object ):
         self.html = "no html set"
         self.repeat = param.get("repeat", None)
         self.condition = param.get( "condition", None )
-        self.dependent_params = []
         self.validators = []
         for elem in param.findall("validator"):
             self.validators.append( validation.Validator.from_element( self, elem ) )

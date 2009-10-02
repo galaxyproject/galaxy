@@ -42,7 +42,7 @@
         </param>
       </when>      
       <when value="history">
-        <param name="input1" type="data" format="sam, bam" label="Select the BAM file to generate the pileup file for" />
+        <param name="input1" type="data" format="bam" label="Select the BAM file to generate the pileup file for" />
         <param name="ownFile" type="data" format="fasta" metadata_name="dbkey" label="Select a reference genome" />
       </when>
     </conditional>	

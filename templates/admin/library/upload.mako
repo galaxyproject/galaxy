@@ -12,14 +12,20 @@
 %>
 
 <b>Create new data library datasets</b>
-<a id="upload-librarydataset--popup" class="popup-arrow" style="display: none;">&#9660;</a>
-<div popupmenu="upload-librarydataset--popup">
-    <a class="action-button" href="${h.url_for( controller='library_admin', action='upload_library_dataset', library_id=library_id, folder_id=folder_id, replace_id=replace_id, upload_option='upload_file' )}">Upload files</a>
-    %if trans.app.config.library_import_dir and os.path.exists( trans.app.config.library_import_dir ):
-        <a class="action-button" href="${h.url_for( controller='library_admin', action='upload_library_dataset', library_id=library_id, folder_id=folder_id, replace_id=replace_id, upload_option='upload_directory' )}">Upload directory of files</a>
-    %endif
-    <a class="action-button" href="${h.url_for( controller='library_admin', action='upload_library_dataset', library_id=library_id, folder_id=folder_id, replace_id=replace_id, upload_option='import_from_history' )}">Import datasets from your current history</a>
-</div>
+%if replace_dataset in [ None, 'None' ]:
+    ## Don't allow multiple datasets to be uploaded when replacing a dataset with a new version
+    <a id="upload-librarydataset--popup" class="popup-arrow" style="display: none;">&#9660;</a>
+    <div popupmenu="upload-librarydataset--popup">
+        <a class="action-button" href="${h.url_for( controller='library_admin', action='upload_library_dataset', library_id=library_id, folder_id=folder_id, replace_id=replace_id, upload_option='upload_file' )}">Upload files</a>
+        %if trans.app.config.library_import_dir and os.path.exists( trans.app.config.library_import_dir ):
+            <a class="action-button" href="${h.url_for( controller='library_admin', action='upload_library_dataset', library_id=library_id, folder_id=folder_id, replace_id=replace_id, upload_option='upload_directory' )}">Upload directory of files</a>
+        %endif
+        %if trans.app.config.allow_library_path_paste:
+            <a class="action-button" href="${h.url_for( controller='library_admin', action='upload_library_dataset', library_id=library_id, folder_id=folder_id, replace_id=replace_id, upload_option='upload_paths' )}">Upload files from filesystem paths</a>
+        %endif
+        <a class="action-button" href="${h.url_for( controller='library_admin', action='upload_library_dataset', library_id=library_id, folder_id=folder_id, replace_id=replace_id, upload_option='import_from_history' )}">Import datasets from your current history</a>
+    </div>
+%endif
 <br/><br/>
 <ul class="manage-table-actions">
     <li>

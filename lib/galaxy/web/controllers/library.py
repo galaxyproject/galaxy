@@ -568,64 +568,31 @@ class Library( BaseController ):
                                                            msg=util.sanitize_text( msg ),
                                                            messagetype='error' ) )
             lddas.append( ldda )
-            if params.get( 'update_roles_button', False ):
-                if trans.app.security_agent.can_manage_library_item( user, roles, ldda ) and \
-                    trans.app.security_agent.can_manage_dataset( roles, ldda.dataset ):
-                    permissions = {}
-                    for k, v in trans.app.model.Dataset.permitted_actions.items():
-                        in_roles = [ trans.app.model.Role.get( x ) for x in util.listify( params.get( k + '_in', [] ) ) ]
-                        permissions[ trans.app.security_agent.get_action( v.action ) ] = in_roles
-                    for ldda in lddas:
-                        # Set the DATASET permissions on the Dataset
-                        trans.app.security_agent.set_all_dataset_permissions( ldda.dataset, permissions )
-                        ldda.dataset.refresh()
-                    permissions = {}
-                    for k, v in trans.app.model.Library.permitted_actions.items():
-                        in_roles = [ trans.app.model.Role.get( x ) for x in util.listify( kwd.get( k + '_in', [] ) ) ]
-                        permissions[ trans.app.security_agent.get_action( v.action ) ] = in_roles
-                    for ldda in lddas:
-                        # Set the LIBRARY permissions on the LibraryDataset
-                        # NOTE: the LibraryDataset and LibraryDatasetDatasetAssociation will be set with the same permissions
-                        trans.app.security_agent.set_all_library_permissions( ldda.library_dataset, permissions )
-                        ldda.library_dataset.refresh()
-                        # Set the LIBRARY permissions on the LibraryDatasetDatasetAssociation
-                        trans.app.security_agent.set_all_library_permissions( ldda, permissions )
-                        ldda.refresh()
-                    msg = 'Permissions and roles have been updated on %d datasets' % len( lddas )
-                    messagetype = 'done'
-                else:
-                    msg = "You are not authorized to change the permissions of dataset '%s'" % ldda.name
-                    messagetype = 'error'
-                return trans.fill_template( "/library/ldda_permissions.mako",
-                                            ldda=lddas,
-                                            library_id=library_id,
-                                            msg=msg,
-                                            messagetype=messagetype )
+        if params.get( 'update_roles_button', False ):
             if trans.app.security_agent.can_manage_library_item( user, roles, ldda ) and \
                 trans.app.security_agent.can_manage_dataset( roles, ldda.dataset ):
-                # Ensure that the permissions across all library items are identical, otherwise we can't update them together.
-                check_list = []
+                permissions = {}
+                for k, v in trans.app.model.Dataset.permitted_actions.items():
+                    in_roles = [ trans.app.model.Role.get( x ) for x in util.listify( params.get( k + '_in', [] ) ) ]
+                    permissions[ trans.app.security_agent.get_action( v.action ) ] = in_roles
                 for ldda in lddas:
-                    permissions = []
-                    # Check the library level permissions - the permissions on the LibraryDatasetDatasetAssociation
-                    # will always be the same as the permissions on the associated LibraryDataset, so we only need to
-                    # check one Library object
-                    for library_permission in trans.app.security_agent.get_library_dataset_permissions( ldda.library_dataset ):
-                        if library_permission.action not in permissions:
-                            permissions.append( library_permission.action )
-                    for dataset_permission in trans.app.security_agent.get_dataset_permissions( ldda.dataset ):
-                        if dataset_permission.action not in permissions:
-                            permissions.append( dataset_permission.action )
-                    permissions.sort()
-                    if not check_list:
-                        check_list = permissions
-                    if permissions != check_list:
-                        msg = 'The datasets you selected do not have identical permissions, so they can not be updated together'
-                        trans.response.send_redirect( web.url_for( controller='library',
-                                                                   action='browse_library',
-                                                                   obj_id=library_id,
-                                                                   msg=util.sanitize_text( msg ),
-                                                                   messagetype='error' ) )
+                    # Set the DATASET permissions on the Dataset
+                    trans.app.security_agent.set_all_dataset_permissions( ldda.dataset, permissions )
+                    ldda.dataset.refresh()
+                permissions = {}
+                for k, v in trans.app.model.Library.permitted_actions.items():
+                    in_roles = [ trans.app.model.Role.get( x ) for x in util.listify( kwd.get( k + '_in', [] ) ) ]
+                    permissions[ trans.app.security_agent.get_action( v.action ) ] = in_roles
+                for ldda in lddas:
+                    # Set the LIBRARY permissions on the LibraryDataset
+                    # NOTE: the LibraryDataset and LibraryDatasetDatasetAssociation will be set with the same permissions
+                    trans.app.security_agent.set_all_library_permissions( ldda.library_dataset, permissions )
+                    ldda.library_dataset.refresh()
+                    # Set the LIBRARY permissions on the LibraryDatasetDatasetAssociation
+                    trans.app.security_agent.set_all_library_permissions( ldda, permissions )
+                    ldda.refresh()
+                msg = 'Permissions and roles have been updated on %d datasets' % len( lddas )
+                messagetype = 'done'
             else:
                 msg = "You are not authorized to change the permissions of dataset '%s'" % ldda.name
                 messagetype = 'error'
@@ -634,6 +601,39 @@ class Library( BaseController ):
                                         library_id=library_id,
                                         msg=msg,
                                         messagetype=messagetype )
+        if trans.app.security_agent.can_manage_library_item( user, roles, ldda ) and \
+            trans.app.security_agent.can_manage_dataset( roles, ldda.dataset ):
+            # Ensure that the permissions across all library items are identical, otherwise we can't update them together.
+            check_list = []
+            for ldda in lddas:
+                permissions = []
+                # Check the library level permissions - the permissions on the LibraryDatasetDatasetAssociation
+                # will always be the same as the permissions on the associated LibraryDataset, so we only need to
+                # check one Library object
+                for library_permission in trans.app.security_agent.get_library_dataset_permissions( ldda.library_dataset ):
+                    if library_permission.action not in permissions:
+                        permissions.append( library_permission.action )
+                for dataset_permission in trans.app.security_agent.get_dataset_permissions( ldda.dataset ):
+                    if dataset_permission.action not in permissions:
+                        permissions.append( dataset_permission.action )
+                permissions.sort()
+                if not check_list:
+                    check_list = permissions
+                if permissions != check_list:
+                    msg = 'The datasets you selected do not have identical permissions, so they can not be updated together'
+                    trans.response.send_redirect( web.url_for( controller='library',
+                                                               action='browse_library',
+                                                               obj_id=library_id,
+                                                               msg=util.sanitize_text( msg ),
+                                                               messagetype='error' ) )
+        else:
+            msg = "You are not authorized to change the permissions of dataset '%s'" % ldda.name
+            messagetype = 'error'
+        return trans.fill_template( "/library/ldda_permissions.mako",
+                                    ldda=lddas,
+                                    library_id=library_id,
+                                    msg=msg,
+                                    messagetype=messagetype )
     @web.expose
     def upload_library_dataset( self, trans, library_id, folder_id, **kwd ):
         params = util.Params( kwd )
@@ -652,8 +652,11 @@ class Library( BaseController ):
             replace_dataset = trans.app.model.LibraryDataset.get( params.get( 'replace_id', None ) )
             if not last_used_build:
                 last_used_build = replace_dataset.library_dataset_dataset_association.dbkey
+            # Don't allow multiple datasets to be uploaded when replacing a dataset with a new version
+            upload_option = 'upload_file'
         else:
             replace_dataset = None
+            upload_option = params.get( 'upload_option', 'upload_file' )
         user, roles = trans.get_user_and_roles()
         if trans.app.security_agent.can_add_library_item( user, roles, folder ) or \
              ( replace_dataset and trans.app.security_agent.can_modify_library_item( user, roles, replace_dataset ) ):
@@ -666,15 +669,14 @@ class Library( BaseController ):
                 else:
                     template_id = 'None'
                     widgets = []
-                upload_option = params.get( 'upload_option', 'upload_file' )
                 created_outputs = trans.webapp.controllers[ 'library_common' ].upload_dataset( trans,
-                                                                                                controller='library', 
-                                                                                                library_id=library_id,
-                                                                                                folder_id=folder_id,
-                                                                                                template_id=template_id,
-                                                                                                widgets=widgets,
-                                                                                                replace_dataset=replace_dataset,
-                                                                                                **kwd )
+                                                                                               controller='library', 
+                                                                                               library_id=library_id,
+                                                                                               folder_id=folder_id,
+                                                                                               template_id=template_id,
+                                                                                               widgets=widgets,
+                                                                                               replace_dataset=replace_dataset,
+                                                                                               **kwd )
                 if created_outputs:
                     ldda_id_list = [ str( v.id ) for v in created_outputs.values() ]
                     total_added = len( created_outputs.values() )
@@ -859,35 +861,6 @@ class Library( BaseController ):
                                             widgets=[],
                                             msg=msg,
                                             messagetype=messagetype )
-    @web.expose
-    def download_dataset_from_folder(self, trans, obj_id, library_id=None, **kwd):
-        """Catches the dataset id and displays file contents as directed"""
-        # id must refer to a LibraryDatasetDatasetAssociation object
-        ldda = trans.app.model.LibraryDatasetDatasetAssociation.get( obj_id )
-        if not ldda.dataset:
-            msg = 'Invalid LibraryDatasetDatasetAssociation id %s received for file downlaod' % str( obj_id )
-            return trans.response.send_redirect( web.url_for( controller='library',
-                                                              action='browse_library',
-                                                              obj_id=library_id,
-                                                              msg=msg,
-                                                              messagetype='error' ) )
-        mime = trans.app.datatypes_registry.get_mimetype_by_extension( ldda.extension.lower() )
-        trans.response.set_content_type( mime )
-        fStat = os.stat( ldda.file_name )
-        trans.response.headers[ 'Content-Length' ] = int( fStat.st_size )
-        valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-        fname = ldda.name
-        fname = ''.join( c in valid_chars and c or '_' for c in fname )[ 0:150 ]
-        trans.response.headers[ "Content-Disposition" ] = "attachment; filename=GalaxyLibraryDataset-%s-[%s]" % ( str( obj_id ), fname )
-        try:
-            return open( ldda.file_name )
-        except: 
-            msg = 'This dataset contains no content'
-            return trans.response.send_redirect( web.url_for( controller='library',
-                                                              action='browse_library',
-                                                              obj_id=library_id,
-                                                              msg=msg,
-                                                              messagetype='error' ) )
     @web.expose
     def datasets( self, trans, library_id, ldda_ids='', **kwd ):
         # This method is used by the select list labeled "Perform action on selected datasets"
