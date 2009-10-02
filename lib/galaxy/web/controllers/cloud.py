@@ -42,12 +42,12 @@ class CloudController( BaseController ):
         Render cloud main page (management of cloud resources)
         """
         user = trans.get_user()
-        pendingInstances = trans.sa_session.query( model.UCI ) \
-            .filter_by( user=user, state="pending" ) \
-            .all()
-            
-        for i in range( len ( pendingInstances ) ):
-            update_instance_state( trans, pendingInstances[i].id )
+#        pendingInstances = trans.sa_session.query( model.UCI ) \
+#            .filter_by( user=user, state="pending" ) \
+#            .all()
+#            
+#        for i inupdate_in range( len ( pendingInstances ) ):
+#            stance_state( trans, pendingInstances[i].id )
         
         cloudCredentials = trans.sa_session.query( model.CloudUserCredentials ) \
             .filter_by( user=user ) \
@@ -56,12 +56,13 @@ class CloudController( BaseController ):
         
         liveInstances = trans.sa_session.query( model.UCI ) \
             .filter_by( user=user ) \
-            .filter( or_(model.UCI.c.state=="running", model.UCI.c.state=="pending") ) \
+            .filter( or_( model.UCI.c.state=="running", model.UCI.c.state=="pending", model.UCI.c.state=="terminating" ) ) \
             .order_by( desc( model.UCI.c.launch_time ) ) \
             .all()
             
         prevInstances = trans.sa_session.query( model.UCI ) \
-            .filter_by( user=user, state="available" ) \
+            .filter_by( user=user ) \
+            .filter( or_( model.UCI.c.state=="available", model.UCI.c.state=="new", model.UCI.c.state=="error", model.UCI.c.state=="submitted" ) ) \
             .order_by( desc( model.UCI.c.update_time ) ) \
             .all()
         
@@ -101,26 +102,26 @@ class CloudController( BaseController ):
 
     @web.expose
     @web.require_login( "start Galaxy cloud instance" )
-    def start( self, trans, id, size='small' ):
+    def start( self, trans, id, type='small' ):
         """
         Start a new cloud resource instance
         """
-        # TODO: Add choice of instance size before starting one
-        #if size:
+        # TODO: Add choice of instance type before starting one
+        #if type:
         user = trans.get_user()
-        mi = get_mi( trans, size )
+        mi = get_mi( trans, type )
         uci = get_uci( trans, id )
         stores = get_stores( trans, uci ) 
-        log.debug(self.app.config.job_working_directory)
+#        log.debug(self.app.config.job_working_directory)
         if len(stores) is not 0:
             instance = model.CloudInstance()
             instance.user = user
             instance.image = mi
             instance.uci = uci
-            instance.keypair_name = get_keypair_name( trans )
             instance.availability_zone = stores[0].availability_zone # Bc. all EBS volumes need to be in the same avail. zone, just check 1st
-            instance.type = size
-            conn = get_connection( trans )
+            instance.type = type
+#            instance.keypair_name = get_keypair_name( trans )
+#            conn = get_connection( trans )
 #            log.debug( '***** Setting up security group' )
             # If not existent, setup galaxy security group
 #            try:
@@ -135,26 +136,25 @@ class CloudController( BaseController ):
 #                        sg.append( sgs[i] )
 #                        break # only 1 security group w/ this name can exist, so continue                    
             
-            log.debug( '***** Starting an instance' )
-            log.debug( 'Using following command: conn.run_instances( image_id=%s, key_name=%s )' % ( instance.image.image_id, instance.keypair_name ) )
-            reservation = conn.run_instances( image_id=instance.image.image_id, key_name=instance.keypair_name )
+#            log.debug( '***** Starting an instance' )
+#            log.debug( 'Using following command: conn.run_instances( image_id=%s, key_name=%s )' % ( instance.image.image_id, instance.keypair_name ) )
+#            reservation = conn.run_instances( image_id=instance.image.image_id, key_name=instance.keypair_name )
             #reservation = conn.run_instances( image_id=instance.image, key_name=instance.keypair_name, security_groups=['galaxy'], instance_type=instance.type,  placement=instance.availability_zone )
-            instance.launch_time = datetime.utcnow()
-            uci.launch_time = instance.launch_time
-            instance.reservation_id = str( reservation ).split(":")[1]
-            instance.instance_id = str( reservation.instances[0]).split(":")[1]
+#            instance.launch_time = datetime.utcnow()
+#            uci.launch_time = instance.launch_time
+#            instance.reservation_id = str( reservation ).split(":")[1]
+#            instance.instance_id = str( reservation.instances[0]).split(":")[1]
 #            instance.state = "pending"
-            instance.state = reservation.instances[0].state
-            uci.state = instance.state
-            
-            # TODO: After instance boots up, need to update status, DNS and attach EBS
+#            instance.state = reservation.instances[0].state
+            uci.state = 'submitted'
             
             # Persist
             session = trans.sa_session
             session.save_or_update( instance )
+            session.save_or_update( uci )
             session.flush()
                         
-            trans.log_event ("Started new instance. Reservation ID: '%s', Instance ID: '%s'" % (instance.reservation_id, instance.instance_id ) )
+            trans.log_event ("User initiated starting of cloud instance '%s'." % uci.name )
             return self.list( trans )
         
 #        return trans.show_form( 
@@ -167,55 +167,63 @@ class CloudController( BaseController ):
     @web.require_login( "stop Galaxy cloud instance" )
     def stop( self, trans, id ):
         """
-        Stop a cloud instance. This implies stopping Galaxy server and disconnecting/unmounting relevant file system(s).
+        Stop a cloud UCI instance. This implies stopping Galaxy server and disconnecting/unmounting relevant file system(s).
         """
         uci = get_uci( trans, id )
-        dbInstances = get_instances( trans, uci ) #TODO: handle list!
-        
-        conn = get_connection( trans )
-        # Get actual cloud instance object
-        cloudInstance = get_cloud_instance( conn, dbInstances.instance_id )
-        
-        # TODO: Detach persistent storage volume(s) from instance and update volume data in local database
-        stores = get_stores( trans, uci )
-        for i, store in enumerate( stores ):
-            log.debug( "Detaching volume '%s' to instance '%s'." % ( store.volume_id, dbInstances.instance_id ) )
-            mntDevice = store.device
-            volStat = None
-#            Detaching volume does not work with Eucalyptus Public Cloud, so comment it out
-#            try:
-#                volStat = conn.detach_volume( store.volume_id, dbInstances.instance_id, mntDevice )
-#            except:
-#                log.debug ( 'Error detaching volume; still going to try and stop instance %s.' % dbInstances.instance_id )
-            store.attach_time = None
-            store.device = None
-            store.i_id = None
-            store.status = volStat
-            log.debug ( '***** volume status: %s' % volStat )
-   
-        
-        # Stop the instance and update status in local database
-        cloudInstance.stop()
-        dbInstances.stop_time = datetime.utcnow()
-        while cloudInstance.state != 'terminated':
-            log.debug( "Stopping instance %s state; current state: %s" % ( str( cloudInstance ).split(":")[1], cloudInstance.state ) )
-            time.sleep(3)
-            cloudInstance.update()
-        dbInstances.state = cloudInstance.state
-        
-        # Reset relevant UCI fields
-        uci.state = 'available'
-        uci.launch_time = None
-          
-        # Persist
+        uci.state = 'terminating'
         session = trans.sa_session
 #        session.save_or_update( stores )
-        session.save_or_update( dbInstances ) # TODO: Is this going to work w/ multiple instances stored in dbInstances variable?
         session.save_or_update( uci )
         session.flush()
         trans.log_event( "User stopped cloud instance '%s'" % uci.name )
         trans.set_message( "Galaxy instance '%s' stopped." % uci.name )
-                    
+        
+#        dbInstances = get_instances( trans, uci ) #TODO: handle list!
+#        
+#        conn = get_connection( trans )
+#        # Get actual cloud instance object
+#        cloudInstance = get_cloud_instance( conn, dbInstances.instance_id )
+#        
+#        # TODO: Detach persistent storage volume(s) from instance and update volume data in local database
+#        stores = get_stores( trans, uci )
+#        for i, store in enumerate( stores ):
+#            log.debug( "Detaching volume '%s' to instance '%s'." % ( store.volume_id, dbInstances.instance_id ) )
+#            mntDevice = store.device
+#            volStat = None
+##            Detaching volume does not work with Eucalyptus Public Cloud, so comment it out
+##            try:
+##                volStat = conn.detach_volume( store.volume_id, dbInstances.instance_id, mntDevice )
+##            except:
+##                log.debug ( 'Error detaching volume; still going to try and stop instance %s.' % dbInstances.instance_id )
+#            store.attach_time = None
+#            store.device = None
+#            store.i_id = None
+#            store.status = volStat
+#            log.debug ( '***** volume status: %s' % volStat )
+#   
+#        
+#        # Stop the instance and update status in local database
+#        cloudInstance.stop()
+#        dbInstances.stop_time = datetime.utcnow()
+#        while cloudInstance.state != 'terminated':
+#            log.debug( "Stopping instance %s state; current state: %s" % ( str( cloudInstance ).split(":")[1], cloudInstance.state ) )
+#            time.sleep(3)
+#            cloudInstance.update()
+#        dbInstances.state = cloudInstance.state
+#        
+#        # Reset relevant UCI fields
+#        uci.state = 'available'
+#        uci.launch_time = None
+#          
+#        # Persist
+#        session = trans.sa_session
+##        session.save_or_update( stores )
+#        session.save_or_update( dbInstances ) # TODO: Is this going to work w/ multiple instances stored in dbInstances variable?
+#        session.save_or_update( uci )
+#        session.flush()
+#        trans.log_event( "User stopped cloud instance '%s'" % uci.name )
+#        trans.set_message( "Galaxy instance '%s' stopped." % uci.name )
+#                    
         return self.list( trans )
     
     @web.expose
@@ -302,20 +310,12 @@ class CloudController( BaseController ):
                         trans.app.model.CloudUserCredentials.table.c.name==credName ).first()
                     uci.user= user
                     uci.total_size = volSize # This is OK now because new instance is being created. 
-                    # Need to flush because connection object accesses uci table
-                    uci.flush()
-                    # Capture store related information
+                    uci.state = "new" # Valid states include: "new, "available", "running", "pending", "submitted", "terminating", or "error"
                     storage = model.CloudStore()
                     storage.user = user
                     storage.uci = uci
                     storage.size = volSize
-                    storage.availability_zone = "us-east-1a" # TODO: Give user choice here. Also, enable region selection.
-                    conn = get_connection( trans, credName )
-                    #conn.create_volume( volSize, storage.availability_zone, snapshot=None )
-                    # TODO: get correct value from AWS
-                    storage.volume_id = "made up"
-                    # TODO: If volume creation was successfull, set state to available
-                    uci.state = "available" # Valid states include: "available", "running" or "pending"
+                    storage.availability_zone = zone # TODO: Give user choice here. Also, enable region selection.
                     # Persist
                     session = trans.sa_session
                     session.save_or_update( uci )
@@ -323,7 +323,7 @@ class CloudController( BaseController ):
                     session.flush()
                     # Log and display the management page
                     trans.log_event( "User configured new cloud instance" )
-                    trans.set_message( "New Galaxy instance '%s' configured." % instanceName )
+                    trans.set_message( "New Galaxy instance '%s' configured. Once instance status shows 'available' you will be able to start the instance." % instanceName )
                     return self.list( trans )
             except ValueError:
                 vol_error = "Volume size must be specified as an integer value only, between 1 and 1000."

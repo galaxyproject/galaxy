@@ -38,11 +38,11 @@ CloudInstance_table = Table( "cloud_instance", metadata,
     Column( "launch_time", DateTime ),
     Column( "stop_time", DateTime ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True, nullable=False ),
-    Column( "uci_id", Integer, ForeignKey( "uci.id" ), index=True ),
+    Column( "uci_id", Integer, ForeignKey( "uci.id" ), index=True, nullable=False ),
     Column( "type", TEXT ),
     Column( "reservation_id", TEXT ),
     Column( "instance_id", TEXT ),
-    Column( "mi_id", TEXT, ForeignKey( "cloud_image.image_id" ), index=True, nullable=False ),
+    Column( "mi_id", TEXT, ForeignKey( "cloud_image.image_id" ), index=True ),
     Column( "state", TEXT ),
     Column( "public_dns", TEXT ),
     Column( "private_dns", TEXT ),
@@ -57,9 +57,9 @@ CloudStore_table = Table( "cloud_store", metadata,
     Column( "attach_time", DateTime ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True, nullable=False ),
     Column( "uci_id", Integer, ForeignKey( "uci.id" ), index=True, nullable=False ),
-    Column( "volume_id", TEXT, nullable=False ),
+    Column( "volume_id", TEXT ),
     Column( "size", Integer, nullable=False ),
-    Column( "availability_zone", TEXT, nullable=False ),
+    Column( "availability_zone", TEXT ),
     Column( "i_id", TEXT, ForeignKey( "cloud_instance.instance_id" ), index=True ),
     Column( "status", TEXT ),
     Column( "device", TEXT ),
@@ -93,8 +93,8 @@ def upgrade():
 def downgrade():
     metadata.reflect()
     try:
-#        log.debug( "Would drop cloud_image table." ) 
-        CloudImage_table.drop() #Enable before release
+        log.debug( "Would drop cloud_image table." ) 
+#        CloudImage_table.drop() #Enable before release
     except Exception, e:
         log.debug( "Dropping cloud_image table failed: %s" % str( e ) ) 
     
@@ -109,8 +109,8 @@ def downgrade():
         log.debug( "Dropping cloud_store table failed: %s" % str( e ) )  
         
     try:
-#        log.debug( "Would drop cloud_user_credentials table." )
-        CloudUserCredentials_table.drop() #Enable before putting final version
+        log.debug( "Would drop cloud_user_credentials table." )
+#        CloudUserCredentials_table.drop() #Enable before putting final version
     except Exception, e:
         log.debug( "Dropping cloud_user_credentials table failed: %s" % str( e ) )  
         

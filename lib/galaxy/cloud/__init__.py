@@ -6,7 +6,7 @@ from galaxy.model.orm import lazyload
 from galaxy.datatypes.tabular import *
 from galaxy.datatypes.interval import *
 from galaxy.datatypes import metadata
-#from util import Bunch
+from galaxy.util.bunch import Bunch
 
 import pkg_resources
 pkg_resources.require( "PasteDeploy" )
@@ -34,7 +34,7 @@ class CloudManager( object ):
             # The dispatcher manager underlying cloud instances
             self.provider = DefaultCloudProvider( app )
             # Monitor for updating status of cloud instances
-#            self.cloud_monitor = CloudMonitor( self.config, self.provider )
+            self.cloud_monitor = CloudMonitor( self.app, self.provider )
 #            self.job_stop_queue = JobStopQueue( app, self.dispatcher )
         else:
             self.job_queue = self.job_stop_queue = NoopCloudMonitor()
@@ -43,32 +43,32 @@ class CloudManager( object ):
         self.cloud_monitor.shutdown()
 #        self.job_stop_queue.shutdown()
 
-    def createUCI( self, user, name, storage_size, zone=None):
-        """ 
-        Createse User Configured Instance (UCI). Essentially, creates storage volume.
-        """
-        self.provider.createUCI( user, name, storage_size, zone )
-        
-    def deleteUCI( self, name ):
-        """ 
-        Deletes UCI. NOTE that this implies deletion of any and all data associated
-        with this UCI from the cloud. All data will be deleted.
-        """
-    
-    def addStorageToUCI( self, name ):
-        """ Adds more storage to specified UCI """
-        
-    def startUCI( self, name, type ):
-        """
-        Starts an instance of named UCI on the cloud. This implies, mounting of
-        storage and starting Galaxy instance. 
-        """ 
-        
-    def stopUCI( self, name ):
-        """ 
-        Stops cloud instance associated with named UCI. This also implies 
-        stopping of Galaxy and unmounting of the file system.
-        """
+#    def createUCI( self, user, name, storage_size, zone=None):
+#        """ 
+#        Createse User Configured Instance (UCI). Essentially, creates storage volume.
+#        """
+#        self.provider.createUCI( user, name, storage_size, zone )
+#        
+#    def deleteUCI( self, name ):
+#        """ 
+#        Deletes UCI. NOTE that this implies deletion of any and all data associated
+#        with this UCI from the cloud. All data will be deleted.
+#        """
+#    
+#    def addStorageToUCI( self, name ):
+#        """ Adds more storage to specified UCI """
+#        
+#    def startUCI( self, name, type ):
+#        """
+#        Starts an instance of named UCI on the cloud. This implies, mounting of
+#        storage and starting Galaxy instance. 
+#        """ 
+#        
+#    def stopUCI( self, name ):
+#        """ 
+#        Stops cloud instance associated with named UCI. This also implies 
+#        stopping of Galaxy and unmounting of the file system.
+#        """
         
 class Sleeper( object ):
     """
@@ -149,8 +149,8 @@ class CloudMonitor( object ):
         
         while self.running:
             try:
-                #self.__monitor_step()
-                log.debug ( "would be calling monitor_step" )
+#                log.debug( "Calling monitor_step" )
+                self.__monitor_step()
             except:
                 log.exception( "Exception in cloud manager monitor_step" )
             # Sleep
@@ -171,88 +171,110 @@ class CloudMonitor( object ):
         session = mapping.Session()
         # Pull all new jobs from the queue at once
         new_jobs = []
-        if self.track_jobs_in_database:
-            for j in session.query( model.Job ).options( lazyload( "external_output_metadata" ), lazyload( "parameters" ) ).filter( model.Job.c.state == model.Job.states.NEW ).all():
-                job = JobWrapper( j, self.app.toolbox.tools_by_id[ j.tool_id ], self )
-                new_jobs.append( job )
-        else:
-            try:
-                while 1:
-                    message = self.queue.get_nowait()
-                    if message is self.STOP_SIGNAL:
-                        return
-                    # Unpack the message
-                    job_id, tool_id = message
-                    # Create a job wrapper from it
-                    job_entity = session.query( model.Job ).get( job_id )
-                    job = JobWrapper( job_entity, self.app.toolbox.tools_by_id[ tool_id ], self )
-                    # Append to watch queue
-                    new_jobs.append( job )
-            except Empty:
-                pass
-        # Iterate over new and waiting jobs and look for any that are 
-        # ready to run
-        new_waiting = []
-        for job in ( new_jobs + self.waiting ):
-            try:
-                # Clear the session for each job so we get fresh states for
-                # job and all datasets
-                session.clear()
-                # Get the real job entity corresponding to the wrapper (if we
-                # are tracking in the database this is probably cached in
-                # the session from the origianl query above)
-                job_entity = session.query( model.Job ).get( job.job_id )
-                # Check the job's dependencies, requeue if they're not done                    
-                job_state = self.__check_if_ready_to_run( job, job_entity )
-                if job_state == JOB_WAIT: 
-                    if not self.track_jobs_in_database:
-                        new_waiting.append( job )
-                elif job_state == JOB_ERROR:
-                    log.info( "job %d ended with an error" % job.job_id )
-                elif job_state == JOB_INPUT_ERROR:
-                    log.info( "job %d unable to run: one or more inputs in error state" % job.job_id )
-                elif job_state == JOB_INPUT_DELETED:
-                    log.info( "job %d unable to run: one or more inputs deleted" % job.job_id )
-                elif job_state == JOB_READY:
-                    # If special queuing is enabled, put the ready jobs in the special queue
-                    if self.use_policy :
-                        self.squeue.put( job ) 
-                        log.debug( "job %d put in policy queue" % job.job_id )
-                    else: # or dispatch the job directly
-                        self.dispatcher.put( job )
-                        log.debug( "job %d dispatched" % job.job_id)
-                elif job_state == JOB_DELETED:
-                    msg = "job %d deleted by user while still queued" % job.job_id
-                    job.info = msg
-                    log.debug( msg )
-                elif job_state == JOB_ADMIN_DELETED:
-                    job.fail( job_entity.info )
-                    log.info( "job %d deleted by admin while still queued" % job.job_id )
-                else:
-                    msg = "unknown job state '%s' for job %d" % ( job_state, job.job_id )
-                    job.info = msg
-                    log.error( msg )
-            except Exception, e:
-                job.info = "failure running job %d: %s" % ( job.job_id, str( e ) )
-                log.exception( "failure running job %d" % job.job_id )
-        # Update the waiting list
-        self.waiting = new_waiting
-        # If special (e.g. fair) scheduling is enabled, dispatch all jobs
-        # currently in the special queue    
-        if self.use_policy :
-            while 1:
-                try:
-                    sjob = self.squeue.get()
-                    self.dispatcher.put( sjob )
-                    log.debug( "job %d dispatched" % sjob.job_id )
-                except Empty: 
-                    # squeue is empty, so stop dispatching
-                    break
-                except Exception, e: # if something else breaks while dispatching
-                    job.fail( "failure running job %d: %s" % ( sjob.job_id, str( e ) ) )
-                    log.exception( "failure running job %d" % sjob.job_id )
-        # Done with the session
-        mapping.Session.remove()
+        new_instances = []
+        new_UCIs = []
+        stop_UCIs = []
+        
+#        for r in session.query( model.cloud_instance ).filter( model.cloud_instance.s.state == model.cloud_instance.states.NEW ).all():
+#            new_instances
+            
+        for r in session.query( model.UCI ).filter( model.UCI.c.state == "new" ).all():
+            new_UCIs.append( r )                
+        for r in new_UCIs:
+            self.provider.createUCI( r )
+        
+        for r in session.query( model.UCI ).filter( model.UCI.c.state == "submitted" ).all():
+            new_instances.append( r )                
+        for r in new_instances:
+            self.provider.startUCI( r )
+        
+        for r in session.query( model.UCI ).filter( model.UCI.c.state == "terminating" ).all():
+            stop_UCIs.append( r )                
+        for r in stop_UCIs:
+            self.provider.stopUCI( r )
+        
+#        if self.track_jobs_in_database:
+#            for j in session.query( model.Job ).options( lazyload( "external_output_metadata" ), lazyload( "parameters" ) ).filter( model.Job.c.state == model.Job.states.NEW ).all():
+#                job = JobWrapper( j, self.app.toolbox.tools_by_id[ j.tool_id ], self )
+#                new_jobs.append( job )
+#        else:
+#            try:
+#                while 1:
+#                    message = self.queue.get_nowait()
+#                    if message is self.STOP_SIGNAL:
+#                        return
+#                    # Unpack the message
+#                    job_id, tool_id = message
+#                    # Create a job wrapper from it
+#                    job_entity = session.query( model.Job ).get( job_id )
+#                    job = JobWrapper( job_entity, self.app.toolbox.tools_by_id[ tool_id ], self )
+#                    # Append to watch queue
+#                    new_jobs.append( job )
+#            except Empty:
+#                pass
+#        # Iterate over new and waiting jobs and look for any that are 
+#        # ready to run
+#        new_waiting = []
+#        for job in ( new_jobs + self.waiting ):
+#            try:
+#                # Clear the session for each job so we get fresh states for
+#                # job and all datasets
+#                session.clear()
+#                # Get the real job entity corresponding to the wrapper (if we
+#                # are tracking in the database this is probably cached in
+#                # the session from the origianl query above)
+#                job_entity = session.query( model.Job ).get( job.job_id )
+#                # Check the job's dependencies, requeue if they're not done                    
+#                job_state = self.__check_if_ready_to_run( job, job_entity )
+#                if job_state == JOB_WAIT: 
+#                    if not self.track_jobs_in_database:
+#                        new_waiting.append( job )
+#                elif job_state == JOB_ERROR:
+#                    log.info( "job %d ended with an error" % job.job_id )
+#                elif job_state == JOB_INPUT_ERROR:
+#                    log.info( "job %d unable to run: one or more inputs in error state" % job.job_id )
+#                elif job_state == JOB_INPUT_DELETED:
+#                    log.info( "job %d unable to run: one or more inputs deleted" % job.job_id )
+#                elif job_state == JOB_READY:
+#                    # If special queuing is enabled, put the ready jobs in the special queue
+#                    if self.use_policy :
+#                        self.squeue.put( job ) 
+#                        log.debug( "job %d put in policy queue" % job.job_id )
+#                    else: # or dispatch the job directly
+#                        self.dispatcher.put( job )
+#                        log.debug( "job %d dispatched" % job.job_id)
+#                elif job_state == JOB_DELETED:
+#                    msg = "job %d deleted by user while still queued" % job.job_id
+#                    job.info = msg
+#                    log.debug( msg )
+#                elif job_state == JOB_ADMIN_DELETED:
+#                    job.fail( job_entity.info )
+#                    log.info( "job %d deleted by admin while still queued" % job.job_id )
+#                else:
+#                    msg = "unknown job state '%s' for job %d" % ( job_state, job.job_id )
+#                    job.info = msg
+#                    log.error( msg )
+#            except Exception, e:
+#                job.info = "failure running job %d: %s" % ( job.job_id, str( e ) )
+#                log.exception( "failure running job %d" % job.job_id )
+#        # Update the waiting list
+#        self.waiting = new_waiting
+#        # If special (e.g. fair) scheduling is enabled, dispatch all jobs
+#        # currently in the special queue    
+#        if self.use_policy :
+#            while 1:
+#                try:
+#                    sjob = self.squeue.get()
+#                    self.dispatcher.put( sjob )
+#                    log.debug( "job %d dispatched" % sjob.job_id )
+#                except Empty: 
+#                    # squeue is empty, so stop dispatching
+#                    break
+#                except Exception, e: # if something else breaks while dispatching
+#                    job.fail( "failure running job %d: %s" % ( sjob.job_id, str( e ) ) )
+#                    log.exception( "failure running job %d" % sjob.job_id )
+#        # Done with the session
+#        mapping.Session.remove()
         
     def __check_if_ready_to_run( self, job_wrapper, job ):
         """
@@ -653,12 +675,12 @@ class DefaultCloudProvider( object ):
         else:
             log.error( "Unable to start unknown cloud provider: %s" %self.provider_name )
     
-    def createUCI( self, user, uciName, storage_size, zone=None):
+    def createUCI( self, uci ):
         """ 
         Createse User Configured Instance (UCI). Essentially, creates storage volume.
         """
-        log.debug( "Creating UCI %s" % uciName )
-        self.cloud_provider[self.provider_name].createUCI( user, uciName, storage_size, zone )
+        log.debug( "Creating UCI '%s'" % uci.name )
+        self.cloud_provider[self.provider_name].createUCI( uci )
         
     def deleteUCI( self, uciName ):
         """ 
@@ -669,18 +691,22 @@ class DefaultCloudProvider( object ):
     def addStorageToUCI( self, uciName ):
         """ Adds more storage to specified UCI """
         
-    def startUCI( self, uciName, type ):
+    def startUCI( self, uci ):
         """
         Starts an instance of named UCI on the cloud. This implies, mounting of
         storage and starting Galaxy instance. 
         """ 
+        log.debug( "Starting UCI '%s'" % uci.name )
+        self.cloud_provider[self.provider_name].startUCI( uci )
         
-    def stopUCI( self, uciName ):
+    def stopUCI( self, uci ):
         """ 
         Stops cloud instance associated with named UCI. This also implies 
         stopping of Galaxy and unmounting of the file system.
         """
-            
+        log.debug( "Stopping UCI '%s'" % uci.name )
+        self.cloud_provider[self.provider_name].stopUCI( uci )
+        
     def put( self, job_wrapper ):
         runner_name = ( job_wrapper.tool.job_runner.split(":", 1) )[0]
         log.debug( "dispatching job %d to %s runner" %( job_wrapper.job_id, runner_name ) )
