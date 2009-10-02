@@ -668,7 +668,6 @@ class Tool:
         # form when it changes
         for name in param.get_dependencies():
             context[ name ].refresh_on_change = True
-            context[ name ].dependent_params.append( param.name )
         return param
     
     def check_workflow_compatible( self ):
@@ -804,7 +803,7 @@ class Tool:
         else:
             # Update state for all inputs on the current page taking new
             # values from `incoming`.
-            errors = self.update_state( trans, self.inputs_by_page[state.page], state.inputs, incoming, changed_dependencies={} )
+            errors = self.update_state( trans, self.inputs_by_page[state.page], state.inputs, incoming )
             # If the tool provides a `validate_input` hook, call it. 
             validate_input = self.get_hook( 'validate_input' )
             if validate_input:
@@ -880,8 +879,7 @@ class Tool:
         return 'message.mako', dict( message_type='error', message='Your upload was interrupted.  If this was uninentional, please retry it.', refresh_frames=[], cont=None )
 
     def update_state( self, trans, inputs, state, incoming, prefix="", context=None,
-                      update_only=False, old_errors={}, changed_dependencies=None,
-                      item_callback=None ):
+                      update_only=False, old_errors={}, item_callback=None ):
         """
         Update the tool state in `state` using the user input in `incoming`. 
         This is designed to be called recursively: `inputs` contains the
@@ -891,18 +889,10 @@ class Tool:
         If `update_only` is True, values that are not in `incoming` will
         not be modified. In this case `old_errors` can be provided, and any
         errors for parameters which were *not* updated will be preserved.
-        
-        Parameters in incoming that are 'dependency parameters' are those
-        whose value is used by a dependent parameter to dynamically generate
-        it's options list.  When the value of these dependency parameters changes,
-        the new value is stored in changed_dependencies.
         """
         errors = dict()     
         # Push this level onto the context stack
         context = ExpressionContext( state, context )
-        # Initialize dict for changed dependencies (since we write to it)
-        if changed_dependencies is None:
-            changed_dependencies = {}
         # Iterate inputs and update (recursively)
         for input in inputs.itervalues():
             key = prefix + input.name
@@ -938,7 +928,6 @@ class Tool:
                                                     context=context,
                                                     update_only=update_only,
                                                     old_errors=rep_old_errors,
-                                                    changed_dependencies=changed_dependencies,
                                                     item_callback=item_callback )
                     if rep_errors:
                         any_group_errors = True
@@ -999,7 +988,6 @@ class Tool:
                                                       context=context,
                                                       update_only=update_only,
                                                       old_errors=group_old_errors,
-                                                      changed_dependencies=changed_dependencies,
                                                       item_callback=item_callback )
                 if test_param_error:
                     group_errors[ input.test_param.name ] = test_param_error
@@ -1039,7 +1027,6 @@ class Tool:
                                                     context=context,
                                                     update_only=update_only,
                                                     old_errors=rep_old_errors,
-                                                    changed_dependencies=changed_dependencies,
                                                     item_callback=item_callback )
                     if rep_errors:
                         any_group_errors = True
@@ -1069,45 +1056,8 @@ class Tool:
                     if input.name in old_errors:
                         errors[ input.name ] = old_errors[ input.name ]
                 else:
-                    # FIXME: This is complicated and buggy.
-                    # SelectToolParameters and DataToolParameters whose options are dynamically
-                    # generated based on the current value of a dependency parameter require special
-                    # handling.  When the dependency parameter's value is changed, the form is
-                    # submitted ( due to the refresh_on_change behavior ).  When this occurs, the 
-                    # "dependent" parameter's value has not been reset ( dynamically generated based 
-                    # on the new value of its dependency ) prior to reaching this point, so we need 
-                    # to regenerate it before it is validated in check_param().
-                    value_generated = False
-                    value = None
-                    if not( 'runtool_btn' in incoming or 'URL' in incoming ):
-                        # Form must have been refreshed, probably due to a refresh_on_change
-                        try:
-                            if input.is_dynamic:
-                                dependencies = input.get_dependencies()
-                                for dependency_name in dependencies:
-                                    dependency_value = changed_dependencies.get( dependency_name, None )
-                                    if dependency_value:
-                                        # We need to dynamically generate the current input based on 
-                                        # the changed dependency parameter
-                                        changed_params = {}
-                                        changed_params[dependency_name] = dependency_value
-                                        changed_params[input.name] = input
-                                        value = input.get_initial_value( trans, changed_params )
-                                        error = None
-                                        value_generated = True
-                                        # Delete the dependency_param from chagned_dependencies since its
-                                        # dependent param has been generated based its new value.
-                                        ## Actually, don't do this. What if there is more than one dependent?
-                                        ## del changed_dependencies[dependency_name]
-                                        break
-                        except:
-                            pass
-                    if not value_generated:
-                        incoming_value = get_incoming_value( incoming, key, None )
-                        value, error = check_param( trans, input, incoming_value, context )
-                    # Should we note a changed dependency?
-                    if input.dependent_params and state[ input.name ] != value:
-                        changed_dependencies[ input.name ] = value  
+                    incoming_value = get_incoming_value( incoming, key, None )
+                    value, error = check_param( trans, input, incoming_value, context )
                     # If a callback was provided, allow it to process the value
                     if item_callback:
                         old_value = state.get( input.name, None )

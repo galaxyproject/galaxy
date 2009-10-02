@@ -39,7 +39,7 @@ class LibraryCommon( BaseController ):
         tool_id = 'upload1'
         tool = trans.app.toolbox.tools_by_id[ tool_id ]
         state = tool.new_state( trans )
-        errors = tool.update_state( trans, tool.inputs_by_page[0], state.inputs, kwd, changed_dependencies={} )
+        errors = tool.update_state( trans, tool.inputs_by_page[0], state.inputs, kwd )
         tool_params = state.inputs
         dataset_upload_inputs = []
         for input_name, input in tool.inputs.iteritems():
