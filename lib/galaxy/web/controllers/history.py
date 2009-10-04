@@ -322,7 +322,7 @@ class HistoryController( BaseController ):
                     return self.shared_list_grid( trans, status='error', message=message, **kwargs )
                 # When cloning shared histories, only copy active datasets
                 new_kwargs = { 'clone_choice' : 'active' }
-                return self.clone( trans, id, **new_kwargs )
+                return self.clone( trans, ids, **new_kwargs )
             elif operation == 'unshare':
                 if not ids:
                     message = "Select a history to unshare"
