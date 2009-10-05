@@ -25,7 +25,7 @@ class Grid( object ):
     preserve_state = False
     
     use_paging = False
-    num_rows_per_page = 10
+    num_rows_per_page = 25
     
     # Set preference names.
     cur_filter_pref_name = ".filter"
@@ -123,15 +123,23 @@ class Grid( object ):
         # Process page number.
         if self.use_paging:
             if 'page' in kwargs:
-                page_num = int( kwargs['page'] )
+                if kwargs['page'] == 'all':
+                    page_num = 0 
+                else:
+                    page_num = int( kwargs['page'] )
             else:
                 page_num = 1
                 
-            # Before modifying query, get the total number of rows that query returns so that the total number of pages can
-            # be computed.
-            total_num_rows = query.count()
-            query = query.limit( self.num_rows_per_page ).offset( ( page_num-1 ) * self.num_rows_per_page )
-            num_pages = int ( math.ceil( float( total_num_rows ) / self.num_rows_per_page ) )
+            if page_num == 0:
+                # Show all rows in page.
+                total_num_rows = query.count()
+                num_pages = 1
+            else:
+                # Show a limited number of rows. Before modifying query, get the total number of rows that query 
+                # returns so that the total number of pages can be computed.
+                total_num_rows = query.count()
+                query = query.limit( self.num_rows_per_page ).offset( ( page_num-1 ) * self.num_rows_per_page )
+                num_pages = int ( math.ceil( float( total_num_rows ) / self.num_rows_per_page ) )
         else:
             # Defaults.
             page_num = 1

@@ -125,6 +125,7 @@ class HistoryListGrid( grids.Grid ):
         grids.GridColumnFilter( "All", args=dict( deleted='All' ) ),
     ]
     default_filter = dict( deleted="False", tags="All" )
+    num_rows_per_page = 50
     preserve_state = False
     use_paging = True
     def get_current_item( self, trans ):

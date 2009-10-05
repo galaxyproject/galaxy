@@ -92,9 +92,8 @@
 
             t.autocomplete("${h.url_for( controller='tag', action='tag_autocomplete_data', item_class='History' )}", autocomplete_options);
 
-            //t.addClass("tag-input");
-
-            return t;
+            
+            $("#page-select").change(navigate_to_page);
         });
         ## Can this be moved into base.mako?
         %if refresh_frames:
@@ -141,6 +140,18 @@
             %>
             var url_base = "${url( url_args )}";
             var url = url_base.replace("TAGNAME", tag_name);
+            self.location = url;
+        }
+        
+        //
+        // Initiate navigation when user selects a page to view.
+        //
+        function navigate_to_page()
+        {
+            page_num = $(this).val();
+            <% url_args = {"page" : "PAGE"} %>
+            var url_base = "${url( url_args )}";
+            var url = url_base.replace("PAGE", page_num);
             self.location = url;
         }
         
@@ -207,6 +218,7 @@
     </form>
 </div>
 <form name="history_actions" action="${url()}" method="post" >
+    <input type="hidden" name="page" value="${cur_page_num}">
     <table class="grid">
         <thead>
             <tr>
@@ -300,19 +312,42 @@
             %endfor
         </tbody>
         <tfoot>
+            ## Row for navigating among pages.
             %if num_pages > 1:
                 <tr>
                     <td></td>
-                    <td colspan="100" style="text-align: right">
-                        Page: 
-                        %for page_index in range(1, num_pages + 1):
-                            %if page_index == cur_page_num:
-                                <span style="font-style: italic">${page_index}</span>
-                            %else:
-                                <% args = { "page" : page_index } %>
-                                <span><a href="${url( args )}">${page_index}</a></span>
-                            %endif
-                        %endfor
+                    <td colspan="100">
+                        Page ${cur_page_num} of ${num_pages} 
+                        &nbsp;&nbsp;&nbsp;&nbsp;Go to: 
+                        ## Next page link.
+                        %if cur_page_num != num_pages:
+                            <% args = { "page" : cur_page_num+1 } %>
+                            <span><a href="${url( args )}">Next</a></span>
+                        %endif
+                        ## Previous page link.
+                        %if cur_page_num != 1:
+                            <span>|</span>
+                            <% args = { "page" : cur_page_num-1 } %>
+                            <span><a href="${url( args )}">Previous</a></span>
+                        %endif
+                        ## Go to page select box.
+                        <span>| Select:</span>
+                        <select id="page-select" onchange="navigate_to_page()">
+                            <option value=""></option>
+                            %for page_index in range(1, num_pages + 1):
+                                %if page_index == cur_page_num:
+                                    continue
+                                %else:
+                                    <% args = { "page" : page_index } %>
+                                    <option value='${page_index}'>Page ${page_index}</option>
+                                %endif
+                            %endfor
+                        </select>
+                        ## Show all link.
+                        <% args = { "page" : "all" } %>
+                        <span>| <a href="${url( args )}">Show all histories on one page</a></span>
+                        
+                            
                     </td>
                 </tr>    
             %endif
