@@ -68,14 +68,16 @@ def __main__():
             stop_err( "No sequences are available for '%s', request them by reporting this error." % options.dbkey )
         cmd3 = cmd3 % (opts, seq_path, tmpf0bam, options.output1)
     elif options.ref == 'history':
-        cmd1 = 'cp %s %s; cp %s.fai %s' % (options.ownFile, tmpf1.name, options.ownFile, tmpf1fai)
+        cmd1 = 'cp %s %s; samtools faidx %s' % (options.ownFile, tmpf1.name, tmpf1.name)
         cmd3 = cmd3 % (opts, tmpf1.name, tmpf0bam, options.output1)
     # index reference if necessary
     if cmd1:
         try:
             os.system(cmd1)
+            if options.ref == 'history' and not os.path.exists( tmpf1fai ):
+                stop_err( "Problem creating index file from history item." )
         except Exception, eq:
-            stop_err('Error moving reference sequence\n' + str(eq))
+            stop_err('Error handling reference sequence\n' + str(eq))
     # copy bam index to working directory
     try:
         os.system(cmd2)
@@ -85,7 +87,7 @@ def __main__():
     try:
         os.system(cmd3)
     except Exception, eq:
-        stop_err('Error running SAMtools merge tool\n' + str(eq))
+        stop_err('Error running SAMtools pileup tool\n' + str(eq))
     # clean up temp files
     tmpf1.close()
     tmpf0.close()
@@ -94,6 +96,6 @@ def __main__():
     if os.path.exists(tmpf0bambai):
         os.remove(tmpf0bambai)
     if os.path.exists(tmpf1fai):
-        os.remove(tmpf0bambai)
+        os.remove(tmpf1fai)
             
 if __name__ == "__main__" : __main__()
