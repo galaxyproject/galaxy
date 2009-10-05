@@ -18,6 +18,13 @@ SUCCESS, INFO, WARNING, ERROR = "done", "info", "warning", "error"
 
 class HistoryListGrid( grids.Grid ):
     # Custom column types
+    class NameColumn( grids.GridColumn ):
+        def __init( self, key, link, attach_popup ):
+            grids.GridColumn.__init__(self, key, link, attach_popup)
+        
+        def get_value( self, trans, grid, history ):
+            return history.get_display_name()
+            
     class DatasetsByStateColumn( grids.GridColumn ):
         def get_value( self, trans, grid, history ):
             rval = []
@@ -42,7 +49,7 @@ class HistoryListGrid( grids.Grid ):
                 return dict( operation="sharing" )
             return None
     class TagsColumn( grids.GridColumn ):
-        def __init__(self, col_name, key, filterable):
+        def __init__( self, col_name, key, filterable ):
             grids.GridColumn.__init__(self, col_name, key=key, filterable=filterable)
             # Tags cannot be sorted.
             self.sortable = False
@@ -98,8 +105,8 @@ class HistoryListGrid( grids.Grid ):
     template='/history/grid.mako'
     default_sort_key = "-create_time"
     columns = [
-        grids.GridColumn( "Name", key="name",
-                          link=( lambda item: iff( item.deleted, None, dict( operation="switch", id=item.id ) ) ),
+        NameColumn( "Name", key="name",
+                          link=( lambda history: iff( history.deleted, None, dict( operation="switch", id=history.id ) ) ),
                           attach_popup=True ),
         DatasetsByStateColumn( "Datasets (by state)", ncells=4 ),
         TagsColumn( "Tags", key="tags", filterable=True),

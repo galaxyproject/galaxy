@@ -245,6 +245,12 @@ class History( object ):
     def activatable_datasets( self ):
         # This needs to be a list
         return [ hda for hda in self.datasets if not hda.dataset.deleted ]
+    def get_display_name( self ):
+        ## History name can be either a string or a unicode object. If string, convert to unicode object assuming 'utf-8' format.
+        history_name = self.name
+        if isinstance(history_name, str):
+            history_name = unicode(history_name, 'utf-8')
+        return history_name
 
 class HistoryUserShareAssociation( object ):
     def __init__( self ):
@@ -682,6 +688,13 @@ class HistoryDatasetAssociation( DatasetInstance ):
         for assoc in self.implicitly_converted_datasets:
             if not metadata_safe or not assoc.metadata_safe:
                 assoc.clear( purge = purge )
+    def get_display_name( self ):
+        ## Name can be either a string or a unicode object. If string, convert to unicode object assuming 'utf-8' format.
+        hda_name = self.name
+        if isinstance(hda_name, str):
+            hda_name = unicode(hda_name, 'utf-8')
+        return hda_name
+        
 
 class HistoryDatasetAssociationDisplayAtAuthorization( object ):
     def __init__( self, hda=None, user=None, site=None ):

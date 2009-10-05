@@ -290,7 +290,7 @@ var updater_callback = function ( tracked_datasets ) {
     
 <div id="history-name-area" class="historyLinks" style="color: gray; font-weight: bold;">
     <div style="float: right"><a id="history-rename" title="Rename" class="icon-button edit" target="galaxy_main" href="${h.url_for( controller='history', action='rename' )}"></a></div>
-    <div id="history-name">${history.name}</div>
+    <div id="history-name">${history.get_display_name()}</div>
 </div>
 
 %if history.deleted:
