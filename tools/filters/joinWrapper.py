@@ -22,8 +22,8 @@ def main():
     
     try:
         #Sort the two files based on specified fields
-        os.system("sort -k %d -o %s %s" %(field1, tmpfile1.name, infile1))
-        os.system("sort -k %d -o %s %s" %(field2, tmpfile2.name, infile2))
+        os.system("sort -t $'\t' -k %d -o %s %s" %(field1, tmpfile1.name, infile1))
+        os.system("sort -t $'\t' -k %d -o %s %s" %(field2, tmpfile2.name, infile2))
     except Exception, exc:
         stop_err( 'Initialization error -> %s' %str(exc) )
         
@@ -40,9 +40,9 @@ def main():
             break
     
     if mode == "V":
-        cmdline = 'join -v 1 -o %s -1 %d -2 %d %s %s | tr " " "\t" > %s' %(option, field1, field2, tmpfile1.name, tmpfile2.name, outfile)
+        cmdline = "join -t $'\t' -v 1 -o %s -1 %d -2 %d %s %s > %s" %(option, field1, field2, tmpfile1.name, tmpfile2.name, outfile)
     else:
-        cmdline = 'join -o %s -1 %d -2 %d %s %s | tr " " "\t" > %s' %(option, field1, field2, tmpfile1.name, tmpfile2.name, outfile)
+        cmdline = "join -t $'\t' -o %s -1 %d -2 %d %s %s > %s" %(option, field1, field2, tmpfile1.name, tmpfile2.name, outfile)
     
     try:
         os.system(cmdline) 

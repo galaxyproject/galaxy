@@ -1,4 +1,4 @@
-<tool id="comp1" name="Compare two Queries">
+<tool id="comp1" name="Compare two Queries" version="1.0.1">
   <description>to find common or distinct rows</description>
   <command interpreter="python">joinWrapper.py $input1 $input2 $field1 $field2 $mode $out_file1</command>
   <inputs>
