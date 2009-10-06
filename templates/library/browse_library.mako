@@ -215,6 +215,8 @@ class RowCounter( object ):
         if created_ldda_ids:
             created_ldda_ids = [ int( ldda_id ) for ldda_id in util.listify( created_ldda_ids ) ]
         can_add = trans.app.security_agent.can_add_library_item( user, roles, folder )
+        if can_add:
+            info_association, inherited = folder.get_info_association( restrict=True )
         can_modify = trans.app.security_agent.can_modify_library_item( user, roles, folder )
         can_manage = trans.app.security_agent.can_manage_library_item( user, roles, folder )
         my_row = None
@@ -245,7 +247,7 @@ class RowCounter( object ):
                     %else:
                         <a class="action-button" href="${h.url_for( controller='library', action='folder', information=True, obj_id=folder.id, library_id=library_id )}">View this folder's information</a>
                     %endif
-                    %if can_add and forms and not folder.info_association:
+                    %if can_add and not info_association:
                         <a class="action-button" href="${h.url_for( controller='library_common', action='info_template', cntrller='library', library_id=library.id, response_action='folder', folder_id=folder.id )}">Add an information template to this folder</a>
                     %endif
                     %if can_manage:
@@ -280,6 +282,8 @@ class RowCounter( object ):
 
 <%
     can_add = trans.app.security_agent.can_add_library_item( user, roles, library )
+    if can_add:
+        info_association, inherited = library.get_info_association()
     can_modify = trans.app.security_agent.can_modify_library_item( user, roles, library )
     can_manage = trans.app.security_agent.can_manage_library_item( user, roles, library )
 %>
@@ -287,22 +291,22 @@ class RowCounter( object ):
 <ul class="manage-table-actions">
     %if can_add:
         <li>
-            <a class="action-button" href="${h.url_for( controller='library', action='upload_library_dataset', library_id=library.id, folder_id=library.root_folder.id )}"><span>Add datasets to this data library</span></a>
+            <a class="action-button" href="${h.url_for( controller='library', action='upload_library_dataset', library_id=library.id, folder_id=library.root_folder.id )}"><span>Add datasets</span></a>
         </li>
         <li>
-            <a class="action-button" href="${h.url_for( controller='library', action='folder', new=True, obj_id=library.root_folder.id, library_id=library.id )}">Add a folder to this data library</a>
+            <a class="action-button" href="${h.url_for( controller='library', action='folder', new=True, obj_id=library.root_folder.id, library_id=library.id )}">Add folder</a>
         </li>
     %endif
     %if can_modify:
-        <li><a class="action-button" href="${h.url_for( controller='library', action='library', information=True, obj_id=library.id )}">Edit this data library's information</a></li>
+        <li><a class="action-button" href="${h.url_for( controller='library', action='library', information=True, obj_id=library.id )}">Edit information</a></li>
     %else:
-        <li><a class="action-button" href="${h.url_for( controller='library', action='library', information=True, obj_id=library.id )}">View this data library's information</a></li>
+        <li><a class="action-button" href="${h.url_for( controller='library', action='library', information=True, obj_id=library.id )}">View information</a></li>
     %endif
-    %if can_add and forms and not library.info_association:
-        <a class="action-button" href="${h.url_for( controller='library_common', action='info_template', cntrller='library', library_id=library.id, response_action='browse_library' )}">Add an information template to this data library</a>
+    %if can_add and not info_association:
+        <a class="action-button" href="${h.url_for( controller='library_common', action='info_template', cntrller='library', library_id=library.id, response_action='browse_library' )}">Add template</a>
     %endif
     %if can_manage:
-        <li><a class="action-button" href="${h.url_for( controller='library', action='library', permissions=True, obj_id=library.id )}">Edit this data library's permissions</a></li>
+        <li><a class="action-button" href="${h.url_for( controller='library', action='library', permissions=True, obj_id=library.id )}">Edit permissions</a></li>
     %endif 
 </ul>
 

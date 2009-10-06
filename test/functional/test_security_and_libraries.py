@@ -497,7 +497,6 @@ class TestSecurityAndLibraries( TwillTestCase ):
         template_name = 'Library Template 1'
         self.add_library_info_template( 'library_admin',
                                         str( library_one.id ),
-                                        library_one.name,
                                         str( form_one.id ),
                                         form_one.name )
         # Make sure the template fields are displayed on the library information page
@@ -1622,6 +1621,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.visit_page( 'library_admin/browse_libraries' )
         self.check_page_for_string( name )
         self.check_page_for_string( description )
+        global library_three
         library_three = galaxy.model.Library.filter( and_( galaxy.model.Library.table.c.name==name,
                                                            galaxy.model.Library.table.c.description==description,
                                                            galaxy.model.Library.table.c.deleted==False ) ).first()
@@ -1658,20 +1658,41 @@ class TestSecurityAndLibraries( TwillTestCase ):
         description = "This is the root folder's Folder X"
         self.add_folder( 'library',
                          str( library_three.id ),
-                         str( library_three.root_folder.id ),
+                         str( library_three.root_folder.id ), 
                          name=name,
                          description=description )
+        global folder_x
         folder_x = galaxy.model.LibraryFolder.filter( and_( galaxy.model.LibraryFolder.table.c.parent_id==library_three.root_folder.id,
                                                             galaxy.model.LibraryFolder.table.c.name==name,
                                                             galaxy.model.LibraryFolder.table.c.description==description ) ).first()
+        # Add an information template to the folder
+        template_name = 'Folder Template 1'
+        self.add_folder_info_template( 'library',
+                                        str( library_one.id ),
+                                        str( folder_x.id ),
+                                        str( form_one.id ),
+                                        form_one.name )
         # Modify the folder's information
+        contents = '%s folder contents' % form_one_field_label
         new_name = "Root Folder's Folder Y"
         new_description = "This is the root folder's Folder Y"
-        self.edit_folder_info( 'library', str( folder_x.id ), str( library_three.id ), name, new_name, new_description )
+        self.edit_folder_info( 'library',
+                               str( folder_x.id ),
+                               str( library_three.id ),
+                               name,
+                               new_name,
+                               new_description,
+                               contents=contents,
+                               field_name=form_one_field_name )
+        # Twill barfs when self.check_page_for_string() is called after dealing with an information template,
+        # the exception is: TypeError: 'str' object is not callable
+        # the work-around it to end this method so any calls are in the next method.
+    def test_265_template_features_and_permissions( self ):
+        """Test library template and more permissions behavior from the Data Libraries view"""
+        # Logged in as regular_user2
         folder_x.refresh()
         # Add a dataset to the folder
-        name2 = "Folder Y subfolder"
-        description2 = "Folder Y subfolder description"
+        message = 'Testing adding 2.bed to Library Three root folder'
         self.add_library_dataset( 'library',
                                   '2.bed',
                                   str( library_three.id ),
@@ -1681,21 +1702,41 @@ class TestSecurityAndLibraries( TwillTestCase ):
                                   dbkey='hg18',
                                   message=message.replace( ' ', '+' ),
                                   root=False )
+        global ldda_x
         ldda_x = galaxy.model.LibraryDatasetDatasetAssociation.query() \
             .order_by( desc( galaxy.model.LibraryDatasetDatasetAssociation.table.c.create_time ) ).first()
         assert ldda_x is not None, 'Problem retrieving ldda_x from the database'
-        # Log in as regular_user1
+        # Add an information template to the library
+        template_name = 'Library Template 3'
+        self.add_library_info_template( 'library',
+                                        str( library_three.id ),
+                                        str( form_one.id ),
+                                        form_one.name )
+        # Add information to the library using the template
+        contents = '%s library contents' % form_one_field_label
+        self.visit_url( '%s/library/library?obj_id=%s&information=True' % ( self.url, str( library_three.id ) ) )
+        # There are 2 forms on this page and the template is the 2nd form
+        tc.fv( '2', form_one_field_name, contents )
+        tc.submit( 'edit_info_button' )
+        # For some reason, the following check:
+        # self.check_page_for_string ( 'The information has been updated.' )
+        # ...throws the following exception - I have not idea why!
+        # TypeError: 'str' object is not callable
+        # The work-around is to not make ANY self.check_page_for_string() calls until the next method
+    def test_270_permissions_as_different_regular_user( self ):
+        """Test library template and more permissions behavior from the Data Libraries view as a different user"""
+        # Log in as regular_user2
         self.logout()
         self.login( email=regular_user1.email )
         self.visit_url( '%s/library/browse_library?obj_id=%s' % ( self.url, str( library_three.id ) ) )
         self.check_page_for_string( ldda_x.name )
+    def test_275_reset_data_for_later_test_runs( self ):
+        """Reseting data to enable later test runs to pass"""
+        # Logged in as regular_user2
         self.logout()
         self.login( email=admin_user.email )
         self.delete_library_item( str( library_three.id ), str( library_three.id ), library_three.name, library_item_type='library' )
         self.purge_library( str( library_three.id ), library_three.name )
-    def test_265_reset_data_for_later_test_runs( self ):
-        """Reseting data to enable later test runs to pass"""
-        # Logged in as admin_user
         ##################
         # Eliminate all non-private roles
         ##################

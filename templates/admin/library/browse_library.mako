@@ -244,10 +244,10 @@
 <ul class="manage-table-actions">
     %if not deleted:
         <li>
-            <a class="action-button" href="${h.url_for( controller='library_admin', action='upload_library_dataset', library_id=library.id, folder_id=library.root_folder.id )}"><span>Add datasets to this data library</span></a>
+            <a class="action-button" href="${h.url_for( controller='library_admin', action='upload_library_dataset', library_id=library.id, folder_id=library.root_folder.id )}"><span>Add datasets</span></a>
         </li>
         <li>
-            <a class="action-button" href="${h.url_for( controller='library_admin', action='folder', new=True, obj_id=library.root_folder.id, library_id=library.id )}">Add a folder to this data library</a>
+            <a class="action-button" href="${h.url_for( controller='library_admin', action='folder', new=True, obj_id=library.root_folder.id, library_id=library.id )}">Add folder</a>
         </li>
     %endif
 </ul>

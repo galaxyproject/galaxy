@@ -211,7 +211,7 @@ class LibraryCommon( BaseController ):
                                                               messagetype='error' ) )
     @web.expose
     def info_template( self, trans, cntrller, library_id, response_action='library', obj_id=None, folder_id=None, ldda_id=None, **kwd ):
-        # Only adding a new templAte to a library or folder is currently allowed.  Editing an existing template is
+        # Only adding a new template to a library or folder is currently allowed.  Editing an existing template is
         # a future enhancement.  The response_action param is the name of the method to which this method will redirect
         # if a new template is being added to a library or folder.
         params = util.Params( kwd )
@@ -241,7 +241,6 @@ class LibraryCommon( BaseController ):
             msg += "try again to add the information template to the %s." % library_item_desc
             trans.response.send_redirect( web.url_for( controller='forms',
                                                        action='new',
-                                                       new=True,
                                                        msg=msg,
                                                        messagetype='done' ) )
         if params.get( 'add_info_template_button', False ):
@@ -260,19 +259,17 @@ class LibraryCommon( BaseController ):
             trans.response.send_redirect( web.url_for( controller=cntrller,
                                                        action=response_action,
                                                        obj_id=response_id,
+                                                       library_id=library_id,
                                                        msg=msg,
                                                        message_type='done' ) )
-        # TODO: handle this better
-        if cntrller == 'library_admin':
-            tmplt = '/admin/library/select_info_template.mako'
-        else:
-            tmplt = '/library/select_info_template.mako'
-        return trans.fill_template( tmplt,
+        return trans.fill_template( '/library/select_info_template.mako',
+                                    controller=cntrller,
                                     library_item_name=library_item.name,
                                     library_item_desc=library_item_desc,
                                     library_id=library_id,
                                     folder_id=folder_id,
                                     ldda_id=ldda_id,
+                                    obj_id=response_id,
                                     forms=forms,
                                     msg=msg,
                                     messagetype=messagetype )

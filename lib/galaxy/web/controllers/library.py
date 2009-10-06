@@ -70,7 +70,7 @@ class Library( BaseController ):
                             trans.app.security_agent.permitted_actions.LIBRARY_MANAGE ]
         # The authorized_libraries dictionary looks like: { library : '1,2' }, library : '3' }
         # Its keys are the libraries that should be displayed for the current user and whose values are a
-        # string of comma-separated folder ids, of the associated folders the should NOT be displayed.
+        # string of comma-separated folder ids of the associated folders that should NOT be displayed.
         # The folders that should not be displayed may not be a complete list, but it is ultimately passed
         # to the browse_library() method and the browse_library.mako template to keep from re-checking the
         # same folders when the library is rendered.
