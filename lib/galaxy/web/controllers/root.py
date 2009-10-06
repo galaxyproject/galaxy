@@ -48,7 +48,7 @@ class RootController( BaseController ):
     ## ---- Root history display ---------------------------------------------
     
     @web.expose
-    def my_data( self, trans ):
+    def my_data( self, trans, **kwd ):
         """
         Display user's data.
         """
