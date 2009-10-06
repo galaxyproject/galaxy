@@ -158,9 +158,9 @@
       <when value="history">
         <param name="ownFile" type="data" format="fasta" metadata_name="dbkey" label="Select a reference genome" />
         <conditional name="indexParams">
-          <param name="index_settings" type="select" label="Choose whether to use default options or to set your own">
-            <option value="index_pre_set">Commonly Used</option>
-            <option value="index_full">Full Parameter List</option>
+          <param name="index_settings" type="select" label="Choose whether to use default options for building indices or to set your own">
+            <option value="index_pre_set">Default</option>
+            <option value="index_full">Set your own</option>
           </param> 
           <when value="index_pre_set" />
           <when value="index_full">

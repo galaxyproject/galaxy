@@ -103,7 +103,7 @@
 	        </param>
 	      </when>
 	      <when value="history">
-	        <param name="ownFile" type="data" format="fasta" metadata_name="dbkey" label="Select a reference genome" />
+	        <param name="ownFile" type="data" format="fasta" metadata_name="dbkey" label="Select a reference from history" />
 	      </when>
 	    </conditional>
 	  </when>
