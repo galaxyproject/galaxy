@@ -37,17 +37,19 @@ while (<IN>) {
  	die "Coverage column" . ($cvrg_column+1) . " contains non-numeric values. Check your input parameters as well as format of input dataset." if ( not isdigit $fields[ $cvrg_column ] );
     next if $fields[ $cvrg_column ] < $cvrg_cutoff;
 	my $base_quality = $fields[ $base_quality_column ];
-	
 	if ($read_bases =~ m/[\$\^\+-]/) {
-		$read_bases =~ s/\$//g; #removing end of the read segment mark
 		$read_bases =~ s/\^.//g; #removing the start of the read segement mark
+		$read_bases =~ s/\$//g; #removing end of the read segment mark
 		while ($read_bases =~ m/[\+-]{1}(\d+)/g) {
 			my $indel_len = $1;
 			$read_bases =~ s/[\+-]{1}$indel_len.{$indel_len}//; # remove indel info from read base field
 		}
 	}
-	die "Error parsing read bases and qualities in line $.. Last processed line conatined these values: " . join("\t", @fields) . "\n" if ( length($read_bases) != length($base_quality) );
-
+	if ( length($read_bases) != length($base_quality) ) {
+        $first_skipped_line = $. if $first_skipped_line eq "";
+        ++$invalid_line_counter;
+        next;
+	}
 	# after removing read block and indel data the length of read_base 
 	# field should identical to the length of base_quality field
 	
@@ -94,6 +96,6 @@ while (<IN>) {
 
 }
 
-print STDERR "Could not parse $invalid_line_counter line(s) beginning with: $first_skipped_line\n" if $invalid_line_counter > 0;
+print "Skipped $invalid_line_counter invalid line(s) beginning with line $first_skipped_line\n" if $invalid_line_counter > 0;
 close IN;
 close OUT;
