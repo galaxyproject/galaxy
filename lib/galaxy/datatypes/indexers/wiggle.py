@@ -2,7 +2,7 @@
 
 """
 Read a chromosome of wiggle data, and write it as a npy array, as 
-well as averages over regions of progessively larger size in powers of 10
+well as averages over regions of progressively larger size in powers of 10
 """
 
 from __future__ import division

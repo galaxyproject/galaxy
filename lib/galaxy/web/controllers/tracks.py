@@ -49,7 +49,8 @@ dataset_type_to_data_provider = {
 
 # FIXME: hardcoding this for now, but it should be derived from the available
 #        converters
-browsable_types = set( ["wig", "bed" ] )
+browsable_types = ( "wig", "bed" )
+
 
 class TracksController( BaseController ):
     """
@@ -92,7 +93,7 @@ class TracksController( BaseController ):
                 if dataset.metadata.dbkey == dbkey and dataset.extension in browsable_types:
                     datasets[dataset.id] = (dataset.extension, dataset.name)
             # Render the template
-            return trans.fill_template( "tracks/new_browser.mako", dbkey=dbkey, dbkey_set=dbkey_set, datasets=datasets )
+            return trans.fill_template( "tracks/new_browser.mako", converters=browsable_types, dbkey=dbkey, dbkey_set=dbkey_set, datasets=datasets )
 
     @web.expose
     def browser(self, trans, dataset_ids, chrom=""):

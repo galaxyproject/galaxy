@@ -6,35 +6,6 @@ var DENSITY = 1000,
     DATA_ERROR = "There was an error in indexing this dataset.",
     DATA_NONE = "No data for this chrom/contig.";
 
-var DataCache = function( type, track ) {
-    this.type = type;
-    this.track = track;
-    this.cache = Object();
-};
-$.extend( DataCache.prototype, {
-    get: function( resolution, position ) {
-        var cache = this.cache;
-        if ( !( cache[resolution] && cache[resolution][position] ) ) {
-            if ( !cache[resolution] ) {
-                cache[resolution] = Object();
-            }
-            var low = position * DENSITY * resolution;
-            var high = ( position + 1 ) * DENSITY * resolution;
-            cache[resolution][position] = { state: "loading" };
-            
-            $.getJSON( data_url, { track_type: this.track.track_type, chrom: this.track.view.chrom, low: low, high: high, dataset_id: this.track.dataset_id }, function ( data ) {
-                if( data == "pending" ) {
-                    setTimeout( fetcher, 5000 );
-                } else {
-                    cache[resolution][position] = { state: "loaded", values: data };
-                }
-                $(document).trigger( "redraw" );
-            });
-        }
-        return cache[resolution][position];
-    }
-});
-
 var View = function( chrom, max_length ) {
     this.chrom = chrom;
     this.tracks = [];
@@ -234,7 +205,7 @@ var LineTrack = function ( name, dataset_id, height ) {
     this.container_div.addClass( "line-track" );
     this.content_div.css( "height", this.height_px + "px" );
     this.dataset_id = dataset_id;
-    this.cache = new DataCache( "", this );
+    this.cache = new Cache(50);
 };
 $.extend( LineTrack.prototype, TiledTrack.prototype, {
     init: function() {
@@ -254,6 +225,21 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
             }
         });
     },
+    get_data: function( resolution, position ) {
+        var key = resolution + '-' + position,
+            cache = this.cache;
+        
+        if ( !cache[key] ) {
+            var low = position * DENSITY * resolution,
+                high = ( position + 1 ) * DENSITY * resolution;
+                
+            $.getJSON( data_url, { track_type: this.track_type, chrom: this.view.chrom, low: low, high: high, dataset_id: this.dataset_id }, function ( data ) {
+                cache[key] = data;
+                $(document).trigger( "redraw" );
+            });
+        }
+        return cache[key];
+    },
     draw_tile: function( resolution, tile_index, parent_element, w_scale, h_scale ) {
         if (!this.vertical_range) // We don't have the necessary information yet
             return;
@@ -261,13 +247,13 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
         var tile_low = tile_index * DENSITY * resolution,
             tile_high = ( tile_index + 1 ) * DENSITY * resolution,
             tile_length = DENSITY * resolution;
-        var chunk = this.cache.get( resolution, tile_index );
-        var element;
-        if ( chunk.state == "loading" ) {
-            element = $("<div class='loading tile'></div>");
-        } else {
-            element = $("<canvas class='tile'></canvas>");
+        var data = this.get_data( resolution, tile_index );
+        if ( !data ) {
+            in_path = false;
+            return null;
         }
+        var element = $("<canvas class='tile'></canvas>");
+
         element.css( {
             position: "absolute",
             top: 0,
@@ -275,18 +261,13 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
         });
         parent_element.append( element );
         // Chunk is still loading, do nothing
-        if ( chunk.state == "loading" ) {
-            in_path = false;
-            return null;
-        }
+
         var canvas = element;
         canvas.get(0).width = Math.ceil( tile_length * w_scale );
         canvas.get(0).height = this.height_px;
         var ctx = canvas.get(0).getContext("2d");
         var in_path = false;
         ctx.beginPath();
-        var data = chunk.values;
-        if (!data) return;
         for ( var i = 0; i < data.length - 1; i++ ) {
             var x = data[i][0] - tile_low;
             var y = data[i][1];
