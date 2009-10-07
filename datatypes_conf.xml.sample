@@ -22,11 +22,8 @@
     <datatype extension="fasta" type="galaxy.datatypes.sequence:Fasta" display_in_upload="true">
       <converter file="fasta_to_tabular_converter.xml" target_datatype="tabular"/>
     </datatype>
+    <datatype extension="fastq" type="galaxy.datatypes.sequence:Fastq" display_in_upload="true"/>
     <datatype extension="fastqsanger" type="galaxy.datatypes.sequence:FastqSanger" display_in_upload="true"/>
-    <datatype extension="fastqsolexa" type="galaxy.datatypes.sequence:FastqSolexa" display_in_upload="true">
-      <converter file="fastqsolexa_to_fasta_converter.xml" target_datatype="fasta"/>
-      <converter file="fastqsolexa_to_qual_converter.xml" target_datatype="qualsolexa"/>
-    </datatype>
     <datatype extension="genetrack" type="galaxy.datatypes.tracks:GeneTrack"/>
     <datatype extension="gff" type="galaxy.datatypes.interval:Gff" display_in_upload="true">
       <converter file="gff_to_bed_converter.xml" target_datatype="bed"/>
@@ -200,8 +197,8 @@
     <sniffer type="galaxy.datatypes.qualityscore:QualityScoreSOLiD"/>
     <sniffer type="galaxy.datatypes.qualityscore:QualityScore454"/>
     <sniffer type="galaxy.datatypes.sequence:Fasta"/>
-    <sniffer type="galaxy.datatypes.sequence:FastqSolexa"/>
     <sniffer type="galaxy.datatypes.sequence:FastqSanger"/>
+    <sniffer type="galaxy.datatypes.sequence:Fastq"/>
     <sniffer type="galaxy.datatypes.interval:Wiggle"/>
     <sniffer type="galaxy.datatypes.images:Html"/>
     <sniffer type="galaxy.datatypes.sequence:Axt"/>

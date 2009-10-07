@@ -81,16 +81,6 @@ class SniffingAndMetaDataSettings( TwillTestCase ):
         assert latest_hda is not None, "Problem retrieving fasta hda from the database"
         if not latest_hda.name == '1.fasta' and not latest_hda.extension == 'fasta':
             raise AssertionError, "fasta data type was not correctly sniffed."
-    def test_030_fastqsolexa_datatype( self ):
-        """Testing correctly sniffing fastqsolexa ( the Solexa variant ) data type upon upload"""
-        self.upload_file( '1.fastqsolexa' )
-        self.verify_dataset_correctness( '1.fastqsolexa' )
-        self.check_history_for_string( '1.fastqsolexa format: <span class="fastqsolexa">fastqsolexa</span>, database: \? Info: uploaded fastqsolexa file' )
-        latest_hda = galaxy.model.HistoryDatasetAssociation.query() \
-            .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ).first()
-        assert latest_hda is not None, "Problem retrieving fastqsolexa hda from the database"
-        if not latest_hda.name == '1.fastqsolexa' and not latest_hda.extension == 'fastqsolexa':
-            raise AssertionError, "fastqsolexa data type was not correctly sniffed."
     def test_035_gff_datatype( self ):
         """Testing correctly sniffing gff data type upon upload"""
         self.upload_file( '5.gff' )
@@ -236,6 +226,16 @@ class SniffingAndMetaDataSettings( TwillTestCase ):
         assert latest_hda is not None, "Problem retrieving sam hda from the database"
         if not latest_hda.name == '1.sam' and not latest_hda.extension == 'sam':
             raise AssertionError, "sam data type was not correctly sniffed."
+    def test_095_fastq_datatype( self ):
+        """Testing correctly sniffing fastq ( generic ) data type upon upload"""
+        self.upload_file( '2gen.fastq' )
+        self.verify_dataset_correctness( '2gen.fastq' )
+        self.check_history_for_string( '2gen.fastq format: <span class="fastq">fastq</span>, database: \? Info: uploaded fastq file' )
+        latest_hda = galaxy.model.HistoryDatasetAssociation.query() \
+            .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ).first()
+        assert latest_hda is not None, "Problem retrieving fastq hda from the database"
+        if not latest_hda.name == '2gen.fastq' and not latest_hda.extension == 'fastq':
+            raise AssertionError, "fastq data type was not correctly sniffed."
     def test_9999_clean_up( self ):
         self.delete_history( id=self.security.encode_id( history1.id ) )
         self.logout()
