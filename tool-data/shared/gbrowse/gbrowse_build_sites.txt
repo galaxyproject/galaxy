@@ -1,3 +1,4 @@
 # wormbase sites / supported genomes
-main	http://www.wormbase.org/db/seq/gbgff/c_elegans/    c_elegans,c_briggsae,c_remanei,c_brenneri,c_japonica,p_pristionchus,b_malayi
-test    http://dev.wormbase.org/db/seq/gbrowse/c_elegans/    c_elegans,c_briggsae,c_remanei,c_brenneri,c_japonica,p_pristionchus,b_malayi
+main	http://www.wormbase.org/db/seq/gbgff/c_elegans/	c_elegans,c_briggsae,c_remanei,c_brenneri,c_japonica,p_pristionchus,b_malayi
+test	http://dev.wormbase.org/db/seq/gbrowse/c_elegans/	c_elegans,c_briggsae,c_remanei,c_brenneri,c_japonica,p_pristionchus,b_malayi
+tair	http://arabidopsis.org/cgi-bin/gbrowse/	arabidopsis_tair8,arabidopsis

@@ -665,3 +665,6 @@ baciAnth_AMES	Bacillus anthracis str. Ames	chr=5227293
 shewOnei	Shewanella oneidensis MR-1	plasmid_pMR-1=161613,chr=4969803
 15217	Human herpesvirus 1	NC_001806=152261
 lMaj5	Leishmania major 2005	chr1=268984,chr2=355714,chr3=384518,chr4=441313,chr5=465823,chr6=516874,chr7=596348,chr8=574972,chr9=573441,chr10=570864,chr11=582575,chr12=675347,chr13=654604,chr14=622648,chr15=629514,chr16=714659,chr17=684831,chr18=739751,chr19=702212,chr20=742551,chr21=772974,chr22=716608,chr23=772567,chr24=840950,chr25=912849,chr26=1091579,chr27=1130447,chr28=1160128,chr29=1212674,chr30=1403454,chr31=1484336,chr32=1604650,chr33=1583673,chr34=1866754,chr35=2090491,chr36=2682183
+arabidopsis	Arabidopsis thaliana TAIR9
+arabidopsis_tair8	Arabidopsis thaliana TAIR8
+araTha1	Arabidopsis thaliana TAIR7
