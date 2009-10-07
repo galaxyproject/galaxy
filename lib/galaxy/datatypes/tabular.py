@@ -205,6 +205,10 @@ class Tabular( data.Text ):
     def display_peek( self, dataset ):
         """Returns formatted html of peek"""
         return self.make_html_table( dataset )
+    def as_gbrowse_display_file( self, dataset, **kwd ):
+        return open( dataset.file_name )
+    def as_ucsc_display_file( self, dataset, **kwd ):
+        return open( dataset.file_name )
 
 class Taxonomy( Tabular ):
     def __init__(self, **kwd):

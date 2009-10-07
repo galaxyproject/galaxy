@@ -57,10 +57,6 @@ class GenomeGraphs( Tabular ):
         """Return a chrom, start, stop tuple for viewing a file."""
         raise notImplemented
 
-    def as_ucsc_display_file( self, dataset, **kwd ):
-        """Returns file"""
-        return file(dataset.file_name,'r')
-
     def ucsc_links( self, dataset, type, app, base_url ):
         """ from the ever-helpful angie hinrichs angie@soe.ucsc.edu
         a genome graphs call looks like this 

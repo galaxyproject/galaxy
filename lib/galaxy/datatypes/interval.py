@@ -493,7 +493,6 @@ class Gff( Tabular ):
         """Initialize datatype, by adding GBrowse display app"""
         Tabular.__init__(self, **kwd)
         self.add_display_app ( 'c_elegans', 'display in Wormbase', 'as_gbrowse_display_file', 'gbrowse_links' )
-
     def set_meta( self, dataset, overwrite = True, **kwd ):
         i = 0
         for i, line in enumerate( file ( dataset.file_name ) ):
@@ -508,7 +507,6 @@ class Gff( Tabular ):
                     except:
                         pass
         Tabular.set_meta( self, dataset, overwrite = overwrite, skip = i )
-
     def make_html_table( self, dataset, skipchars=[] ):
         """Create HTML table, used for displaying peek"""
         out = ['<table cellspacing="0" cellpadding="3">']
@@ -524,11 +522,6 @@ class Gff( Tabular ):
         except Exception, exc:
             out = "Can't create peek %s" % exc
         return out
-    
-    def as_gbrowse_display_file( self, dataset, **kwd ):
-        """Returns file contents that can be displayed in GBrowse apps."""
-        return open( dataset.file_name )
-
     def get_estimated_display_viewport( self, dataset ):
         """
         Return a chrom, start, stop tuple for viewing a file.  There are slight differences between gff 2 and gff 3
@@ -568,7 +561,6 @@ class Gff( Tabular ):
             return ( seqid, str( start ), str( stop ) )
         else:
             return ( '', '', '' )
-
     def gbrowse_links( self, dataset, type, app, base_url ):
         ret_val = []
         if dataset.has_data:
@@ -582,7 +574,6 @@ class Gff( Tabular ):
                         link = "%s?start=%s&stop=%s&ref=%s&dbkey=%s" % ( site_url, start, stop, seqid, dataset.dbkey )
                         ret_val.append( ( site_name, link ) )
         return ret_val
-
     def sniff( self, filename ):
         """
         Determines whether the file is in gff format
@@ -639,7 +630,6 @@ class Gff3( Gff ):
     def __init__(self, **kwd):
         """Initialize datatype, by adding GBrowse display app"""
         Gff.__init__(self, **kwd)
-
     def set_meta( self, dataset, overwrite = True, **kwd ):
         i = 0
         for i, line in enumerate( file ( dataset.file_name ) ):
@@ -666,7 +656,6 @@ class Gff3( Gff ):
                     if valid_start and valid_end and start < end and strand in self.valid_gff3_strand and phase in self.valid_gff3_phase:
                         break
         Tabular.set_meta( self, dataset, overwrite = overwrite, skip = i )
-
     def sniff( self, filename ):
         """
         Determines whether the file is in gff version 3 format
@@ -740,9 +729,70 @@ class Wiggle( Tabular ):
 
     MetadataElement( name="columns", default=3, desc="Number of columns", readonly=True, visible=False )
     
+    def __init__( self, **kwd ):
+        Tabular.__init__( self, **kwd )
+        self.add_display_app( 'ucsc', 'display at UCSC', 'as_ucsc_display_file', 'ucsc_links' )
+        self.add_display_app( 'gbrowse', 'display in Gbrowse', 'as_gbrowse_display_file', 'gbrowse_links' )
+    def get_estimated_display_viewport( self, dataset ):
+        value = ( "", "", "" )
+        num_check_lines = 100 # only check up to this many non empty lines
+        for i, line in enumerate( file( dataset.file_name ) ):
+            line = line.rstrip( '\r\n' )
+            if line and line.startswith( "browser" ):
+                chr_info = line.split()[-1]
+                wig_chr, coords = chr_info.split( ":" )
+                start, end = coords.split( "-" )
+                value = ( wig_chr, start, end )
+                break
+            if i > num_check_lines:
+                break
+        return value
+    def _get_remote_call_url( self, redirect_url, site_name, dataset, type, app, base_url ):
+        """Retrieve the URL to call out to an external site and retrieve data.
+        This routes our external URL through a local galaxy instance which makes
+        the data available, followed by redirecting to the remote site with a
+        link back to the available information.
+        """
+        internal_url = "%s" % url_for( controller='dataset', dataset_id=dataset.id, action='display_at', filename='%s_%s' % ( type, site_name ) )
+        base_url = app.config.get( "display_at_callback", base_url )
+        if base_url.startswith( 'https://' ):
+            base_url = base_url.replace( 'https', 'http', 1 )
+        display_url = urllib.quote_plus( "%s%s/display_as?id=%i&display_app=%s&authz_method=display_at" % \
+                                         ( base_url, url_for( controller='root' ), dataset.id, type ) )
+        link = '%s?redirect_url=%s&display_url=%s' % ( internal_url, redirect_url, display_url )
+        return link
+    def _get_viewer_range( self, dataset ):
+        """Retrieve the chromosome, start, end for an external viewer."""
+        if dataset.has_data:
+            viewport_tuple = self.get_estimated_display_viewport( dataset )
+            if viewport_tuple:
+                chrom = viewport_tuple[0]
+                start = viewport_tuple[1]
+                stop = viewport_tuple[2]
+                return ( chrom, start, stop )
+        return ( None, None, None )
+    def gbrowse_links( self, dataset, type, app, base_url ):
+        ret_val = []
+        chrom, start, stop = self._get_viewer_range( dataset )
+        if chrom is not None:
+            for site_name, site_url in util.get_gbrowse_sites_by_build( dataset.dbkey ):
+                if site_name in app.config.gbrowse_display_sites:
+                    redirect_url = urllib.quote_plus( "%s%s/?ref=%s&start=%s&stop=%s&eurl=%%s" % ( site_url, dataset.dbkey, chrom, start, stop ) )
+                    link = self._get_remote_call_url( redirect_url, site_name, dataset, type, app, base_url )
+                    ret_val.append( ( site_name, link ) )
+        return ret_val
+    def ucsc_links( self, dataset, type, app, base_url ):
+        ret_val = []
+        chrom, start, stop = self._get_viewer_range( dataset )
+        if chrom is not None:
+            for site_name, site_url in util.get_ucsc_by_build( dataset.dbkey ):
+                if site_name in app.config.ucsc_display_sites:
+                    redirect_url = urllib.quote_plus( "%sdb=%s&position=%s:%s-%s&hgt.customText=%%s" % ( site_url, dataset.dbkey, chrom, start, stop ) )
+                    link = self._get_remote_call_url( redirect_url, site_name, dataset, type, app, base_url )
+                    ret_val.append( ( site_name, link ) )
+        return ret_val
     def make_html_table( self, dataset ):
         return Tabular.make_html_table( self, dataset, skipchars=['track', '#'] )
-
     def set_meta( self, dataset, overwrite = True, **kwd ):
         i = 0
         for i, line in enumerate( file ( dataset.file_name ) ):
@@ -761,7 +811,6 @@ class Wiggle( Tabular ):
                     if do_break:
                         break
         Tabular.set_meta( self, dataset, overwrite = overwrite, skip = i )
-
     def sniff( self, filename ):
         """
         Determines wether the file is in wiggle format
@@ -792,7 +841,6 @@ class Wiggle( Tabular ):
             return False
         except:
             return False
-
     def get_track_window(self, dataset, data, start, end):
         """
         Assumes we have a numpy file.
@@ -817,7 +865,6 @@ class Wiggle( Tabular ):
         y = data[ t_start : t_end ]
     
         return zip(x.tolist(), y.tolist())
-
     def get_track_resolution( self, dataset, start, end):
         range = end - start
         # Determine appropriate resolution to plot ~1000 points
@@ -826,7 +873,6 @@ class Wiggle( Tabular ):
         resolution = min( resolution, 100000 )
         resolution = max( resolution, 1 )
         return resolution
-
     def get_track_type( self ):
         return "LineTrack"
 
@@ -882,8 +928,6 @@ class CustomTrack ( Tabular ):
         except:
             #return "."
             return ('', '', '')
-    def as_ucsc_display_file( self, dataset ):
-        return open(dataset.file_name)
     def ucsc_links( self, dataset, type, app, base_url ):
         ret_val = []
         if dataset.has_data:
@@ -947,58 +991,6 @@ class CustomTrack ( Tabular ):
                 except: 
                     return False
         return True
-
-class GBrowseTrack ( Tabular ):
-    """GMOD GBrowseTrack"""
-    file_ext = "gbrowsetrack"
-
-    def __init__(self, **kwd):
-        """Initialize datatype, by adding GBrowse display app"""
-        Tabular.__init__(self, **kwd)
-        self.add_display_app ('c_elegans', 'display in Wormbase', 'as_gbrowse_display_file', 'gbrowse_links' )
-    
-    def set_readonly_meta( self, dataset, skip=1, **kwd ):
-        """Resets the values of readonly metadata elements."""
-        Tabular.set_readonly_meta( self, dataset, skip = skip, **kwd )
-    
-    def set_meta( self, dataset, overwrite = True, **kwd ):
-        Tabular.set_meta( self, dataset, overwrite = overwrite, skip = 1 )
-    
-    def make_html_table( self, dataset ):
-        return Tabular.make_html_table( self, dataset, skipchars=['track', '#'] )
-    
-    def get_estimated_display_viewport( self, dataset ):
-        #TODO: fix me...
-        return ('', '', '')
-    
-    def gbrowse_links( self, dataset, type, app, base_url ):
-        ret_val = []
-        if dataset.has_data:
-            viewport_tuple = self.get_estimated_display_viewport(dataset)
-            if viewport_tuple:
-                chrom = viewport_tuple[0]
-                start = viewport_tuple[1]
-                stop = viewport_tuple[2]
-                for site_name, site_url in util.get_gbrowse_sites_by_build(dataset.dbkey):
-                    if site_name in app.config.gbrowse_display_sites:
-                        display_url = urllib.quote_plus( "%s%s/display_as?id=%i&display_app=%s" % (base_url, url_for( controller='root' ), dataset.id, type) )
-                        link = "%sname=%s&ref=%s:%s..%s&eurl=%s" % (site_url, dataset.dbkey, chrom, start, stop, display_url )                        
-                        ret_val.append( (site_name, link) )
-        return ret_val
-        
-    def as_gbrowse_display_file( self, dataset, **kwd ):
-        """Returns file contents that can be displayed in GBrowse apps."""
-        #TODO: fix me...
-        return open(dataset.file_name)
-
-    def sniff( self, filename ):
-        """
-        Determines whether the file is in gbrowsetrack format.
-        
-        GBrowseTrack files are built within Galaxy.
-        TODO: Not yet sure what this file will look like.  Fix this sniffer and add some unit tests here as soon as we know.
-        """
-        return False
 
 if __name__ == '__main__':
     import doctest, sys
