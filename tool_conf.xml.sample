@@ -75,6 +75,7 @@
     <tool file="next_gen_conversion/solid_to_fastq.xml" />
     <tool file="next_gen_conversion/fastq_conversions.xml" />
     <tool file="fastx_toolkit/fastq_quality_converter.xml" />
+    <tool file="next_gen_conversion/fastq_gen_conv.xml" />
   </section>
   <section name="Extract Features" id="features">
     <tool file="filters/ucsc_gene_bed_to_exon_bed.xml" />

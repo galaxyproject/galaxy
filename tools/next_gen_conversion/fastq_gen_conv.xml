@@ -1,0 +1,100 @@
+<tool id="fastq_gen_conv" name="FASTQ Groomer" version="1.0.0">
+  <description>converts any type of FASTQ file to Sanger type and validates data</description>
+  <command interpreter="python">
+    fastq_gen_conv.py 
+     --input=$input 
+     --origType=$origTypeChoice.origType
+     #if $origTypeChoice.origType == "sanger":
+      --allOrNot=$origTypeChoice.howManyBlocks.allOrNot 
+      #if $origTypeChoice.howManyBlocks.allOrNot == "not":
+       --blocks=$origTypeChoice.howManyBlocks.blocks
+      #else:
+       --blocks="None"
+      #end if
+     #else:
+      --allOrNot="None"
+      --blocks="None"
+     #end if
+     --output=$output
+  </command>
+  <inputs>
+    <param name="input" type="data" format="fastq" label="FASTQ file to check:" />
+    <conditional name="origTypeChoice">
+      <param name="origType" type="select" label="What type of FASTQ do you think this is?">
+        <option value="solexa">Solexa</option>
+        <option value="illumina">Illumina</option>
+        <option value="sanger">Sanger</option>
+      </param>
+      <when value="solexa" />
+      <when value="illumina" />
+      <when value="sanger">
+        <conditional name="howManyBlocks">
+          <param name="allOrNot" type="select" label="Do you want to do a subset of lines, or do the whole file?">
+            <option value="all">Check all</option> 
+            <option value="not">Select blocks</option>
+          </param>
+          <when value="all" />
+          <when value="not">
+            <param name="blocks" type="integer" value="1000" label="How many blocks (four lines each) do you want to do?" />
+          </when>
+        </conditional>
+      </when>
+    </conditional>
+  </inputs>
+  <outputs>
+    <data name="output" format="fastqsanger"/>
+  </outputs>
+  <tests>
+    <test>
+      <param name="input" value="fastq_gen_conv_in1.fastq" ftype="fastq" />
+      <param name="origType" value="solexa" />
+      <output name="output" format="fastqsanger" file="fastq_gen_conv_out1.fastqsanger" />
+    </test>
+    <test>
+      <param name="input" value="fastq_gen_conv_in2.fastq" ftype="fastq" />
+      <param name="origType" value="sanger" />
+      <param name="allOrNot" value="not" />
+      <param name="blocks" value="3" />
+      <output name="output" format="fastqsanger" file="fastq_gen_conv_out2.fastqsanger" />
+    </test>
+  </tests>
+  <help>
+
+**What it does**
+
+This tool takes a FASTQ file (Solexa or Illumina) and converts it to Sanger format. It only converts valid blocks. It also can confirm the validity of Sanger FASTQ.
+
+-----
+
+**Example**
+
+- Converting the following Solexa FASTQ file::
+
+    @seq1
+    AGTCGTGGTCATCGTGACTAGTCGATCTAGCTAGCTCTCTAGAGTGT
+    +
+    ;&gt;@BCEFGHJKLMNOPQRSTUVWXYZ[\]^_?abcdefghijklmno
+    @seq2
+    AGTCGTTGTCATCGTGACTAGTCGATCTAGCTAGCTCTCTAGAGTGT
+    +
+    ;&gt;@BCElcH@KLMNOPQ>STZVWbYu[\]^_?a=;d?fghijklmno
+    @seq3
+    AGTCGTCGTCATCGTGACTAGTCGATCTAGCTAGCTCTCTAGAGTGT
+    +
+    7&gt;@BCEFGHJKLMNOPQRSTUVWXYZ[\]^_?abcdefghijklmno
+
+- will produce the following Sanger FASTQ data::
+
+    @seq1
+    AGTCGTGGTCATCGTGACTAGTCGATCTAGCTAGCTCTCTAGAGTGT
+    +
+    "#$%%''()+,-./0123456789:;&lt;=&gt;?@#BCDEFGHIJKLMNOP
+    @seq2
+    AGTCGTTGTCATCGTGACTAGTCGATCTAGCTAGCTCTCTAGAGTGT
+    +
+    "#$%%'MD)$,-./012#45;78C:V%lt;=&gt;?@#B""E#GHIJKLMNOP
+    
+- Note that seq3 was not converted, because it contained an invalid Solexa quality value (7).
+
+    </help>
+</tool>
