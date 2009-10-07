@@ -1,8 +1,8 @@
 #This is a sample file distributed with Galaxy that enables tools
 #to use a directory of BWA indexed sequences data files.  You will need
 #to create these data files and then create a sequence_index_base.loc file 
-#similar to this one (store it in this directory ) that points to 
-#the directories in which those files are stored.  The sequence_index_base.loc 
+#similar to this one (store it in this directory) that points to 
+#the directories in which those files are stored. The sequence_index_base.loc 
 #file has this format (white space characters are TAB characters):
 #
 #<build>	<file_base>
@@ -26,3 +26,4 @@
 #exist, but it is the prefix for the actual index files.  For example:
 #
 #phiX	/depot/data2/galaxy/phiX/base/phiX.fa
+#hg18	/depot/data2/galaxy/hg18/base/hg18.fa

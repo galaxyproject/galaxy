@@ -1,8 +1,8 @@
 #This is a sample file distributed with Galaxy that enables tools
 #to use a directory of Bowtie indexed sequences data files.  You will need
 #to create these data files and then create a bowtie_indices.loc file 
-#similar to this one (store it in this directory ) that points to 
-#the directories in which those files are stored.  The bowtie_indices.loc 
+#similar to this one (store it in this directory) that points to 
+#the directories in which those files are stored. The bowtie_indices.loc 
 #file has this format (white space characters are TAB characters):
 #
 #<build>	<file_base>
@@ -26,3 +26,4 @@
 #exist, but it is the prefix for the actual index files.  For example:
 #
 #hg18	/depot/data2/galaxy/bowtie/hg18/hg18
+#hg19	/depot/data2/galaxy/bowtie/hg19/hg19
