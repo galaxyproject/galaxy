@@ -3,7 +3,7 @@
 	<command>gunzip -cf $input | fastq_to_fasta $SKIPN $RENAMESEQ -o $output -v </command>
 
 	<inputs>
-		<param format="fastqsolexa,fastqsanger" name="input" type="data" label="FASTQ Library to convert" />
+		<param format="fastq" name="input" type="data" label="FASTQ Library to convert" />
 
 		<param name="SKIPN" type="select" label="Discard sequences with unknown (N) bases ">
 			<option value="">yes</option>

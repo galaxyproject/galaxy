@@ -4,7 +4,7 @@
     split_paired_reads.py $input $output1 $output2
   </command>
     <inputs>
-        <param name="input" type="data" format="fastqsolexa,fastqsanger" label="Your paired-end file" />
+        <param name="input" type="data" format="fastqsanger" label="Your paired-end file" />
     </inputs>
     <outputs>
         <data name="output1" format="input"/>
@@ -12,8 +12,8 @@
     </outputs>
     <tests>
         <test>
-            <param name="input" value="split_paired_reads_test1.fastq" ftype="fastqsolexa" />
-            <output name="output1" file="split_paired_reads_test1.out1" fype="fastqsolexa" />
+            <param name="input" value="split_paired_reads_test1.fastq" ftype="fastqsanger"/>
+            <output name="output1" file="split_paired_reads_test1.out1" ftype="fastqsanger"/>
         </test>
     </tests>
 <help>

@@ -1,5 +1,5 @@
 <tool id="fastq_gen_conv" name="FASTQ Groomer" version="1.0.0">
-  <description>converts any type of FASTQ file to Sanger type and validates data</description>
+  <description>converts any FASTQ to Sanger</description>
   <command interpreter="python">
     fastq_gen_conv.py 
      --input=$input 
@@ -18,24 +18,24 @@
      --output=$output
   </command>
   <inputs>
-    <param name="input" type="data" format="fastq" label="FASTQ file to check:" />
+    <param name="input" type="data" format="fastq" label="Groom this dataset" />
     <conditional name="origTypeChoice">
-      <param name="origType" type="select" label="What type of FASTQ do you think this is?">
-        <option value="solexa">Solexa</option>
-        <option value="illumina">Illumina</option>
-        <option value="sanger">Sanger</option>
+      <param name="origType" type="select" label="How do you think quality values are scaled?" help="See below for explanation">
+        <option value="solexa">Solexa/Illumina 1.0</option>
+        <option value="illumina">Illumina 1.3+</option>
+        <option value="sanger">Sanger (validation only)</option>
       </param>
       <when value="solexa" />
       <when value="illumina" />
       <when value="sanger">
         <conditional name="howManyBlocks">
-          <param name="allOrNot" type="select" label="Do you want to do a subset of lines, or do the whole file?">
-            <option value="all">Check all</option> 
-            <option value="not">Select blocks</option>
+          <param name="allOrNot" type="select" label="Since your fastq is already in Sanger format you can check it for consistency">
+            <option value="all">Check all (may take a while)</option> 
+            <option selected="true" value="not">Check selected number of blocks</option>
           </param>
           <when value="all" />
           <when value="not">
-            <param name="blocks" type="integer" value="1000" label="How many blocks (four lines each) do you want to do?" />
+            <param name="blocks" type="integer" value="1000" label="How many blocks (four lines each) do you want to check?" />
           </when>
         </conditional>
       </when>
@@ -62,39 +62,45 @@
 
 **What it does**
 
-This tool takes a FASTQ file (Solexa or Illumina) and converts it to Sanger format. It only converts valid blocks. It also can confirm the validity of Sanger FASTQ.
+Galaxy pipeline for mapping of Illumina data requires data to be in fastq format with quality values conforming to so called "Sanger" format. Unfortunately there are many other types of fastq. Thus the main objective of this tool is to "groom" multiple types of fastq into Sanger-conforming fastq that can be used in downstream application such as mapping.
+
+.. class:: infomark
+
+**TIP**: If the input dataset is already in Sanger format the tool does not perform conversion. However validation (described below) is still performed.
 
 -----
 
-**Example**
+**Types of fastq datasets**
 
-- Converting the following Solexa FASTQ file::
+A good description of fastq datasets can be found `here`__, while a description of Galaxy's fastq "logic" can be found `here`__. Because ranges of quality values within different types of fastq datasets overlap it very difficult to detect them automatically. This tool supports conversion of two commonly found types (Solexa/Illumina 1.0 and Illumina 1.3+) into fastq Sanger. 
 
-    @seq1
-    AGTCGTGGTCATCGTGACTAGTCGATCTAGCTAGCTCTCTAGAGTGT
-    +
-    ;&gt;@BCEFGHJKLMNOPQRSTUVWXYZ[\]^_?abcdefghijklmno
-    @seq2
-    AGTCGTTGTCATCGTGACTAGTCGATCTAGCTAGCTCTCTAGAGTGT
-    +
-    ;&gt;@BCElcH@KLMNOPQ>STZVWbYu[\]^_?a=;d?fghijklmno
-    @seq3
-    AGTCGTCGTCATCGTGACTAGTCGATCTAGCTAGCTCTCTAGAGTGT
-    +
-    7&gt;@BCEFGHJKLMNOPQRSTUVWXYZ[\]^_?abcdefghijklmno
+ .. __: http://en.wikipedia.org/wiki/FASTQ_format
+ .. __: http://bitbucket.org/galaxy/galaxy-central/wiki/NGS
 
-- will produce the following Sanger FASTQ data::
+.. class:: warningmark
 
-    @seq1
-    AGTCGTGGTCATCGTGACTAGTCGATCTAGCTAGCTCTCTAGAGTGT
-    +
-    "#$%%''()+,-./0123456789:;&lt;=&gt;?@#BCDEFGHIJKLMNOP
-    @seq2
-    AGTCGTTGTCATCGTGACTAGTCGATCTAGCTAGCTCTCTAGAGTGT
-    +
-    "#$%%'MD)$,-./012#45;78C:V%lt;=&gt;?@#B""E#GHIJKLMNOP
-    
-- Note that seq3 was not converted, because it contained an invalid Solexa quality value (7).
+**NOTE** that there is also a type of fastq format where quality values are represented by a list of space-delimited integers (e.g., 40 40 20 15 -5 20 ...). This tool **does not** handle such fastq. If you have such a dataset, it needs to be converted into ASCII-type fastq (where quality values are encoded by characters) by "Numeric-to-ASCII" utility before it can accepted by this tool.
+
+-----
+
+**Validation**
+
+In addition to converting quality values to Sanger format the tool also checks the input dataset for consistency. Specifically, it performs these four checks:
+
+- skips empty lines
+- checks that blocks are properly formed by making sure that:
+
+  #. there are four lines per block
+  #. the first line starts with "@"
+  #. the third line starts with "+"
+  #. lengths of second line (sequences) and the fourth line (quality string) are identical
+  
+- checks that quality values are within range for the chosen fastq format (e.g., the format provided by the user in **How do you think quality values are scaled?** drop down.
+
+To see exactly what the tool does you can take a look at its source code `here`__.
+
+ .. __: http://bitbucket.org/galaxy/galaxy-central/src/tip/tools/next_gen_conversion/fastq_gen_conv.py
+
 
     </help>
 </tool>

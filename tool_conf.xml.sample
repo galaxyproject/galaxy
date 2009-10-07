@@ -72,10 +72,6 @@
     <tool file="maf/maf_to_fasta.xml" />
     <tool file="fasta_tools/tabular_to_fasta.xml" />
     <tool file="fastx_toolkit/fastq_to_fasta.xml" />
-    <tool file="next_gen_conversion/solid_to_fastq.xml" />
-    <tool file="next_gen_conversion/fastq_conversions.xml" />
-    <tool file="fastx_toolkit/fastq_quality_converter.xml" />
-    <tool file="next_gen_conversion/fastq_gen_conv.xml" />
   </section>
   <section name="Extract Features" id="features">
     <tool file="filters/ucsc_gene_bed_to_exon_bed.xml" />
@@ -175,32 +171,27 @@
   </section>
   <section name="NGS: QC and manipulation" id="cshl_library_information">
     <label text="Generic FASTQ data" id="fastq" />
+        <tool file="next_gen_conversion/fastq_gen_conv.xml" />
+        <tool file="fastx_toolkit/fastq_quality_converter.xml" />
         <tool file="fastx_toolkit/fastx_quality_statistics.xml" />
         <tool file="fastx_toolkit/fastq_quality_boxplot.xml" />
         <tool file="fastx_toolkit/fastx_nucleotides_distribution.xml" />
-        <!-- <tool file="fastx_toolkit/fasta_clipping_histogram.xml" /> -->
-        <!-- <tool file="fastx_toolkit/fastx_clipper.xml" /> -->
-        <tool file="fastx_toolkit/fastx_trimmer.xml" />
-        <tool file="fastx_toolkit/fastx_renamer.xml" />
-        <tool file="fastx_toolkit/fastx_reverse_complement.xml" />
-        <tool file="fastx_toolkit/fastx_artifacts_filter.xml" />
-        <tool file="fastx_toolkit/fastq_quality_filter.xml" />
-        <!--<tool file="fastx_toolkit/fastx_barcode_splitter.xml" />-->
         <tool file="metag_tools/split_paired_reads.xml" />
     <label text="Roche-454 data" id="454" />
         <tool file="metag_tools/short_reads_figure_score.xml" />
         <tool file="metag_tools/short_reads_trim_seq.xml" />
     <label text="AB-SOLiD data" id="solid" />
+        <tool file="next_gen_conversion/solid_to_fastq.xml" />
         <tool file="solid_tools/solid_qual_stats.xml" />
         <tool file="solid_tools/solid_qual_boxplot.xml" />
   </section>
   <section name="NGS: Mapping" id="solexa_tools">
    <!-- <tool file="sr_mapping/lastz_wrapper.xml" /> -->
-   <tool file="metag_tools/megablast_wrapper.xml" />
-   <tool file="metag_tools/megablast_xml_parser.xml" />
    <tool file="sr_mapping/bowtie_wrapper.xml" />
    <tool file="sr_mapping/bwa_wrapper.xml" />
-  </section>
+   <tool file="metag_tools/megablast_wrapper.xml" />
+   <tool file="metag_tools/megablast_xml_parser.xml" />
+     </section>
   <section name="NGS: SAM Tools" id="samtools">
    <tool file="samtools/sam_bitwise_flag_filter.xml" />
    <tool file="samtools/sam2interval.xml" />

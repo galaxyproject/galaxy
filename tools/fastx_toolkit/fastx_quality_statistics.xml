@@ -3,11 +3,8 @@
 	<command>zcat -f $input | fastx_quality_stats -o $output -Q $offset</command>
 
 	<inputs>
-		<param format="fasta,fastqsolexa,fastqsanger" name="input" type="data" label="Library to analyse" />
-		<param name="offset" type="select" label="FASTQ ASCII offset">
-            <option value="33">33</option>
-            <option value="64">64</option>
-        </param>
+		<param format="fastqsanger" name="input" type="data" label="Library to analyse" />
+		<param name="offset" type="hidden" value="33"/>
 	</inputs>
 
 	<tests>

@@ -2,7 +2,7 @@
 	<description>(ASCII-Numeric)</description>
 	<command>zcat -f $input | fastq_quality_converter $QUAL_FORMAT -o $output -Q $offset</command>
 	<inputs>
-		<param format="fastqsolexa,fastqsanger" name="input" type="data" label="Library to convert" />
+		<param format="fastq" name="input" type="data" label="Library to convert" />
 
 		<param name="QUAL_FORMAT" type="select" label="Desired output format">
 			<option value="-a">ASCII (letters) quality scores</option>
@@ -11,7 +11,7 @@
 		
         <param name="offset" type="select" label="FASTQ ASCII offset">
             <option value="33">33</option>
-            <option value="64">64</option>
+            <option selected="true" value="64">64</option>
         </param>	
     </inputs>
 
@@ -47,7 +47,7 @@
 	</tests>
 
 	<outputs>
-		<data format="fastqsolexa" name="output" metadata_source="input" />
+		<data format="fastq" name="output" metadata_source="input" />
 	</outputs>
 <help>
 
