@@ -6,12 +6,18 @@
     $(function(){
         $("#history-options-button").css( "position", "relative" );
         make_popupmenu( $("#history-options-button"), {
-            "List your histories": null,
-            "Stored by you": function() {
+            "History Lists": null,
+            "My Saved Histories": function() {
                 galaxy_main.location = "${h.url_for( controller='history', action='list')}";
             },
+            "My Shared Histories": function() {
+                galaxy_main.location = "${h.url_for( controller='history', action='list', operation='sharing' )}";
+            },
+            "Histories Shared with Me": function() {
+                galaxy_main.location = "${h.url_for( controller='history', action='list_shared')}";
+            },
             "Current History": null,
-            "Create new": function() {
+            "Create New": function() {
                 galaxy_history.location = "${h.url_for( controller='root', action='history_new' )}";
             },
             "Clone": function() {
@@ -20,13 +26,13 @@
             "Share": function() {
                 galaxy_main.location = "${h.url_for( controller='history', action='share' )}";
             },
-            "Extract workflow": function() {
+            "Extract Workflow": function() {
                 galaxy_main.location = "${h.url_for( controller='workflow', action='build_from_current_history' )}";
             },
-            "Dataset security": function() {
+            "Dataset Security": function() {
                 galaxy_main.location = "${h.url_for( controller='root', action='history_set_default_permissions' )}";
             },
-            "Show deleted datasets": function() {
+            "Show Deleted Datasets": function() {
                 galaxy_history.location = "${h.url_for( controller='root', action='history', show_deleted=True)}";
             },
             "Delete": function()
@@ -35,13 +41,6 @@
                 {
                     galaxy_main.location = "${h.url_for( controller='history', action='delete_current' )}";
                 }
-            },
-            "Manage shared histories": null,
-            "Shared by you": function() {
-                galaxy_main.location = "${h.url_for( controller='history', action='list', operation='sharing' )}";
-            },
-            "Shared with you": function() {
-                galaxy_main.location = "${h.url_for( controller='history', action='list_shared')}";
             }
         });
     });
