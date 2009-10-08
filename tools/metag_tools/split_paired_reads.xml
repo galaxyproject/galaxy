@@ -7,8 +7,8 @@
         <param name="input" type="data" format="fastqsanger" label="Your paired-end file" />
     </inputs>
     <outputs>
-        <data name="output1" format="input"/>
-        <data name="output2" format="input"/>
+        <data name="output1" format="fastqsanger"/>
+        <data name="output2" format="fastqsanger"/>
     </outputs>
     <tests>
         <test>
