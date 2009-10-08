@@ -66,7 +66,7 @@
   <inputs>
     <conditional name="solidOrSolexa">
    	  <param name="solidSolexa" type="select" label="Select SOLiD or Solexa format for the original dataset">
-	    <option value="solexa">Solexa</option>
+	    <option value="solexa">Illumina</option>
 	    <option value="solid">SOLiD</option>
 	  </param>
 	  <when value="solid">
