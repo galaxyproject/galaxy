@@ -20,13 +20,15 @@ class ArrayTreeDataProvider( object ):
         self.dataset = dataset
     
     def get_stats( self, chrom ):
-        d = FileArrayTreeDict( open( self.dataset.file_name ) )
+        f = open( self.dataset.file_name )
+        d = FileArrayTreeDict( f )
         try:
             chrom_array_tree = d[chrom]
         except KeyError:
             return "no data"
         
         root_summary = chrom_array_tree.get_summary( 0, chrom_array_tree.levels )
+        f.close()
         return { 'max': float( max(root_summary.maxs) ), 'min': float( min(root_summary.mins) ) }
     
     def get_data( self, chrom, start, end ):
@@ -35,7 +37,8 @@ class ArrayTreeDataProvider( object ):
         level = int( ceil( log( end - start, BLOCK_SIZE ) ) ) - 1
 
         # Open the file
-        d = FileArrayTreeDict( open( self.dataset.file_name ) )
+        f = open( self.dataset.file_name )
+        d = FileArrayTreeDict( f )
         # Get the right chromosome
         try:
             chrom_array_tree = d[chrom]
@@ -51,12 +54,14 @@ class ArrayTreeDataProvider( object ):
         # Return either data point or a summary depending on the level
         if level > 0:
             s = chrom_array_tree.get_summary( start, level )
+            f.close()
             if s is not None:
                 return zip( indexes,  map( float, s.sums / s.counts ) )
             else:
                 return None
         else:
             v = chrom_array_tree.get_leaf( start )
+            f.close()
             if v is not None:
                 return zip( indexes, map( float, v ) )
             else:
