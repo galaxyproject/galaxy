@@ -91,8 +91,8 @@ class Forms( BaseController ):
         self.current_form = {}
         self.current_form[ 'name' ] = 'New Form'
         self.current_form[ 'desc' ] = ''
-        self.current_form['type'] = 'none'
-        self.current_form[ 'layout' ] = ['Main']
+        self.current_form[ 'type' ] = params.get( 'form_type', 'none' )
+        self.current_form[ 'layout' ] = [ 'Main' ]
         self.current_form[ 'fields' ] = []
         inputs = [ ( 'Name', TextField( 'name', 40, self.current_form[ 'name' ] ) ),
                    ( 'Description', TextField( 'description', 40, self.current_form[ 'desc' ] ) ),
@@ -286,9 +286,9 @@ class Forms( BaseController ):
         if util.restore_text( params.form_type_selectbox ) == 'none': 
             return None, 'Form type must be selected.'        
         # fields
-        for i in range( len(self.current_form['fields']) ):
-            if not util.restore_text(params.get( 'field_name_%i' % i, None )):
-                return None, "All the field label(s) must be completed."
+#        for i in range( len(self.current_form['fields']) ):
+#            if not util.restore_text(params.get( 'field_name_%i' % i, None )):
+#                return None, "All the field label(s) must be completed."
         return True, ''
     def __get_form(self, trans, **kwd):
         params = util.Params( kwd )
@@ -365,8 +365,13 @@ class Forms( BaseController ):
         flag, msg = self.__validate_form(**kwd)
         if not flag:
             return None, msg
-        fd = trans.app.model.FormDefinition()
-        fd.name, fd.desc, fd.type, fd.layout, fd.fields = self.__get_form(trans, **kwd)
+        name, desc, form_type, layout, fields = self.__get_form(trans, **kwd)
+        # validate fields
+        for field in fields:
+            if not field[ 'label' ]:
+                return None, "All the field label(s) must be completed."
+        fd = trans.app.model.FormDefinition(name, desc, fields, current_form=None, 
+                                            form_type=form_type, layout=layout )
         if fdc_id: # save changes to the existing form    
             # change the pointer in the form_definition_current table to point 
             # to this new record
