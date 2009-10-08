@@ -291,7 +291,17 @@
     	
 **What it does**   	
     	
-**BWA** is a high performance sequence aligner that succeeds MAQ. It is based on BWT-SW but uses a completely different algorithm and is aimed towards short read alignments. It is fast--it can map the human genome in only 15-25 minutes. Heng Li of the Sanger Institute wrote the majority of the code, with contributions by Chi-Kwong Wong at the University of Hong Kong, Nong Ge at Sun Yat-Sen University, and Yuta Mori. 
+BWA is a fast light-weighted tool that aligns relatively short sequences (queries) to a sequence database (large), such as the human reference genome. It is developed by Heng Li at the Sanger Insitute.
+
+------
+
+**Know what you are doing**
+
+.. class:: warningmark
+
+There is no such thing (yet) as automated gearshift in short read mapping. It is all like stick-shift driving in San Francisco. In other words = running this tool with default parameters will probably not give you meaningful results. A way to deal with this is to **understand** the parameters by carefully reading `documentation`__ and experimenting. Fortunaly, Galaxy makes experimenting easy.
+
+ .. __: http://bio-bwa.sourceforge.net/
 
 ------
 
