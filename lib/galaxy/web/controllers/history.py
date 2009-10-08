@@ -371,6 +371,7 @@ class HistoryController( BaseController ):
         # Rename
         history.name = new_name
         trans.sa_session.flush()
+        
     @web.expose
     def imp( self, trans, id=None, confirm=False, **kwd ):
         """Import another user's history via a shared URL"""
@@ -423,6 +424,38 @@ class HistoryController( BaseController ):
             Warning! If you import this history, you will lose your current
             history. Click <a href="%s">here</a> to confirm.
             """ % web.url_for( id=id, confirm=True ) )
+            
+    @web.expose
+    def view( self, trans, id=None ):
+        """View a history. If a history is importable, then it is viewable by any user."""
+
+        # Get history to view.
+        if not id:
+            return trans.show_error_message( "You must specify a history you want to view." )
+        history_to_view = get_history( trans, id, False)
+
+        # Integrity checks.
+        if not history_to_view:
+            return trans.show_error_message( "The specified history does not exist.")
+        # TODO: Use a new flag to determine if history is viewable?
+        if not history_to_view.importable:
+            error( "The owner of this history has not published this history." )
+
+        # View history.
+        query = trans.sa_session.query( model.HistoryDatasetAssociation ) \
+            .filter( model.HistoryDatasetAssociation.history == history_to_view ) \
+            .options( eagerload( "children" ) ) \
+            .join( "dataset" ).filter( model.Dataset.purged == False ) \
+            .options( eagerload_all( "dataset.actions" ) )
+        # Do not show deleted datasets.
+        query = query.filter( model.HistoryDatasetAssociation.deleted == False )
+        user_owns_history = ( trans.get_user() == history_to_view.user )
+        return trans.stream_template_mako( "history/view.mako",
+                                           history = history_to_view,
+                                           datasets = query.all(),
+                                           user_owns_history = user_owns_history,
+                                           show_deleted = False )
+            
     @web.expose
     @web.require_login( "share histories with other users" )
     def share( self, trans, id=None, email="", **kwd ):
@@ -699,6 +732,7 @@ class HistoryController( BaseController ):
     @web.expose
     @web.require_login( "share histories with other users" )
     def sharing( self, trans, histories=[], id=None, **kwd ):
+        """Performs sharing of histories among users."""
         # histories looks like: [ historyX, historyY ]
         params = util.Params( kwd )
         msg = util.restore_text ( params.get( 'msg', '' ) )

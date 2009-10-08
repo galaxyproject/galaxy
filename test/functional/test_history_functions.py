@@ -164,7 +164,7 @@ class TestHistory( TwillTestCase ):
         # Enable importing history3 via a URL
         self.enable_import_via_link( self.security.encode_id( history3.id ),
                                      check_str='Unshare',
-                                     check_str_after_submit='Send the above URL to users' )
+                                     check_str_after_submit='Send the above link to users' )
         # Make sure history3 is now import-able
         history3.refresh()
         if not history3.importable:
@@ -175,7 +175,7 @@ class TestHistory( TwillTestCase ):
                                      check_str_after_submit='You cannot import your own history.' )
         # Disable the import link for history3
         self.disable_import_via_link( self.security.encode_id( history3.id ),
-                                     check_str='Send the above URL to users',
+                                     check_str='Send the above link to users',
                                      check_str_after_submit='Enable import via link' )
         # Try importing history3 after disabling the URL
         self.import_history_via_url( self.security.encode_id( history3.id ),

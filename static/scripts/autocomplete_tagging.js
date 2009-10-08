@@ -12,30 +12,31 @@ jQuery.fn.autocomplete_tagging = function(options) {
   //
   var defaults = 
   {
-  get_toggle_link_text_fn: function(tags) 
-  { 
-    var text = "";
-    var num_tags = array_length(tags);
-    if (num_tags != 0)
-	text = num_tags + (num_tags != 0 ? " Tags" : " Tag");
-    else
-	// No tags.
-	text = "Add tags";
-    return text;
-  },
-  tag_click_fn : function (name, value) { },
-  input_size: 20,
-  in_form: false,
-  tags : {},
-  use_toggle_link: true,
-  item_id: "",
-  add_tag_img: "",
-  add_tag_img_rollover: "",
-  delete_tag_img: "",
-  ajax_autocomplete_tag_url: "",
-  ajax_retag_url: "",
-  ajax_delete_tag_url: "",
-  ajax_add_tag_url: ""
+      get_toggle_link_text_fn: function(tags) 
+      { 
+        var text = "";
+        var num_tags = array_length(tags);
+        if (num_tags != 0)
+    	text = num_tags + (num_tags != 0 ? " Tags" : " Tag");
+        else
+    	// No tags.
+    	text = "Add tags";
+        return text;
+      },
+      tag_click_fn : function (name, value) { },
+      editable: true,
+      input_size: 20,
+      in_form: false,
+      tags : {},
+      use_toggle_link: true,
+      item_id: "",
+      add_tag_img: "",
+      add_tag_img_rollover: "",
+      delete_tag_img: "",
+      ajax_autocomplete_tag_url: "",
+      ajax_retag_url: "",
+      ajax_delete_tag_url: "",
+      ajax_add_tag_url: ""
   };
 
   //
@@ -206,32 +207,32 @@ jQuery.fn.autocomplete_tagging = function(options) {
 
       // Delete tag.
       $.ajax({
-	url: settings.ajax_delete_tag_url,
-	    data: { tag_name: tag_name },
-	    error: function() 
-	    { 
-	      // Failed. Roll back changes and show alert.
-	      settings.tags[tag_name] = tag_value;
-	      if (prev_button.hasClass("tag-button"))
-			prev_button.after(tag_button);
-	      else
-			tag_area.prepend(tag_button);
-	      var new_text = settings.get_toggle_link_text_fn(settings.tags);
-	      alert( "Remove tag failed" );
+	      url: settings.ajax_delete_tag_url,
+	      data: { tag_name: tag_name },
+	      error: function() 
+	      { 
+	          // Failed. Roll back changes and show alert.
+    	      settings.tags[tag_name] = tag_value;
+    	      if (prev_button.hasClass("tag-button"))
+    			prev_button.after(tag_button);
+    	      else
+    			tag_area.prepend(tag_button);
+    	      var new_text = settings.get_toggle_link_text_fn(settings.tags);
+    	      alert( "Remove tag failed" );
 	
-	      toggle_link.text(new_text);
+    	      toggle_link.text(new_text);
 		
-	      // TODO: no idea why it's necessary to set this up again.
-	      delete_img.mouseenter( function ()
-	      {
-		      $(this).attr("src", settings.delete_tag_img_rollover);
-	      });
-	      delete_img.mouseleave( function ()
-	      {	
-              $(this).attr("src", settings.delete_tag_img);
-	      });
-	    },
-	    success: function() {}
+    	      // TODO: no idea why it's necessary to set this up again.
+    	      delete_img.mouseenter( function ()
+    	      {
+    		      $(this).attr("src", settings.delete_tag_img_rollover);
+    	      });
+    	      delete_img.mouseleave( function ()
+    	      {	
+                  $(this).attr("src", settings.delete_tag_img);
+    	      });
+	      },
+	      success: function() {}
       });
 
       return true;
@@ -248,7 +249,9 @@ jQuery.fn.autocomplete_tagging = function(options) {
 
     var tag_button = $("<span></span>").addClass("tag-button");
     tag_button.append(tag_name_elt);
-    tag_button.append(delete_img);
+    // Allow delete only if element is editable.
+    if (settings.editable)
+        tag_button.append(delete_img);
 
     return tag_button;
   };
@@ -411,55 +414,58 @@ jQuery.fn.autocomplete_tagging = function(options) {
     }
   });  
   
-  tag_area.append(add_tag_button);
-  tag_area.append(tag_input_field);
-  tag_input_field.hide();
-  
-  // On click, enable user to add tags.
-  tag_area.click( function(e) 
+  if (settings.editable)
   {
-    var is_active = $(this).hasClass("active-tag-area");
-
-    // If a "delete image" object was pressed and area is inactive, do nothing.
-    if ($(e.target).hasClass("delete-tag-img") && !is_active)
-      return false;
-    
-    // If a "tag name" object was pressed and area is inactive, do nothing.
-    if ($(e.target).hasClass("tag-name") && !is_active)
-      return false;    
-
-    // Hide add tag button, show tag_input field. Change background to show 
-    // area is active.
-    $(this).addClass("active-tag-area");
-    add_tag_button.hide();
-    tag_input_field.show();
-    tag_input_field.focus();
-
-    // Add handler to document that will call blur when the tag area is blurred;
-    // a tag area is blurred when a user clicks on an element outside the area.
-    var handle_document_click = function(e) 
+      tag_area.append(add_tag_button);
+      tag_area.append(tag_input_field);
+      tag_input_field.hide();
+  
+      // On click, enable user to add tags.
+      tag_area.click( function(e) 
       {
-	var tag_area_id = tag_area.attr("id");
-	// Blur the tag area if the element clicked on is not in the tag area.
-	if ( 
-	    ($(e.target).attr("id") != tag_area_id) &&
-	    ($(e.target).parents().filter(tag_area_id).length == 0) 
-	     )
-	  {
-	    tag_area.blur();
-	    $(document).unbind("click", handle_document_click);
-	  }    
-      };
-    // TODO: we should attach the click handler to all frames in order to capture
-    // clicks outside the frame that this element is in.
-    //window.parent.document.onclick = handle_document_click;
-    //var temp = $(window.parent.document.body).contents().find("iframe").html();
-    //alert(temp);
-    //$(document).parent().click(handle_document_click);
-    $(window).click(handle_document_click);
+        var is_active = $(this).hasClass("active-tag-area");
+
+        // If a "delete image" object was pressed and area is inactive, do nothing.
+        if ($(e.target).hasClass("delete-tag-img") && !is_active)
+          return false;
     
-    return false;
-  });
+        // If a "tag name" object was pressed and area is inactive, do nothing.
+        if ($(e.target).hasClass("tag-name") && !is_active)
+          return false;    
+
+        // Hide add tag button, show tag_input field. Change background to show 
+        // area is active.
+        $(this).addClass("active-tag-area");
+        add_tag_button.hide();
+        tag_input_field.show();
+        tag_input_field.focus();
+
+        // Add handler to document that will call blur when the tag area is blurred;
+        // a tag area is blurred when a user clicks on an element outside the area.
+        var handle_document_click = function(e) 
+          {
+    	var tag_area_id = tag_area.attr("id");
+    	// Blur the tag area if the element clicked on is not in the tag area.
+    	if ( 
+    	    ($(e.target).attr("id") != tag_area_id) &&
+    	    ($(e.target).parents().filter(tag_area_id).length == 0) 
+    	     )
+    	  {
+    	    tag_area.blur();
+    	    $(document).unbind("click", handle_document_click);
+    	  }    
+          };
+        // TODO: we should attach the click handler to all frames in order to capture
+        // clicks outside the frame that this element is in.
+        //window.parent.document.onclick = handle_document_click;
+        //var temp = $(window.parent.document.body).contents().find("iframe").html();
+        //alert(temp);
+        //$(document).parent().click(handle_document_click);
+        $(window).click(handle_document_click);
+    
+        return false;
+      });
+  }
   
   // If using toggle link, hide the tag area. Otherwise, if there are no tags,
   // hide the "add tags" button and show the input field.

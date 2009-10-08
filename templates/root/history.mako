@@ -321,7 +321,7 @@ var updater_callback = function ( tracked_datasets ) {
     %for data in reversed( datasets ):
         %if data.visible:
             <div class="historyItemContainer" id="historyItemContainer-${data.id}">
-                ${render_dataset( data, data.hid, show_deleted_on_refresh = show_deleted )}
+                ${render_dataset( data, data.hid, show_deleted_on_refresh = show_deleted, user_owns_dataset = True )}
             </div>
         %endif
     %endfor

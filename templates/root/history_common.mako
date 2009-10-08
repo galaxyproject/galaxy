@@ -1,6 +1,6 @@
 <% _=n_ %>
 ## Render the dataset `data` as history item, using `hid` as the displayed id
-<%def name="render_dataset( data, hid, show_deleted_on_refresh = False )">
+<%def name="render_dataset( data, hid, show_deleted_on_refresh = False, user_owns_dataset = True )">
     <%
     	if data.state in ['no state','',None]:
     	    data_state = "queued"
@@ -19,21 +19,27 @@
             <strong>This dataset has been deleted. Click <a href="${h.url_for( controller='dataset', action='undelete', id=data.id )}" class="historyItemUndelete" id="historyItemUndeleter-${data.id}" target="galaxy_history">here</a> to undelete.</strong>
         </div>
     %endif
-    
+
         ## Header row for history items (name, state, action buttons)
 	<div style="overflow: hidden;" class="historyItemTitleBar">		
 	    <div class="historyItemButtons">
             %if data_state == "upload":
-		## TODO: Make these CSS, just adding a "disabled" class to the normal
-		## links should be enough. However the number of datasets being uploaded
-		## at a time is usually small so the impact of these images is also small.
-	        <img src="${h.url_for('/static/images/eye_icon_grey.png')}" width='16' height='16' alt='display data' title='display data' class='button display' border='0'>
-	        <img src="${h.url_for('/static/images/pencil_icon_grey.png')}" width='16' height='16' alt='edit attributes' title='edit attributes' class='button edit' border='0'>
+		        ## TODO: Make these CSS, just adding a "disabled" class to the normal
+        		## links should be enough. However the number of datasets being uploaded
+        		## at a time is usually small so the impact of these images is also small.
+    	        <img src="${h.url_for('/static/images/eye_icon_grey.png')}" width='16' height='16' alt='display data' title='display data' class='button display' border='0'>
+                %if user_owns_dataset:
+    	            <img src="${h.url_for('/static/images/pencil_icon_grey.png')}" width='16' height='16' alt='edit attributes' title='edit attributes' class='button edit' border='0'>
+    	        %endif
             %else:
-	        <a class="icon-button display" title="display data" href="${h.url_for( controller='dataset', dataset_id=data.id, action='display', filename='index')}" target="galaxy_main"></a>
-	        <a class="icon-button edit" title="edit attributes" href="${h.url_for( controller='root', action='edit', id=data.id )}" target="galaxy_main"></a>
+    	        <a class="icon-button display" title="display data" href="${h.url_for( controller='dataset', dataset_id=data.id, action='display', filename='index')}" target="galaxy_main"></a>
+                %if user_owns_dataset:
+    	            <a class="icon-button edit" title="edit attributes" href="${h.url_for( controller='root', action='edit', id=data.id )}" target="galaxy_main"></a>
+    	        %endif
             %endif
-	    <a class="icon-button delete" title="delete" href="${h.url_for( action='delete', id=data.id, show_deleted_on_refresh=show_deleted_on_refresh )}" id="historyItemDeleter-${data.id}"></a>
+            %if user_owns_dataset:
+	            <a class="icon-button delete" title="delete" href="${h.url_for( action='delete', id=data.id, show_deleted_on_refresh=show_deleted_on_refresh )}" id="historyItemDeleter-${data.id}"></a>
+	        %endif
 	    </div>
 	    <span class="state-icon"></span>
 	    <span class="historyItemTitle"><b>${hid}: ${data.display_name().decode('utf-8')}</b></span>
@@ -80,8 +86,10 @@
                 <div class="info">${_('Info: ')}${data.display_info()}</div>
                 <div> 
                     %if data.has_data:
-                        <a href="${h.url_for( action='display', id=data.id, tofile='yes', toext=data.ext )}" target="_blank">save</a>
-			| <a href="${h.url_for( controller='tool_runner', action='rerun', id=data.id )}" target="galaxy_main">rerun</a>
+                        <a href="${h.url_for( controller='root', action='display', id=data.id, tofile='yes', toext=data.ext )}" target="_blank">save</a>
+			            %if user_owns_dataset:
+			                | <a href="${h.url_for( controller='tool_runner', action='rerun', id=data.id )}" target="galaxy_main">rerun</a>
+			            %endif
                         %for display_app in data.datatype.get_display_types():
                             <% target_frame, display_links = data.datatype.get_display_links( data, display_app, app, request.base ) %>
                             %if len( display_links ) > 0:

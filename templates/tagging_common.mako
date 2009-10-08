@@ -4,7 +4,7 @@
 %endif
 
 ## Render the tags 'tags' as an autocomplete element.
-<%def name="render_tagging_element(tagged_item, elt_id, use_toggle_link='true', in_form='false', input_size='15', tag_click_fn='default_tag_click_fn', get_toggle_link_text_fn='default_get_toggle_link_text_fn')">
+<%def name="render_tagging_element(tagged_item, elt_id, use_toggle_link='true', in_form='false', input_size='15', tag_click_fn='default_tag_click_fn', get_toggle_link_text_fn='default_get_toggle_link_text_fn', editable='true')">
     <script type="text/javascript">
         //
         // Set up autocomplete tagger.
@@ -83,6 +83,7 @@
         var options =
         {
             tags : ${h.to_json_string(tag_names_and_values)},
+            editable : ${str(editable).lower()},
             get_toggle_link_text_fn: ${get_toggle_link_text_fn},
             tag_click_fn: ${tag_click_fn},
             <% tagged_item_id = trans.security.encode_id(tagged_item.id) %>

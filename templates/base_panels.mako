@@ -44,13 +44,14 @@
     <!--[if lt IE 7]>
     ${h.js( 'IE7', 'ie7-recalc' )}
     <![endif]-->
+    ${h.js( 'jquery' )}
 </%def>
 
 ## Default late-load javascripts
 <%def name="late_javascripts()">
     ## Scripts can be loaded later since they progressively add features to
     ## the panels, but do not change layout
-    ${h.js( 'jquery', 'jquery.event.drag', 'jquery.event.hover', 'jquery.form', 'galaxy.base', 'galaxy.panels' )}
+    ${h.js( 'jquery.event.drag', 'jquery.event.hover', 'jquery.form', 'galaxy.base', 'galaxy.panels' )}
     <script type="text/javascript">
         
     ensure_dd_helper();

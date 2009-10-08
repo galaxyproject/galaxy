@@ -34,10 +34,17 @@
                 %endif
                 %if history.importable:
                     <div class="form-row">
+                        <% url = h.url_for( controller='history', action='view', id=trans.security.encode_id(history.id), qualified=True ) %>
+                        <a href="${url}" target="_blank">${url}</a>
+                        <div class="toolParamHelp" style="clear: both;">
+                            Send the above link to users as an easy way for them to view the history.
+                        </div>
+                    </div>
+                    <div class="form-row">
                         <% url = h.url_for( controller='history', action='imp', id=trans.security.encode_id(history.id), qualified=True ) %>
                         <a href="${url}">${url}</a>
                         <div class="toolParamHelp" style="clear: both;">
-                            Send the above URL to users as an easy way for them to import the history, making a copy of their own
+                            Send the above link to users as an easy way for them to import the history, making a copy of their own.
                         </div>
                     </div>
                     <div class="form-row">
