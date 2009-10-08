@@ -426,9 +426,19 @@
 
 **What it does**
 
-Bowtie_ is a short read aligner designed to be ultrafast and memory-efficient. Reads can be as long as 1024 base pairs, though shorter is better. Bowtie produces a specific output format which is converted to SAM by this tool. 
+Bowtie_ is a short read aligner designed to be ultrafast and memory-efficient. It is developed by Ben Langmead and Cole Trapnell.
 
 .. _Bowtie: http://bowtie-bio.sourceforge.net/index.shtml
+
+------
+
+**Know what you are doing**
+
+.. class:: warningmark
+
+There is no such thing (yet) as automated gearshift in short read mapping. It is all like stick-shift driving in San Francisco. In other words = running this tool with default parameters will probably not give you meaningful results. A way to deal with this is to **understand** the parameters by carefully reading `documentation`__ and experimenting. Fortunaly, Galaxy makes experimenting easy.
+
+ .. __: http://bowtie-bio.sourceforge.net/index.shtml
 
 ------
 
