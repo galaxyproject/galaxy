@@ -290,12 +290,8 @@ class RowCounter( object ):
 
 <ul class="manage-table-actions">
     %if can_add:
-        <li>
-            <a class="action-button" href="${h.url_for( controller='library', action='upload_library_dataset', library_id=library.id, folder_id=library.root_folder.id )}"><span>Add datasets</span></a>
-        </li>
-        <li>
-            <a class="action-button" href="${h.url_for( controller='library', action='folder', new=True, obj_id=library.root_folder.id, library_id=library.id )}">Add folder</a>
-        </li>
+        <li><a class="action-button" href="${h.url_for( controller='library', action='upload_library_dataset', library_id=library.id, folder_id=library.root_folder.id )}"><span>Add datasets</span></a></li>
+        <li><a class="action-button" href="${h.url_for( controller='library', action='folder', new=True, obj_id=library.root_folder.id, library_id=library.id )}">Add folder</a></li>
     %endif
     %if can_modify:
         <li><a class="action-button" href="${h.url_for( controller='library', action='library', information=True, obj_id=library.id )}">Edit information</a></li>
@@ -303,7 +299,7 @@ class RowCounter( object ):
         <li><a class="action-button" href="${h.url_for( controller='library', action='library', information=True, obj_id=library.id )}">View information</a></li>
     %endif
     %if can_add and not info_association:
-        <a class="action-button" href="${h.url_for( controller='library_common', action='info_template', cntrller='library', library_id=library.id, response_action='browse_library' )}">Add template</a>
+        <li><a class="action-button" href="${h.url_for( controller='library_common', action='info_template', cntrller='library', library_id=library.id, response_action='browse_library' )}">Add template</a></li>
     %endif
     %if can_manage:
         <li><a class="action-button" href="${h.url_for( controller='library', action='library', permissions=True, obj_id=library.id )}">Edit permissions</a></li>
