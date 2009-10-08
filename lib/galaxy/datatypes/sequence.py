@@ -174,58 +174,10 @@ class Fastq ( Sequence ):
         except:
             return False
 
-
 class FastqSanger( Fastq ):
     """Class representing a FASTQ sequence ( the Sanger variant )"""
     file_ext = "fastqsanger"
 
-    def sniff( self, filename ):
-        """
-        Determines whether the file is in fastqsanger format (Sanger Variant)
-        For details, see http://maq.sourceforge.net/fastq.shtml
-
-        Note: There are three kinds of FASTQ files, known as "Sanger" (sometimes called "Standard"), Solexa, and Illumina
-              These differ in the representation of the quality scores
-
-        >>> fname = get_test_fname( '1.fastqsanger' )
-        >>> FastqSanger().sniff( fname )
-        True
-        >>> fname = get_test_fname( '2.fastqsanger' )
-        >>> FastqSanger().sniff( fname )
-        True
-        """
-        headers = get_headers( filename, None )
-        bases_regexp = re.compile( "^[NGTAC]*$" )
-        try:
-            if len( headers ) >= 4 and headers[0][0] and headers[0][0][0] == "@" and headers[2][0] and headers[2][0][0] == "+" and headers[1][0]:
-                # look through first 20 blocks and make sure bases valid and qualities valid
-                for i in range( 1, 80, 4 ):
-                    try:
-                        # check that bases are legitimate
-                        if not bases_regexp.match( headers[i][0] ):
-                            return False
-                        # check length of qualities (matching bases)
-                        if len( headers[i+2][0] ) != len( headers[1][0] ):
-                            return False
-                        # check qualities within fastqsanger range
-                        if not self.check_qual_values_within_range( headers[i+2][0] ):
-                            return False
-                    except IndexError:
-                        pass
-                return True
-            return False 
-        except:
-            return False
-    def check_qual_values_within_range( self, qual_seq ):
-        under59 = False
-        for val in qual_seq:
-            if ord(val) < 33 or ord(val) > 126:
-                return False
-            if not under59 and ord(val) < 59:
-                under59 = True
-        if under59:
-            return True
-        return False
 
 try:
     from galaxy import eggs
