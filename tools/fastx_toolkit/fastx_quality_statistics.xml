@@ -9,7 +9,7 @@
 
 	<tests>
 		<test>
-			<param name="input" value="fastq_stats1.fastq" />
+			<param name="input" value="fastq_stats1.fastq" ftype="fastq"/>
 			<param name="offset" value="64" />
 			<output name="output" file="fastq_stats1.out" />
 		</test>

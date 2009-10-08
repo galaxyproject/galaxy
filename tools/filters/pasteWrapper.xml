@@ -12,6 +12,7 @@
       <option value="D">Dash</option>
       <option value="U">Underscore</option>
       <option value="P">Pipe</option>
+      <option value="Sp">Space</option>
     </param>
   </inputs>
   <outputs>
