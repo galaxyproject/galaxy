@@ -10,6 +10,7 @@
       #for $col in $column_set:
         ${col.other_column}
         ${col.other_style}
+        ${col.other_order}
       #end for
   </command>
   <inputs>
@@ -19,17 +20,21 @@
       <option value="num">Numerical sort</option>
       <option value="alpha">Alphabetical sort</option>
     </param>
+    <param name="order" type="select" label="everything in">
+      <option value="DESC">Descending order</option>
+      <option value="ASC">Ascending order</option>
+    </param>
     <repeat name="column_set" title="Column selection">
       <param name="other_column" label="on column" type="data_column" data_ref="input" accept_default="true" />
       <param name="other_style" type="select" label="with flavor">
         <option value="num">Numerical sort</option>
         <option value="alpha">Alphabetical sort</option>
       </param>
+      <param name="other_order" type="select" label="everything in">
+        <option value="DESC">Descending order</option>
+        <option value="ASC">Ascending order</option>
+      </param>
     </repeat>
-    <param name="order" type="select" label="everything in">
-      <option value="DESC">Descending order</option>
-      <option value="ASC">Ascending order</option>
-    </param>
   </inputs>
   <outputs>
     <data format="input" name="out_file1" metadata_source="input"/>
@@ -39,18 +44,20 @@
       <param name="input" value="sort_in1.bed"/>
       <param name="column" value="1"/>
       <param name="style" value="num"/>
+      <param name="order" value="ASC"/>
       <param name="other_column" value="3"/>
       <param name="other_style" value="num"/>
-      <param name="order" value="ASC"/>
+      <param name="other_order" value="ASC"/>
       <output name="out_file1" file="sort_out1.bed"/>
     </test>
     <test>
       <param name="input" value="sort_in1.bed"/>
       <param name="column" value="3"/>
       <param name="style" value="alpha"/>
+      <param name="order" value="ASC"/>
       <param name="other_column" value="1"/>
       <param name="other_style" value="alpha"/>
-      <param name="order" value="ASC"/>
+      <param name="other_order" value="ASC"/>
       <output name="out_file1" file="sort_out2.bed"/>
     </test>
   </tests>
@@ -64,7 +71,7 @@
 
 **Syntax**
 
-This tool sorts the dataset on any number of columns in either ascending or descending order (all columns will be ascending or descending).
+This tool sorts the dataset on any number of columns in either ascending or descending order.
 
 * Numerical sort orders numbers by their magnitude, ignores all characters besides numbers, and evaluates a string of numbers to the value they signify.  
 * Alphabetical sort is a phonebook type sort based on the conventional order of letters in an alphabet. Each nth letter is compared with the nth letter of other words in the list, starting at the first letter of each word and advancing to the second, third, fourth, and so on, until the order is established. Therefore, in an alphabetical sort, 2 comes after 100 (1 &lt; 2).

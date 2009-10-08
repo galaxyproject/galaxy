@@ -26,19 +26,20 @@ def main():
     try:
         inputfile = options.input
         outputfile = '-o %s' % options.out_file1
-        order = ('', '-r')[options.order == 'DESC']
         columns = [options.column]
         styles = [('','n')[options.style == 'num']]
-        col_styles = sys.argv[6:]
-        if len(col_styles) > 1:
-            columns.extend([col_styles[i] for i in range(0,len(col_styles),2)])
-            styles.extend([('','n')[col_styles[i] == 'num'] for i in range(1,len(col_styles),2)])
-        cols = [ '-k%s,%s%s'%(columns[i], columns[i], styles[i]) for i in range(len(columns)) ]
+        orders = [('','r')[options.order == 'DESC']]
+        col_style_orders = sys.argv[6:]
+        if len(col_style_orders) > 1:
+            columns.extend([col_style_orders[i] for i in range(0,len(col_style_orders),3)])
+            styles.extend([('','n')[col_style_orders[i] == 'num'] for i in range(1,len(col_style_orders),3)])
+            orders.extend([('','r')[col_style_orders[i] == 'DESC'] for i in range(2,len(col_style_orders),3)])
+        cols = [ '-k%s,%s%s%s'%(columns[i], columns[i], styles[i], orders[i]) for i in range(len(columns)) ]
     except Exception, ex:
         stop_err('Error parsing input parameters\n' + str(ex))
 
     # Launch sort.
-    cmd = "sort -f -t $'\t' %s %s %s %s" % (order, ' '.join(cols), outputfile, inputfile)
+    cmd = "sort -f -t $'\t' %s %s %s" % (' '.join(cols), outputfile, inputfile)
     try:
         os.system(cmd)
     except Exception, ex:
