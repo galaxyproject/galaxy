@@ -32,22 +32,15 @@
      --valAlign=$singlePaired.params.valAlign
      --allValAligns=$singlePaired.params.allValAligns
      --suppressAlign=$singlePaired.params.suppressAlign
-     --offbase=$singlePaired.params.offbase
      --offrate=$singlePaired.params.offrate
      --seed=$singlePaired.params.seed
      --best=$singlePaired.params.bestOption.best
      #if $singlePaired.params.bestOption.best == "doBest":
       --maxBacktracks=$singlePaired.params.bestOption.maxBacktracks
       --strata=$singlePaired.params.bestOption.strata
-      --phased="None"
      #else:
       --maxBacktracks="None"
       --strata="None"
-      #if $singlePaired.sPaired =="single":
-       --phased=$singlePaired.params.bestOption.phased
-      #else:
-       --phased="None"
-      #end if
      #end if
      #if $singlePaired.sPaired == "single":
       --minInsert="None"
@@ -78,7 +71,6 @@
      --valAlign="None"
      --allValAligns="None"
      --suppressAlign="None"
-     --offbase="None"
      --best="None"
      --maxBacktracks="None"
      --strata="None"
@@ -88,7 +80,6 @@
      --maxAlignAttempt="None"
      --forwardAlign="None"
      --reverseAlign="None"
-     --phased="None"
      --offrate="None"
      --seed="None"
     #end if
@@ -123,7 +114,6 @@
      --iendian=$refGenomeSource.indexParams.endian
      --iseed=$refGenomeSource.indexParams.seed
      --icutoff=$refGenomeSource.indexParams.cutoff
-     --ioldpmap=$refGenomeSource.indexParams.oldpmap
     #else:
      --iauto_b="None"
      --ipacked="None"
@@ -138,8 +128,8 @@
      --iendian="None"
      --iseed="None"
      --icutoff="None"
-     --ioldpmap="None"
     #end if
+    --suppressHeader=$suppressHeader
   </command>
   <inputs>
     <conditional name="refGenomeSource">
@@ -200,10 +190,6 @@
             </param> 
             <param name="seed" type="integer" value="-1" label="Seed for the pseudorandom number generator (--seed)" help="Use -1 to use default" />
             <param name="cutoff" type="integer" value="-1" label="Number of first bases of the reference sequence to index (--cutoff)" help="Use -1 to use default" />
-            <param name="oldpmap" type="select" label="Use the scheme for mapping joined reference locations to original reference locations used in versions of Bowtie prior to 0.9.8 (--oldpmap)" help="The old scheme uses padding and the new one doesn't">
-              <option value="no">Use the new scheme</option>
-              <option value="yes">Use the old scheme</option>
-            </param> 
           </when> <!-- index_full -->
         </conditional>
       </when>
@@ -244,7 +230,6 @@
               <option value="doAllValAligns">Report all valid alignments</option>
             </param>
             <param name="suppressAlign" type="integer" value="-1" label="Suppress all alignments for a read if more than n reportable alignments exist (-m)" help="-1 for no limit" />
-            <param name="offbase" type="integer" value="0" label="Number the first base of a reference sequence as n when outputting alignments (-B)" />
             <conditional name="bestOption">
               <param name="best" type="select" label="Whether or not to make Bowtie guarantee that reported singleton alignments are 'best' in terms of stratum and in terms of the quality values at the mismatched positions (--best)" help="Removes all strand bias. Only affects which alignments are reported by Bowtie. Runs slower with best option">
                 <option value="noBest">Do not use best</option>
@@ -252,10 +237,6 @@
               </param>
               <when value="noBest">
                 <param name="maxBacktracks" type="integer" value="125" label="Maximum number of backtracks permitted when aligning a read (--maxbts)" />
-                <param name="phased" type="select" label="Whether or not it should alternate between using the forward and mirror indexes in a series of phases so that only half of the index is resident in memory at one time (-z)">
-                  <option value="noPhased">Don't alternate</option>
-                  <option value="doPhased">Do alternate</option>
-                </param>
               </when>
               <when value="doBest">
                 <param name="maxBacktracks" type="integer" value="800" label="Maximum number of backtracks permitted when aligning a read (--maxbts)" />
@@ -318,7 +299,6 @@
               <option value="doAllValAligns">Report all valid alignments</option>
             </param>
             <param name="suppressAlign" type="integer" value="-1" label="Suppress all alignments for a pair if more than n reportable alignments exist (-m)" help="-1 for no limit" />
-            <param name="offbase" type="integer" value="0" label="Number the first base of a reference sequence as n when outputting alignments (-B)" />
             <conditional name="bestOption">
               <param name="best" type="select" label="Whether or not to make Bowtie guarantee that reported singleton alignments are 'best' in terms of stratum and in terms of the quality values at the mismatched positions (--best)" help="Removes all strand bias. Only affects which alignments are reported by Bowtie. Runs slower with best option">
                 <option value="noBest">Do not use best</option>
@@ -341,6 +321,7 @@
         </conditional> <!-- params -->
       </when> <!-- paired -->
     </conditional> <!-- singlePaired -->
+    <param name="suppressHeader" type="boolean" truevalue="true" falsevalue="false" checked="true" label="Suppress the header in the output SAM file" help="Bowtie produces SAM with several lines of header information" />
   </inputs>
   <outputs>
     <data format="sam" name="output" />
@@ -352,6 +333,7 @@
       <param name="sPaired" value="single" />
       <param name="input1" ftype="fastqsanger" value="bowtie_in1.fastq" />
       <param name="settings_type" value="pre_set" />
+      <param name="suppressHeader" value="true" />
       <output name="output" ftype="sam" file="bowtie_out1.sam" />
     </test>
     <test>
@@ -362,6 +344,7 @@
       <param name="input1" ftype="fastqsanger" value="bowtie_in2.fastq" />
       <param name="input2" ftype="fastqsanger" value="bowtie_in3.fastq" />
       <param name="settings_type" value="pre_set" />
+      <param name="suppressHeader" value="true" />
       <output name="output" ftype="sam" file="bowtie_out2.sam" />
     </test>
     <test>
@@ -381,10 +364,10 @@
       <param name="endian" value="little" />
       <param name="seed" value="-1" />
       <param name="cutoff" value="-1" />
-      <param name="oldpmap" value="no" />
       <param name="sPaired" value="single" />
       <param name="input1" ftype="fastqsanger" value="bowtie_in1.fastq" />
       <param name="settings_type" value="pre_set" />
+      <param name="suppressHeader" value="true" />
       <output name="output" ftype="sam" file="bowtie_out1.sam" />
     </test>  
     <test>
@@ -413,13 +396,13 @@
       <param name="valAlign" value="1" />
       <param name="allValAligns" value="noAllValAligns" />
       <param name="suppressAlign" value="-1" />
-      <param name="offbase" value="0" />
       <param name="best" value="doBest" />
       <param name="maxBacktracks" value="800" />
       <param name="strata" value="noStrata" />
       <param name="offrate" value="-1" />
       <param name="seed" value="403" />
-      <output name="output" ftype="sam" file="bowtie_out2.sam" />
+      <param name="suppressHeader" value="true" />
+      <output name="output" ftype="sam" file="bowtie_out3.sam" />
     </test>
   </tests> 
   <help>
@@ -514,7 +497,6 @@ For indexing (bowtie-build)::
 	--little                Endianness. [--little]
 	--seed &lt;int&gt;      Random seed. Use &lt;int&gt; as the seed for the pseudo-random number generator. [off]
 	--cutoff &lt;int&gt;    Cutoff. Index only the first &lt;int&gt; bases of the reference sequences (cumulative across sequences) and ignore the rest. [off]
-	--oldpmap               Use old mapping scheme. Use the padding-based scheme from Bowtie versions before 0.9.8 instead of the current scheme. [off]
 
 For aligning (bowtie)::
 	-s &lt;int&gt;           Skip. Do not align the first &lt;int&gt; reads or pairs in the input. [off]
@@ -542,10 +524,7 @@ For aligning (bowtie)::
 	-m &lt;int&gt;           Suppress alignments. Suppress all alignments for a particular read or pair if more than &lt;int&gt; reportable alignments exist for it. [no limit]
 	--best                   Best mode. Make Bowtie guarantee that reported singleton alignments are "best" in terms of stratum (the number of mismatches) and quality values at mismatched position. [off]
 	--strata                 Best strata. When running in best mode, report alignments that fall into the best stratum if there are ones falling into more than one. [off]
-	-B &lt;int&gt;           First base number. When outputting alignments, number the first base of a reference sequence as &lt;int&gt;. [0]
-	-z &lt;int&gt;           Phased. Alternate between using the forward and mirror indexes in a series of phases such that only one half of the index is resident in memory at one time. Cannot be used with paired-end alignment. [off]
 	-o &lt;int&gt;           Offrate override. Override the offrate of the index with &lt;int&gt;. Some row markings are discarded when index read into memory. &lt;int&gt; must be greater than the value used to build the index (default: 5). [off]
-	--mm                     I/O for index loading. Choosing this option means that memory-mapped I/O will be used to load the index instead of the normal POSIX/C file I/O. Allows memory-efficient parallelization where using -p is not desirable. [off]
 	--seed &lt;int&gt;       Random seed. Use &lt;int&gt; as the seed for the pseudo-random number generator. [off]
 
   </help>

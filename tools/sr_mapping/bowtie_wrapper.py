@@ -33,7 +33,6 @@ def __main__():
     parser.add_option('', '--valAlign', dest='valAlign', help='Report up to n valid arguments per read')
     parser.add_option('', '--allValAligns', dest='allValAligns', help='Whether or not to report all valid alignments per read')
     parser.add_option('', '--suppressAlign', dest='suppressAlign', help='Suppress all alignments for a read if more than n reportable alignments exist')
-    parser.add_option('', '--offbase', dest='offbase', help='Number the first base of a reference sequence as n when outputting alignments')
     parser.add_option('', '--best', dest='best', help="Whether or not to make Bowtie guarantee that reported singleton alignments are 'best' in terms of stratum and in terms of the quality values at the mismatched positions")
     parser.add_option('', '--maxBacktracks', dest='maxBacktracks', help='Maximum number of backtracks permitted when aligning a read')
     parser.add_option('', '--strata', dest='strata', help='Whether or not to report only those alignments that fall in the best stratum if many valid alignments exist and are reportable')
@@ -43,7 +42,6 @@ def __main__():
     parser.add_option('', '--maxAlignAttempt', dest='maxAlignAttempt', help='Maximum number of attempts Bowtie will make to match an alignment for one mate with an alignment for the opposite mate')
     parser.add_option('', '--forwardAlign', dest='forwardAlign', help='Whether or not to attempt to align the forward reference strand')
     parser.add_option('', '--reverseAlign', dest='reverseAlign', help='Whether or not to attempt to align the reverse-complement reference strand')
-    parser.add_option('', '--phased', dest='phased', help='Whether or not it should alternate between using the forward and mirror indexes in a series of phases so that only half of the index is resident in memory at one time')
     parser.add_option('', '--offrate', dest='offrate', help='Override the offrate of the index to n')
     parser.add_option('', '--seed', dest='seed', help='Seed for pseudo-random number generator')
     parser.add_option('', '--dbkey', dest='dbkey', help='')
@@ -61,8 +59,8 @@ def __main__():
     parser.add_option('', '--iendian', dest='iendian', help='Endianness to use when serializing integers to the index file')
     parser.add_option('', '--iseed', dest='iseed', help='Seed for the pseudorandom number generator')
     parser.add_option('', '--icutoff', dest='icutoff', help='Number of first bases of the reference sequence to index')
-    parser.add_option('', '--ioldpmap', dest='ioldpmap', help='Use the scheme for mapping joined reference locations to original reference locations used in versions of Bowtie prior to 0.9.8')
     parser.add_option('', '--indexSettings', dest='index_settings', help='Whether or not indexing options are to be set')
+    parser.add_option('', '--suppressHeader', dest='suppressHeader', help='Suppress header')
     (options, args) = parser.parse_args()
     
     # index if necessary
@@ -72,7 +70,7 @@ def __main__():
             indexing_cmds = ''
         else:
             try:
-                indexing_cmds = '%s %s %s %s %s %s %s --offrate %s %s %s %s %s %s %s' % \
+                indexing_cmds = '%s %s %s %s %s %s %s --offrate %s %s %s %s %s %s' % \
                                 (('','--noauto')[options.iauto_b=='set'], 
                                  ('','--packed')[options.ipacked=='packed'],
                                  ('','--bmax %s'%options.ibmax)[options.ibmax!='None' and options.ibmax>=1], 
@@ -84,8 +82,7 @@ def __main__():
                                  ('','--ntoa')[options.intoa=='yes'], 
                                  ('--little','--big')[options.iendian=='big'],
                                  ('','--seed %s'%options.iseed)[int(options.iseed)>0], 
-                                 ('','--cutoff %s'%options.icutoff)[int(options.icutoff)>0], 
-                                 ('','--oldpmap')[options.ioldpmap=='yes'])
+                                 ('','--cutoff %s'%options.icutoff)[int(options.icutoff)>0])
             except ValueError:
                 indexing_cmds = ''
                 
@@ -105,11 +102,11 @@ def __main__():
     # set up aligning and generate aligning command options
     # automatically set threads to 8 in both cases
     if options.params == 'pre_set':
-        aligning_cmds = '-p %s' % options.threads
+        aligning_cmds = '-p %s -S' % options.threads
     else:
         try:
             aligning_cmds = '%s %s %s %s %s %s %s %s %s %s %s %s %s %s ' \
-                            '%s %s %s %s %s %s %s %s %s %s %s %s -p %s' % \
+                            '%s %s %s %s %s %s %s %s %s %s -p %s -S' % \
                             (('','-s %s'%options.skip)[options.skip!='None'], 
                              ('','-u %s'%options.alignLimit)[int(options.alignLimit)>0],
                              ('','-5 %s'%options.trimH)[int(options.trimH)>=0], 
@@ -132,41 +129,47 @@ def __main__():
                              ('','-m %s'%options.suppressAlign)[int(options.suppressAlign)>=0], 
                              ('','--best')[options.best=='doBest'],
                              ('','--strata')[options.strata=='doStrata'],
-                             ('','-B %s'%options.offbase)[int(options.offbase)>=0],
-                             ('','-z %s'%options.phased)[options.phased!='None'], 
                              ('','-o %s'%options.offrate)[int(options.offrate)>=0],
                              ('','--seed %s'%options.seed)[int(options.seed)>=0],
                              options.threads)
         except ValueError:
             aligning_cmds = '-p %s' % options.threads 
 
-    tmp_out = tempfile.NamedTemporaryFile()
-
     # prepare actual aligning commands
     if options.paired == 'paired':
-        cmd2 = 'bowtie %s %s -1 %s -2 %s > %s 2> /dev/null' % (aligning_cmds, options.ref, options.input1, options.input2, tmp_out.name)
+        cmd2 = 'bowtie %s %s -1 %s -2 %s > %s 2> /dev/null' % (aligning_cmds, options.ref, options.input1, options.input2, options.output) 
     else:
-        cmd2 = 'bowtie %s %s %s > %s 2> /dev/null' % (aligning_cmds, options.ref, options.input1, tmp_out.name)
-    # prepare command to convert bowtie output to sam and alternative
-    cmd3 = 'bowtie2sam.pl %s > %s' % (tmp_out.name, options.output)
-    cmd4 = 'cp %s %s' % (tmp_out.name, options.output)
+        cmd2 = 'bowtie %s %s %s > %s 2> /dev/null' % (aligning_cmds, options.ref, options.input1, options.output) 
 
     # align
     try:
         os.system(cmd2)
     except Exception, erf:
         stop_err("Error aligning sequence\n" + str(erf))
-    if len(file(tmp_out.name,'r').read()) > 0:
-        #convert 
+
+    # remove header if necessary
+    if options.suppressHeader == 'true':
+        tmp_out = tempfile.NamedTemporaryFile()
+        cmd3 = 'cp %s %s' % (options.output, tmp_out.name)
         try:
             os.system(cmd3)
         except Exception, erf:
-            stop_err('Error converting output to sam format\n' + str(erf))
-    else:
-        try:
-            os.system(cmd4)
-            sys.stdout.write('Alignment file contained no data')
-        except Exception, erf:
-            stop_err('Error producing alignment file. File contained no data.\n' + str(erf))
+            stop_err("Error copying output file before removing headers\n" + str(erf))
+        output = file(tmp_out.name, 'r')
+        fout = file(options.output, 'w')
+        header = True
+        line = output.readline()
+        while line.strip() != '':
+            if header:
+                if line.startswith('@HD') or line.startswith('@SQ') or line.startswith('@RG') or line.startswith('@PG') or line.startswith('@CO'):
+                    pass
+                else:
+                    header = False
+                    fout.write(line)
+            else:
+                fout.write(line)
+            line = output.readline()
+        fout.close()
+        tmp_out.close()
 
 if __name__=="__main__": __main__()
