@@ -1,5 +1,7 @@
 <%inherit file="/base_panels.mako"/>
 
+<%def name="title()">Galaxy :: ${page.user.username} :: ${page.title}</%def>
+
 <%def name="init()">
 <%
     self.has_left_panel=False
@@ -14,7 +16,7 @@
 
     <div class="unified-panel-header" unselectable="on">
         <div class="unified-panel-header-inner">
-            ${page.user.username} / ${page.title}
+            ${page.user.username} :: ${page.title}
         </div>
     </div>
 
