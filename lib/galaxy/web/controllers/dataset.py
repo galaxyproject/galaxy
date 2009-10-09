@@ -363,7 +363,7 @@ class DatasetInterface( BaseController ):
                     new_history = trans.app.model.History()
                     if new_history_name:
                         new_history.name = new_history_name
-                    new_history_name = user
+                    new_history.user = user
                     new_history.flush()
                     target_history_ids.append( new_history.id )
                 if user:
