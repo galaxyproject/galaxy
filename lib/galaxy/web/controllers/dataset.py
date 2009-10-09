@@ -199,7 +199,7 @@ class DatasetInterface( BaseController ):
         return 'This link may not be followed from within Galaxy.'
     
     @web.expose
-    def display(self, trans, dataset_id=None, filename=None, **kwd):
+    def display(self, trans, dataset_id=None, filename=None, show_all=False, **kwd):
         """Catches the dataset id and displays file contents as directed"""
         data = trans.app.model.HistoryDatasetAssociation.get( dataset_id )
         if not data:
@@ -209,23 +209,29 @@ class DatasetInterface( BaseController ):
             if data.state == trans.model.Dataset.states.UPLOAD:
                 return trans.show_error_message( "Please wait until this dataset finishes uploading before attempting to view it." )
             if filename is None or filename.lower() == "index":
+                file_path = data.file_name
                 mime = trans.app.datatypes_registry.get_mimetype_by_extension( data.extension.lower() )
                 trans.response.set_content_type(mime)
                 trans.log_event( "Display dataset id: %s" % str( dataset_id ) )
-                try:
-                    return open( data.file_name )
-                except:
-                    raise paste.httpexceptions.HTTPNotFound( "File Not Found (%s)." % ( filename ) )
+
             else:
                 file_path = os.path.join( data.extra_files_path, filename )
                 mime, encoding = mimetypes.guess_type( file_path )
                 if mime is None:
                     mime = trans.app.datatypes_registry.get_mimetype_by_extension( ".".split( file_path )[-1] )
                 trans.response.set_content_type( mime )
-                try:
+                
+            if os.path.exists( file_path ):
+                max_peek_size = 1000000 # 1 MB
+                if show_all or os.stat( file_path ).st_size < max_peek_size:
                     return open( file_path )
-                except:
-                    raise paste.httpexceptions.HTTPNotFound( "File Not Found (%s)." % ( filename ) )
+                else:
+                    trans.response.set_content_type( "text/html" )
+                    return trans.fill_template( "/dataset/large_file.mako",
+                                                    truncated_data = open( file_path ).read(max_peek_size),
+                                                    data = data )
+            else:
+                raise paste.httpexceptions.HTTPNotFound( "File Not Found (%s)." % ( filename ) )
         else:
             return trans.show_error_message( "You are not allowed to access this dataset" )
             
