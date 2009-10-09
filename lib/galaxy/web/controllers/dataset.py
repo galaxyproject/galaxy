@@ -107,7 +107,7 @@ class HistoryDatasetAssociationListGrid( grids.Grid ):
             return accepted_filters
 
     # Grid definition
-    title = "Stored datasets"
+    title = "Stored Datasets"
     model_class = model.HistoryDatasetAssociation
     template='/dataset/grid.mako'
     default_sort_key = "-create_time"
@@ -125,7 +125,7 @@ class HistoryDatasetAssociationListGrid( grids.Grid ):
     default_filter = dict( deleted="False", tags="All" )
     preserve_state = False
     use_paging = True
-    num_rows_per_page = 10
+    num_rows_per_page = 50
     def apply_default_filter( self, trans, query, **kwargs ):
         # This is a somewhat obtuse way to join the History and HDA tables. However, it's necessary 
         # because the initial query in build_initial_query is specificied on the HDA table (this is reasonable) 
