@@ -390,9 +390,9 @@ class TwillTestCase( unittest.TestCase ):
         self.visit_url( "%s/dataset/undelete?id=%s" % ( self.url, hda_id ) )
         if check_str:
             self.check_page_for_string( check_str )
-    def display_history_item( self, id, check_str='' ):
+    def display_history_item( self, hda_id, check_str='' ):
         """Displays a history item - simulates eye icon click"""
-        self.visit_url( '%s/datasets/%s/display/index' % ( self.url, id ) )
+        self.visit_url( '%s/dataset/display?encoded_id=%s' % ( self.url, self.security.encode_id( hda_id ) ) )
         if check_str:
             self.check_page_for_string( check_str )
         self.home()
