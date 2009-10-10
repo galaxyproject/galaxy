@@ -32,7 +32,7 @@
     	            <img src="${h.url_for('/static/images/pencil_icon_grey.png')}" width='16' height='16' alt='edit attributes' title='edit attributes' class='button edit' border='0'>
     	        %endif
             %else:
-    	        <a class="icon-button display" title="display data" href="${h.url_for( controller='dataset', action='display', encoded_id=trans.security.encode_id( data.id ))}" target="galaxy_main"></a>
+    	        <a class="icon-button display" title="display data" href="${h.url_for( controller='dataset', dataset_id=data.id, action='display', filename='index')}" target="galaxy_main"></a>
                 %if user_owns_dataset:
     	            <a class="icon-button edit" title="edit attributes" href="${h.url_for( controller='root', action='edit', id=data.id )}" target="galaxy_main"></a>
     	        %endif
@@ -86,7 +86,7 @@
                 <div class="info">${_('Info: ')}${data.display_info()}</div>
                 <div> 
                     %if data.has_data:
-                        <a href="${h.url_for( controller='dataset', action='display', encoded_id=trans.security.encode_id( data.id ), to_ext=data.ext )}">save</a>
+                        <a href="${h.url_for( controller='root', action='display', id=data.id, tofile='yes', toext=data.ext )}" target="_blank">save</a>
 			            %if user_owns_dataset:
 			                | <a href="${h.url_for( controller='tool_runner', action='rerun', id=data.id )}" target="galaxy_main">rerun</a>
 			            %endif

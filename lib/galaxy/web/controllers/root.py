@@ -136,6 +136,72 @@ class RootController( BaseController ):
     ## ---- Dataset display / editing ----------------------------------------
 
     @web.expose
+    def display( self, trans, id=None, hid=None, tofile=None, toext=".txt", **kwd ):
+        """
+        Returns data directly into the browser. 
+        Sets the mime-type according to the extension
+        """
+        if hid is not None:
+            try:
+                hid = int( hid )
+            except:
+                return "hid '%s' is invalid" %str( hid )
+            history = trans.get_history()
+            for dataset in history.datasets:
+                if dataset.hid == hid:
+                    data = dataset
+                    break
+            else:
+                raise Exception( "No dataset with hid '%d'" % hid )
+        else:
+            try:
+                data = self.app.model.HistoryDatasetAssociation.get( id )
+            except:
+                return "Dataset id '%s' is invalid" %str( id )
+        if data:
+            user, roles = trans.get_user_and_roles()
+            if trans.app.security_agent.can_access_dataset( roles, data.dataset ):
+                mime = trans.app.datatypes_registry.get_mimetype_by_extension( data.extension.lower() )
+                trans.response.set_content_type(mime)
+                if tofile:
+                    fStat = os.stat(data.file_name)
+                    trans.response.headers['Content-Length'] = int(fStat.st_size)
+                    if toext[0:1] != ".":
+                        toext = "." + toext
+                    valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+                    fname = data.name
+                    fname = ''.join(c in valid_chars and c or '_' for c in fname)[0:150]
+                    trans.response.headers["Content-Disposition"] = "attachment; filename=GalaxyHistoryItem-%s-[%s]%s" % (data.hid, fname, toext)
+                trans.log_event( "Display dataset id: %s" % str(id) )
+                try:
+                    return open( data.file_name )
+                except: 
+                    return "This dataset contains no content"
+            else:
+                return "You are not allowed to access this dataset"
+        else:
+            return "No dataset with id '%s'" % str( id )
+
+    @web.expose
+    def display_child(self, trans, parent_id=None, designation=None, tofile=None, toext=".txt"):
+        """
+        Returns child data directly into the browser, based upon parent_id and designation.
+        """
+        try:
+            data = self.app.model.HistoryDatasetAssociation.get( parent_id )
+            if data:
+                child = data.get_child_by_designation( designation )
+                if child:
+                    user, roles = trans.get_user_and_roles()
+                    if trans.app.security_agent.can_access_dataset( roles, child ):
+                        return self.display( trans, id=child.id, tofile=tofile, toext=toext )
+                    else:
+                        return "You are not privileged to access this dataset."
+        except Exception:
+            pass
+        return "A child named %s could not be found for data %s" % ( designation, parent_id )
+
+    @web.expose
     def display_as( self, trans, id=None, display_app=None, **kwd ):
         """Returns a file in a format that can successfully be displayed in display_app"""
         data = self.app.model.HistoryDatasetAssociation.get( id )
