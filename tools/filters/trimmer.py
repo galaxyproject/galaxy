@@ -83,9 +83,7 @@ options (listed below) default to 'None' if omitted
                 print line
                 continue
                 
-            if options.fastq and line.startswith('@'):
-                stop_err('Malformed fastq file: even numbered line starts with @')
-                
+
             if line[0] not in invalid_starts:
                 if col == 0:
                     if int( options.end ) > 0:
