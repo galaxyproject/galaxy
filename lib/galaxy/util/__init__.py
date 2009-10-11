@@ -109,7 +109,7 @@ def xml_to_string(elem):
     return text
 
 # characters that are valid
-valid_chars  = set(string.letters + string.digits + " -=_.()/+*^,:?!")
+valid_chars  = set(string.letters + string.digits + " -=_.()/+*^,:?!;|")
 
 # characters that are allowed but need to be escaped
 mapped_chars = { '>' :'__gt__', 

@@ -226,7 +226,7 @@ class UploadDataset( Group ):
             if context.get( 'space_to_tab', None ) not in ["None", None]:
                 space_to_tab = True
             file_bunch = get_data_file_filename( data_file, override_name = name, override_info = info )
-            if file_bunch.path:
+            if file_bunch.path and url_paste:
                 if url_paste.strip():
                     warnings.append( "All file contents specified in the paste box were ignored." )
             else: #we need to use url_paste
