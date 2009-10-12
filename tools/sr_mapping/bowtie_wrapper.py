@@ -119,7 +119,7 @@ def __main__():
                              ('','-I %s'%options.minInsert)[options.minInsert!='None'], 
                              ('','-X %s'%options.maxInsert)[options.maxInsert!='None'], 
                              ('','--%s'%options.mateOrient)[options.mateOrient!='None'],
-                             ('','--pairtries %s'%options.maxAlignAttempt)[int(options.maxAlignAttempt)>=0],
+                             ('','--pairtries %s'%options.maxAlignAttempt)[options.maxAlignAttempt!='None' and int(options.maxAlignAttempt)>=0],
                              ('','--nofw')[options.forwardAlign=='noForward'],
                              ('','--norc')[options.reverseAlign=='noReverse'],
                              ('','--maxbts %s'%options.maxBacktracks)[options.maxBacktracks!='None' and (options.mismatchSeed=='2' or options.mismatchSeed=='3')], 
@@ -133,7 +133,7 @@ def __main__():
                              ('','--seed %s'%options.seed)[int(options.seed)>=0],
                              options.threads)
         except ValueError:
-            aligning_cmds = '-p %s' % options.threads 
+            aligning_cmds = '-p %s -S' % options.threads 
 
     # prepare actual aligning commands
     if options.paired == 'paired':
