@@ -132,8 +132,8 @@ def __main__():
                              ('','-o %s'%options.offrate)[int(options.offrate)>=0],
                              ('','--seed %s'%options.seed)[int(options.seed)>=0],
                              options.threads)
-        except ValueError:
-            aligning_cmds = '-p %s -S' % options.threads 
+        except ValueError, erf:
+            stop_err('Something is wrong with the alignment parameters and the alignment could not be run\n' + str(erf))
 
     # prepare actual aligning commands
     if options.paired == 'paired':
