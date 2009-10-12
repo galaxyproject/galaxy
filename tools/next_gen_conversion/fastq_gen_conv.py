@@ -47,14 +47,15 @@ def __main__():
     lines = []
     line = fin.readline()
     while line:
-        if max_blocks >= 0 and block_num > 0 and orig_type == 'sanger' and max_blocks < block_num:
-            print 'break'
-            break
-        if line.strip():
-            # the line that starts of a block, with a name
+        if line.strip() and max_blocks >= 0 and block_num > 0 and orig_type == 'sanger' and block_num >= max_blocks:
+            fout.write(line)
+            if line_count % 4 == 0:
+                block_num += 1
+            line_count += 1
+        elif line.strip():
+            # the line that starts a block, with a name
             if line_count % 4 == 0 and line.startswith('@'):
                 lines.append(line)
-                block_num += 1
             else:
                 # if we expect a sequence of bases
                 if line_count % 4 == 1 and all_bases_valid(line.strip()):
@@ -154,6 +155,8 @@ def __main__():
                         bad_blocks += 1
                         base_len = -1
                         lines = []
+                    # mark the successful end of a block
+                    block_num += 1
             line_count += 1
         line = fin.readline()
     fout.close()
