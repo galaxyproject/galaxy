@@ -85,13 +85,15 @@ body {
 
 .track-content.error {
     text-align: center;
-    padding-top: 30px;
+    padding-top: 10px;
     background-color: #ECB4AF;
+    height: 30px;
 }
 .track-content.nodata {
     text-align: center;
-    padding-top: 30px;
+    padding-top: 10px;
     background-color: #ddd;
+    height: 30px;
 }
 
 .loading {
@@ -101,16 +103,4 @@ body {
 .label-track .label {
     border-left: solid gray 1px;
     padding-left: 2px;
-}
-
-.feature-track .feature {
-
-}
-
-.feature-track .feature .forward { 
-
-}
-
-.feature-track .feature .reverse { 
-
 }
