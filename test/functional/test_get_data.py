@@ -45,6 +45,7 @@ class UploadData( TwillTestCase ):
         self.delete_history( id=self.security.encode_id( history1.id ) )
     def test_005_url_paste( self ):
         """Test url paste behavior"""
+        # Logged in as admin_user
         # Deleting the current history should have created a new history
         self.check_history_for_string( 'Your history is empty' )
         history2 = galaxy.model.History.filter( and_( galaxy.model.History.table.c.deleted==False,
@@ -57,3 +58,38 @@ class UploadData( TwillTestCase ):
         self.check_history_for_string( 'Pasted Entry' )
         self.check_history_for_string( 'hello world' )
         self.delete_history( id=self.security.encode_id( history2.id ) )
+    def test_010_upload_lped_composite_datatype_files( self ):
+        """Test uploading lped composite datatype files"""
+        # Logged in as admin_user
+        self.check_history_for_string( 'Your history is empty' )
+        history3 = galaxy.model.History.filter( and_( galaxy.model.History.table.c.deleted==False,
+                                                      galaxy.model.History.table.c.user_id==admin_user.id ) ) \
+                                       .order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
+        # lped data types include a ped_file and a map_file ( which is binary )
+        self.upload_composite_datatype_file( 'lped', ped_file='tinywga.ped', map_file='tinywga.map', base_name='rgenetics' )
+        # Get the latest hid for testing
+        hda1 = galaxy.model.HistoryDatasetAssociation.query() \
+            .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ).first()
+        assert hda1 is not None, "Problem retrieving hda1 from database"
+        # We'll test against the resulting ped file and map file for correctness
+        self.verify_composite_datatype_file_content( 'rgenetics.ped', str( hda1.id ) )
+        self.verify_composite_datatype_file_content( 'rgenetics.map', str( hda1.id ) )
+        self.delete_history( id=self.security.encode_id( history3.id ) )
+    def test_015_upload_pbed_composite_datatype_files( self ):
+        """Test uploading pbed composite datatype files"""
+        # Logged in as admin_user
+        self.check_history_for_string( 'Your history is empty' )
+        history4 = galaxy.model.History.filter( and_( galaxy.model.History.table.c.deleted==False,
+                                                      galaxy.model.History.table.c.user_id==admin_user.id ) ) \
+                                       .order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
+        # pbed data types include a bim_file, a bed_file and a fam_file
+        self.upload_composite_datatype_file( 'pbed', bim_file='tinywga.bim', bed_file='tinywga.bed', fam_file='tinywga.fam', base_name='rgenetics' )
+        # Get the latest hid for testing
+        hda1 = galaxy.model.HistoryDatasetAssociation.query() \
+            .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ).first()
+        assert hda1 is not None, "Problem retrieving hda1 from database"
+        # We'll test against the resulting ped file and map file for correctness
+        self.verify_composite_datatype_file_content( 'rgenetics.bim', str( hda1.id ) )
+        self.verify_composite_datatype_file_content( 'rgenetics.bed', str( hda1.id ) )
+        self.verify_composite_datatype_file_content( 'rgenetics.fam', str( hda1.id ) )
+        self.delete_history( id=self.security.encode_id( history4.id ) )

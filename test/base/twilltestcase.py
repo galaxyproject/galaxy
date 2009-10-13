@@ -83,7 +83,7 @@ class TwillTestCase( unittest.TestCase ):
             tc.submit("runtool_btn")
             self.home()
         except AssertionError, err:
-            errmsg = "The file (%s) doesn't exist." % filename
+            errmsg = "Uploading file resulted in the following exception.  Make sure the file (%s) exists.  " % filename
             errmsg += str( err )
             raise AssertionError( errmsg )
         # Make sure every history item has a valid hid
@@ -116,7 +116,36 @@ class TwillTestCase( unittest.TestCase ):
                 raise AssertionError, "Invalid hid (%s) created when pasting %s" % ( hid, url_paste )
         # Wait for upload processing to finish (TODO: this should be done in each test case instead)
         self.wait()
-
+    def upload_composite_datatype_file( self, ftype, ped_file='', map_file='', bim_file='', bed_file='', fam_file='', dbkey='unspecified (?)', base_name='rgenetics' ):
+        """Tests uploading either of 2 different composite data types ( lped and pbed )"""
+        self.visit_url( "%s/tool_runner/index?tool_id=upload1" % self.url )
+        # Handle refresh_on_change
+        self.refresh_form( "file_type", ftype )
+        tc.fv( "1", "dbkey", dbkey )
+        tc.fv( "1", "files_metadata|base_name", base_name )
+        if ftype == 'lped':
+            # lped data types include a ped_file and a map_file
+            ped_file = self.get_filename( ped_file )
+            tc.formfile( "1", "files_0|file_data", ped_file )
+            map_file = self.get_filename( map_file )
+            tc.formfile( "1", "files_1|file_data", map_file )
+        elif ftype == 'pbed':
+            # pbed data types include a bim_file, a bed_file and a fam_file
+            bim_file = self.get_filename( bim_file )
+            tc.formfile( "1", "files_0|file_data", bim_file )
+            bed_file = self.get_filename( bed_file )
+            tc.formfile( "1", "files_1|file_data", bed_file )
+            fam_file = self.get_filename( fam_file )
+            tc.formfile( "1", "files_2|file_data", fam_file )
+        else:
+            raise AssertionError, "Unsupported composite data type (%s) received, currently only lped and pbed data types are supported." % ftype
+        tc.submit( "runtool_btn" )
+        self.check_page_for_string( 'The following job has been succesfully added to the queue:' )
+        check_str = 'Uploaded Composite Dataset (%s)' % ftype
+        self.check_page_for_string( check_str )
+        # Wait for upload processing to finish (TODO: this should be done in each test case instead)
+        self.wait()
+        self.check_history_for_string( check_str )
     # Functions associated with histories
     def check_history_for_errors( self ):
         """Raises an exception if there are errors in a history"""
@@ -522,7 +551,20 @@ class TwillTestCase( unittest.TestCase ):
                 errmsg += str( err )
                 raise AssertionError( errmsg )
             os.remove(temp_name)
-
+    def verify_composite_datatype_file_content( self, file_name, hda_id ):
+        local_name = self.get_filename( file_name )
+        temp_name = self.get_filename( 'temp_%s' % file_name )
+        self.visit_url( "%s/datasets/%s/display/%s" % ( self.url, hda_id, file_name ) )
+        data = self.last_page()
+        file( temp_name, 'wb' ).write( data )
+        try:
+            self.files_diff( local_name, temp_name )
+        except AssertionError, err:
+            os.remove( temp_name )
+            errmsg = 'History item %s different than expected, difference:\n' % str( hda_id )
+            errmsg += str( err )
+            raise AssertionError( errmsg )
+        os.remove( temp_name )
     def is_zipped( self, filename ):
         if not zipfile.is_zipfile( filename ):
             return False
@@ -722,7 +764,29 @@ class TwillTestCase( unittest.TestCase ):
                 # Add conditions for other control types here when necessary.
                 pass
         tc.submit( button )
-
+    def refresh_form( self, control_name, value, form_no=0, **kwd ):
+        """Handles Galaxy's refresh_on_change for forms without ultimately submitting the form"""
+        # control_name is the name of the form field that requires refresh_on_change, and value is
+        # the value to which that field is being set.
+        for i, f in enumerate( self.showforms() ):
+            if i == form_no:
+                break
+        try:
+            control = f.find_control( name=control_name )
+        except:
+            # This assumes we always want the first control of the given name, which may not be ideal...
+            control = f.find_control( name=control_name, nr=0 )
+        # Check for refresh_on_change attribute, submit a change if required
+        if 'refresh_on_change' in control.attrs.keys():
+            # Clear Control and set to proper value
+            control.clear()
+            tc.fv( f.name, control.name, value )
+            # Create a new submit control, allows form to refresh, instead of going to next page
+            control = ClientForm.SubmitControl( 'SubmitControl', '___refresh_grouping___', {'name':'refresh_grouping'} )
+            control.add_to_form( f )
+            control.fixup()
+            # Submit for refresh
+            tc.submit( '___refresh_grouping___' )
     def visit_page( self, page ):
         # tc.go("./%s" % page)
         if not page.startswith( "/" ):
