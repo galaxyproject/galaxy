@@ -30,7 +30,7 @@ def __main__():
     tmpf = tempfile.NamedTemporaryFile()    #forward reads
     if options.input3 != "None" and options.input4 != "None":
         tmpr = tempfile.NamedTemporaryFile()    #reverse reads
-        cmd1 = "%s/bwa_solid2fastq_modified.pl 'yes' %s %s %s %s %s %s %s 2>&1" %(os.path.split(sys.argv[0])[0], tmpf.name,tmpr.name,None,options.input1,options.input2,options.input3,options.input4)
+        cmd1 = "%s/bwa_solid2fastq_modified.pl 'yes' %s %s %s %s %s %s 2>&1" %(os.path.split(sys.argv[0])[0], tmpf.name,tmpr.name,options.input1,options.input2,options.input3,options.input4)
         try:
             os.system(cmd1)
             os.system('gunzip -c %s >> %s' %(tmpf.name,options.output1))
@@ -40,7 +40,7 @@ def __main__():
         tmpr.close()
     # if single-end data
     else:
-        cmd1 = "%s/bwa_solid2fastq_modified.pl 'no' %s %s %s %s %s %s %s 2>&1" % (os.path.split(sys.argv[0])[0], tmpf.name, None, None, options.input1, options.input2, None, None)
+        cmd1 = "%s/bwa_solid2fastq_modified.pl 'no' %s %s %s %s %s %s 2>&1" % (os.path.split(sys.argv[0])[0], tmpf.name, None, options.input1, options.input2, None, None)
         try:
             os.system(cmd1)
             os.system('gunzip -c %s >> %s' % (tmpf.name, options.output1))

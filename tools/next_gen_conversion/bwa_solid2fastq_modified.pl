@@ -8,9 +8,9 @@ use warnings;
 use Getopt::Std;
 
 my %opts;
-my $version = '0.1.2';
+my $version = '0.1.3';
 my $usage = qq{
-Usage: solid2fastq.pl <paired> <outfile1> <outfile2> <outfile3> <F3.csfasta> <F3.qual> <R3.csfasta> <R3.qual> 
+Usage: solid2fastq.pl <paired> <outfile1> <outfile2> <F3.csfasta> <F3.qual> <R3.csfasta> <R3.qual> 
 
 Note: <in.title> is the string showed in the `# Title:' line of a
       ".csfasta" read file. Then <in.title>F3.csfasta is read sequence
@@ -25,13 +25,11 @@ Note: <in.title> is the string showed in the `# Title:' line of a
 };
 
 getopts('', \%opts);
-die($usage) if (@ARGV != 8);
-my ($is_paired,$outfile1,$outfile2,$outfile3,$f3reads,$f3qual,$r3reads,$r3qual) = @ARGV;
+die($usage) if (@ARGV != 7);
+my ($is_paired,$outfile1,$outfile2,$f3reads,$f3qual,$r3reads,$r3qual) = @ARGV;
 my (@fhr, @fhw);
 my $fn = '';
 my @fn_suff = ($f3reads,$f3qual,$r3reads,$r3qual);
-#my @fn_suff = ('F3.csfasta', 'F3_QV.qual', 'R3.csfasta', 'R3_QV.qual');
-#my $is_paired = (-f "$title$fn_suff[2]" || -f "$title$fn_suff[2].gz")? 1 : 0;
 if ($is_paired eq "yes") { # paired end
   for (0 .. 3) {
 	$fn = $fn_suff[$_];
@@ -40,33 +38,12 @@ if ($is_paired eq "yes") { # paired end
   }
   open($fhw[0], "|gzip >$outfile2") || die;
   open($fhw[1], "|gzip >$outfile1") || die;
-  open($fhw[2], "|gzip >$outfile3") || die;
   my (@df, @dr);
   @df = &read1(1); @dr = &read1(2);
   while (@df && @dr) {
 	if ($df[0] eq $dr[0]) { # mate pair
 	  print {$fhw[0]} $df[1]; print {$fhw[1]} $dr[1];
 	  @df = &read1(1); @dr = &read1(2);
-	} else {
-	  if ($df[0] le $dr[0]) {
-		print {$fhw[2]} $df[1];
-		@df = &read1(1);
-	  } else {
-		print {$fhw[2]} $dr[1];
-		@dr = &read1(2);
-	  }
-	}
-  }
-  if (@df) {
-	print {$fhw[2]} $df[1];
-	while (@df = &read1(1, $fhr[0], $fhr[1])) {
-	  print {$fhw[2]} $df[1];
-	}
-  }
-  if (@dr) {
-	print {$fhw[2]} $dr[1];
-	while (@dr = &read1(2, $fhr[2], $fhr[3])) {
-	  print {$fhw[2]} $dr[1];
 	}
   }
   close($fhr[$_]) for (0 .. $#fhr);
@@ -95,7 +72,7 @@ sub read1 {
 	my $t = <$fhq>;
 	if (/^>(\d+)_(\d+)_(\d+)_[FR]3/) {
 	  $key = sprintf("%.4d_%.4d_%.4d", $1, $2, $3); # this line could be improved on 64-bit machines
-	  #print  $key;
+	  #print $key;
 	  die(qq/** unmatched read name: '$_' != '$_'\n/) unless ($_ eq $t);
 	  my $name = "$1_$2_$3/$i";
 	  $_ = substr(<$fhs>, 2);
@@ -106,7 +83,7 @@ sub read1 {
 	  s/(\d+)\s*/chr($1+33)/eg;
 	  $seq = qq/\@$name\n$s+\n$_\n/;
 	  last;
-	}
+	} 
   }
   return defined($seq)? ($key, $seq) : ();
 }
