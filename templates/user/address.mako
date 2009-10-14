@@ -46,7 +46,7 @@
                                 <td>
                                     <div class="form-row">   
                                         <label>${address.desc}</label>
-                                        ${address.display()}
+                                        ${address.get_html()}
                                     </div>
                                     <div class="form-row">
                                         <ul class="manage-table-actions">

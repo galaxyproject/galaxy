@@ -58,6 +58,8 @@
                 </select>
             %elif field['type'] == 'CheckboxField':
                 <input type="checkbox" name="sample_${index}_field_${field_index}" value="Yes"/>
+            %elif field['type'] == 'NumberField':
+                <input type=int name="sample_${index}_field_${field_index}" value="${sample_values[field_index]}" size="7"/>
             %endif
             <div class="toolParamHelp" style="clear: both;">
                 <i>${'('+field['required']+')' }</i>
@@ -91,35 +93,41 @@
 </%def>
 
 <div class="toolForm">
-        <div class="form-row">
-        <a href="${h.url_for( controller='requests_admin', action='toggle_request_details', request_id=request.id )}">${details_state}</a>
-        </div>
-        %if details_state == "Hide request details":
-            %for index, rd in enumerate(request_details):
-                <div class="form-row">
-                    <label>${rd['label']}</label>
-                    %if not rd['value']:
-                        <i>None</i>
-                    %else:                      
-                        %if rd['label'] == 'Data library':
-                            <a href="${h.url_for( controller='library_admin', action='browse_library', obj_id=request.library.id )}">${rd['value']}</a>
-                        %else:
-                            ${rd['value']}     
+    <div class="form-row">
+        %if details == "show":
+            <a href="${h.url_for( controller='requests_admin', action='toggle_request_details', request_id=request.id, details="hide"  )}">Hide request details</a>
+            </div>
+                %for index, rd in enumerate(request_details):
+                    <div class="form-row">
+                        <label>${rd['label']}</label>
+                        %if not rd['value']:
+                            <i>None</i>
+                        %else:                      
+                            %if rd['label'] == 'Data library':
+                                %if rd['value']:
+                                    <a href="${h.url_for( controller='library', action='browse_library', obj_id=request.library.id )}">${rd['value']}</a>
+                                %else:
+                                    <i>None</i>
+                                %endif
+                            %else:
+                                ${rd['value']}     
+                            %endif
                         %endif
-                    %endif
-                </div>
-                <div style="clear: both"></div>
-            %endfor
-            <div class="form-row">
+                    </div>
+                    <div style="clear: both"></div>
+                %endfor
+                <div class="form-row">
                 <ul class="manage-table-actions">
                     <li>
                         <a class="action-button"  href="${h.url_for( controller='requests_admin', action='edit', show=True, request_id=request.id)}">
                         <span>Edit request details</span></a>
                     </li>
                 </ul>
+                </div>
             </div>
+        %else:
+            <a href="${h.url_for( controller='requests_admin', action='toggle_request_details', request_id=request.id, details="show"  )}">Show request details</a>        
         %endif
-    </div>
 </div>
 
 <%def name="render_grid( grid_index, grid_name, fields_dict )">
@@ -151,13 +159,13 @@
             request.refresh()
             %>
             %for sample_index, sample in enumerate(current_samples):
-                %if edit_mode:
+                %if edit_mode == 'True':
                     <tr>
                         <td>${sample_index+1}</td>
                         ${render_sample_form( sample_index, sample[0], sample[1], grid_index, fields_dict)}
                         <td>
                             %if request.unsubmitted() and grid_index == 0:
-                                <a class="action-button" href="${h.url_for( controller='requests', action='delete_sample', request_id=request.id, sample_id=sample_index)}">
+                                <a class="action-button" href="${h.url_for( controller='requests_admin', action='delete_sample', request_id=request.id, sample_id=sample_index)}">
                                 <img src="${h.url_for('/static/images/delete_icon.png')}" />
                                 <span></span></a>
                             %endif
@@ -173,7 +181,7 @@
                         %endif
                         <td>
                             %if request.unsubmitted() and grid_index == 0:
-                                <a class="action-button" href="${h.url_for( controller='requests', action='delete_sample', request_id=request.id, sample_id=sample_index)}">
+                                <a class="action-button" href="${h.url_for( controller='requests_admin', action='delete_sample', request_id=request.id, sample_id=sample_index)}">
                                 <img src="${h.url_for('/static/images/delete_icon.png')}" />
                                 <span></span></a>
                             %endif
@@ -201,7 +209,7 @@
                 <label>There are no samples.</label>
             %endif
         </div>
-        %if not edit_mode:
+        %if edit_mode == 'False':
             <table class="grid">
                 <tbody>
                     <tr>
@@ -238,7 +246,7 @@
               <div style="clear: both"></div>
             </div>
             <div class="form-row">
-                %if edit_mode:   
+                %if edit_mode == 'True':   
                     <input type="submit" name="save_samples_button" value="Save"/>
                     <input type="submit" name="cancel_changes_button" value="Cancel"/>
                 %elif request.unsubmitted():

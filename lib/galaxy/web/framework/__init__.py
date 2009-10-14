@@ -635,7 +635,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         return None
     
     def request_types(self):
-        if self.app.model.RequestType.query().all():
+        if self.app.model.RequestType.query().filter_by(deleted=False).all():
             return True
         return False
         

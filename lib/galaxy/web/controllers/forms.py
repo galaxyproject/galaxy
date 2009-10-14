@@ -12,6 +12,14 @@ import copy
 log = logging.getLogger( __name__ )
 
 class Forms( BaseController ):
+    # Empty form field
+    empty_field = { 'label': '', 
+                    'helptext': '', 
+                    'visible': True,
+                    'required': False,
+                    'type': BaseField.form_field_types()[0],
+                    'selectlist': [],
+                    'layout': 'none' }
     @web.expose
     @web.require_admin
     def index( self, trans, **kwd ):
@@ -84,19 +92,12 @@ class Forms( BaseController ):
                                                                   action='edit',
                                                                   form_id=fd.id,
                                                                   add_field_button='Add field',
-                                                                  num_fields=0,
                                                                   name=fd.name,
                                                                   description=fd.desc,
                                                                   form_type_selectbox=fd.type ) )  
-        self.current_form = {}
-        self.current_form[ 'name' ] = 'New Form'
-        self.current_form[ 'desc' ] = ''
-        self.current_form[ 'type' ] = params.get( 'form_type', 'none' )
-        self.current_form[ 'layout' ] = [ 'Main' ]
-        self.current_form[ 'fields' ] = []
-        inputs = [ ( 'Name', TextField( 'name', 40, self.current_form[ 'name' ] ) ),
-                   ( 'Description', TextField( 'description', 40, self.current_form[ 'desc' ] ) ),
-                   ( 'Type', self.__form_types_widget(trans, selected=self.current_form['type']) ),
+        inputs = [ ( 'Name', TextField( 'name', 40, 'New Form' ) ),
+                   ( 'Description', TextField( 'description', 40, '' ) ),
+                   ( 'Type', self.__form_types_widget(trans, selected=params.get( 'form_type', 'none' )) ),
                    ( 'Import from csv file (Optional)', FileField( 'file_data', 40, '' ) ) ]
         return trans.fill_template( '/admin/forms/create_form.mako', 
                                     inputs=inputs,
@@ -134,102 +135,156 @@ class Forms( BaseController ):
         renaming fields, adding/deleting fields, changing fields attributes.
         '''
         params = util.Params( kwd )
+        log.debug( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
-        form_id = params.get( 'form_id', None )
-        if not form_id:
-            msg = 'Invalid form id %s' % str( form_id )
-            trans.response.send_redirect( web.url_for( controller='forms',
-                                                       action='manage',
-                                                       msg=msg,
-                                                       messagetype='error' ) )
-        fd = trans.app.model.FormDefinition.get( int( params.form_id ) )
+        try:
+            fd = trans.app.model.FormDefinition.get( int( params.get( 'form_id', None ) ) )
+        except:
+            return trans.response.send_redirect( web.url_for( controller='forms',
+                                                              action='manage',
+                                                              msg='Invalid form',
+                                                              messagetype='error' ) )
+        #
         # Show the form for editing
+        #
         if params.get( 'show_form', False ):
-            self.__get_saved_form( fd )
-            # The following two dicts store the unsaved select box options
-            self.del_options = {}
-            self.add_options = {}
-            return self.__show( trans=trans, form=fd, msg=msg, messagetype=messagetype, **kwd )
-        #Add a layout grid
+            current_form = self.__get_saved_form( fd )
+            return self.__show( trans=trans, form=fd, current_form=current_form, 
+                                msg=msg, messagetype=messagetype, **kwd )
+        #
+        # Add a layout grid
+        #
         elif params.get( 'add_layout_grid', False ):
-            self.__update_current_form( trans, **kwd )
-            self.__add_layout_grid()
+            current_form = self.__get_form( trans, **kwd )
+            current_form['layout'].append('')
             # show the form again
-            return self.__show( trans=trans, form=fd, msg=msg, messagetype=messagetype, **kwd )
+            return self.__show( trans=trans, form=fd, current_form=current_form, 
+                                msg=msg, messagetype=messagetype, **kwd )
+        #
         # Delete a layout grid
+        #
         elif params.get( 'remove_layout_grid_button', False ):
-            self.__update_current_form( trans, **kwd )
+            current_form = self.__get_form( trans, **kwd )
             index = int( kwd[ 'remove_layout_grid_button' ].split( ' ' )[2] ) - 1
-            self.__remove_layout_grid( index )
-            return self.__show( trans=trans, form=fd, msg=msg, messagetype=messagetype, **kwd )   
-        # Delete a field
-        elif params.get( 'remove_button', False ):
-            self.__update_current_form( trans, **kwd )
-            index = int( kwd[ 'remove_button' ].split( ' ' )[2] ) - 1
-            self.__remove_field( index )
-            return self.__show( trans=trans, form=fd, msg=msg, messagetype=messagetype, **kwd )          
-        # Save changes
-        elif params.get( 'save_changes_button', False ):
-            self.__update_current_form( trans, **kwd )
-            fd_new, msg = self.__save_form( trans, fd.form_definition_current.id, **kwd )
-            if not fd_new:
-                return self.__show( trans=trans, form=fd, msg=msg, messagetype='error', **kwd )
-            else:
-                fd = fd_new
-            msg = "The form '%s' has been updated with the changes." % fd.name
-            return self.__show( trans=trans, form=fd, msg=msg, messagetype=messagetype, **kwd )
-        #Add a field
+            del current_form['layout'][index]
+            return self.__show( trans=trans, form=fd, current_form=current_form, 
+                                msg=msg, messagetype=messagetype, **kwd )
+        #
+        # Add a field
+        #
         elif params.get( 'add_field_button', False ):
-            self.__update_current_form( trans, **kwd )
-            self.__add_field()
+            current_form = self.__get_form( trans, **kwd )
+            current_form['fields'].append( self.empty_field )
             # show the form again with one empty field
-            return self.__show( trans=trans, form=fd, msg=msg, messagetype=messagetype, **kwd )
+            return self.__show( trans=trans, form=fd, current_form=current_form, 
+                                msg=msg, messagetype=messagetype, **kwd )
+        #
+        # Delete a field
+        #
+        elif params.get( 'remove_button', False ):
+            current_form = self.__get_form( trans, **kwd )
+            # find the index of the field to be removed from the remove button label
+            index = int( kwd[ 'remove_button' ].split( ' ' )[2] ) - 1
+            del current_form['fields'][index]
+            return self.__show( trans=trans, form=fd, current_form=current_form, 
+                                msg=msg, messagetype=messagetype, **kwd )
+        #
+        # Save changes
+        #
+        elif params.get( 'save_changes_button', False ):
+            fd_new, msg = self.__save_form( trans, fdc_id=fd.form_definition_current.id, **kwd )
+            # if validation error encountered while saving the form, show the 
+            # unsaved form, with the error message
+            if not fd_new:
+                current_form = self.__get_form( trans, **kwd )
+                return self.__show( trans=trans, form=fd, current_form=current_form, 
+                                    msg=msg, messagetype='error', **kwd )
+            # everything went fine. form saved successfully. Show the saved form
+            fd = fd_new
+            current_form = self.__get_saved_form( fd )
+            msg = "The form '%s' has been updated with the changes." % fd.name
+            return self.__show( trans=trans, form=fd, current_form=current_form, 
+                                msg=msg, messagetype=messagetype, **kwd )
+        #
         # Show form read-only
+        #
         elif params.get( 'read_only', False ):           
             return trans.fill_template( '/admin/forms/show_form_read_only.mako',
                                         form=fd,
                                         msg=msg,
                                         messagetype=messagetype )
-        # Refresh page, SelectField is selected/deselected as the type of a field
-        elif params.get( 'refresh', False ):
-            self.__update_current_form( trans, **kwd )
-            return self.__show( trans=trans, form=fd, msg=msg, messagetype=messagetype, **kwd )
-        # Remove SelectField option
-        elif params.get( 'select_box_options', False ) == 'remove':
-            index = int( kwd[ 'field_index' ] )
-            option = int( kwd[ 'option_index' ] )
-            del self.current_form[ 'fields' ][ index ][ 'selectlist' ][ option ]
-            return self.__show( trans=trans, form=fd, msg=msg, messagetype=messagetype, **kwd )
+        #
         # Add SelectField option
-        elif params.get( 'select_box_options', False ) == 'add':
-            index = int( kwd[ 'field_index' ] )
-            self.current_form[ 'fields' ][ index ][ 'selectlist' ].append( '' )
-            return self.__show( trans=trans, form=fd, msg=msg, messagetype=messagetype, **kwd )   
-    def __add_layout_grid(self):
-        self.current_form['layout'].append('')
-    def __remove_layout_grid(self, index):
-        del self.current_form['layout'][index]
-    def __remove_field(self, index):
-        del self.current_form['fields'][index]
-    def __add_field(self):
+        #
+        elif 'Add' in kwd.values():
+            return self.__add_selectbox_option(trans, fd, msg, messagetype, **kwd)
+        #
+        # Remove SelectField option
+        #
+        elif 'Remove' in kwd.values():
+            return self.__remove_selectbox_option(trans, fd, msg, messagetype, **kwd)
+        #
+        # Refresh page
+        #
+        elif params.get( 'refresh', False ):
+            current_form = self.__get_form( trans, **kwd )
+            return self.__show( trans=trans, form=fd, current_form=current_form, 
+                                msg=msg, messagetype=messagetype, **kwd )
+            
+    def __add_selectbox_option( self, trans, fd, msg, messagetype, **kwd ):
         '''
-        add an empty field to the fields list
+        This method adds a selectbox option. The kwd dict searched for
+        the field index which needs to be removed
         '''
-        empty_field = { 'label': '', 
-                        'helptext': '', 
-                        'visible': True,
-                        'required': False,
-                        'type': BaseField.form_field_types()[0],
-                        'selectlist': [],
-                        'layout': 'none' }
-        self.current_form['fields'].append(empty_field)
+        current_form = self.__get_form( trans, **kwd )
+        index = -1
+        for k, v in kwd.items():
+            if v == 'Add':
+                # extract the field index from the
+                # button name of format: 'addoption_<field>'
+                index = int(k.split('_')[1])
+                break
+        if index == -1:
+            # something wrong happened
+            return self.__show( trans=trans, form=fd, current_form=current_form, 
+                                msg='Error in adding selectfield option', 
+                                messagetype='error', **kwd )
+        # add an empty option
+        current_form[ 'fields' ][ index ][ 'selectlist' ].append( '' )
+        return self.__show( trans=trans, form=fd, current_form=current_form, 
+                            msg=msg, messagetype=messagetype, **kwd )
+    def __remove_selectbox_option( self, trans, fd, msg, messagetype, **kwd ):
+        '''
+        This method removes a selectbox option. The kwd dict searched for
+        the field index and option index which needs to be removed
+        '''
+        current_form = self.__get_form( trans, **kwd )
+        option = -1
+        for k, v in kwd.items():
+            if v == 'Remove':
+                # extract the field & option indices from the
+                # button name of format: 'removeoption_<field>_<option>'
+                index = int(k.split('_')[1])
+                option = int(k.split('_')[2])
+                break
+        if option == -1:
+            # something wrong happened
+            return self.__show( trans=trans, form=fd, current_form=current_form, 
+                                msg='Error in removing selectfield option', 
+                                messagetype='error', **kwd )
+        # remove the option
+        del current_form[ 'fields' ][ index ][ 'selectlist' ][ option ]
+        return self.__show( trans=trans, form=fd, current_form=current_form, 
+                            msg=msg, messagetype=messagetype, **kwd )
+
+    
     def __get_field(self, index, **kwd):
+        '''
+        This method retrieves all the user-entered details of a field and
+        returns a dict.
+        '''
         params = util.Params( kwd )
-        #TODO: RC this needs to be handled so that it does not throw an exception.
-        # To reproduce, create a new form, click the "add field" button, click the
-        # browser back arrow, then click the "add field" button again.
-        # You should never attempt to "restore_text()" on a None object...
         name = util.restore_text( params.get( 'field_name_%i' % index, '' ) )
         helptext = util.restore_text( params.get( 'field_helptext_%i' % index, '' ) )
         required =  params.get( 'field_required_%i' % index, False )
@@ -266,57 +321,54 @@ class Forms( BaseController ):
             else:
                 return sb_options
     def __get_saved_form(self, fd):
-        self.current_form = {}
-        self.current_form['name'] = fd.name
-        self.current_form['desc'] = fd.desc
-        self.current_form['type'] = fd.type
-        self.current_form['layout'] = list(copy.deepcopy(fd.layout))
-        self.current_form['fields'] = list(copy.deepcopy(fd.fields))
-    def __validate_form(self, **kwd):
         '''
-        This method checks the following text inputs are filled out by the user
-        - the name of form
-        - name of all the fields
+        This retrieves the saved form and returns a dictionary containing the name, 
+        desc, type, layout & fields of the form
         '''
-        params = util.Params( kwd )
-        # form name
-        if not util.restore_text( params.name ):
-            return None, 'Form name must be filled.'
-        # form type
-        if util.restore_text( params.form_type_selectbox ) == 'none': 
-            return None, 'Form type must be selected.'        
-        # fields
-#        for i in range( len(self.current_form['fields']) ):
-#            if not util.restore_text(params.get( 'field_name_%i' % i, None )):
-#                return None, "All the field label(s) must be completed."
-        return True, ''
+        return dict(name = fd.name,
+                    desc = fd.desc,
+                    type = fd.type,
+                    layout = list(copy.deepcopy(fd.layout)),
+                    fields = list(copy.deepcopy(fd.fields)))
     def __get_form(self, trans, **kwd):
+        '''
+        This method gets all the user-entered form details and returns a 
+        dictionary containing the name, desc, type, layout & fields of the form
+        '''
         params = util.Params( kwd )
         name = util.restore_text( params.name ) 
         desc = util.restore_text( params.description ) or ""
         form_type = util.restore_text( params.form_type_selectbox )
+        # get the user entered layout grids 
         layout = []
-        if form_type == trans.app.model.FormDefinition.types.SAMPLE:
-            for index in range(len(self.current_form[ 'layout' ])):
-                layout.append(params.get( 'grid_layout%i' % index, '' ))
+        index = 0
+        while True:
+            grid_name = util.restore_text( params.get( 'grid_layout%i' % index, '' ) )
+            if grid_name:
+                layout.append( grid_name )
+                index = index + 1
+            else:
+                break
+        # for csv file import
         csv_file = params.get( 'file_data', '' )
+        fields = []
         if csv_file == '':
-            # set form fields
-            fields = []
-            for i in range( len(self.current_form['fields']) ):
-                fields.append(self.__get_field(i, **kwd))
+            # get the user entered fields
+            index = 0
+            while True:
+                if params.get( 'field_name_%i' % index, False ):
+                    fields.append( self.__get_field( index, **kwd ) )
+                    index = index + 1
+                else:
+                    break
             fields = fields
         else:
             fields, layout = self.__import_fields(trans, csv_file, form_type)
-        return name, desc, form_type, layout, fields
-    def __update_current_form(self, trans, **kwd):
-        name, desc, form_type, layout, fields = self.__get_form(trans, **kwd)
-        self.current_form = {}
-        self.current_form['name'] = name
-        self.current_form['desc'] = desc
-        self.current_form['type'] = form_type
-        self.current_form['layout'] = layout
-        self.current_form['fields'] = fields
+        return dict(name = name,
+                    desc = desc,
+                    type = form_type,
+                    layout = layout,
+                    fields = fields)
         
     def __import_fields(self, trans, csv_file, form_type):
         '''
@@ -356,7 +408,20 @@ class Forms( BaseController ):
                                                               **kwd))
         self.__imported_from_file = True
         return fields, list(layouts)
-
+    def __validate_form(self, **kwd):
+        '''
+        This method checks the following text inputs are filled out by the user
+        - the name of form
+        - form type
+        '''
+        params = util.Params( kwd )
+        # form name
+        if not util.restore_text( params.name ):
+            return None, 'Form name must be filled.'
+        # form type
+        if util.restore_text( params.form_type_selectbox ) == 'none': 
+            return None, 'Form type must be selected.'        
+        return True, ''
     def __save_form(self, trans, fdc_id=None, **kwd):
         '''
         This method saves the current form 
@@ -365,13 +430,18 @@ class Forms( BaseController ):
         flag, msg = self.__validate_form(**kwd)
         if not flag:
             return None, msg
-        name, desc, form_type, layout, fields = self.__get_form(trans, **kwd)
+        current_form = self.__get_form( trans, **kwd )
         # validate fields
-        for field in fields:
+        for field in current_form[ 'fields' ]:
             if not field[ 'label' ]:
                 return None, "All the field label(s) must be completed."
-        fd = trans.app.model.FormDefinition(name, desc, fields, current_form=None, 
-                                            form_type=form_type, layout=layout )
+        # create a new form definition
+        fd = trans.app.model.FormDefinition(name=current_form[ 'name' ], 
+                                            desc=current_form[ 'desc' ], 
+                                            fields=current_form[ 'fields' ], 
+                                            form_definition_current=None, 
+                                            form_type=current_form[ 'type' ], 
+                                            layout=current_form[ 'layout' ] )
         if fdc_id: # save changes to the existing form    
             # change the pointer in the form_definition_current table to point 
             # to this new record
@@ -467,7 +537,7 @@ class Forms( BaseController ):
         def label(self):
             return str(self.index)+'.'+self.label 
         
-    def __show( self, trans, form, msg='', messagetype='done', **kwd ):
+    def __show( self, trans, form, current_form, msg='', messagetype='done', **kwd ):
         '''
         This method displays the form and any of the changes made to it,
         The empty_form param allows for this method to simulate clicking
@@ -476,18 +546,18 @@ class Forms( BaseController ):
         '''
         params = util.Params( kwd )
         # name & description
-        form_details = [ ( 'Name', TextField( 'name', 40, self.current_form[ 'name' ] ) ),
-                         ( 'Description', TextField( 'description', 40, self.current_form[ 'desc' ] ) ),
-                         ( 'Type', self.__form_types_widget(trans, selected=self.current_form['type']) ) ]
+        form_details = [ ( 'Name', TextField( 'name', 40, current_form[ 'name' ] ) ),
+                         ( 'Description', TextField( 'description', 40, current_form[ 'desc' ] ) ),
+                         ( 'Type', self.__form_types_widget(trans, selected=current_form[ 'type' ]) ) ]
         form_layout = []
-        if self.current_form['type'] == trans.app.model.FormDefinition.types.SAMPLE:
-            for index, lg in enumerate(self.current_form['layout']):
+        if current_form[ 'type' ] == trans.app.model.FormDefinition.types.SAMPLE:
+            for index, lg in enumerate(current_form[ 'layout' ]):
                 form_layout.append( TextField( 'grid_layout%i' % index, 40, lg )) 
         # fields
         field_details = []
-        for index, field in enumerate( self.current_form[ 'fields' ] ):
-            if self.current_form['type'] == trans.app.model.FormDefinition.types.SAMPLE:
-                field_ui = self.FieldUI( self.current_form['layout'], index, field )
+        for index, field in enumerate( current_form[ 'fields' ] ):
+            if current_form['type'] == trans.app.model.FormDefinition.types.SAMPLE:
+                field_ui = self.FieldUI( current_form['layout'], index, field )
             else:
                 field_ui = self.FieldUI( None, index, field )
             field_details.append( field_ui.get() )
@@ -498,7 +568,7 @@ class Forms( BaseController ):
                                     field_types=BaseField.form_field_types(),
                                     msg=msg,
                                     messagetype=messagetype,
-                                    current_form_type=self.current_form['type'],
+                                    current_form_type=current_form[ 'type' ],
                                     layout_grids=form_layout )
 
 # Common methods for all components that use forms

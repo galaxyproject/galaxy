@@ -1059,8 +1059,15 @@ class TwillTestCase( unittest.TestCase ):
             tc.fv( "1", field_name, field_contents )
             tc.fv( "1", field_help_name, field_help_contents )
             tc.submit( "save_changes_button" )
+        if num_fields:
             check_str = "The form '%s' has been updated with the changes." % name
-        self.check_page_for_string( check_str )
+            self.check_page_for_string( check_str )
+        else:
+            self.home()
+            self.visit_url( "%s/forms/manage" % self.url )
+            self.check_page_for_string( name )
+            self.check_page_for_string( desc )
+            self.check_page_for_string( formtype )
         self.home()
     def edit_form( self, form_id, form_name, new_form_name="Form One's Name (Renamed)", new_form_desc="This is Form One's description (Re-described)"):
         """
@@ -1074,7 +1081,7 @@ class TwillTestCase( unittest.TestCase ):
         tc.submit( "save_changes_button" )
         self.check_page_for_string( "The form '%s' has been updated with the changes." % new_form_name )
         self.home()
-    def form_add_field( self, form_id, form_name, field_index, fields):
+    def form_add_field( self, form_id, form_name, form_desc, form_type, field_index, fields):
         """
         Add a new fields to the form definition
         """
@@ -1088,13 +1095,18 @@ class TwillTestCase( unittest.TestCase ):
             tc.fv( "1", "field_helptext_%i" % index, field['desc'] )
             tc.fv( "1", "field_type_%i" % index, field['type'] )
             tc.fv( "1", "field_required_%i" % index, field['required'] )
-#            if field['type'] == 'SelectField':
-#                for option_index, option in enumerate(field['selectlist']):
-#                    self.visit_url( "%s/forms/edit?select_box_options=add&form_id=%i&field_index=%i" % \
-#                                    (self.url, form_id, index))
-#                    #data = self.last_page()
-#                    #file( "rc.html", 'wb' ).write(data)
-#                    tc.fv( "1", "field_%i_option_%i" % (index, option_index), option )
+            if field['type'] == 'SelectField':
+                options = ''
+                for option_index, option in enumerate(field['selectlist']):
+                    url_str = "%s/forms/edit?description=%s&form_id=%i&form_type_selectbox=%s&addoption_%i=Add&name=%s&field_name_%i=%s&field_helptext_%i=%s&field_type_%i=%s" % \
+                              (self.url, form_desc.replace(" ", "+"), form_id, form_type.replace(" ", "+"), 
+                               index, form_name.replace(" ", "+"), index, field['name'].replace(" ", "+"), 
+                               index, field['desc'].replace(" ", "+"), index, field['type'])
+                    self.visit_url( url_str + options )
+                    data = self.last_page()
+                    file( "rc.html", 'wb' ).write(data)
+                    tc.fv( "1", "field_%i_option_%i" % (index, option_index), option )
+                    options = options + "&field_%i_option_%i=%s" % (index, option_index, option)
         tc.submit( "save_changes_button" )
         check_str = "The form '%s' has been updated with the changes." % form_name
         self.check_page_for_string( check_str )
@@ -1130,18 +1142,22 @@ class TwillTestCase( unittest.TestCase ):
         self.check_page_for_string( "Request type <b>%s</b> has been created" % name )
     def create_request( self, request_type_id, name, desc, library_id, folder_id, fields ):
         self.home()
-        self.visit_url( "%s/requests/new?create=True&select_request_type=%i" % (self.url, request_type_id) )
+        self.visit_url( "%s/requests/new?create=True&select_request_type=%i&library_id=%i" % ( self.url, 
+                                                                                               request_type_id,
+                                                                                               library_id ) )
         self.check_page_for_string( 'Add a new request' )
         tc.fv( "1", "name", name )
         tc.fv( "1", "desc", desc )
         tc.fv( "1", "library_id", str(library_id) )
-        #tc.fv( "1", "folder_id", str(folder_id) )
+        tc.fv( "1", "folder_id", str(folder_id) )
         for index, field_value in enumerate(fields):
             tc.fv( "1", "field_%i" % index, field_value )
         tc.submit( "create_request_button" )
     def create_request_admin( self, request_type_id, user_id, name, desc, library_id, fields ):
         self.home()
-        self.visit_url( "%s/requests_admin/new?create=True&select_request_type=%i" % (self.url, request_type_id) )
+        self.visit_url( "%s/requests_admin/new?create=True&select_request_type=%i&library_id=%i" % ( self.url, 
+                                                                                                     request_type_id,
+                                                                                                     library_id ) )
         self.check_page_for_string( 'Add a new request' )
         tc.fv( "1", "select_user", str(user_id) )
         tc.fv( "1", "name", name )

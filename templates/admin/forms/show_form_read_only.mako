@@ -63,9 +63,19 @@
 
 <div class="toolForm">
     %if form.desc:
-        <div class="toolFormTitle">${form.name} - <i>${form.desc}</i></div>
+        <div class="toolFormTitle">${form.name} - <i>${form.desc}</i>
+            <a id="form-${form.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
+            <div popupmenu="form-${form.id}-popup">
+                <a class="action-button" href="${h.url_for( action='edit', form_id=form.id, show_form=True )}">Edit</a>
+            </div>
+        </div>
     %else:
-        <div class="toolFormTitle">${form.name}</div>
+        <div class="toolFormTitle">${form.name}
+        <a id="form-${form.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
+        <div popupmenu="form-${form.id}-popup">
+            <a class="action-button" href="${h.url_for( action='edit', form_id=form.id, show_form=True )}">Edit</a>
+        </div>
+        </div>
     %endif
     <form name="library" action="${h.url_for( controller='forms', action='manage' )}" method="post" >
         %if form.type == trans.app.model.FormDefinition.types.SAMPLE:
@@ -77,58 +87,27 @@
                 %endfor
             %endif
         %else:
-            <table class = "grid">
-                <tbody>
-                    %for index, field in enumerate(form.fields):
-                        <tr>
-                            <td>
-                                <div class="form-row">
-                                    <label>${1+index}. Label</label>
-                                    <a>${field['label']}</a>
-                                    %if field['type'] == 'SelectField':
-                                        <a id="${field['label']}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
-                                        %for option in field['selectlist']:
-                                            <div popupmenu="${field['label']}-type-popup">
-                                                <a class="action-button" href="" >${option}</a>
-                                            </div>                                 
-                                        %endfor
-                                    %endif                                    
-                                </div>
-                            </td>
-                            <td>
-                                <div class="form-row">
-                                    <label>Help text </label>
-                                    %if not field['helptext']:
-                                        <a><i>No helptext</i></a>
-                                    %else:
-                                        <a>${field['helptext']}</a>
-                                    %endif
-                                </div>
-                            </td>                            
-                            <td>
-                                <div class="form-row">
-                                    <label>Type:</label>
-                                    <a>${field['type']}</a>
-                                    %if field['type'] == 'SelectField':
-                                        <a id="fieldtype-popup" class="popup-arrow" style="display: none;">&#9660;</a>
-                                        %for option in field['selectlist']:
-                                            <div popupmenu="type-popup">
-                                                <a class="action-button" href="" >${option}</a>
-                                            </div>                                 
-                                        %endfor
-                                    %endif
-                                </div>
-                            </td>
-                            <td>
-                                <div class="form-row">
-                                    <label>Required?</label>
-                                    <a>${field['required']}</a>
-                                </div>
-                            </td>
-                        </tr>       
-                    %endfor
-                </tbody>
-            </table>
+            %for index, field in enumerate(form.fields):
+                <div class="form-row">
+                    <label>${field['label']}</label>
+                    %if field['helptext']:
+                        <div class="toolParamHelp" style="clear: both;">
+                            <i>${field['helptext']}</i>
+                        </div>
+                    %endif
+                    <div>${field['required']}</div>
+                    <i>Type: </i> ${field['type']}
+                    %if field['type'] == 'SelectField':
+                        <div>
+                        <div><i>Options:</i></div>
+                        %for option in field['selectlist']:
+                            <div>${option}</div>
+                        %endfor
+                        </div>
+                    %endif
+                </div>
+                <div style="clear: both"></div>
+            %endfor
         %endif
     </form>
     </div>

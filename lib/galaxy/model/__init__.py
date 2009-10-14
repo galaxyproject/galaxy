@@ -1090,11 +1090,12 @@ class FormDefinition( object ):
     types = Bunch(  REQUEST = 'Sequencing Request Form',
                     SAMPLE = 'Sequencing Sample Form',
                     LIBRARY_INFO_TEMPLATE = 'Library information template'  )
-    def __init__(self, name=None, desc=None, fields=[], current_form=None, form_type=None, layout=None):
+    def __init__(self, name=None, desc=None, fields=[], 
+                 form_definition_current=None, form_type=None, layout=None):
         self.name = name
         self.desc = desc
         self.fields = fields 
-        self.form_definition_current = current_form
+        self.form_definition_current = form_definition_current
         self.type = form_type
         self.layout = layout
     def fields_of_grid(self, layout_grid_name):
@@ -1263,20 +1264,26 @@ class UserAddress( object ):
         self.postal_code = postal_code
         self.country = country
         self.phone = phone
-    def display(self):
-        return  self.name+'<br/>'+ \
-                self.institution+'<br/>'+ \
-                self.address+'<br/>'+ \
-                self.city+' '+self.state+' '+self.postal_code+'<br/>'+ \
-                self.country+'<br/>'+ \
-                'Phone: '+self.phone
     def get_html(self):
-        return  self.name+'<br/>'+ \
-                self.institution+'<br/>'+ \
-                self.address+'<br/>'+ \
-                self.city+' '+self.state+' '+self.postal_code+'<br/>'+ \
-                self.country+'<br/>'+ \
-                'Phone: '+self.phone
+        html = ''
+        if self.name:
+            html = html + self.name
+        if self.institution:
+            html = html + '<br/>' + self.institution
+        if self.address:
+            html = html + '<br/>' + self.address
+        if self.city:
+            html = html + '<br/>' + self.city
+        if self.state:
+            html = html + ' ' + self.state
+        if self.postal_code:
+            html = html + ' ' + self.postal_code
+        if self.country:
+            html = html + '<br/>' + self.country
+        if self.phone:
+            html = html + '<br/>' + 'Phone: ' + self.phone
+        return html
+
                 
 class Page( object ):
     def __init__( self ):

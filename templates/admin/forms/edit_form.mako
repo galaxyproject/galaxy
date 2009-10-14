@@ -36,16 +36,20 @@ $( function() {
             <% options = field_attr[2] %>
             <div class="repeat-group-item">
                 <div class="form-row">
-                <label> Options</label>
-                %for i, option in enumerate(options):
-                    <b> ${i+1}</b>
-                    ${option[1].get_html()}                    
-                    <a class="action-button" href="${h.url_for( controller='forms', action='edit', form_id=form.id, select_box_options='remove', field_index=index, option_index=i )}">Remove</a><br>
-                %endfor
+                    <label> Options</label>
+                    %for i, option in enumerate(options):
+                        <div class="form-row">
+                            <b> ${i+1}</b>
+                            ${option[1].get_html()}
+                            ##<a class="action-button" href="${h.url_for( controller='forms', action='edit', form_id=form.id, select_box_options='remove', field_index=index, option_index=i )}">Remove</a><br>                            
+                            <input type="submit" name="removeoption_${index}_${i}" value="Remove"/>
+                        </div>
+                    %endfor
+                    <input type="hidden" name="field_index" value="${index}"/>
                 </div>
             </div>
             <div class="form-row">
-                <a class="action-button" href="${h.url_for( controller='forms', action='edit', form_id=form.id, select_box_options='add', field_index=index )}">Add</a>
+                <input type="submit" name="addoption_${index}" value="Add"/>
             </div>
         %endif
     %endif
@@ -81,7 +85,7 @@ $( function() {
 
 <div class="toolForm">
     <div class="toolFormTitle">Edit form definition "${form.name}"</div>
-    <form id="edit_form" name="edit_form" action="${h.url_for( controller='forms', action='edit', form_id=form.id, num_fields=len(form.fields)  )}" method="post" >
+    <form id="edit_form" name="edit_form" action="${h.url_for( controller='forms', action='edit', form_id=form.id  )}" method="post" >
         %for label, input in form_details:
             <div class="form-row">
                 <label>${label}</label>

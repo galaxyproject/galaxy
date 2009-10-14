@@ -42,12 +42,7 @@ class TestFormsAndRequests( TwillTestCase ):
         name = form_one_name
         desc = "This is Form One's description"
         formtype = galaxy.model.FormDefinition.types.REQUEST
-        self.create_form( name=name, desc=desc, formtype=formtype )
-        self.home()
-        self.visit_page( 'forms/manage' )
-        self.check_page_for_string( name )
-        self.check_page_for_string( desc )
-        self.check_page_for_string( formtype )
+        self.create_form( name=name, desc=desc, formtype=formtype, num_fields=0 )
         # Get the form_definition object for later tests
         form_one = galaxy.model.FormDefinition.filter( and_( galaxy.model.FormDefinition.table.c.name==name,
                                                              galaxy.model.FormDefinition.table.c.desc==desc,
@@ -66,24 +61,21 @@ class TestFormsAndRequests( TwillTestCase ):
         """Testing adding fields to a form definition"""
         fields = [dict(name='Test field name one',
                        desc='Test field description one',
-                       type='TextField',
-                       required='required'),
+                       type='SelectField',
+                       required='optional',
+                       selectlist=['option1', 'option2']),
                   dict(name='Test field name two',
                        desc='Test field description two',
                        type='AddressField',
-                       required='optional')]
+                       required='optional'),
+                  dict(name='Test field name three',
+                       desc='Test field description three',
+                       type='TextField',
+                       required='required')]
         form_one = get_latest_form(form_one_name)
-        self.form_add_field(form_one.id, form_one.name, field_index=len(form_one.fields), fields=fields)
+        self.form_add_field(form_one.id, form_one.name, form_one.desc, form_one.type, field_index=len(form_one.fields), fields=fields)
         form_one_latest = get_latest_form(form_one_name)        
         assert len(form_one_latest.fields) == len(form_one.fields)+len(fields)
-#This following test has been commented out as it is causing:
-#TwillException: multiple matches to "remove_button"     
-#    def test_010_remove_form_fields( self ):
-#        """Testing removing fields from a form definition"""
-#        form_one = get_latest_form(form_one_name)
-#        self.form_remove_field( form_one.id, form_one.name, 'Test field name one' )
-#        form_one_latest = get_latest_form(form_one_name)
-#        assert len(form_one_latest.fields) == len(form_one.fields)-1
     def test_015_create_sample_form( self ):
         """Testing creating another form (for samples)"""
         global form_two_name
@@ -186,10 +178,10 @@ class TestFormsAndRequests( TwillTestCase ):
         self.logout()
         self.login( email='test1@bx.psu.edu' )
         # set field values
-        fields = ['field one value', 'field two value', str(user_address.id)] 
+        fields = ['option1', str(user_address.id), 'field three value'] 
         # create the request
         request_name, request_desc = 'Request One', 'Request One Description'
-        self.create_request(request_type.id, request_name, request_desc, library_one.id, folder_one.id, fields)
+        self.create_request(request_type.id, request_name, request_desc, library_one.id, 'none', fields)
         self.check_page_for_string( request_name )
         self.check_page_for_string( request_desc )
         global request_one
@@ -208,8 +200,9 @@ class TestFormsAndRequests( TwillTestCase ):
             for field_value in fields:
                 self.check_page_for_string( field_value )
         # edit this request
-        fields = ['field one value (edited)', 'field two value (edited)', str(user_address.id)]
-        self.edit_request(request_one.id, request_one.name, request_one.name+' (Renamed)', request_one.desc+' (Re-described)', library_one.id, folder_one.id, fields)
+        fields = ['option2', str(user_address.id), 'field three value (edited)'] 
+        self.edit_request(request_one.id, request_one.name, request_one.name+' (Renamed)', 
+                          request_one.desc+' (Re-described)', library_one.id, folder_one.id, fields)
         request_one.refresh()
         self.check_page_for_string( request_name+' (Renamed)' )
         self.check_page_for_string( request_desc+' (Re-described)' )
@@ -261,8 +254,8 @@ class TestFormsAndRequests( TwillTestCase ):
         self.login( email='test@bx.psu.edu' )
         request_name = "RequestTwo"
         # simulate request creation
-        url_str = '%s/requests_admin/new?create=True&create_request_button=Save&select_request_type=%i&select_user=%i&name=%s&library_id=%i&folder_id=%i&refresh=True&field_1=%s&field_2=%i' \
-                  % ( self.url, request_type.id, regular_user.id, request_name, library_one.id, library_one.root_folder.id, "field_1_value", user_address.id )
+        url_str = '%s/requests_admin/new?create=True&create_request_button=Save&select_request_type=%i&select_user=%i&name=%s&library_id=%i&folder_id=%i&refresh=True&field_2=%s&field_0=%s&field_1=%i' \
+                  % ( self.url, request_type.id, regular_user.id, request_name, library_one.id, library_one.root_folder.id, "field_2_value", 'option1', user_address.id )
         self.home()
         self.visit_url( url_str )
         self.check_page_for_string( "The new request named %s has been created" % request_name )
@@ -299,10 +292,3 @@ class TestFormsAndRequests( TwillTestCase ):
         self.visit_url( '%s/requests_admin/list?show_filter=All' % self.url )
         self.check_page_for_string( request_one.name )
         self.check_page_for_string( request_two.name )
-
-        
-        
-        
-        
-        
-        

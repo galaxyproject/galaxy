@@ -11,6 +11,10 @@ from galaxy.web.controllers.forms import get_all_forms
 
 log = logging.getLogger( __name__ )
 
+#
+# ---- Request Grid ------------------------------------------------------------ 
+#
+
 class RequestsListGrid( grids.Grid ):
     title = "Sequencing Requests"
     template = "admin/requests/grid.mako"
@@ -60,6 +64,11 @@ class RequestsListGrid( grids.Grid ):
         else:
             return query
     
+
+#
+# ---- Request Controller ------------------------------------------------------ 
+#
+
 class Requests( BaseController ):
     request_grid = RequestsListGrid()
     
@@ -67,6 +76,7 @@ class Requests( BaseController ):
     @web.require_admin
     def index( self, trans ):
         return trans.fill_template( "/admin/requests/index.mako" )
+    
     @web.expose
     @web.require_admin
     def list( self, trans, **kwargs ):
@@ -104,51 +114,26 @@ class Requests( BaseController ):
         self.request_grid.show_filter = kwargs.get('show_filter', trans.app.model.Request.states.SUBMITTED)
         # Render the list view
         return self.request_grid( trans, **kwargs )
-    @web.expose
-    @web.require_admin
-    def edit(self, trans, **kwd):
-        params = util.Params( kwd )
-        msg = util.restore_text( params.get( 'msg', ''  ) )
-        messagetype = params.get( 'messagetype', 'done' )
+    def __show_request(self, trans, id, messagetype, msg):
         try:
-            request = trans.app.model.Request.get(int(params.get('request_id', None)))
+            request = trans.app.model.Request.get(id)
         except:
             return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                               action='list',
                                                               status='error',
                                                               message="Invalid request ID",
                                                               **kwd) )
-        if params.get('show', False) == 'True':
-            return self.__edit_request(trans, request.id, **kwd)
-        elif params.get('save_changes_request_button', False) == 'Save changes' \
-             or params.get('edit_samples_button', False) == 'Edit samples':
-                request_type = trans.app.model.RequestType.get(int(params.select_request_type))
-                if not util.restore_text(params.get('name', '')):
-                    msg = 'Please enter the <b>Name</b> of the request'
-                    kwd['messagetype'] = 'error'
-                    kwd['msg'] = msg
-                    kwd['show'] = 'True'
-                    return trans.response.send_redirect( web.url_for( controller='requests_admin',
-                                                                      action='edit',
-                                                                      **kwd) )
-                request = self.__save_request(trans, request, **kwd)
-                msg = 'The changes made to the request named %s has been saved' % request.name
-                if params.get('save_changes_request_button', False) == 'Save changes':
-                    return trans.response.send_redirect( web.url_for( controller='requests_admin',
-                                                                      action='list',
-                                                                      message=msg ,
-                                                                      status='done') )
-                elif params.get('edit_samples_button', False) == 'Edit samples':
-                    new_kwd = {}
-                    new_kwd['request_id'] = request.id
-                    new_kwd['edit_samples_button'] = 'Edit samples'
-                    return trans.response.send_redirect( web.url_for( controller='requests_admin',
-                                                                      action='show_request',
-                                                                      msg=msg ,
-                                                                      messagetype='done',
-                                                                      **new_kwd) )
-        elif params.get('refresh', False) == 'true':
-            return self.__edit_request(trans, request.id, **kwd)
+        current_samples = []
+        for s in request.samples:
+            current_samples.append([s.name, s.values.content])
+        return trans.fill_template( '/admin/requests/show_request.mako',
+                                    request=request,
+                                    request_details=self.request_details(trans, id),
+                                    current_samples = current_samples,
+                                    sample_copy=self.__copy_sample(current_samples), 
+                                    details='hide', edit_mode='False',
+                                    msg=msg, messagetype=messagetype)
+
     def __edit_request(self, trans, id, **kwd):
         try:
             request = trans.app.model.Request.get(id)
@@ -276,317 +261,10 @@ class Requests( BaseController ):
                                                           action='list',
                                                           show_filter=trans.app.model.Request.states.SUBMITTED,
                                                           **kwd) )
-    @web.expose
-    @web.require_admin
-    def submit_request(self, trans, **kwd):
-        params = util.Params( kwd )
-        try:
-            id = int(params.get('id', False))
-            request = trans.app.model.Request.get(id)
-        except:
-            msg = "Invalid request ID"
-            log.warn( msg )
-            return trans.response.send_redirect( web.url_for( controller='requests_admin',
-                                                              action='list',
-                                                              status='error',
-                                                              message=msg,
-                                                              **kwd) )
-        msg = self.__validate(trans, request)
-        if msg:
-            return trans.response.send_redirect( web.url_for( controller='requests_admin',
-                                                              action='edit',
-                                                              messagetype='error',
-                                                              msg=msg,
-                                                              request_id=request.id,
-                                                              show='True') )
-        # get the new state
-        new_state = request.type.states[0]
-        for s in request.samples:
-            event = trans.app.model.SampleEvent(s, new_state, 'Samples submitted to the system')
-            event.flush()
-        # change request's submitted field
-        request.state = request.states.SUBMITTED
-        request.flush()
-        kwd['id'] = trans.security.encode_id(request.id)
-        kwd['status'] = 'done'
-        kwd['message'] = 'The request <b>%s</b> has been submitted.' % request.name
-        return trans.response.send_redirect( web.url_for( controller='requests_admin',
-                                                          action='list',
-                                                          show_filter=trans.app.model.Request.states.SUBMITTED,
-                                                          **kwd) )
-    def __copy_sample(self):
-        copy_list = SelectField('copy_sample')
-        copy_list.add_option('None', -1, selected=True)  
-        for i, s in enumerate(self.current_samples):
-            copy_list.add_option(s[0], i)
-        return copy_list   
-    def __update_samples(self, request, **kwd):
-        params = util.Params( kwd )
-        num_samples = len(self.current_samples)
-        self.current_samples = []
-        for s in request.samples:
-            self.current_samples.append([s.name, s.values.content])
-        for index in range(num_samples-len(request.samples)):
-            sample_index = index + len(request.samples)
-            sample_name = util.restore_text( params.get( 'sample_%i_name' % sample_index, ''  ) )
-            sample_values = []
-            for field_index in range(len(request.type.sample_form.fields)):
-                sample_values.append(util.restore_text( params.get( 'sample_%i_field_%i' % (sample_index, field_index), ''  ) ))
-            self.current_samples.append([sample_name, sample_values])
-    def __show_request(self, trans, id, messagetype, msg):
-        try:
-            request = trans.app.model.Request.get(id)
-        except:
-            return trans.response.send_redirect( web.url_for( controller='requests_admin',
-                                                              action='list',
-                                                              status='error',
-                                                              message="Invalid request ID",
-                                                              **kwd) )
-        self.current_samples = []
-        self.edit_mode = False
-        for s in request.samples:
-            self.current_samples.append([s.name, s.values.content])
-        self.details_state = 'Show request details'
-        return trans.fill_template( '/admin/requests/show_request.mako',
-                                    request=request,
-                                    request_details=self.request_details(trans, id),
-                                    current_samples = self.current_samples, 
-                                    sample_copy=self.__copy_sample(), 
-                                    details_state=self.details_state,
-                                    edit_mode=self.edit_mode,
-                                    msg=msg, messagetype=messagetype)
-    @web.expose
-    @web.require_admin
-    def show_request(self, trans, **kwd):
-        params = util.Params( kwd )
-        msg = util.restore_text( params.get( 'msg', ''  ) )
-        messagetype = params.get( 'messagetype', 'done' )
-        try:
-            request = trans.app.model.Request.get(int(params.get('request_id', None)))
-        except:
-            return trans.response.send_redirect( web.url_for( controller='requests_admin',
-                                                              action='list',
-                                                              status='error',
-                                                              message="Invalid request ID",
-                                                              **kwd) )
-        if params.get('import_samples_button', False) == 'Import samples':
-            try:
-                file_obj = params.get('file_data', '')
-                import csv
-                reader = csv.reader(file_obj.file)
-                for row in reader:
-                    self.current_samples.append([row[0], row[1:]])  
-                return trans.fill_template( '/admin/requests/show_request.mako',
-                                            request=request,
-                                            request_details=self.request_details(trans, request.id),
-                                            current_samples=self.current_samples,
-                                            sample_copy=self.__copy_sample(), 
-                                            details_state=self.details_state,
-                                            edit_mode=self.edit_mode)
-            except:
-                return trans.response.send_redirect( web.url_for( controller='requests_admin',
-                                                                  action='list',
-                                                                  status='error',
-                                                                  operation='show_request',
-                                                                  id=trans.security.encode_id(request.id),
-                                                                  message='Error in importing samples from the given file.',
-                                                                  **kwd))
-        elif params.get('add_sample_button', False) == 'Add New':
-            # save the all (saved+unsaved) sample info in 'current_samples'
-            self.__update_samples(request, **kwd)
-            # add an empty or filled sample
-            # if the user has selected a sample no. to copy then copy the contents 
-            # of the src sample to the new sample else an empty sample
-            src_sample_index = int(params.get( 'copy_sample', -1  ))
-            if src_sample_index == -1:
-                # empty sample
-                self.current_samples.append(['Sample_%i' % (len(self.current_samples)+1),['' for field in request.type.sample_form.fields]])
-            else:
-                self.current_samples.append([self.current_samples[src_sample_index][0]+'_%i' % (len(self.current_samples)+1),
-                                                                  [val for val in self.current_samples[src_sample_index][1]]])
-            return trans.fill_template( '/admin/requests/show_request.mako',
-                                        request=request,
-                                        request_details=self.request_details(trans, request.id),
-                                        current_samples=self.current_samples,
-                                        sample_copy=self.__copy_sample(), 
-                                        details_state=self.details_state,
-                                        edit_mode=self.edit_mode)
-        elif params.get('save_samples_button', False) == 'Save':
-            # update current_samples
-            self.__update_samples(request, **kwd)
-            # check for duplicate sample names
-            msg = ''
-            for index in range(len(self.current_samples)-len(request.samples)):
-                sample_index = index + len(request.samples)
-                sample_name = self.current_samples[sample_index][0]
-                if not sample_name.strip():
-                    msg = 'Please enter the name of sample number %i' % sample_index
-                    break
-                count = 0
-                for i in range(len(self.current_samples)):
-                    if sample_name == self.current_samples[i][0]:
-                        count = count + 1
-                if count > 1: 
-                    msg = "This request has <b>%i</b> samples with the name <b>%s</b>.\nSamples belonging to a request must have unique names." % (count, sample_name)
-                    break
-            if msg:
-                return trans.fill_template( '/admin/requests/show_request.mako',
-                                            request=request,
-                                            request_details=self.request_details(trans, request.id),
-                                            current_samples = self.current_samples,
-                                            sample_copy=self.__copy_sample(), details_state=self.details_state,
-                                            messagetype='error', msg=msg)
-            # save all the new/unsaved samples entered by the user
-            if not self.edit_mode:
-                for index in range(len(self.current_samples)-len(request.samples)):
-                    sample_index = index + len(request.samples)
-                    sample_name = util.restore_text( params.get( 'sample_%i_name' % sample_index, ''  ) )
-                    sample_values = []
-                    for field_index in range(len(request.type.sample_form.fields)):
-                        sample_values.append(util.restore_text( params.get( 'sample_%i_field_%i' % (sample_index, field_index), ''  ) ))
-                    form_values = trans.app.model.FormValues(request.type.sample_form, sample_values)
-                    form_values.flush()                    
-                    s = trans.app.model.Sample(sample_name, '', request, form_values)
-                    s.flush()
-            else:
-                for index in range(len(self.current_samples)):
-                    sample_index = index
-                    sample_name = self.current_samples[sample_index][0]
-                    new_sample_name = util.restore_text( params.get( 'sample_%i_name' % sample_index, ''  ) )
-                    sample_values = []
-                    for field_index in range(len(request.type.sample_form.fields)):
-                        sample_values.append(util.restore_text( params.get( 'sample_%i_field_%i' % (sample_index, field_index), ''  ) ))
-                    sample = request.has_sample(sample_name)
-                    if sample:
-                        form_values = trans.app.model.FormValues.get(sample.values.id)
-                        form_values.content = sample_values
-                        form_values.flush()
-                        sample.name = new_sample_name
-                        sample.flush()
-            return trans.response.send_redirect( web.url_for( controller='requests_admin',
-                                                          action='list',
-                                                          operation='show_request',
-                                                          id=trans.security.encode_id(request.id)) )
-        elif params.get('edit_samples_button', False) == 'Edit samples':
-            self.edit_mode = True
-            return trans.fill_template( '/admin/requests/show_request.mako',
-                                        request=request,
-                                        request_details=self.request_details(trans, request.id),
-                                        current_samples=self.current_samples,
-                                        sample_copy=self.__copy_sample(), 
-                                        details_state=self.details_state,
-                                        edit_mode=self.edit_mode)
-        elif params.get('cancel_changes_button', False) == 'Cancel':
-            return trans.response.send_redirect( web.url_for( controller='requests_admin',
-                                                          action='list',
-                                                          operation='show_request',
-                                                          id=trans.security.encode_id(request.id)) )
 
-            
-    @web.expose
-    @web.require_admin
-    def delete_sample(self, trans, **kwd):
-        params = util.Params( kwd )
-        msg = util.restore_text( params.get( 'msg', ''  ) )
-        messagetype = params.get( 'messagetype', 'done' )
-        request = trans.app.model.Request.get(int(params.get('request_id', 0)))
-        sample_index = int(params.get('sample_id', 0))
-        sample_name = self.current_samples[sample_index][0]
-        s = request.has_sample(sample_name)
-        if s:
-            s.delete()
-            s.flush()
-            request.flush()
-        del self.current_samples[sample_index]  
-        return trans.fill_template( '/admin/requests/show_request.mako',
-                                    request=request,
-                                    request_details=self.request_details(trans, request.id),
-                                    current_samples = self.current_samples,
-                                    sample_copy=self.__copy_sample(), 
-                                    details_state=self.details_state,
-                                    edit_mode=self.edit_mode)
-
-    @web.expose
-    @web.require_admin
-    def toggle_request_details(self, trans, **kwd):
-        params = util.Params( kwd )
-        msg = util.restore_text( params.get( 'msg', ''  ) )
-        messagetype = params.get( 'messagetype', 'done' )
-        request = trans.app.model.Request.get(int(params.get('request_id', 0)))
-        if self.details_state == 'Show request details':
-             self.details_state = 'Hide request details'
-        elif self.details_state == 'Hide request details':
-             self.details_state = 'Show request details'
-        copy_list = SelectField('copy_sample')
-        copy_list.add_option('None', -1, selected=True)  
-        for i, s in enumerate(self.current_samples):
-            copy_list.add_option(i+1, i)    
-        return trans.fill_template( '/admin/requests/show_request.mako',
-                                    request=request,
-                                    request_details=self.request_details(trans, request.id),
-                                    current_samples = self.current_samples,
-                                    sample_copy=copy_list, details_state=self.details_state)
-    def request_details(self, trans, id):
-        '''
-        Shows the request details
-        '''
-        request = trans.app.model.Request.get(id)
-        # list of widgets to be rendered on the request form
-        request_details = []
-        # main details
-        request_details.append(dict(label='User', 
-                                    value=str(request.user.email), 
-                                    helptext=''))
-        request_details.append(dict(label='Description', 
-                                    value=request.desc, 
-                                    helptext=''))
-        request_details.append(dict(label='Type', 
-                                    value=request.type.name, 
-                                    helptext=''))
-        request_details.append(dict(label='State', 
-                                    value=request.state, 
-                                    helptext=''))
-        request_details.append(dict(label='Date created', 
-                                    value=request.create_time, 
-                                    helptext=''))
-        # library associated
-        if request.library:
-			value=request.library.name
-        else:
-			value = None
-        request_details.append(dict(label='Data library', 
-                                    value=value, 
-                                    helptext='Data library where the resultant dataset will be stored'))
-        # folder associated
-        if request.folder:
-            value = request.folder.name
-        else:
-            value = None
-        request_details.append( dict( label='Data library folder', 
-                                      value=value, 
-                                      helptext='Data library folder where the resultant dataset will be stored' ) )
-
-        # form fields
-        for index, field in enumerate(request.type.request_form.fields):
-            if field['required']:
-                req = 'Required'
-            else:
-                req = 'Optional'
-            if field['type'] == 'AddressField':
-                if request.values.content[index]:
-                    request_details.append(dict(label=field['label'],
-                                                value=trans.app.model.UserAddress.get(int(request.values.content[index])).get_html(),
-                                                helptext=field['helptext']+' ('+req+')'))
-                else:
-                    request_details.append(dict(label=field['label'],
-                                                value=None,
-                                                helptext=field['helptext']+' ('+req+')'))
-            else: 
-                request_details.append(dict(label=field['label'],
-                                            value=request.values.content[index],
-                                            helptext=field['helptext']+' ('+req+')'))
-        return request_details
-    
+#
+#---- Request Creation ----------------------------------------------------------
+#    
     def __select_request_type(self, trans, rtid):
         rt_ids = ['none']
         for rt in trans.app.model.RequestType.query().all():
@@ -723,21 +401,22 @@ class Requests( BaseController ):
         return select_user
         
     def __library_ui(self, trans, user, request=None, **kwd):
-        """
-        Return a list of libraries for which user has the permission
-        to perform the LIBRARY_ADD action on any of it's folders
-        """
+        '''
+        This method creates the data library & folder selectbox for new &
+        editing requests. First we get a list of all the libraries accessible to
+        the current user and display it in a selectbox. If the user has select an
+        existing library then display all the accessible sub folders of the selected 
+        data library. 
+        '''
         params = util.Params( kwd )
         lib_id = params.get( 'library_id', 'none'  )
-        # if editing a request
+        # if editing a request and the user has already associated a library to
+        # this request, then set the selected_lib to the request.library
         selected_lib = None
         if request and lib_id == 'none':
             if request.library:
                 lib_id = str(request.library.id)
                 selected_lib = request.library
-        else:
-            # new request
-            selected_lib = None
         # if new request no user is selected initially, none of the libraries are 
         # listed in the selectfield
         if not user:
@@ -759,10 +438,11 @@ class Requests( BaseController ):
                 can_show, hidden_folder_ids = trans.app.security_agent.show_library_item( user, roles, library, actions_to_check )
                 if can_show:
                     libraries[ library ] = hidden_folder_ids
-        # create the selectfield
+        # create data library selectbox with refresh on change enabled
         lib_id_list = ['new'] + [str(lib.id) for lib in libraries.keys()]
         lib_list = SelectField( 'library_id', refresh_on_change=True, refresh_on_change_values=lib_id_list )
-        # first option
+        # fill up the options in the Library selectbox
+        # first option 'none' is the value for "Select one" option
         if lib_id == 'none':
             lib_list.add_option('Select one', 'none', selected=True)
         else:
@@ -784,15 +464,23 @@ class Requests( BaseController ):
         lib_widget = dict(label='Data library', 
                           widget=lib_list, 
                           helptext='Data library where the resultant dataset will be stored.')
+        # show the folder widget only if the user has selected a valid library above
         if selected_lib:
-            # when editing a request
+            # when editing a request, either the user has already selected a subfolder or not
             if request:
                 if request.folder:
                     current_fid = request.folder.id
-                else:
-                    current_fid = request.library.root_folder.id
+                else: 
+                    # when a folder not yet associated with the request then the 
+                    # the current folder is set to the root_folder of the 
+                    # parent data library if present. 
+                    if request.library:
+                        current_fid = request.library.root_folder.id
+                    else:
+                        current_fid = params.get( 'folder_id', 'none'  )
             else:
                 current_fid = params.get( 'folder_id', 'none'  )
+            # create the folder selectbox
             folder_list = SelectField( 'folder_id')
             # first option
             if lib_id == 'none':
@@ -828,9 +516,14 @@ class Requests( BaseController ):
         '''
         Validates the request entered by the user 
         '''
+        if not request.samples:
+            return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                              action='list',
+                                                              operation='show_request',
+                                                              message='Please add one or more samples to this request before submitting.',
+                                                              status='error',
+                                                              id=trans.security.encode_id(request.id)) )
         empty_fields = []
-#        if not request.library:
-#            empty_fields.append('Library')
         # check rest of the fields of the form
         for index, field in enumerate(request.type.request_form.fields):
             if field['required'] == 'required' and request.values.content[index] in ['', None]:
@@ -909,6 +602,350 @@ class Requests( BaseController ):
             request.folder = folder
             request.flush()
         return request
+
+
+#
+#---- Request Editing ----------------------------------------------------------
+#    
+    @web.expose
+    @web.require_admin
+    def edit(self, trans, **kwd):
+        params = util.Params( kwd )
+        msg = util.restore_text( params.get( 'msg', ''  ) )
+        messagetype = params.get( 'messagetype', 'done' )
+        try:
+            request = trans.app.model.Request.get(int(params.get('request_id', None)))
+        except:
+            return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                              action='list',
+                                                              status='error',
+                                                              message="Invalid request ID",
+                                                              **kwd) )
+        if params.get('show', False) == 'True':
+            return self.__edit_request(trans, request.id, **kwd)
+        elif params.get('save_changes_request_button', False) == 'Save changes' \
+             or params.get('edit_samples_button', False) == 'Edit samples':
+                request_type = trans.app.model.RequestType.get(int(params.select_request_type))
+                if not util.restore_text(params.get('name', '')):
+                    msg = 'Please enter the <b>Name</b> of the request'
+                    kwd['messagetype'] = 'error'
+                    kwd['msg'] = msg
+                    kwd['show'] = 'True'
+                    return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                                      action='edit',
+                                                                      **kwd) )
+                request = self.__save_request(trans, request, **kwd)
+                msg = 'The changes made to the request named %s has been saved' % request.name
+                if params.get('save_changes_request_button', False) == 'Save changes':
+                    return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                                      action='list',
+                                                                      message=msg ,
+                                                                      status='done') )
+                elif params.get('edit_samples_button', False) == 'Edit samples':
+                    new_kwd = {}
+                    new_kwd['request_id'] = request.id
+                    new_kwd['edit_samples_button'] = 'Edit samples'
+                    return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                                      action='show_request',
+                                                                      msg=msg ,
+                                                                      messagetype='done',
+                                                                      **new_kwd) )
+        elif params.get('refresh', False) == 'true':
+            return self.__edit_request(trans, request.id, **kwd)
+    @web.expose
+    @web.require_admin
+    def submit_request(self, trans, **kwd):
+        params = util.Params( kwd )
+        try:
+            id = int(params.get('id', False))
+            request = trans.app.model.Request.get(id)
+        except:
+            msg = "Invalid request ID"
+            log.warn( msg )
+            return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                              action='list',
+                                                              status='error',
+                                                              message=msg,
+                                                              **kwd) )
+        msg = self.__validate(trans, request)
+        if msg:
+            return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                              action='edit',
+                                                              messagetype='error',
+                                                              msg=msg,
+                                                              request_id=request.id,
+                                                              show='True') )
+        # get the new state
+        new_state = request.type.states[0]
+        for s in request.samples:
+            event = trans.app.model.SampleEvent(s, new_state, 'Samples submitted to the system')
+            event.flush()
+        # change request's submitted field
+        request.state = request.states.SUBMITTED
+        request.flush()
+        kwd['id'] = trans.security.encode_id(request.id)
+        kwd['status'] = 'done'
+        kwd['message'] = 'The request <b>%s</b> has been submitted.' % request.name
+        return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                          action='list',
+                                                          show_filter=trans.app.model.Request.states.SUBMITTED,
+                                                          **kwd) )
+    def __update_samples(self, request, **kwd):
+        '''
+        This method retrieves all the user entered sample information and
+        returns an list of all the samples and their field values
+        '''
+        params = util.Params( kwd )
+        current_samples = []
+        for s in request.samples:
+            current_samples.append([s.name, s.values.content])
+        index = len(request.samples) 
+        while True:
+            if params.get( 'sample_%i_name' % index, ''  ):
+                sample_index = index
+                sample_name = util.restore_text( params.get( 'sample_%i_name' % sample_index, ''  ) )
+                sample_values = []
+                for field_index in range(len(request.type.sample_form.fields)):
+                    sample_values.append(util.restore_text( params.get( 'sample_%i_field_%i' % (sample_index, field_index), ''  ) ))
+                current_samples.append([sample_name, sample_values])
+                index = index + 1
+            else:
+                break
+        details = params.get( 'details', 'hide' )
+        edit_mode = params.get( 'edit_mode', 'False' )
+        return current_samples, details, edit_mode
+    def __copy_sample(self, current_samples):
+        copy_list = SelectField('copy_sample')
+        copy_list.add_option('None', -1, selected=True)  
+        for i, s in enumerate(current_samples):
+            copy_list.add_option(s[0], i)
+        return copy_list   
+    @web.expose
+    @web.require_login( "create/submit sequencing requests" )
+    def show_request(self, trans, **kwd):
+        params = util.Params( kwd )
+        msg = util.restore_text( params.get( 'msg', ''  ) )
+        messagetype = params.get( 'messagetype', 'done' )
+        try:
+            request = trans.app.model.Request.get(int(params.get('request_id', None)))
+        except:
+            return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                              action='list',
+                                                              status='error',
+                                                              message="Invalid request ID",
+                                                              **kwd) )
+        # get the user entered sample details
+        current_samples, details, edit_mode = self.__update_samples( request, **kwd )
+        if params.get('import_samples_button', False) == 'Import samples':
+            try:
+                file_obj = params.get('file_data', '')
+                import csv
+                reader = csv.reader(file_obj.file)
+                for row in reader:
+                    current_samples.append([row[0], row[1:]])  
+                return trans.fill_template( '/admin/requests/show_request.mako',
+                                            request=request,
+                                            request_details=self.request_details(trans, request.id),
+                                            current_samples=current_samples,
+                                            sample_copy=self.__copy_sample(current_samples), 
+                                            details=details,
+                                            edit_mode=edit_mode)
+            except:
+                return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                                  action='list',
+                                                                  status='error',
+                                                                  message='Error in importing samples file',
+                                                                  **kwd))
+        elif params.get('add_sample_button', False) == 'Add New':
+            # add an empty or filled sample
+            # if the user has selected a sample no. to copy then copy the contents 
+            # of the src sample to the new sample else an empty sample
+            src_sample_index = int(params.get( 'copy_sample', -1  ))
+            if src_sample_index == -1:
+                # empty sample
+                current_samples.append(['Sample_%i' % (len(current_samples)+1),['' for field in request.type.sample_form.fields]])
+            else:
+                current_samples.append([current_samples[src_sample_index][0]+'_%i' % (len(current_samples)+1),
+                                                                  [val for val in current_samples[src_sample_index][1]]])
+            return trans.fill_template( '/admin/requests/show_request.mako',
+                                        request=request,
+                                        request_details=self.request_details(trans, request.id),
+                                        current_samples=current_samples,
+                                        sample_copy=self.__copy_sample(current_samples), 
+                                        details=details,
+                                        edit_mode=edit_mode)
+        elif params.get('save_samples_button', False) == 'Save':
+            # check for duplicate sample names
+            msg = ''
+            for index in range(len(current_samples)-len(request.samples)):
+                sample_index = index + len(request.samples)
+                sample_name = current_samples[sample_index][0]
+                if not sample_name.strip():
+                    msg = 'Please enter the name of sample number %i' % sample_index
+                    break
+                count = 0
+                for i in range(len(current_samples)):
+                    if sample_name == current_samples[i][0]:
+                        count = count + 1
+                if count > 1: 
+                    msg = "This request has <b>%i</b> samples with the name <b>%s</b>.\nSamples belonging to a request must have unique names." % (count, sample_name)
+                    break
+            if msg:
+                return trans.fill_template( '/admin/requests/show_request.mako',
+                                            request=request,
+                                            request_details=self.request_details(trans, request.id),
+                                            current_samples = current_samples,
+                                            sample_copy=self.__copy_sample(current_samples), 
+                                            details=details, edit_mode=edit_mode,
+                                            messagetype='error', msg=msg)
+            # save all the new/unsaved samples entered by the user
+            if edit_mode == 'False':
+                for index in range(len(current_samples)-len(request.samples)):
+                    sample_index = index + len(request.samples)
+                    sample_name = util.restore_text( params.get( 'sample_%i_name' % sample_index, ''  ) )
+                    sample_values = []
+                    for field_index in range(len(request.type.sample_form.fields)):
+                        sample_values.append(util.restore_text( params.get( 'sample_%i_field_%i' % (sample_index, field_index), ''  ) ))
+                    form_values = trans.app.model.FormValues(request.type.sample_form, sample_values)
+                    form_values.flush()                    
+                    s = trans.app.model.Sample(sample_name, '', request, form_values)
+                    s.flush()
+            else:
+                for index in range(len(current_samples)):
+                    sample_index = index
+                    sample_name = current_samples[sample_index][0]
+                    new_sample_name = util.restore_text( params.get( 'sample_%i_name' % sample_index, ''  ) )
+                    sample_values = []
+                    for field_index in range(len(request.type.sample_form.fields)):
+                        sample_values.append(util.restore_text( params.get( 'sample_%i_field_%i' % (sample_index, field_index), ''  ) ))
+                    sample = request.has_sample(sample_name)
+                    if sample:
+                        form_values = trans.app.model.FormValues.get(sample.values.id)
+                        form_values.content = sample_values
+                        form_values.flush()
+                        sample.name = new_sample_name
+                        sample.flush()
+            return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                          action='list',
+                                                          operation='show_request',
+                                                          id=trans.security.encode_id(request.id)) )
+        elif params.get('edit_samples_button', False) == 'Edit samples':
+            edit_mode = 'True'
+            return trans.fill_template( '/admin/requests/show_request.mako',
+                                        request=request,
+                                        request_details=self.request_details(trans, request.id),
+                                        current_samples=current_samples,
+                                        sample_copy=self.__copy_sample(current_samples), 
+                                        details=details,
+                                        edit_mode=edit_mode)
+        elif params.get('cancel_changes_button', False) == 'Cancel':
+            return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                          action='list',
+                                                          operation='show_request',
+                                                          id=trans.security.encode_id(request.id)) )
+
+            
+    @web.expose
+    @web.require_login( "create/submit sequencing requests" )
+    def delete_sample(self, trans, **kwd):
+        params = util.Params( kwd )
+        msg = util.restore_text( params.get( 'msg', ''  ) )
+        messagetype = params.get( 'messagetype', 'done' )
+        request = trans.app.model.Request.get(int(params.get('request_id', 0)))
+        current_samples, details, edit_mode = self.__update_samples( request, **kwd )
+        sample_index = int(params.get('sample_id', 0))
+        sample_name = current_samples[sample_index][0]
+        s = request.has_sample(sample_name)
+        if s:
+            s.delete()
+            s.flush()
+            request.flush()
+        del current_samples[sample_index]  
+        return trans.fill_template( '/admin/requests/show_request.mako',
+                                    request=request,
+                                    request_details=self.request_details(trans, request.id),
+                                    current_samples = current_samples,
+                                    sample_copy=self.__copy_sample(current_samples), 
+                                    details=details,
+                                    edit_mode=edit_mode)
+        
+    @web.expose
+    @web.require_login( "create/submit sequencing requests" )
+    def toggle_request_details(self, trans, **kwd):
+        params = util.Params( kwd )
+        msg = util.restore_text( params.get( 'msg', ''  ) )
+        messagetype = params.get( 'messagetype', 'done' )
+        request = trans.app.model.Request.get(int(params.get('request_id', 0)))
+        current_samples, details, edit_mode = self.__update_samples( request, **kwd )
+        return trans.fill_template( '/admin/requests/show_request.mako',
+                                    request=request,
+                                    request_details=self.request_details(trans, request.id),
+                                    current_samples = current_samples,
+                                    sample_copy=self.__copy_sample(current_samples), 
+                                    details=details,
+                                    edit_mode=edit_mode)
+    @web.expose
+    @web.require_admin
+    def request_details(self, trans, id):
+        '''
+        Shows the request details
+        '''
+        request = trans.app.model.Request.get(id)
+        # list of widgets to be rendered on the request form
+        request_details = []
+        # main details
+        request_details.append(dict(label='User', 
+                                    value=str(request.user.email), 
+                                    helptext=''))
+        request_details.append(dict(label='Description', 
+                                    value=request.desc, 
+                                    helptext=''))
+        request_details.append(dict(label='Type', 
+                                    value=request.type.name, 
+                                    helptext=''))
+        request_details.append(dict(label='State', 
+                                    value=request.state, 
+                                    helptext=''))
+        request_details.append(dict(label='Date created', 
+                                    value=request.create_time, 
+                                    helptext=''))
+        # library associated
+        if request.library:
+			value=request.library.name
+        else:
+			value = None
+        request_details.append(dict(label='Data library', 
+                                    value=value, 
+                                    helptext='Data library where the resultant dataset will be stored'))
+        # folder associated
+        if request.folder:
+            value = request.folder.name
+        else:
+            value = None
+        request_details.append( dict( label='Data library folder', 
+                                      value=value, 
+                                      helptext='Data library folder where the resultant dataset will be stored' ) )
+
+        # form fields
+        for index, field in enumerate(request.type.request_form.fields):
+            if field['required']:
+                req = 'Required'
+            else:
+                req = 'Optional'
+            if field['type'] == 'AddressField':
+                if request.values.content[index]:
+                    request_details.append(dict(label=field['label'],
+                                                value=trans.app.model.UserAddress.get(int(request.values.content[index])).get_html(),
+                                                helptext=field['helptext']+' ('+req+')'))
+                else:
+                    request_details.append(dict(label=field['label'],
+                                                value=None,
+                                                helptext=field['helptext']+' ('+req+')'))
+            else: 
+                request_details.append(dict(label=field['label'],
+                                            value=request.values.content[index],
+                                            helptext=field['helptext']+' ('+req+')'))
+        return request_details
     @web.expose
     @web.require_admin
     def bar_codes(self, trans, **kwd):
@@ -1086,7 +1123,9 @@ class Requests( BaseController ):
                                     events_list=events_list,
                                     sample=sample, widgets=widgets, title=title)
     
-    # Request Type Stuff
+##
+#### Request Type Stuff ###################################################
+##
     @web.expose
     @web.require_admin
     def manage_request_types( self, trans, **kwd ):       
