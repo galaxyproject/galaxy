@@ -7,6 +7,7 @@ from galaxy.datatypes.tabular import *
 from galaxy.datatypes.interval import *
 from galaxy.datatypes import metadata
 from galaxy.util.bunch import Bunch
+from sqlalchemy import or_
 
 import pkg_resources
 pkg_resources.require( "PasteDeploy" )
@@ -147,13 +148,18 @@ class CloudMonitor( object ):
         # HACK: Delay until after forking, we need a way to do post fork notification!!!
         time.sleep( 10 )
         
+        cnt = 0 # Run global update only periodically so keep counter variable
         while self.running:
             try:
 #                log.debug( "Calling monitor_step" )
                 self.__monitor_step()
+                if cnt%30 == 0: # Run global update every 30 seconds
+                    self.provider.update()
+                    cnt = 0
             except:
                 log.exception( "Exception in cloud manager monitor_step" )
             # Sleep
+            cnt += 1
             self.sleeper.sleep( 2 )
 
     def __monitor_step( self ):
@@ -167,31 +173,53 @@ class CloudMonitor( object ):
         it is marked as having errors and removed from the queue. Otherwise,
         the job is dispatched.
         """
-        # Get an orm session
+        # Get an orm (object relational mapping) session
         session = mapping.Session()
         # Pull all new jobs from the queue at once
-        new_jobs = []
-        new_instances = []
-        new_UCIs = []
-        stop_UCIs = []
+        new_requests = []
+#        new_instances = []
+#        new_UCIs = []
+#        stop_UCIs = []
+#        delete_UCIs = []
         
 #        for r in session.query( model.cloud_instance ).filter( model.cloud_instance.s.state == model.cloud_instance.states.NEW ).all():
 #            new_instances
             
-        for r in session.query( model.UCI ).filter( model.UCI.c.state == "new" ).all():
-            new_UCIs.append( r )                
-        for r in new_UCIs:
-            self.provider.createUCI( r )
+        for r in session.query( model.UCI ) \
+                .filter( or_( model.UCI.c.state=="newUCI", 
+                              model.UCI.c.state=="submittedUCI", 
+                              model.UCI.c.state=="shutting-downUCI", 
+                              model.UCI.c.state=="deletingUCI" ) ) \
+                .all():
+            uci = UCIwrapper( r )
+            new_requests.append( uci )
+#        log.debug( 'new_requests: %s' % new_requests )     
+        for uci in new_requests:
+            session.clear()
+#            log.debug( 'r.name: %s, state: %s' % ( r.name, r.state ) )
+#            session.save_or_update( r )
+#            session.flush()
+            self.provider.put( uci )
         
-        for r in session.query( model.UCI ).filter( model.UCI.c.state == "submitted" ).all():
-            new_instances.append( r )                
-        for r in new_instances:
-            self.provider.startUCI( r )
+        # Done with the session
+        mapping.Session.remove()
         
-        for r in session.query( model.UCI ).filter( model.UCI.c.state == "terminating" ).all():
-            stop_UCIs.append( r )                
-        for r in stop_UCIs:
-            self.provider.stopUCI( r )
+#        for r in session.query( model.UCI ).filter( model.UCI.c.state == "submitted" ).all():
+#            new_instances.append( r )                
+#        for r in new_instances:
+#            self.provider.startUCI( r )
+#        
+#        for r in session.query( model.UCI ).filter( model.UCI.c.state == "shutting-down" ).all():
+#            stop_UCIs.append( r )                
+#        for r in stop_UCIs:
+#            self.provider.stopUCI( r )
+#            
+#        for r in session.query( model.UCI ).filter( model.UCI.c.state == "deleting" ).all():
+#            delete_UCIs.append( r )                
+#        for r in delete_UCIs:
+#            self.provider.deleteUCI( r )
+            
+        
         
 #        if self.track_jobs_in_database:
 #            for j in session.query( model.Job ).options( lazyload( "external_output_metadata" ), lazyload( "parameters" ) ).filter( model.Job.c.state == model.Job.states.NEW ).all():
@@ -327,6 +355,281 @@ class CloudMonitor( object ):
             log.info( "cloud manager stopped" )
             self.dispatcher.shutdown()
 
+class UCIwrapper( object ):
+    """
+    Wraps 'model.UCI' with convenience methods for state management
+    """
+    def __init__( self, uci ):
+        self.uci_id = uci.id
+        
+    # --------- Setter methods -----------------
+    
+    def change_state( self, uci_state=None, instance_id=None, i_state=None ):
+        """
+        Sets state for UCI and/or UCI's instance with instance_id as provided by cloud provider and stored in local
+        Galaxy database. 
+        Need to provide either state for the UCI or instance_id and it's state or all arguments.
+        """
+#        log.debug( "Changing state - new uci_state: %s, instance_id: %s, i_state: %s" % ( uci_state, instance_id, i_state ) )
+        if uci_state is not None:
+            uci = model.UCI.get( self.uci_id )
+            uci.refresh()
+            uci.state = uci_state
+            uci.flush()
+        if ( instance_id is not None ) and ( i_state is not None ):
+            instance = model.CloudInstance.filter_by( uci_id=self.uci_id, instance_id=instance_id).first()
+            instance.state = i_state
+            instance.flush()
+        
+    def set_mi( self, i_index, mi_id ):
+        """
+        Sets Machine Image (MI), e.g., 'ami-66fa190f', for UCI's instance with given index as it
+        is stored in local Galaxy database. 
+        """
+        mi = model.CloudImage.filter( model.CloudImage.c.image_id==mi_id ).first()
+        instance = model.CloudInstance.get( i_index )
+        instance.image = mi
+        instance.flush()
+        
+    def set_key_pair( self, i_index, key_name, key_material=None ):
+        """
+        Single UCI may instantiate many instances, i_index refers to the numeric index
+        of instance controlled by this UCI as it is stored in local DB (see get_instances_ids()).
+        """
+        instance = model.CloudInstance.get( i_index )
+        instance.keypair_name = key_name
+        if key_material is not None:
+            instance.keypair_material = key_material
+        instance.flush()
+    
+    def set_launch_time( self, launch_time, i_index=None, i_id=None ):
+        """
+        Stores launch time in local database for instance with specified index (as it is stored in local
+        Galaxy database) or with specified instance ID (as obtained from the cloud provider AND stored
+        in local Galaxy Database). Only one of i_index or i_id needs to be provided.
+        """
+        if i_index != None:
+            instance = model.CloudInstance.get( i_index )
+            instance.launch_time = launch_time
+            instance.flush()
+        elif i_id != None:
+            instance = model.CloudInstance.filter_by( uci_id=self.uci_id, instance_id=i_id).first()
+            instance.launch_time = launch_time
+            instance.flush()
+    
+    def set_uci_launch_time( self, launch_time ):
+        uci = model.UCI.get( self.uci_id )
+        uci.refresh()
+        uci.launch_time = launch_time
+        uci.flush()
+    
+    def set_stop_time( self, stop_time, i_index=None, i_id=None ):
+        if i_index != None:
+            instance = model.CloudInstance.get( i_index )
+            instance.stop_time = stop_time
+            instance.flush()
+        elif i_id != None:
+            instance = model.CloudInstance.filter_by( uci_id=self.uci_id, instance_id=i_id).first()
+            instance.stop_time = stop_time
+            instance.flush()
+    
+    def reset_uci_launch_time( self ):
+        uci = model.UCI.get( self.uci_id )
+        uci.refresh()
+        uci.launch_time = None
+        uci.flush()
+    
+    def set_reservation_id( self, i_index, reservation_id ):
+        instance = model.CloudInstance.get( i_index )
+        instance.reservation_id = reservation_id
+        instance.flush()
+        
+    def set_instance_id( self, i_index, instance_id ):
+        """
+        i_index refers to UCI's instance ID as stored in local database
+        instance_id refers to real-world, cloud resource ID (e.g., 'i-78hd823a') 
+        """
+        instance = model.CloudInstance.get( i_index )
+        instance.instance_id = instance_id
+        instance.flush()
+    
+    def set_public_dns( self, instance_id, public_dns ):
+        uci = model.UCI.get( self.uci_id )
+        uci.refresh()
+        uci.instance[instance_id].public_dns = public_dns
+        uci.instance[instance_id].flush()
+    
+    def set_private_dns( self, instance_id, private_dns ):
+        uci = model.UCI.get( self.uci_id )
+        uci.refresh()
+        uci.instance[instance_id].private_dns = private_dns
+        uci.instance[instance_id].flush()
+    
+    def set_store_device( self, store_id, device ):
+        uci = model.UCI.get( self.uci_id )
+        uci.refresh()
+        uci.store[store_id].device = device
+        uci.store[store_id].flush()
+    
+    def set_store_status( self, store_id, status ):
+        uci = model.UCI.get( self.uci_id )
+        uci.refresh()
+        uci.store[store_id].status = status
+        uci.store[store_id].flush()
+    
+    def set_store_availability_zone( self, store_id, availability_zone ):
+        uci = model.UCI.get( self.uci_id )
+        uci.refresh()
+        uci.store[store_id].availability_zone = availability_zone
+        uci.store[store_id].flush()
+    
+    def set_store_volume_id( self, store_id, volume_id ):
+        """
+        Given store ID associated with this UCI, set volume ID as it is registered 
+        on the cloud provider (e.g., vol-39890501)
+        """
+        uci = model.UCI.get( self.uci_id )
+        uci.refresh()
+        uci.store[store_id].volume_id = volume_id
+        uci.store[store_id].flush()
+        
+    def set_store_instance( self, store_id, instance_id ):
+        """ Stores instance ID that given store volume is attached to. """
+        uci = model.UCI.get( self.uci_id )
+        uci.refresh()
+        uci.store[store_id].i_id = instance_id
+        uci.store[store_id].flush()
+   
+    # --------- Getter methods -----------------
+    
+    def get_instances_indexes( self, state=None ):
+        """
+        Returns indexes of instances associated with given UCI as they are stored in local Galaxy database and 
+        whose state corresponds to passed argument. Returned values enable indexing instances from local Galaxy database.  
+        """
+        uci = model.UCI.get( self.uci_id )
+        uci.refresh()
+        instances = model.CloudInstance.filter_by( uci=uci ).filter( model.CloudInstance.c.state==state ).all()
+        il = []
+        for i in instances:
+            il.append( i.id )
+            
+        return il
+    
+    def get_type( self, i_index ):
+        instance = model.CloudInstance.get( i_index )
+        return instance.type 
+        
+    def get_state( self ):
+        uci = model.UCI.get( self.uci_id )
+        uci.refresh()
+        return uci.state
+    
+    def get_instance_state( self, instance_id ):
+        uci = model.UCI.get( self.uci_id )
+        uci.refresh()
+        return uci.instance[instance_id].state
+    
+    def get_instances_ids( self ):
+        """ 
+        Returns list IDs of all instances' associated with this UCI that are not in 'terminated' state
+        (e.g., ['i-402906D2', 'i-q0290dsD2'] ).
+        """
+        il = model.CloudInstance.filter_by( uci_id=self.uci_id ).filter( model.CloudInstance.c.state != 'terminated' ).all()
+        instanceList = []
+        for i in il:
+            instanceList.append( i.instance_id )
+        return instanceList
+        
+    def get_name( self ):
+        uci = model.UCI.get( self.uci_id )
+        uci.refresh()
+        return uci.name
+    
+    def get_key_pair_name( self, i_index=None, i_id=None ):
+        """
+        Given EITHER instance index as it is stored in local Galaxy database OR instance ID as it is 
+        obtained from cloud provider and stored in local Galaxy database, return keypair name assocaited
+        with given instance.
+        """
+        if i_index != None:
+            instance = model.CloudInstance.get( i_index )
+            return instance.keypair_name
+        elif i_id != None:
+            instance = model.CloudInstance.filter_by( uci_id=self.uci_id, instance_id=i_id).first()
+            return instance.keypair_name
+        
+    def get_access_key( self ):
+        uci = model.UCI.get( self.uci_id )
+        uci.refresh()
+        return uci.credentials.access_key
+    
+    def get_secret_key( self ):
+        uci = model.UCI.get( self.uci_id )
+        uci.refresh()
+        return uci.credentials.secret_key
+    
+    def get_mi_id( self, instance_id=0 ):
+        uci = model.UCI.get( self.uci_id )
+        uci.refresh()
+        return uci.instance[instance_id].mi_id
+    
+    def get_public_dns( self, instance_id=0 ):
+        uci = model.UCI.get( self.uci_id )
+        uci.refresh()
+        return uci.instance[instance_id].public_dns
+    
+    def get_private_dns( self, instance_id=0 ):
+        uci = model.UCI.get( self.uci_id )
+        uci.refresh()
+        return uci.instance[instance_id].private_dns
+    
+    def get_store_availability_zone( self, store_id ):
+        uci = model.UCI.get( self.uci_id )
+        uci.refresh()
+        return uci.store[store_id].availability_zone
+    
+    def get_store_size( self, store_id ):
+        uci = model.UCI.get( self.uci_id )
+        uci.refresh()
+        return uci.store[store_id].size
+    
+    def get_store_volume_id( self, store_id ):
+        """
+        Given store ID associated with this UCI, get volume ID as it is registered 
+        on the cloud provider (e.g., 'vol-39890501')
+        """
+        uci = model.UCI.get( self.uci_id )
+        uci.refresh()
+        return uci.store[store_id].volume_id
+    
+    def get_all_stores( self ):
+        """ Returns all storage volumes' database objects associated with this UCI. """
+        return model.CloudStore.filter( model.CloudStore.c.uci_id == self.uci_id ).all()
+#        svs = model.CloudStore.filter( model.CloudStore.c.uci_id == self.uci_id ).all()
+#        svl = [] # storage volume list
+#        for sv in svs:
+#            svl.append( sv.volume_id )
+#        return svl
+        
+    def get_uci( self ):
+        """ Returns database object for given UCI. """
+        uci = model.UCI.get( self.uci_id )
+        uci.refresh()
+        return uci
+    
+    def uci_launch_time_set( self ):
+        uci = model.UCI.get( self.uci_id )
+        uci.refresh()
+        return uci.launch_time
+    
+    def delete( self ):
+        uci = model.UCI.get( self.uci_id )
+        uci.refresh()
+#        uci.delete()
+        uci.state = 'deleted' # for bookkeeping reasons, mark as deleted but don't actually delete.
+        uci.flush()
+    
 class JobWrapper( object ):
     """
     Wraps a 'model.Job' with convience methods for running processes and 
@@ -675,6 +978,11 @@ class DefaultCloudProvider( object ):
         else:
             log.error( "Unable to start unknown cloud provider: %s" %self.provider_name )
     
+    def put( self, uci_wrapper ):
+        """ Put given request for UCI manipulation into provider's request queue."""
+#        log.debug( "Adding UCI '%s' manipulation request into cloud manager's queue." % uci_wrapper.name )
+        self.cloud_provider[self.provider_name].put( uci_wrapper )
+    
     def createUCI( self, uci ):
         """ 
         Createse User Configured Instance (UCI). Essentially, creates storage volume.
@@ -682,13 +990,15 @@ class DefaultCloudProvider( object ):
         log.debug( "Creating UCI '%s'" % uci.name )
         self.cloud_provider[self.provider_name].createUCI( uci )
         
-    def deleteUCI( self, uciName ):
+    def deleteUCI( self, uci ):
         """ 
         Deletes UCI. NOTE that this implies deletion of any and all data associated
         with this UCI from the cloud. All data will be deleted.
         """
+        log.debug( "Deleting UCI '%s'" % uci.name )
+        self.cloud_provider[self.provider_name].deleteUCI( uci )
     
-    def addStorageToUCI( self, uciName ):
+    def addStorageToUCI( self, uci ):
         """ Adds more storage to specified UCI """
         
     def startUCI( self, uci ):
@@ -706,17 +1016,16 @@ class DefaultCloudProvider( object ):
         """
         log.debug( "Stopping UCI '%s'" % uci.name )
         self.cloud_provider[self.provider_name].stopUCI( uci )
+    
+    def update( self ):
+        """ 
+        Runs a global status update on all storage volumes and all instances whose UCI is
+        'running' state.
+        Reason behind this method is to sync state of local DB and real world resources
+        """
+#        log.debug( "Running global update" )
+        self.cloud_provider[self.provider_name].update()
         
-    def put( self, job_wrapper ):
-        runner_name = ( job_wrapper.tool.job_runner.split(":", 1) )[0]
-        log.debug( "dispatching job %d to %s runner" %( job_wrapper.job_id, runner_name ) )
-        self.cloud_provider[runner_name].put( job_wrapper )
-
-    def stop( self, job ):
-        runner_name = ( job.job_runner_name.split(":", 1) )[0]
-        log.debug( "stopping job %d in %s runner" %( job.id, runner_name ) )
-        self.cloud_provider[runner_name].stop_job( job )
-
     def recover( self, job, job_wrapper ):
         runner_name = ( job.job_runner_name.split(":", 1) )[0]
         log.debug( "recovering job %d in %s runner" %( job.id, runner_name ) )

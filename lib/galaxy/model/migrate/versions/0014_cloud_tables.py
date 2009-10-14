@@ -82,7 +82,10 @@ def upgrade():
         CloudImage_table.create()
     except Exception, e:
         log.debug( "Creating cloud_image table failed. Table probably exists already." )
-    UCI_table.create()
+    try:
+        UCI_table.create()
+    except Exception, e:
+        log.debug( "Creating UCI table failed. Table probably exists already." )
     CloudInstance_table.create()
     CloudStore_table.create()
     try:
@@ -115,7 +118,8 @@ def downgrade():
         log.debug( "Dropping cloud_user_credentials table failed: %s" % str( e ) )  
         
     try:
-        UCI_table.drop()
+        log.debug( "Would drop UCI table." )
+#        UCI_table.drop()
     except Exception, e:
         log.debug( "Dropping UCI table failed: %s" % str( e ) )  
     

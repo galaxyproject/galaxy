@@ -965,7 +965,7 @@ assign_mapper( context, UCI, UCI.table,
     properties=dict( user=relation( User ),
                      credentials=relation( CloudUserCredentials ),
                      instance=relation( CloudInstance, backref='uci' ),
-                     store=relation( CloudStore, backref='uci' ) 
+                     store=relation( CloudStore, backref='uci', cascade='all, delete-orphan' ) 
                     ) )
 
 assign_mapper( context, CloudInstance, CloudInstance.table,
