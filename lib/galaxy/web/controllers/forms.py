@@ -135,7 +135,6 @@ class Forms( BaseController ):
         renaming fields, adding/deleting fields, changing fields attributes.
         '''
         params = util.Params( kwd )
-        log.debug( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
         try:

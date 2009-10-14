@@ -50,7 +50,8 @@ class LibraryAdmin( BaseController ):
                                                               messagetype='error' ) )
         created_ldda_ids = params.get( 'created_ldda_ids', '' )
         if created_ldda_ids and not msg:
-            msg = "%d datasets are now uploading in the background to the library '%s' ( each is selected ).  Please do not navigate away from Galaxy or use the browser's \"stop\" or \"reload\" buttons (on this tab) until the upload(s) change from the \"uploading\" state." % ( len( created_ldda_ids.split(',') ), library.name )
+            msg = "%d datasets are now uploading in the background to the library '%s' ( each is selected ).  " % ( len( created_ldda_ids.split( ',' ) ), library.name )
+            msg += "Do not navigate away from Galaxy or use the browser's \"stop\" or \"reload\" buttons ( on this tab ) until the upload(s) change from the \"uploading\" state."
             messagetype = "info"
         return trans.fill_template( '/admin/library/browse_library.mako', 
                                     library=library,
