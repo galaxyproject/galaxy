@@ -239,6 +239,59 @@ class Rgenetics(Html):
         rval.append( '</ul></div></html>' )
         return "\n".join( rval )
 
+    def regenerate_primary_file(self,dataset):
+        """cannot do this until we are setting metadata 
+        """
+        def fix(oldpath,newbase):
+           old,e = os.path.splitext(oldpath)
+           head,rest = os.path.split(old)
+           newpath = os.path.join(head,newbase)
+           newpath = '%s%s' % (newpath,e)
+	   shutil.move(oldpath,newpath)
+           return newpath
+        bn = dataset.metadata.base_name
+        efp = dataset.extra_files_path
+        flist = os.listdir(efp)
+        proper_base = bn
+        rval = ['<html><head><title>Files for Composite Dataset %s</title></head><p/>Comprises the following files:<p/><ul>' % (bn)]
+        for i,fname in enumerate(flist):
+            newpath = fix(os.path.join(efp,fname),proper_base)
+            sfname = os.path.split(newpath)[-1] 
+            rval.append( '<li><a href="%s">%s</a>' % ( sfname, sfname ) )
+        rval.append( '</ul></html>' )
+        f = file(dataset.file_name,'w')
+        f.write("\n".join( rval ))
+        f.write('\n')
+        f.close()
+
+    def set_meta( self, dataset, **kwd ):
+
+        """
+        NOTE we apply the tabular machinary to the phenodata extracted
+        from a BioC eSet or affybatch.
+
+        """
+        try:
+            flist = os.listdir(dataset.extra_files_path)
+        except:                 
+            gal_Log.debug('@@@rgenetics set_meta failed - no dataset?')
+            return
+        bn = None
+        for f in flist:
+           n = os.path.splitext(f)[0]                  
+           if not bn:
+                bn = n
+                dataset.metadata.base_name = bn
+        if not bn:
+            bn = '?'
+        self.regenerate_primary_file(dataset)
+        if not dataset.info:           
+                dataset.info = 'Galaxy genotype datatype object'
+        if not dataset.blurb:
+               dataset.blurb = 'Composite file - Rgenetics Galaxy toolkit'
+        return True
+
+
 class SNPMatrix(Rgenetics):
     """fake class to distinguish different species of Rgenetics data collections
     """
