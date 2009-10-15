@@ -1,3 +1,4 @@
+#! /usr/bin/python
 """
 usage: check_eggs.py
 """

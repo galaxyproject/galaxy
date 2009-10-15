@@ -25,6 +25,7 @@ from galaxy.datatypes.tabular import Tabular
 from galaxy.datatypes.images import Html
 
 gal_Log = logging.getLogger(__name__)
+verbose = False
 
 class GenomeGraphs( Tabular ):
     """Tab delimited data containing a marker id and any number of numeric values"""
@@ -247,7 +248,8 @@ class Rgenetics(Html):
            head,rest = os.path.split(old)
            newpath = os.path.join(head,newbase)
            newpath = '%s%s' % (newpath,e)
-	   shutil.move(oldpath,newpath)
+           if oldpath <> newpath:
+               shutil.move(oldpath,newpath)
            return newpath
         bn = dataset.metadata.base_name
         efp = dataset.extra_files_path
@@ -266,20 +268,32 @@ class Rgenetics(Html):
 
     def set_meta( self, dataset, **kwd ):
 
-        """
-        NOTE we apply the tabular machinary to the phenodata extracted
-        from a BioC eSet or affybatch.
+        """for lped/pbed eg
 
         """
+        if kwd.get('overwrite') == False:
+            if verbose:
+                gal_Log.debug('@@@ rgenetics set_meta called with overwrite = False')
+            return True
         try:
-            flist = os.listdir(dataset.extra_files_path)
-        except:                 
-            gal_Log.debug('@@@rgenetics set_meta failed - no dataset?')
-            return
+            efp = dataset.extra_files_path
+        except: 
+            if verbose:                
+               gal_Log.debug('@@@rgenetics set_meta failed %s - dataset %s has no efp ?' % (sys.exc_info()[0], dataset.name))
+            return False
+        try:
+	     flist = os.listdir(efp)
+	except:
+            if verbose: gal_Log.debug('@@@rgenetics set_meta failed %s - dataset %s has no efp ?' % (sys.exc_info()[0],dataset.name))
+            return False
+        if len(flist) == 0:
+            if verbose:
+                gal_Log.debug('@@@rgenetics set_meta failed - %s efp %s is empty?' % (dataset.name,efp))
+            return False
         bn = None
         for f in flist:
-           n = os.path.splitext(f)[0]                  
-           if not bn:
+           n,e = os.path.splitext(f)[0]                  
+           if (not bn) and e in ('.ped','.map','.bim','.fam'):
                 bn = n
                 dataset.metadata.base_name = bn
         if not bn:
@@ -607,8 +621,9 @@ class RexpBase( Html ):
         try:
             flist = os.listdir(dataset.extra_files_path)
         except:
-            gal_Log.debug('@@@rexpression set_meta failed - no dataset?')
-            return
+            if verbose:
+                gal_Log.debug('@@@rexpression set_meta failed - no dataset?')
+            return False
         bn = None
         for f in flist:
            n = os.path.splitext(f)[0]
