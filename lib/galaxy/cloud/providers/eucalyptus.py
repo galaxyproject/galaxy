@@ -22,7 +22,6 @@ class EucalyptusCloudProvider( object ):
     """
     STOP_SIGNAL = object()
     def __init__( self, app ):
-        log.debug( "Using eucalyptus as default cloud provider." )
         self.zone = "epc"
         self.key_pair = "galaxy-keypair"
         self.queue = Queue()
@@ -35,7 +34,7 @@ class EucalyptusCloudProvider( object ):
             worker = threading.Thread( target=self.run_next )
             worker.start()
             self.threads.append( worker )
-        log.debug( "%d cloud workers ready", nworkers )
+        log.debug( "%d eucalyptus cloud workers ready", nworkers )
         
     def run_next( self ):
         """Run the next job, waiting until one is available if necessary"""
@@ -65,12 +64,9 @@ class EucalyptusCloudProvider( object ):
             
     def get_connection( self, uci_wrapper ):
         """
-        Establishes EC2 connection using user's default credentials
+        Establishes eucalyptus cloud connection using user's credentials associated with given UCI
         """
-        log.debug( '##### Establishing cloud connection' )
-        # Amazon EC2
-        #conn = EC2Connection( uci_wrapper.get_access_key(), uci_wrapper.get_secret_key() )
-        
+        log.debug( '##### Establishing eucalyptus cloud connection' )
         # Eucalyptus Public Cloud
         # TODO: Add option in Galaxy config file to specify these values (i.e., for locally managed Eucalyptus deployments)
         euca_region = RegionInfo( None, "eucalyptus", "mayhem9.cs.ucsb.edu" )
@@ -141,32 +137,20 @@ class EucalyptusCloudProvider( object ):
         """
         conn = self.get_connection( uci_wrapper )
         # Temporary code - need to ensure user selects zone at UCI creation time!
-        if uci_wrapper.get_store_availability_zone( 0 )=='':
-            log.info( "Availability zone for storage volume was not selected, using default zone: %s" % self.zone )
-            uci_wrapper.set_store_availability_zone( 0, self.zone )
+        if uci_wrapper.get_uci_availability_zone()=='':
+            log.info( "Availability zone for UCI (i.e., storage volume) was not selected, using default zone: %s" % self.zone )
+            uci_wrapper.set_store_availability_zone( self.zone )
         
         #TODO: check if volume associated with UCI already exists (if server crashed for example) and don't recreate it
-        log.info( "Creating volume in zone '%s'..." % uci_wrapper.get_store_availability_zone( 0 ) )
-        vol = conn.create_volume( uci_wrapper.get_store_size( 0 ), uci_wrapper.get_store_availability_zone( 0 ), snapshot=None )
-        uci_wrapper.set_store_volume_id( 0, vol.id )
-        
-        # Wait for a while to ensure volume was created
-#        vol_status = vol.status
-#        for i in range( 30 ):
-#            if vol_status is not "u'available'":
-#                log.debug( 'Updating volume status; current status: %s' % vol_status )
-#                vol_status = vol.status
-#                time.sleep(3)
-#            if i is 29:
-#                log.debug( "Error while creating volume '%s'; stuck in state '%s'; deleting volume." % ( vol.id, vol_status ) )
-#                conn.delete_volume( vol.id )
-#                uci.state = 'error'
-#                uci.flush()
-#                return
+        log.info( "Creating volume in zone '%s'..." % uci_wrapper.get_uci_availability_zone() )
+        # Because only 1 storage volume may be created at UCI config time, index of this storage volume in local Galaxy DB w.r.t
+        # current UCI is 0, so reference it in following methods
+        vol = conn.create_volume( uci_wrapper.get_store_size( 0 ), uci_wrapper.get_uci_availability_zone(), snapshot=None )
+        uci_wrapper.set_store_volume_id( 0, vol.id ) 
         
         # EPC does not allow creation of storage volumes (it deletes one as soon as it is created, so manually set uci_state here)
         uci_wrapper.change_state( uci_state='available' )
-        uci_wrapper.set_store_status( 0, vol.status )
+        uci_wrapper.set_store_status( vol.id, vol.status )
 
     def deleteUCI( self, uci_wrapper ):
         """ 
@@ -214,7 +198,7 @@ class EucalyptusCloudProvider( object ):
         
     def startUCI( self, uci_wrapper ):
         """
-        Starts an instance of named UCI on the cloud.  
+        Starts instance(s) of given UCI on the cloud.  
         """ 
         conn = self.get_connection( uci_wrapper )
 #        
@@ -250,11 +234,12 @@ class EucalyptusCloudProvider( object ):
             if not uci_wrapper.uci_launch_time_set():
                 uci_wrapper.set_uci_launch_time( l_time )
             uci_wrapper.set_reservation_id( i_index, str( reservation ).split(":")[1] )
+            # TODO: if more than a single instance will be started through single reservation, change this reference to element [0]
             i_id = str( reservation.instances[0]).split(":")[1]
             uci_wrapper.set_instance_id( i_index, i_id )
-            s = reservation.instances[0].state # TODO: once more than a single instance will be started through single reservation, change this
+            s = reservation.instances[0].state
             uci_wrapper.change_state( s, i_id, s )
-            log.debug( "UCI '%s' started, current state: %s" % ( uci_wrapper.get_name(), uci_wrapper.get_state() ) )
+            log.debug( "Instance of UCI '%s' started, current state: %s" % ( uci_wrapper.get_name(), uci_wrapper.get_state() ) )
         
         
         
@@ -291,7 +276,7 @@ class EucalyptusCloudProvider( object ):
         
     def stopUCI( self, uci_wrapper):
         """ 
-        Stops all of cloud instances associated with named UCI. 
+        Stops all of cloud instances associated with given UCI. 
         """
         conn = self.get_connection( uci_wrapper )
         

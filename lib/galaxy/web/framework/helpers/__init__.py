@@ -4,6 +4,7 @@ pkg_resources.require( "WebHelpers" )
 from webhelpers import *
 
 from datetime import datetime, timedelta
+from galaxy.util.json import to_json_string
 
 # If the date is more than one week ago, then display the actual date instead of in words
 def time_ago( x ):

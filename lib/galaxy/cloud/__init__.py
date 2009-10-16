@@ -33,9 +33,9 @@ class CloudManager( object ):
         self.app = app
         if self.app.config.get_bool( "enable_cloud_execution", True ):
             # The dispatcher manager underlying cloud instances
-            self.provider = DefaultCloudProvider( app )
+#            self.provider = CloudProvider( app )
             # Monitor for updating status of cloud instances
-            self.cloud_monitor = CloudMonitor( self.app, self.provider )
+            self.cloud_monitor = CloudMonitor( self.app )
 #            self.job_stop_queue = JobStopQueue( app, self.dispatcher )
         else:
             self.job_queue = self.job_stop_queue = NoopCloudMonitor()
@@ -93,7 +93,7 @@ class CloudMonitor( object ):
     CloudProvider.
     """
     STOP_SIGNAL = object()
-    def __init__( self, app, provider ):
+    def __init__( self, app ):
         """Start the cloud manager"""
         self.app = app
         # Keep track of the pid that started the cloud manager, only it
@@ -153,7 +153,7 @@ class CloudMonitor( object ):
             try:
 #                log.debug( "Calling monitor_step" )
                 self.__monitor_step()
-                if cnt%30 == 0: # Run global update every 30 seconds
+                if cnt%30 == 0: # Run global update every 30 seconds (1 minute)
                     self.provider.update()
                     cnt = 0
             except:
@@ -471,18 +471,25 @@ class UCIwrapper( object ):
         uci.store[store_id].device = device
         uci.store[store_id].flush()
     
-    def set_store_status( self, store_id, status ):
-        uci = model.UCI.get( self.uci_id )
-        uci.refresh()
-        uci.store[store_id].status = status
-        uci.store[store_id].flush()
-    
-    def set_store_availability_zone( self, store_id, availability_zone ):
-        uci = model.UCI.get( self.uci_id )
-        uci.refresh()
-        uci.store[store_id].availability_zone = availability_zone
-        uci.store[store_id].flush()
-    
+    def set_store_status( self, vol_id, status ):
+        vol = model.CloudStore.filter( model.CloudStore.c.volume_id == vol_id ).first()
+        vol.status = status
+        vol.flush()
+
+    def set_store_availability_zone( self, availability_zone, vol_id=None ):
+        """
+        Sets availability zone of storage volumes for either ALL volumes associated with current
+        UCI or for the volume whose volume ID (e.g., 'vol-39F80512') is provided as argument.
+        """
+        if vol_id is not None:
+            vol = model.CloudStore.filter( model.CloudStore.c.volume_id == vol_id ).all()
+        else:
+            vol = model.CloudStore.filter( model.CloudStore.c.uci_id == self.uci_id ).all()
+        
+        for v in vol:
+            v.availability_zone = availability_zone
+            v.flush()
+        
     def set_store_volume_id( self, store_id, volume_id ):
         """
         Given store ID associated with this UCI, set volume ID as it is registered 
@@ -493,13 +500,15 @@ class UCIwrapper( object ):
         uci.store[store_id].volume_id = volume_id
         uci.store[store_id].flush()
         
-    def set_store_instance( self, store_id, instance_id ):
-        """ Stores instance ID that given store volume is attached to. """
-        uci = model.UCI.get( self.uci_id )
-        uci.refresh()
-        uci.store[store_id].i_id = instance_id
-        uci.store[store_id].flush()
-   
+    def set_store_instance( self, vol_id, instance_id ):
+        """
+        Stores instance ID that given store volume is attached to. Store volume ID should
+        be given in following format: 'vol-78943248'
+        """
+        vol = model.CloudStore.filter( model.CloudStore.c.volume_id == vol_id ).first()
+        vol.i_id = instance_id
+        vol.flush()
+
     # --------- Getter methods -----------------
     
     def get_instances_indexes( self, state=None ):
@@ -584,17 +593,23 @@ class UCIwrapper( object ):
         uci.refresh()
         return uci.instance[instance_id].private_dns
     
-    def get_store_availability_zone( self, store_id ):
+    def get_uci_availability_zone( self ):
+        """
+        Returns UCI's availability zone.
+        Because all of storage volumes associated with a given UCI must be in the same
+        availability zone, availability of a UCI is determined by availability zone of 
+        any one storage volume. 
+        """
         uci = model.UCI.get( self.uci_id )
         uci.refresh()
-        return uci.store[store_id].availability_zone
+        return uci.store[0].availability_zone
     
-    def get_store_size( self, store_id ):
+    def get_store_size( self, store_id=0 ):
         uci = model.UCI.get( self.uci_id )
         uci.refresh()
         return uci.store[store_id].size
     
-    def get_store_volume_id( self, store_id ):
+    def get_store_volume_id( self, store_id=0 ):
         """
         Given store ID associated with this UCI, get volume ID as it is registered 
         on the cloud provider (e.g., 'vol-39890501')
@@ -630,337 +645,337 @@ class UCIwrapper( object ):
         uci.state = 'deleted' # for bookkeeping reasons, mark as deleted but don't actually delete.
         uci.flush()
     
-class JobWrapper( object ):
-    """
-    Wraps a 'model.Job' with convience methods for running processes and 
-    state management.
-    """
-    def __init__(self, job, tool, queue ):
-        self.job_id = job.id
-        # This is immutable, we cache it for the scheduling policy to use if needed
-        self.session_id = job.session_id
-        self.tool = tool
-        self.queue = queue
-        self.app = queue.app
-        self.extra_filenames = []
-        self.command_line = None
-        self.galaxy_lib_dir = None
-        # With job outputs in the working directory, we need the working
-        # directory to be set before prepare is run, or else premature deletion
-        # and job recovery fail.
-        self.working_directory = \
-            os.path.join( self.app.config.job_working_directory, str( self.job_id ) )
-        self.output_paths = None
-        self.external_output_metadata = metadata.JobExternalOutputMetadataWrapper( job ) #wrapper holding the info required to restore and clean up from files used for setting metadata externally
-        
-    def get_param_dict( self ):
-        """
-        Restore the dictionary of parameters from the database.
-        """
-        job = model.Job.get( self.job_id )
-        param_dict = dict( [ ( p.name, p.value ) for p in job.parameters ] )
-        param_dict = self.tool.params_from_strings( param_dict, self.app )
-        return param_dict
-        
-    def prepare( self ):
-        """
-        Prepare the job to run by creating the working directory and the
-        config files.
-        """
-        mapping.context.current.clear() #this prevents the metadata reverting that has been seen in conjunction with the PBS job runner
-        if not os.path.exists( self.working_directory ):
-            os.mkdir( self.working_directory )
-        # Restore parameters from the database
-        job = model.Job.get( self.job_id )
-        incoming = dict( [ ( p.name, p.value ) for p in job.parameters ] )
-        incoming = self.tool.params_from_strings( incoming, self.app )
-        # Do any validation that could not be done at job creation
-        self.tool.handle_unvalidated_param_values( incoming, self.app )
-        # Restore input / output data lists
-        inp_data = dict( [ ( da.name, da.dataset ) for da in job.input_datasets ] )
-        out_data = dict( [ ( da.name, da.dataset ) for da in job.output_datasets ] )
-        # These can be passed on the command line if wanted as $userId $userEmail
-        if job.history.user: # check for anonymous user!
-             userId = '%d' % job.history.user.id
-             userEmail = str(job.history.user.email)
-        else:
-             userId = 'Anonymous'
-             userEmail = 'Anonymous'
-        incoming['userId'] = userId
-        incoming['userEmail'] = userEmail
-        # Build params, done before hook so hook can use
-        param_dict = self.tool.build_param_dict( incoming, inp_data, out_data, self.get_output_fnames(), self.working_directory )
-        # Certain tools require tasks to be completed prior to job execution
-        # ( this used to be performed in the "exec_before_job" hook, but hooks are deprecated ).
-        if self.tool.tool_type is not None:
-            out_data = self.tool.exec_before_job( self.queue.app, inp_data, out_data, param_dict )
-        # Run the before queue ("exec_before_job") hook
-        self.tool.call_hook( 'exec_before_job', self.queue.app, inp_data=inp_data, 
-                             out_data=out_data, tool=self.tool, param_dict=incoming)
-        mapping.context.current.flush()
-        # Build any required config files
-        config_filenames = self.tool.build_config_files( param_dict, self.working_directory )
-        # FIXME: Build the param file (might return None, DEPRECATED)
-        param_filename = self.tool.build_param_file( param_dict, self.working_directory )
-        # Build the job's command line
-        self.command_line = self.tool.build_command_line( param_dict )
-        # FIXME: for now, tools get Galaxy's lib dir in their path
-        if self.command_line and self.command_line.startswith( 'python' ):
-            self.galaxy_lib_dir = os.path.abspath( "lib" ) # cwd = galaxy root
-        # We need command_line persisted to the db in order for Galaxy to re-queue the job
-        # if the server was stopped and restarted before the job finished
-        job.command_line = self.command_line
-        job.flush()
-        # Return list of all extra files
-        extra_filenames = config_filenames
-        if param_filename is not None:
-            extra_filenames.append( param_filename )
-        self.param_dict = param_dict
-        self.extra_filenames = extra_filenames
-        return extra_filenames
+#class JobWrapper( object ):
+#    """
+#    Wraps a 'model.Job' with convience methods for running processes and 
+#    state management.
+#    """
+#    def __init__(self, job, tool, queue ):
+#        self.job_id = job.id
+#        # This is immutable, we cache it for the scheduling policy to use if needed
+#        self.session_id = job.session_id
+#        self.tool = tool
+#        self.queue = queue
+#        self.app = queue.app
+#        self.extra_filenames = []
+#        self.command_line = None
+#        self.galaxy_lib_dir = None
+#        # With job outputs in the working directory, we need the working
+#        # directory to be set before prepare is run, or else premature deletion
+#        # and job recovery fail.
+#        self.working_directory = \
+#            os.path.join( self.app.config.job_working_directory, str( self.job_id ) )
+#        self.output_paths = None
+#        self.external_output_metadata = metadata.JobExternalOutputMetadataWrapper( job ) #wrapper holding the info required to restore and clean up from files used for setting metadata externally
+#        
+#    def get_param_dict( self ):
+#        """
+#        Restore the dictionary of parameters from the database.
+#        """
+#        job = model.Job.get( self.job_id )
+#        param_dict = dict( [ ( p.name, p.value ) for p in job.parameters ] )
+#        param_dict = self.tool.params_from_strings( param_dict, self.app )
+#        return param_dict
+#        
+#    def prepare( self ):
+#        """
+#        Prepare the job to run by creating the working directory and the
+#        config files.
+#        """
+#        mapping.context.current.clear() #this prevents the metadata reverting that has been seen in conjunction with the PBS job runner
+#        if not os.path.exists( self.working_directory ):
+#            os.mkdir( self.working_directory )
+#        # Restore parameters from the database
+#        job = model.Job.get( self.job_id )
+#        incoming = dict( [ ( p.name, p.value ) for p in job.parameters ] )
+#        incoming = self.tool.params_from_strings( incoming, self.app )
+#        # Do any validation that could not be done at job creation
+#        self.tool.handle_unvalidated_param_values( incoming, self.app )
+#        # Restore input / output data lists
+#        inp_data = dict( [ ( da.name, da.dataset ) for da in job.input_datasets ] )
+#        out_data = dict( [ ( da.name, da.dataset ) for da in job.output_datasets ] )
+#        # These can be passed on the command line if wanted as $userId $userEmail
+#        if job.history.user: # check for anonymous user!
+#             userId = '%d' % job.history.user.id
+#             userEmail = str(job.history.user.email)
+#        else:
+#             userId = 'Anonymous'
+#             userEmail = 'Anonymous'
+#        incoming['userId'] = userId
+#        incoming['userEmail'] = userEmail
+#        # Build params, done before hook so hook can use
+#        param_dict = self.tool.build_param_dict( incoming, inp_data, out_data, self.get_output_fnames(), self.working_directory )
+#        # Certain tools require tasks to be completed prior to job execution
+#        # ( this used to be performed in the "exec_before_job" hook, but hooks are deprecated ).
+#        if self.tool.tool_type is not None:
+#            out_data = self.tool.exec_before_job( self.queue.app, inp_data, out_data, param_dict )
+#        # Run the before queue ("exec_before_job") hook
+#        self.tool.call_hook( 'exec_before_job', self.queue.app, inp_data=inp_data, 
+#                             out_data=out_data, tool=self.tool, param_dict=incoming)
+#        mapping.context.current.flush()
+#        # Build any required config files
+#        config_filenames = self.tool.build_config_files( param_dict, self.working_directory )
+#        # FIXME: Build the param file (might return None, DEPRECATED)
+#        param_filename = self.tool.build_param_file( param_dict, self.working_directory )
+#        # Build the job's command line
+#        self.command_line = self.tool.build_command_line( param_dict )
+#        # FIXME: for now, tools get Galaxy's lib dir in their path
+#        if self.command_line and self.command_line.startswith( 'python' ):
+#            self.galaxy_lib_dir = os.path.abspath( "lib" ) # cwd = galaxy root
+#        # We need command_line persisted to the db in order for Galaxy to re-queue the job
+#        # if the server was stopped and restarted before the job finished
+#        job.command_line = self.command_line
+#        job.flush()
+#        # Return list of all extra files
+#        extra_filenames = config_filenames
+#        if param_filename is not None:
+#            extra_filenames.append( param_filename )
+#        self.param_dict = param_dict
+#        self.extra_filenames = extra_filenames
+#        return extra_filenames
+#
+#    def fail( self, message, exception=False ):
+#        """
+#        Indicate job failure by setting state and message on all output 
+#        datasets.
+#        """
+#        job = model.Job.get( self.job_id )
+#        job.refresh()
+#        # if the job was deleted, don't fail it
+#        if not job.state == model.Job.states.DELETED:
+#            # Check if the failure is due to an exception
+#            if exception:
+#                # Save the traceback immediately in case we generate another
+#                # below
+#                job.traceback = traceback.format_exc()
+#                # Get the exception and let the tool attempt to generate
+#                # a better message
+#                etype, evalue, tb =  sys.exc_info()
+#                m = self.tool.handle_job_failure_exception( evalue )
+#                if m:
+#                    message = m
+#            if self.app.config.outputs_to_working_directory:
+#                for dataset_path in self.get_output_fnames():
+#                    try:
+#                        shutil.move( dataset_path.false_path, dataset_path.real_path )
+#                        log.debug( "fail(): Moved %s to %s" % ( dataset_path.false_path, dataset_path.real_path ) )
+#                    except ( IOError, OSError ), e:
+#                        log.error( "fail(): Missing output file in working directory: %s" % e )
+#            for dataset_assoc in job.output_datasets:
+#                dataset = dataset_assoc.dataset
+#                dataset.refresh()
+#                dataset.state = dataset.states.ERROR
+#                dataset.blurb = 'tool error'
+#                dataset.info = message
+#                dataset.set_size()
+#                dataset.flush()
+#            job.state = model.Job.states.ERROR
+#            job.command_line = self.command_line
+#            job.info = message
+#            job.flush()
+#        # If the job was deleted, just clean up
+#        self.cleanup()
+#        
+#    def change_state( self, state, info = False ):
+#        job = model.Job.get( self.job_id )
+#        job.refresh()
+#        for dataset_assoc in job.output_datasets:
+#            dataset = dataset_assoc.dataset
+#            dataset.refresh()
+#            dataset.state = state
+#            if info:
+#                dataset.info = info
+#            dataset.flush()
+#        if info:
+#            job.info = info
+#        job.state = state
+#        job.flush()
+#
+#    def get_state( self ):
+#        job = model.Job.get( self.job_id )
+#        job.refresh()
+#        return job.state
+#
+#    def set_runner( self, runner_url, external_id ):
+#        job = model.Job.get( self.job_id )
+#        job.refresh()
+#        job.job_runner_name = runner_url
+#        job.job_runner_external_id = external_id
+#        job.flush()
+#        
+#    def finish( self, stdout, stderr ):
+#        """
+#        Called to indicate that the associated command has been run. Updates 
+#        the output datasets based on stderr and stdout from the command, and
+#        the contents of the output files. 
+#        """
+#        # default post job setup
+#        mapping.context.current.clear()
+#        job = model.Job.get( self.job_id )
+#        # if the job was deleted, don't finish it
+#        if job.state == job.states.DELETED:
+#            self.cleanup()
+#            return
+#        elif job.state == job.states.ERROR:
+#            # Job was deleted by an administrator
+#            self.fail( job.info )
+#            return
+#        if stderr:
+#            job.state = "error"
+#        else:
+#            job.state = 'ok'
+#        if self.app.config.outputs_to_working_directory:
+#            for dataset_path in self.get_output_fnames():
+#                try:
+#                    shutil.move( dataset_path.false_path, dataset_path.real_path )
+#                    log.debug( "finish(): Moved %s to %s" % ( dataset_path.false_path, dataset_path.real_path ) )
+#                except ( IOError, OSError ):
+#                    self.fail( "Job %s's output dataset(s) could not be read" % job.id )
+#                    return
+#        for dataset_assoc in job.output_datasets:
+#            #should this also be checking library associations? - can a library item be added from a history before the job has ended? - lets not allow this to occur
+#            for dataset in dataset_assoc.dataset.dataset.history_associations: #need to update all associated output hdas, i.e. history was shared with job running
+#                dataset.blurb = 'done'
+#                dataset.peek  = 'no peek'
+#                dataset.info  = stdout + stderr
+#                dataset.set_size()
+#                if stderr:
+#                    dataset.blurb = "error"
+#                elif dataset.has_data():
+#                    #if a dataset was copied, it won't appear in our dictionary:
+#                    #either use the metadata from originating output dataset, or call set_meta on the copies
+#                    #it would be quicker to just copy the metadata from the originating output dataset, 
+#                    #but somewhat trickier (need to recurse up the copied_from tree), for now we'll call set_meta()
+#                    if not self.external_output_metadata.external_metadata_set_successfully( dataset ):
+#                        # Only set metadata values if they are missing...
+#                        dataset.set_meta( overwrite = False )
+#                    else:
+#                        #load metadata from file
+#                        #we need to no longer allow metadata to be edited while the job is still running,
+#                        #since if it is edited, the metadata changed on the running output will no longer match
+#                        #the metadata that was stored to disk for use via the external process, 
+#                        #and the changes made by the user will be lost, without warning or notice
+#                        dataset.metadata.from_JSON_dict( self.external_output_metadata.get_output_filenames_by_dataset( dataset ).filename_out )
+#                    if self.tool.is_multi_byte:
+#                        dataset.set_multi_byte_peek()
+#                    else:
+#                        dataset.set_peek()
+#                else:
+#                    dataset.blurb = "empty"
+#                dataset.flush()
+#            if stderr:
+#                dataset_assoc.dataset.dataset.state = model.Dataset.states.ERROR
+#            else:
+#                dataset_assoc.dataset.dataset.state = model.Dataset.states.OK
+#            dataset_assoc.dataset.dataset.flush()
+#        
+#        # Save stdout and stderr    
+#        if len( stdout ) > 32768:
+#            log.error( "stdout for job %d is greater than 32K, only first part will be logged to database" % job.id )
+#        job.stdout = stdout[:32768]
+#        if len( stderr ) > 32768:
+#            log.error( "stderr for job %d is greater than 32K, only first part will be logged to database" % job.id )
+#        job.stderr = stderr[:32768]  
+#        # custom post process setup
+#        inp_data = dict( [ ( da.name, da.dataset ) for da in job.input_datasets ] )
+#        out_data = dict( [ ( da.name, da.dataset ) for da in job.output_datasets ] )
+#        param_dict = dict( [ ( p.name, p.value ) for p in job.parameters ] ) # why not re-use self.param_dict here? ##dunno...probably should, this causes tools.parameters.basic.UnvalidatedValue to be used in following methods instead of validated and transformed values during i.e. running workflows
+#        param_dict = self.tool.params_from_strings( param_dict, self.app )
+#        # Check for and move associated_files
+#        self.tool.collect_associated_files(out_data, self.working_directory)
+#        # Create generated output children and primary datasets and add to param_dict
+#        collected_datasets = {'children':self.tool.collect_child_datasets(out_data),'primary':self.tool.collect_primary_datasets(out_data)}
+#        param_dict.update({'__collected_datasets__':collected_datasets})
+#        # Certain tools require tasks to be completed after job execution
+#        # ( this used to be performed in the "exec_after_process" hook, but hooks are deprecated ).
+#        if self.tool.tool_type is not None:
+#            self.tool.exec_after_process( self.queue.app, inp_data, out_data, param_dict, job = job )
+#        # Call 'exec_after_process' hook
+#        self.tool.call_hook( 'exec_after_process', self.queue.app, inp_data=inp_data, 
+#                             out_data=out_data, param_dict=param_dict, 
+#                             tool=self.tool, stdout=stdout, stderr=stderr )
+#        # TODO
+#        # validate output datasets
+#        job.command_line = self.command_line
+#        mapping.context.current.flush()
+#        log.debug( 'job %d ended' % self.job_id )
+#        self.cleanup()
+#        
+#    def cleanup( self ):
+#        # remove temporary files
+#        try:
+#            for fname in self.extra_filenames:
+#                os.remove( fname )
+#            if self.working_directory is not None:
+#                shutil.rmtree( self.working_directory )
+#            if self.app.config.set_metadata_externally:
+#                self.external_output_metadata.cleanup_external_metadata()
+#        except:
+#            log.exception( "Unable to cleanup job %d" % self.job_id )
+#        
+#    def get_command_line( self ):
+#        return self.command_line
+#    
+#    def get_session_id( self ):
+#        return self.session_id
+#
+#    def get_input_fnames( self ):
+#        job = model.Job.get( self.job_id )
+#        filenames = []
+#        for da in job.input_datasets: #da is JobToInputDatasetAssociation object
+#            if da.dataset:
+#                filenames.append( da.dataset.file_name )
+#                #we will need to stage in metadata file names also
+#                #TODO: would be better to only stage in metadata files that are actually needed (found in command line, referenced in config files, etc.)
+#                for key, value in da.dataset.metadata.items():
+#                    if isinstance( value, model.MetadataFile ):
+#                        filenames.append( value.file_name )
+#        return filenames
+#
+#    def get_output_fnames( self ):
+#        if self.output_paths is not None:
+#            return self.output_paths
+#
+#        class DatasetPath( object ):
+#            def __init__( self, real_path, false_path = None ):
+#                self.real_path = real_path
+#                self.false_path = false_path
+#            def __str__( self ):
+#                if self.false_path is None:
+#                    return self.real_path
+#                else:
+#                    return self.false_path
+#
+#        job = model.Job.get( self.job_id )
+#        if self.app.config.outputs_to_working_directory:
+#            self.output_paths = []
+#            for name, data in [ ( da.name, da.dataset.dataset ) for da in job.output_datasets ]:
+#                false_path = os.path.abspath( os.path.join( self.working_directory, "galaxy_dataset_%d.dat" % data.id ) )
+#                self.output_paths.append( DatasetPath( data.file_name, false_path ) )
+#        else:
+#            self.output_paths = [ DatasetPath( da.dataset.file_name ) for da in job.output_datasets ]
+#        return self.output_paths
+#
+#    def check_output_sizes( self ):
+#        sizes = []
+#        output_paths = self.get_output_fnames()
+#        for outfile in [ str( o ) for o in output_paths ]:
+#            sizes.append( ( outfile, os.stat( outfile ).st_size ) )
+#        return sizes
+#    def setup_external_metadata( self, exec_dir = None, tmp_dir = None, dataset_files_path = None, config_root = None, datatypes_config = None, **kwds ):
+#        if tmp_dir is None:
+#            #this dir should should relative to the exec_dir
+#            tmp_dir = self.app.config.new_file_path
+#        if dataset_files_path is None:
+#            dataset_files_path = self.app.model.Dataset.file_path
+#        if config_root is None:
+#            config_root = self.app.config.root
+#        if datatypes_config is None:
+#            datatypes_config = self.app.config.datatypes_config
+#        job = model.Job.get( self.job_id )
+#        return self.external_output_metadata.setup_external_metadata( [ output_dataset_assoc.dataset for output_dataset_assoc in job.output_datasets ], exec_dir = exec_dir, tmp_dir = tmp_dir, dataset_files_path = dataset_files_path, config_root = config_root, datatypes_config = datatypes_config, **kwds )
 
-    def fail( self, message, exception=False ):
-        """
-        Indicate job failure by setting state and message on all output 
-        datasets.
-        """
-        job = model.Job.get( self.job_id )
-        job.refresh()
-        # if the job was deleted, don't fail it
-        if not job.state == model.Job.states.DELETED:
-            # Check if the failure is due to an exception
-            if exception:
-                # Save the traceback immediately in case we generate another
-                # below
-                job.traceback = traceback.format_exc()
-                # Get the exception and let the tool attempt to generate
-                # a better message
-                etype, evalue, tb =  sys.exc_info()
-                m = self.tool.handle_job_failure_exception( evalue )
-                if m:
-                    message = m
-            if self.app.config.outputs_to_working_directory:
-                for dataset_path in self.get_output_fnames():
-                    try:
-                        shutil.move( dataset_path.false_path, dataset_path.real_path )
-                        log.debug( "fail(): Moved %s to %s" % ( dataset_path.false_path, dataset_path.real_path ) )
-                    except ( IOError, OSError ), e:
-                        log.error( "fail(): Missing output file in working directory: %s" % e )
-            for dataset_assoc in job.output_datasets:
-                dataset = dataset_assoc.dataset
-                dataset.refresh()
-                dataset.state = dataset.states.ERROR
-                dataset.blurb = 'tool error'
-                dataset.info = message
-                dataset.set_size()
-                dataset.flush()
-            job.state = model.Job.states.ERROR
-            job.command_line = self.command_line
-            job.info = message
-            job.flush()
-        # If the job was deleted, just clean up
-        self.cleanup()
-        
-    def change_state( self, state, info = False ):
-        job = model.Job.get( self.job_id )
-        job.refresh()
-        for dataset_assoc in job.output_datasets:
-            dataset = dataset_assoc.dataset
-            dataset.refresh()
-            dataset.state = state
-            if info:
-                dataset.info = info
-            dataset.flush()
-        if info:
-            job.info = info
-        job.state = state
-        job.flush()
-
-    def get_state( self ):
-        job = model.Job.get( self.job_id )
-        job.refresh()
-        return job.state
-
-    def set_runner( self, runner_url, external_id ):
-        job = model.Job.get( self.job_id )
-        job.refresh()
-        job.job_runner_name = runner_url
-        job.job_runner_external_id = external_id
-        job.flush()
-        
-    def finish( self, stdout, stderr ):
-        """
-        Called to indicate that the associated command has been run. Updates 
-        the output datasets based on stderr and stdout from the command, and
-        the contents of the output files. 
-        """
-        # default post job setup
-        mapping.context.current.clear()
-        job = model.Job.get( self.job_id )
-        # if the job was deleted, don't finish it
-        if job.state == job.states.DELETED:
-            self.cleanup()
-            return
-        elif job.state == job.states.ERROR:
-            # Job was deleted by an administrator
-            self.fail( job.info )
-            return
-        if stderr:
-            job.state = "error"
-        else:
-            job.state = 'ok'
-        if self.app.config.outputs_to_working_directory:
-            for dataset_path in self.get_output_fnames():
-                try:
-                    shutil.move( dataset_path.false_path, dataset_path.real_path )
-                    log.debug( "finish(): Moved %s to %s" % ( dataset_path.false_path, dataset_path.real_path ) )
-                except ( IOError, OSError ):
-                    self.fail( "Job %s's output dataset(s) could not be read" % job.id )
-                    return
-        for dataset_assoc in job.output_datasets:
-            #should this also be checking library associations? - can a library item be added from a history before the job has ended? - lets not allow this to occur
-            for dataset in dataset_assoc.dataset.dataset.history_associations: #need to update all associated output hdas, i.e. history was shared with job running
-                dataset.blurb = 'done'
-                dataset.peek  = 'no peek'
-                dataset.info  = stdout + stderr
-                dataset.set_size()
-                if stderr:
-                    dataset.blurb = "error"
-                elif dataset.has_data():
-                    #if a dataset was copied, it won't appear in our dictionary:
-                    #either use the metadata from originating output dataset, or call set_meta on the copies
-                    #it would be quicker to just copy the metadata from the originating output dataset, 
-                    #but somewhat trickier (need to recurse up the copied_from tree), for now we'll call set_meta()
-                    if not self.external_output_metadata.external_metadata_set_successfully( dataset ):
-                        # Only set metadata values if they are missing...
-                        dataset.set_meta( overwrite = False )
-                    else:
-                        #load metadata from file
-                        #we need to no longer allow metadata to be edited while the job is still running,
-                        #since if it is edited, the metadata changed on the running output will no longer match
-                        #the metadata that was stored to disk for use via the external process, 
-                        #and the changes made by the user will be lost, without warning or notice
-                        dataset.metadata.from_JSON_dict( self.external_output_metadata.get_output_filenames_by_dataset( dataset ).filename_out )
-                    if self.tool.is_multi_byte:
-                        dataset.set_multi_byte_peek()
-                    else:
-                        dataset.set_peek()
-                else:
-                    dataset.blurb = "empty"
-                dataset.flush()
-            if stderr:
-                dataset_assoc.dataset.dataset.state = model.Dataset.states.ERROR
-            else:
-                dataset_assoc.dataset.dataset.state = model.Dataset.states.OK
-            dataset_assoc.dataset.dataset.flush()
-        
-        # Save stdout and stderr    
-        if len( stdout ) > 32768:
-            log.error( "stdout for job %d is greater than 32K, only first part will be logged to database" % job.id )
-        job.stdout = stdout[:32768]
-        if len( stderr ) > 32768:
-            log.error( "stderr for job %d is greater than 32K, only first part will be logged to database" % job.id )
-        job.stderr = stderr[:32768]  
-        # custom post process setup
-        inp_data = dict( [ ( da.name, da.dataset ) for da in job.input_datasets ] )
-        out_data = dict( [ ( da.name, da.dataset ) for da in job.output_datasets ] )
-        param_dict = dict( [ ( p.name, p.value ) for p in job.parameters ] ) # why not re-use self.param_dict here? ##dunno...probably should, this causes tools.parameters.basic.UnvalidatedValue to be used in following methods instead of validated and transformed values during i.e. running workflows
-        param_dict = self.tool.params_from_strings( param_dict, self.app )
-        # Check for and move associated_files
-        self.tool.collect_associated_files(out_data, self.working_directory)
-        # Create generated output children and primary datasets and add to param_dict
-        collected_datasets = {'children':self.tool.collect_child_datasets(out_data),'primary':self.tool.collect_primary_datasets(out_data)}
-        param_dict.update({'__collected_datasets__':collected_datasets})
-        # Certain tools require tasks to be completed after job execution
-        # ( this used to be performed in the "exec_after_process" hook, but hooks are deprecated ).
-        if self.tool.tool_type is not None:
-            self.tool.exec_after_process( self.queue.app, inp_data, out_data, param_dict, job = job )
-        # Call 'exec_after_process' hook
-        self.tool.call_hook( 'exec_after_process', self.queue.app, inp_data=inp_data, 
-                             out_data=out_data, param_dict=param_dict, 
-                             tool=self.tool, stdout=stdout, stderr=stderr )
-        # TODO
-        # validate output datasets
-        job.command_line = self.command_line
-        mapping.context.current.flush()
-        log.debug( 'job %d ended' % self.job_id )
-        self.cleanup()
-        
-    def cleanup( self ):
-        # remove temporary files
-        try:
-            for fname in self.extra_filenames:
-                os.remove( fname )
-            if self.working_directory is not None:
-                shutil.rmtree( self.working_directory )
-            if self.app.config.set_metadata_externally:
-                self.external_output_metadata.cleanup_external_metadata()
-        except:
-            log.exception( "Unable to cleanup job %d" % self.job_id )
-        
-    def get_command_line( self ):
-        return self.command_line
-    
-    def get_session_id( self ):
-        return self.session_id
-
-    def get_input_fnames( self ):
-        job = model.Job.get( self.job_id )
-        filenames = []
-        for da in job.input_datasets: #da is JobToInputDatasetAssociation object
-            if da.dataset:
-                filenames.append( da.dataset.file_name )
-                #we will need to stage in metadata file names also
-                #TODO: would be better to only stage in metadata files that are actually needed (found in command line, referenced in config files, etc.)
-                for key, value in da.dataset.metadata.items():
-                    if isinstance( value, model.MetadataFile ):
-                        filenames.append( value.file_name )
-        return filenames
-
-    def get_output_fnames( self ):
-        if self.output_paths is not None:
-            return self.output_paths
-
-        class DatasetPath( object ):
-            def __init__( self, real_path, false_path = None ):
-                self.real_path = real_path
-                self.false_path = false_path
-            def __str__( self ):
-                if self.false_path is None:
-                    return self.real_path
-                else:
-                    return self.false_path
-
-        job = model.Job.get( self.job_id )
-        if self.app.config.outputs_to_working_directory:
-            self.output_paths = []
-            for name, data in [ ( da.name, da.dataset.dataset ) for da in job.output_datasets ]:
-                false_path = os.path.abspath( os.path.join( self.working_directory, "galaxy_dataset_%d.dat" % data.id ) )
-                self.output_paths.append( DatasetPath( data.file_name, false_path ) )
-        else:
-            self.output_paths = [ DatasetPath( da.dataset.file_name ) for da in job.output_datasets ]
-        return self.output_paths
-
-    def check_output_sizes( self ):
-        sizes = []
-        output_paths = self.get_output_fnames()
-        for outfile in [ str( o ) for o in output_paths ]:
-            sizes.append( ( outfile, os.stat( outfile ).st_size ) )
-        return sizes
-    def setup_external_metadata( self, exec_dir = None, tmp_dir = None, dataset_files_path = None, config_root = None, datatypes_config = None, **kwds ):
-        if tmp_dir is None:
-            #this dir should should relative to the exec_dir
-            tmp_dir = self.app.config.new_file_path
-        if dataset_files_path is None:
-            dataset_files_path = self.app.model.Dataset.file_path
-        if config_root is None:
-            config_root = self.app.config.root
-        if datatypes_config is None:
-            datatypes_config = self.app.config.datatypes_config
-        job = model.Job.get( self.job_id )
-        return self.external_output_metadata.setup_external_metadata( [ output_dataset_assoc.dataset for output_dataset_assoc in job.output_datasets ], exec_dir = exec_dir, tmp_dir = tmp_dir, dataset_files_path = dataset_files_path, config_root = config_root, datatypes_config = datatypes_config, **kwds )
-
-class DefaultCloudProvider( object ):
+class CloudProvider( object ):
     def __init__( self, app ):
         self.app = app
         self.cloud_provider = {}

@@ -28,7 +28,7 @@ $(function(){
 	            <div class="${cls}">
 	            <label>Credentials name:</label>
 	              <div class="form-row-input">
-	              	<input type="text" name="credName" value="Unnamed credentials" size="40">
+	              	<input type="text" name="credName" value="${credName}" size="40">
 	              </div>
 				  %if error.has_key('cred_error'):
 	              	<div class="form-row-error-message">${error['cred_error']}</div>
@@ -45,7 +45,7 @@ $(function(){
 	            <div class="${cls}">
 	            <label>Cloud provider name:</label>
 	              <div class="form-row-input">
-	              	<select name="providerName">
+	              	<select name="providerName" style="width:40em">
 	              		<option value="ec2">Amazon EC2</option>
 						<option value="eucalyptus">Eucalpytus Public Cloud (EPC)</option>
 	              	</select>
@@ -64,7 +64,7 @@ $(function(){
 	            <div class="${cls}">
 	            <label>Access key:</label>
 	              <div class="form-row-input">
-	              	<input type="text" name="accessKey" value="" size="40">
+	              	<input type="text" name="accessKey" value="${accessKey}" size="40">
 	              </div>
 				  %if error.has_key('access_key_error'):
 	              	<div class="form-row-error-message">${error['access_key_error']}</div>
@@ -81,7 +81,7 @@ $(function(){
 	            <div class="${cls}">
 	            <label>Secret key:</label>
 	              <div class="form-row-input">
-	              	<input type="password" name="secretKey" value="" size="40">
+	              	<input type="password" name="secretKey" value="${secretKey}" size="40">
 	              </div>
 				  %if error.has_key('secret_key_error'):
 	              	<div class="form-row-error-message">${error['secret_key_error']}</div>

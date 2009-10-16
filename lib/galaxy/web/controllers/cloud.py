@@ -14,7 +14,10 @@ from galaxy.util.topsort import topsort, topsort_levels, CycleError
 from galaxy.workflow.modules import *
 from galaxy.model.mapping import desc
 from galaxy.model.orm import *
-from datetime import datetime
+from datetime import datetime, timedelta
+
+pkg_resources.require( "WebHelpers" )
+from webhelpers import *
 
 # Required for Cloud tab
 import galaxy.eggs
@@ -116,7 +119,7 @@ class CloudController( BaseController ):
 
     @web.expose
     @web.require_login( "start Galaxy cloud instance" )
-    def start( self, trans, id, type='small' ):
+    def start( self, trans, id, type='m1.small' ):
         """
         Start a new cloud resource instance
         """
@@ -311,28 +314,39 @@ class CloudController( BaseController ):
         Configure and add new cloud instance to user's instance pool
         """
         inst_error = vol_error = cred_error = None
+        error = {}
         user = trans.get_user()
         # TODO: Hack until present user w/ bullet list w/ registered credentials
-        storedCreds = trans.sa_session.query( model.CloudUserCredentials ) \
-            .filter_by( user=user ).all()
-        credsMatch = False
-        for cred in storedCreds:
-            if cred.name == credName:
-                credsMatch = True
+        storedCreds = trans.sa_session.query( model.CloudUserCredentials ).filter_by( user=user ).all()
+        if len( storedCreds ) == 0:
+            return trans.show_error_message( "You must register credentials before configuring a Galaxy instance." )
+
+        providersToZones = {}
+        for storedCred in storedCreds:
+            if storedCred.provider_name == 'ec2':
+                ec2_zones = ['us-east-1a', 'us-east-1b', 'us-east-1c', 'us-east-1d']
+                providersToZones[storedCred.name] = ec2_zones 
+            elif storedCred.provider_name == 'eucalyptus':
+                providersToZones[storedCred.name] = ['epc']
         
         if instanceName:
             # Create new user configured instance
             try:
-                if len( instanceName ) > 255:
-                    inst_error = "Instance name exceeds maximum allowable length."
-                elif trans.app.model.UCI.filter(  and_( trans.app.model.UCI.table.c.name==instanceName, trans.app.model.UCI.table.c.state!='deleted' ) ).first():
-                    inst_error = "An instance with that name already exist."
-                elif int( volSize ) > 1000:
-                    vol_error = "Volume size cannot exceed 1000GB. You must specify an integer between 1 and 1000." 
-                elif int( volSize ) < 1:
-                    vol_error = "Volume size cannot be less than 1GB. You must specify an integer between 1 and 1000." 
-                elif not credsMatch:
-                    cred_error = "You specified unknown credentials." 
+                if trans.app.model.UCI.filter(  and_( trans.app.model.UCI.table.c.name==instanceName, trans.app.model.UCI.table.c.state!='deleted' ) ).first():
+                    error['inst_error'] = "An instance with that name already exist."
+                elif instanceName=='' or len( instanceName ) > 255:
+                    error['inst_error'] = "Instance name must be between 1 and 255 characters long."
+                elif credName=='':
+                    error['cred_error'] = "You must select credentials."
+                elif volSize == '':
+                    error['vol_error'] = "You must specify volume size as an integer value between 1 and 1000."
+                elif ( int( volSize ) < 1 ) or ( int( volSize ) > 1000 ):
+                    error['vol_error'] = "Volume size must be integer value between 1 and 1000."
+#                elif type( volSize ) != type( 1 ): # Check if volSize is int
+#                    log.debug( "volSize='%s'" % volSize )
+#                    error['vol_error'] = "Volume size must be integer value between 1 and 1000."
+                elif zone=='':
+                    error['zone_error'] = "You must select zone where this UCI will be registered."
                 else:
                     # Capture user configured instance information
                     uci = model.UCI()
@@ -341,7 +355,8 @@ class CloudController( BaseController ):
                         trans.app.model.CloudUserCredentials.table.c.name==credName ).first()
                     uci.user= user
                     uci.total_size = volSize # This is OK now because new instance is being created. 
-                    uci.state = "newUCI" 
+                    uci.state = "newUCI"
+                    
                     storage = model.CloudStore()
                     storage.user = user
                     storage.uci = uci
@@ -361,6 +376,16 @@ class CloudController( BaseController ):
             except AttributeError, ae:
                 inst_error = "No registered cloud images. You must contact administrator to add some before proceeding."
                 log.debug("AttributeError: %s " % str( ae ) )
+        
+        #TODO: based on user credentials (i.e., provider) selected, zone options will be different (e.g., EC2: us-east-1a vs EPC: epc)
+        
+        return trans.fill_template( "cloud/configure_uci.mako", 
+                                    instanceName = instanceName, 
+                                    credName = storedCreds, 
+                                    volSize = volSize, 
+                                    zone = zone, 
+                                    error = error, 
+                                    providersToZones = providersToZones )
                 
         return trans.show_form( 
             web.FormBuilder( web.url_for(), "Configure new instance", submit_text="Add" )
@@ -445,9 +470,9 @@ class CloudController( BaseController ):
             elif ( ( providerName.lower()!='ec2' ) and ( providerName.lower()!='eucalyptus' ) ):
                 error['provider_error'] = "You specified an unsupported cloud provider."
             elif accessKey=='' or len( accessKey ) > 255:
-                error['access_key_error'] = "Access key much be between 1 and 255 characters long."
+                error['access_key_error'] = "Access key must be between 1 and 255 characters long."
             elif secretKey=='' or len( secretKey ) > 255:
-                error['secret_key_error'] = "Secret key much be between 1 and 255 characters long."
+                error['secret_key_error'] = "Secret key must be between 1 and 255 characters long."
             else:
                 # Create new user stored credentials
                 credentials = model.CloudUserCredentials()
@@ -523,7 +548,7 @@ class CloudController( BaseController ):
         # Display the management page
         trans.set_message( "Credentials '%s' deleted." % stored.name )
         return self.list( trans )
-        
+    
     @web.expose
     @web.require_login( "edit workflows" )
     def editor( self, trans, id=None ):
@@ -965,7 +990,23 @@ class CloudController( BaseController ):
                                         ids_in_menu=ids_in_menu )
     
 ## ---- Utility methods -------------------------------------------------------
+
+def get_UCIs_state( trans ):
+    user = trans.get_user()
+    instances = trans.sa_session.query( model.UCI ).filter_by( user=user ).filter( model.UCI.c.state != "deleted" ).all()
+    insd = {} # instance name-state dict
+    for inst in instances:
+        insd[inst.name] = inst.state
         
+    
+def get_UCIs_time_ago( trans ):
+    user = trans.get_user()
+    instances = trans.sa_session.query( model.UCI ).filter_by( user=user ).all()
+    intad = {} # instance name-time-ago dict
+    for inst in instances:
+        if inst.launch_time != None:
+            intad[inst.name] = str(date.distance_of_time_in_words (inst.launch_time, date.datetime.utcnow() ) )
+                
 def get_stored_credentials( trans, id, check_ownership=True ):
     """
     Get StoredUserCredentials from the database by id, verifying ownership. 
@@ -1020,7 +1061,7 @@ def get_uci( trans, id, check_ownership=True ):
     # Looks good
     return live
 
-def get_mi( trans, size='small' ):
+def get_mi( trans, size='m1.small' ):
     """
     Get appropriate machine image (mi) based on instance size.
     TODO: Dummy method - need to implement logic
