@@ -55,7 +55,7 @@ class RootController( BaseController ):
         return trans.fill_template_mako( "/my_data.mako" )
 
     @web.expose
-    def history( self, trans, as_xml=False, show_deleted=False ):
+    def history( self, trans, as_xml=False, show_deleted=False, hda_id=None ):
         """
         Display the current history, creating a new history if necessary.
         NOTE: No longer accepts "id" or "template" options for security reasons.
@@ -78,6 +78,7 @@ class RootController( BaseController ):
             return trans.stream_template_mako( "root/history.mako",
                                                history = history,
                                                datasets = query.all(),
+                                               hda_id = hda_id,
                                                show_deleted = show_deleted )
 
     @web.expose

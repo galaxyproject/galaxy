@@ -77,6 +77,10 @@ $(function() {
         <% updateable = [data for data in reversed( datasets ) if data.visible and data.state not in [ "deleted", "empty", "error", "ok" ]] %>
         ${ ",".join( map(lambda data: "\"%s\" : \"%s\"" % (data.id, data.state), updateable) ) }
     });
+    // Navigate to a dataset.
+    %if hda_id:
+        self.location = "#${hda_id}";
+    %endif
 });
 // Functionized so AJAX'd datasets can call them
 function initShowHide() {

@@ -20,7 +20,8 @@
         </div>
     %endif
 
-        ## Header row for history items (name, state, action buttons)
+    ## Header row for history items (name, state, action buttons)
+    <a name="${trans.security.encode_id(data.id)}"></a>
 	<div style="overflow: hidden;" class="historyItemTitleBar">		
 	    <div class="historyItemButtons">
             %if data_state == "upload":
