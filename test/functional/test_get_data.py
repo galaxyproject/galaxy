@@ -93,3 +93,17 @@ class UploadData( TwillTestCase ):
         self.verify_composite_datatype_file_content( 'rgenetics.bed', str( hda1.id ) )
         self.verify_composite_datatype_file_content( 'rgenetics.fam', str( hda1.id ) )
         self.delete_history( id=self.security.encode_id( history4.id ) )
+    def test_020_upload_multibyte_character_file( self ):
+        """Test uploading multi-byte character file"""
+        # Logged in as admin_user
+        self.check_history_for_string( 'Your history is empty' )
+        history5 = galaxy.model.History.filter( and_( galaxy.model.History.table.c.deleted==False,
+                                                      galaxy.model.History.table.c.user_id==admin_user.id ) ) \
+            .order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
+        self.upload_file( 'asian_chars_1.txt' )
+        hda1 = galaxy.model.HistoryDatasetAssociation.query() \
+            .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ).first()
+        assert hda1 is not None, "Problem retrieving hda1 from database"
+        self.verify_dataset_correctness( 'asian_chars_1.txt', hid=str( hda1.hid ) )
+        self.check_history_for_string( 'uploaded multi-byte char file' )
+        self.delete_history( id=self.security.encode_id( history5.id ) )

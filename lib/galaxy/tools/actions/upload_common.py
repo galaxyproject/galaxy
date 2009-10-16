@@ -27,7 +27,7 @@ def persist_uploads( params ):
             elif type( f ) == dict and 'filename' and 'local_filename' not in f:
                 raise Exception( 'Uploaded file was encoded in a way not understood by Galaxy.' )
             if upload_dataset['url_paste'].strip() != '':
-                upload_dataset['url_paste'] = datatypes.sniff.stream_to_file( StringIO.StringIO( upload_dataset['url_paste'] ), prefix="strio_url_paste_" )[0]
+                upload_dataset['url_paste'], is_multi_byte = datatypes.sniff.stream_to_file( StringIO.StringIO( upload_dataset['url_paste'] ), prefix="strio_url_paste_" )
             else:
                 upload_dataset['url_paste'] = None
             new_files.append( upload_dataset )
@@ -135,7 +135,6 @@ def new_library_upload( trans, uploaded_dataset, library_bunch, state=None ):
             folder.refresh()
             matches = filter( lambda x: x.name == name, active_folders( trans, folder ) )
             if matches:
-                log.debug( 'DEBUGDEBUG: In %s, found a folder name match: %s:%s' % ( folder.name, matches[0].id, matches[0].name ) )
                 folder = matches[0]
             else:
                 new_folder = trans.app.model.LibraryFolder( name=name, description='Automatically created by upload tool' )
@@ -143,7 +142,6 @@ def new_library_upload( trans, uploaded_dataset, library_bunch, state=None ):
                 folder.add_folder( new_folder )
                 new_folder.flush()
                 trans.app.security_agent.copy_library_permissions( folder, new_folder )
-                log.debug( 'DEBUGDEBUG: In %s, created a new folder: %s:%s' % ( folder.name, new_folder.id, new_folder.name ) )
                 folder = new_folder
     if library_bunch.replace_dataset:
         ld = library_bunch.replace_dataset

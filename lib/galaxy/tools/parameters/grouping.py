@@ -240,7 +240,7 @@ class UploadDataset( Group ):
             url_paste = context['url_paste']
             name = context.get( 'NAME', None )
             info = context.get( 'INFO', None )
-            space_to_tab = False 
+            space_to_tab = False
             if context.get( 'space_to_tab', None ) not in ["None", None]:
                 space_to_tab = True
             warnings = []
@@ -248,7 +248,6 @@ class UploadDataset( Group ):
             if file_bunch.path:
                 file_bunch.space_to_tab = space_to_tab
                 rval.append( file_bunch )
-                #rval.append( ( type, temp_name, precreated_name, space_to_tab, dataset_name, dataset_info ) )
             for file_bunch in get_url_paste_urls_or_filename( context, override_name = name, override_info = info ):
                 if file_bunch.path:
                     file_bunch.space_to_tab = space_to_tab
@@ -266,11 +265,6 @@ class UploadDataset( Group ):
         if d_type.composite_type is not None:
             #handle uploading of composite datatypes
             #Only one Dataset can be created
-            
-            '''
-            dataset = UploadedDataset()
-            dataset.datatype = d_type
-            '''
             dataset = Bunch()
             dataset.type = 'composite'
             dataset.file_type = file_type
@@ -279,14 +273,12 @@ class UploadDataset( Group ):
             dataset.warnings = []
             dataset.metadata = {}
             dataset.composite_files = {}
-            
             #load metadata
             files_metadata = context.get( self.metadata_ref, {} )
             for meta_name, meta_spec in d_type.metadata_spec.iteritems():
                 if meta_spec.set_in_upload:
                     if meta_name in files_metadata:
                         dataset.metadata[ meta_name ] = files_metadata[ meta_name ]
-            
             dataset_name = None
             dataset_info = None
             if dataset.datatype.composite_type == 'auto_primary_file':

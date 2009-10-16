@@ -5,7 +5,7 @@ Naming: try to use class names that have a distinct plural form so that
 the relationship cardinalities are obvious (e.g. prefer Dataset to Data)
 """
 
-import os.path, os, errno, sys
+import os.path, os, errno, sys, codecs
 import galaxy.datatypes
 from galaxy.util.bunch import Bunch
 from galaxy import util
@@ -418,7 +418,13 @@ class Dataset( object ):
         return self.get_size() > 0
     def mark_deleted( self, include_children=True ):
         self.deleted = True
-        
+    def is_multi_byte( self ):
+        if not self.has_data():
+            return False
+        try:
+            return util.is_multi_byte( codecs.open( self.file_name, 'r', 'utf-8' ).read( 100 ) )
+        except UnicodeDecodeError, e:
+            return False
     # FIXME: sqlalchemy will replace this
     def _delete(self):
         """Remove the file that corresponds to this data"""
@@ -433,7 +439,7 @@ class DatasetInstance( object ):
     permitted_actions = Dataset.permitted_actions
     def __init__( self, id=None, hid=None, name=None, info=None, blurb=None, peek=None, extension=None, 
                   dbkey=None, metadata=None, history=None, dataset=None, deleted=False, designation=None,
-                  parent_id=None, validation_errors=None, visible=True, create_dataset = False ):
+                  parent_id=None, validation_errors=None, visible=True, create_dataset=False ):
         self.name = name or "Unnamed dataset"
         self.id = id
         self.info = info
@@ -519,6 +525,9 @@ class DatasetInstance( object ):
     def get_mime( self ):
         """Returns the mime type of the data"""
         return datatypes_registry.get_mimetype_by_extension( self.extension.lower() )
+    def is_multi_byte( self ):
+        """Data consists of multi-byte characters"""
+        return self.dataset.is_multi_byte()
     def set_peek( self ):
         return self.datatype.set_peek( self )
     def set_multi_byte_peek( self ):
@@ -556,7 +565,7 @@ class DatasetInstance( object ):
     def get_converter_types(self):
         return self.datatype.get_converter_types( self, datatypes_registry)
     def find_conversion_destination( self, accepted_formats, **kwd ):
-        """Returns ( target_ext, exisiting converted dataset )"""
+        """Returns ( target_ext, existing converted dataset )"""
         return self.datatype.find_conversion_destination( self, accepted_formats, datatypes_registry, **kwd )
     def add_validation_error( self, validation_error ):
         self.validation_errors.append( validation_error )

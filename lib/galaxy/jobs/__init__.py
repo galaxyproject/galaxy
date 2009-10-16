@@ -535,12 +535,12 @@ class JobWrapper( object ):
                         dataset.metadata.from_JSON_dict( self.external_output_metadata.get_output_filenames_by_dataset( dataset ).filename_out )
                     try:
                         assert context.get( 'line_count', None ) is not None
-                        if self.tool.is_multi_byte:
+                        if ( not dataset.datatype.composite_type and dataset.dataset.is_multi_byte() ) or self.tool.is_multi_byte:
                             dataset.set_multi_byte_peek( line_count=context['line_count'] )
                         else:
                             dataset.set_peek( line_count=context['line_count'] )
                     except:
-                        if self.tool.is_multi_byte:
+                        if ( not dataset.datatype.composite_type and dataset.dataset.is_multi_byte() ) or self.tool.is_multi_byte:
                             dataset.set_multi_byte_peek()
                         else:
                             dataset.set_peek()

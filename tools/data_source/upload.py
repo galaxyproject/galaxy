@@ -4,7 +4,7 @@
 # WARNING: Changes in this tool (particularly as related to parsing) may need
 # to be reflected in galaxy.web.controllers.tool_runner and galaxy.tools
 
-import urllib, sys, os, gzip, tempfile, shutil, re, gzip, zipfile
+import urllib, sys, os, gzip, tempfile, shutil, re, gzip, zipfile, codecs
 from galaxy import eggs
 # need to import model before sniff to resolve a circular import dependency
 import galaxy.model
@@ -129,13 +129,11 @@ def add_file( dataset, json_file, output_path ):
 
     if dataset.type == 'url':
         try:
-            temp_name, is_multi_byte = sniff.stream_to_file( urllib.urlopen( dataset.path ), prefix='url_paste' )
+            temp_name, dataset.is_multi_byte = sniff.stream_to_file( urllib.urlopen( dataset.path ), prefix='url_paste' )
         except Exception, e:
             file_err( 'Unable to fetch %s\n%s' % ( dataset.path, str( e ) ), dataset, json_file )
             return
         dataset.path = temp_name
-        dataset.is_multi_byte = is_multi_byte
-
     # See if we have an empty file
     if not os.path.exists( dataset.path ):
         file_err( 'Uploaded temporary file (%s) does not exist.' % dataset.path, dataset, json_file )
@@ -143,11 +141,15 @@ def add_file( dataset, json_file, output_path ):
     if not os.path.getsize( dataset.path ) > 0:
         file_err( 'The uploaded file is empty', dataset, json_file )
         return
-    if 'is_multi_byte' not in dir( dataset ):
-        dataset.is_multi_byte = util.is_multi_byte( open( dataset.path, 'r' ).read( 1024 ) )
+    if not dataset.type == 'url':
+        # Already set is_multi_byte above if type == 'url'
+        try:
+            dataset.is_multi_byte = util.is_multi_byte( codecs.open( dataset.path, 'r', 'utf-8' ).read( 100 ) )
+        except UnicodeDecodeError, e:
+            dataset.is_multi_byte = False
     if dataset.is_multi_byte:
+        data_type = 'multi-byte char'
         ext = sniff.guess_ext( dataset.path, is_multi_byte=True )
-        data_type = ext
     else:
         # See if we have a gzipped file, which, if it passes our restrictions, we'll uncompress
         is_gzipped, is_valid = check_gzip( dataset.path )
@@ -283,24 +285,19 @@ def __main__():
         sys.exit( 1 )
 
     output_paths = parse_outputs( sys.argv[2:] )
-
     json_file = open( 'galaxy.json', 'w' )
-
     for line in open( sys.argv[1], 'r' ):
         dataset = from_json_string( line )
         dataset = util.bunch.Bunch( **safe_dict( dataset ) )
-
         try:
             output_path = output_paths[int( dataset.dataset_id )]
         except:
             print >>sys.stderr, 'Output path for dataset %s not found on command line' % dataset.dataset_id
             sys.exit( 1 )
-
         if dataset.type == 'composite':
             add_composite_file( dataset, json_file, output_path )
         else:
             add_file( dataset, json_file, output_path )
-
     # clean up paramfile
     try:
         os.remove( sys.argv[1] )

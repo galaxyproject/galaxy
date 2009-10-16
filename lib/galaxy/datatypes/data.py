@@ -136,7 +136,7 @@ class Data( object ):
                 line = line.strip()
                 if not line:
                     continue
-                out.append( '<tr><td>%s</td></tr>' % escape( unicode( line ) ) )
+                out.append( '<tr><td>%s</td></tr>' % escape( unicode( line, 'utf-8' ) ) )
             out.append( '</table>' )
             out = "".join( out )
         except Exception, exc:
@@ -437,8 +437,8 @@ def get_file_peek( file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5 ):
     temp.close()
     if file_type in [ 'gzipped', 'binary' ]: 
         text = "%s file" % file_type 
-    else: 
-        text  =  unicode( '\n'.join( lines ), 'utf-8' )
+    else:
+        text = unicode( '\n'.join( lines ), 'utf-8' )
     return text
 
 def get_line_count(file_name):
