@@ -16,126 +16,222 @@ import logging, os, sys, time, tempfile, shutil, string, glob
 import data
 from galaxy import util
 from cgi import escape
-import urllib
+import urllib, binascii
 from galaxy.web import url_for
 from galaxy.datatypes import metadata
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.data import Text
 from galaxy.datatypes.tabular import Tabular
 from galaxy.datatypes.images import Html
+from galaxy.datatypes.interval import Interval
+from galaxy.util.hash_util import *
 
 gal_Log = logging.getLogger(__name__)
 verbose = False
 
-class GenomeGraphs( Tabular ):
-    """Tab delimited data containing a marker id and any number of numeric values"""
+
+"""
+Want to make some wig tracks from each analysis
+Best n -log10(p). Make top hit the window.
+
+
+from ucsc wig docs
+ll options are placed in a single line separated by spaces:
+
+  track type=wiggle_0 name=track_label description=center_label \
+        visibility=display_mode color=r,g,b altColor=r,g,b \
+        priority=priority autoScale=on|off \
+        gridDefault=on|off maxHeightPixels=max:default:min \
+        graphType=bar|points viewLimits=lower:upper \
+        yLineMark=real-value yLineOnOff=on|off \
+        windowingFunction=maximum|mean|minimum smoothingWindow=off|2-16
+
+The track type with version is REQUIRED, and it currently must be wiggle_0:
+"""
+
+class GenomeGraphs(Interval):
+
+    """gg version viewable at ucsc of Gff format"""
+    file_ext = "gg"
+    column_names = [ 'Seqname', 'Source', 'Feature', 'Start', 'End', 'Score', 'Strand', 'Frame', 'Group' ]
 
     """Add metadata elements"""
-    MetadataElement( name="markerCol", default=1, desc="Marker ID column", param=metadata.ColumnParameter )
-    MetadataElement( name="columns", default=3, desc="Number of columns", readonly=True )
-    MetadataElement( name="column_types", default=[], desc="Column types", readonly=True, visible=False )
-    file_ext = 'gg'
-
-    def __init__(self, **kwd):
-        """Initialize gg datatype, by adding UCSC display apps"""
-        Tabular.__init__(self, **kwd)
-        self.add_display_app ( 'ucsc', 'Genome Graph', 'as_ucsc_display_file', 'ucsc_links' )
+    MetadataElement( name="columns", default=9, desc="Number of columns", readonly=True, visible=False )
+    MetadataElement( name="column_types", default=['str','str','str','int','int','int','str','str','str'], param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False )
+    MetadataElement( name="chromCol", default=1, desc="Chrom column", param=metadata.ColumnParameter )
+    MetadataElement( name="startCol", default=4, desc="Start column", param=metadata.ColumnParameter )
+    MetadataElement( name="endCol", default=5, desc="End column", param=metadata.ColumnParameter )
+    MetadataElement( name="strandCol", desc="Strand column (click box & select)", param=metadata.ColumnParameter, optional=True, no_value=0 )
+    ###do we need to repeat these? they are the same as should be inherited from interval type
     
-    def set_peek( self, dataset ):
-        """Set the peek and blurb text"""
-        if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek( dataset.file_name )
-            dataset.blurb = util.commaify( str( data.get_line_count( dataset.file_name ) ) ) + " rows"
-        else:
-            dataset.peek = 'file does not exist'
-            dataset.blurb = 'file purged from disk'
-
-    def get_mime(self):
-        """Returns the mime type of the datatype"""
-        return 'application/vnd.msexcel'
-        
-    def get_estimated_display_viewport( self, dataset ):
-        """Return a chrom, start, stop tuple for viewing a file."""
-        raise notImplemented
+    def __init__(self, **kwd):
+        """Initialize datatype, by adding GBrowse display app"""
+        Interval.__init__(self, **kwd)
+        self.add_display_app ( 'ucsc', 'display at UCSC', 'as_ucsc_display_file', 'ucsc_links' )
 
     def as_ucsc_display_file( self, dataset, **kwd ):
-        """Returns file"""
-        return file(dataset.file_name,'r')
+        return open( dataset.file_name )
 
-    def ucsc_links( self, dataset, type, app, base_url ):
-        """ from the ever-helpful angie hinrichs angie@soe.ucsc.edu
-        a genome graphs call looks like this 
-        http://genome.ucsc.edu/cgi-bin/hgGenome?clade=mammal&org=Human&db=hg18&hgGenome_dataSetName=dname
-        &hgGenome_dataSetDescription=test&hgGenome_formatType=best%20guess&hgGenome_markerType=best%20guess
-        &hgGenome_columnLabels=best%20guess&hgGenome_maxVal=&hgGenome_labelVals=
-        &hgGenome_maxGapToFill=25000000&hgGenome_uploadFile=http://galaxy.esphealth.org/datasets/333/display/index
-        &hgGenome_doSubmitUpload=submit
-                Galaxy gives this for an interval file
-        http://genome.ucsc.edu/cgi-bin/hgTracks?db=hg18&position=chr1:1-1000&hgt.customText=
-        http%3A%2F%2Fgalaxy.esphealth.org%2Fdisplay_as%3Fid%3D339%26display_app%3Ducsc
+    def set_meta( self, dataset, overwrite = True, **kwd ):
+        i = 0
+        for i, line in enumerate( file ( dataset.file_name ) ):
+            line = line.rstrip('\r\n')
+            if line and not line.startswith( '#' ):
+                elems = line.split( '\t' )
+                if len(elems) == 9:
+                    try:
+                        int( elems[3] )
+                        int( elems[4] )
+                        break
+                    except:
+                        pass
+        Interval.set_meta( self, dataset, overwrite = overwrite, skip = i )
+        
+    def make_html_table( self, dataset, skipchars=[] ):
+        """Create HTML table, used for displaying peek"""
+        out = ['<table cellspacing="0" cellpadding="3">']
+        comments = []
+        try:
+            # Generate column header
+            out.append( '<tr>' )
+            for i, name in enumerate( self.column_names ):
+                out.append( '<th>%s.%s</th>' % ( str( i+1 ), name ) )
+            out.append( self.make_html_peek_rows( dataset, skipchars=skipchars ) )
+            out.append( '</table>' )
+            out = "".join( out )
+        except Exception, exc:
+            out = "Can't create peek %s" % exc
+        return out
+        
+    def get_estimated_display_viewport( self, dataset ):
         """
+        Return a chrom, start, stop tuple for viewing a file.  There are slight differences between gff 2 and gff 3
+        formats.  This function should correctly handle both...
+        """
+        if True or (dataset.has_data() and dataset.state == dataset.states.OK):
+            try:
+                seqid = ''
+                start = 2147483647  # Maximum value of a signed 32 bit integer ( 2**31 - 1 )
+                stop = 0
+                for i, line in enumerate( file( dataset.file_name ) ):
+                    if i == 0: # track stuff there
+                        continue
+                    line = line.rstrip( '\r\n' )
+                    if not line:
+                        continue
+                    if not line.startswith( '#' ):
+                        elems = line.split( '\t' )
+                        if not seqid:
+                            # We can only set the viewport for a single chromosome
+                            seqid = elems[0]
+                        if seqid == elems[0]:
+                            # Make sure we have not spanned chromosomes
+                            start = min( start, int( elems[3] ) )
+                            stop = max( stop, int( elems[4] ) )
+                        else:
+                            # We've spanned a chromosome
+                            break
+                    if i > 10:
+                        break
+            except:
+                 seqid, start, stop = ( '', '', '' )
+            return ( seqid, str( start ), str( stop ) )
+        else:
+            return ( '', '', '' )
+        
+    def gbrowse_links( self, dataset, type, app, base_url ):
         ret_val = []
-        ggtail = '&hgGenome_doSubmitUpload=submit'
-        if not dataset.dbkey:
-              dataset.dbkey = 'hg18' # punt!
+        if dataset.has_data:
+            viewport_tuple = self.get_estimated_display_viewport( dataset )
+            seqid = viewport_tuple[0]
+            start = viewport_tuple[1]
+            stop = viewport_tuple[2]
+            if seqid and start and stop:
+                for site_name, site_url in util.get_gbrowse_sites_by_build( dataset.dbkey ):
+                    if site_name in app.config.gbrowse_display_sites:
+                        link = "%s?start=%s&stop=%s&ref=%s&dbkey=%s" % ( site_url, start, stop, seqid, dataset.dbkey )
+                        ret_val.append( ( site_name, link ) )
+        return ret_val
+    
+    def ucsc_links( self, dataset, type, app, base_url ):
         ret_val = []
-        ggtail = '&hgGenome_doSubmitUpload=submit'
-        if not dataset.dbkey:
-              dataset.dbkey = 'hg18' # punt!
-        if dataset.has_data:      
-              for site_name, site_url in util.get_ucsc_by_build(dataset.dbkey):
+        if dataset.has_data:
+            viewport_tuple = self.get_estimated_display_viewport(dataset)
+            if viewport_tuple:
+                chrom = viewport_tuple[0]
+                start = viewport_tuple[1]
+                stop = viewport_tuple[2]
+                if start == '' or int(start) < 1:
+                    start='1'
+                if stop == '' or int(stop) <= start:
+                    stop = '%d' % (int(start) + 10000)
+                for site_name, site_url in util.get_ucsc_by_build(dataset.dbkey):
                     if site_name in app.config.ucsc_display_sites:
-                        site_url = site_url.replace('/hgTracks?','/hgGenome?') # for genome graphs
-                        display_url = urllib.quote_plus( "%s/display_as?id=%i&display_app=%s" % (base_url, dataset.id, type) )
-                        sl = ["%sdb=%s" % (site_url,dataset.dbkey ),]
-                        sl.append("&hgGenome_dataSetName=%s&hgGenome_dataSetDescription=%s" % (dataset.name, 'GalaxyGG_data'))
-                        sl.append("&hgGenome_formatType=best%20guess&hgGenome_markerType=best%20guess")
-                        sl.append("&hgGenome_columnLabels=first%20row&hgGenome_maxVal=&hgGenome_labelVals=")
-                        sl.append("&hgGenome_maxGapToFill=25000000&hgGenome_uploadFile=")
-                        s = urllib.quote_plus( ''.join(sl) )
-                        link = "%s%s%s" % (s, display_url, ggtail )
+                        # HACK: UCSC doesn't support https, so force http even
+                        # if our URL scheme is https.  Making this work
+                        # requires additional hackery in your upstream proxy.
+                        # If UCSC ever supports https, remove this hack.
+                        internal_url = "%s" % url_for( controller='dataset',
+                                dataset_id=dataset.id, action='display_at', filename='ucsc_' + site_name )
+                        if base_url.startswith( 'https://' ):
+                            base_url = base_url.replace( 'https', 'http', 1 )
+                        display_url = urllib.quote_plus( "%s%s/display_as?id=%i&display_app=%s&authz_method=display_at" % (base_url, url_for( controller='root' ), dataset.id, type) )
+                        redirect_url = urllib.quote_plus( "%sdb=%s&position=%s:%s-%s&hgt.customText=%%s" % (site_url, dataset.dbkey, chrom, start, stop) )
+                        link = '%s?redirect_url=%s&display_url=%s' % ( internal_url, redirect_url, display_url )
                         ret_val.append( (site_name, link) )
+            else:
+                gal_Log.debug('@@@ gg ucsc_links - no viewport_tuple')
         return ret_val
 
 
-    def validate( self, dataset ):
-        """Validate a gg file - all numeric after header row"""
-        errors = list()
-        infile = open(dataset.file_name, "r")
-        for i,row in enumerate(infile): #drop header
-           badvals = []
-           if i > 0:
-               ll = row.strip().split('\t')
-               for j,x in enumerate(ll):
-                  try:
-                    x = float(x)
-                  except:
-                    badval.append('col%d:%s' % (j+1,x))
-        if len(badvals) > 0:
-            errors.append('row %d, %s' % (' '.join(badvals)))
-            return errors 
+    def sniff( self, filename ):
+        """
+        Determines whether the file is in gff format
         
-    def repair_methods( self, dataset ):
-        """Return options for removing errors along with a description"""
-        return [("lines","Remove erroneous lines")]
-    
-    def sniff(self,filename):
+        GFF lines have nine required fields that must be tab-separated.
+        
+        For complete details see http://genome.ucsc.edu/FAQ/FAQformat#format3
+        
+        >>> fname = get_test_fname( 'gff_version_3.gff' )
+        >>> Gff().sniff( fname )
+        False
+        >>> fname = get_test_fname( 'test.gff' )
+        >>> Gff().sniff( fname )
+        True
         """
-        """
-        infile = open(dataset.file_name, "r")
-        header= infile.next() # header
-        badvals = []
-        for i,row in enumerate(infile[:10]): # sample first 10 rows
-           ll = row.strip().split('\t')
-           for j,x in enumerate(ll[1:]): # ignore first identifier col
-              try:
-                x = float(x)
-              except:
-                badval.append('col%d:%s' % (j+1,x))
-        if len(badvals) > 0:
-            return False
-        else:
+        f = open(filename,'r')
+        headers = f.readline().split
+        if headers[0].lower() == 'track':
+            headers = f.readline.split()
+        #headers = get_headers( filename, '\t' )
+        try:
+            if len(headers) < 2:
+                return False
+            for hdr in headers:
+                if hdr and hdr[0].startswith( '##gff-version' ) and hdr[0].find( '2' ) < 0:
+                    return False
+                if hdr and hdr[0] and not hdr[0].startswith( '#' ):
+                    if len(hdr) != 9:
+                        return False
+                    try:
+                        int( hdr[3] )
+                        int( hdr[4] )
+                    except:
+                        return False
+                    if hdr[5] != '.':
+                        try:
+                            score = int(hdr[5])
+                        except:
+                            return False
+                        if (score < 0 or score > 1000):
+                            return False
+                    if hdr[6] not in data.valid_strand:
+                        return False
             return True
+        except:
+            return False
+
+    
 
 class rgTabList(Tabular):
     """ for sampleid and for featureid lists of exclusions or inclusions in the clean tool
