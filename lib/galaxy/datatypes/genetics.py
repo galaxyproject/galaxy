@@ -29,26 +29,6 @@ from galaxy.util.hash_util import *
 gal_Log = logging.getLogger(__name__)
 verbose = False
 
-
-"""
-Want to make some wig tracks from each analysis
-Best n -log10(p). Make top hit the window.
-
-
-from ucsc wig docs
-ll options are placed in a single line separated by spaces:
-
-  track type=wiggle_0 name=track_label description=center_label \
-        visibility=display_mode color=r,g,b altColor=r,g,b \
-        priority=priority autoScale=on|off \
-        gridDefault=on|off maxHeightPixels=max:default:min \
-        graphType=bar|points viewLimits=lower:upper \
-        yLineMark=real-value yLineOnOff=on|off \
-        windowingFunction=maximum|mean|minimum smoothingWindow=off|2-16
-
-The track type with version is REQUIRED, and it currently must be wiggle_0:
-"""
-
 class GenomeGraphs(Interval):
 
     """gg version viewable at ucsc of Gff format"""
@@ -131,7 +111,7 @@ class GenomeGraphs(Interval):
                         else:
                             # We've spanned a chromosome
                             break
-                    if i > 10:
+                    if i > 10: # span 10 features
                         break
             except:
                  seqid, start, stop = ( '', '', '' )
@@ -189,15 +169,6 @@ class GenomeGraphs(Interval):
         Determines whether the file is in gff format
         
         GFF lines have nine required fields that must be tab-separated.
-        
-        For complete details see http://genome.ucsc.edu/FAQ/FAQformat#format3
-        
-        >>> fname = get_test_fname( 'gff_version_3.gff' )
-        >>> Gff().sniff( fname )
-        False
-        >>> fname = get_test_fname( 'test.gff' )
-        >>> Gff().sniff( fname )
-        True
         """
         f = open(filename,'r')
         headers = f.readline().split
