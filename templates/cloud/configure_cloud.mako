@@ -26,7 +26,7 @@
 	    <li>
 	        <a class="action-button" href="${h.url_for( action='add' )}">
 	            <img src="${h.url_for('/static/images/silk/add.png')}" />
-	            <span>Add AWS credentials</span>
+	            <span>Add credentials</span>
 	        </a>
 	    </li>
 	</ul>

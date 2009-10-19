@@ -18,11 +18,22 @@ from Queue import Queue, Empty
 
 log = logging.getLogger( __name__ )
 
-# States for running a job. These are NOT the same as data states
-#messages = {
-#            JOB_WAIT
-#            
-#            }
+uci_states = Bunch(
+    NEW_UCI = "newUCI",
+    NEW = "new",
+    DELETING_UCI = "deletingUCI",
+    DELETING = "deleting",
+    SUBMITTED_UCI = "submittedUCI",
+    SUBMITTED = "submitted",
+    SHUTTING_DOWN_UCI = "shutting-downUCI",
+    SHUTTING_DOWN = "shutting-down",
+    AVAILABLE = "available",
+    RUNNING = "running",
+    PENDING = "pending",
+    ERROR = "error",
+    CREATING = "creating"
+)
+
 JOB_WAIT, JOB_ERROR, JOB_INPUT_ERROR, JOB_INPUT_DELETED, JOB_OK, JOB_READY, JOB_DELETED, JOB_ADMIN_DELETED = 'wait', 'error', 'input_error', 'input_deleted', 'ok', 'ready', 'deleted', 'admin_deleted'
 
 class CloudManager( object ):
@@ -32,10 +43,10 @@ class CloudManager( object ):
     def __init__( self, app ):
         self.app = app
         if self.app.config.get_bool( "enable_cloud_execution", True ):
-            # The dispatcher manager underlying cloud instances
-#            self.provider = CloudProvider( app )
+            # The dispatcher manager for underlying cloud instances - implements and contacts individual cloud providers
+            self.provider = CloudProvider( app )
             # Monitor for updating status of cloud instances
-            self.cloud_monitor = CloudMonitor( self.app )
+            self.cloud_monitor = CloudMonitor( self.app, self.provider   )
 #            self.job_stop_queue = JobStopQueue( app, self.dispatcher )
         else:
             self.job_queue = self.job_stop_queue = NoopCloudMonitor()
@@ -93,7 +104,7 @@ class CloudMonitor( object ):
     CloudProvider.
     """
     STOP_SIGNAL = object()
-    def __init__( self, app ):
+    def __init__( self, app, provider ):
         """Start the cloud manager"""
         self.app = app
         # Keep track of the pid that started the cloud manager, only it
@@ -186,20 +197,20 @@ class CloudMonitor( object ):
 #            new_instances
             
         for r in session.query( model.UCI ) \
-                .filter( or_( model.UCI.c.state=="newUCI", 
-                              model.UCI.c.state=="submittedUCI", 
-                              model.UCI.c.state=="shutting-downUCI", 
-                              model.UCI.c.state=="deletingUCI" ) ) \
+                .filter( or_( model.UCI.c.state==uci_states.NEW_UCI, #"newUCI", 
+                              model.UCI.c.state==uci_states.SUBMITTED_UCI, #"submittedUCI", 
+                              model.UCI.c.state==uci_states.SHUTTING_DOWN_UCI, #"shutting-downUCI", 
+                              model.UCI.c.state==uci_states.DELETING_UCI ) ) \
                 .all():
-            uci = UCIwrapper( r )
-            new_requests.append( uci )
+            uci_wrapper = UCIwrapper( r )
+            new_requests.append( uci_wrapper )
 #        log.debug( 'new_requests: %s' % new_requests )     
-        for uci in new_requests:
+        for uci_wrapper in new_requests:
             session.clear()
 #            log.debug( 'r.name: %s, state: %s' % ( r.name, r.state ) )
 #            session.save_or_update( r )
 #            session.flush()
-            self.provider.put( uci )
+            self.provider.put( uci_wrapper )
         
         # Done with the session
         mapping.Session.remove()
@@ -510,6 +521,14 @@ class UCIwrapper( object ):
         vol.flush()
 
     # --------- Getter methods -----------------
+    
+    def get_provider_name( self ):
+        """ Returns name of cloud  provider associated with given UCI. """ 
+        uci = model.UCI.get( self.uci_id )
+        uci.refresh()
+        cred_id = uci.credentials_id
+        cred = model.CloudUserCredentials.get( cred_id )
+        return cred.provider_name
     
     def get_instances_indexes( self, state=None ):
         """
@@ -977,26 +996,35 @@ class UCIwrapper( object ):
 
 class CloudProvider( object ):
     def __init__( self, app ):
+        import providers.eucalyptus
+        import providers.ec2
+        
         self.app = app
         self.cloud_provider = {}
+        self.cloud_provider["eucalyptus"] = providers.eucalyptus.EucalyptusCloudProvider( app )
+        self.cloud_provider["ec2"] = providers.ec2.EC2CloudProvider( app )
+        
 #        start_cloud_provider = None
 #        if app.config.start_job_runners is not None:
 #            start_cloud_provider.extend( app.config.start_job_runners.split(",") )
 #        for provider_name in start_cloud_provider:
-        self.provider_name = app.config.cloud_provider
-        if self.provider_name == "eucalyptus":
-            import providers.eucalyptus
-            self.cloud_provider[self.provider_name] = providers.eucalyptus.EucalyptusCloudProvider( app )
-        elif self.provider_name == "ec2":
-            import providers.ec2
-            self.cloud_provider[self.provider_name] = providers.ec2.EC2CloudProvider( app )
-        else:
-            log.error( "Unable to start unknown cloud provider: %s" %self.provider_name )
+#        self.provider_name = app.config.cloud_provider
+#        if self.provider_name == "eucalyptus":
+#            import providers.eucalyptus
+#            self.cloud_provider[self.provider_name] = providers.eucalyptus.EucalyptusCloudProvider( app )
+#        elif self.provider_name == "ec2":
+#            import providers.ec2
+#            self.cloud_provider[self.provider_name] = providers.ec2.EC2CloudProvider( app )
+#        else:
+#            log.error( "Unable to start unknown cloud provider: %s" %self.provider_name )
     
     def put( self, uci_wrapper ):
         """ Put given request for UCI manipulation into provider's request queue."""
 #        log.debug( "Adding UCI '%s' manipulation request into cloud manager's queue." % uci_wrapper.name )
-        self.cloud_provider[self.provider_name].put( uci_wrapper )
+        self.cloud_provider[uci_wrapper.get_provider_name()].put( uci_wrapper )
+    
+    
+    
     
     def createUCI( self, uci ):
         """ 
@@ -1034,12 +1062,12 @@ class CloudProvider( object ):
     
     def update( self ):
         """ 
-        Runs a global status update on all storage volumes and all instances whose UCI is
-        'running' state.
-        Reason behind this method is to sync state of local DB and real world resources
+        Runs a global status update across all providers for all UCIs in state other than 'terminated' and 'available'.
+        Reason behind this method is to sync state of local DB and real world resources.
         """
-#        log.debug( "Running global update" )
-        self.cloud_provider[self.provider_name].update()
+        for provider in self.cloud_provider.keys():
+#            log.debug( "Running global update for provider: '%s'" % provider )
+            self.cloud_provider[provider].update()
         
     def recover( self, job, job_wrapper ):
         runner_name = ( job.job_runner_name.split(":", 1) )[0]

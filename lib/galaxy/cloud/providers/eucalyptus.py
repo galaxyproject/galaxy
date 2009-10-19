@@ -5,6 +5,7 @@ from datetime import datetime
 from galaxy import model # Database interaction class
 from galaxy.model import mapping
 from galaxy.datatypes.data import nice_size
+from galaxy.util.bunch import Bunch
 from Queue import Queue
 from sqlalchemy import or_
 
@@ -16,12 +17,41 @@ from boto.ec2.regioninfo import RegionInfo
 import logging
 log = logging.getLogger( __name__ )
 
+uci_states = Bunch(
+    NEW_UCI = "newUCI",
+    NEW = "new",
+    DELETING_UCI = "deletingUCI",
+    DELETING = "deleting",
+    SUBMITTED_UCI = "submittedUCI",
+    SUBMITTED = "submitted",
+    SHUTTING_DOWN_UCI = "shutting-downUCI",
+    SHUTTING_DOWN = "shutting-down",
+    AVAILABLE = "available",
+    RUNNING = "running",
+    PENDING = "pending",
+    ERROR = "error",
+    DELETED = "deleted"
+)
+
+instance_states = Bunch(
+    TERMINATED = "terminated",
+    RUNNING = "running",
+    PENDING = "pending",
+    SHUTTING_DOWN = "shutting-down"
+)
+
+store_states = Bunch(
+    IN_USE = "in-use",
+    CREATING = "creating"
+)
+
 class EucalyptusCloudProvider( object ):
     """
     Eucalyptus-based cloud provider implementation for managing instances. 
     """
     STOP_SIGNAL = object()
     def __init__( self, app ):
+        self.name = "eucalyptus"
         self.zone = "epc"
         self.key_pair = "galaxy-keypair"
         self.queue = Queue()
@@ -48,15 +78,13 @@ class EucalyptusCloudProvider( object ):
             if uci_state is self.STOP_SIGNAL:
                 return
             try:
-                if uci_state=="new":
-                    log.debug( "Calling create UCI" )
+                if uci_state==uci_states.NEW: # "new":
                     self.createUCI( uci_wrapper )
-                elif uci_state=="deleting":
+                elif uci_state==uci_states.DELETING: #"deleting":
                     self.deleteUCI( uci_wrapper )
-                elif uci_state=="submitted":
-                    log.debug( "Calling start UCI" )
+                elif uci_state==uci_states.SUBMITTED: #"submitted":
                     self.startUCI( uci_wrapper )
-                elif uci_state=="shutting-down":
+                elif uci_state==uci_states.SHUTTING_DOWN: #"shutting-down":
                     self.stopUCI( uci_wrapper )
             except:
                 log.exception( "Uncaught exception executing request." )
@@ -149,7 +177,7 @@ class EucalyptusCloudProvider( object ):
         uci_wrapper.set_store_volume_id( 0, vol.id ) 
         
         # EPC does not allow creation of storage volumes (it deletes one as soon as it is created, so manually set uci_state here)
-        uci_wrapper.change_state( uci_state='available' )
+        uci_wrapper.change_state( uci_state=uci_states.AVAILABLE )
         uci_wrapper.set_store_status( vol.id, vol.status )
 
     def deleteUCI( self, uci_wrapper ):
@@ -182,7 +210,7 @@ class EucalyptusCloudProvider( object ):
         else:
             log.error( "Deleting following volume(s) failed: %s. However, these volumes were successfully deleted: %s. \
                         MANUAL intervention and processing needed." % ( failedList, deletedList ) )
-            uci_wrapper.change_state( uci_state="error" )
+            uci_wrapper.change_state( uci_state=uci_states.ERROR )
             
     def addStorageToUCI( self, name ):
         """ Adds more storage to specified UCI """
@@ -191,7 +219,7 @@ class EucalyptusCloudProvider( object ):
         
         uci = uci_wrapper.get_uci()
         log.debug( "Would be starting instance '%s'" % uci.name )
-        uci_wrapper.change_state( 'pending' )
+        uci_wrapper.change_state( uci_states.PENDING )
 #        log.debug( "Sleeping a bit... (%s)" % uci.name )
 #        time.sleep(20)
 #        log.debug( "Woke up! (%s)" % uci.name )
@@ -322,7 +350,7 @@ class EucalyptusCloudProvider( object ):
 #        uci.launch_time = None
 #        uci.flush()
 #        
-        log.debug( "All instances for UCI '%s' were terminated." % uci_wrapper.get_name() )
+        log.debug( "Termination was initiated for all instances of UCI '%s'." % uci_wrapper.get_name() )
 
 
 
@@ -373,20 +401,26 @@ class EucalyptusCloudProvider( object ):
 
     def update( self ):
         """ 
-        Runs a global status update on all storage volumes and all instances whose UCI is in
-        'running', 'pending', or 'shutting-down' state.
+        Runs a global status update on all instances that are in 'running', 'pending', "creating", or 'shutting-down' state.
+        Also, runs update on all storage volumes that are in "in-use", "creating", or 'None' state.
         Reason behind this method is to sync state of local DB and real-world resources
         """
-        log.debug( "Running general status update for EPC UCIs." )
-        instances = model.CloudInstance.filter( or_( model.CloudInstance.c.state=="running", model.CloudInstance.c.state=="pending", model.CloudInstance.c.state=="shutting-down" ) ).all()
+        log.debug( "Running general status update for EPC UCIs..." )
+        instances = model.CloudInstance.filter( or_( model.CloudInstance.c.state==instance_states.RUNNING, #"running", 
+                                                     model.CloudInstance.c.state==instance_states.PENDING, #"pending", 
+                                                     model.CloudInstance.c.state==instance_states.SHUTTING_DOWN ) ).all()
         for inst in instances:
-            log.debug( "Running general status update on instance '%s'" % inst.instance_id )
-            self.updateInstance( inst )
+            if self.name == inst.uci.credentials.provider_name:
+                log.debug( "[%s] Running general status update on instance '%s'" % ( inst.uci.credentials.provider_name, inst.instance_id ) )
+                self.updateInstance( inst )
             
-        stores = model.CloudStore.filter( or_( model.CloudStore.c.status=="in-use", model.CloudStore.c.status=="creating" ) ).all()
+        stores = model.CloudStore.filter( or_( model.CloudStore.c.status==store_states.IN_USE, 
+                                               model.CloudStore.c.status==store_states.CREATING,
+                                               model.CloudStore.c.status==None ) ).all()
         for store in stores:
-            log.debug( "Running general status update on store '%s'" % store.volume_id )
-            self.updateStore( store )
+            if self.name == store.uci.credentials.provider_name:
+                log.debug( "[%s] Running general status update on store '%s'" % ( store.uci.credentials.provider_name, store.volume_id ) )
+                self.updateStore( store )
         
     def updateInstance( self, inst ):
         
@@ -406,8 +440,8 @@ class EucalyptusCloudProvider( object ):
         # marks given instance as having terminated. Note that an instance might have also crashed and this code will not catch the difference...
         if len( rl ) == 0:
             log.info( "Instance ID '%s' was not found by the cloud provider. Instance might have crashed or otherwise been terminated." % inst.instance_id )
-            inst.state = 'terminated'
-            uci.state = 'available'
+            inst.state = instance_states.TERMINATED
+            uci.state = uci_states.AVAILABLE
             uci.launch_time = None
             inst.flush()
             uci.flush()
@@ -419,10 +453,10 @@ class EucalyptusCloudProvider( object ):
                 if  s != inst.state:
                     inst.state = s
                     inst.flush()
-                    if s == 'terminated': # After instance has shut down, ensure UCI is marked as 'available'
-                        uci.state = 'available'
+                    if s == instance_states.TERMINATED: # After instance has shut down, ensure UCI is marked as 'available'
+                        uci.state = uci_states.AVAILABLE
                         uci.flush()
-                if s != uci.state and s != 'terminated': 
+                if s != uci.state and s != instance_states.TERMINATED: 
                     # Making sure state of UCI is updated. Once multiple instances become associated with single UCI, this will need to be changed.
                     uci.state = s                    
                     uci.flush() 
@@ -448,6 +482,12 @@ class EucalyptusCloudProvider( object ):
 #        log.debug( "Store '%s' vl: '%s'" % ( store.volume_id, vl ) )
         # Update store status in local DB with info from cloud provider
         if store.status != vl[0].status:
+            # In case something failed during creation of UCI but actual storage volume was created and yet 
+            #  UCI state remained as 'new', try to remedy this by updating UCI state here 
+            if ( store.status == None ) and ( store.volume_id != None ):
+                uci.state = vl[0].status
+                uci.flush()
+                
             store.status = vl[0].status
             store.flush()
         if store.i_id != vl[0].instance_id:
@@ -460,48 +500,48 @@ class EucalyptusCloudProvider( object ):
             store.device = vl[0].device
             store.flush()
     
-    def updateUCI( self, uci ):
-        """ 
-        Runs a global status update on all storage volumes and all instances that are
-        associated with specified UCI
-        """
-        conn = self.get_connection( uci )
-        
-        # Update status of storage volumes
-        vl = model.CloudStore.filter( model.CloudInstance.c.uci_id == uci.id ).all()
-        vols = []
-        for v in vl:
-            vols.append( v.volume_id )
-        try:
-            volumes = conn.get_all_volumes( vols )
-            for i, v in enumerate( volumes ):
-                uci.store[i].i_id = v.instance_id
-                uci.store[i].status = v.status
-                uci.store[i].device = v.device
-                uci.store[i].flush()
-        except:
-            log.debug( "Error updating status of volume(s) associated with UCI '%s'. Status was not updated." % uci.name )
-            pass
-        
-        # Update status of instances
-        il = model.CloudInstance.filter_by( uci_id=uci.id ).filter( model.CloudInstance.c.state != 'terminated' ).all()
-        instanceList = []
-        for i in il:
-            instanceList.append( i.instance_id )
-        log.debug( 'instanceList: %s' % instanceList )
-        try:
-            reservations = conn.get_all_instances( instanceList )
-            for i, r in enumerate( reservations ):
-                uci.instance[i].state = r.instances[0].update()
-                log.debug('updating instance %s; status: %s' % ( uci.instance[i].instance_id, uci.instance[i].state ) )
-                uci.state = uci.instance[i].state
-                uci.instance[i].public_dns = r.instances[0].dns_name
-                uci.instance[i].private_dns = r.instances[0].private_dns_name
-                uci.instance[i].flush()
-                uci.flush()
-        except:
-            log.debug( "Error updating status of instances associated with UCI '%s'. Instance status was not updated." % uci.name )
-            pass
+#    def updateUCI( self, uci ):
+#        """ 
+#        Runs a global status update on all storage volumes and all instances that are
+#        associated with specified UCI
+#        """
+#        conn = self.get_connection( uci )
+#        
+#        # Update status of storage volumes
+#        vl = model.CloudStore.filter( model.CloudInstance.c.uci_id == uci.id ).all()
+#        vols = []
+#        for v in vl:
+#            vols.append( v.volume_id )
+#        try:
+#            volumes = conn.get_all_volumes( vols )
+#            for i, v in enumerate( volumes ):
+#                uci.store[i].i_id = v.instance_id
+#                uci.store[i].status = v.status
+#                uci.store[i].device = v.device
+#                uci.store[i].flush()
+#        except:
+#            log.debug( "Error updating status of volume(s) associated with UCI '%s'. Status was not updated." % uci.name )
+#            pass
+#        
+#        # Update status of instances
+#        il = model.CloudInstance.filter_by( uci_id=uci.id ).filter( model.CloudInstance.c.state != 'terminated' ).all()
+#        instanceList = []
+#        for i in il:
+#            instanceList.append( i.instance_id )
+#        log.debug( 'instanceList: %s' % instanceList )
+#        try:
+#            reservations = conn.get_all_instances( instanceList )
+#            for i, r in enumerate( reservations ):
+#                uci.instance[i].state = r.instances[0].update()
+#                log.debug('updating instance %s; status: %s' % ( uci.instance[i].instance_id, uci.instance[i].state ) )
+#                uci.state = uci.instance[i].state
+#                uci.instance[i].public_dns = r.instances[0].dns_name
+#                uci.instance[i].private_dns = r.instances[0].private_dns_name
+#                uci.instance[i].flush()
+#                uci.flush()
+#        except:
+#            log.debug( "Error updating status of instances associated with UCI '%s'. Instance status was not updated." % uci.name )
+#            pass
         
     # --------- Helper methods ------------
     

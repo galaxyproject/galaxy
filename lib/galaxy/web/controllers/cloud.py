@@ -29,6 +29,29 @@ from galaxy.cloud import CloudManager
 import logging
 log = logging.getLogger( __name__ )
 
+uci_states = Bunch(
+    NEW_UCI = "newUCI",
+    NEW = "new",
+    DELETING_UCI = "deletingUCI",
+    DELETING = "deleting",
+    SUBMITTED_UCI = "submittedUCI",
+    SUBMITTED = "submitted",
+    SHUTTING_DOWN_UCI = "shutting-downUCI",
+    SHUTTING_DOWN = "shutting-down",
+    AVAILABLE = "available",
+    RUNNING = "running",
+    PENDING = "pending",
+    ERROR = "error",
+    DELETED = "deleted"
+)
+
+instance_states = Bunch(
+    TERMINATED = "terminated",
+    RUNNING = "running",
+    PENDING = "pending",
+    SHUTTING_DOWN = "shutting-down"
+)
+
 class CloudController( BaseController ):
     
 #    def __init__( self ):
@@ -59,23 +82,23 @@ class CloudController( BaseController ):
         
         liveInstances = trans.sa_session.query( model.UCI ) \
             .filter_by( user=user ) \
-            .filter( or_( model.UCI.c.state=="running", 
-                          model.UCI.c.state=="pending",
-                          model.UCI.c.state=="submitted", 
-                          model.UCI.c.state=="submittedUCI",
-                          model.UCI.c.state=="shutting-down",
-                          model.UCI.c.state=="shutting-downUCI" ) ) \
+            .filter( or_( model.UCI.c.state==uci_states.RUNNING, #"running", 
+                          model.UCI.c.state==uci_states.PENDING, #"pending",
+                          model.UCI.c.state==uci_states.SUBMITTED, #"submitted", 
+                          model.UCI.c.state==uci_states.SUBMITTED_UCI, #"submittedUCI",
+                          model.UCI.c.state==uci_states.SHUTTING_DOWN, #"shutting-down",
+                          model.UCI.c.state==uci_states.SHUTTING_DOWN_UCI ) ) \
             .order_by( desc( model.UCI.c.update_time ) ) \
             .all()
             
         prevInstances = trans.sa_session.query( model.UCI ) \
             .filter_by( user=user ) \
-            .filter( or_( model.UCI.c.state=="available", 
-                          model.UCI.c.state=="new", 
-                          model.UCI.c.state=="newUCI", 
-                          model.UCI.c.state=="error", 
-                          model.UCI.c.state=="deleting",
-                          model.UCI.c.state=="deletingUCI" ) ) \
+            .filter( or_( model.UCI.c.state==uci_states.AVAILABLE, #"available", 
+                          model.UCI.c.state==uci_states.NEW, #"new", 
+                          model.UCI.c.state==uci_states.NEW_UCI, #"newUCI", 
+                          model.UCI.c.state==uci_states.ERROR, #"error", 
+                          model.UCI.c.state==uci_states.DELETING, #"deleting",
+                          model.UCI.c.state==uci_states.DELETING_UCI ) ) \
             .order_by( desc( model.UCI.c.update_time ) ) \
             .all()
         
@@ -83,9 +106,9 @@ class CloudController( BaseController ):
         # TODO: Auto-refresh once instance is running
         pendingInstances = trans.sa_session.query( model.UCI ) \
             .filter_by( user=user ) \
-            .filter( or_( model.UCI.c.state=="pending" , \
-                          model.UCI.c.state=="submitted" , \
-                          model.UCI.c.state=="submittedUCI" ) ) \
+            .filter( or_( model.UCI.c.state==uci_states.PENDING, #"pending" , \
+                          model.UCI.c.state==uci_states.SUBMITTED, #"submitted" , \
+                          model.UCI.c.state==uci_states.SUBMITTED_UCI ) ) \
             .all()
         if pendingInstances:
             trans.set_message( "Galaxy instance started. NOTE: Please wait about 3-5 minutes for the instance to " 
@@ -131,12 +154,12 @@ class CloudController( BaseController ):
         stores = get_stores( trans, uci ) 
 #        log.debug(self.app.config.job_working_directory)
         if ( len(stores) is not 0 ) and \
-           ( uci.state != 'submitted' ) and \
-           ( uci.state != 'submittedUCI' ) and \
-           ( uci.state != 'pending' ) and \
-           ( uci.state != 'deleting' ) and \
-           ( uci.state != 'deletingUCI' ) and \
-           ( uci.state != 'error' ):
+           ( uci.state != uci_states.SUBMITTED ) and \
+           ( uci.state != uci_states.SUBMITTED_UCI ) and \
+           ( uci.state != uci_states.PENDING ) and \
+           ( uci.state != uci_states.DELETING ) and \
+           ( uci.state != uci_states.DELETING_UCI ) and \
+           ( uci.state != uci_states.ERROR ):
             instance = model.CloudInstance()
             instance.user = user
             instance.image = mi
@@ -169,7 +192,7 @@ class CloudController( BaseController ):
 #            instance.instance_id = str( reservation.instances[0]).split(":")[1]
 #            instance.state = "pending"
 #            instance.state = reservation.instances[0].state
-            uci.state = 'submittedUCI'
+            uci.state = uci_states.SUBMITTED_UCI
             
             # Persist
             session = trans.sa_session
@@ -181,6 +204,7 @@ class CloudController( BaseController ):
             trans.set_message( "Galaxy instance started. NOTE: Please wait about 3-5 minutes for the instance to " 
                     "start up and then refresh this page. A button to connect to the instance will then appear alongside "
                     "instance description." )
+            time.sleep(1) # Wait for initial update to occur to avoid immediate page reload
             return self.list( trans )
         
         trans.show_error_message( "Cannot start instance that is in state '%s'." % uci.state )
@@ -199,7 +223,7 @@ class CloudController( BaseController ):
         Stop a cloud UCI instance. This implies stopping Galaxy server and disconnecting/unmounting relevant file system(s).
         """
         uci = get_uci( trans, id )
-        uci.state = 'shutting-downUCI'
+        uci.state = uci_states.SHUTTING_DOWN_UCI
         session = trans.sa_session
 #        session.save_or_update( stores )
         session.save_or_update( uci )
@@ -252,7 +276,6 @@ class CloudController( BaseController ):
 #        session.flush()
 #        trans.log_event( "User stopped cloud instance '%s'" % uci.name )
 #        trans.set_message( "Galaxy instance '%s' stopped." % uci.name )
-#                    
         return self.list( trans )
     
     @web.expose
@@ -264,9 +287,9 @@ class CloudController( BaseController ):
         """
         uci = get_uci( trans, id )
         
-        if ( uci.state != 'deletingUCI' ) and ( uci.state != 'deleting' ) and ( uci.state != 'error' ):
+        if ( uci.state != uci_states.DELETING_UCI ) and ( uci.state != uci_states.DELETING ) and ( uci.state != uci_states.ERROR ):
             name = uci.name
-            uci.state = "deletingUCI"
+            uci.state = uci_states.DELETING_UCI
     #        dbInstances = get_instances( trans, uci ) #TODO: handle list!
     #        
     #        conn = get_connection( trans )
@@ -332,7 +355,7 @@ class CloudController( BaseController ):
         if instanceName:
             # Create new user configured instance
             try:
-                if trans.app.model.UCI.filter(  and_( trans.app.model.UCI.table.c.name==instanceName, trans.app.model.UCI.table.c.state!='deleted' ) ).first():
+                if trans.app.model.UCI.filter(  and_( trans.app.model.UCI.table.c.name==instanceName, trans.app.model.UCI.table.c.state!=uci_states.DELETED ) ).first():
                     error['inst_error'] = "An instance with that name already exist."
                 elif instanceName=='' or len( instanceName ) > 255:
                     error['inst_error'] = "Instance name must be between 1 and 255 characters long."
@@ -355,7 +378,7 @@ class CloudController( BaseController ):
                         trans.app.model.CloudUserCredentials.table.c.name==credName ).first()
                     uci.user= user
                     uci.total_size = volSize # This is OK now because new instance is being created. 
-                    uci.state = "newUCI"
+                    uci.state = uci_states.NEW_UCI
                     
                     storage = model.CloudStore()
                     storage.user = user
@@ -370,6 +393,7 @@ class CloudController( BaseController ):
                     # Log and display the management page
                     trans.log_event( "User configured new cloud instance" )
                     trans.set_message( "New Galaxy instance '%s' configured. Once instance status shows 'available' you will be able to start the instance." % instanceName )
+                    time.sleep(1) # Wait for initial update to occur to avoid immediate page reload
                     return self.list( trans )
             except ValueError:
                 vol_error = "Volume size must be specified as an integer value only, between 1 and 1000."
@@ -993,7 +1017,7 @@ class CloudController( BaseController ):
 
 def get_UCIs_state( trans ):
     user = trans.get_user()
-    instances = trans.sa_session.query( model.UCI ).filter_by( user=user ).filter( model.UCI.c.state != "deleted" ).all()
+    instances = trans.sa_session.query( model.UCI ).filter_by( user=user ).filter( model.UCI.c.state != uci_states.DELETED ).all()
     insd = {} # instance name-state dict
     for inst in instances:
         insd[inst.name] = inst.state
@@ -1088,7 +1112,7 @@ def get_instances( trans, uci ):
     user = trans.get_user()
     instances = trans.sa_session.query( model.CloudInstance ) \
             .filter_by( user=user, uci_id=uci.id ) \
-            .filter( or_(model.CloudInstance.table.c.state=="running", model.CloudInstance.table.c.state=="pending" ) ) \
+            .filter( or_(model.CloudInstance.table.c.state==instance_states.RUNNING, model.CloudInstance.table.c.state==instance_states.PENDING ) ) \
             .first()
             #.all() #TODO: return all but need to edit calling method(s) to handle list
             
@@ -1172,7 +1196,7 @@ def update_instance_state( trans, id ):
     session.flush()
     
     # If instance is now running, update/process instance (i.e., mount file system, start Galaxy, update DB with DNS)
-    if oldState=="pending" and dbInstances.state=="running":
+    if oldState==instance_states.PENDING and dbInstances.state==instance_states.RUNNING:
         update_instance( trans, dbInstances, cloudInstance, conn, uci )
     
     

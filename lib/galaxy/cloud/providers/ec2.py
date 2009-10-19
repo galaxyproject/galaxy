@@ -5,16 +5,45 @@ from datetime import datetime
 from galaxy import model # Database interaction class
 from galaxy.model import mapping
 from galaxy.datatypes.data import nice_size
+from galaxy.util.bunch import Bunch
 from Queue import Queue
 from sqlalchemy import or_
 
 import galaxy.eggs
 galaxy.eggs.require("boto")
 from boto.ec2.connection import EC2Connection
-from boto.ec2.regioninfo import RegionInfo
+import boto.exception
 
 import logging
 log = logging.getLogger( __name__ )
+
+uci_states = Bunch(
+    NEW_UCI = "newUCI",
+    NEW = "new",
+    DELETING_UCI = "deletingUCI",
+    DELETING = "deleting",
+    SUBMITTED_UCI = "submittedUCI",
+    SUBMITTED = "submitted",
+    SHUTTING_DOWN_UCI = "shutting-downUCI",
+    SHUTTING_DOWN = "shutting-down",
+    AVAILABLE = "available",
+    RUNNING = "running",
+    PENDING = "pending",
+    ERROR = "error",
+    DELETED = "deleted"
+)
+
+instance_states = Bunch(
+    TERMINATED = "terminated",
+    RUNNING = "running",
+    PENDING = "pending",
+    SHUTTING_DOWN = "shutting-down"
+)
+
+store_states = Bunch(
+    IN_USE = "in-use",
+    CREATING = "creating"
+)
 
 class EC2CloudProvider( object ):
     """
@@ -22,6 +51,7 @@ class EC2CloudProvider( object ):
     """
     STOP_SIGNAL = object()
     def __init__( self, app ):
+        self.name = "ec2"
         self.zone = "us-east-1a"
         self.key_pair = "galaxy-keypair"
         self.queue = Queue()
@@ -48,15 +78,13 @@ class EC2CloudProvider( object ):
             if uci_state is self.STOP_SIGNAL:
                 return
             try:
-                if uci_state=="new":
-                    log.debug( "Calling create UCI" )
+                if uci_state==uci_states.NEW: # "new":
                     self.createUCI( uci_wrapper )
-                elif uci_state=="deleting":
+                elif uci_state==uci_states.DELETING: #"deleting":
                     self.deleteUCI( uci_wrapper )
-                elif uci_state=="submitted":
-                    log.debug( "Calling start UCI" )
+                elif uci_state==uci_states.SUBMITTED: #"submitted":
                     self.startUCI( uci_wrapper )
-                elif uci_state=="shutting-down":
+                elif uci_state==uci_states.SHUTTING_DOWN: #"shutting-down":
                     self.stopUCI( uci_wrapper )
             except:
                 log.exception( "Uncaught exception executing request." )
@@ -75,19 +103,21 @@ class EC2CloudProvider( object ):
         Generate keypair using user's default credentials
         """
         log.debug( "Getting user's keypair" )
-        kp = conn.get_key_pair( self.key_pair )
         instances = uci_wrapper.get_instances_indexes()
-        
         try:
+            kp = conn.get_key_pair( self.key_pair )
             for inst in instances:
-                log.debug("inst: '%s'" % inst )
+#                log.debug("inst: '%s'" % inst )
                 uci_wrapper.set_key_pair( inst, kp.name )
             return kp.name
-        except AttributeError: # No keypair under this name exists so create it
-            log.info( "No keypair found, creating keypair '%s'" % self.key_pair )
-            kp = conn.create_key_pair( self.key_pair )
-            for inst in instances:
-                uci_wrapper.set_key_pair( inst, kp.name, kp.material )
+        except boto.exception.EC2ResponseError, e: # No keypair under this name exists so create it
+            if e.code == 'InvalidKeyPair.NotFound': 
+                log.info( "No keypair found, creating keypair '%s'" % self.key_pair )
+                kp = conn.create_key_pair( self.key_pair )
+                for inst in instances:
+                    uci_wrapper.set_key_pair( inst, kp.name, kp.material )
+            else:
+                log.error( "EC2 response error: '%s'" % e )
                 
         return kp.name
     
@@ -146,20 +176,24 @@ class EC2CloudProvider( object ):
         uci_wrapper.set_store_volume_id( 0, vol.id )
         
         # Wait for a while to ensure volume was created
-        vol_status = vol.status
-        for i in range( 30 ):
-            if vol_status is not "available":
-                log.debug( 'Updating volume status; current status: %s' % vol_status )
-                vol_status = vol.status
-                time.sleep(3)
-            if i is 29:
-                log.debug( "Error while creating volume '%s'; stuck in state '%s'; deleting volume." % ( vol.id, vol_status ) )
-                conn.delete_volume( vol.id )
-                uci_wrapper.change_state( uci_state='error' )
-                return
-        
-        uci_wrapper.change_state( uci_state='available' )
-        uci_wrapper.set_store_status( vol.id, vol_status )
+#        vol_status = vol.status
+#        for i in range( 30 ):
+#            if vol_status is not "available":
+#                log.debug( 'Updating volume status; current status: %s' % vol_status )
+#                vol_status = vol.status
+#                time.sleep(3)
+#            if i is 29:
+#                log.debug( "Error while creating volume '%s'; stuck in state '%s'; deleting volume." % ( vol.id, vol_status ) )
+#                conn.delete_volume( vol.id )
+#                uci_wrapper.change_state( uci_state='error' )
+#                return
+        vl = conn.get_all_volumes( [vol.id] )
+        if len( vl ) > 0:
+            uci_wrapper.change_state( uci_state=vl[0].status )
+            uci_wrapper.set_store_status( vol.id, vl[0].status )
+        else:
+            uci_wrapper.change_state( uci_state=uci_states.ERROR )
+            uci_wrapper.set_store_status( vol.id, uci_states.ERROR )
 
     def deleteUCI( self, uci_wrapper ):
         """ 
@@ -191,7 +225,7 @@ class EC2CloudProvider( object ):
         else:
             log.error( "Deleting following volume(s) failed: %s. However, these volumes were successfully deleted: %s. \
                         MANUAL intervention and processing needed." % ( failedList, deletedList ) )
-            uci_wrapper.change_state( uci_state="error" )
+            uci_wrapper.change_state( uci_state=uci_state.ERROR )
             
     def addStorageToUCI( self, name ):
         """ Adds more storage to specified UCI 
@@ -201,7 +235,7 @@ class EC2CloudProvider( object ):
         
         uci = uci_wrapper.get_uci()
         log.debug( "Would be starting instance '%s'" % uci.name )
-        uci_wrapper.change_state( 'pending' )
+        uci_wrapper.change_state( uci_state.PENDING )
 #        log.debug( "Sleeping a bit... (%s)" % uci.name )
 #        time.sleep(20)
 #        log.debug( "Woke up! (%s)" % uci.name )
@@ -213,16 +247,16 @@ class EC2CloudProvider( object ):
         conn = self.get_connection( uci_wrapper )
 #        
         self.set_keypair( uci_wrapper, conn )
-        i_indexes = uci_wrapper.get_instances_indexes() # Get indexes of *new* i_indexes associated with this UCI
+        i_indexes = uci_wrapper.get_instances_indexes() # Get indexes of i_indexes associated with this UCI whose state is 'None'
         log.debug( "Starting instances with IDs: '%s' associated with UCI '%s' " % ( uci_wrapper.get_name(), i_indexes ) )
         
         for i_index in i_indexes:
             mi_id = self.get_mi_id( uci_wrapper.get_type( i_index ) )
-            log.debug( "mi_id: %s, uci_wrapper.get_key_pair_name( i_index ): %s" % ( mi_id, uci_wrapper.get_key_pair_name( i_index ) ) )
+#            log.debug( "mi_id: %s, uci_wrapper.get_key_pair_name( i_index ): %s" % ( mi_id, uci_wrapper.get_key_pair_name( i_index ) ) )
             uci_wrapper.set_mi( i_index, mi_id )
             
             # Check if galaxy security group exists (and create it if it does not)
-            log.debug( '***** Setting up security group' )
+#            log.debug( '***** Setting up security group' )
             security_group = 'galaxyWeb'
             sgs = conn.get_all_security_groups() # security groups
             gsgt = False # galaxy security group test
@@ -235,12 +269,15 @@ class EC2CloudProvider( object ):
                 gSecurityGroup.authorize( 'tcp', 80, 80, '0.0.0.0/0' ) # Open HTTP port
                 gSecurityGroup.authorize( 'tcp', 22, 22, '0.0.0.0/0' ) # Open SSH port
             # Start an instance            
-            log.debug( "***** Starting UCI instance '%s'" % uci_wrapper.get_name() )
+            log.debug( "***** Starting instance for UCI '%s'" % uci_wrapper.get_name() )
+            #TODO: Get customization scripts remotley and pass volID and user credential data only as user data from here.
+            userdata = open('/Users/afgane/Dropbox/Galaxy/EC2startupScripts/web/ec2autorun.zip', 'rb').read()
             log.debug( 'Using following command: conn.run_instances( image_id=%s, key_name=%s, security_groups=[%s], instance_type=%s, placement=%s )' 
                        % ( mi_id, uci_wrapper.get_key_pair_name( i_index ), [security_group], uci_wrapper.get_type( i_index ), uci_wrapper.get_uci_availability_zone() ) )
             reservation = conn.run_instances( image_id=mi_id, 
                                               key_name=uci_wrapper.get_key_pair_name( i_index ), 
                                               security_groups=[security_group], 
+                                              user_data=userdata,
                                               instance_type=uci_wrapper.get_type( i_index ),  
                                               placement=uci_wrapper.get_uci_availability_zone() )
             # Record newly available instance data into local Galaxy database
@@ -337,8 +374,7 @@ class EC2CloudProvider( object ):
 #        uci.launch_time = None
 #        uci.flush()
 #        
-        log.debug( "All instances for UCI '%s' were terminated." % uci_wrapper.get_name() )
-
+        log.debug( "Termination was initiated for all instances of UCI '%s'." % uci_wrapper.get_name() )
 
 
 #        dbInstances = get_instances( trans, uci ) #TODO: handle list!
@@ -388,20 +424,26 @@ class EC2CloudProvider( object ):
 
     def update( self ):
         """ 
-        Runs a global status update on all storage volumes and all instances whose UCI is in
-        'running', 'pending', or 'shutting-down' state.
+        Runs a global status update on all instances that are in 'running', 'pending', "creating", or 'shutting-down' state.
+        Also, runs update on all storage volumes that are in "in-use", "creating", or 'None' state.
         Reason behind this method is to sync state of local DB and real-world resources
         """
-        log.debug( "Running general status update for EPC UCIs." )
-        instances = model.CloudInstance.filter( or_( model.CloudInstance.c.state=="running", model.CloudInstance.c.state=="pending", model.CloudInstance.c.state=="shutting-down" ) ).all()
+        log.debug( "Running general status update for EC2 UCIs..." )
+        instances = model.CloudInstance.filter( or_( model.CloudInstance.c.state==instance_states.RUNNING, #"running", 
+                                                     model.CloudInstance.c.state==instance_states.PENDING, #"pending", 
+                                                     model.CloudInstance.c.state==instance_states.SHUTTING_DOWN ) ).all()
         for inst in instances:
-            log.debug( "Running general status update on instance '%s'" % inst.instance_id )
-            self.updateInstance( inst )
+            if self.name == inst.uci.credentials.provider_name:
+                log.debug( "[%s] Running general status update on instance '%s'" % ( inst.uci.credentials.provider_name, inst.instance_id ) )
+                self.updateInstance( inst )
             
-        stores = model.CloudStore.filter( or_( model.CloudStore.c.status=="in-use", model.CloudStore.c.status=="creating" ) ).all()
+        stores = model.CloudStore.filter( or_( model.CloudStore.c.status==store_states.IN_USE, 
+                                               model.CloudStore.c.status==store_states.CREATING,
+                                               model.CloudStore.c.status==None ) ).all()
         for store in stores:
-            log.debug( "Running general status update on store '%s'" % store.volume_id )
-            self.updateStore( store )
+            if self.name == store.uci.credentials.provider_name:
+                log.debug( "[%s] Running general status update on store '%s'" % ( store.uci.credentials.provider_name, store.volume_id ) )
+                self.updateStore( store )
         
     def updateInstance( self, inst ):
         
@@ -420,8 +462,8 @@ class EC2CloudProvider( object ):
         # marks given instance as having terminated. Note that an instance might have also crashed and this code will not catch the difference...
         if len( rl ) == 0:
             log.info( "Instance ID '%s' was not found by the cloud provider. Instance might have crashed or otherwise been terminated." % inst.instance_id )
-            inst.state = 'terminated'
-            uci.state = 'available'
+            inst.state = instance_states.TERMINATED
+            uci.state = uci_states.AVAILABLE
             uci.launch_time = None
             inst.flush()
             uci.flush()
@@ -429,14 +471,14 @@ class EC2CloudProvider( object ):
         for r in rl:
             for i, cInst in enumerate( r.instances ):
                 s = cInst.update()
-                log.debug( "Checking state of cloud instance '%s' associated with reservation '%s'. State='%s'" % ( cInst, r, s ) )
+                log.debug( "Checking state of cloud instance '%s' associated with UCI '%s' and reservation '%s'. State='%s'" % ( cInst, uci.name, r, s ) )
                 if  s != inst.state:
                     inst.state = s
                     inst.flush()
-                    if s == 'terminated': # After instance has shut down, ensure UCI is marked as 'available'
-                        uci.state = 'available'
+                    if s == instance_states.TERMINATED: # After instance has shut down, ensure UCI is marked as 'available'
+                        uci.state = uci_states.AVAILABLE
                         uci.flush()
-                if s != uci.state and s != 'terminated': 
+                if s != uci.state and s != instance_states.TERMINATED: 
                     # Making sure state of UCI is updated. Once multiple instances become associated with single UCI, this will need to be changed.
                     uci.state = s                    
                     uci.flush() 
@@ -461,6 +503,12 @@ class EC2CloudProvider( object ):
 #        log.debug( "Store '%s' vl: '%s'" % ( store.volume_id, vl ) )
         # Update store status in local DB with info from cloud provider
         if store.status != vl[0].status:
+            # In case something failed during creation of UCI but actual storage volume was created and yet 
+            #  UCI state remained as 'new', try to remedy this by updating UCI state here 
+            if ( store.status == None ) and ( store.volume_id != None ):
+                uci.state = vl[0].status
+                uci.flush()
+                
             store.status = vl[0].status
             store.flush()
         if store.i_id != vl[0].instance_id:
