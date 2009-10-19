@@ -313,10 +313,10 @@ class Forms( BaseController ):
         ctr=0
         sb_options = []
         while True:
-            option = params.get( 'field_'+str(index)+'_option_'+str(ctr), None ) 
-            ctr = ctr+1
-            if option:
+            if kwd.has_key( 'field_'+str(index)+'_option_'+str(ctr) ):
+                option = params.get( 'field_'+str(index)+'_option_'+str(ctr), None ) 
                 sb_options.append(util.restore_text(option))
+                ctr = ctr+1
             else:
                 return sb_options
     def __get_saved_form(self, fd):
@@ -342,8 +342,8 @@ class Forms( BaseController ):
         layout = []
         index = 0
         while True:
-            grid_name = util.restore_text( params.get( 'grid_layout%i' % index, '' ) )
-            if grid_name:
+            if kwd.has_key( 'grid_layout%i' % index ):
+                grid_name = util.restore_text( params.get( 'grid_layout%i' % index, '' ) )
                 layout.append( grid_name )
                 index = index + 1
             else:
@@ -355,7 +355,7 @@ class Forms( BaseController ):
             # get the user entered fields
             index = 0
             while True:
-                if params.get( 'field_name_%i' % index, False ):
+                if kwd.has_key( 'field_name_%i' % index ):
                     fields.append( self.__get_field( index, **kwd ) )
                     index = index + 1
                 else:

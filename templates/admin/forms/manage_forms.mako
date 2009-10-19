@@ -23,7 +23,7 @@
                 </div>
             %else:
                 <div popupmenu="form-${form.id}-popup">
-                    <a class="action-button" href="${h.url_for( action='edit', form_id=form.id, show_form=True )}">Edit form definition</a>
+                    <a class="action-button" href="${h.url_for( action='edit', form_id=form.id, show_form=True )}">Edit</a>
                     <a class="action-button" confirm="Click OK to delete the form ${form.name}." href="${h.url_for( action='delete', form_id=form.id )}">Delete</a>
                 </div>
             %endif

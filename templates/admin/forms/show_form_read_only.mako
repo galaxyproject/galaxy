@@ -63,14 +63,14 @@
 
 <div class="toolForm">
     %if form.desc:
-        <div class="toolFormTitle">${form.name} - <i>${form.desc}</i>
+        <div class="toolFormTitle">${form.name} - <i> ${form.desc}</i> (${form.type})
             <a id="form-${form.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
             <div popupmenu="form-${form.id}-popup">
                 <a class="action-button" href="${h.url_for( action='edit', form_id=form.id, show_form=True )}">Edit</a>
             </div>
         </div>
     %else:
-        <div class="toolFormTitle">${form.name}
+        <div class="toolFormTitle">${form.name} (${form.type})
         <a id="form-${form.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
         <div popupmenu="form-${form.id}-popup">
             <a class="action-button" href="${h.url_for( action='edit', form_id=form.id, show_form=True )}">Edit</a>
