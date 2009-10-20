@@ -419,9 +419,9 @@ class TwillTestCase( unittest.TestCase ):
         self.visit_url( "%s/dataset/undelete?id=%s" % ( self.url, hda_id ) )
         if check_str:
             self.check_page_for_string( check_str )
-    def display_history_item( self, id, check_str='' ):
+    def display_history_item( self, hda_id, check_str='' ):
         """Displays a history item - simulates eye icon click"""
-        self.visit_url( '%s/datasets/%s/display/index' % ( self.url, id ) )
+        self.visit_url( '%s/datasets/%s/display/' % ( self.url, self.security.encode_id( hda_id ) ) )
         if check_str:
             self.check_page_for_string( check_str )
         self.home()
@@ -554,7 +554,7 @@ class TwillTestCase( unittest.TestCase ):
     def verify_composite_datatype_file_content( self, file_name, hda_id ):
         local_name = self.get_filename( file_name )
         temp_name = self.get_filename( 'temp_%s' % file_name )
-        self.visit_url( "%s/datasets/%s/display/%s" % ( self.url, hda_id, file_name ) )
+        self.visit_url( "%s/datasets/%s/display/%s" % ( self.url, self.security.encode_id( hda_id ), file_name ) )
         data = self.last_page()
         file( temp_name, 'wb' ).write( data )
         try:

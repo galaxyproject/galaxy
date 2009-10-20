@@ -199,8 +199,14 @@ class DatasetInterface( BaseController ):
         return 'This link may not be followed from within Galaxy.'
     
     @web.expose
-    def display(self, trans, dataset_id=None, filename=None, show_all=False, **kwd):
+    def display(self, trans, encoded_id=None, preview=False, filename=None, to_ext=None, **kwd):
         """Catches the dataset id and displays file contents as directed"""
+        
+        # DEPRECATION: We still support unencoded ids for backward compatibility
+        try:
+            dataset_id = int( encoded_id )
+        except ValueError:
+            dataset_id = trans.security.decode_id( encoded_id )
         data = trans.app.model.HistoryDatasetAssociation.get( dataset_id )
         if not data:
             raise paste.httpexceptions.HTTPRequestRangeNotSatisfiable( "Invalid reference dataset id: %s." % str( dataset_id ) )
@@ -208,30 +214,47 @@ class DatasetInterface( BaseController ):
         if trans.app.security_agent.can_access_dataset( roles, data.dataset ):
             if data.state == trans.model.Dataset.states.UPLOAD:
                 return trans.show_error_message( "Please wait until this dataset finishes uploading before attempting to view it." )
-            if filename is None or filename.lower() == "index":
-                file_path = data.file_name
-                mime = trans.app.datatypes_registry.get_mimetype_by_extension( data.extension.lower() )
-                trans.response.set_content_type(mime)
-                trans.log_event( "Display dataset id: %s" % str( dataset_id ) )
-
-            else:
+            
+            if filename and filename != "index":
                 file_path = os.path.join( data.extra_files_path, filename )
-                mime, encoding = mimetypes.guess_type( file_path )
-                if mime is None:
-                    mime = trans.app.datatypes_registry.get_mimetype_by_extension( ".".split( file_path )[-1] )
-                trans.response.set_content_type( mime )
+                if os.path.exists( file_path ):
+                    mime, encoding = mimetypes.guess_type( file_path )
+                    if not mime:
+                        try:
+                            mime = trans.app.datatypes_registry.get_mimetype_by_extension( ".".split( file_path )[-1] )
+                        except:
+                            mime = "txt"
                 
-            if os.path.exists( file_path ):
-                max_peek_size = 1000000 # 1 MB
-                if show_all or os.stat( file_path ).st_size < max_peek_size:
+                    trans.response.set_content_type( mime )
                     return open( file_path )
                 else:
+                    return "Could not find '%s' on the extra files path." % filename
+            
+            mime = trans.app.datatypes_registry.get_mimetype_by_extension( data.extension.lower() )
+            trans.response.set_content_type(mime)
+            trans.log_event( "Display dataset id: %s" % str( dataset_id ) )
+            
+            if to_ext: # Saving the file
+                trans.response.headers['Content-Length'] = int( os.stat( data.file_name ).st_size )
+                if to_ext[0] != ".":
+                    to_ext = "." + to_ext
+                valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+                fname = data.name
+                fname = ''.join(c in valid_chars and c or '_' for c in fname)[0:150]
+                trans.response.headers["Content-Disposition"] = "attachment; filename=GalaxyHistoryItem-%s-[%s]%s" % (data.hid, fname, to_ext)
+                return open( data.file_name )
+                
+            if os.path.exists( data.file_name ):
+                max_peek_size = 1000000 # 1 MB
+                if preview and os.stat( data.file_name ).st_size > max_peek_size:
                     trans.response.set_content_type( "text/html" )
-                    return trans.fill_template( "/dataset/large_file.mako",
-                                                    truncated_data = open( file_path ).read(max_peek_size),
+                    return trans.stream_template_mako( "/dataset/large_file.mako",
+                                                    truncated_data = open( data.file_name ).read(max_peek_size),
                                                     data = data )
+                else:
+                    return open( data.file_name )
             else:
-                raise paste.httpexceptions.HTTPNotFound( "File Not Found (%s)." % ( filename ) )
+                raise paste.httpexceptions.HTTPNotFound( "File Not Found (%s)." % data.file_name )
         else:
             return trans.show_error_message( "You are not allowed to access this dataset" )
             
