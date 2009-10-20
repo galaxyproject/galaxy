@@ -7,10 +7,10 @@
         $("#history-options-button").css( "position", "relative" );
         make_popupmenu( $("#history-options-button"), {
             "History Lists": null,
-            "My Saved Histories": function() {
+            "Saved Histories": function() {
                 galaxy_main.location = "${h.url_for( controller='history', action='list')}";
             },
-            "My Shared Histories": function() {
+            "Shared Histories": function() {
                 galaxy_main.location = "${h.url_for( controller='history', action='list', operation='sharing' )}";
             },
             "Histories Shared with Me": function() {
