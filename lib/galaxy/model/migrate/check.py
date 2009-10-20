@@ -1,4 +1,4 @@
-import os.path, logging
+import sys, os.path, logging
 
 from galaxy import eggs
 
@@ -109,4 +109,18 @@ def migrate_to_current_version( engine, schema ):
     for ver, change in changeset:
         nextver = ver + changeset.step
         log.info( 'Migrating %s -> %s... ' % ( ver, nextver ) )
-        schema.runchange( ver, change, changeset.step )
+        old_stdout = sys.stdout
+        class FakeStdout( object ):
+            def __init__( self ):
+                self.buffer = []
+            def write( self, s ):
+                self.buffer.append( s )
+            def flush( self ):
+                pass
+        sys.stdout = FakeStdout()
+        try:
+            schema.runchange( ver, change, changeset.step )
+        finally:
+            for message in "".join( sys.stdout.buffer ).split( "\n" ):
+                log.info( message )
+            sys.stdout = old_stdout

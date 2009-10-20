@@ -2,7 +2,7 @@
 Manage Galaxy eggs
 """
 
-import os, sys, shutil, tarfile, zipfile, subprocess, ConfigParser, glob, urllib2
+import os, sys, shutil, tarfile, zipfile, zipimport, subprocess, ConfigParser, glob, urllib2, shutil
 from types import ModuleType
 
 import logging
@@ -101,10 +101,17 @@ class Egg( object ):
                 raise EggNotFetchable( self.name )
                 #if e.code == 404:
                 #    return False
+            self.unpack_if_needed()
             for doppelganger in self.doppelgangers:
-                os.unlink( doppelganger )
+                remove_file_or_path( doppelganger )
                 log.debug( "Removed conflicting egg: %s" % doppelganger )
             return True
+    def unpack_if_needed( self ):
+        meta = pkg_resources.EggMetadata( zipimport.zipimporter( self.path ) )    
+        if meta.has_metadata( 'not-zip-safe' ):
+            unpack_zipfile( self.path, self.path + "-tmp" )
+            os.remove( self.path )
+            os.rename( self.path + "-tmp", self.path )
     def scramble( self ):
         if self.path is None:
             self.find()
@@ -141,8 +148,9 @@ class Egg( object ):
         shutil.copyfile( new_egg, self.path )
         log.warning( "scramble(): Copied egg to:" )
         log.warning( "  %s" % self.path )
+        self.unpack_if_needed()
         for doppelganger in self.doppelgangers:
-            os.unlink( doppelganger )
+            remove_file_or_path( doppelganger )
             log.warning( "Removed conflicting egg: %s" % doppelganger )
         return True
     # scramble helper methods
@@ -583,5 +591,38 @@ def get_platform( platform=False, peak=False ):
             return get_py()
         else:
             return "%s-noplatform" % get_py()
+
+def unpack_zipfile( filename, extract_dir):
+    z = zipfile.ZipFile(filename)
+    try:
+        for info in z.infolist():
+            name = info.filename
+            # don't extract absolute paths or ones with .. in them
+            if name.startswith('/') or '..' in name:
+                continue
+            target = os.path.join(extract_dir, *name.split('/'))
+            if not target:
+                continue
+            if name.endswith('/'):
+                # directory
+                pkg_resources.ensure_directory(target)
+            else:
+                # file
+                pkg_resources.ensure_directory(target)
+                data = z.read(info.filename)
+                f = open(target,'wb')
+                try:
+                    f.write(data)
+                finally:
+                    f.close()
+                    del data
+    finally:
+        z.close()
+
+def remove_file_or_path( f ):
+    if os.path.isdir( f ):
+        shutil.rmtree( f )
+    else:
+        os.remove( f )
 
 pkg_resources.require = require

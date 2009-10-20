@@ -1,7 +1,7 @@
 import pkg_resources
 pkg_resources.require( "twill==0.9" )
 
-import StringIO, os, sys, random, filecmp, time, unittest, urllib, logging, difflib, zipfile
+import StringIO, os, sys, random, filecmp, time, unittest, urllib, logging, difflib, zipfile, tempfile
 from itertools import *
 
 import twill
@@ -650,14 +650,24 @@ class TwillTestCase( unittest.TestCase ):
         self.visit_page( "user/logout" )
         self.check_page_for_string( "You are no longer logged in" )
         self.home()
+    
     # Functions associated with browsers, cookies, HTML forms and page visits
+    
     def check_page_for_string( self, patt ):
         """Looks for 'patt' in the current browser page"""
         page = self.last_page()
         for subpatt in patt.split():
             if page.find( patt ) == -1:
-                errmsg = "TwillAssertionError: no match to '%s'" %patt
+                fname = self.write_temp_file( page )
+                errmsg = "no match to '%s'\npage content written to '%s'" % ( patt, fname )
                 raise AssertionError( errmsg )
+
+    def write_temp_file( self, content ):
+        fd, fname = tempfile.mkstemp( suffix='.html', prefix='twilltestcase-' )
+        f = os.fdopen( fd, "w" )
+        f.write( content )
+        f.close()
+        return fname
 
     def clear_cookies( self ):
         tc.clear_cookies()
@@ -825,7 +835,7 @@ class TwillTestCase( unittest.TestCase ):
     def wait( self, maxiter=20 ):
         """Waits for the tools to finish"""
         count = 0
-        sleep_amount = 1
+        sleep_amount = 0.1
         self.home()
         while count < maxiter:
             count += 1
@@ -833,7 +843,7 @@ class TwillTestCase( unittest.TestCase ):
             page = tc.browser.get_html()
             if page.find( '<!-- running: do not change this comment, used by TwillTestCase.wait -->' ) > -1:
                 time.sleep( sleep_amount )
-                sleep_amount += 1
+                sleep_amount *= 2
             else:
                 break
         self.assertNotEqual(count, maxiter)
