@@ -63,7 +63,7 @@ body {
     position: absolute;
     margin-top: 1px;
     height: 16px;
-    background: #ddd url(/static/images/draggable_horizontal.png) center center no-repeat;
+    background: #ddd url(images/draggable_horizontal.png) center center no-repeat;
     border-style: outset;
     border-width: 1px;
 }
