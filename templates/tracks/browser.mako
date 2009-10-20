@@ -16,7 +16,7 @@ ${h.js( "jquery", "jquery.event.drag", "jquery.mousewheel", "lrucache", "trackst
     
     $(function() {
         
-        view.add_track( new LabelTrack( $("#overview" ) ) );
+        view.add_track( new LabelTrack( $("#viewport" ) ) );
         view.add_track( new LabelTrack( $("#nav-labeltrack" ) ) );
    
         %for track in tracks:
@@ -27,41 +27,35 @@ ${h.js( "jquery", "jquery.event.drag", "jquery.mousewheel", "lrucache", "trackst
             view.redraw();
         });
         
-        $(document).bind("mousewheel", function(e, delta) {
+        $(document).bind("mousewheel", function( e, delta ) {
             if (delta > 0) {
-                view.zoom_in(2, e.pageX);
+                view.zoom_in(e.pageX);
                 view.redraw();
             } else {
-                view.zoom_out(2);
+                view.zoom_out();
                 view.redraw();
             }
         });
         
-        $(document).bind("dblclick", function(e) {
-            view.zoom_in(2, e.pageX);
+        $(document).bind("dblclick", function( e ) {
+            view.zoom_in(e.pageX);
             view.redraw();
         });
         
-        $("#overview-box").bind("dragstart", function(e) {
+        // To let the overview box be draggable
+        $("#overview-box").bind("dragstart", function( e ) {
             this.current_x = e.offsetX;
-        }).bind("drag", function(e) {
+        }).bind("drag", function( e ) {
             var delta = e.offsetX - this.current_x;
             this.current_x = e.offsetX;
             
-            var delta_chrom = Math.round(delta / $(document).width() * (view.max_high - view.max_low));
-            var view_range = view.high - view.low;
-            
-            var new_low = view.low += delta_chrom;
-            var new_high = view.high += delta_chrom;
-            if (new_low < view.max_low) {
-                new_low = 0;
-                new_high = view_range;
-            } else if (new_high > view.max_high) {
-                new_high = view.max_high;
-                new_low = view.max_high - view_range;
+            var delta_chrom = Math.round(delta / $(document).width() * view.span);
+            view.center += delta_chrom;
+            if (view.center < 0) {
+                view.center = 0;
+            } else if (view.center > view.max_high) {
+                view.center = view.max_high;
             }
-            view.low = new_low;
-            view.high = new_high;
             view.redraw();
         });
 
@@ -70,11 +64,12 @@ ${h.js( "jquery", "jquery.event.drag", "jquery.mousewheel", "lrucache", "trackst
             view.redraw();
         });
 
-        $("#viewport").bind( "dragstart", function ( e ) {
+        $("#viewport").bind( "dragstart", function( e ) {
             this.original_low = view.low;
             this.current_height = e.clientY;
+            this.current_x = e.offsetX;
         }).bind( "drag", function( e ) {
-            var move_amount = ( e.offsetX - this.offsetLeft ) / this.offsetWidth;
+            var delta = e.offsetX - this.current_x;
             var new_scroll = $(this).scrollTop() - (e.clientY - this.current_height);
             
             if ( new_scroll < $(this).get(0).scrollHeight - $(this).height() - 200) {
@@ -82,19 +77,10 @@ ${h.js( "jquery", "jquery.event.drag", "jquery.mousewheel", "lrucache", "trackst
                 
             }
             this.current_height = e.clientY;
-            var range = view.high - view.low;
-            var move_bases = Math.round( range * move_amount );
-            var new_low = this.original_low - move_bases;
-            if ( new_low < 0 ) {
-                new_low = 0;
-            } 
-            var new_high = new_low + range;
-            if ( new_high > view.length ) {
-                new_high = view.length;
-                new_low = new_high - range;
-            }
-            view.low = new_low;
-            view.high = new_high;
+            this.current_x = e.offsetX;
+
+            var delta_chrom = Math.round(delta / $(document).width() * (view.max_high - view.max_low));
+            view.center += delta_chrom;
             view.redraw();
         });
         (function () {
@@ -122,28 +108,25 @@ ${h.js( "jquery", "jquery.event.drag", "jquery.mousewheel", "lrucache", "trackst
 </%def>
 
 <div id="content">
+    <div id="viewport"></div>
+</div>
+<div id="nav">
+    <div id="nav-labeltrack"></div>
     <div id="overview">
         <div id="overview-viewport">
             <div id="overview-box"></div>
         </div>
     </div>
-    <div id="viewport"></div>
-</div>
-<div id="nav">
-    <div id="nav-labeltrack"></div>
+    <span id="low"></span>
+    <span id="high"></span>
     <div id="nav-controls">
         <form name="chr" id="chr" method="get">
             <select id="chrom" name="chrom">
                 <option value="">Loading</option>
             </select>
             <input type="hidden" name="dataset_ids" value="${dataset_ids}" />
-            <a href="#" onclick="javascript:view.left(5);view.redraw();">&lt;&lt;</a>
-            <a href="#" onclick="javascript:view.left(2);view.redraw();">&lt;</a>
-            <span id="low">0</span>&mdash;<span id="high">${LEN}</span>
-            <a href="#" onclick="javascript:view.zoom_in(2);view.redraw();">+</a>
-            <a href="#" onclick="javascript:view.zoom_out(2);view.redraw();">-</a>
-            <a href="#" onclick="javascript:view.right(2);view.redraw();">&gt;</a>
-            <a href="#" onclick="javascript:view.right(5);view.redraw();">&gt;&gt;</a>
+            <a href="#" onclick="javascript:view.zoom_in();view.redraw();">+</a>
+            <a href="#" onclick="javascript:view.zoom_out();view.redraw();">-</a>
         </form>
     </div>
 </div>

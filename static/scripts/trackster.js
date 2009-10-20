@@ -5,17 +5,26 @@
 var DENSITY = 1000,
     DATA_ERROR = "There was an error in indexing this dataset.",
     DATA_NONE = "No data for this chrom/contig.",
-    CACHED_TILES = 200,
+    CACHED_TILES = 50,
     CACHED_DATA = 20;
 
-var View = function( chrom, max_length ) {
+function commatize( number ) {
+    number += ''; // Convert to string
+	var rgx = /(\d+)(\d{3})/;
+	while (rgx.test(number)) {
+		number = number.replace(rgx, '$1' + ',' + '$2');
+	}
+	return number;
+}
+var View = function( chrom, max_high ) {
     this.chrom = chrom;
     this.tracks = [];
     this.max_low = 0;
-    this.max_high = max_length;
-    this.low = this.max_low;
-    this.high = this.max_high;
-    this.length = this.max_high - this.max_low;
+    this.max_high = max_high;
+    this.center = (this.max_high - this.max_low) / 2;
+    this.span = this.max_high - this.max_low;
+    this.zoom_factor = 2;
+    this.zoom_level = 0;
 };
 $.extend( View.prototype, {
     add_track: function ( track ) {
@@ -24,82 +33,55 @@ $.extend( View.prototype, {
         if (track.init) { track.init(); }
     },
     redraw: function () {
+        var span = this.span / Math.pow(this.zoom_factor, this.zoom_level),
+            low = this.center - (span / 2),
+            high = low + span;
+        
+        if (low < 0) {
+            low = 0;
+            high = low + span;
+            
+        } else if (high > this.max_high) {
+            high = this.max_high;
+            low = high - span;
+        }
+        this.low = Math.floor(low);
+        this.high = Math.ceil(high);
+        this.center = Math.round( this.low + (this.high - this.low) / 2 );
+        
         // Overview
         $("#overview-box").css( {
-            left: ( this.low / this.length ) * $("#overview-viewport").width(),
-            width: Math.max( 4, ( ( this.high - this.low ) / this.length ) * $("#overview-viewport").width() )
+            left: ( this.low / this.span ) * $("#overview-viewport").width(),
+            // Minimum width for usability
+            width: Math.max( 12, ( ( this.high - this.low ) / this.span ) * $("#overview-viewport").width() )
         }).show();
-        $("#low").text( this.low );
-        $("#high").text( this.high );
+        $("#low").text( commatize(this.low) );
+        $("#high").text( commatize(this.high) );
         for ( var i = 0, len = this.tracks.length; i < len; i++ ) {
             this.tracks[i].draw();
         }
         $("#bottom-spacer").remove();
         $("#viewport").append('<div id="bottom-spacer" style="height: 200px;"></div>');
     },
-    move: function ( new_low, new_high ) {
-        this.low = Math.max( this.max_low, Math.floor( new_low ) );
-        this.high = Math.min( this.length, Math.ceil( new_high ) );
-    },
-    zoom_in: function ( factor, point ) {
-        if (this.max_high === 0) {
+    zoom_in: function ( point ) {
+        if (this.max_high === 0 || this.high - this.low < 5) {
             return;
         }
         
-        var range = this.high - this.low;
-        var diff = range / factor / 2;
-        var center;
-        
-        if (point === undefined) {
-            center = ( this.low + this.high ) / 2;
-        } else {
-            center = this.low + range * point / $(document).width();
+        if ( point ) {
+            this.center = point / $(document).width() * (this.high - this.low) + this.low;
         }
-        this.low = Math.floor( center - diff );
-        this.high = Math.ceil( center + diff );
-        if (this.low < this.max_low) {
-            this.low = this.max_low;
-            this.high = range / factor;
-        } else if (this.high > this.max_high) {
-            this.high = this.max_high;
-            this.low = this.max_high - range / factor;
-            // console.log(this.high, this.low);
-        } 
-        if (this.high - this.low < 1 ) {
-            this.high = this.low + 1;
-        }
+        this.zoom_level += 1;
     },
-    zoom_out: function ( factor ) {
+    zoom_out: function () {
         if (this.max_high === 0) {
             return;
         }
-        var center = ( this.low + this.high ) / 2;
-        var range = this.high - this.low;
-        var diff = range * factor / 2;
-        this.low = Math.floor( Math.max( 0, center - diff ) );
-        this.high = Math.ceil( Math.min( this.length, center + diff ) );
-    },
-    left: function( factor ) {
-        var range = this.high - this.low;
-        var diff = Math.floor( range / factor );
-        if ( this.low - diff < 0 ) {
-            this.low = 0;
-            this.high = this.low + range;
-        } else {
-            this.low -= diff;
-            this.high -= diff;
+        if (this.zoom_level <= 0) {
+            this.zoom_level = 0;
+            return;            
         }
-    },
-    right: function ( factor ) {
-        var range = this.high - this.low;
-        var diff = Math.floor( range / factor );
-        if ( this.high + diff > this.length ) {
-            this.high = this.length;
-            this.low = this.high - range;
-        } else {
-            this.low += diff;
-            this.high += diff;
-        }
+        this.zoom_level -= 1;
     }
 });
 
@@ -143,7 +125,7 @@ $.extend( TiledTrack.prototype, Track.prototype, {
         var tile_index = Math.floor( low / resolution / DENSITY );
         while ( ( tile_index * DENSITY * resolution ) < high ) {
             // Check in cache
-            var key = w_scale + "_" + tile_index;
+            var key = this.view.zoom_level + "_" + tile_index;
             if ( this.tile_cache[key] ) {
                 // console.log("cached tile");
                 tile_element = this.tile_cache[key];
@@ -178,7 +160,7 @@ $.extend( LabelTrack.prototype, Track.prototype, {
             new_div = $("<div style='position: relative; height: 1.3em;'></div>");
         while ( position < view.high ) {
             var screenPosition = ( position - view.low ) / range * width;
-            new_div.append( $("<div class='label'>" + position + "</div>").css( {
+            new_div.append( $("<div class='label'>" + commatize( position ) + "</div>").css( {
                 position: "absolute",
                 // Reduce by one to account for border
                 left: screenPosition - 1
@@ -231,7 +213,7 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
             $(document).trigger( "redraw" );
         });
     },
-    draw_tile: function( resolution, tile_index, parent_element, w_scale, h_scale ) {
+    draw_tile: function( resolution, tile_index, parent_element, w_scale ) {
         if (!this.vertical_range) { // We don't have the necessary information yet
             return;
         }
@@ -354,11 +336,11 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
         this.height_px = end_ary.length * this.vertical_gap + 15;
         this.content_div.css( "height", this.height_px + "px" );
     },
-    draw_tile: function( resolution, tile_index, parent_element, w_scale, h_scale ) {
+    draw_tile: function( resolution, tile_index, parent_element, w_scale ) {
         if (!this.values) { // Still loading
             return null;
         }
-         // Once we zoom in enough, show name labels
+        // Once we zoom in enough, show name labels
         if (w_scale > this.show_labels_scale && !this.showing_labels) {
             this.showing_labels = true;
             if (!this.zi_slots) {
@@ -373,9 +355,9 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
         
         var tile_low = tile_index * DENSITY * resolution,
             tile_high = ( tile_index + 1 ) * DENSITY * resolution,
-            tile_length = DENSITY * resolution;
+            tile_span = DENSITY * resolution;
         // console.log(tile_low, tile_high, tile_length, w_scale);
-        var width = Math.ceil( tile_length * w_scale ),
+        var width = Math.ceil( tile_span * w_scale ),
             height = this.height_px,
             new_canvas = $("<canvas class='tile'></canvas>");
         
