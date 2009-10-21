@@ -73,7 +73,7 @@ sub read1 {
 	if (/^>(\d+)_(\d+)_(\d+)_[FR]3/) {
 	  $key = sprintf("%.4d_%.4d_%.4d", $1, $2, $3); # this line could be improved on 64-bit machines
 	  #print $key;
-	  die(qq/** unmatched read name: '$_' != '$_'\n/) unless ($_ eq $t);
+	  die(qq/** unmatched read name: '$_' != '$t'\n/) unless ($_ eq $t);
 	  my $name = "$1_$2_$3/$i";
 	  $_ = substr(<$fhs>, 2);
 	  tr/0123./ACGTN/;
