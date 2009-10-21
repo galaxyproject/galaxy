@@ -270,9 +270,9 @@ class EC2CloudProvider( object ):
                 gSecurityGroup.authorize( 'tcp', 22, 22, '0.0.0.0/0' ) # Open SSH port
             # Start an instance            
             log.debug( "***** Starting instance for UCI '%s'" % uci_wrapper.get_name() )
-            #TODO: Get customization scripts remotley and pass volID and user credential data only as user data from here.
-            userdata = open('/Users/afgane/Dropbox/Galaxy/EC2startupScripts/web/ec2autorun.zip', 'rb').read()
-            log.debug( 'Using following command: conn.run_instances( image_id=%s, key_name=%s, security_groups=[%s], instance_type=%s, placement=%s )' 
+            #TODO: Once multiple volumes can be attached to a single instance, update 'userdata' composition            
+            userdata = uci_wrapper.get_store_volume_id()+"|"+uci_wrapper.get_access_key()+"|"+uci_wrapper.get_secret_key() 
+            log.debug( 'Using following command: conn.run_instances( image_id=%s, key_name=%s, security_groups=[%s], user_data=[OMITTED], instance_type=%s, placement=%s )' 
                        % ( mi_id, uci_wrapper.get_key_pair_name( i_index ), [security_group], uci_wrapper.get_type( i_index ), uci_wrapper.get_uci_availability_zone() ) )
             reservation = conn.run_instances( image_id=mi_id, 
                                               key_name=uci_wrapper.get_key_pair_name( i_index ), 
