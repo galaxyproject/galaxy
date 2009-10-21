@@ -232,7 +232,7 @@
                         logout_target = "galaxy_main"
                         logout_url = h.url_for( controller='user', action='logout' )
                 %>
-                <li><a target="${logout_target}" href="${logout_url}">Logout ${user_email}</a></li>
+                <li><a target="${logout_target}" href="${logout_url}">Logout</a></li>
                 <li><hr style="color: inherit; background-color: gray"/></li>
                 <li><a target="galaxy_main" href="${h.url_for( controller='history', action='list' )}">Histories</a></li>
                 <li><a target="galaxy_main" href="${h.url_for( controller='dataset', action='list' )}">Datasets</a></li>
