@@ -112,7 +112,7 @@ class Egg( object ):
             unpack_zipfile( self.path, self.path + "-tmp" )
             os.remove( self.path )
             os.rename( self.path + "-tmp", self.path )
-    def scramble( self ):
+    def scramble( self, dist=False ):
         if self.path is None:
             self.find()
         if os.access( self.path, os.F_OK ):
@@ -148,7 +148,8 @@ class Egg( object ):
         shutil.copyfile( new_egg, self.path )
         log.warning( "scramble(): Copied egg to:" )
         log.warning( "  %s" % self.path )
-        self.unpack_if_needed()
+        if not dist:
+            self.unpack_if_needed()
         for doppelganger in self.doppelgangers:
             remove_file_or_path( doppelganger )
             log.warning( "Removed conflicting egg: %s" % doppelganger )

@@ -31,7 +31,7 @@ if egg_list is None:
     sys.exit( 1 )
 failed = []
 for egg in egg_list:
-    if not egg.scramble():
+    if not egg.scramble( dist=True ):
         failed.append( egg.platform['galaxy'] )
 if len( failed ):
     print ""
