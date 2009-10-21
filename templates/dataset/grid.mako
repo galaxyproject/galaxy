@@ -260,6 +260,8 @@
                             %>
                             %for cellnum, v in enumerate( value ):
                                 <%
+                                    if isinstance(v, str):
+                                        v = unicode(v, 'utf-8')
                                     # Attach popup menu?
                                     if column.attach_popup and cellnum == 0:
                                         extra = '<a id="grid-%d-popup" class="arrow" style="display: none;"><span>&#9660;</span></a>' % i
