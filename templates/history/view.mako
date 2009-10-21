@@ -8,6 +8,13 @@
 <%def name="stylesheets()">
     ${parent.stylesheets()}
     ${h.css( "history", "autocomplete_tagging" )}
+    <style type="text/css">
+        .visible-right-border {
+          padding-right: 3px;
+          border-right-style: solid;
+          border-right-color: #66AA66;
+        };
+    </style>
 </%def>
 
 <%namespace file="/root/history_common.mako" import="render_dataset" />
@@ -291,7 +298,7 @@
 
             <div id="top-links" class="historyLinks" style="padding: 0px 0px 5px 0px">
                 %if not user_owns_history:
-                    <a href="${h.url_for( controller='history', action='imp', id=trans.security.encode_id(history.id) )}">${_('import')}</a> |
+                    <a href="${h.url_for( controller='history', action='imp', id=trans.security.encode_id(history.id) )}">import and start using history</a> |
                 %endif
                 <a href="${h.url_for( controller='history', action='view', id=trans.security.encode_id(history.id) )}">${_('refresh')}</a> 
                 %if show_deleted:
@@ -320,7 +327,7 @@
 
             %if trans.get_user() is not None:
                 <div id='history-tag-area' class="tag-element"></div>
-                ${render_tagging_element(history, "history-tag-area", get_toggle_link_text_fn='get_toggle_link_text', editable=user_owns_history)}
+                ${render_tagging_element(history, "history-tag-area", use_toggle_link='false', get_toggle_link_text_fn='get_toggle_link_text', editable=user_owns_history)}
             %endif
 
             %if not datasets:
@@ -332,7 +339,7 @@
                 ## Render requested datasets, ordered from newest to oldest
                 %for data in reversed( datasets ):
                     %if data.visible:
-                        <div class="historyItemContainer" id="historyItemContainer-${data.id}">
+                        <div class="historyItemContainer visible-right-border" id="historyItemContainer-${data.id}">
                             ${render_dataset( data, data.hid, show_deleted_on_refresh = show_deleted, user_owns_dataset=user_owns_history )}
                         </div>
                     %endif
