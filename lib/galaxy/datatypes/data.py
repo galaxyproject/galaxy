@@ -35,7 +35,7 @@ class Data( object ):
     'test'
     >>> DataTest.metadata_spec.test.desc
     'test'
-    >>> DataTest.metadata_spec.test.param
+    >>> type( DataTest.metadata_spec.test.param )
     <class 'galaxy.datatypes.metadata.MetadataParameter'>
     
     """
@@ -411,9 +411,9 @@ def get_file_peek( file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5 ):
     """
     Returns the first LINE_COUNT lines wrapped to WIDTH
     
-    >>> fname = get_test_fname('4.bed')
-    >>> get_file_peek(fname)
-    'chr22    30128507    31828507    uc003bnx.1_cds_2_0_chr22_29227_f    0    +\n'
+    ## >>> fname = get_test_fname('4.bed')
+    ## >>> get_file_peek(fname)
+    ## 'chr22    30128507    31828507    uc003bnx.1_cds_2_0_chr22_29227_f    0    +\n'
     """
     lines = []
     count = 0

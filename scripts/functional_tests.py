@@ -144,6 +144,7 @@ def main():
     if app:
         # TODO: provisions for loading toolbox from file when using external server
         functional.test_toolbox.toolbox = app.toolbox
+        functional.test_toolbox.build_tests()
     else:
         # FIXME: This doesn't work at all now that toolbox requires an 'app' instance
         #        (to get at datatypes, might just pass a datatype registry directly)

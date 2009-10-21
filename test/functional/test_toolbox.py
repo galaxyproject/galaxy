@@ -100,7 +100,7 @@ class ToolTestCase( TwillTestCase ):
                     expanded_inputs[value.name] = declared_inputs[value.name]
         return expanded_inputs
 
-def get_testcase( testdef, name ):
+def get_case( testdef, name ):
     """Dynamically generate a `ToolTestCase` for `testdef`"""
     n = "TestForTool_" + testdef.tool.id.replace( ' ', '_' )
     s = ( ToolTestCase, )
@@ -109,7 +109,7 @@ def get_testcase( testdef, name ):
     d = dict( testdef=testdef, test_tool=test_tool, name=name )
     return new.classobj( n, s, d )
 
-def setup():
+def build_tests():
     """
     If the module level variable `toolbox` is set, generate `ToolTestCase`
     classes for all of its tests and put them into this modules globals() so
@@ -124,5 +124,5 @@ def setup():
         if tool.tests:
             for j, testdef in enumerate( tool.tests ):
                 name = "%s ( %s ) > %s" % ( tool.name, tool.id, testdef.name )
-                testcase = get_testcase( testdef, name )
+                testcase = get_case( testdef, name )
                 G[ 'testcase_%d_%d' % ( i, j ) ] = testcase
