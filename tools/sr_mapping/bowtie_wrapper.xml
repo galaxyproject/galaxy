@@ -409,7 +409,7 @@
 
 **What it does**
 
-Bowtie_ is a short read aligner designed to be ultrafast and memory-efficient. It is developed by Ben Langmead and Cole Trapnell.
+Bowtie_ is a short read aligner designed to be ultrafast and memory-efficient. It is developed by Ben Langmead and Cole Trapnell. Please cite: Langmead B, Trapnell C, Pop M, Salzberg SL. Ultrafast and memory-efficient alignment of short DNA sequences to the human genome. Genome Biology 10:R25.
 
 .. _Bowtie: http://bowtie-bio.sourceforge.net/index.shtml
 
