@@ -77,7 +77,7 @@ def app_factory( global_conf, **kwargs ):
     webapp.add_route( '/async/:tool_id/:data_id/:data_secret', controller='async', action='index', tool_id=None, data_id=None, data_secret=None )
     webapp.add_route( '/:controller/:action', action='index' )
     webapp.add_route( '/:action', controller='root', action='index' )
-    webapp.add_route( '/datasets/:encoded_id/:action/:filename', controller='dataset', action='index', encoded_id=None, filename=None)
+    webapp.add_route( '/datasets/:dataset_id/:action/:filename', controller='dataset', action='index', dataset_id=None, filename=None)
     webapp.add_route( '/u/:username/p/:slug', controller='page', action='display_by_username_and_slug' )
     webapp.finalize_config()
     # Wrap the webapp in some useful middleware

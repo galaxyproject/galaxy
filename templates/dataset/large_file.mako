@@ -2,8 +2,8 @@
 
 <div class="warningmessagelarge">
     This dataset is large and only the first megabyte is shown below.<br />
-    <a href="${h.url_for( controller='dataset', action='display', encoded_id=trans.security.encode_id( data.id ), filename='' )}">Show all</a> |
-    <a href="${h.url_for( controller='dataset', action='display', encoded_id=trans.security.encode_id( data.id ), to_ext=data.ext )}">Save</a>
+    <a href="${h.url_for( controller='dataset', action='display', dataset_id=trans.security.encode_id( data.id ), filename='' )}">Show all</a> |
+    <a href="${h.url_for( controller='dataset', action='display', dataset_id=trans.security.encode_id( data.id ), to_ext=data.ext )}">Save</a>
 </div>
 
 <pre>

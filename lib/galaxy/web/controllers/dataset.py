@@ -199,14 +199,14 @@ class DatasetInterface( BaseController ):
         return 'This link may not be followed from within Galaxy.'
     
     @web.expose
-    def display(self, trans, encoded_id=None, preview=False, filename=None, to_ext=None, **kwd):
+    def display(self, trans, dataset_id=None, preview=False, filename=None, to_ext=None, **kwd):
         """Catches the dataset id and displays file contents as directed"""
         
         # DEPRECATION: We still support unencoded ids for backward compatibility
         try:
-            dataset_id = int( encoded_id )
+            dataset_id = int( dataset_id )
         except ValueError:
-            dataset_id = trans.security.decode_id( encoded_id )
+            dataset_id = trans.security.decode_id( dataset_id )
         data = trans.app.model.HistoryDatasetAssociation.get( dataset_id )
         if not data:
             raise paste.httpexceptions.HTTPRequestRangeNotSatisfiable( "Invalid reference dataset id: %s." % str( dataset_id ) )
