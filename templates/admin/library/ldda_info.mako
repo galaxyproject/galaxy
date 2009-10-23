@@ -4,7 +4,7 @@
 <% from galaxy import util %>
 
 <%
-    library = trans.app.model.Library.get( library_id )
+    library = trans.sa_session.query( trans.app.model.Library ).get( library_id )
     if ldda == ldda.library_dataset.library_dataset_dataset_association:
         current_version = True
     else:

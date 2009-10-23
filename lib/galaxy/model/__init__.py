@@ -1292,8 +1292,7 @@ class UserAddress( object ):
         if self.phone:
             html = html + '<br/>' + 'Phone: ' + self.phone
         return html
-
-                
+    
 class Page( object ):
     def __init__( self ):
         self.id = None
@@ -1330,8 +1329,7 @@ class ItemTagAssociation ( object ):
         
     def __str__ ( self ):
         return "%s(item_id=%s, item_tag=%s, user_tname=%s, value=%s, user_value=%s)" % (self.__class__.__name__, self.item_id, self.tag_id, self.user_tname, self.value. self.user_value )  
-    
-    
+
 class HistoryTagAssociation ( ItemTagAssociation ):
     pass
 

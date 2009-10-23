@@ -39,7 +39,7 @@ class Forms( BaseController ):
         show_filter = params.get( 'show_filter', 'Active' )
         return self._show_forms_list(trans, msg, messagetype, show_filter)
     def _show_forms_list(self, trans, msg, messagetype, show_filter='Active'):
-        all_forms = trans.app.model.FormDefinitionCurrent.query().all()
+        all_forms = trans.sa_session.query( trans.app.model.FormDefinitionCurrent )
         if show_filter == 'All':
             forms_list = all_forms
         elif show_filter == 'Deleted':
@@ -109,7 +109,7 @@ class Forms( BaseController ):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
-        fd = trans.app.model.FormDefinition.get(int(util.restore_text( params.form_id )))
+        fd = trans.sa_session.query( trans.app.model.FormDefinition ).get( int( util.restore_text( params.form_id ) ) )
         fd.form_definition_current.deleted = True
         fd.form_definition_current.flush()
         return self._show_forms_list(trans, 
@@ -121,7 +121,7 @@ class Forms( BaseController ):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
-        fd = trans.app.model.FormDefinition.get(int(util.restore_text( params.form_id )))
+        fd = trans.sa_session.query( trans.app.model.FormDefinition ).get( int( util.restore_text( params.form_id ) ) )
         fd.form_definition_current.deleted = False
         fd.form_definition_current.flush()
         return self._show_forms_list(trans, 
@@ -138,7 +138,7 @@ class Forms( BaseController ):
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
         try:
-            fd = trans.app.model.FormDefinition.get( int( params.get( 'form_id', None ) ) )
+            fd = trans.sa_session.query( trans.app.model.FormDefinition ).get( int( params.get( 'form_id', None ) ) )
         except:
             return trans.response.send_redirect( web.url_for( controller='forms',
                                                               action='manage',
@@ -444,7 +444,7 @@ class Forms( BaseController ):
         if fdc_id: # save changes to the existing form    
             # change the pointer in the form_definition_current table to point 
             # to this new record
-            fdc = trans.app.model.FormDefinitionCurrent.get(fdc_id)
+            fdc = trans.sa_session.query( trans.app.model.FormDefinitionCurrent ).get( fdc_id )
         else: # create a new form
             fdc = trans.app.model.FormDefinitionCurrent()
         # create corresponding row in the form_definition_current table
@@ -578,11 +578,11 @@ def get_all_forms( trans, all_versions=False, filter=None, form_type='All' ):
     of all the forms from the form_definition table.
     '''
     if all_versions:
-        return trans.app.model.FormDefinition.query().all()
+        return trans.sa_session.query( trans.app.model.FormDefinition )
     if filter:
-        fdc_list = trans.app.model.FormDefinitionCurrent.query().filter_by(**filter)
+        fdc_list = trans.sa_session.query( trans.app.model.FormDefinitionCurrent ).filter_by( **filter )
     else:
-        fdc_list = trans.app.model.FormDefinitionCurrent.query().all()
+        fdc_list = trans.sa_session.query( trans.app.model.FormDefinitionCurrent )
     if form_type == 'All':
         return [ fdc.latest_form for fdc in fdc_list ]
     else:

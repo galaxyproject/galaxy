@@ -233,9 +233,9 @@ class HistoryController( BaseController ):
                     status, message = self._list_undelete( trans, histories )
                 elif operation == "unshare":
                     for history in histories:
-                        husas = trans.app.model.HistoryUserShareAssociation.filter_by( history=history ).all()
-                        for husa in husas:
-                            husa.delete()
+                        for husa in trans.sa_session.query( trans.app.model.HistoryUserShareAssociation ) \
+                                                    .filter_by( history=history ):
+                            trans.sa_session.delete( husa )
                 elif operation == "enable import via link":
                     for history in histories:
                         if not history.importable:
@@ -306,8 +306,9 @@ class HistoryController( BaseController ):
         new_history = histories[0]
         galaxy_session = trans.get_galaxy_session()
         try:
-            association = trans.app.model.GalaxySessionToHistoryAssociation \
-                .filter_by( session_id=galaxy_session.id, history_id=trans.security.decode_id( new_history.id ) ).first()
+            association = trans.sa_session.query( trans.app.model.GalaxySessionToHistoryAssociation ) \
+                                          .filter_by( session_id=galaxy_session.id, history_id=trans.security.decode_id( new_history.id ) ) \
+                                          .first()
         except:
             association = None
         new_history.add_galaxy_session( galaxy_session, association=association )
@@ -338,8 +339,8 @@ class HistoryController( BaseController ):
                 histories = [ get_history( trans, history_id ) for history_id in ids ]
                 for history in histories:
                     # Current user is the user with which the histories were shared
-                    association = trans.app.model.HistoryUserShareAssociation.filter_by( user=trans.user, history=history ).one()
-                    association.delete()
+                    association = trans.sa_session.query( trans.app.model.HistoryUserShareAssociation ).filter_by( user=trans.user, history=history ).one()
+                    trans.sa_session.delete( association )
                     association.flush()
                 message = "Unshared %d shared histories" % len( ids )
                 status = 'done'
@@ -360,7 +361,7 @@ class HistoryController( BaseController ):
         return trans.show_ok_message( "History deleted, a new history is active", refresh_frames=['history'] )
     @web.expose
     def rename_async( self, trans, id=None, new_name=None ):
-        history = model.History.get( id )
+        history = trans.sa_session.query( model.History ).get( id )
         # Check that the history exists, and is either owned by the current
         # user (if logged in) or the current history
         assert history is not None
@@ -393,8 +394,9 @@ class HistoryController( BaseController ):
             new_history.user_id = user.id
             galaxy_session = trans.get_galaxy_session()
             try:
-                association = trans.app.model.GalaxySessionToHistoryAssociation \
-                    .filter_by( session_id=galaxy_session.id, history_id=new_history.id ).first()
+                association = trans.sa_session.query( trans.app.model.GalaxySessionToHistoryAssociation ) \
+                                              .filter_by( session_id=galaxy_session.id, history_id=new_history.id ) \
+                                              .first()
             except:
                 association = None
             new_history.add_galaxy_session( galaxy_session, association=association )
@@ -410,8 +412,9 @@ class HistoryController( BaseController ):
             new_history.user_id = None
             galaxy_session = trans.get_galaxy_session()
             try:
-                association = trans.app.model.GalaxySessionToHistoryAssociation \
-                    .filter_by( session_id=galaxy_session.id, history_id=new_history.id ).first()
+                association = trans.sa_session.query( trans.app.model.GalaxySessionToHistoryAssociation ) \
+                                              .filter_by( session_id=galaxy_session.id, history_id=new_history.id ) \
+                                              .first()
             except:
                 association = None
             new_history.add_galaxy_session( galaxy_session, association=association )
@@ -443,10 +446,10 @@ class HistoryController( BaseController ):
 
         # View history.
         query = trans.sa_session.query( model.HistoryDatasetAssociation ) \
-            .filter( model.HistoryDatasetAssociation.history == history_to_view ) \
-            .options( eagerload( "children" ) ) \
-            .join( "dataset" ).filter( model.Dataset.purged == False ) \
-            .options( eagerload_all( "dataset.actions" ) )
+                                .filter( model.HistoryDatasetAssociation.history == history_to_view ) \
+                                .options( eagerload( "children" ) ) \
+                                .join( "dataset" ).filter( model.Dataset.purged == False ) \
+                                .options( eagerload_all( "dataset.actions" ) )
         # Do not show deleted datasets.
         query = query.filter( model.HistoryDatasetAssociation.deleted == False )
         user_owns_history = ( trans.get_user() == history_to_view.user )
@@ -547,10 +550,10 @@ class HistoryController( BaseController ):
         for send_to_user, history_dict in can_change.items():
             for history in history_dict:                  
                 # Make sure the current history has not already been shared with the current send_to_user
-                if trans.app.model.HistoryUserShareAssociation \
-                    .filter( and_( trans.app.model.HistoryUserShareAssociation.table.c.user_id == send_to_user.id, 
-                                  trans.app.model.HistoryUserShareAssociation.table.c.history_id == history.id ) ) \
-                    .count() > 0:
+                if trans.sa_session.query( trans.app.model.HistoryUserShareAssociation ) \
+                                   .filter( and_( trans.app.model.HistoryUserShareAssociation.table.c.user_id == send_to_user.id, 
+                                                  trans.app.model.HistoryUserShareAssociation.table.c.history_id == history.id ) ) \
+                                   .count() > 0:
                     send_to_err += "History (%s) already shared with user (%s)" % ( history.name, send_to_user.email )
                 else:
                     # Only deal with datasets that have not been purged
@@ -590,8 +593,10 @@ class HistoryController( BaseController ):
                 if email_address == user.email:
                     send_to_err += "You cannot send histories to yourself.  "
                 else:
-                    send_to_user = trans.app.model.User.filter( and_( trans.app.model.User.table.c.email==email_address,
-                                                                      trans.app.model.User.table.c.deleted==False ) ).first()                                                                      
+                    send_to_user = trans.sa_session.query( trans.app.model.User ) \
+                                                   .filter( and_( trans.app.model.User.table.c.email==email_address,
+                                                                  trans.app.model.User.table.c.deleted==False ) ) \
+                                                   .first()                                                                      
                     if send_to_user:
                         send_to_users.append( send_to_user )
                     else:
@@ -608,10 +613,10 @@ class HistoryController( BaseController ):
         for send_to_user, history_dict in other.items():
             for history in history_dict:
                 # Make sure the current history has not already been shared with the current send_to_user
-                if trans.app.model.HistoryUserShareAssociation \
-                    .filter( and_( trans.app.model.HistoryUserShareAssociation.table.c.user_id == send_to_user.id, 
-                                  trans.app.model.HistoryUserShareAssociation.table.c.history_id == history.id ) ) \
-                    .count() > 0:
+                if trans.sa_session.query( trans.app.model.HistoryUserShareAssociation ) \
+                                   .filter( and_( trans.app.model.HistoryUserShareAssociation.table.c.user_id == send_to_user.id, 
+                                                  trans.app.model.HistoryUserShareAssociation.table.c.history_id == history.id ) ) \
+                                   .count() > 0:
                     send_to_err += "History (%s) already shared with user (%s)" % ( history.name, send_to_user.email )
                 else:
                     # Build the dict that will be used for sharing
@@ -640,10 +645,10 @@ class HistoryController( BaseController ):
         for history in histories:
             for send_to_user in send_to_users:
                 # Make sure the current history has not already been shared with the current send_to_user
-                if trans.app.model.HistoryUserShareAssociation \
-                    .filter( and_( trans.app.model.HistoryUserShareAssociation.table.c.user_id == send_to_user.id, 
-                                  trans.app.model.HistoryUserShareAssociation.table.c.history_id == history.id ) ) \
-                    .count() > 0:
+                if trans.sa_session.query( trans.app.model.HistoryUserShareAssociation ) \
+                                   .filter( and_( trans.app.model.HistoryUserShareAssociation.table.c.user_id == send_to_user.id, 
+                                                  trans.app.model.HistoryUserShareAssociation.table.c.history_id == history.id ) ) \
+                                   .count() > 0:
                     send_to_err += "History (%s) already shared with user (%s)" % ( history.name, send_to_user.email )
                 else:
                     # Only deal with datasets that have not been purged
@@ -748,14 +753,14 @@ class HistoryController( BaseController ):
                 history.importable = False
                 history.flush()
             elif params.get( 'unshare_user', False ):
-                user = trans.app.model.User.get( trans.security.decode_id( kwd[ 'unshare_user' ] ) )
+                user = trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( kwd[ 'unshare_user' ] ) )
                 if not user:
                     msg = 'History (%s) does not seem to be shared with user (%s)' % ( history.name, user.email )
                     return trans.fill_template( 'history/sharing.mako', histories=histories, msg=msg, messagetype='error' )
-                husas = trans.app.model.HistoryUserShareAssociation.filter_by( user=user, history=history ).all()
+                husas = trans.sa_session.query( trans.app.model.HistoryUserShareAssociation ).filter_by( user=user, history=history ).all()
                 if husas:
                     for husa in husas:
-                        husa.delete()
+                        trans.sa_session.delete( husa )
                         husa.flush()
         histories = []
         # Get all histories that have been shared with others
@@ -763,8 +768,7 @@ class HistoryController( BaseController ):
                                 .join( "history" ) \
                                 .filter( and_( trans.app.model.History.user == trans.user,
                                                trans.app.model.History.deleted == False ) ) \
-                                .order_by( trans.app.model.History.table.c.name ) \
-                                .all()
+                                .order_by( trans.app.model.History.table.c.name )
         for husa in husas:
             history = husa.history
             if history not in histories:
@@ -772,8 +776,7 @@ class HistoryController( BaseController ):
         # Get all histories that are importable
         importables = trans.sa_session.query( trans.app.model.History ) \
                                       .filter_by( user=trans.user, importable=True, deleted=False ) \
-                                      .order_by( trans.app.model.History.table.c.name ) \
-                                      .all()
+                                      .order_by( trans.app.model.History.table.c.name )
         for importable in importables:
             if importable not in histories:
                 histories.append( importable )
@@ -843,7 +846,8 @@ class HistoryController( BaseController ):
                 owner = True
             else:
                 if trans.sa_session.query( trans.app.model.HistoryUserShareAssociation ) \
-                        .filter_by( user=user, history=history ).count() == 0:
+                                   .filter_by( user=user, history=history ) \
+                                   .count() == 0:
                     return trans.show_error_message( "The history you are attempting to clone is not owned by you or shared with you.  " )
                 owner = False
             name = "Clone of '%s'" % history.name

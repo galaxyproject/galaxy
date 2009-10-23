@@ -72,8 +72,10 @@ class WorkflowController( BaseController ):
         # Load workflow from database
         stored = get_stored_workflow( trans, id )
         if email:
-            other = model.User.filter( and_( model.User.table.c.email==email,
-                                             model.User.table.c.deleted==False ) ).first()
+            other = trans.sa_session.query( model.User ) \
+                                    .filter( and_( model.User.table.c.email==email,
+                                                   model.User.table.c.deleted==False ) ) \
+                                    .first()
             if not other:
                 mtype = "error"
                 msg = ( "User '%s' does not exist" % email )

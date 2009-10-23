@@ -22,7 +22,7 @@ class LibraryCommon( BaseController ):
             ids = map( int, ids.split( "," ) )
             states = states.split( "," )
             for id, state in zip( ids, states ):
-                data = self.app.model.LibraryDatasetDatasetAssociation.get( id )
+                data = trans.sa_session.query( self.app.model.LibraryDatasetDatasetAssociation ).get( id )
                 if data.state != state:
                     job_ldda = data
                     while job_ldda.copied_from_library_dataset_dataset_association:
@@ -184,7 +184,7 @@ class LibraryCommon( BaseController ):
     def download_dataset_from_folder( self, trans, cntrller, obj_id, library_id=None, **kwd ):
         """Catches the dataset id and displays file contents as directed"""
         # id must refer to a LibraryDatasetDatasetAssociation object
-        ldda = trans.app.model.LibraryDatasetDatasetAssociation.get( obj_id )
+        ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( obj_id )
         if not ldda.dataset:
             msg = 'Invalid LibraryDatasetDatasetAssociation id %s received for file downlaod' % str( obj_id )
             return trans.response.send_redirect( web.url_for( controller=cntrller,
@@ -218,19 +218,19 @@ class LibraryCommon( BaseController ):
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
         if obj_id:
-            library_item = trans.app.model.FormDefinition.get( int( obj_id ) )
+            library_item = trans.sa_session.query( trans.app.model.FormDefinition ).get( int( obj_id ) )
             library_item_desc = 'information template'
             response_id = obj_id
         elif folder_id:
-            library_item = trans.app.model.LibraryFolder.get( int( folder_id ) )
+            library_item = trans.sa_session.query( trans.app.model.LibraryFolder ).get( int( folder_id ) )
             library_item_desc = 'folder'
             response_id = folder_id
         elif ldda_id:
-            library_item = trans.app.model.LibraryDatasetDatasetAssociation.get( int( ldda_id ) )
+            library_item = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( int( ldda_id ) )
             library_item_desc = 'library dataset'
             response_id = ldda_id
         else:
-            library_item = trans.app.model.Library.get( int( library_id ) )
+            library_item = trans.sa_session.query( trans.app.model.Library ).get( int( library_id ) )
             library_item_desc = 'library'
             response_id = library_id
         forms = get_all_forms( trans,
@@ -244,7 +244,7 @@ class LibraryCommon( BaseController ):
                                                        msg=msg,
                                                        messagetype='done' ) )
         if params.get( 'add_info_template_button', False ):
-            form = trans.app.model.FormDefinition.get( int( kwd[ 'form_id' ] ) )
+            form = trans.sa_session.query( trans.app.model.FormDefinition ).get( int( kwd[ 'form_id' ] ) )
             #fields = list( copy.deepcopy( form.fields ) )
             form_values = trans.app.model.FormValues( form, [] )
             form_values.flush()
@@ -280,13 +280,13 @@ class LibraryCommon( BaseController ):
         messagetype = params.get( 'messagetype', 'done' )
         folder_id = None
         if library_item_type == 'library':
-            library_item = trans.app.model.Library.get( library_item_id )
+            library_item = trans.sa_session.query( trans.app.model.Library ).get( library_item_id )
         elif library_item_type == 'library_dataset':
-            library_item = trans.app.model.LibraryDataset.get( library_item_id )
+            library_item = trans.sa_session.query( trans.app.model.LibraryDataset ).get( library_item_id )
         elif library_item_type == 'folder':
-            library_item = trans.app.model.LibraryFolder.get( library_item_id )
+            library_item = trans.sa_session.query( trans.app.model.LibraryFolder ).get( library_item_id )
         elif library_item_type == 'library_dataset_dataset_association':
-            library_item = trans.app.model.LibraryDatasetDatasetAssociation.get( library_item_id )
+            library_item = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( library_item_id )
             # This response_action method requires a folder_id
             folder_id = library_item.library_dataset.folder.id
         else:
@@ -310,7 +310,7 @@ class LibraryCommon( BaseController ):
             if info_association:
                 template = info_association.template
                 info = info_association.info
-                form_values = trans.app.model.FormValues.get( info.id )
+                form_values = trans.sa_session.query( trans.app.model.FormValues ).get( info.id )
                 # Update existing content only if it has changed
                 if form_values.content != field_contents:
                     form_values.content = field_contents

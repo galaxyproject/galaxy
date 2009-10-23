@@ -85,7 +85,7 @@ class RootController( BaseController ):
     def dataset_state ( self, trans, id=None, stamp=None ):
         if id is not None:
             try: 
-                data = self.app.model.HistoryDatasetAssociation.get( id )
+                data = trans.sa_session.query( self.app.model.HistoryDatasetAssociation ).get( id )
             except: 
                 return trans.show_error_message( "Unable to check dataset %s." %str( id ) )
             trans.response.headers['X-Dataset-State'] = data.state
@@ -99,7 +99,7 @@ class RootController( BaseController ):
     def dataset_code( self, trans, id=None, hid=None, stamp=None ):
         if id is not None:
             try: 
-                data = self.app.model.HistoryDatasetAssociation.get( id )
+                data = trans.sa_session.query( self.app.model.HistoryDatasetAssociation ).get( id )
             except: 
                 return trans.show_error_message( "Unable to check dataset %s." %str( id ) )
             trans.response.headers['Pragma'] = 'no-cache'
@@ -119,7 +119,7 @@ class RootController( BaseController ):
             ids = map( int, ids.split( "," ) )
             states = states.split( "," )
             for id, state in zip( ids, states ):
-                data = self.app.model.HistoryDatasetAssociation.get( id )
+                data = trans.sa_session.query( self.app.model.HistoryDatasetAssociation ).get( id )
                 if data.state != state:
                     job_hda = data
                     while job_hda.copied_from_history_dataset_association:
@@ -189,7 +189,7 @@ class RootController( BaseController ):
         Returns child data directly into the browser, based upon parent_id and designation.
         """
         try:
-            data = self.app.model.HistoryDatasetAssociation.get( parent_id )
+            data = trans.sa_session.query( self.app.model.HistoryDatasetAssociation ).get( parent_id )
             if data:
                 child = data.get_child_by_designation( designation )
                 if child:
@@ -205,7 +205,7 @@ class RootController( BaseController ):
     @web.expose
     def display_as( self, trans, id=None, display_app=None, **kwd ):
         """Returns a file in a format that can successfully be displayed in display_app"""
-        data = self.app.model.HistoryDatasetAssociation.get( id )
+        data = trans.sa_session.query( self.app.model.HistoryDatasetAssociation ).get( id )
         authz_method = 'rbac'
         if 'authz_method' in kwd:
             authz_method = kwd['authz_method']
@@ -228,7 +228,7 @@ class RootController( BaseController ):
     @web.expose
     def peek(self, trans, id=None):
         """Returns a 'peek' at the data"""
-        data = self.app.model.HistoryDatasetAssociation.get( id )
+        data = trans.sa_session.query( self.app.model.HistoryDatasetAssociation ).get( id )
         if data:
             yield "<html><body><pre>"
             yield data.peek
@@ -242,7 +242,12 @@ class RootController( BaseController ):
         def __ok_to_edit_metadata( dataset_id ):
             #prevent modifying metadata when dataset is queued or running as input/output
             #This code could be more efficient, i.e. by using mappers, but to prevent slowing down loading a History panel, we'll leave the code here for now
-            for job_to_dataset_association in self.app.model.JobToInputDatasetAssociation.filter_by( dataset_id=dataset_id ).all() + self.app.model.JobToOutputDatasetAssociation.filter_by( dataset_id=dataset_id ).all():
+            for job_to_dataset_association in trans.sa_session.query( self.app.model.JobToInputDatasetAssociation ) \
+                                                              .filter_by( dataset_id=dataset_id ) \
+                                                              .all() \
+                                            + trans.sa_session.query( self.app.model.JobToOutputDatasetAssociation ) \
+                                                              .filter_by( dataset_id=dataset_id ) \
+                                                              .all():
                 if job_to_dataset_association.job.state not in [ job_to_dataset_association.job.states.OK, job_to_dataset_association.job.states.ERROR, job_to_dataset_association.job.states.DELETED ]:
                     return False
             return True
@@ -251,7 +256,7 @@ class RootController( BaseController ):
             # TODO: hid handling
             data = history.datasets[ int( hid ) - 1 ]
         elif id is not None: 
-            data = self.app.model.HistoryDatasetAssociation.get( id )
+            data = trans.sa_session.query( self.app.model.HistoryDatasetAssociation ).get( id )
         else:
             trans.log_event( "Problem loading dataset id %s with history id %s." % ( str( id ), str( hid ) ) )
             return trans.show_error_message( "Problem loading dataset." )
@@ -333,10 +338,10 @@ class RootController( BaseController ):
                         in_roles = params.get( k + '_in', [] )
                         if not isinstance( in_roles, list ):
                             in_roles = [ in_roles ]
-                        in_roles = [ trans.app.model.Role.get( x ) for x in in_roles ]
+                        in_roles = [ trans.sa_session.query( trans.app.model.Role ).get( x ) for x in in_roles ]
                         permissions[ trans.app.security_agent.get_action( v.action ) ] = in_roles
                     trans.app.security_agent.set_all_dataset_permissions( data.dataset, permissions )
-                    data.dataset.refresh()
+                    trans.sa_session.refresh( data.dataset )
                 else:
                     return trans.show_error_message( "You are not authorized to change this dataset's permissions" )
             data.datatype.before_edit( data )
@@ -359,7 +364,7 @@ class RootController( BaseController ):
             return trans.show_error_message( "You do not have permission to edit this dataset's ( id: %s ) information." % str( id ) )
 
     def __delete_dataset( self, trans, id ):
-        data = self.app.model.HistoryDatasetAssociation.get( id )
+        data = trans.sa_session.query( self.app.model.HistoryDatasetAssociation ).get( id )
         if data:
             # Walk up parent datasets to find the containing history
             topmost_parent = data
@@ -437,7 +442,7 @@ class RootController( BaseController ):
         user_history = trans.get_history()
         if not id:
             return trans.show_error_message( "You must specify a history you want to import.")
-        import_history = trans.app.model.History.get( id )
+        import_history = trans.sa_session.query( trans.app.model.History ).get( id )
         if not import_history:
             return trans.show_error_message( "The specified history does not exist.")
         if user:
@@ -448,7 +453,9 @@ class RootController( BaseController ):
             new_history.user_id = user.id
             galaxy_session = trans.get_galaxy_session()
             try:
-                association = trans.app.model.GalaxySessionToHistoryAssociation.filter_by( session_id=galaxy_session.id, history_id=new_history.id ).first()
+                association = trans.sa_session.query( trans.app.model.GalaxySessionToHistoryAssociation ) \
+                                              .filter_by( session_id=galaxy_session.id, history_id=new_history.id ) \
+                                              .first()
             except:
                 association = None
             new_history.add_galaxy_session( galaxy_session, association=association )
@@ -465,7 +472,9 @@ class RootController( BaseController ):
             new_history.user_id = None
             galaxy_session = trans.get_galaxy_session()
             try:
-                association = trans.app.model.GalaxySessionToHistoryAssociation.filter_by( session_id=galaxy_session.id, history_id=new_history.id ).first()
+                association = trans.sa_session.query( trans.app.model.GalaxySessionToHistoryAssociation ) \
+                                              .filter_by( session_id=galaxy_session.id, history_id=new_history.id ) \
+                                              .first()
             except:
                 association = None
             new_history.add_galaxy_session( galaxy_session, association=association )
@@ -488,10 +497,10 @@ class RootController( BaseController ):
     def history_add_to( self, trans, history_id=None, file_data=None, name="Data Added to History",info=None,ext="txt",dbkey="?",copy_access_from=None,**kwd ):
         """Adds a POSTed file to a History"""
         try:
-            history = trans.app.model.History.get( history_id )
+            history = trans.sa_session.query( trans.app.model.History ).get( history_id )
             data = trans.app.model.HistoryDatasetAssociation( name = name, info = info, extension = ext, dbkey = dbkey, create_dataset = True )
             if copy_access_from:
-                copy_access_from = trans.app.model.HistoryDatasetAssociation.get( copy_access_from )
+                copy_access_from = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( copy_access_from )
                 trans.app.security_agent.copy_dataset_permissions( copy_access_from.dataset, data.dataset )
             else:
                 permissions = trans.app.security_agent.history_get_default_permissions( history )
@@ -527,7 +536,7 @@ class RootController( BaseController ):
                     except:
                         id = None
                     if id:
-                        history = trans.app.model.History.get( id )
+                        history = trans.sa_session.query( trans.app.model.History ).get( id )
                 if not history:
                     # If we haven't retrieved a history, use the current one
                     history = trans.get_history()
@@ -537,7 +546,7 @@ class RootController( BaseController ):
                     in_roles = p.get( k + '_in', [] )
                     if not isinstance( in_roles, list ):
                         in_roles = [ in_roles ]
-                    in_roles = [ trans.app.model.Role.get( x ) for x in in_roles ]
+                    in_roles = [ trans.sa_session.query( trans.app.model.Role ).get( x ) for x in in_roles ]
                     permissions[ trans.app.security_agent.get_action( v.action ) ] = in_roles
                 dataset = 'dataset' in kwd
                 bypass_manage_permission = 'bypass_manage_permission' in kwd
@@ -551,7 +560,7 @@ class RootController( BaseController ):
     def dataset_make_primary( self, trans, id=None):
         """Copies a dataset and makes primary"""
         try:
-            old_data = self.app.model.HistoryDatasetAssociation.get( id )
+            old_data = trans.sa_session.query( self.app.model.HistoryDatasetAssociation ).get( id )
             new_data = old_data.copy()
             ## new_data.parent = None
             ## history = trans.app.model.History.get( old_data.history_id )
@@ -622,7 +631,3 @@ class RootController( BaseController ):
     @web.expose
     def generate_error( self, trans ):
         raise Exception( "Fake error!" )
-
-
-
-

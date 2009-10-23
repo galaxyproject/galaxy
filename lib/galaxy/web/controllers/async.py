@@ -52,7 +52,7 @@ class ASync( BaseController ):
         if data_id:
             if not URL:
                 return "No URL parameter was submitted for data %s" % data_id
-            data = trans.model.HistoryDatasetAssociation.get( data_id )
+            data = trans.sa_session.query( trans.model.HistoryDatasetAssociation ).get( data_id )
            
             if not data:
                 return "Data %s does not exist or has already been deleted" % data_id

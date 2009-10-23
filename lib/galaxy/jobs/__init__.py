@@ -1,7 +1,6 @@
 import logging, threading, sys, os, time, subprocess, string, tempfile, re, traceback, shutil
 
 from galaxy import util, model
-from galaxy.model import mapping
 from galaxy.model.orm import lazyload
 from galaxy.datatypes.tabular import *
 from galaxy.datatypes.interval import *
@@ -73,6 +72,7 @@ class JobQueue( object ):
     def __init__( self, app, dispatcher ):
         """Start the job manager"""
         self.app = app
+        self.sa_session = app.model.context
         # Should we read jobs form the database, or use an in memory queue
         self.track_jobs_in_database = app.config.get_bool( 'track_jobs_in_database', False )
         # Check if any special scheduling policy should be used. If not, default is FIFO.
@@ -126,14 +126,14 @@ class JobQueue( object ):
         job manager starts.
         """
         model = self.app.model
-        for job in model.Job.filter( model.Job.c.state==model.Job.states.NEW ).all():
+        for job in self.sa_session.query( model.Job ).filter( model.Job.state == model.Job.states.NEW ):
             if job.tool_id not in self.app.toolbox.tools_by_id:
                 log.warning( "Tool '%s' removed from tool config, unable to recover job: %s" % ( job.tool_id, job.id ) )
                 JobWrapper( job, None, self ).fail( 'This tool was disabled before the job completed.  Please contact your Galaxy administrator, or' )
             else:
                 log.debug( "no runner: %s is still in new state, adding to the jobs queue" %job.id )
                 self.queue.put( ( job.id, job.tool_id ) )
-        for job in model.Job.filter( (model.Job.c.state == model.Job.states.RUNNING) | (model.Job.c.state == model.Job.states.QUEUED) ).all():
+        for job in self.sa_session.query( model.Job ).filter( ( model.Job.state == model.Job.states.RUNNING ) | ( model.Job.state == model.Job.states.QUEUED ) ):
             if job.tool_id not in self.app.toolbox.tools_by_id:
                 log.warning( "Tool '%s' removed from tool config, unable to recover job: %s" % ( job.tool_id, job.id ) )
                 JobWrapper( job, None, self ).fail( 'This tool was disabled before the job completed.  Please contact your Galaxy administrator, or' )
@@ -169,12 +169,12 @@ class JobQueue( object ):
         it is marked as having errors and removed from the queue. Otherwise,
         the job is dispatched.
         """
-        # Get an orm session
-        session = mapping.Session()
         # Pull all new jobs from the queue at once
         new_jobs = []
         if self.track_jobs_in_database:
-            for j in session.query( model.Job ).options( lazyload( "external_output_metadata" ), lazyload( "parameters" ) ).filter( model.Job.c.state == model.Job.states.NEW ).all():
+            for j in session.query( model.Job ) \
+                            .options( lazyload( "external_output_metadata" ), lazyload( "parameters" ) ) \
+                            .filter( model.Job.c.state == model.Job.states.NEW ):
                 job = JobWrapper( j, self.app.toolbox.tools_by_id[ j.tool_id ], self )
                 new_jobs.append( job )
         else:
@@ -186,7 +186,7 @@ class JobQueue( object ):
                     # Unpack the message
                     job_id, tool_id = message
                     # Create a job wrapper from it
-                    job_entity = session.query( model.Job ).get( job_id )
+                    job_entity = self.sa_session.query( model.Job ).get( job_id )
                     job = JobWrapper( job_entity, self.app.toolbox.tools_by_id[ tool_id ], self )
                     # Append to watch queue
                     new_jobs.append( job )
@@ -199,11 +199,11 @@ class JobQueue( object ):
             try:
                 # Clear the session for each job so we get fresh states for
                 # job and all datasets
-                session.clear()
+                self.sa_session.clear()
                 # Get the real job entity corresponding to the wrapper (if we
                 # are tracking in the database this is probably cached in
                 # the session from the origianl query above)
-                job_entity = session.query( model.Job ).get( job.job_id )
+                job_entity = self.sa_session.query( model.Job ).get( job.job_id )
                 # Check the job's dependencies, requeue if they're not done                    
                 job_state = self.__check_if_ready_to_run( job, job_entity )
                 if job_state == JOB_WAIT: 
@@ -254,7 +254,7 @@ class JobQueue( object ):
                     job.fail( "failure running job %d: %s" % ( sjob.job_id, str( e ) ) )
                     log.exception( "failure running job %d" % sjob.job_id )
         # Done with the session
-        mapping.Session.remove()
+        self.sa_session.remove()
         
     def __check_if_ready_to_run( self, job_wrapper, job ):
         """
@@ -319,6 +319,7 @@ class JobWrapper( object ):
         self.tool = tool
         self.queue = queue
         self.app = queue.app
+        self.sa_session = self.app.model.context
         self.extra_filenames = []
         self.command_line = None
         self.galaxy_lib_dir = None
@@ -335,7 +336,7 @@ class JobWrapper( object ):
         """
         Restore the dictionary of parameters from the database.
         """
-        job = model.Job.get( self.job_id )
+        job = self.sa_session.query( model.Job ).get( self.job_id )
         param_dict = dict( [ ( p.name, p.value ) for p in job.parameters ] )
         param_dict = self.tool.params_from_strings( param_dict, self.app )
         return param_dict
@@ -345,11 +346,11 @@ class JobWrapper( object ):
         Prepare the job to run by creating the working directory and the
         config files.
         """
-        mapping.context.current.clear() #this prevents the metadata reverting that has been seen in conjunction with the PBS job runner
+        self.sa_session.clear() #this prevents the metadata reverting that has been seen in conjunction with the PBS job runner
         if not os.path.exists( self.working_directory ):
             os.mkdir( self.working_directory )
         # Restore parameters from the database
-        job = model.Job.get( self.job_id )
+        job = self.sa_session.query( model.Job ).get( self.job_id )
         incoming = dict( [ ( p.name, p.value ) for p in job.parameters ] )
         incoming = self.tool.params_from_strings( incoming, self.app )
         # Do any validation that could not be done at job creation
@@ -376,7 +377,7 @@ class JobWrapper( object ):
         # Run the before queue ("exec_before_job") hook
         self.tool.call_hook( 'exec_before_job', self.queue.app, inp_data=inp_data, 
                              out_data=out_data, tool=self.tool, param_dict=incoming)
-        mapping.context.current.flush()
+        self.sa_session.flush()
         # Build any required config files
         config_filenames = self.tool.build_config_files( param_dict, self.working_directory )
         # FIXME: Build the param file (might return None, DEPRECATED)
@@ -403,8 +404,8 @@ class JobWrapper( object ):
         Indicate job failure by setting state and message on all output 
         datasets.
         """
-        job = model.Job.get( self.job_id )
-        job.refresh()
+        job = self.sa_session.query( model.Job ).get( self.job_id )
+        self.sa_session.refresh( job )
         # if the job was deleted, don't fail it
         if not job.state == model.Job.states.DELETED:
             # Check if the failure is due to an exception
@@ -427,7 +428,7 @@ class JobWrapper( object ):
                         log.error( "fail(): Missing output file in working directory: %s" % e )
             for dataset_assoc in job.output_datasets + job.output_library_datasets:
                 dataset = dataset_assoc.dataset
-                dataset.refresh()
+                self.sa_session.refresh( dataset )
                 dataset.state = dataset.states.ERROR
                 dataset.blurb = 'tool error'
                 dataset.info = message
@@ -443,11 +444,11 @@ class JobWrapper( object ):
         self.cleanup()
         
     def change_state( self, state, info = False ):
-        job = model.Job.get( self.job_id )
-        job.refresh()
+        job = self.sa_session.query( model.Job ).get( self.job_id )
+        self.sa_session.refresh( job )
         for dataset_assoc in job.output_datasets + job.output_library_datasets:
             dataset = dataset_assoc.dataset
-            dataset.refresh()
+            self.sa_session.refresh( dataset )
             dataset.state = state
             if info:
                 dataset.info = info
@@ -458,13 +459,13 @@ class JobWrapper( object ):
         job.flush()
 
     def get_state( self ):
-        job = model.Job.get( self.job_id )
-        job.refresh()
+        job = self.sa_session.query( model.Job ).get( self.job_id )
+        self.sa_session.refresh( job )
         return job.state
 
     def set_runner( self, runner_url, external_id ):
-        job = model.Job.get( self.job_id )
-        job.refresh()
+        job = self.sa_session.query( model.Job ).get( self.job_id )
+        self.sa_session.refresh( job )
         job.job_runner_name = runner_url
         job.job_runner_external_id = external_id
         job.flush()
@@ -476,8 +477,8 @@ class JobWrapper( object ):
         the contents of the output files. 
         """
         # default post job setup
-        mapping.context.current.clear()
-        job = model.Job.get( self.job_id )
+        self.sa_session.clear()
+        job = self.sa_session.query( model.Job ).get( self.job_id )
         # if the job was deleted, don't finish it
         if job.state == job.states.DELETED:
             self.cleanup()
@@ -523,7 +524,7 @@ class JobWrapper( object ):
                     #either use the metadata from originating output dataset, or call set_meta on the copies
                     #it would be quicker to just copy the metadata from the originating output dataset, 
                     #but somewhat trickier (need to recurse up the copied_from tree), for now we'll call set_meta()
-                    if not self.external_output_metadata.external_metadata_set_successfully( dataset ):
+                    if not self.external_output_metadata.external_metadata_set_successfully( dataset, self.sa_session ):
                         # Only set metadata values if they are missing...
                         dataset.set_meta( overwrite = False )
                     else:
@@ -563,7 +564,7 @@ class JobWrapper( object ):
             # ERROR.  The user will never see that the datasets are in error if
             # they were flushed as OK here, since upon doing so, the history
             # panel stops checking for updates.  So allow the
-            # mapping.context.current.flush() at the bottom of this method set
+            # self.sa_session.flush() at the bottom of this method set
             # the state instead.
             #dataset_assoc.dataset.dataset.flush()
         
@@ -596,7 +597,7 @@ class JobWrapper( object ):
         # TODO
         # validate output datasets
         job.command_line = self.command_line
-        mapping.context.current.flush()
+        self.sa_session.flush()
         log.debug( 'job %d ended' % self.job_id )
         self.cleanup()
         
@@ -619,7 +620,7 @@ class JobWrapper( object ):
         return self.session_id
 
     def get_input_fnames( self ):
-        job = model.Job.get( self.job_id )
+        job = self.sa_session.query( model.Job ).get( self.job_id )
         filenames = []
         for da in job.input_datasets: #da is JobToInputDatasetAssociation object
             if da.dataset:
@@ -646,7 +647,7 @@ class JobWrapper( object ):
                 else:
                     return self.false_path
 
-        job = model.Job.get( self.job_id )
+        job = self.sa_session.query( model.Job ).get( self.job_id )
         if self.app.config.outputs_to_working_directory:
             self.output_paths = []
             for name, data in [ ( da.name, da.dataset.dataset ) for da in job.output_datasets + job.output_library_datasets ]:
@@ -709,12 +710,12 @@ class JobWrapper( object ):
         return sizes
     def setup_external_metadata( self, exec_dir = None, tmp_dir = None, dataset_files_path = None, config_root = None, datatypes_config = None, **kwds ):
         # extension could still be 'auto' if this is the upload tool.
-        job = model.Job.get( self.job_id )
+        job = self.sa_session.query( model.Job ).get( self.job_id )
         for output_dataset_assoc in job.output_datasets:
             if output_dataset_assoc.dataset.ext == 'auto':
                 context = self.get_dataset_finish_context( dict(), output_dataset_assoc.dataset.dataset )
                 output_dataset_assoc.dataset.extension = context.get( 'ext', 'data' )
-        mapping.context.current.flush()
+        self.sa_session.flush()
         if tmp_dir is None:
             #this dir should should relative to the exec_dir
             tmp_dir = self.app.config.new_file_path
@@ -724,7 +725,14 @@ class JobWrapper( object ):
             config_root = self.app.config.root
         if datatypes_config is None:
             datatypes_config = self.app.config.datatypes_config
-        return self.external_output_metadata.setup_external_metadata( [ output_dataset_assoc.dataset for output_dataset_assoc in job.output_datasets ], exec_dir = exec_dir, tmp_dir = tmp_dir, dataset_files_path = dataset_files_path, config_root = config_root, datatypes_config = datatypes_config, **kwds )
+        return self.external_output_metadata.setup_external_metadata( [ output_dataset_assoc.dataset for output_dataset_assoc in job.output_datasets ],
+                                                                      self.sa_session,
+                                                                      exec_dir = exec_dir,
+                                                                      tmp_dir = tmp_dir,
+                                                                      dataset_files_path = dataset_files_path,
+                                                                      config_root = config_root,
+                                                                      datatypes_config = datatypes_config,
+                                                                      **kwds )
 
 class DefaultJobDispatcher( object ):
     def __init__( self, app ):
@@ -772,6 +780,7 @@ class JobStopQueue( object ):
     STOP_SIGNAL = object()
     def __init__( self, app, dispatcher ):
         self.app = app
+        self.sa_session = app.model.context
         self.dispatcher = dispatcher
 
         # Keep track of the pid that started the job manager, only it
@@ -821,8 +830,8 @@ class JobStopQueue( object ):
             pass  
 
         for job_id, error_msg in jobs:
-            job = model.Job.get( job_id )
-            job.refresh()
+            job = self.sa_session.query( model.Job ).get( job_id )
+            self.sa_session.refresh( job )
             # if desired, error the job so we can inform the user.
             if error_msg is not None:
                 job.state = job.states.ERROR

@@ -108,7 +108,7 @@ class Requests( BaseController ):
     
     def __show_request(self, trans, id, add_sample=False):
         try:
-            request = trans.app.model.Request.get(id)
+            request = trans.sa_session.query( trans.app.model.Request ).get( id )
         except:
             return trans.response.send_redirect( web.url_for( controller='requests',
                                                               action='list',
@@ -130,7 +130,7 @@ class Requests( BaseController ):
         '''
         Shows the request details
         '''
-        request = trans.app.model.Request.get(id)
+        request = trans.sa_session.query( trans.app.model.Request ).get( id )
         # list of widgets to be rendered on the request form
         request_details = []
         # main details
@@ -171,7 +171,7 @@ class Requests( BaseController ):
             if field['type'] == 'AddressField':
                 if request.values.content[index]:
                     request_details.append(dict(label=field['label'],
-                                                value=trans.app.model.UserAddress.get(int(request.values.content[index])).get_html(),
+                                                value=trans.sa_session.query( trans.app.model.UserAddress ).get( int( request.values.content[index] ) ).get_html(),
                                                 helptext=field['helptext']+' ('+req+')'))
                 else:
                     request_details.append(dict(label=field['label'],
@@ -220,7 +220,7 @@ class Requests( BaseController ):
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
         try:
-            request = trans.app.model.Request.get(int(params.get('request_id', None)))
+            request = trans.sa_session.query( trans.app.model.Request ).get( int( params.get( 'request_id', None ) ) )
         except:
             return trans.response.send_redirect( web.url_for( controller='requests',
                                                               action='list',
@@ -313,7 +313,7 @@ class Requests( BaseController ):
                         sample_values.append(util.restore_text( params.get( 'sample_%i_field_%i' % (sample_index, field_index), ''  ) ))
                     sample = request.has_sample(sample_name)
                     if sample:
-                        form_values = trans.app.model.FormValues.get(sample.values.id)
+                        form_values = trans.sa_session.query( trans.app.model.FormValues ).get( sample.values.id )
                         form_values.content = sample_values
                         form_values.flush()
                         sample.name = new_sample_name
@@ -344,13 +344,13 @@ class Requests( BaseController ):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
-        request = trans.app.model.Request.get(int(params.get('request_id', 0)))
+        request = trans.sa_session.query( trans.app.model.Request ).get( int( params.get( 'request_id', 0 ) ) )
         current_samples, details, edit_mode = self.__update_samples( request, **kwd )
         sample_index = int(params.get('sample_id', 0))
         sample_name = current_samples[sample_index][0]
         s = request.has_sample(sample_name)
         if s:
-            s.delete()
+            trans.sa_session.delete( s )
             s.flush()
             request.flush()
         del current_samples[sample_index]  
@@ -368,7 +368,8 @@ class Requests( BaseController ):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
-        request = trans.app.model.Request.get(int(params.get('request_id', 0)))
+        # TODO: Fix the following - can we get a Request.id == 0???
+        request = trans.sa_session.query( trans.app.model.Request ).get(int(params.get('request_id', 0)))
         current_samples, details, edit_mode = self.__update_samples( request, **kwd )
         return trans.fill_template( '/requests/show_request.mako',
                                     request=request,
@@ -379,7 +380,7 @@ class Requests( BaseController ):
                                     edit_mode=edit_mode)
     def __select_request_type(self, trans, rtid):
         rt_ids = ['none']
-        for rt in trans.app.model.RequestType.query().all():
+        for rt in trans.sa_session.query( trans.app.model.RequestType ):
             if not rt.deleted:
                 rt_ids.append(str(rt.id))
         select_reqtype = SelectField('select_request_type', 
@@ -389,7 +390,7 @@ class Requests( BaseController ):
             select_reqtype.add_option('Select one', 'none', selected=True)
         else:
             select_reqtype.add_option('Select one', 'none')
-        for rt in trans.app.model.RequestType.query().all():
+        for rt in trans.sa_session.query( trans.app.model.RequestType ):
             if not rt.deleted:
                 if rtid == rt.id:
                     select_reqtype.add_option(rt.name, rt.id, selected=True)
@@ -411,7 +412,7 @@ class Requests( BaseController ):
         elif params.get('create', False) == 'True':
             if params.get('create_request_button', False) == 'Save' \
                or params.get('create_request_samples_button', False) == 'Add samples':
-                request_type = trans.app.model.RequestType.get(int(params.select_request_type))
+                request_type = trans.sa_session.query( trans.app.model.RequestType ).get( int( params.select_request_type ) )
                 if not util.restore_text(params.get('name', '')):
                     msg = 'Please enter the <b>Name</b> of the request'
                     kwd['create'] = 'True'
@@ -448,7 +449,7 @@ class Requests( BaseController ):
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
         try:
-            request_type = trans.app.model.RequestType.get(int(params.select_request_type))
+            request_type = trans.sa_session.query( trans.app.model.RequestType ).get( int( params.select_request_type ) )
         except:
             return trans.fill_template( '/requests/new_request.mako',
                                         select_request_type=self.__select_request_type(trans, 'none'),                                 
@@ -496,8 +497,9 @@ class Requests( BaseController ):
                 lib_id = str(request.library.id)
                 selected_lib = request.library
         # get all permitted libraries for this user
-        all_libraries = trans.app.model.Library.filter( trans.app.model.Library.table.c.deleted == False ) \
-                                               .order_by( trans.app.model.Library.name ).all()
+        all_libraries = trans.sa_session.query( trans.app.model.Library ) \
+                                        .filter( trans.app.model.Library.table.c.deleted == False ) \
+                                        .order_by( trans.app.model.Library.name )
         user, roles = trans.get_user_and_roles()
         actions_to_check = [ trans.app.security_agent.permitted_actions.LIBRARY_ADD ]
         libraries = odict()
@@ -600,16 +602,16 @@ class Requests( BaseController ):
         This method saves a new request if request_id is None. 
         '''
         params = util.Params( kwd )
-        request_type = trans.app.model.RequestType.get(int(params.select_request_type))
+        request_type = trans.sa_session.query( trans.app.model.RequestType ).get( int( params.select_request_type ) )
         name = util.restore_text(params.get('name', ''))
         desc = util.restore_text(params.get('desc', ''))
         # library
         try:
-            library = trans.app.model.Library.get(int(params.get('library_id', None)))
+            library = trans.sa_session.query( trans.app.model.Library ).get( int( params.get( 'library_id', None ) ) )
         except:
             library = None
         try:
-            folder = trans.app.model.LibraryFolder.get(int(params.get('folder_id', None)))
+            folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( int( params.get( 'folder_id', None ) ) )
         except:
             if library:
                 folder = library.root_folder
@@ -633,7 +635,7 @@ class Requests( BaseController ):
                     user_address.country = util.restore_text(params.get('field_%i_country' % index, ''))
                     user_address.phone = util.restore_text(params.get('field_%i_phone' % index, ''))
                     user_address.flush()
-                    trans.user.refresh()
+                    trans.sa_session.refresh( trans.user )
                     values.append(int(user_address.id))
                 elif value == unicode('none'):
                     values.append('')
@@ -667,7 +669,7 @@ class Requests( BaseController ):
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
         try:
-            request = trans.app.model.Request.get(int(params.get('request_id', None)))
+            request = trans.sa_session.query( trans.app.model.Request ).get( int( params.get( 'request_id', None ) ) )
         except:
             return trans.response.send_redirect( web.url_for( controller='requests',
                                                               action='list',
@@ -678,7 +680,7 @@ class Requests( BaseController ):
             return self.__edit_request(trans, request.id, **kwd)
         elif params.get('save_changes_request_button', False) == 'Save changes' \
              or params.get('edit_samples_button', False) == 'Edit samples':
-                request_type = trans.app.model.RequestType.get(int(params.select_request_type))
+                request_type = trans.sa_session.query( trans.app.model.RequestType ).get( int( params.select_request_type ) )
                 if not util.restore_text(params.get('name', '')):
                     msg = 'Please enter the <b>Name</b> of the request'
                     kwd['messagetype'] = 'error'
@@ -708,7 +710,7 @@ class Requests( BaseController ):
             
     def __edit_request(self, trans, id, **kwd):
         try:
-            request = trans.app.model.Request.get(id)
+            request = trans.sa_session.query( trans.app.model.Request ).get( id )
         except:
             msg = "Invalid request ID"
             log.warn( msg )
@@ -750,7 +752,7 @@ class Requests( BaseController ):
         return self.__show_request_form(trans)
     def __delete_request(self, trans, id):
         try:
-            request = trans.app.model.Request.get(id)
+            request = trans.sa_session.query( trans.app.model.Request ).get( id )
         except:
             msg = "Invalid request ID"
             log.warn( msg )
@@ -777,7 +779,7 @@ class Requests( BaseController ):
                                                           **kwd) )
     def __undelete_request(self, trans, id):
         try:
-            request = trans.app.model.Request.get(id)
+            request = trans.sa_session.query( trans.app.model.Request ).get( id )
         except:
             msg = "Invalid request ID"
             log.warn( msg )
@@ -798,7 +800,7 @@ class Requests( BaseController ):
                                                           **kwd) )
     def __submit(self, trans, id):
         try:
-            request = trans.app.model.Request.get(id)
+            request = trans.sa_session.query( trans.app.model.Request ).get( id )
         except:
             msg = "Invalid request ID"
             log.warn( msg )
@@ -837,7 +839,7 @@ class Requests( BaseController ):
         params = util.Params( kwd )
         try:
             id = int(params.get('id', False))
-            request = trans.app.model.Request.get(id)
+            request = trans.sa_session.query( trans.app.model.Request ).get( id )
         except:
             msg = "Invalid request ID"
             log.warn( msg )
@@ -876,7 +878,7 @@ class Requests( BaseController ):
         params = util.Params( kwd )
         try:
             sample_id = int(params.get('sample_id', False))
-            sample = trans.app.model.Sample.get(sample_id)
+            sample = trans.sa_session.query( trans.app.model.Sample ).get( sample_id )
         except:
             msg = "Invalid sample ID"
             return trans.response.send_redirect( web.url_for( controller='requests',
@@ -897,7 +899,3 @@ class Requests( BaseController ):
                                     events_list=events_list,
                                     sample_name=sample.name,
                                     request=sample.request)
-
-            
-    
-    

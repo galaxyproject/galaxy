@@ -41,12 +41,14 @@
     ${render_msg( msg, messagetype )}
 %endif
 
-%if len( groups ) == 0:
+## TODO: make this a grid
+
+%if not groups:
     There are no Galaxy groups
 %else:
     <table class="manage-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
         <% 
-            render_quick_find = len( groups ) > 200
+            render_quick_find = groups.count() > 200
             ctr = 0
         %>
         %if render_quick_find:

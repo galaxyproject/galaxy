@@ -29,9 +29,18 @@ class SetMetadataToolAction( ToolAction ):
         job.flush() #ensure job.id is available
         
         #add parameters to job_parameter table
-        incoming[ '__ORIGINAL_DATASET_STATE__' ] = dataset.state #store original dataset state, so we can restore it. A seperate table might be better (no chance of 'loosing' the original state)? 
+        # Store original dataset state, so we can restore it. A separate table might be better (no chance of 'losing' the original state)? 
+        incoming[ '__ORIGINAL_DATASET_STATE__' ] = dataset.state
         external_metadata_wrapper = JobExternalOutputMetadataWrapper( job )
-        cmd_line = external_metadata_wrapper.setup_external_metadata( dataset, exec_dir = None, tmp_dir = trans.app.config.new_file_path, dataset_files_path = trans.app.model.Dataset.file_path, output_fnames = None, config_root = None, datatypes_config = None, kwds = { 'overwrite' : True } )
+        cmd_line = external_metadata_wrapper.setup_external_metadata( dataset,
+                                                                      trans.sa_session,
+                                                                      exec_dir = None,
+                                                                      tmp_dir = trans.app.config.new_file_path,
+                                                                      dataset_files_path = trans.app.model.Dataset.file_path,
+                                                                      output_fnames = None,
+                                                                      config_root = None,
+                                                                      datatypes_config = None,
+                                                                      kwds = { 'overwrite' : True } )
         incoming[ '__SET_EXTERNAL_METADATA_COMMAND_LINE__' ] = cmd_line
         for name, value in tool.params_to_strings( incoming, trans.app ).iteritems():
             job.add_parameter( name, value )

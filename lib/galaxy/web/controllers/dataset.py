@@ -138,12 +138,12 @@ class DatasetInterface( BaseController ):
 
     @web.expose
     def errors( self, trans, id ):
-        dataset = model.HistoryDatasetAssociation.get( id )
+        dataset = trans.sa_session.query( model.HistoryDatasetAssociation ).get( id )
         return trans.fill_template( "dataset/errors.mako", dataset=dataset )
     
     @web.expose
     def stderr( self, trans, id ):
-        dataset = model.HistoryDatasetAssociation.get( id )
+        dataset = trans.sa_session.query( model.HistoryDatasetAssociation ).get( id )
         job = dataset.creating_job_associations[0].job
         trans.response.set_content_type( 'text/plain' )
         return job.stderr
@@ -157,7 +157,7 @@ class DatasetInterface( BaseController ):
         if to_address is None:
             return trans.show_error_message( "Sorry, error reporting has been disabled for this galaxy instance" )
         # Get the dataset and associated job
-        dataset = model.HistoryDatasetAssociation.get( id )
+        dataset = trans.sa_session.query( model.HistoryDatasetAssociation ).get( id )
         job = dataset.creating_job_associations[0].job
         # Get the name of the server hosting the Galaxy instance from which this report originated
         host = trans.request.host
@@ -207,7 +207,7 @@ class DatasetInterface( BaseController ):
             dataset_id = int( dataset_id )
         except ValueError:
             dataset_id = trans.security.decode_id( dataset_id )
-        data = trans.app.model.HistoryDatasetAssociation.get( dataset_id )
+        data = data = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( dataset_id )
         if not data:
             raise paste.httpexceptions.HTTPRequestRangeNotSatisfiable( "Invalid reference dataset id: %s." % str( dataset_id ) )
         user, roles = trans.get_user_and_roles()
@@ -305,7 +305,7 @@ class DatasetInterface( BaseController ):
     def display_at( self, trans, dataset_id, filename=None, **kwd ):
         """Sets up a dataset permissions so it is viewable at an external site"""
         site = filename
-        data = trans.app.model.HistoryDatasetAssociation.get( dataset_id )
+        data = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( dataset_id )
         if not data:
             raise paste.httpexceptions.HTTPRequestRangeNotSatisfiable( "Invalid reference dataset id: %s." % str( dataset_id ) )
         if 'display_url' not in kwd or 'redirect_url' not in kwd:
@@ -326,7 +326,7 @@ class DatasetInterface( BaseController ):
         except ValueError, e:
             return False
         history = trans.get_history()
-        data = self.app.model.HistoryDatasetAssociation.get( id )
+        data = trans.sa_session.query( self.app.model.HistoryDatasetAssociation ).get( id )
         if data and data.undeletable:
             # Walk up parent datasets to find the containing history
             topmost_parent = data
@@ -390,12 +390,12 @@ class DatasetInterface( BaseController ):
                     new_history.flush()
                     target_history_ids.append( new_history.id )
                 if user:
-                    target_histories = [ hist for hist in map( trans.app.model.History.get, target_history_ids ) if ( hist is not None and hist.user == user )]
+                    target_histories = [ hist for hist in map( trans.sa_session.query( trans.app.model.History ).get, target_history_ids ) if ( hist is not None and hist.user == user )]
                 else:
                     target_histories = [ history ]
                 if len( target_histories ) != len( target_history_ids ):
                     error_msg = error_msg + "You do not have permission to add datasets to %i requested histories.  " % ( len( target_history_ids ) - len( target_histories ) )
-                for data in map( trans.app.model.HistoryDatasetAssociation.get, source_dataset_ids ):
+                for data in map( trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get, source_dataset_ids ):
                     if data is None:
                         error_msg = error_msg + "You tried to copy a dataset that does not exist.  "
                         invalid_datasets += 1
@@ -409,7 +409,7 @@ class DatasetInterface( BaseController ):
                     refresh_frames = ['history']
                 trans.app.model.flush()
                 done_msg = "%i datasets copied to %i histories." % ( len( source_dataset_ids ) - invalid_datasets, len( target_histories ) )
-                history.refresh()
+                trans.sa_session.refresh( history )
         elif create_new_history:
             target_history_ids.append( "create_new_history" )
         source_datasets = history.active_datasets

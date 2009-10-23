@@ -32,7 +32,8 @@ class DefaultToolAction( object ):
         def visitor( prefix, input, value, parent = None ):
             def process_dataset( data ):
                 if data and not isinstance( data.datatype, input.formats ):
-                    data.refresh() #need to refresh in case this conversion just took place, i.e. input above in tool performed the same conversion
+                    # Need to refresh in case this conversion just took place, i.e. input above in tool performed the same conversion
+                    trans.sa_session.refresh( data )
                     target_ext, converted_dataset = data.find_conversion_destination( input.formats, converter_safe = input.converter_safe( param_values, trans ) )
                     if target_ext:
                         if converted_dataset:
@@ -172,7 +173,7 @@ class DefaultToolAction( object ):
                 #      this happens i.e. as a result of the async controller
                 if name in incoming:
                     dataid = incoming[name]
-                    data = trans.app.model.HistoryDatasetAssociation.get( dataid )
+                    data = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( dataid )
                     assert data != None
                     out_data[name] = data
                 else:

@@ -1,5 +1,6 @@
 import galaxy.model
 from galaxy.model.orm import *
+from galaxy.model.mapping import context as sa_session
 from base.twilltestcase import *
 
 not_logged_in_security_msg = 'You must be logged in as an administrator to access this feature.'
@@ -38,7 +39,9 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.visit_page( "admin" )
         self.check_page_for_string( 'Administration' )
         global admin_user
-        admin_user = galaxy.model.User.filter( galaxy.model.User.table.c.email=='test@bx.psu.edu' ).first()
+        admin_user = sa_session.query( galaxy.model.User ) \
+                               .filter( galaxy.model.User.table.c.email=='test@bx.psu.edu' ) \
+                               .first()
         assert admin_user is not None, 'Problem retrieving user with email "test@bx.psu.edu" from the database'
         # Get the admin user's private role for later use
         global admin_user_private_role
@@ -53,19 +56,25 @@ class TestSecurityAndLibraries( TwillTestCase ):
         if len( admin_user.default_permissions ) > 1:
             raise AssertionError( '%d DefaultUserPermissions associated with user %s ( should be 1 )' \
                                   % ( len( admin_user.default_permissions ), admin_user.email ) )
-        dup =  galaxy.model.DefaultUserPermissions.filter( galaxy.model.DefaultUserPermissions.table.c.user_id==admin_user.id ).first()
+        dup = sa_session.query( galaxy.model.DefaultUserPermissions ) \
+                         .filter( galaxy.model.DefaultUserPermissions.table.c.user_id==admin_user.id ) \
+                         .first()
         if not dup.action == galaxy.model.Dataset.permitted_actions.DATASET_MANAGE_PERMISSIONS.action:
             raise AssertionError( 'The DefaultUserPermission.action for user "%s" is "%s", but it should be "%s"' \
                                   % ( admin_user.email, dup.action, galaxy.model.Dataset.permitted_actions.DATASET_MANAGE_PERMISSIONS.action ) )
         # Make sure DefaultHistoryPermissions are correct
         # Logged in as admin_user
-        latest_history = galaxy.model.History.filter( and_( galaxy.model.History.table.c.deleted==False,
-                                                      galaxy.model.History.table.c.user_id==admin_user.id ) ) \
-            .order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
+        latest_history = sa_session.query( galaxy.model.History ) \
+                                   .filter( and_( galaxy.model.History.table.c.deleted==False,
+                                                  galaxy.model.History.table.c.user_id==admin_user.id ) ) \
+                                   .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
+                                   .first()
         if len( latest_history.default_permissions ) > 1:
             raise AssertionError( '%d DefaultHistoryPermissions were created for history id %d when it was created ( should have been 1 )' \
                                   % ( len( latest_history.default_permissions ), latest_history.id ) )
-        dhp =  galaxy.model.DefaultHistoryPermissions.filter( galaxy.model.DefaultHistoryPermissions.table.c.history_id==latest_history.id ).first()
+        dhp = sa_session.query( galaxy.model.DefaultHistoryPermissions ) \
+                        .filter( galaxy.model.DefaultHistoryPermissions.table.c.history_id==latest_history.id ) \
+                        .first()
         if not dhp.action == galaxy.model.Dataset.permitted_actions.DATASET_MANAGE_PERMISSIONS.action:
             raise AssertionError( 'The DefaultHistoryPermission.action for history id %d is "%s", but it should be "%s"' \
                                   % ( latest_history.id, dhp.action, galaxy.model.Dataset.permitted_actions.DATASET_MANAGE_PERMISSIONS.action ) )
@@ -84,7 +93,9 @@ class TestSecurityAndLibraries( TwillTestCase ):
         # test_history_functions.py script, so we could potentially eliminate 1 or 2 of them.
         self.login( email='test1@bx.psu.edu' ) # test1@bx.psu.edu is not an admin user
         global regular_user1
-        regular_user1 = galaxy.model.User.filter( galaxy.model.User.table.c.email=='test1@bx.psu.edu' ).first()
+        regular_user1 = sa_session.query( galaxy.model.User ) \
+                                  .filter( galaxy.model.User.table.c.email=='test1@bx.psu.edu' ) \
+                                  .first()
         assert regular_user1 is not None, 'Problem retrieving user with email "test1@bx.psu.edu" from the database'
         self.visit_page( "admin" )
         self.check_page_for_string( logged_in_security_msg )
@@ -100,12 +111,16 @@ class TestSecurityAndLibraries( TwillTestCase ):
         regular_user1_private_role = private_role
         # Add a dataset to the history
         self.upload_file( '1.bed' )
-        latest_dataset = galaxy.model.Dataset.query().order_by( desc( galaxy.model.Dataset.table.c.create_time ) ).first()
+        latest_dataset = sa_session.query( galaxy.model.Dataset ) \
+                                   .order_by( desc( galaxy.model.Dataset.table.c.create_time ) ) \
+                                   .first()
         # Make sure DatasetPermissions is correct - default is 'manage permissions'
         if len( latest_dataset.actions ) > 1:
             raise AssertionError( '%d DatasetPermissions were created for dataset id %d when it was created ( should have been 1 )' \
                                   % ( len( latest_dataset.actions ), latest_dataset.id ) )
-        dp = galaxy.model.DatasetPermissions.filter( galaxy.model.DatasetPermissions.table.c.dataset_id==latest_dataset.id ).first()
+        dp = sa_session.query( galaxy.model.DatasetPermissions ) \
+                       .filter( galaxy.model.DatasetPermissions.table.c.dataset_id==latest_dataset.id ) \
+                       .first()
         if not dp.action == galaxy.model.Dataset.permitted_actions.DATASET_MANAGE_PERMISSIONS.action:
             raise AssertionError( 'The DatasetPermissions.action for dataset id %d is "%s", but it should be "manage permissions"' \
                                   % ( latest_dataset.id, dp.action ) )
@@ -123,9 +138,11 @@ class TestSecurityAndLibraries( TwillTestCase ):
         # Make sure the default permissions are changed for new histories
         self.new_history()
         # logged in as regular_user1
-        latest_history = galaxy.model.History.filter( and_( galaxy.model.History.table.c.deleted==False,
-                                                      galaxy.model.History.table.c.user_id==regular_user1.id ) ) \
-            .order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
+        latest_history = sa_session.query( galaxy.model.History ) \
+                                   .filter( and_( galaxy.model.History.table.c.deleted==False,
+                                                  galaxy.model.History.table.c.user_id==regular_user1.id ) ) \
+                                   .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
+                                   .first()
         if len( latest_history.default_permissions ) != len( galaxy.model.Dataset.permitted_actions.items() ):
             raise AssertionError( '%d DefaultHistoryPermissions were created for history id %d, should have been %d' % \
                                   ( len( latest_history.default_permissions ), latest_history.id, len( galaxy.model.Dataset.permitted_actions.items() ) ) )
@@ -161,16 +178,21 @@ class TestSecurityAndLibraries( TwillTestCase ):
 
     def test_015_login_as_regular_user2( self ):
         """Testing logging in as regular user test2@bx.psu.edu - tests changing DefaultHistoryPermissions for the current history"""
-        self.login( email='test2@bx.psu.edu' ) # This will not be an admin user
+        email = 'test2@bx.psu.edu'
+        self.login( email=email ) # This will not be an admin user
         global regular_user2
-        regular_user2 = galaxy.model.User.filter( galaxy.model.User.table.c.email=='test2@bx.psu.edu' ).first()
-        assert regular_user2 is not None, 'Problem retrieving user with email "test2@bx.psu.edu" from the database'
+        regular_user2 = sa_session.query( galaxy.model.User ) \
+                                  .filter( galaxy.model.User.table.c.email==email ) \
+                                  .first()
+        assert regular_user2 is not None, 'Problem retrieving user with email "" from the database' % email
         # Logged in as regular_user2
-        latest_history = galaxy.model.History.filter( and_( galaxy.model.History.table.c.deleted==False,
-                                                      galaxy.model.History.table.c.user_id==regular_user2.id ) ) \
-            .order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
+        latest_history = sa_session.query( galaxy.model.History ) \
+                                   .filter( and_( galaxy.model.History.table.c.deleted==False,
+                                                  galaxy.model.History.table.c.user_id==regular_user2.id ) ) \
+                                   .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
+                                   .first()
         self.upload_file( '1.bed' )
-        latest_dataset = galaxy.model.Dataset.query().order_by( desc( galaxy.model.Dataset.table.c.create_time ) ).first()
+        latest_dataset = sa_session.query( galaxy.model.Dataset ).order_by( desc( galaxy.model.Dataset.table.c.create_time ) ).first()
         permissions_in = [ 'DATASET_MANAGE_PERMISSIONS' ]
         # Make sure these are in sorted order for later comparison
         actions_in = [ 'manage permissions' ]
@@ -216,14 +238,14 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.logout()
     def test_020_create_new_user_account_as_admin( self ):
         """Testing creating a new user account as admin"""
-        self.login( email='test@bx.psu.edu' )
+        self.login( email=admin_user.email )
         email = 'test3@bx.psu.edu'
         password = 'testuser'
         previously_created = self.create_new_account_as_admin( email=email, password=password )
         # Get the user object for later tests
         global regular_user3
-        regular_user3 = galaxy.model.User.filter( galaxy.model.User.table.c.email=='test3@bx.psu.edu' ).first()
-        assert regular_user3 is not None, 'Problem retrieving user with email "test3@bx.psu.edu" from the database'
+        regular_user3 = sa_session.query( galaxy.model.User ).filter( galaxy.model.User.table.c.email==email ).first()
+        assert regular_user3 is not None, 'Problem retrieving user with email "%s" from the database' % email
         # Make sure DefaultUserPermissions were created
         if not regular_user3.default_permissions:
             raise AssertionError( 'No DefaultUserPermissions were created for user %s when the admin created the account' % email )
@@ -234,14 +256,16 @@ class TestSecurityAndLibraries( TwillTestCase ):
             raise AssertionError( '%d UserRoleAssociations were created for user %s when the admin created the account ( should have been 1 )' \
                                   % ( len( regular_user3.roles ), regular_user3.email ) )
         for ura in regular_user3.roles:
-            role = galaxy.model.Role.get( ura.role_id )
+            role = sa_session.query( galaxy.model.Role ).get( ura.role_id )
             if not previously_created and role.type != 'private':
                 raise AssertionError( 'Role created for user %s when the admin created the account is not private, type is' \
                                       % str( role.type ) )
         if not previously_created:
             # Make sure a history was not created ( previous test runs may have left deleted histories )
-            histories = galaxy.model.History.filter( and_( galaxy.model.History.table.c.user_id==regular_user3.id,
-                                                           galaxy.model.History.table.c.deleted==False ) ).all()
+            histories = sa_session.query( galaxy.model.History ) \
+                                  .filter( and_( galaxy.model.History.table.c.user_id==regular_user3.id,
+                                           galaxy.model.History.table.c.deleted==False ) ) \
+                                  .all()
             if histories:
                 raise AssertionError( 'Histories were incorrectly created for user %s when the admin created the account' % email )
             # Make sure the user was not associated with any groups
@@ -257,22 +281,26 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.login( email='test3@bx.psu.edu', password='testreset' )
         # Make sure a History and HistoryDefaultPermissions exist for the user
         # Logged in as regular_user3
-        latest_history = galaxy.model.History.filter( and_( galaxy.model.History.table.c.deleted==False,
-                                                      galaxy.model.History.table.c.user_id==regular_user3.id ) ) \
-            .order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
+        latest_history = sa_session.query( galaxy.model.History ) \
+                                   .filter( and_( galaxy.model.History.table.c.deleted==False,
+                                                  galaxy.model.History.table.c.user_id==regular_user3.id ) ) \
+                                   .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
+                                   .first()
         if not latest_history.user_id == regular_user3.id:
             raise AssertionError( 'A history was not created for user %s when he logged in' % email )
         if not latest_history.default_permissions:
             raise AssertionError( 'No DefaultHistoryPermissions were created for history id %d when it was created' % latest_history.id )
         if len( latest_history.default_permissions ) > 1:
             raise AssertionError( 'More than 1 DefaultHistoryPermissions were created for history id %d when it was created' % latest_history.id )
-        dhp =  galaxy.model.DefaultHistoryPermissions.filter( galaxy.model.DefaultHistoryPermissions.table.c.history_id==latest_history.id ).first()
+        dhp =  sa_session.query( galaxy.model.DefaultHistoryPermissions ) \
+                         .filter( galaxy.model.DefaultHistoryPermissions.table.c.history_id==latest_history.id ) \
+                         .first()
         if not dhp.action == galaxy.model.Dataset.permitted_actions.DATASET_MANAGE_PERMISSIONS.action:
             raise AssertionError( 'The DefaultHistoryPermission.action for history id %d is "%s", but it should be "manage permissions"' \
                                   % ( latest_history.id, dhp.action ) )
         # Upload a file to create a HistoryDatasetAssociation
         self.upload_file( '1.bed' )
-        latest_dataset = galaxy.model.Dataset.query().order_by( desc( galaxy.model.Dataset.table.c.create_time ) ).first()
+        latest_dataset = sa_session.query( galaxy.model.Dataset ).order_by( desc( galaxy.model.Dataset.table.c.create_time ) ).first()
         for dp in latest_dataset.actions:
             # Should only have 1 DatasetPermissions
             if dp.action != galaxy.model.Dataset.permitted_actions.DATASET_MANAGE_PERMISSIONS.action:
@@ -288,7 +316,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         """Testing marking a user account as deleted"""
         self.mark_user_deleted( user_id=self.security.encode_id( regular_user3.id ), email=regular_user3.email )
         # Deleting a user should not delete any associations
-        regular_user3.refresh()
+        sa_session.refresh( regular_user3 )
         if not regular_user3.active_histories:
             raise AssertionError( 'HistoryDatasetAssociations for regular_user3 were incorrectly deleted when the user was marked deleted' )
     def test_040_undelete_user( self ):
@@ -303,7 +331,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
                           create_group_for_role='yes', private_role=admin_user.email )
         # Get the role object for later tests
         global role_one
-        role_one = galaxy.model.Role.filter( galaxy.model.Role.table.c.name==name ).first()
+        role_one = sa_session.query( galaxy.model.Role ).filter( galaxy.model.Role.table.c.name==name ).first()
         assert role_one is not None, 'Problem retrieving role named "Role One" from the database'
         # Make sure UserRoleAssociations are correct
         if len( role_one.users ) != len( user_ids ):
@@ -311,7 +339,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
                                   % ( len( role_one.users ), role_one.id, len( user_ids ) ) )
         # Each of the following users should now have 2 role associations, their private role and role_one
         for user in [ admin_user, regular_user1, regular_user3 ]:
-            user.refresh()
+            sa_session.refresh( user )
             if len( user.roles ) != 2:
                 raise AssertionError( '%d UserRoleAssociations are associated with user %s ( should be 2 )' \
                                       % ( len( user.roles ), user.email ) )
@@ -320,7 +348,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.visit_page( 'admin/groups' )
         self.check_page_for_string( name )
         global group_zero
-        group_zero = galaxy.model.Group.filter( galaxy.model.Group.table.c.name==name ).first()
+        group_zero = sa_session.query( galaxy.model.Group ).filter( galaxy.model.Group.table.c.name==name ).first()
         # Rename the role
         rename = "Role One's been Renamed"
         redescription="This is Role One's Re-described"
@@ -339,7 +367,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.create_group( name=name, in_user_ids=user_ids, in_role_ids=role_ids )
         # Get the group object for later tests
         global group_one
-        group_one = galaxy.model.Group.filter( galaxy.model.Group.table.c.name==name ).first()
+        group_one = sa_session.query( galaxy.model.Group ).filter( galaxy.model.Group.table.c.name==name ).first()
         assert group_one is not None, 'Problem retrieving group named "Group One" from the database'
         # Make sure UserGroupAssociations are correct
         if len( group_one.users ) != len( user_ids ):
@@ -347,7 +375,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
                                   % ( len( group_one.users ), group_one.id, len( user_ids ) ) )
         # Each user should now have 1 group association, group_one
         for user in [ admin_user, regular_user1, regular_user3 ]:
-            user.refresh()
+            sa_session.refresh( user )
             if len( user.groups ) != 1:
                 raise AssertionError( '%d UserGroupAssociations are associated with user %s ( should be 1 )' % ( len( user.groups ), user.email ) )
         # Make sure GroupRoleAssociations are correct
@@ -368,7 +396,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.create_group( name=name, in_user_ids=[], in_role_ids=[] )
         # Get the group object for later tests
         global group_two
-        group_two = galaxy.model.Group.filter( galaxy.model.Group.table.c.name==name ).first()
+        group_two = sa_session.query( galaxy.model.Group ).filter( galaxy.model.Group.table.c.name==name ).first()
         assert group_two is not None, 'Problem retrieving group named "Group Two" from the database'
         # group_two should have no associations
         if group_two.users:
@@ -396,23 +424,23 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.create_role( name=name, description=description, in_user_ids=user_ids, in_group_ids=group_ids, private_role=private_role )
         # Get the role object for later tests
         global role_two
-        role_two = galaxy.model.Role.filter( galaxy.model.Role.table.c.name==name ).first()
+        role_two = sa_session.query( galaxy.model.Role ).filter( galaxy.model.Role.table.c.name==name ).first()
         assert role_two is not None, 'Problem retrieving role named "Role Two" from the database'
         # Make sure UserRoleAssociations are correct
         if len( role_two.users ) != len( user_ids ):
             raise AssertionError( '%d UserRoleAssociations were created for role id %d when it was created with %d members' \
                                   % ( len( role_two.users ), role_two.id, len( user_ids ) ) )
         # admin_user should now have 3 role associations, private role, role_one, role_two
-        admin_user.refresh()
+        sa_session.refresh( admin_user )
         if len( admin_user.roles ) != 3:
             raise AssertionError( '%d UserRoleAssociations are associated with user %s ( should be 3 )' % ( len( admin_user.roles ), admin_user.email ) )
         # Make sure GroupRoleAssociations are correct
-        role_two.refresh()
+        sa_session.refresh( role_two )
         if len( role_two.groups ) != len( group_ids ):
             raise AssertionError( '%d GroupRoleAssociations were created for role id %d when it was created ( should have been %d )' \
                                   % ( len( role_two.groups ), role_two.id, len( group_ids ) ) )
         # group_two should now be associated with 2 roles: role_one, role_two
-        group_two.refresh()
+        sa_session.refresh( group_two )
         if len( group_two.roles ) != 2:
             raise AssertionError( '%d GroupRoleAssociations are associated with group id %d ( should be 2 )' % ( len( group_two.roles ), group_two.id ) )
     def test_065_change_user_role_associations( self ):
@@ -426,10 +454,10 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.create_role( name=name, description=description, in_user_ids=user_ids, in_group_ids=group_ids, private_role=private_role )
         # Get the role object for later tests
         global role_three
-        role_three = galaxy.model.Role.filter( galaxy.model.Role.table.c.name==name ).first()
+        role_three = sa_session.query( galaxy.model.Role ).filter( galaxy.model.Role.table.c.name==name ).first()
         assert role_three is not None, 'Problem retrieving role named "Role Three" from the database'
         # Associate the role with a user
-        admin_user.refresh()
+        sa_session.refresh( admin_user )
         role_ids = []
         for ura in admin_user.non_private_roles:
             role_ids.append( str( ura.role_id ) )
@@ -440,7 +468,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         check_str = "User '%s' has been updated with %d associated roles and %d associated groups" % ( admin_user.email, len( role_ids ), len( group_ids ) )
         self.associate_roles_and_groups_with_user( self.security.encode_id( admin_user.id ), str( admin_user.email ),
                                                    in_role_ids=role_ids, in_group_ids=group_ids, check_str=check_str )
-        admin_user.refresh()
+        sa_session.refresh( admin_user )
         # admin_user should now be associated with 4 roles: private, role_one, role_two, role_three
         if len( admin_user.roles ) != 4:
             raise AssertionError( '%d UserRoleAssociations are associated with %s ( should be 4 )' % ( len( admin_user.roles ), admin_user.email ) )
@@ -454,9 +482,11 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.check_page_for_string( description )
         # Get the library object for later tests
         global library_one
-        library_one = galaxy.model.Library.filter( and_( galaxy.model.Library.table.c.name==name,
-                                                         galaxy.model.Library.table.c.description==description,
-                                                         galaxy.model.Library.table.c.deleted==False ) ).first()
+        library_one = sa_session.query( galaxy.model.Library ) \
+                                .filter( and_( galaxy.model.Library.table.c.name==name,
+                                               galaxy.model.Library.table.c.description==description,
+                                               galaxy.model.Library.table.c.deleted==False ) ) \
+                                .first()
         assert library_one is not None, 'Problem retrieving library named "%s" from the database' % name
         # Set permissions on the library, sort for later testing
         permissions_in = [ k for k, v in galaxy.model.Library.permitted_actions.items() ]
@@ -473,9 +503,9 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.check_page_for_string( rename )
         self.check_page_for_string( redescription )
         # Reset the library back to the original name and description
-        library_one.refresh()
+        sa_session.refresh( library_one )
         self.rename_library( str( library_one.id ), library_one.name, name=name, description=description )
-        library_one.refresh()
+        sa_session.refresh( library_one )
     def test_075_library_template_features( self ):
         """Testing adding a template to a library, then filling in the contents"""
         # Make sure a form exists
@@ -485,9 +515,9 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.create_form( name=form_name, desc=form_desc, formtype=form_type )
         global form_one
         form_one = None
-        fdcs = galaxy.model.FormDefinitionCurrent.filter( galaxy.model.FormDefinitionCurrent.table.c.deleted==False ) \
-                                                 .order_by( galaxy.model.FormDefinitionCurrent.table.c.create_time.desc() ) \
-                                                 .all()
+        fdcs = sa_session.query( galaxy.model.FormDefinitionCurrent ) \
+                         .filter( galaxy.model.FormDefinitionCurrent.table.c.deleted==False ) \
+                         .order_by( galaxy.model.FormDefinitionCurrent.table.c.create_time.desc() )
         for fdc in fdcs:
             if form_name == fdc.latest_form.name and form_type == fdc.latest_form.type:
                 form_one = fdc.latest_form
@@ -551,8 +581,9 @@ class TestSecurityAndLibraries( TwillTestCase ):
                                   template_field_name1=form_one_field_name,
                                   template_field_contents1=template_contents )
         global ldda_one
-        ldda_one = galaxy.model.LibraryDatasetDatasetAssociation.query() \
-            .order_by( desc( galaxy.model.LibraryDatasetDatasetAssociation.table.c.create_time ) ).first()
+        ldda_one = sa_session.query( galaxy.model.LibraryDatasetDatasetAssociation ) \
+                             .order_by( desc( galaxy.model.LibraryDatasetDatasetAssociation.table.c.create_time ) ) \
+                             .first()
         assert ldda_one is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda_one from the database'
         self.home()
         self.visit_url( '%s/library_admin/browse_library?obj_id=%s' % ( self.url, str( library_one.id ) ) )
@@ -560,9 +591,9 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.check_page_for_string( message )
         self.check_page_for_string( admin_user.email )
         # Make sure the library permissions were inherited to the library_dataset_dataset_association
-        ldda_permissions = galaxy.model.LibraryDatasetDatasetAssociationPermissions \
-            .filter( galaxy.model.LibraryDatasetDatasetAssociationPermissions.table.c.library_dataset_dataset_association_id == ldda_one.id ) \
-            .all()
+        ldda_permissions = sa_session.query( galaxy.model.LibraryDatasetDatasetAssociationPermissions ) \
+                                     .filter( galaxy.model.LibraryDatasetDatasetAssociationPermissions.table.c.library_dataset_dataset_association_id == ldda_one.id ) \
+                                     .all()
         ldda_permissions = [ lddap_obj.action for lddap_obj in ldda_permissions ]
         ldda_permissions.sort()
         assert actions == ldda_permissions, "Permissions for ldda id %s not correctly inherited from library %s" \
@@ -571,7 +602,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         if len( ldda_one.dataset.actions ) > 1:
             raise AssertionError( '%d DatasetPermissionss were created for dataset id %d when it was created ( should have been 1 )' \
                                   % ( len( ldda_one.dataset.actions ), ldda_one.dataset.id ) )
-        dp = galaxy.model.DatasetPermissions.filter( galaxy.model.DatasetPermissions.table.c.dataset_id==ldda_one.dataset.id ).first()
+        dp = sa_session.query( galaxy.model.DatasetPermissions ).filter( galaxy.model.DatasetPermissions.table.c.dataset_id==ldda_one.dataset.id ).first()
         if not dp.action == galaxy.model.Dataset.permitted_actions.DATASET_MANAGE_PERMISSIONS.action:
             raise AssertionError( 'The DatasetPermissions.action for dataset id %d is "%s", but it should be "manage permissions"' \
                                   % ( ldda_one.dataset.id, dp.action ) )
@@ -600,9 +631,11 @@ class TestSecurityAndLibraries( TwillTestCase ):
                          name=name,
                          description=description )
         global folder_one
-        folder_one = galaxy.model.LibraryFolder.filter( and_( galaxy.model.LibraryFolder.table.c.parent_id==root_folder.id,
-                                                              galaxy.model.LibraryFolder.table.c.name==name,
-                                                              galaxy.model.LibraryFolder.table.c.description==description ) ).first()
+        folder_one = sa_session.query( galaxy.model.LibraryFolder ) \
+                               .filter( and_( galaxy.model.LibraryFolder.table.c.parent_id==root_folder.id,
+                                              galaxy.model.LibraryFolder.table.c.name==name,
+                                              galaxy.model.LibraryFolder.table.c.description==description ) ) \
+                               .first()
         assert folder_one is not None, 'Problem retrieving library folder named "%s" from the database' % name
         self.home()
         self.visit_url( '%s/library_admin/browse_library?obj_id=%s' % ( self.url, str( library_one.id ) ) )
@@ -632,9 +665,11 @@ class TestSecurityAndLibraries( TwillTestCase ):
         description = "This is the Folder One's subfolder"
         self.add_folder( 'library_admin', str( library_one.id ), str( folder_one.id ), name=name, description=description )
         global subfolder_one
-        subfolder_one = galaxy.model.LibraryFolder.filter( and_( galaxy.model.LibraryFolder.table.c.parent_id==folder_one.id,
-                                                                 galaxy.model.LibraryFolder.table.c.name==name,
-                                                                 galaxy.model.LibraryFolder.table.c.description==description ) ).first()
+        subfolder_one = sa_session.query( galaxy.model.LibraryFolder ) \
+                                  .filter( and_( galaxy.model.LibraryFolder.table.c.parent_id==folder_one.id,
+                                                 galaxy.model.LibraryFolder.table.c.name==name,
+                                                 galaxy.model.LibraryFolder.table.c.description==description ) ) \
+                                  .first()
         assert subfolder_one is not None, 'Problem retrieving library folder named "Folder Ones Subfolder" from the database'
         self.home()
         self.visit_url( '%s/library_admin/browse_library?obj_id=%s' % ( self.url, str( library_one.id ) ) )
@@ -665,9 +700,11 @@ class TestSecurityAndLibraries( TwillTestCase ):
         description = "This is the root folder's Folder Two"
         self.add_folder( 'library_admin', str( library_one.id ), str( root_folder.id ), name=name, description=description )
         global folder_two
-        folder_two = galaxy.model.LibraryFolder.filter( and_( galaxy.model.LibraryFolder.table.c.parent_id==root_folder.id,
-                                                              galaxy.model.LibraryFolder.table.c.name==name,
-                                                              galaxy.model.LibraryFolder.table.c.description==description ) ).first()
+        folder_two = sa_session.query( galaxy.model.LibraryFolder ) \
+                               .filter( and_( galaxy.model.LibraryFolder.table.c.parent_id==root_folder.id,
+                                              galaxy.model.LibraryFolder.table.c.name==name,
+                                              galaxy.model.LibraryFolder.table.c.description==description ) ) \
+                               .first()
         assert folder_two is not None, 'Problem retrieving library folder named "%s" from the database' % name
         self.home()
         self.visit_url( '%s/library_admin/browse_library?obj_id=%s' % ( self.url, str( library_one.id ) ) )
@@ -703,8 +740,9 @@ class TestSecurityAndLibraries( TwillTestCase ):
                                   template_field_name1=form_one_field_name,
                                   template_field_contents1=template_contents )
         global ldda_two
-        ldda_two = galaxy.model.LibraryDatasetDatasetAssociation.query() \
-            .order_by( desc( galaxy.model.LibraryDatasetDatasetAssociation.table.c.create_time ) ).first()
+        ldda_two = sa_session.query( galaxy.model.LibraryDatasetDatasetAssociation ) \
+                             .order_by( desc( galaxy.model.LibraryDatasetDatasetAssociation.table.c.create_time ) ) \
+                             .first()
         assert ldda_two is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda_two from the database'
         self.home()
         self.visit_url( '%s/library_admin/browse_library?obj_id=%s' % ( self.url, str( library_one.id ) ) )
@@ -735,8 +773,9 @@ class TestSecurityAndLibraries( TwillTestCase ):
                                   template_field_name1=form_one_field_name,
                                   template_field_contents1=template_contents )
         global ldda_three
-        ldda_three = galaxy.model.LibraryDatasetDatasetAssociation.query() \
-            .order_by( desc( galaxy.model.LibraryDatasetDatasetAssociation.table.c.create_time ) ).first()
+        ldda_three = sa_session.query( galaxy.model.LibraryDatasetDatasetAssociation ) \
+                               .order_by( desc( galaxy.model.LibraryDatasetDatasetAssociation.table.c.create_time ) ) \
+                               .first()
         assert ldda_three is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda_three from the database'
         self.home()
         self.visit_url( '%s/library_admin/browse_library?obj_id=%s' % ( self.url, str( library_one.id ) ) )
@@ -779,8 +818,9 @@ class TestSecurityAndLibraries( TwillTestCase ):
                                   template_field_name1=form_one_field_name,
                                   template_field_contents1=template_contents )
         global ldda_four
-        ldda_four = galaxy.model.LibraryDatasetDatasetAssociation.query() \
-            .order_by( desc( galaxy.model.LibraryDatasetDatasetAssociation.table.c.create_time ) ).first()
+        ldda_four = sa_session.query( galaxy.model.LibraryDatasetDatasetAssociation ) \
+                              .order_by( desc( galaxy.model.LibraryDatasetDatasetAssociation.table.c.create_time ) ) \
+                              .first()
         assert ldda_four is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda_four from the database'
         self.home()
         self.visit_url( '%s/library_admin/browse_library?obj_id=%s' % ( self.url, str( library_one.id ) ) )
@@ -887,8 +927,9 @@ class TestSecurityAndLibraries( TwillTestCase ):
                                   template_field_name1=form_one_field_name,
                                   template_field_contents1=template_contents )
         global ldda_five
-        ldda_five = galaxy.model.LibraryDatasetDatasetAssociation.query() \
-            .order_by( desc( galaxy.model.LibraryDatasetDatasetAssociation.table.c.create_time ) ).first()
+        ldda_five = sa_session.query( galaxy.model.LibraryDatasetDatasetAssociation ) \
+                              .order_by( desc( galaxy.model.LibraryDatasetDatasetAssociation.table.c.create_time ) ) \
+                              .first()
         assert ldda_five is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda_five from the database'
         self.home()
         self.visit_url( '%s/library_admin/browse_library?obj_id=%s' % ( self.url, str( library_one.id ) ) )
@@ -979,11 +1020,17 @@ class TestSecurityAndLibraries( TwillTestCase ):
         """Testing copying a dataset from the current history to a subfolder"""
         self.new_history()
         self.upload_file( "6.bed" )
-        latest_hda = galaxy.model.HistoryDatasetAssociation.query().order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ).first()
+        latest_hda = sa_session.query( galaxy.model.HistoryDatasetAssociation ) \
+                               .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ) \
+                               .first()
         self.add_history_datasets_to_library( str( library_one.id ), str( subfolder_one.id ), subfolder_one.name, str( latest_hda.id ), root=False )
         # Test for DatasetPermissionss, the default setting is "manage permissions"
-        last_dataset_created = galaxy.model.Dataset.query().order_by( desc( galaxy.model.Dataset.table.c.create_time ) ).first()
-        dps = galaxy.model.DatasetPermissions.filter( galaxy.model.DatasetPermissions.table.c.dataset_id==last_dataset_created.id ).all()
+        last_dataset_created = sa_session.query( galaxy.model.Dataset ) \
+                                         .order_by( desc( galaxy.model.Dataset.table.c.create_time ) ) \
+                                         .first()
+        dps = sa_session.query( galaxy.model.DatasetPermissions ) \
+                        .filter( galaxy.model.DatasetPermissions.table.c.dataset_id==last_dataset_created.id ) \
+                        .all()
         if not dps:
             raise AssertionError( 'No DatasetPermissionss created for dataset id: %d' % last_dataset_created.id )
         if len( dps ) > 1:
@@ -993,8 +1040,9 @@ class TestSecurityAndLibraries( TwillTestCase ):
                 raise AssertionError( 'DatasetPermissions.action "%s" is not the DefaultHistoryPermission setting of "manage permissions"' \
                                       % str( dp.action ) )
         global ldda_six
-        ldda_six = galaxy.model.LibraryDatasetDatasetAssociation.query() \
-            .order_by( desc( galaxy.model.LibraryDatasetDatasetAssociation.table.c.create_time ) ).first()
+        ldda_six = sa_session.query( galaxy.model.LibraryDatasetDatasetAssociation ) \
+                             .order_by( desc( galaxy.model.LibraryDatasetDatasetAssociation.table.c.create_time ) ) \
+                             .first()
         assert ldda_six is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda_six from the database'
         self.home()
         # Make sure the correct template was inherited
@@ -1013,7 +1061,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         new_ldda_name = '6.bed ( version 1 )'
         self.edit_ldda_attribute_info( str( library_one.id ), str( subfolder_one.id ), str( ldda_six.id ), ldda_six.name, new_ldda_name )
         self.home()
-        ldda_six.refresh()
+        sa_session.refresh( ldda_six )
         self.visit_url( '%s/library_admin/browse_library?obj_id=%s' % ( self.url, str( library_one.id ) ) )
         self.check_page_for_string( ldda_six.name )
         self.home()
@@ -1044,8 +1092,9 @@ class TestSecurityAndLibraries( TwillTestCase ):
                                          template_field_name1=form_one_field_name,
                                          template_field_contents1=template_contents )
         global ldda_six_version_two
-        ldda_six_version_two = galaxy.model.LibraryDatasetDatasetAssociation.query() \
-            .order_by( desc( galaxy.model.LibraryDatasetDatasetAssociation.table.c.create_time ) ).first()
+        ldda_six_version_two = sa_session.query( galaxy.model.LibraryDatasetDatasetAssociation ) \
+                                         .order_by( desc( galaxy.model.LibraryDatasetDatasetAssociation.table.c.create_time ) ) \
+                                         .first()
         assert ldda_six_version_two is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda_six_version_two from the database'
         self.home()
         self.visit_url( "%s/library_admin/ldda_edit_info?library_id=%s&folder_id=%s&obj_id=%s" % \
@@ -1066,7 +1115,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.check_page_for_string( 'The information has been updated.' )
         self.check_page_for_string( template_contents )
         # Make sure the permissions are the same
-        ldda_six.refresh()
+        sa_session.refresh( ldda_six )
         if len( ldda_six.actions ) != len( ldda_six_version_two.actions ):
             raise AssertionError( 'ldda "%s" actions "%s" != ldda "%s" actions "%s"' \
                 % ( ldda_six.name, str( ldda_six.actions ),
@@ -1093,7 +1142,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         message = 'Testing uploading a new version of a library dataset'
         # The form_one template should be inherited to the library dataset upload form.
         template_contents = "%s contents for %s 5th new version of 6.bed" % ( form_one_field_label, folder_one.name )
-        ldda_six_version_two.refresh()
+        sa_session.refresh( ldda_six_version_two )
         self.upload_new_dataset_version( '6.bed',
                                          str( library_one.id ),
                                          str( subfolder_one.id ),
@@ -1106,8 +1155,9 @@ class TestSecurityAndLibraries( TwillTestCase ):
                                          template_field_name1=form_one_field_name,
                                          template_field_contents1=template_contents )
         global ldda_six_version_five
-        ldda_six_version_five = galaxy.model.LibraryDatasetDatasetAssociation.query() \
-            .order_by( desc( galaxy.model.LibraryDatasetDatasetAssociation.table.c.create_time ) ).first()
+        ldda_six_version_five = sa_session.query( galaxy.model.LibraryDatasetDatasetAssociation ) \
+                                          .order_by( desc( galaxy.model.LibraryDatasetDatasetAssociation.table.c.create_time ) ) \
+                                          .first()
         assert ldda_six_version_five is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda_six_version_five from the database'
         self.home()
         self.visit_url( "%s/library_admin/ldda_edit_info?library_id=%s&folder_id=%s&obj_id=%s" % \
@@ -1134,7 +1184,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.check_page_for_string( ldda_six.name )
         self.home()
         # Make sure the permissions are the same
-        ldda_six.refresh()
+        sa_session.refresh( ldda_six )
         if len( ldda_six.actions ) != len( ldda_six_version_five.actions ):
             raise AssertionError( 'ldda "%s" actions "%s" != ldda "%s" actions "%s"' \
                 % ( ldda_six.name, str( ldda_six.actions ),
@@ -1173,8 +1223,9 @@ class TestSecurityAndLibraries( TwillTestCase ):
         # form with the uploaded datasets selected, but it does not ( they're not checked ),
         # so we'll have to simulate this behavior ( not ideal ) for the 'edit' action.  We
         # first need to get the ldda.id for the 3 new datasets
-        latest_3_lddas = galaxy.model.LibraryDatasetDatasetAssociation.query() \
-            .order_by( desc( galaxy.model.LibraryDatasetDatasetAssociation.table.c.update_time ) ).limit( 3 )
+        latest_3_lddas = sa_session.query( galaxy.model.LibraryDatasetDatasetAssociation ) \
+                                   .order_by( desc( galaxy.model.LibraryDatasetDatasetAssociation.table.c.update_time ) ) \
+                                   .limit( 3 )
         ldda_ids = ''
         for ldda in latest_3_lddas:
             ldda_ids += '%s,' % str( ldda.id )
@@ -1199,8 +1250,9 @@ class TestSecurityAndLibraries( TwillTestCase ):
                 self.home()
                 self.visit_url( '%s/library/datasets?do_action=add&ldda_ids=%s&library_id=%s' % ( self.url, str( ldda.id ), str( library_one.id ) ) )
                 # Determine the new HistoryDatasetAssociation id created when the library dataset was imported into our history
-                last_hda_created = galaxy.model.HistoryDatasetAssociation.query() \
-                    .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ).first()
+                last_hda_created = sa_session.query( galaxy.model.HistoryDatasetAssociation ) \
+                                             .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ) \
+                                             .first()
                 self.home()
                 self.visit_url( '%s/root/edit?id=%s' % ( self.url, str( last_hda_created.id ) ) )
                 self.check_page_for_string( 'Edit Attributes' )
@@ -1246,8 +1298,9 @@ class TestSecurityAndLibraries( TwillTestCase ):
                 self.home()
                 self.visit_url( '%s/library/datasets?library_id=%s&do_action=add&ldda_ids=%s' % ( self.url, str( library_one.id ), str( ldda.id ) ) )
                 # Determine the new HistoryDatasetAssociation id created when the library dataset was imported into our history
-                last_hda_created = galaxy.model.HistoryDatasetAssociation.query() \
-                    .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ).first()
+                last_hda_created = sa_session.query( galaxy.model.HistoryDatasetAssociation ) \
+                                             .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ) \
+                                             .first()
                 self.home()
                 self.visit_url( '%s/root/edit?id=%s' % ( self.url, str( last_hda_created.id ) ) )
                 self.check_page_for_string( 'Edit Attributes' )
@@ -1315,7 +1368,6 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.home()
         self.logout()
         self.login( email=admin_user.email )
-
     def test_170_mark_group_deleted( self ):
         """Testing marking a group as deleted"""
         # Logged in as admin_user
@@ -1323,7 +1375,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.visit_url( '%s/admin/groups' % self.url )
         self.check_page_for_string( group_two.name )
         self.mark_group_deleted( str( group_two.id ), group_two.name )
-        group_two.refresh()
+        sa_session.refresh( group_two )
         if not group_two.deleted:
             raise AssertionError( '%s was not correctly marked as deleted.' % group_two.name )
         # Deleting a group should not delete any associations
@@ -1335,7 +1387,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         """Testing undeleting a deleted group"""
         # Logged in as admin_user
         self.undelete_group( str( group_two.id ), group_two.name )
-        group_two.refresh()
+        sa_session.refresh( group_two )
         if group_two.deleted:
             raise AssertionError( '%s was not correctly marked as not deleted.' % group_two.name )
     def test_180_mark_role_deleted( self ):
@@ -1345,7 +1397,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.visit_url( '%s/admin/roles' % self.url )
         self.check_page_for_string( role_two.name )
         self.mark_role_deleted( str( role_two.id ), role_two.name )
-        role_two.refresh()
+        sa_session.refresh( role_two )
         if not role_two.deleted:
             raise AssertionError( '%s was not correctly marked as deleted.' % role_two.name )
         # Deleting a role should not delete any associations
@@ -1448,21 +1500,21 @@ class TestSecurityAndLibraries( TwillTestCase ):
         """Testing purging a user account"""
         # Logged in as admin_user
         self.mark_user_deleted( user_id=self.security.encode_id( regular_user3.id ), email=regular_user3.email )
-        regular_user3.refresh()
+        sa_session.refresh( regular_user3 )
         self.purge_user( self.security.encode_id( regular_user3.id ), regular_user3.email )
-        regular_user3.refresh()
+        sa_session.refresh( regular_user3 )
         if not regular_user3.purged:
             raise AssertionError( 'User %s was not marked as purged.' % regular_user3.email )
         # Make sure DefaultUserPermissions deleted EXCEPT FOR THE PRIVATE ROLE
         if len( regular_user3.default_permissions ) != 1:
             raise AssertionError( 'DefaultUserPermissions for user %s were not deleted.' % regular_user3.email )
         for dup in regular_user3.default_permissions:
-            role = galaxy.model.Role.get( dup.role_id )
+            role = sa_session.query( galaxy.model.Role ).get( dup.role_id )
             if role.type != 'private':
                 raise AssertionError( 'DefaultUserPermissions for user %s are not related with the private role.' % regular_user3.email )
         # Make sure History deleted
         for history in regular_user3.histories:
-            history.refresh()
+            sa_session.refresh( history )
             if not history.deleted:
                 raise AssertionError( 'User %s has active history id %d after their account was marked as purged.' % ( regular_user3.email, hda.id ) )
             # NOTE: Not all hdas / datasets will be deleted at the time a history is deleted - the cleanup_datasets.py script
@@ -1474,7 +1526,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         if len( regular_user3.roles ) != 1:
             raise AssertionError( 'UserRoleAssociations for user %s were not deleted.' % regular_user3.email )
         for ura in regular_user3.roles:
-            role = galaxy.model.Role.get( ura.role_id )
+            role = sa_session.query( galaxy.model.Role ).get( ura.role_id )
             if role.type != 'private':
                 raise AssertionError( 'UserRoleAssociations for user %s are not related with the private role.' % regular_user3.email )
     def test_230_manually_unpurge_user( self ):
@@ -1493,11 +1545,15 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.mark_group_deleted( group_id, group_two.name )
         self.purge_group( group_id, group_two.name )
         # Make sure there are no UserGroupAssociations
-        uga = galaxy.model.UserGroupAssociation.filter( galaxy.model.UserGroupAssociation.table.c.group_id == group_id ).all()
+        uga = sa_session.query( galaxy.model.UserGroupAssociation ) \
+                        .filter( galaxy.model.UserGroupAssociation.table.c.group_id == group_id ) \
+                        .first()
         if uga:
             raise AssertionError( "Purging the group did not delete the UserGroupAssociations for group_id '%s'" % group_id )
         # Make sure there are no GroupRoleAssociations
-        gra = galaxy.model.GroupRoleAssociation.filter( galaxy.model.GroupRoleAssociation.table.c.group_id == group_id ).all()
+        gra = sa_session.query( galaxy.model.GroupRoleAssociation ) \
+                        .filter( galaxy.model.GroupRoleAssociation.table.c.group_id == group_id ) \
+                        .first()
         if gra:
             raise AssertionError( "Purging the group did not delete the GroupRoleAssociations for group_id '%s'" % group_id )
         # Undelete the group for later test runs
@@ -1509,23 +1565,33 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.mark_role_deleted( role_id, role_two.name )
         self.purge_role( role_id, role_two.name )
         # Make sure there are no UserRoleAssociations
-        uras = galaxy.model.UserRoleAssociation.filter( galaxy.model.UserRoleAssociation.table.c.role_id == role_id ).all()
+        uras = sa_session.query( galaxy.model.UserRoleAssociation ) \
+                         .filter( galaxy.model.UserRoleAssociation.table.c.role_id == role_id ) \
+                         .all()
         if uras:
             raise AssertionError( "Purging the role did not delete the UserRoleAssociations for role_id '%s'" % role_id )
         # Make sure there are no DefaultUserPermissions associated with the Role
-        dups = galaxy.model.DefaultUserPermissions.filter( galaxy.model.DefaultUserPermissions.table.c.role_id == role_id ).all()
+        dups = sa_session.query( galaxy.model.DefaultUserPermissions ) \
+                         .filter( galaxy.model.DefaultUserPermissions.table.c.role_id == role_id ) \
+                         .all()
         if dups:
             raise AssertionError( "Purging the role did not delete the DefaultUserPermissions for role_id '%s'" % role_id )
         # Make sure there are no DefaultHistoryPermissions associated with the Role
-        dhps = galaxy.model.DefaultHistoryPermissions.filter( galaxy.model.DefaultHistoryPermissions.table.c.role_id == role_id ).all()
+        dhps = sa_session.query( galaxy.model.DefaultHistoryPermissions ) \
+                         .filter( galaxy.model.DefaultHistoryPermissions.table.c.role_id == role_id ) \
+                         .all()
         if dhps:
             raise AssertionError( "Purging the role did not delete the DefaultHistoryPermissions for role_id '%s'" % role_id )
         # Make sure there are no GroupRoleAssociations
-        gra = galaxy.model.GroupRoleAssociation.filter( galaxy.model.GroupRoleAssociation.table.c.role_id == role_id ).all()
+        gra = sa_session.query( galaxy.model.GroupRoleAssociation ) \
+                        .filter( galaxy.model.GroupRoleAssociation.table.c.role_id == role_id ) \
+                        .first()
         if gra:
             raise AssertionError( "Purging the role did not delete the GroupRoleAssociations for role_id '%s'" % role_id )
         # Make sure there are no DatasetPermissionss
-        dp = galaxy.model.DatasetPermissions.filter( galaxy.model.DatasetPermissions.table.c.role_id == role_id ).all()
+        dp = sa_session.query( galaxy.model.DatasetPermissions ) \
+                       .filter( galaxy.model.DatasetPermissions.table.c.role_id == role_id ) \
+                       .first()
         if dp:
             raise AssertionError( "Purging the role did not delete the DatasetPermissionss for role_id '%s'" % role_id )
     def test_245_manually_unpurge_role( self ):
@@ -1543,29 +1609,29 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.delete_library_item( str( library_one.id ), str( library_one.id ), library_one.name, library_item_type='library' )
         self.purge_library( str( library_one.id ), library_one.name )
         # Make sure the library was purged
-        library_one.refresh()
+        sa_session.refresh( library_one )
         if not ( library_one.deleted and library_one.purged ):
             raise AssertionError( 'The library id %s named "%s" has not been marked as deleted and purged.' % ( str( library_one.id ), library_one.name ) )
         def check_folder( library_folder ):
             for folder in library_folder.folders:
-                folder.refresh()
+                sa_session.refresh( folder )
                 # Make sure all of the library_folders are purged
                 if not folder.purged:
                     raise AssertionError( 'The library_folder id %s named "%s" has not been marked purged.' % ( str( folder.id ), folder.name ) )
                 check_folder( folder )
             # Make sure all of the LibraryDatasets and associated objects are deleted
-            library_folder.refresh()
+            sa_session.refresh( library_folder )
             for library_dataset in library_folder.datasets:
-                library_dataset.refresh
+                sa_session.refresh( library_dataset )
                 ldda = library_dataset.library_dataset_dataset_association
                 if ldda:
-                    ldda.refresh()
+                    sa_session.refresh( ldda )
                     if not ldda.deleted:
                         raise AssertionError( 'The library_dataset_dataset_association id %s named "%s" has not been marked as deleted.' % \
                                               ( str( ldda.id ), ldda.name ) )
                     # Make sure all of the datasets have been deleted
                     dataset = ldda.dataset
-                    dataset.refresh()
+                    sa_session.refresh( dataset )
                     if not dataset.deleted:
                         raise AssertionError( 'The dataset with id "%s" has not been marked as deleted when it should have been.' % \
                                               str( ldda.dataset.id ) )
@@ -1583,9 +1649,11 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.visit_page( 'library_admin/browse_libraries' )
         self.check_page_for_string( name )
         self.check_page_for_string( description )
-        library_two = galaxy.model.Library.filter( and_( galaxy.model.Library.table.c.name==name,
-                                                         galaxy.model.Library.table.c.description==description,
-                                                         galaxy.model.Library.table.c.deleted==False ) ).first()
+        library_two = sa_session.query( galaxy.model.Library ) \
+                                .filter( and_( galaxy.model.Library.table.c.name==name,
+                                               galaxy.model.Library.table.c.description==description,
+                                               galaxy.model.Library.table.c.deleted==False ) ) \
+                                .first()
         assert library_two is not None, 'Problem retrieving library named "%s" from the database' % name
         # Add a dataset to the library
         self.add_library_dataset( 'library_admin',
@@ -1597,8 +1665,9 @@ class TestSecurityAndLibraries( TwillTestCase ):
                                   dbkey='hg18',
                                   message='',
                                   root=True )
-        ldda_seven = galaxy.model.LibraryDatasetDatasetAssociation.query() \
-            .order_by( desc( galaxy.model.LibraryDatasetDatasetAssociation.table.c.create_time ) ).first()
+        ldda_seven = sa_session.query( galaxy.model.LibraryDatasetDatasetAssociation ) \
+                               .order_by( desc( galaxy.model.LibraryDatasetDatasetAssociation.table.c.create_time ) ) \
+                               .first()
         assert ldda_seven is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda_seven from the database'
         self.home()
         self.visit_url( '%s/library_admin/browse_library?obj_id=%s' % ( self.url, str( library_two.id ) ) )
@@ -1622,9 +1691,11 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.check_page_for_string( name )
         self.check_page_for_string( description )
         global library_three
-        library_three = galaxy.model.Library.filter( and_( galaxy.model.Library.table.c.name==name,
-                                                           galaxy.model.Library.table.c.description==description,
-                                                           galaxy.model.Library.table.c.deleted==False ) ).first()
+        library_three = sa_session.query( galaxy.model.Library ) \
+                                  .filter( and_( galaxy.model.Library.table.c.name==name,
+                                                 galaxy.model.Library.table.c.description==description,
+                                                 galaxy.model.Library.table.c.deleted==False ) ) \
+                                  .first()
         assert library_three is not None, 'Problem retrieving library named "%s" from the database' % name
         # Set library permissions for regular_user1 and regular_user2.  Each of these users will be permitted to
         # LIBRARY_ADD, LIBRARY_MODIFY, LIBRARY_MANAGE for library items.
@@ -1662,9 +1733,11 @@ class TestSecurityAndLibraries( TwillTestCase ):
                          name=name,
                          description=description )
         global folder_x
-        folder_x = galaxy.model.LibraryFolder.filter( and_( galaxy.model.LibraryFolder.table.c.parent_id==library_three.root_folder.id,
-                                                            galaxy.model.LibraryFolder.table.c.name==name,
-                                                            galaxy.model.LibraryFolder.table.c.description==description ) ).first()
+        folder_x = sa_session.query( galaxy.model.LibraryFolder ) \
+                             .filter( and_( galaxy.model.LibraryFolder.table.c.parent_id==library_three.root_folder.id,
+                                            galaxy.model.LibraryFolder.table.c.name==name,
+                                            galaxy.model.LibraryFolder.table.c.description==description ) ) \
+                             .first()
         # Add an information template to the folder
         template_name = 'Folder Template 1'
         self.add_folder_info_template( 'library',
@@ -1690,7 +1763,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
     def test_265_template_features_and_permissions( self ):
         """Test library template and more permissions behavior from the Data Libraries view"""
         # Logged in as regular_user2
-        folder_x.refresh()
+        sa_session.refresh( folder_x )
         # Add a dataset to the folder
         message = 'Testing adding 2.bed to Library Three root folder'
         self.add_library_dataset( 'library',
@@ -1703,8 +1776,9 @@ class TestSecurityAndLibraries( TwillTestCase ):
                                   message=message.replace( ' ', '+' ),
                                   root=False )
         global ldda_x
-        ldda_x = galaxy.model.LibraryDatasetDatasetAssociation.query() \
-            .order_by( desc( galaxy.model.LibraryDatasetDatasetAssociation.table.c.create_time ) ).first()
+        ldda_x = sa_session.query( galaxy.model.LibraryDatasetDatasetAssociation ) \
+                           .order_by( desc( galaxy.model.LibraryDatasetDatasetAssociation.table.c.create_time ) ) \
+                           .first()
         assert ldda_x is not None, 'Problem retrieving ldda_x from the database'
         # Add an information template to the library
         template_name = 'Library Template 3'
@@ -1744,8 +1818,8 @@ class TestSecurityAndLibraries( TwillTestCase ):
             self.mark_role_deleted( str( role.id ), role.name )
             self.purge_role( str( role.id ), role.name )
             # Manually delete the role from the database
-            role.refresh()
-            role.delete()
+            sa_session.refresh( role )
+            sa_session.delete( role )
             role.flush()
         ##################
         # Eliminate all groups
@@ -1754,14 +1828,14 @@ class TestSecurityAndLibraries( TwillTestCase ):
             self.mark_group_deleted( str( group.id ), group.name )
             self.purge_group( str( group.id ), group.name )
             # Manually delete the group from the database
-            group.refresh()
-            group.delete()
+            sa_session.refresh( group )
+            sa_session.delete( group )
             group.flush()
         ##################
         # Make sure all users are associated only with their private roles
         ##################
         for user in [ admin_user, regular_user1, regular_user2, regular_user3 ]:
-            user.refresh()
+            sa_session.refresh( user )
             if len( user.roles) != 1:
                 raise AssertionError( '%d UserRoleAssociations are associated with %s ( should be 1 )' % ( len( user.roles ), user.email ) )
         #####################

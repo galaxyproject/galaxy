@@ -1239,7 +1239,7 @@ class DataToolParameter( ToolParameter ):
         elif isinstance( value, trans.app.model.HistoryDatasetAssociation ):
             return value
         else:
-            return trans.app.model.HistoryDatasetAssociation.get( value )
+            return trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( value )
 
     def to_string( self, value, app ):
         if value is None or isinstance( value, str ):
@@ -1253,7 +1253,7 @@ class DataToolParameter( ToolParameter ):
         # indicates that the dataset is optional, while '' indicates that it is not.
         if value is None or value == '' or value == 'None':
             return value
-        return app.model.HistoryDatasetAssociation.get( int( value ) )
+        return app.model.context.query( app.model.HistoryDatasetAssociation ).get( int( value ) )
 
     def to_param_dict_string( self, value, other_values={} ):
         if value is None: return "None"

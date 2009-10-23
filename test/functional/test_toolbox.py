@@ -4,6 +4,7 @@ from galaxy.tools.parameters import basic
 from base.twilltestcase import TwillTestCase
 import galaxy.model
 from galaxy.model.orm import *
+from galaxy.model.mapping import context as sa_session
 
 toolbox = None
 
@@ -19,11 +20,13 @@ class ToolTestCase( TwillTestCase ):
         # Start with a new history
         self.logout()
         self.login( email='test@bx.psu.edu' )
-        admin_user = galaxy.model.User.filter( galaxy.model.User.table.c.email=='test@bx.psu.edu' ).one()
+        admin_user = sa_session.query( galaxy.model.User ).filter( galaxy.model.User.table.c.email=='test@bx.psu.edu' ).one()
         self.new_history()
-        latest_history = galaxy.model.History.filter( and_( galaxy.model.History.table.c.deleted==False,
-                                                            galaxy.model.History.table.c.user_id==admin_user.id ) ) \
-            .order_by( desc( galaxy.model.History.table.c.create_time ) ).first()
+        latest_history = sa_session.query( galaxy.model.History ) \
+                                   .filter( and_( galaxy.model.History.table.c.deleted==False,
+                                                  galaxy.model.History.table.c.user_id==admin_user.id ) ) \
+                                   .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
+                                   .first()
         assert latest_history is not None, "Problem retrieving latest_history from database"
         if len( self.get_history_as_data_list() ) > 0:
             raise AssertionError("ToolTestCase.do_it failed")

@@ -205,8 +205,10 @@ class GalaxyRBACAgent( RBACAgent ):
         self.associate_components( role=role, user=user )
         return role
     def get_private_user_role( self, user, auto_create=False ):
-        role = self.model.Role.filter( and_( self.model.Role.table.c.name == user.email, 
-                                             self.model.Role.table.c.type == self.model.Role.types.PRIVATE ) ).first()
+        role = self.sa_session.query( self.model.Role ) \
+                              .filter( and_( self.model.Role.table.c.name == user.email, 
+                                             self.model.Role.table.c.type == self.model.Role.types.PRIVATE ) ) \
+                              .first()
         if not role:
             if auto_create:
                 return self.create_private_user_role( user )
@@ -225,7 +227,7 @@ class GalaxyRBACAgent( RBACAgent ):
                 permissions[ self.permitted_actions.DATASET_ACCESS ] = permissions.values()[ 0 ]
         # Delete all of the current default permissions for the user
         for dup in user.default_permissions:
-            dup.delete()
+            self.sa_session.delete( dup )
             dup.flush()
         # Add the new default permissions for the user
         for action, roles in permissions.items():
@@ -255,7 +257,7 @@ class GalaxyRBACAgent( RBACAgent ):
             permissions = self.user_get_default_permissions( user )
         # Delete all of the current default permission for the history
         for dhp in history.default_permissions:
-            dhp.delete()
+            self.sa_session.delete( dhp )
             dhp.flush()
         # Add the new default permissions for the history
         for action, roles in permissions.items():
@@ -293,7 +295,7 @@ class GalaxyRBACAgent( RBACAgent ):
         # TODO: If setting ACCESS permission, at least 1 user must have every role associated with this dataset,
         # or the dataset is inaccessible.  See admin/library_dataset_dataset_association()
         for dp in dataset.actions:
-            dp.delete()
+            self.sa_session.delete( dp )
             dp.flush()
         # Add the new permissions on the dataset
         for action, roles in permissions.items():
@@ -314,7 +316,7 @@ class GalaxyRBACAgent( RBACAgent ):
             # Delete the current specific permission on the dataset if one exists
             for dp in dataset.actions:
                 if dp.action == action:
-                    dp.delete()
+                    self.sa_session.delete( dp )
                     dp.flush()
             # Add the new specific permission on the dataset
             for dp in [ self.model.DatasetPermissions( action, dataset, role ) for role in roles ]:
@@ -328,7 +330,7 @@ class GalaxyRBACAgent( RBACAgent ):
         # other actions ( 'manage permissions', 'edit metadata' ) are irrelevant.
         for dp in dataset.actions:
             if dp.action == self.permitted_actions.DATASET_ACCESS.action:
-                dp.delete()
+                self.sa_session.delete( dp )
                 dp.flush()
     def get_dataset_permissions( self, dataset ):
         """
@@ -379,7 +381,7 @@ class GalaxyRBACAgent( RBACAgent ):
     def set_all_library_permissions( self, library_item, permissions={} ):
         # Set new permissions on library_item, eliminating all current permissions
         for role_assoc in library_item.actions:
-            role_assoc.delete()
+            self.sa_session.delete( role_assoc )
             role_assoc.flush()
         # Add the new permissions on library_item
         for item_class, permission_class in self.library_item_assocs:
@@ -472,9 +474,9 @@ class GalaxyRBACAgent( RBACAgent ):
         for user in users:
             if delete_existing_assocs:
                 for a in user.non_private_roles + user.groups:
-                    a.delete()
+                    self.sa_session.delete( a )
                     a.flush()
-            user.refresh()
+            self.sa_session.refresh( user )
             for role in roles:
                 # Make sure we are not creating an additional association with a PRIVATE role
                 if role not in user.roles:
@@ -485,7 +487,7 @@ class GalaxyRBACAgent( RBACAgent ):
         for group in groups:
             if delete_existing_assocs:
                 for a in group.roles + group.users:
-                    a.delete()
+                    self.sa_session.delete( a )
                     a.flush()
             for role in roles:
                 self.associate_components( group=group, role=role )
@@ -495,7 +497,7 @@ class GalaxyRBACAgent( RBACAgent ):
         for role in roles:
             if delete_existing_assocs:
                 for a in role.users + role.groups:
-                    a.delete()
+                    self.sa_session.delete( a )
                     a.flush()
             for user in users:
                 self.associate_components( user=user, role=role )
@@ -505,15 +507,15 @@ class GalaxyRBACAgent( RBACAgent ):
         assert len( kwd ) == 2, 'You must specify exactly 2 Galaxy security components to check for associations.'
         if 'dataset' in kwd:
             if 'action' in kwd:
-                return self.model.DatasetPermissions.filter_by( action = kwd['action'].action, dataset_id = kwd['dataset'].id ).first()
+                return self.sa_session.query( self.model.DatasetPermissions ).filter_by( action = kwd['action'].action, dataset_id = kwd['dataset'].id ).first()
         elif 'user' in kwd:
             if 'group' in kwd:
-                return self.model.UserGroupAssociation.filter_by( group_id = kwd['group'].id, user_id = kwd['user'].id ).first()
+                return self.sa_session.query( self.model.UserGroupAssociation ).filter_by( group_id = kwd['group'].id, user_id = kwd['user'].id ).first()
             elif 'role' in kwd:
-                return self.model.UserRoleAssociation.filter_by( role_id = kwd['role'].id, user_id = kwd['user'].id ).first()
+                return self.sa_session.query( self.model.UserRoleAssociation ).filter_by( role_id = kwd['role'].id, user_id = kwd['user'].id ).first()
         elif 'group' in kwd:
             if 'role' in kwd:
-                return self.model.GroupRoleAssociation.filter_by( role_id = kwd['role'].id, group_id = kwd['group'].id ).first()
+                return self.sa_session.query( self.model.GroupRoleAssociation ).filter_by( role_id = kwd['role'].id, group_id = kwd['group'].id ).first()
         raise 'No valid method of associating provided components: %s' % kwd
     def check_folder_contents( self, user, roles, folder, hidden_folder_ids='' ):
         """
@@ -526,11 +528,11 @@ class GalaxyRBACAgent( RBACAgent ):
         """
         action = self.permitted_actions.DATASET_ACCESS
         lddas = self.sa_session.query( self.model.LibraryDatasetDatasetAssociation ) \
-            .join( "library_dataset" ) \
-            .filter( self.model.LibraryDataset.folder == folder ) \
-            .join( "dataset" ) \
-            .options( eagerload_all( "dataset.actions" ) ) \
-            .all()
+                               .join( "library_dataset" ) \
+                               .filter( self.model.LibraryDataset.folder == folder ) \
+                               .join( "dataset" ) \
+                               .options( eagerload_all( "dataset.actions" ) ) \
+                               .all()
         for ldda in lddas:
             ldda_access_permissions = self.get_item_actions( action, ldda.dataset )
             if not ldda_access_permissions:
@@ -573,7 +575,8 @@ class HostAgent( RBACAgent ):
             if action == self.permitted_actions.DATASET_ACCESS and action.action not in [ dp.action for dp in hda.dataset.actions ]:
                 log.debug( 'Allowing access to public dataset with hda: %i.' % hda.id )
                 return True # dataset has no roles associated with the access permission, thus is already public
-            hdadaa = self.model.HistoryDatasetAssociationDisplayAtAuthorization.filter_by( history_dataset_association_id = hda.id ).first()
+            hdadaa = self.sa_session.query( self.model.HistoryDatasetAssociationDisplayAtAuthorization ) \
+                                    .filter_by( history_dataset_association_id = hda.id ).first()
             if not hdadaa:
                 log.debug( 'Denying access to private dataset with hda: %i.  No hdadaa record for this dataset.' % hda.id )
                 return False # no auth
@@ -602,7 +605,8 @@ class HostAgent( RBACAgent ):
         else:
             raise 'The dataset access permission is the only valid permission in the host security agent.'
     def set_dataset_permissions( self, hda, user, site ):
-        hdadaa = self.model.HistoryDatasetAssociationDisplayAtAuthorization.filter_by( history_dataset_association_id = hda.id ).first()
+        hdadaa = self.sa_session.query( self.model.HistoryDatasetAssociationDisplayAtAuthorization ) \
+                                .filter_by( history_dataset_association_id = hda.id ).first()
         if hdadaa:
             hdadaa.update_time = datetime.utcnow()
         else:

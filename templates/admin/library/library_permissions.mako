@@ -14,6 +14,8 @@
 %endif
 
 <%
-    roles = trans.app.model.Role.filter( trans.app.model.Role.table.c.deleted==False ).order_by( trans.app.model.Role.table.c.name ).all()
+    roles = trans.sa_session.query( trans.app.model.Role ) \
+                            .filter( trans.app.model.Role.table.c.deleted==False ) \
+                            .order_by( trans.app.model.Role.table.c.name )
 %>
 ${render_permission_form( library, library.name, h.url_for( conroller='admin', action='library', obj_id=library.id, permissions=True ), roles )}

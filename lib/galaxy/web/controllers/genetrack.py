@@ -154,7 +154,7 @@ class WebRoot(BaseController):
         """
         Default search page
         """
-        data = trans.app.model.HistoryDatasetAssociation.get( dataset_id )
+        data = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( dataset_id )
         if not data:
             raise paste.httpexceptions.HTTPRequestRangeNotSatisfiable( "Invalid reference dataset id: %s." % str( dataset_id ) )
         # the main configuration file
@@ -202,7 +202,7 @@ class WebRoot(BaseController):
         Main request handler
         """
         color = cycle( [LIGHT, WHITE] )
-        data = trans.app.model.HistoryDatasetAssociation.get( dataset_id )
+        data = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( dataset_id )
         if not data:
             raise paste.httpexceptions.HTTPRequestRangeNotSatisfiable( "Invalid reference dataset id: %s." % str( dataset_id ) )
         # the main configuration file

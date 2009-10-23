@@ -41,12 +41,12 @@ def handle_library_params( trans, params, folder_id, replace_dataset=None ):
     # See if we have any template field contents
     library_bunch.template_field_contents = []
     template_id = params.get( 'template_id', None )
-    library_bunch.folder = trans.app.model.LibraryFolder.get( folder_id )
+    library_bunch.folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( folder_id )
     # We are inheriting the folder's info_association, so we did not
     # receive any inherited contents, but we may have redirected here
     # after the user entered template contents ( due to errors ).
     if template_id not in [ None, 'None' ]:
-        library_bunch.template = trans.app.model.FormDefinition.get( template_id )
+        library_bunch.template = trans.sa_session.query( trans.app.model.FormDefinition ).get( template_id )
         for field_index in range( len( library_bunch.template.fields ) ):
             field_name = 'field_%i' % field_index
             if params.get( field_name, False ):
@@ -56,7 +56,8 @@ def handle_library_params( trans, params, folder_id, replace_dataset=None ):
         library_bunch.template = None
     library_bunch.roles = []
     for role_id in util.listify( params.get( 'roles', [] ) ):
-            library_bunch.roles.append( trans.app.model.Role.get( role_id ) )
+        role = trans.sa_session.query( trans.app.model.Role ).get( role_id )
+        library_bunch.roles.append( role )
     return library_bunch
 
 def get_precreated_datasets( trans, params, data_obj, controller='root' ):
@@ -132,7 +133,7 @@ def new_library_upload( trans, uploaded_dataset, library_bunch, state=None ):
     if uploaded_dataset.get( 'in_folder', False ):
         # Create subfolders if desired
         for name in uploaded_dataset.in_folder.split( os.path.sep ):
-            folder.refresh()
+            trans.sa_session.refresh( folder )
             matches = filter( lambda x: x.name == name, active_folders( trans, folder ) )
             if matches:
                 folder = matches[0]

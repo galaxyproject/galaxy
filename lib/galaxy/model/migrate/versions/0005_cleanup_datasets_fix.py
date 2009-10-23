@@ -662,7 +662,7 @@ def upgrade():
     log.debug( "Fixing a discrepancy concerning deleted shared history items." )
     affected_items = 0
     start_time = time.time()
-    for dataset in Dataset.filter( and_( Dataset.c.deleted == True, Dataset.c.purged == False ) ).all():
+    for dataset in context.query( Dataset ).filter( and_( Dataset.c.deleted == True, Dataset.c.purged == False ) ):
         for dataset_instance in dataset.history_associations + dataset.library_associations:
             if not dataset_instance.deleted:
                 dataset.deleted = False
@@ -679,7 +679,7 @@ def upgrade():
     dataset_by_filename = {}
     changed_associations = 0
     start_time = time.time()
-    for dataset in Dataset.filter( Dataset.external_filename.like( '%dataset_%.dat' ) ).all():
+    for dataset in context.query( Dataset ).filter( Dataset.external_filename.like( '%dataset_%.dat' ) ):
         if dataset.file_name in dataset_by_filename:
             guessed_dataset = dataset_by_filename[ dataset.file_name ]
         else:

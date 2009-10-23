@@ -157,7 +157,7 @@
         <thead>
         <tbody>
             <%
-            request.refresh()
+            trans.sa_session.refresh( request )
             %>
             %for sample_index, sample in enumerate(current_samples):
                 %if edit_mode == 'True':

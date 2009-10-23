@@ -27,7 +27,6 @@ class User( BaseController ):
     @web.expose
     def index( self, trans, **kwd ):
         return trans.fill_template( '/user/index.mako', user=trans.get_user() )
-        
     @web.expose
     def change_password(self, trans, old_pass='', new_pass='', conf_pass='', **kwd):
         old_pass_err = new_pass_err = conf_pass_err = ''
@@ -52,7 +51,6 @@ class User( BaseController ):
                 .add_password( "old_pass", "Old Password", value='', error=old_pass_err )
                 .add_password( "new_pass", "New Password", value='', error=new_pass_err ) 
                 .add_password( "conf_pass", "Confirm Password", value='', error=conf_pass_err ) )
-
     @web.expose
     def change_email(self, trans, email='', conf_email='', password='', **kwd):
         email_err = conf_email_err = pass_err = ''
@@ -66,7 +64,7 @@ class User( BaseController ):
                 email_err = "Please enter a real email address"
             elif len( email) > 255:
                 email_err = "Email address exceeds maximum allowable length"
-            elif trans.app.model.User.filter_by( email=email ).first():
+            elif trans.sa_session.query( trans.app.model.User ).filter_by( email=email ).first():
                 email_err = "User with that email already exists"
             elif email != conf_email:
                 conf_email_err = "Email addresses do not match."
@@ -80,7 +78,6 @@ class User( BaseController ):
                 .add_text( "email", "Email", value=email, error=email_err )
                 .add_text( "conf_email", "Confirm Email", value='', error=conf_email_err ) 
                 .add_password( "password", "Password", value='', error=pass_err ) )
-
     @web.expose
     def change_username(self, trans, username='', **kwd):
         username_err = ''
@@ -94,7 +91,7 @@ class User( BaseController ):
                 username_err = "USername must be at most 255 characters in length"
             elif not( VALID_USERNAME_RE.match( username ) ):
                 username_err = "Username must contain only letters, numbers, '-', and '_'"
-            elif trans.app.model.User.filter_by( username=username ).first():
+            elif trans.sa_session.query( trans.app.model.User ).filter_by( username=username ).first():
                 username_err = "This username is not available"
             else:
                 user.username = username
@@ -111,7 +108,6 @@ class User( BaseController ):
                                 you share publicly. Usernames must be at least
                                 four characters in length and contain only lowercase
                                 letters, numbers, and the '-' character.""" ) )
-
     @web.expose
     def login( self, trans, email='', password='' ):
         email_error = password_error = None
@@ -121,7 +117,7 @@ class User( BaseController ):
         else:
             refresh_frames = [ 'masthead', 'history' ]
         if email or password:
-            user = trans.app.model.User.filter( trans.app.model.User.table.c.email==email ).first()
+            user = trans.sa_session.query( trans.app.model.User ).filter( trans.app.model.User.table.c.email==email ).first()
             if not user:
                 email_error = "No such user"
             elif user.deleted:
@@ -148,7 +144,6 @@ class User( BaseController ):
                 return trans.show_form( form, header = require_login_nocreation_template )
         else:
             return trans.show_form( form )
-
     @web.expose
     def logout( self, trans ):
         if trans.app.config.require_login:
@@ -162,7 +157,6 @@ class User( BaseController ):
         if trans.app.config.require_login:
             msg += '  <a href="%s">Click here</a> to return to the login page.' % web.url_for( controller='user', action='login' )
         return trans.show_ok_message( msg, refresh_frames=refresh_frames )
-
     @web.expose
     def create( self, trans, email='', password='', confirm='', subscribe=False ):
         if trans.app.config.require_login:
@@ -177,7 +171,7 @@ class User( BaseController ):
                 email_error = "Please enter a real email address"
             elif len( email ) > 255:
                 email_error = "Email address exceeds maximum allowable length"
-            elif trans.app.model.User.filter_by( email=email ).all():
+            elif trans.sa_session.query( trans.app.model.User ).filter_by( email=email ).all():
                 email_error = "User with that email already exists"
             elif len( password ) < 6:
                 password_error = "Please use a password of at least 6 characters"
@@ -208,11 +202,10 @@ class User( BaseController ):
                 .add_password( "password", "Password", value='', error=password_error ) 
                 .add_password( "confirm", "Confirm password", value='', error=confirm_error ) 
                 .add_input( "checkbox","Subscribe To Mailing List","subscribe", value='subscribe' ) )
-
     @web.expose
     def reset_password( self, trans, email=None, **kwd ):
         error = ''
-        reset_user = trans.app.model.User.filter( trans.app.model.User.table.c.email==email ).first()
+        reset_user = trans.sa_session.query( trans.app.model.User ).filter( trans.app.model.User.table.c.email==email ).first()
         user = trans.get_user()
         if reset_user:
             if user and user.id != reset_user.id:
@@ -235,7 +228,6 @@ class User( BaseController ):
         return trans.show_form( 
             web.FormBuilder( web.url_for(), "Reset Password", submit_text="Submit" )
                 .add_text( "email", "Email", value=email, error=error ) )
-    
     @web.expose
     def set_default_permissions( self, trans, **kwd ):
         """Sets the user's default permissions for the new histories"""
@@ -247,7 +239,7 @@ class User( BaseController ):
                     in_roles = p.get( k + '_in', [] )
                     if not isinstance( in_roles, list ):
                         in_roles = [ in_roles ]
-                    in_roles = [ trans.app.model.Role.get( x ) for x in in_roles ]
+                    in_roles = [ trans.sa_session.query( trans.app.model.Role ).get( x ) for x in in_roles ]
                     action = trans.app.security_agent.get_action( v.action ).action
                     permissions[ action ] = in_roles
                 trans.app.security_agent.user_set_default_permissions( trans.user, permissions )
@@ -256,7 +248,6 @@ class User( BaseController ):
         else:
             # User not logged in, history group must be only public
             return trans.show_error_message( "You must be logged in to change your default permitted actions." )
-        
     @web.expose
     def manage_addresses(self, trans, **kwd):
         if trans.user:
@@ -278,7 +269,6 @@ class User( BaseController ):
         else:
             # User not logged in, history group must be only public
             return trans.show_error_message( "You must be logged in to change your default permitted actions." )
-        
     @web.expose
     def new_address( self, trans, short_desc='', name='', institution='', address1='',  
                      address2='', city='', state='', postal_code='', country='', phone='' ):
@@ -331,8 +321,6 @@ class User( BaseController ):
                 .add_text( "postal_code", "Postal Code", value=postal_code, error=postal_code_error )
                 .add_text( "country", "Country", value=country, error=country_error )
                 .add_text( "phone", "Phone", value=phone, error=phone_error ) )
-
-
     @web.expose
     def edit_address( self, trans, address_id=None, short_desc='', name='', institution='', address1='',  
                      address2='', city='', state='', postal_code='', country='', phone='' ):
@@ -366,7 +354,7 @@ class User( BaseController ):
             else:
                 if self.edit_address_id:
                     try:
-                        user_address = trans.app.model.UserAddress.get(int(self.edit_address_id))
+                        user_address = trans.sa_session.query( trans.app.model.UserAddress ).get( int( self.edit_address_id ) )
                     except:
                         return trans.response.send_redirect( web.url_for( controller='user',
                                                                           action='manage_addresses',
@@ -400,7 +388,6 @@ class User( BaseController ):
                 .add_text( "postal_code", "Postal Code", value=postal_code, error=postal_code_error )
                 .add_text( "country", "Country", value=country, error=country_error )
                 .add_text( "phone", "Phone", value=phone, error=phone_error ) )
-        
     @web.expose
     def delete_address( self, trans, address_id=None):
         if trans.app.config.require_login:
@@ -410,7 +397,7 @@ class User( BaseController ):
         if not trans.app.config.allow_user_creation and not trans.user_is_admin():
             return trans.show_error_message( 'User registration is disabled.  Please contact your Galaxy administrator for an account.' )
         try:
-            user_address = trans.app.model.UserAddress.get(int(address_id))
+            user_address = trans.sa_session.query( trans.app.model.UserAddress ).get( int( address_id ) )
         except:
             return trans.fill_template( 'user/address.mako',
                                         msg='Invalid address ID',
@@ -421,7 +408,6 @@ class User( BaseController ):
                                                           action='manage_addresses',
                                                           msg='Address <b>%s</b> deleted' % user_address.desc,
                                                           messagetype='done') )
-        
     @web.expose
     def undelete_address( self, trans, address_id=None):
         if trans.app.config.require_login:
@@ -431,7 +417,7 @@ class User( BaseController ):
         if not trans.app.config.allow_user_creation and not trans.user_is_admin():
             return trans.show_error_message( 'User registration is disabled.  Please contact your Galaxy administrator for an account.' )
         try:
-            user_address = trans.app.model.UserAddress.get(int(address_id))
+            user_address = trans.sa_session.query( trans.app.model.UserAddress ).get( int( address_id ) )
         except:
             return trans.fill_template( 'user/address.mako',
                                         msg='Invalid address ID',
@@ -442,4 +428,3 @@ class User( BaseController ):
                                                           action='manage_addresses',
                                                           msg='Address <b>%s</b> is restored' % user_address.desc,
                                                           messagetype='done') )
-

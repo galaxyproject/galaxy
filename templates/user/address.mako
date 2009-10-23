@@ -38,7 +38,7 @@
 %else:
     <div class="toolForm">
         <div class="toolFormBody">
-            <% trans.user.refresh() %>
+            <% trans.sa_session.refresh( trans.user ) %>
                 <table class="grid">
                     <tbody>
                         %for index, address in enumerate(addresses):    

@@ -19,8 +19,9 @@ class LibraryAdmin( BaseController ):
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
         return trans.fill_template( '/admin/library/browse_libraries.mako', 
-                                    libraries=trans.app.model.Library.filter( trans.app.model.Library.table.c.deleted==False ) \
-                                                                     .order_by( trans.app.model.Library.name ).all(),
+                                    libraries=trans.sa_session.query( trans.app.model.Library ) \
+                                                               .filter( trans.app.model.Library.table.c.deleted==False ) \
+                                                               .order_by( trans.app.model.Library.name ),
                                     deleted=False,
                                     show_deleted=False,
                                     msg=msg,
@@ -41,7 +42,7 @@ class LibraryAdmin( BaseController ):
                                                               messagetype='error' ) )
         deleted = util.string_as_bool( params.get( 'deleted', False ) )
         show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
-        library = library=trans.app.model.Library.get( library_id )
+        library = trans.sa_session.query( trans.app.model.Library ).get( library_id )
         if not library:
             msg = "Invalid library id ( %s )." % str( library_id )
             return trans.response.send_redirect( web.url_for( controller='library_admin',
@@ -82,7 +83,7 @@ class LibraryAdmin( BaseController ):
                                                               msg=util.sanitize_text( msg ),
                                                               messagetype='error' ) )
         if not action == 'new':
-            library = trans.app.model.Library.get( int( library_id ) )
+            library = trans.sa_session.query( trans.app.model.Library ).get( int( library_id ) )
         if action == 'new':
             if params.new == 'submitted':
                 library = trans.app.model.Library( name = util.restore_text( params.name ), 
@@ -134,14 +135,14 @@ class LibraryAdmin( BaseController ):
                                         messagetype=messagetype )
         elif action == 'delete':
             def delete_folder( library_folder ):
-                library_folder.refresh()
+                trans.sa_session.refresh( library_folder )
                 for folder in library_folder.folders:
                     delete_folder( folder )
                 for library_dataset in library_folder.datasets:
-                    library_dataset.refresh()
+                    trans.sa_session.refresh( library_dataset )
                     ldda = library_dataset.library_dataset_dataset_association
                     if ldda:
-                        ldda.refresh()
+                        trans.sa_session.refresh( ldda )
                         # We don't set ldda.dataset.deleted to True here because the cleanup_dataset script
                         # will eventually remove it from disk.  The purge_library method below sets the dataset
                         # to deleted.  This allows for the library to be undeleted ( before it is purged ), 
@@ -152,7 +153,7 @@ class LibraryAdmin( BaseController ):
                     library_dataset.flush()
                 library_folder.deleted = True
                 library_folder.flush()
-            library.refresh()
+            trans.sa_session.refresh( library )
             delete_folder( library.root_folder )
             library.deleted = True
             library.flush()
@@ -163,10 +164,10 @@ class LibraryAdmin( BaseController ):
                 # The user clicked the Save button on the 'Associate With Roles' form
                 permissions = {}
                 for k, v in trans.app.model.Library.permitted_actions.items():
-                    in_roles = [ trans.app.model.Role.get( x ) for x in util.listify( kwd.get( k + '_in', [] ) ) ]
+                    in_roles = [ trans.sa_session.query( trans.app.model.Role ).get( x ) for x in util.listify( kwd.get( k + '_in', [] ) ) ]
                     permissions[ trans.app.security_agent.get_action( v.action ) ] = in_roles
                 trans.app.security_agent.set_all_library_permissions( library, permissions )
-                library.refresh()
+                trans.sa_session.refresh( library )
                 # Copy the permissions to the root folder
                 trans.app.security_agent.copy_library_permissions( library, library.root_folder )
                 msg = "Permissions updated for library '%s'" % library.name
@@ -186,9 +187,10 @@ class LibraryAdmin( BaseController ):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
-        libraries=trans.app.model.Library.filter( and_( trans.app.model.Library.table.c.deleted==True,
-                                                        trans.app.model.Library.table.c.purged==False ) ) \
-                                         .order_by( trans.app.model.Library.table.c.name ).all()
+        libraries = trans.sa_session.query( trans.app.model.Library ) \
+                                    .filter( and_( trans.app.model.Library.table.c.deleted==True,
+                                                   trans.app.model.Library.table.c.purged==False ) ) \
+                                    .order_by( trans.app.model.Library.table.c.name )
         return trans.fill_template( '/admin/library/browse_libraries.mako', 
                                     libraries=libraries,
                                     deleted=True,
@@ -199,18 +201,18 @@ class LibraryAdmin( BaseController ):
     @web.require_admin
     def purge_library( self, trans, **kwd ):
         params = util.Params( kwd )
-        library = trans.app.model.Library.get( int( params.obj_id ) )
+        library = trans.sa_session.query( trans.app.model.Library ).get( int( params.obj_id ) )
         def purge_folder( library_folder ):
             for lf in library_folder.folders:
                 purge_folder( lf )
-            library_folder.refresh()
+            trans.sa_session.refresh( library_folder )
             for library_dataset in library_folder.datasets:
-                library_dataset.refresh()
+                trans.sa_session.refresh( library_dataset )
                 ldda = library_dataset.library_dataset_dataset_association
                 if ldda:
-                    ldda.refresh()
+                    trans.sa_session.refresh( ldda )
                     dataset = ldda.dataset
-                    dataset.refresh()
+                    trans.sa_session.refresh( dataset )
                     # If the dataset is not associated with any additional undeleted folders, then we can delete it.
                     # We don't set dataset.purged to True here because the cleanup_datasets script will do that for
                     # us, as well as removing the file from disk.
@@ -254,7 +256,7 @@ class LibraryAdmin( BaseController ):
         else:
             # 'information' will be the default
             action = 'information'
-        folder = trans.app.model.LibraryFolder.get( int( obj_id ) )
+        folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( int( obj_id ) )
         if not folder:
             msg = "Invalid folder specified, id: %s" % str( obj_id )
             return trans.response.send_redirect( web.url_for( controller='library_admin',
@@ -331,10 +333,10 @@ class LibraryAdmin( BaseController ):
                 # The user clicked the Save button on the 'Associate With Roles' form
                 permissions = {}
                 for k, v in trans.app.model.Library.permitted_actions.items():
-                    in_roles = [ trans.app.model.Role.get( int( x ) ) for x in util.listify( params.get( k + '_in', [] ) ) ]
+                    in_roles = [ trans.sa_session.query( trans.app.model.Role ).get( int( x ) ) for x in util.listify( params.get( k + '_in', [] ) ) ]
                     permissions[ trans.app.security_agent.get_action( v.action ) ] = in_roles
                 trans.app.security_agent.set_all_library_permissions( folder, permissions )
-                folder.refresh()
+                trans.sa_session.refresh( folder )
                 msg = "Permissions updated for folder '%s'" % folder.name
                 return trans.response.send_redirect( web.url_for( controller='library_admin',
                                                                   action='folder',
@@ -358,7 +360,7 @@ class LibraryAdmin( BaseController ):
             action = 'permissions'
         else:
             action = 'information'
-        library_dataset = trans.app.model.LibraryDataset.get( obj_id )
+        library_dataset = trans.sa_session.query( trans.app.model.LibraryDataset ).get( obj_id )
         if not library_dataset:
             msg = "Invalid library dataset specified, id: %s" %str( obj_id )
             return trans.response.send_redirect( web.url_for( controller='library_admin',
@@ -390,15 +392,15 @@ class LibraryAdmin( BaseController ):
                 # The user clicked the Save button on the 'Edit permissions and role associations' form
                 permissions = {}
                 for k, v in trans.app.model.Library.permitted_actions.items():
-                    in_roles = [ trans.app.model.Role.get( x ) for x in util.listify( kwd.get( k + '_in', [] ) ) ]
+                    in_roles = [ trans.sa_session.query( trans.app.model.Role ).get( x ) for x in util.listify( kwd.get( k + '_in', [] ) ) ]
                     permissions[ trans.app.security_agent.get_action( v.action ) ] = in_roles
                 # Set the LIBRARY permissions on the LibraryDataset
                 # NOTE: the LibraryDataset and LibraryDatasetDatasetAssociation will be set with the same permissions
                 trans.app.security_agent.set_all_library_permissions( library_dataset, permissions )
-                library_dataset.refresh()
+                trans.sa_session.refresh( library_dataset )
                 # Set the LIBRARY permissions on the LibraryDatasetDatasetAssociation
                 trans.app.security_agent.set_all_library_permissions( library_dataset.library_dataset_dataset_association, permissions )
-                library_dataset.library_dataset_dataset_association.refresh()
+                trans.sa_session.refresh( library_dataset.library_dataset_dataset_association )
                 msg = 'Permissions and roles have been updated for library dataset %s' % library_dataset.name
             return trans.fill_template( '/admin/library/library_dataset_permissions.mako',
                                         library_dataset=library_dataset,
@@ -411,7 +413,7 @@ class LibraryAdmin( BaseController ):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
-        ldda = trans.app.model.LibraryDatasetDatasetAssociation.get( obj_id )
+        ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( obj_id )
         if not ldda:
             msg = "Invalid LibraryDatasetDatasetAssociation specified, obj_id: %s" % str( obj_id )
             return trans.response.send_redirect( web.url_for( controller='library_admin',
@@ -528,7 +530,7 @@ class LibraryAdmin( BaseController ):
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
         show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
-        ldda = trans.app.model.LibraryDatasetDatasetAssociation.get( obj_id )
+        ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( obj_id )
         if not ldda:
             msg = "Invalid LibraryDatasetDatasetAssociation specified, obj_id: %s" % str( obj_id )
             return trans.response.send_redirect( web.url_for( controller='library_admin',
@@ -555,7 +557,7 @@ class LibraryAdmin( BaseController ):
         # Display permission form, permissions will be updated for all lddas simultaneously.
         lddas = []
         for obj_id in [ int( obj_id ) for obj_id in obj_ids ]:
-            ldda = trans.app.model.LibraryDatasetDatasetAssociation.get( obj_id )
+            ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( obj_id )
             if ldda is None:
                 msg = 'You specified an invalid LibraryDatasetDatasetAssociation obj_id: %s' %str( obj_id )
                 trans.response.send_redirect( web.url_for( controller='library_admin',
@@ -568,7 +570,7 @@ class LibraryAdmin( BaseController ):
             permissions = {}
             accessible = False
             for k, v in trans.app.model.Dataset.permitted_actions.items():
-                in_roles = [ trans.app.model.Role.get( x ) for x in util.listify( params.get( k + '_in', [] ) ) ]
+                in_roles = [ trans.sa_session.query( trans.app.model.Role ).get( x ) for x in util.listify( params.get( k + '_in', [] ) ) ]
                 # At least 1 user must have every role associated with this dataset, or the dataset is inaccessible
                 if v == trans.app.security_agent.permitted_actions.DATASET_ACCESS:
                     if len( in_roles ) > 1:
@@ -599,19 +601,19 @@ class LibraryAdmin( BaseController ):
             for ldda in lddas:
                 # Set the DATASET permissions on the Dataset
                 trans.app.security_agent.set_all_dataset_permissions( ldda.dataset, permissions )
-                ldda.dataset.refresh()
+                trans.sa_session.refresh( ldda.dataset )
             permissions = {}
             for k, v in trans.app.model.Library.permitted_actions.items():
-                in_roles = [ trans.app.model.Role.get( x ) for x in util.listify( kwd.get( k + '_in', [] ) ) ]
+                in_roles = [ trans.sa_session.query( trans.app.model.Role ).get( x ) for x in util.listify( kwd.get( k + '_in', [] ) ) ]
                 permissions[ trans.app.security_agent.get_action( v.action ) ] = in_roles
             for ldda in lddas:
                 # Set the LIBRARY permissions on the LibraryDataset
                 # NOTE: the LibraryDataset and LibraryDatasetDatasetAssociation will be set with the same permissions
                 trans.app.security_agent.set_all_library_permissions( ldda.library_dataset, permissions )
-                ldda.library_dataset.refresh()
+                trans.sa_session.refresh( ldda.library_dataset )
                 # Set the LIBRARY permissions on the LibraryDatasetDatasetAssociation
                 trans.app.security_agent.set_all_library_permissions( ldda, permissions )
-                ldda.refresh()
+                trans.sa_session.refresh( ldda )
             if not accessible:
                 msg = "At least 1 user must have every role associated with accessing these %d datasets. " % len( lddas )
                 msg += "The roles you attempted to associate for access would make these datasets inaccessible by everyone, "
@@ -666,12 +668,12 @@ class LibraryAdmin( BaseController ):
             last_used_build = dbkey[0]
         else:
             last_used_build = dbkey
-        folder = trans.app.model.LibraryFolder.get( folder_id )
+        folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( folder_id )
         if folder and last_used_build in [ 'None', None, '?' ]:
             last_used_build = folder.genome_build
         replace_id = params.get( 'replace_id', None )
         if replace_id not in [ None, 'None' ]:
-            replace_dataset = trans.app.model.LibraryDataset.get( int( replace_id ) )
+            replace_dataset = trans.sa_session.query( trans.app.model.LibraryDataset ).get( int( replace_id ) )
             if not last_used_build:
                 last_used_build = replace_dataset.library_dataset_dataset_association.dbkey
             # Don't allow multiple datasets to be uploaded when replacing a dataset with a new version
@@ -729,10 +731,12 @@ class LibraryAdmin( BaseController ):
                 yield build_name, dbkey, ( dbkey==last_used_build )
         dbkeys = get_dbkey_options( last_used_build )
         # Send list of roles to the form so the dataset can be associated with 1 or more of them.
-        roles = trans.app.model.Role.filter( trans.app.model.Role.table.c.deleted==False ).order_by( trans.app.model.Role.c.name ).all()
+        roles = trans.sa_session.query( trans.app.model.Role ) \
+                                .filter( trans.app.model.Role.table.c.deleted==False ) \
+                                .order_by( trans.app.model.Role.table.c.name )
         # Send the current history to the form to enable importing datasets from history to library
         history = trans.get_history()
-        history.refresh()
+        trans.sa_session.refresh( history )
         # If we're using nginx upload, override the form action
         action = web.url_for( controller='library_admin', action='upload_library_dataset' )
         if upload_option == 'upload_file' and trans.app.config.nginx_upload_path:
@@ -758,7 +762,7 @@ class LibraryAdmin( BaseController ):
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
         try:
-            folder = trans.app.model.LibraryFolder.get( int( folder_id ) )
+            folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( int( folder_id ) )
         except:
             msg = "Invalid folder id: %s" % str( folder_id )
             return trans.response.send_redirect( web.url_for( controller='library_admin',
@@ -768,12 +772,12 @@ class LibraryAdmin( BaseController ):
                                                               messagetype='error' ) )
         replace_id = params.get( 'replace_id', None )
         if replace_id:
-            replace_dataset = trans.app.model.LibraryDataset.get( replace_id )
+            replace_dataset = trans.sa_session.query( trans.app.model.LibraryDataset ).get( replace_id )
         else:
             replace_dataset = None
         # See if the current history is empty
         history = trans.get_history()
-        history.refresh()
+        trans.sa_session.refresh( history )
         if not history.active_datasets:
             msg = 'Your current history is empty'
             return trans.response.send_redirect( web.url_for( controller='library_admin',
@@ -787,7 +791,7 @@ class LibraryAdmin( BaseController ):
                 dataset_names = []
                 created_ldda_ids = ''
                 for hda_id in hda_ids:
-                    hda = trans.app.model.HistoryDatasetAssociation.get( hda_id )
+                    hda = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( hda_id )
                     if hda:
                         ldda = hda.to_library_dataset_dataset_association( target_folder=folder, replace_dataset=replace_dataset )
                         created_ldda_ids = '%s,%s' % ( created_ldda_ids, str( ldda.id ) )
@@ -838,7 +842,9 @@ class LibraryAdmin( BaseController ):
                         yield build_name, dbkey, ( dbkey==last_used_build )
                 dbkeys = get_dbkey_options( last_used_build )
                 # Send list of roles to the form so the dataset can be associated with 1 or more of them.
-                roles = trans.app.model.Role.filter( trans.app.model.Role.table.c.deleted==False ).order_by( trans.app.model.Role.c.name ).all()
+                roles = trans.sa_session.query( trans.app.model.Role ) \
+                                        .filter( trans.app.model.Role.table.c.deleted==False ) \
+                                        .order_by( trans.app.model.Role.table.c.name )
                 return trans.fill_template( "/admin/library/upload.mako",
                                             upload_option=upload_option,
                                             library_id=library_id,
@@ -871,7 +877,7 @@ class LibraryAdmin( BaseController ):
                                                            messagetype='error' ) )
             if params.action == 'manage_permissions':
                 # We need the folder containing the LibraryDatasetDatasetAssociation(s)
-                ldda = trans.app.model.LibraryDatasetDatasetAssociation.get( int( ldda_ids[0] ) )
+                ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( int( ldda_ids[0] ) )
                 trans.response.send_redirect( web.url_for( controller='library_admin',
                                                            action='ldda_manage_permissions',
                                                            library_id=library_id,
@@ -881,7 +887,7 @@ class LibraryAdmin( BaseController ):
                                                            messagetype=messagetype ) )
             elif params.action == 'delete':
                 for ldda_id in ldda_ids:
-                    ldda = trans.app.model.LibraryDatasetDatasetAssociation.get( ldda_id )
+                    ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( ldda_id )
                     ldda.deleted = True
                     ldda.flush()
                 msg = "The selected datasets have been removed from this data library"
@@ -918,7 +924,7 @@ class LibraryAdmin( BaseController ):
                 library_item_desc = 'Dataset'
             else:
                 library_item_desc = library_item_type.capitalize()
-            library_item = library_item_types[ library_item_type ].get( int( library_item_id ) )
+            library_item = trans.sa_session.query( library_item_types[ library_item_type ] ).get( int( library_item_id ) )
             library_item.deleted = True
             library_item.flush()
             msg = util.sanitize_text( "%s '%s' has been marked deleted" % ( library_item_desc, library_item.name ) )
@@ -945,7 +951,7 @@ class LibraryAdmin( BaseController ):
                 library_item_desc = 'Dataset'
             else:
                 library_item_desc = library_item_type.capitalize()
-            library_item = library_item_types[ library_item_type ].get( int( library_item_id ) )
+            library_item = trans.sa_session.query( library_item_types[ library_item_type ] ).get( int( library_item_id ) )
             if library_item.purged:
                 msg = '%s %s has been purged, so it cannot be undeleted' % ( library_item_desc, library_item.name )
                 messagetype = 'error'

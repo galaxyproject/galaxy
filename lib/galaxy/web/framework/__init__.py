@@ -253,8 +253,10 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
                 session_key = None
             if session_key:
                 # Retrieve the galaxy_session id via the unique session_key
-                galaxy_session = self.app.model.GalaxySession.filter( and_( self.app.model.GalaxySession.table.c.session_key==session_key,
-                                                                            self.app.model.GalaxySession.table.c.is_valid==True ) ).first()
+                galaxy_session = self.sa_session.query( self.app.model.GalaxySession ) \
+                                                .filter( and_( self.app.model.GalaxySession.table.c.session_key==session_key,
+                                                               self.app.model.GalaxySession.table.c.is_valid==True ) ) \
+                                                .first()
         # If remote user is in use it can invalidate the session, so we need to to check some things now.
         if self.app.config.use_remote_user:
             assert "HTTP_REMOTE_USER" in self.environ, \
@@ -358,7 +360,9 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         Return the user in $HTTP_REMOTE_USER and create if necessary
         """
         # remote_user middleware ensures HTTP_REMOTE_USER exists
-        user = self.app.model.User.filter( self.app.model.User.table.c.email==remote_user_email ).first()
+        user = self.sa_session.query( self.app.model.User ) \
+                              .filter( self.app.model.User.table.c.email==remote_user_email ) \
+                              .first()
         if user:
             # GVK: June 29, 2009 - This is to correct the behavior of a previous bug where a private
             # role and default user / history permissions were not set for remote users.  When a
@@ -614,9 +618,9 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         the user (chromInfo in history).
         """
         dbnames = list()
-        datasets = self.app.model.HistoryDatasetAssociation \
-            .filter_by(deleted=False, history_id=self.history.id, extension="len").all()
-        if len(datasets) > 0:
+        datasets = self.sa_session.query( self.app.model.HistoryDatasetAssociation ) \
+                                  .filter_by( deleted=False, history_id=self.history.id, extension="len" )
+        if datasets.count() > 0:
             dbnames.append( (util.dbnames.default_value, '--------- User Defined Builds ----------') )
         for dataset in datasets:
             dbnames.append( (dataset.dbkey, dataset.name) )
@@ -627,15 +631,15 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         """
         Returns the db_file dataset associated/needed by `dataset`, or `None`.
         """
-        datasets = self.app.model.HistoryDatasetAssociation \
-            .filter_by(deleted=False, history_id=self.history.id, extension="len").all()
+        datasets = self.sa_session.query( self.app.model.HistoryDatasetAssociation ) \
+                                  .filter_by( deleted=False, history_id=self.history.id, extension="len" )
         for ds in datasets:
             if dbkey == ds.dbkey:
                 return ds
         return None
     
     def request_types(self):
-        if self.app.model.RequestType.query().filter_by(deleted=False).all():
+        if self.sa_session.query( self.app.model.RequestType ).filter_by( deleted=False ).count() > 0:
             return True
         return False
         
@@ -688,4 +692,3 @@ class Bunch( dict ):
         return self[key]
     def __setattr__( self, key, value ):
         self[key] = value
-

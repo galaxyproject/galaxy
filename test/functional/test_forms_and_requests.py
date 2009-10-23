@@ -1,5 +1,6 @@
 import galaxy.model
 from galaxy.model.orm import *
+from galaxy.model.mapping import context as sa_session
 from base.twilltestcase import *
 
 not_logged_in_as_admin_security_msg = 'You must be logged in as an administrator to access this feature.'
@@ -24,8 +25,9 @@ address1 = dict(  short_desc="Office",
 
 
 def get_latest_form(form_name):
-    fdc_list = galaxy.model.FormDefinitionCurrent.filter( galaxy.model.FormDefinitionCurrent.table.c.deleted==False )\
-                                        .order_by( galaxy.model.FormDefinitionCurrent.table.c.create_time.desc() )
+    fdc_list = sa_session.query( galaxy.model.FormDefinitionCurrent ) \
+                         .filter( galaxy.model.FormDefinitionCurrent.table.c.deleted==False ) \
+                         .order_by( galaxy.model.FormDefinitionCurrent.table.c.create_time.desc() )
     for fdc in fdc_list:
         if form_name == fdc.latest_form.name:
             return fdc.latest_form
@@ -44,9 +46,11 @@ class TestFormsAndRequests( TwillTestCase ):
         formtype = galaxy.model.FormDefinition.types.REQUEST
         self.create_form( name=name, desc=desc, formtype=formtype, num_fields=0 )
         # Get the form_definition object for later tests
-        form_one = galaxy.model.FormDefinition.filter( and_( galaxy.model.FormDefinition.table.c.name==name,
-                                                             galaxy.model.FormDefinition.table.c.desc==desc,
-                                                             galaxy.model.FormDefinition.table.c.type==formtype ) ).all()[-1]
+        form_one = sa_session.query( galaxy.model.FormDefinition ) \
+                             .filter( and_( galaxy.model.FormDefinition.table.c.name==name,
+                                            galaxy.model.FormDefinition.table.c.desc==desc,
+                                            galaxy.model.FormDefinition.table.c.type==formtype ) ) \
+                             .all()[-1]
         assert form_one is not None, 'Problem retrieving form named "%s" from the database' % name
         # edit form & add few more fields
         new_name = "Request Form (Renamed)"
@@ -96,7 +100,10 @@ class TestFormsAndRequests( TwillTestCase ):
         self.create_request_type(request_type_name, "test request type", 
                                  str(request_form.id), str(sample_form.id), sample_states )
         global request_type
-        request_type = galaxy.model.RequestType.filter( and_( galaxy.model.RequestType.table.c.name==request_type_name ) ).all()[-1]
+        request_type = sa_session.query( galaxy.model.RequestType ) \
+                                 .filter( and_( galaxy.model.RequestType.table.c.name==request_type_name ) ) \
+                                 .order_by( desc( galaxy.model.RequestType.table.c.create_time ) ) \
+                                 .first()
         assert request_type is not None, 'Problem retrieving request type named "%s" from the database' % request_type_name
     def test_025_create_address_and_library( self ):
         """Testing address & library creation"""
@@ -112,11 +119,15 @@ class TestFormsAndRequests( TwillTestCase ):
         self.check_page_for_string( lib_name )
         # Get the library object for later tests
         global library_one
-        library_one = galaxy.model.Library.filter( and_( galaxy.model.Library.table.c.name==lib_name,
-                                                         galaxy.model.Library.table.c.deleted==False ) ).first()
+        library_one = sa_session.query( galaxy.model.Library ) \
+                                .filter( and_( galaxy.model.Library.table.c.name==lib_name,
+                                               galaxy.model.Library.table.c.deleted==False ) ) \
+                                .first()
         assert library_one is not None, 'Problem retrieving library named "%s" from the database' % lib_name
         global admin_user
-        admin_user = galaxy.model.User.filter( galaxy.model.User.table.c.email=='test@bx.psu.edu' ).first()
+        admin_user = sa_session.query( galaxy.model.User ) \
+                               .filter( galaxy.model.User.table.c.email=='test@bx.psu.edu' ) \
+                               .first()
         assert admin_user is not None, 'Problem retrieving user with email "test@bx.psu.edu" from the database'
         # Get the admin user's private role for later use
         global admin_user_private_role
@@ -128,7 +139,9 @@ class TestFormsAndRequests( TwillTestCase ):
         if not admin_user_private_role:
             raise AssertionError( "Private role not found for user '%s'" % admin_user.email )
         global regular_user1
-        regular_user1 = galaxy.model.User.filter( galaxy.model.User.table.c.email=='test1@bx.psu.edu' ).first()
+        regular_user1 = sa_session.query( galaxy.model.User ) \
+                                  .filter( galaxy.model.User.table.c.email=='test1@bx.psu.edu' ) \
+                                  .first()
         assert regular_user1 is not None, 'Problem retrieving user with email "test1@bx.psu.edu" from the database'
         # Get the regular user's private role for later use
         global regular_user1_private_role
@@ -150,8 +163,10 @@ class TestFormsAndRequests( TwillTestCase ):
         name = "Folder One"
         self.add_folder( 'library_admin', str( library_one.id ), str( root_folder.id ), name=name, description='' )
         global folder_one
-        folder_one = galaxy.model.LibraryFolder.filter( and_( galaxy.model.LibraryFolder.table.c.parent_id==root_folder.id,
-                                                              galaxy.model.LibraryFolder.table.c.name==name ) ).first()
+        folder_one = sa_session.query( galaxy.model.LibraryFolder ) \
+                               .filter( and_( galaxy.model.LibraryFolder.table.c.parent_id==root_folder.id,
+                                              galaxy.model.LibraryFolder.table.c.name==name ) ) \
+                               .first()
         assert folder_one is not None, 'Problem retrieving library folder named "%s" from the database' % name
         self.home()
         self.visit_url( '%s/library_admin/browse_library?obj_id=%s' % ( self.url, str( library_one.id ) ) )
@@ -168,10 +183,14 @@ class TestFormsAndRequests( TwillTestCase ):
         self.visit_url( url_str )
         self.check_page_for_string( 'Address <b>%s</b> has been added' % address1[ 'short_desc' ] )
         global regular_user
-        regular_user = galaxy.model.User.filter( galaxy.model.User.table.c.email=='test1@bx.psu.edu' ).first()
+        regular_user = sa_session.query( galaxy.model.User ) \
+                                 .filter( galaxy.model.User.table.c.email=='test1@bx.psu.edu' ) \
+                                 .first()
         global user_address
-        user_address = galaxy.model.UserAddress.filter( and_( galaxy.model.UserAddress.table.c.desc==address1[ 'short_desc' ],
-                                                         galaxy.model.UserAddress.table.c.deleted==False ) ).first()    
+        user_address = sa_session.query( galaxy.model.UserAddress ) \
+                                 .filter( and_( galaxy.model.UserAddress.table.c.desc==address1[ 'short_desc' ],
+                                                galaxy.model.UserAddress.table.c.deleted==False ) ) \
+                                 .first()    
     def test_030_create_request( self ):
         """Testing creating, editing and submitting a request as a regular user"""
         # login as a regular user
@@ -185,10 +204,13 @@ class TestFormsAndRequests( TwillTestCase ):
         self.check_page_for_string( request_name )
         self.check_page_for_string( request_desc )
         global request_one
-        request_one = galaxy.model.Request.filter( and_( galaxy.model.Request.table.c.name==request_name,
-                                                         galaxy.model.Request.table.c.deleted==False ) ).first()        
+        request_one = sa_session.query( galaxy.model.Request ) \
+                                .filter( and_( galaxy.model.Request.table.c.name==request_name,
+                                               galaxy.model.Request.table.c.deleted==False ) ) \
+                                .first()        
         # check if the request's state is now set to 'unsubmitted'
-        assert request_one.state is not request_one.states.UNSUBMITTED, "The state of the request '%s' should be set to '%s'" % ( request_one.name, request_one.states.UNSUBMITTED )
+        assert request_one.state is not request_one.states.UNSUBMITTED, "The state of the request '%s' should be set to '%s'" \
+            % ( request_one.name, request_one.states.UNSUBMITTED )
         # sample fields
         samples = [ ( 'Sample One', [ 'S1 Field 0 Value' ] ),
                     ( 'Sample Two', [ 'S2 Field 0 Value' ] ) ]
@@ -203,7 +225,7 @@ class TestFormsAndRequests( TwillTestCase ):
         fields = ['option2', str(user_address.id), 'field three value (edited)'] 
         self.edit_request(request_one.id, request_one.name, request_one.name+' (Renamed)', 
                           request_one.desc+' (Re-described)', library_one.id, folder_one.id, fields)
-        request_one.refresh()
+        sa_session.refresh( request_one )
         self.check_page_for_string( request_name+' (Renamed)' )
         self.check_page_for_string( request_desc+' (Re-described)' )
         # check if the request is showing in the 'unsubmitted' filter
@@ -212,13 +234,14 @@ class TestFormsAndRequests( TwillTestCase ):
         self.check_page_for_string( request_one.name )
         # submit the request
         self.submit_request( request_one.id, request_one.name )
-        request_one.refresh()
+        sa_session.refresh( request_one )
         # check if the request is showing in the 'submitted' filter
         self.home()
         self.visit_url( '%s/requests/list?show_filter=Submitted' % self.url )
         self.check_page_for_string( request_one.name )
         # check if the request's state is now set to 'submitted'
-        assert request_one.state is not request_one.states.SUBMITTED, "The state of the request '%s' should be set to '%s'" % ( request_one.name, request_one.states.SUBMITTED )
+        assert request_one.state is not request_one.states.SUBMITTED, "The state of the request '%s' should be set to '%s'" \
+            % ( request_one.name, request_one.states.SUBMITTED )
     def test_035_request_lifecycle( self ):
         """Testing request lifecycle as it goes through all the states"""
         # goto admin manage requests page
@@ -243,11 +266,12 @@ class TestFormsAndRequests( TwillTestCase ):
             self.check_page_for_string( request_type.states[2].name )
             self.check_page_for_string( request_type.states[2].desc )
         self.home()
-        request_one.refresh()
+        sa_session.refresh( request_one )
         # check if the request's state is now set to 'complete'
         self.visit_url('%s/requests_admin/list?show_filter=Complete' % self.url)
         self.check_page_for_string( request_one.name )
-        assert request_one.state is not request_one.states.COMPLETE, "The state of the request '%s' should be set to '%s'" % ( request_one.name, request_one.states.COMPLETE )
+        assert request_one.state is not request_one.states.COMPLETE, "The state of the request '%s' should be set to '%s'" \
+            % ( request_one.name, request_one.states.COMPLETE )
     def test_40_admin_create_request_on_behalf_of_regular_user( self ):
         """Testing creating and submitting a request as an admin on behalf of a regular user"""
         self.logout()
@@ -260,14 +284,17 @@ class TestFormsAndRequests( TwillTestCase ):
         self.visit_url( url_str )
         self.check_page_for_string( "The new request named %s has been created" % request_name )
         global request_two
-        request_two = galaxy.model.Request.filter( and_( galaxy.model.Request.table.c.name==request_name,
-                                                         galaxy.model.Request.table.c.deleted==False ) ).first()        
+        request_two = sa_session.query( galaxy.model.Request ) \
+                                .filter( and_( galaxy.model.Request.table.c.name==request_name,
+                                               galaxy.model.Request.table.c.deleted==False ) ) \
+                                .first()        
         # check if the request is showing in the 'unsubmitted' filter
         self.home()
         self.visit_url( '%s/requests_admin/list?show_filter=Unsubmitted' % self.url )
         self.check_page_for_string( request_two.name )
         # check if the request's state is now set to 'unsubmitted'
-        assert request_two.state is not request_two.states.UNSUBMITTED, "The state of the request '%s' should be set to '%s'" % ( request_two.name, request_two.states.UNSUBMITTED )
+        assert request_two.state is not request_two.states.UNSUBMITTED, "The state of the request '%s' should be set to '%s'" \
+            % ( request_two.name, request_two.states.UNSUBMITTED )
         # sample fields
         samples = [ ( 'Sample One', [ 'S1 Field 0 Value' ] ),
                     ( 'Sample Two', [ 'S2 Field 0 Value' ] ) ]
@@ -280,13 +307,14 @@ class TestFormsAndRequests( TwillTestCase ):
                 self.check_page_for_string( field_value )
         # submit the request
         self.submit_request( request_two.id, request_two.name )
-        request_two.refresh()
+        sa_session.refresh( request_two )
         # check if the request is showing in the 'submitted' filter
         self.home()
         self.visit_url( '%s/requests_admin/list?show_filter=Submitted' % self.url )
         self.check_page_for_string( request_two.name )
         # check if the request's state is now set to 'submitted'
-        assert request_two.state is not request_two.states.SUBMITTED, "The state of the request '%s' should be set to '%s'" % ( request_two.name, request_two.states.SUBMITTED )
+        assert request_two.state is not request_two.states.SUBMITTED, "The state of the request '%s' should be set to '%s'" \
+            % ( request_two.name, request_two.states.SUBMITTED )
         # check if both the requests is showing in the 'All' filter
         self.home()
         self.visit_url( '%s/requests_admin/list?show_filter=All' % self.url )

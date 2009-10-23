@@ -21,7 +21,7 @@ class TagHandler( object ):
     def get_tag_assoc_class(self, entity_class):
         return self.tag_assoc_classes[entity_class]
         
-    def remove_item_tag(self, item, tag_name):
+    def remove_item_tag( self, trans, item, tag_name ):
         """Remove a tag from an item."""
         # Get item tag association.
         item_tag_assoc = self._get_item_tag_assoc(item, tag_name)
@@ -29,17 +29,17 @@ class TagHandler( object ):
         # Remove association.
         if item_tag_assoc:
             # Delete association.
-            item_tag_assoc.delete()
+            trans.sa_session.delete( item_tag_assoc )
             item.tags.remove(item_tag_assoc)
             return True
         
         return False
     
-    def delete_item_tags(self, item):
+    def delete_item_tags( self, trans, item ):
         """Delete tags from an item."""
         # Delete item-tag associations.
         for tag in item.tags:
-            tag.delete()
+            trans.sa_ession.delete( tag )
             
         # Delete tags from item.
         del item.tags[:]

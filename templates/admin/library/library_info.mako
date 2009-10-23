@@ -39,8 +39,10 @@
 </div>
 
 <%
-    roles = trans.app.model.Role.filter( trans.app.model.Role.table.c.deleted==False ).order_by( trans.app.model.Role.table.c.name ).all()
-    library.refresh()
+    roles = trans.sa_session.query( trans.app.model.Role ) \
+                            .filter( trans.app.model.Role.table.c.deleted==False ) \
+                            .order_by( trans.app.model.Role.table.c.name )
+    trans.sa_session.refresh( library )
 %>
 
 %if widgets:

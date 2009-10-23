@@ -167,7 +167,7 @@ class ToolBox( object ):
         which is encoded in the tool panel.
         """
         id = self.app.security.decode_id( workflow_id )
-        stored = self.app.model.StoredWorkflow.get( id )
+        stored = self.app.model.context.query( self.app.model.StoredWorkflow ).get( id )
         return stored.latest_workflow
 
 class ToolSection( object ):
@@ -863,7 +863,7 @@ class Tool:
         if 'async_datasets' in inputs and inputs['async_datasets'] not in [ 'None', '', None ]:
             for id in inputs['async_datasets'].split(','):
                 try:
-                    data = trans.model.HistoryDatasetAssociation.get( int( id ) )
+                    data = trans.sa_session.query( trans.model.HistoryDatasetAssociation ).get( int( id ) )
                 except:
                     log.exception( 'Unable to load precreated dataset (%s) sent in upload form' % id )
                     continue
@@ -1567,7 +1567,7 @@ class SetMetadataTool( Tool ):
     def exec_after_process( self, app, inp_data, out_data, param_dict, job = None ):
         for name, dataset in inp_data.iteritems():
             external_metadata = galaxy.datatypes.metadata.JobExternalOutputMetadataWrapper( job )
-            if external_metadata.external_metadata_set_successfully( dataset ):
+            if external_metadata.external_metadata_set_successfully( dataset, app.model.context ):
                 dataset.metadata.from_JSON_dict( external_metadata.get_output_filenames_by_dataset( dataset ).filename_out )    
             # If setting external metadata has failed, how can we inform the user?
             # For now, we'll leave the default metadata and set the state back to its original.

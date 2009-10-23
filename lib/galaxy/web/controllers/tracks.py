@@ -103,7 +103,7 @@ class TracksController( BaseController ):
         tracks = []
         dbkey = ""
         for dataset_id in dataset_ids.split( "," ):
-            dataset = trans.app.model.HistoryDatasetAssociation.get( dataset_id )
+            dataset = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( dataset_id )
             tracks.append( {
                 "type": dataset.datatype.get_track_type(),
                 "name": dataset.name,
@@ -165,7 +165,7 @@ class TracksController( BaseController ):
         Called by the browser to request a block of data
         """
         # Load the requested dataset
-        dataset = trans.app.model.HistoryDatasetAssociation.get( dataset_id )
+        dataset = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( dataset_id )
         # No dataset for that id
         if not dataset:
             return messages.NO_DATA

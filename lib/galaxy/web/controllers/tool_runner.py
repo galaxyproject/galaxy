@@ -69,7 +69,7 @@ class ToolRunner( BaseController ):
         except:
             error( "Invalid value for 'id' parameter" )
         # Get the dataset object
-        data = trans.app.model.HistoryDatasetAssociation.get( id )
+        data = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( id )
         # Get the associated job, if any. If this hda was copied from another,
         # we need to find the job that created the origial hda
         job_hda = data
@@ -144,7 +144,7 @@ class ToolRunner( BaseController ):
             if nonfile_params.get( 'folder_id', False ):
                 replace_id = nonfile_params.get( 'replace_id', None )
                 if replace_id not in [ None, 'None' ]:
-                    replace_dataset = trans.app.model.LibraryDataset.get( int( replace_id ) )
+                    replace_dataset = trans.sa_session.query( l.LibraryDataset ).get( int( replace_id ) )
                 else:
                     replace_dataset = None
                 library_bunch = upload_common.handle_library_params( trans, nonfile_params, nonfile_params.folder_id, replace_dataset )

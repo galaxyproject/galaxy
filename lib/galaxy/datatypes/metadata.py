@@ -489,15 +489,22 @@ class JobExternalOutputMetadataWrapper( object ):
     #We will use JSON as the medium of exchange of information, except for the DatasetInstance object which will use pickle (in the future this could be JSONified as well)
     def __init__( self, job ):
         self.job_id = job.id
-    def get_output_filenames_by_dataset( self, dataset ):
+    def get_output_filenames_by_dataset( self, dataset, sa_session ):
         if isinstance( dataset, galaxy.model.HistoryDatasetAssociation ):
-            return galaxy.model.JobExternalOutputMetadata.filter_by( job_id = self.job_id, history_dataset_association_id = dataset.id ).first() #there should only be one or None
+            return sa_session.query( galaxy.model.JobExternalOutputMetadata ) \
+                             .filter_by( job_id = self.job_id, history_dataset_association_id = dataset.id ) \
+                             .first() #there should only be one or None
         elif isinstance( dataset, galaxy.model.LibraryDatasetDatasetAssociation ):
-            return galaxy.model.JobExternalOutputMetadata.filter_by( job_id = self.job_id, library_dataset_dataset_association_id = dataset.id ).first() #there should only be one or None
+            return sa_session.query( galaxy.model.JobExternalOutputMetadata ) \
+                             .filter_by( job_id = self.job_id, library_dataset_dataset_association_id = dataset.id ) \
+                             .first() #there should only be one or None
         return None
     def get_dataset_metadata_key( self, dataset ):
-        return "%s_%d" % ( dataset.__class__.__name__, dataset.id ) #set meta can be called on library items and history items, need to make different keys for them, since ids can overlap
-    def setup_external_metadata( self, datasets, exec_dir = None, tmp_dir = None, dataset_files_path = None, output_fnames = None, config_root = None, datatypes_config = None, kwds = {} ):
+         # Set meta can be called on library items and history items, 
+         # need to make different keys for them, since ids can overlap
+        return "%s_%d" % ( dataset.__class__.__name__, dataset.id )
+    def setup_external_metadata( self, datasets, sa_session, exec_dir=None, tmp_dir=None, dataset_files_path=None, 
+                                 output_fnames=None, config_root=None, datatypes_config=None, kwds={} ):
         #fill in metadata_files_dict and return the command with args required to set metadata
         def __metadata_files_list_to_cmd_line( metadata_files ):
             def __get_filename_override():
@@ -527,7 +534,7 @@ class JobExternalOutputMetadataWrapper( object ):
             #when setting metadata externally, via 'auto-detect' button in edit attributes, etc., 
             #we don't want to overwrite (losing the ability to cleanup) our existing dataset keys and files, 
             #so we will only populate the dictionary once
-            metadata_files = self.get_output_filenames_by_dataset( dataset )
+            metadata_files = self.get_output_filenames_by_dataset( dataset, sa_session )
             if not metadata_files:
                 metadata_files = galaxy.model.JobExternalOutputMetadata( dataset = dataset)
                 metadata_files.job_id = self.job_id
@@ -553,8 +560,8 @@ class JobExternalOutputMetadataWrapper( object ):
         #return command required to build
         return "%s %s %s %s %s %s" % ( os.path.join( exec_dir, 'set_metadata.sh' ), dataset_files_path, tmp_dir, config_root, datatypes_config, " ".join( map( __metadata_files_list_to_cmd_line, metadata_files_list ) ) )
     
-    def external_metadata_set_successfully( self, dataset ):
-        metadata_files = self.get_output_filenames_by_dataset( dataset )
+    def external_metadata_set_successfully( self, dataset, sa_session ):
+        metadata_files = self.get_output_filenames_by_dataset( dataset, sa_session )
         if not metadata_files:
             return False # this file doesn't exist
         rval, rstring = simplejson.load( open( metadata_files.filename_results_code ) )
@@ -578,4 +585,3 @@ class JobExternalOutputMetadataWrapper( object ):
         for metadata_files in galaxy.model.Job.get( self.job_id ).external_output_metadata:
             metadata_files.job_runner_external_pid = pid
             metadata_files.flush()
-        

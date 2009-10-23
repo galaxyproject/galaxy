@@ -65,7 +65,7 @@ class PageController( BaseController ):
                 page_slug_err = "Page id is required"
             elif not VALID_SLUG_RE.match( page_slug ):
                 page_slug_err = "Page identifier must consist of only lowercase letters, numbers, and the '-' character"
-            elif model.Page.filter_by( user=user, slug=page_slug ).first():
+            elif trans.sa_session.query( model.Page ).filter_by( user=user, slug=page_slug ).first():
                 page_slug_err = "Page id must be unique"
             else:
                 # Create the new stored workflow

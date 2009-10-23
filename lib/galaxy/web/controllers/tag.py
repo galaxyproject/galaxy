@@ -45,7 +45,7 @@ class TagsController ( BaseController ):
         
         self._do_security_check(trans, item)
         
-        self.tag_handler.remove_item_tag( item, tag_name.encode('utf-8') )
+        self.tag_handler.remove_item_tag( trans, item, tag_name.encode('utf-8') )
         #print tag_name
         #print unicode(tag_name)
         trans.sa_session.flush()
@@ -59,7 +59,7 @@ class TagsController ( BaseController ):
         
         self._do_security_check(trans, item)
         
-        tag_handler.delete_item_tags(item)
+        tag_handler.delete_item_tags( trans, item )
         self.tag_handler.apply_item_tags( trans.sa_session, item, new_tags.encode('utf-8') )
         trans.sa_session.flush()
                 

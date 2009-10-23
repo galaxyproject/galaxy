@@ -11,19 +11,19 @@ class Mobile( BaseController ):
         
     @web.expose
     def history_detail( self, trans, id ):
-        history = trans.app.model.History.get( id )
+        history = trans.sa_session.query( trans.app.model.History ).get( id )
         assert history.user == trans.user
         return trans.fill_template( "mobile/history/detail.mako", history=history )
 
     @web.expose
     def dataset_detail( self, trans, id ):
-        dataset = trans.app.model.HistoryDatasetAssociation.get( id )
+        dataset = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( id )
         assert dataset.history.user == trans.user
         return trans.fill_template( "mobile/dataset/detail.mako", dataset=dataset )
 
     @web.expose
     def dataset_peek( self, trans, id ):
-        dataset = trans.app.model.HistoryDatasetAssociation.get( id )
+        dataset = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( id )
         assert dataset.history.user == trans.user
         return trans.fill_template( "mobile/dataset/peek.mako", dataset=dataset )
         
@@ -45,7 +45,7 @@ class Mobile( BaseController ):
 
     def __login( self, trans, email="", password="" ):
         error = password_error = None
-        user = model.User.filter( model.User.table.c.email==email ).first()
+        user = trans.sa_session.query( model.User ).filter_by( email = email ).first()
         if not user:
             error = "No such user"
         elif user.deleted:

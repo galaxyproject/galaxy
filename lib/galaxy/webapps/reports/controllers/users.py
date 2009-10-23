@@ -20,7 +20,7 @@ class Users( BaseController ):
     def registered_users( self, trans, **kwd ):
         params = util.Params( kwd )
         msg = params.get( 'msg', '' )
-        num_users = galaxy.model.User.query().count()
+        num_users = trans.sa_session.query( galaxy.model.User ).count()
         return trans.fill_template( 'registered_users.mako', num_users=num_users, msg=msg )
     @web.expose
     def registered_users_per_month( self, trans, **kwd ):
@@ -104,7 +104,9 @@ class Users( BaseController ):
         cutoff_time = datetime.utcnow() - timedelta( days=int( not_logged_in_for_days ) )
         now = strftime( "%Y-%m-%d %H:%M:%S" )
         users = []
-        for user in galaxy.model.User.filter( galaxy.model.User.table.c.deleted==False ).order_by( galaxy.model.User.table.c.email ).all():
+        for user in trans.sa_session.query( galaxy.model.User ) \
+                                    .filter( galaxy.model.User.table.c.deleted==False ) \
+                                    .order_by( galaxy.model.User.table.c.email ):
             if user.galaxy_sessions:
                 last_galaxy_session = user.galaxy_sessions[ 0 ]
                 if last_galaxy_session.update_time < cutoff_time:

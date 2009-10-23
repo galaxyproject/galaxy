@@ -398,7 +398,7 @@ class TwillTestCase( unittest.TestCase ):
             elem = data_list[-1]
             hid = int( elem.get('hid') )
         self.assertTrue( hid )
-        self.visit_page( "edit?hid=%d" % hid )
+        self.visit_page( "edit?hid=%s" % hid )
         for subpatt in patt.split():
             tc.find(subpatt)
     def delete_history_item( self, hda_id, check_str='' ):
@@ -1113,8 +1113,6 @@ class TwillTestCase( unittest.TestCase ):
                                index, form_name.replace(" ", "+"), index, field['name'].replace(" ", "+"), 
                                index, field['desc'].replace(" ", "+"), index, field['type'])
                     self.visit_url( url_str + options )
-                    data = self.last_page()
-                    file( "rc.html", 'wb' ).write(data)
                     tc.fv( "1", "field_%i_option_%i" % (index, option_index), option )
                     options = options + "&field_%i_option_%i=%s" % (index, option_index, option)
         tc.submit( "save_changes_button" )
