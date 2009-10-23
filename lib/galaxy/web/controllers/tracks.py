@@ -122,9 +122,10 @@ class TracksController( BaseController ):
         vis = session.query( model.Visualization ).get( decoded_id )
         tracks = []
         dbkey = ""
+        hda_query = session.query( model.HistoryDatasetAssociation )
         for t in vis.latest_revision.config['tracks']:
             dataset_id = t['dataset_id']
-            dataset = trans.app.model.HistoryDatasetAssociation.get( dataset_id )
+            dataset = hda_query.get( dataset_id )
             tracks.append( {
                 "type": dataset.datatype.get_track_type(),
                 "name": dataset.name,
