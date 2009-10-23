@@ -6,7 +6,20 @@ var DENSITY = 1000,
     DATA_ERROR = "There was an error in indexing this dataset.",
     DATA_NONE = "No data for this chrom/contig.",
     CACHED_TILES = 50,
-    CACHED_DATA = 20;
+    CACHED_DATA = 20,
+    CONTEXT = $("<canvas></canvas>").get(0).getContext("2d"),
+    RIGHT_STRAND, LEFT_STRAND;
+    
+var right_img = new Image();
+right_img.src = "../images/visualization/strand_right.png";
+right_img.onload = function() {
+    RIGHT_STRAND = CONTEXT.createPattern(right_img, "repeat");
+}
+var left_img = new Image();
+left_img.src = "../images/visualization/strand_left.png";
+left_img.onload = function() {
+    LEFT_STRAND = CONTEXT.createPattern(left_img, "repeat");
+}
 
 function commatize( number ) {
     number += ''; // Convert to string
@@ -101,6 +114,7 @@ $.extend( Track.prototype, {
 
 var TiledTrack = function() {
     this.tile_cache = new Cache(CACHED_TILES);
+    // this.tile_cache = {};
 };
 $.extend( TiledTrack.prototype, Track.prototype, {
     draw: function() {
@@ -126,20 +140,20 @@ $.extend( TiledTrack.prototype, Track.prototype, {
         while ( ( tile_index * DENSITY * resolution ) < high ) {
             // Check in cache
             var key = this.view.zoom_level + "_" + tile_index;
-            if ( this.tile_cache[key] ) {
+            var cached = this.tile_cache.getItem(key);
+            if ( cached ) {
                 // console.log("cached tile");
-                tile_element = this.tile_cache[key];
                 var tile_low = tile_index * DENSITY * resolution;
-                tile_element.css( {
+                cached.css( {
                     left: ( tile_low - this.view.low ) * w_scale
                 });
                 // Our responsibility to move the element to the new parent
-                parent_element.append( tile_element );
+                parent_element.append( cached );
             } else {
                 tile_element = this.draw_tile( resolution, tile_index, parent_element, w_scale, h );
             }
             if ( tile_element ) {
-                this.tile_cache[key] = tile_element;
+                this.tile_cache.setItem(key, tile_element);
             }
             tile_index += 1;
         }
@@ -340,6 +354,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
         if (!this.values) { // Still loading
             return null;
         }
+        // console.log("drawing");
         // Once we zoom in enough, show name labels
         if (w_scale > this.show_labels_scale && !this.showing_labels) {
             this.showing_labels = true;
@@ -373,7 +388,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
         ctx.fillStyle = "#000";
         ctx.font = "10px monospace";
         ctx.textAlign = "right";
-        
+
         var j = 0;
         for (var i = 0, len = this.values.length; i < len; i++) {
             var feature = this.values[i];
@@ -381,9 +396,19 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                 var f_start = Math.floor( Math.max(0, (feature.start - tile_low) * w_scale) ),
                     f_end   = Math.ceil( Math.min(width, (feature.end - tile_low) * w_scale) ),
                     y_center = this.slots[feature.name] * this.vertical_gap;
-                    
-                // console.log(feature.start, feature.end, f_start, f_end, j);
-                ctx.fillRect(f_start, y_center + 5, f_end - f_start, 1);
+                
+                if (feature.strand && this.showing_labels) {
+                    if (feature.strand == "+") {
+                        ctx.fillStyle = RIGHT_STRAND;
+                    } else if (feature.strand == "-") {
+                        ctx.fillStyle = LEFT_STRAND;
+                    }
+                    ctx.fillRect(f_start, y_center, f_end - f_start, 10);
+                    ctx.fillStyle = "#000";
+                } else {
+                    ctx.fillStyle = "#000";
+                    ctx.fillRect(f_start, y_center + 5, f_end - f_start, 1);
+                }
                 
                 if (this.showing_labels && ctx.fillText) {
                     ctx.fillText(feature.name, f_start, y_center + 8);
@@ -393,18 +418,17 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                 if (feature.exon_start && feature.exon_end) {
                     exon_start = Math.floor( Math.max(0, (feature.exon_start - tile_low) * w_scale) );
                     exon_end = Math.ceil( Math.min(width, (feature.exon_end - tile_low) * w_scale) );
-                    ctx.fillRect(exon_start, y_center + 4, exon_end - exon_start, 3);
                 }
                 
-                if (feature.blocks) {
+                if (feature.blocks && this.showing_labels) {
                     for (var k = 0, k_len = feature.blocks.length; k < k_len; k++) {
                         var block = feature.blocks[k],
                             block_start = Math.floor( Math.max(0, (block[0] - tile_low) * w_scale) ),
                             block_end = Math.ceil( Math.min(width, (block[1] - tile_low) * w_scale) );
-                        var thickness = 3, y_start = 4;
+                        var thickness = 5, y_start = 3;
                         if (exon_start && block_start >= exon_start && block_end <= exon_end) {
-                            thickness = 5;
-                            y_start = 3;
+                            thickness = 7;
+                            y_start = 2;
                         }                    
                         ctx.fillRect(block_start, y_center + y_start, block_end - block_start, thickness);
                         // console.log(block_start, block_end);

@@ -21,19 +21,19 @@ class IntervalIndexDataProvider( object ):
         for start, end, offset in index.find(chrom, start, end):
             source.seek(offset)
             feature = source.readline().split()
-            payload = { 'start': start, 'end': end, 'name': feature[3] }
+            payload = { 'start': start, 'end': end, 'name': feature[3], 'strand': feature[5] }
             try:
                 block_sizes = [ int(n) for n in feature[10].split(',') if n != '']
                 block_starts = [ int(n) for n in feature[11].split(',') if n != '' ]
                 blocks = zip(block_sizes, block_starts)
-                payload['block_start_end'] = [ (chrom_start + block[1], chrom_start + block[1] + block[0]) for block in blocks]
-            except:
+                payload['blocks'] = [ (start + block[1], start + block[1] + block[0]) for block in blocks]
+            except IndexError:
                 pass
     
             try:
                 payload['exon_start'] = int(feature[6])
                 payload['exon_end'] = int(feature[7])
-            except:
+            except IndexError:
                 pass
 
             results.append(payload)

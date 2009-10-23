@@ -16,7 +16,7 @@ ${h.js( "jquery", "jquery.event.drag", "jquery.mousewheel", "lrucache", "trackst
     
     $(function() {
         
-        view.add_track( new LabelTrack( $("#viewport" ) ) );
+        view.add_track( new LabelTrack( $("#top-labeltrack" ) ) );
         view.add_track( new LabelTrack( $("#nav-labeltrack" ) ) );
    
         %for track in tracks:
@@ -51,11 +51,6 @@ ${h.js( "jquery", "jquery.event.drag", "jquery.mousewheel", "lrucache", "trackst
             
             var delta_chrom = Math.round(delta / $(document).width() * view.span);
             view.center += delta_chrom;
-            if (view.center < 0) {
-                view.center = 0;
-            } else if (view.center > view.max_high) {
-                view.center = view.max_high;
-            }
             view.redraw();
         });
 
@@ -79,8 +74,8 @@ ${h.js( "jquery", "jquery.event.drag", "jquery.mousewheel", "lrucache", "trackst
             this.current_height = e.clientY;
             this.current_x = e.offsetX;
 
-            var delta_chrom = Math.round(delta / $(document).width() * (view.max_high - view.max_low));
-            view.center += delta_chrom;
+            var delta_chrom = Math.round(delta / $(document).width() * (view.high - view.low));
+            view.center -= delta_chrom;
             view.redraw();
         });
         (function () {
@@ -108,6 +103,7 @@ ${h.js( "jquery", "jquery.event.drag", "jquery.mousewheel", "lrucache", "trackst
 </%def>
 
 <div id="content">
+    <div id="top-labeltrack"></div>
     <div id="viewport"></div>
 </div>
 <div id="nav">
