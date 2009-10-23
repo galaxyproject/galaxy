@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<tool name="Upload File" id="upload1" version="1.0.3">
+<tool name="Upload File" id="upload1" version="1.0.4">
   <description>
     from your computer  
   </description>
@@ -11,7 +11,7 @@
     #while $varExists('output%i' % $outnum):
         #set $output = $getVar('output%i' % $outnum)
         #set $outnum += 1
-        ${output.dataset.dataset.id}:${output}
+        ${output.dataset.dataset.id}:${output.files_path}:${output}
     #end while
   </command>
   <inputs nginx_upload="true">

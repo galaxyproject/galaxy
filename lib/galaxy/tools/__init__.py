@@ -1463,6 +1463,14 @@ class Tool:
                 if len( os.listdir( temp_file_path ) ) > 0:
                     store_file_path = os.path.join( os.path.join( self.app.config.file_path, *directory_hash_id( hda.dataset.id ) ), "dataset_%d_files" % hda.dataset.id )
                     shutil.move( temp_file_path, store_file_path )
+                    # fix permissions
+                    for basedir, dirs, files in os.walk( store_file_path ):
+                        util.umask_fix_perms( basedir, self.app.config.umask, 0777, self.app.config.gid )
+                        for file in files:
+                            path = os.path.join( basedir, file )
+                            if os.path.islink( path ):
+                                continue # ignore symlinks
+                            util.umask_fix_perms( path, self.app.config.umask, 0666, self.app.config.gid )
             except:
                 continue
     

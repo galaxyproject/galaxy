@@ -140,7 +140,6 @@ class ToolRunner( BaseController ):
         permissions = trans.app.security_agent.history_get_default_permissions( trans.history )
         def create_dataset( name ):
             ud = Bunch( name=name, file_type=None, dbkey=None )
-            # Okay, time to make this crap actually use the upload_common functions, which means making them get called from outside the json_paramfile method.
             if nonfile_params.get( 'folder_id', False ):
                 replace_id = nonfile_params.get( 'replace_id', None )
                 if replace_id not in [ None, 'None' ]:

@@ -594,9 +594,10 @@ class JobWrapper( object ):
         self.tool.call_hook( 'exec_after_process', self.queue.app, inp_data=inp_data, 
                              out_data=out_data, param_dict=param_dict, 
                              tool=self.tool, stdout=stdout, stderr=stderr )
-        # TODO
-        # validate output datasets
         job.command_line = self.command_line
+        # fix permissions
+        for path in [ dp.real_path for dp in self.get_output_fnames() ]:
+            util.umask_fix_perms( path, self.app.config.umask, 0666, self.app.config.gid )
         self.sa_session.flush()
         log.debug( 'job %d ended' % self.job_id )
         self.cleanup()

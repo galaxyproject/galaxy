@@ -23,6 +23,10 @@ class Configuration( object ):
     def __init__( self, **kwargs ):
         self.config_dict = kwargs
         self.root = kwargs.get( 'root_dir', '.' )
+        # Collect the umask and primary gid from the environment
+        self.umask = os.umask( 077 ) # get the current umask
+        os.umask( self.umask ) # can't get w/o set, so set it back
+        self.gid = os.getgid() # if running under newgrp(1) we'll need to fix the group of data created on the cluster
         # Database related configuration
         self.database = resolve_path( kwargs.get( "database_file", "database/universe.d" ), self.root )
         self.database_connection =  kwargs.get( "database_connection", False )

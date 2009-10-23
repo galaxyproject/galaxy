@@ -239,7 +239,6 @@ def create_paramfile( uploaded_datasets ):
                          type = uploaded_dataset.type,
                          metadata = uploaded_dataset.metadata,
                          primary_file = uploaded_dataset.primary_file,
-                         extra_files_path = data.extra_files_path,
                          composite_file_paths = uploaded_dataset.composite_files,
                          composite_files = dict( [ ( k, v.__dict__ ) for k, v in data.datatype.get_composite_files( data ).items() ] ) )
         else:

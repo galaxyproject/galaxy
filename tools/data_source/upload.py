@@ -119,8 +119,8 @@ def check_zip( temp_name ):
 def parse_outputs( args ):
     rval = {}
     for arg in args:
-        id, path = arg.split( ':', 1 )
-        rval[int( id )] = path
+        id, files_path, path = arg.split( ':', 2 )
+        rval[int( id )] = ( path, files_path )
     return rval
 
 def add_file( dataset, json_file, output_path ):
@@ -255,9 +255,9 @@ def add_file( dataset, json_file, output_path ):
                  line_count = line_count )
     json_file.write( to_json_string( info ) + "\n" )
 
-def add_composite_file( dataset, json_file, output_path ):
+def add_composite_file( dataset, json_file, output_path, files_path ):
         if dataset.composite_files:
-            os.mkdir( dataset.extra_files_path )
+            os.mkdir( files_path )
             for name, value in dataset.composite_files.iteritems():
                 value = util.bunch.Bunch( **value )
                 if dataset.composite_file_paths[ value.name ] is None and not value.optional:
@@ -269,7 +269,7 @@ def add_composite_file( dataset, json_file, output_path ):
                             sniff.convert_newlines_sep2tabs( dataset.composite_file_paths[ value.name ][ 'path' ] )
                         else:
                             sniff.convert_newlines( dataset.composite_file_paths[ value.name ][ 'path' ] )
-                    shutil.move( dataset.composite_file_paths[ value.name ][ 'path' ], os.path.join( dataset.extra_files_path, name ) )
+                    shutil.move( dataset.composite_file_paths[ value.name ][ 'path' ], os.path.join( files_path, name ) )
         # Move the dataset to its "real" path
         shutil.move( dataset.primary_file, output_path )
         # Write the job info
@@ -290,12 +290,13 @@ def __main__():
         dataset = from_json_string( line )
         dataset = util.bunch.Bunch( **safe_dict( dataset ) )
         try:
-            output_path = output_paths[int( dataset.dataset_id )]
+            output_path = output_paths[int( dataset.dataset_id )][0]
         except:
             print >>sys.stderr, 'Output path for dataset %s not found on command line' % dataset.dataset_id
             sys.exit( 1 )
         if dataset.type == 'composite':
-            add_composite_file( dataset, json_file, output_path )
+            files_path = output_paths[int( dataset.dataset_id )][1]
+            add_composite_file( dataset, json_file, output_path, files_path )
         else:
             add_file( dataset, json_file, output_path )
     # clean up paramfile
