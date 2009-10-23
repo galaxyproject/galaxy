@@ -63,18 +63,35 @@ class TracksController( BaseController ):
         return trans.fill_template( "tracks/index.mako" )
 
     @web.expose
-    def new_browser( self, trans, dbkey=None, dataset_ids=None, browse=None ):
+    def new_browser( self, trans, dbkey=None, dataset_ids=None, browse=None, title=None ):
         """
         Build a new browser from datasets in the current history. Redirects
-        to 'index' once datasets to browse have been selected.
+        to 'browser' once datasets to browse have been selected.
         """
         session = trans.sa_session
         # If the user clicked the submit button explicitly, try to build the browser
-        if browse and dataset_ids:
+        if title and browse and dataset_ids:
             if not isinstance( dataset_ids, list ):
                 dataset_ids = [ dataset_ids ]
-            dataset_ids = ",".join( map( str, dataset_ids ) )
-            trans.response.send_redirect( web.url_for( controller='tracks', action='browser', chrom="", dataset_ids=dataset_ids ) )
+            # Build config
+            tracks = []
+            for dataset_id in dataset_ids:
+                tracks.append( { "dataset_id": str( dataset_id ) } )
+            config = { "tracks": tracks }
+            # Build visualization object
+            vis = model.Visualization()
+            vis.user = trans.user
+            vis.title = title
+            vis.type = "trackster"
+            vis_rev = model.VisualizationRevision()
+            vis_rev.visualization = vis
+            vis_rev.title = title
+            vis_rev.config = config
+            vis.latest_revision = vis_rev
+            session.add( vis )
+            session.add( vis_rev )
+            session.flush()
+            trans.response.send_redirect( web.url_for( controller='tracks', action='browser', id=trans.security.encode_id( vis.id ) ) )
         else:
             # Determine the set of all dbkeys that are used in the current history
             dbkeys = [ d.metadata.dbkey for d in trans.get_history().datasets if not d.deleted ]
@@ -96,14 +113,18 @@ class TracksController( BaseController ):
             return trans.fill_template( "tracks/new_browser.mako", converters=browsable_types, dbkey=dbkey, dbkey_set=dbkey_set, datasets=datasets )
 
     @web.expose
-    def browser(self, trans, dataset_ids, chrom=""):
+    def browser(self, trans, id, chrom=""):
         """
         Display browser for the datasets listed in `dataset_ids`.
         """
+        decoded_id = trans.security.decode_id( id )
+        session = trans.sa_session
+        vis = session.query( model.Visualization ).get( decoded_id )
         tracks = []
         dbkey = ""
-        for dataset_id in dataset_ids.split( "," ):
-            dataset = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( dataset_id )
+        for t in vis.latest_revision.config['tracks']:
+            dataset_id = t['dataset_id']
+            dataset = trans.app.model.HistoryDatasetAssociation.get( dataset_id )
             tracks.append( {
                 "type": dataset.datatype.get_track_type(),
                 "name": dataset.name,
@@ -114,7 +135,8 @@ class TracksController( BaseController ):
         if chrom_lengths is None:
             error( "No chromosome lengths file found for '%s'" % dataset.name )
         return trans.fill_template( 'tracks/browser.mako',
-                                    dataset_ids=dataset_ids,
+                                    #dataset_ids=dataset_ids,
+                                    id=id,
                                     tracks=tracks,
                                     chrom=chrom,
                                     dbkey=dbkey,

@@ -19,10 +19,17 @@ $( function() {
 
 % else:
     <div class="form">
-        <div class="form-title">Select datasets to include in browser</div>
+        <div class="form-title">Create new track browser</div>
     
         <div id="dbkey" class="form-body">
             <form id="form" method="POST">
+                <div class="form-row">
+                    <label for="dbkey">Browser name:</label>
+                    <div class="form-row-input">
+                        <input type="text" name="title" id="title" value="Unnamed Browser"></input>
+                    </div>
+                    <div style="clear: both;"></div>
+                </div>
                 <div class="form-row">
                     <label for="dbkey">Reference genome build (dbkey): </label>
                     <div class="form-row-input">

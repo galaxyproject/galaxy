@@ -1292,7 +1292,7 @@ class UserAddress( object ):
         if self.phone:
             html = html + '<br/>' + 'Phone: ' + self.phone
         return html
-    
+
 class Page( object ):
     def __init__( self ):
         self.id = None
@@ -1307,6 +1307,22 @@ class PageRevision( object ):
         self.user = None
         self.title = None
         self.content = None
+
+class Visualization( object ):
+    def __init__( self ):
+        self.id = None
+        self.user = None
+        self.type = None
+        self.title = None
+        self.latest_revision = None
+        self.revisions = []
+
+class VisualizationRevision( object ):
+    def __init__( self ):
+        self.id = None
+        self.visualization = None
+        self.title = None
+        self.config = None
         
 class Tag ( object ):
     def __init__( self, id=None, type=None, parent_id=None, name=None ):

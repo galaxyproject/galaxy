@@ -173,11 +173,18 @@
     %endif
 
     %if app.config.get_bool( 'enable_tracks', False ):
-    <td class="tab">
+    <%
+    cls = "tab"
+    if self.active_view == 'visualization':
+	cls += " active"
+    %>
+    <td class="${cls}">
         Visualization
         <div class="submenu">
         <ul>
             <li><a href="${h.url_for( controller='tracks', action='index' )}">Build track browser</a></li>
+            <li><hr style="color: inherit; background-color: gray"/></li>
+	    <li><a href="${h.url_for( controller='visualization', action='index' )}">Stored visualizations</a></li>
         </ul>
         </div>
     </td>

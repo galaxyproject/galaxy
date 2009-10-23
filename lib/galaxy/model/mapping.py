@@ -556,6 +556,26 @@ PageRevision.table = Table( "page_revision", metadata,
     Column( "content", TEXT )
     )
 
+Visualization.table = Table( "visualization", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True, nullable=False ),
+    Column( "latest_revision_id", Integer,
+            ForeignKey( "visualization_revision.id", use_alter=True, name='visualization_latest_revision_id_fk' ), index=True ),
+    Column( "title", TEXT ),
+    Column( "type", TEXT )
+    )
+
+VisualizationRevision.table = Table( "visualization_revision", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "visualization_id", Integer, ForeignKey( "visualization.id" ), index=True, nullable=False ),
+    Column( "title", TEXT ),
+    Column( "config", JSONType )
+    )
+
 Tag.table = Table( "tag", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "type", Integer ),
@@ -1010,6 +1030,18 @@ assign_mapper( context, Page, Page.table,
                                                primaryjoin=( Page.table.c.latest_revision_id == PageRevision.table.c.id ),
                                                lazy=False ),
                      tags=relation(PageTagAssociation, order_by=PageTagAssociation.table.c.id, backref="pages") 
+                   ) )
+
+assign_mapper( context, VisualizationRevision, VisualizationRevision.table )
+
+assign_mapper( context, Visualization, Visualization.table,
+    properties=dict( user=relation( User ),
+                     revisions=relation( VisualizationRevision, backref='visualization',
+                                         cascade="all, delete-orphan",
+                                         primaryjoin=( Visualization.table.c.id == VisualizationRevision.table.c.visualization_id ) ),
+                     latest_revision=relation( VisualizationRevision, post_update=True,
+                                               primaryjoin=( Visualization.table.c.latest_revision_id == VisualizationRevision.table.c.id ),
+                                               lazy=False )
                    ) )
 
 assign_mapper( context, Tag, Tag.table,

@@ -124,7 +124,8 @@ ${h.js( "jquery", "jquery.event.drag", "jquery.mousewheel", "lrucache", "trackst
             <select id="chrom" name="chrom">
                 <option value="">Loading</option>
             </select>
-            <input type="hidden" name="dataset_ids" value="${dataset_ids}" />
+            ## <input type="hidden" name="dataset_ids" value="${dataset_ids}" />
+	    <input type="hidden" name="id" value="${id}" /> 
             <a href="#" onclick="javascript:view.zoom_in();view.redraw();">+</a>
             <a href="#" onclick="javascript:view.zoom_out();view.redraw();">-</a>
         </form>
