@@ -77,7 +77,7 @@ class CloudController( BaseController ):
         
         cloudCredentials = trans.sa_session.query( model.CloudUserCredentials ) \
             .filter_by( user=user ) \
-            .order_by( desc( model.CloudUserCredentials.c.update_time ) ) \
+            .order_by( desc( model.CloudUserCredentials.c.name ) ) \
             .all()
         
         liveInstances = trans.sa_session.query( model.UCI ) \
@@ -115,6 +115,13 @@ class CloudController( BaseController ):
                     "start up and then refresh this page. A button to connect to the instance will then appear alongside "
                     "instance description." )         
         
+#        log.debug( "provider.is_secure: '%s'" % trans.sa_session.query( model.CloudProvider).filter_by(id=1).first().is_secure )
+#        trans.sa_session.query( model.CloudProvider).filter_by(id=1).first().is_secure=False
+#        trans.sa_session.flush()
+#        log.debug( "provider.is_secure: '%s'" % trans.sa_session.query( model.CloudProvider).filter_by(id=1).first().is_secure )
+        
+#        log.debug( "image: '%s'" % model.CloudImage.is_secure )
+        
         return trans.fill_template( "cloud/configure_cloud.mako",
                                     cloudCredentials = cloudCredentials,
                                     liveInstances = liveInstances,
@@ -146,13 +153,12 @@ class CloudController( BaseController ):
         """
         Start a new cloud resource instance
         """
-        # TODO: Add choice of instance type before starting one
-        #if type:
         user = trans.get_user()
-        mi = get_mi( trans, type )
         uci = get_uci( trans, id )
+        mi = get_mi( trans, uci, type )
         stores = get_stores( trans, uci ) 
-#        log.debug(self.app.config.job_working_directory)
+        # Ensure instance is not already running (or related state) and store relevant data
+        # into DB to initiate instance startup by cloud manager
         if ( len(stores) is not 0 ) and \
            ( uci.state != uci_states.SUBMITTED ) and \
            ( uci.state != uci_states.SUBMITTED_UCI ) and \
@@ -166,116 +172,45 @@ class CloudController( BaseController ):
             instance.uci = uci
             instance.availability_zone = stores[0].availability_zone # Bc. all EBS volumes need to be in the same avail. zone, just check 1st
             instance.type = type
-#            instance.keypair_name = get_keypair_name( trans )
-#            conn = get_connection( trans )
-#            log.debug( '***** Setting up security group' )
-            # If not existent, setup galaxy security group
-#            try:
-#                gSecurityGroup = conn.create_security_group('galaxy', 'Security group for Galaxy.')
-#                gSecurityGroup.authorize( 'tcp', 80, 80, '0.0.0.0/0' ) # Open HTTP port
-#                gSecurityGroup.authorize( 'tcp', 22, 22, '0.0.0.0/0' ) # Open SSH port
-#            except:
-#                pass
-#                sgs = conn.get_all_security_groups()
-#                for i in range( len( sgs ) ):
-#                    if sgs[i].name == "galaxy":
-#                        sg.append( sgs[i] )
-#                        break # only 1 security group w/ this name can exist, so continue                    
-            
-#            log.debug( '***** Starting an instance' )
-#            log.debug( 'Using following command: conn.run_instances( image_id=%s, key_name=%s )' % ( instance.image.image_id, instance.keypair_name ) )
-#            reservation = conn.run_instances( image_id=instance.image.image_id, key_name=instance.keypair_name )
-            #reservation = conn.run_instances( image_id=instance.image, key_name=instance.keypair_name, security_groups=['galaxy'], instance_type=instance.type,  placement=instance.availability_zone )
-#            instance.launch_time = datetime.utcnow()
-#            uci.launch_time = instance.launch_time
-#            instance.reservation_id = str( reservation ).split(":")[1]
-#            instance.instance_id = str( reservation.instances[0]).split(":")[1]
-#            instance.state = "pending"
-#            instance.state = reservation.instances[0].state
             uci.state = uci_states.SUBMITTED_UCI
-            
             # Persist
             session = trans.sa_session
             session.save_or_update( instance )
             session.save_or_update( uci )
             session.flush()
-                        
+            # Log  
             trans.log_event ("User initiated starting of cloud instance '%s'." % uci.name )
             trans.set_message( "Galaxy instance started. NOTE: Please wait about 3-5 minutes for the instance to " 
                     "start up and then refresh this page. A button to connect to the instance will then appear alongside "
                     "instance description." )
-            time.sleep(1) # Wait for initial update to occur to avoid immediate page reload
             return self.list( trans )
         
         trans.show_error_message( "Cannot start instance that is in state '%s'." % uci.state )
         return self.list( trans )
-        
-#        return trans.show_form( 
-#            web.FormBuilder( web.url_for(), "Start instance size", submit_text="Start" )
-#                .add_input( "radio","Small","size", value='small' ) 
-#                .add_input( "radio","Medium","size", value='medium' ) )
-                    
     
     @web.expose
     @web.require_login( "stop Galaxy cloud instance" )
     def stop( self, trans, id ):
         """
-        Stop a cloud UCI instance. This implies stopping Galaxy server and disconnecting/unmounting relevant file system(s).
+        Stop a cloud UCI instance.
         """
         uci = get_uci( trans, id )
-        uci.state = uci_states.SHUTTING_DOWN_UCI
-        session = trans.sa_session
-#        session.save_or_update( stores )
-        session.save_or_update( uci )
-        session.flush()
-        trans.log_event( "User stopped cloud instance '%s'" % uci.name )
-        trans.set_message( "Galaxy instance '%s' stopped." % uci.name )
+        if ( uci.state != uci_states.DELETING ) and \
+           ( uci.state != uci_states.DELETING_UCI ) and \
+           ( uci.state != uci_states.ERROR ) and \
+           ( uci.state != uci_states.SHUTTING_DOWN_UCI ) and \
+           ( uci.state != uci_states.SHUTTING_DOWN ) and \
+           ( uci.state != uci_states.AVAILABLE ):
+            uci.state = uci_states.SHUTTING_DOWN_UCI
+            session = trans.sa_session
+            session.save_or_update( uci )
+            session.flush()
+            trans.log_event( "User stopped cloud instance '%s' (id: %s)" % ( uci.name, uci.id ) )
+            trans.set_message( "Stopping of Galaxy instance '%s' initiated." % uci.name )
+            
+            return self.list( trans )
         
-#        dbInstances = get_instances( trans, uci ) #TODO: handle list!
-#        
-#        conn = get_connection( trans )
-#        # Get actual cloud instance object
-#        cloudInstance = get_cloud_instance( conn, dbInstances.instance_id )
-#        
-#        # TODO: Detach persistent storage volume(s) from instance and update volume data in local database
-#        stores = get_stores( trans, uci )
-#        for i, store in enumerate( stores ):
-#            log.debug( "Detaching volume '%s' to instance '%s'." % ( store.volume_id, dbInstances.instance_id ) )
-#            mntDevice = store.device
-#            volStat = None
-##            Detaching volume does not work with Eucalyptus Public Cloud, so comment it out
-##            try:
-##                volStat = conn.detach_volume( store.volume_id, dbInstances.instance_id, mntDevice )
-##            except:
-##                log.debug ( 'Error detaching volume; still going to try and stop instance %s.' % dbInstances.instance_id )
-#            store.attach_time = None
-#            store.device = None
-#            store.i_id = None
-#            store.status = volStat
-#            log.debug ( '***** volume status: %s' % volStat )
-#   
-#        
-#        # Stop the instance and update status in local database
-#        cloudInstance.stop()
-#        dbInstances.stop_time = datetime.utcnow()
-#        while cloudInstance.state != 'terminated':
-#            log.debug( "Stopping instance %s state; current state: %s" % ( str( cloudInstance ).split(":")[1], cloudInstance.state ) )
-#            time.sleep(3)
-#            cloudInstance.update()
-#        dbInstances.state = cloudInstance.state
-#        
-#        # Reset relevant UCI fields
-#        uci.state = 'available'
-#        uci.launch_time = None
-#          
-#        # Persist
-#        session = trans.sa_session
-##        session.save_or_update( stores )
-#        session.save_or_update( dbInstances ) # TODO: Is this going to work w/ multiple instances stored in dbInstances variable?
-#        session.save_or_update( uci )
-#        session.flush()
-#        trans.log_event( "User stopped cloud instance '%s'" % uci.name )
-#        trans.set_message( "Galaxy instance '%s' stopped." % uci.name )
+        trans.show_error_message( "Cannot stop instance that is in state '%s'." % uci.state )
         return self.list( trans )
     
     @web.expose
@@ -290,30 +225,10 @@ class CloudController( BaseController ):
         if ( uci.state != uci_states.DELETING_UCI ) and ( uci.state != uci_states.DELETING ) and ( uci.state != uci_states.ERROR ):
             name = uci.name
             uci.state = uci_states.DELETING_UCI
-    #        dbInstances = get_instances( trans, uci ) #TODO: handle list!
-    #        
-    #        conn = get_connection( trans )
             session = trans.sa_session
-    #        
-    #        # Delete volume(s) associated with given uci 
-    #        stores = get_stores( trans, uci )
-    #        for i, store in enumerate( stores ):
-    #            log.debug( "Deleting volume '%s' that is associated with UCI '%s'." % ( store.volume_id, uci.name ) )
-    #            volStat = None
-    #            try:
-    #                volStat = conn.delete_volume( store.volume_id )
-    #            except:
-    #                log.debug ( 'Error deleting volume %s' % store.volume_id )
-    #            
-    #            if volStat:
-    #                session.delete( store )
-    #            
-    #        # Delete UCI from table
-    #        uciName = uci.name # Store name for logging
-    #        session.delete( uci )
-            
+            session.save_or_update( uci )
             session.flush()
-            trans.log_event( "User deleted cloud instance '%s'" % name )
+            trans.log_event( "User marked cloud instance '%s' for deletion." % name )
             trans.set_message( "Galaxy instance '%s' marked for deletion." % name )
             return self.list( trans )
         
@@ -332,7 +247,19 @@ class CloudController( BaseController ):
     
     @web.expose
     @web.require_login( "use Galaxy cloud" )
-    def configureNew( self, trans, instanceName='', credName='', volSize='', zone=''):
+    def usageReport( self, trans ):
+        user = trans.get_user()
+        
+        prevInstances = trans.sa_session.query( model.CloudInstance ) \
+            .filter_by( user=user, state=instance_states.TERMINATED ) \
+            .order_by( desc( model.CloudInstance.c.update_time ) ) \
+            .all()
+        
+        return trans.fill_template( "cloud/view_usage.mako", prevInstances = prevInstances ) 
+    
+    @web.expose
+    @web.require_login( "use Galaxy cloud" )
+    def configureNew( self, trans, instanceName='', credName='', volSize='', zone='' ):
         """
         Configure and add new cloud instance to user's instance pool
         """
@@ -346,16 +273,19 @@ class CloudController( BaseController ):
 
         providersToZones = {}
         for storedCred in storedCreds:
-            if storedCred.provider_name == 'ec2':
+            if storedCred.provider.type == 'ec2':
                 ec2_zones = ['us-east-1a', 'us-east-1b', 'us-east-1c', 'us-east-1d']
                 providersToZones[storedCred.name] = ec2_zones 
-            elif storedCred.provider_name == 'eucalyptus':
+            elif storedCred.provider.type == 'eucalyptus':
                 providersToZones[storedCred.name] = ['epc']
         
         if instanceName:
             # Create new user configured instance
             try:
-                if trans.app.model.UCI.filter(  and_( trans.app.model.UCI.table.c.name==instanceName, trans.app.model.UCI.table.c.state!=uci_states.DELETED ) ).first():
+                if trans.app.model.UCI \
+                    .filter_by (user=user) \
+                    .filter(  and_( trans.app.model.UCI.table.c.name==instanceName, trans.app.model.UCI.table.c.state!=uci_states.DELETED ) ) \
+                    .first():
                     error['inst_error'] = "An instance with that name already exist."
                 elif instanceName=='' or len( instanceName ) > 255:
                     error['inst_error'] = "Instance name must be between 1 and 255 characters long."
@@ -393,7 +323,6 @@ class CloudController( BaseController ):
                     # Log and display the management page
                     trans.log_event( "User configured new cloud instance" )
                     trans.set_message( "New Galaxy instance '%s' configured. Once instance status shows 'available' you will be able to start the instance." % instanceName )
-                    time.sleep(1) # Wait for initial update to occur to avoid immediate page reload
                     return self.list( trans )
             except ValueError:
                 vol_error = "Volume size must be specified as an integer value only, between 1 and 1000."
@@ -460,8 +389,9 @@ class CloudController( BaseController ):
             trans.set_message( "Credentials renamed to '%s'." % new_name )
             return self.list( trans )
         else:
-            return form( url_for( id=trans.security.encode_id(stored.id) ), "Rename credentials", submit_text="Rename" ) \
-                .add_text( "new_name", "Credentials Name", value=stored.name )
+            return trans.show_form( 
+                web.FormBuilder( url_for( id=trans.security.encode_id(stored.id) ), "Rename credentials", submit_text="Rename" ) 
+                .add_text( "new_name", "Credentials Name", value=stored.name ) )
    
     @web.expose
     @web.require_login( "use Galaxy cloud" )
@@ -473,8 +403,9 @@ class CloudController( BaseController ):
             trans.set_message( "Instance renamed to '%s'." % new_name )
             return self.list( trans )
         else:
-            return form( url_for( id=trans.security.encode_id(instance.id) ), "Rename instance", submit_text="Rename" ) \
-                .add_text( "new_name", "Instance name", value=instance.name )
+            return trans.show_form( 
+                web.FormBuilder( url_for( id=trans.security.encode_id(instance.id) ), "Rename instance", submit_text="Rename" )
+                .add_text( "new_name", "Instance name", value=instance.name ) )
    
     @web.expose
     @web.require_login( "add credentials" )
@@ -485,14 +416,14 @@ class CloudController( BaseController ):
         user = trans.get_user()
         error = {}
         
-        if credName:
-            if len( credName ) > 255:
-                error['cred_error'] = "Credentials name exceeds maximum allowable length."
-            elif trans.app.model.CloudUserCredentials.filter(  
+        if credName or providerName or accessKey or secretKey:
+            if credName=='' or len( credName ) > 255:
+                error['cred_error'] = "Credentials name must be between 1 and 255 characters in length."
+            elif trans.app.model.CloudUserCredentials.filter_by( user=user ).filter(  
                     trans.app.model.CloudUserCredentials.table.c.name==credName ).first():
                 error['cred_error'] = "Credentials with that name already exist."
-            elif ( ( providerName.lower()!='ec2' ) and ( providerName.lower()!='eucalyptus' ) ):
-                error['provider_error'] = "You specified an unsupported cloud provider."
+            elif providerName=='':
+                error['provider_error'] = "You must select cloud provider associated with these credentials."
             elif accessKey=='' or len( accessKey ) > 255:
                 error['access_key_error'] = "Access key must be between 1 and 255 characters long."
             elif secretKey=='' or len( secretKey ) > 255:
@@ -504,7 +435,8 @@ class CloudController( BaseController ):
                 credentials.user = user
                 credentials.access_key = accessKey
                 credentials.secret_key = secretKey
-                credentials.provider_name = providerName.lower()
+                provider = get_provider( trans, providerName )
+                credentials.provider = provider
                 # Persist
                 session = trans.sa_session
                 session.save_or_update( credentials )
@@ -516,12 +448,14 @@ class CloudController( BaseController ):
 #                    self.makeDefault( trans, credentials.id)
                 return self.list( trans )
         
-        return trans.fill_template( "cloud/add_credentials.mako", \
-                                    credName = credName, \
-                                    providerName = providerName, \
-                                    accessKey = accessKey, \
-                                    secretKey = secretKey, \
-                                    error = error
+        providers = trans.sa_session.query( model.CloudProvider ).filter_by( user=user ).all()
+        return trans.fill_template( "cloud/add_credentials.mako", 
+                                    credName = credName, 
+                                    providerName = providerName, 
+                                    accessKey = accessKey, 
+                                    secretKey = secretKey, 
+                                    error = error, 
+                                    providers = providers
                                     )
         
 #        return trans.show_form( 
@@ -542,6 +476,13 @@ class CloudController( BaseController ):
         
         return trans.fill_template( "cloud/view.mako", 
                                    credDetails = stored )
+
+    @web.expose
+    @web.require_login( "test cloud credentials" )
+    def test_cred( self, trans, id=None ):
+        """
+        Tests credentials provided by user with selected cloud provider 
+        """
 
     @web.expose
     @web.require_login( "view instance details" )
@@ -571,6 +512,97 @@ class CloudController( BaseController ):
         stored.flush()
         # Display the management page
         trans.set_message( "Credentials '%s' deleted." % stored.name )
+        return self.list( trans )
+    
+    @web.expose
+    @web.require_login( "add provider" )
+    def add_provider( self, trans, name='', type='', region_name='', region_endpoint='', is_secure='', host='', port='', proxy='', proxy_port='',
+                      proxy_user='', proxy_pass='', debug='', https_connection_factory='', path='' ):
+        user = trans.get_user()
+        error = {}
+        
+        # Check if Amazon EC2 has already been registered by this user
+        ec2_registered = trans.sa_session.query( model.CloudProvider ).filter_by( user=user, type='ec2' ).first()
+        
+        if region_name or region_endpoint or name or is_secure or port or proxy or debug or path:
+            if trans.app.model.CloudProvider \
+                .filter_by (user=user, name=name) \
+                .first():
+                error['name_error'] = "A provider with that name already exist."
+            elif name=='' or len( name ) > 255:
+                error['name_error'] = "Provider name must be between 1 and 255 characters long."
+            elif type=='':
+                error['type_error'] = "Provider type must be selected."
+            elif ec2_registered:
+                error['type_error'] = "Amazon EC2 has already been registered as a provider."
+            elif is_secure!=0 or is_secure!=1:
+                error['is_secure_error'] = "Field 'is secure' can only take on a value '0' or '1'."
+            else:
+                provider = model.CloudProvider()
+                provider.user = user
+                provider.type = type
+                provider.name = name
+                provider.region_name = region_name
+                provider.region_endpoint = region_endpoint
+                if is_secure=='0':
+                    provider.is_secure = False
+                else:
+                    provider.is_secure = True
+                provider.host = host
+                provider.port = port
+                provider.proxy = proxy
+                provider.proxy_port = proxy_port
+                provider.proxy_user = proxy_user
+                provider.proxy_pass = proxy_pass
+                provider.debug = debug
+                provider.https_connection_factory = https_connection_factory
+                provider.path = path
+                # Persist
+                session = trans.sa_session
+                session.save_or_update( provider )
+                session.flush()
+                # Log and display the management page
+                trans.log_event( "User configured new cloud provider: '%s'" % name )
+                trans.set_message( "New cloud provider '%s' added." % name )
+                return self.list( trans )
+        
+        return trans.fill_template( "cloud/add_provider.mako", 
+                                    name = name,
+                                    type = type,
+                                    region_name = region_name,
+                                    region_endpoint = region_endpoint,
+                                    is_secure = is_secure,
+                                    host = host, 
+                                    port = port, 
+                                    proxy = proxy,
+                                    proxy_port = proxy_port,
+                                    proxy_user = proxy_user,
+                                    proxy_pass = proxy_pass, 
+                                    debug = debug,
+                                    https_connection_factory = https_connection_factory,
+                                    path = path,
+                                    error = error
+                                    )
+        
+    @web.expose
+    @web.require_login( "add Amazon EC2 provider" )
+    def add_ec2( self, trans ):
+        """ Default provider setup for Amazon's EC2. """
+        user = trans.get_user()
+        # Check if EC2 has already been registered by this user.
+        exists = trans.sa_session.query( model.CloudProvider ) \
+            .filter_by( user=user, type='ec2' ).first()
+        
+        if not exists:
+            provider = model.CloudProvider()
+            provider.user = user
+            provider.type = 'ec2'
+            provider.name = 'EC2'
+            # Persist
+            session = trans.sa_session
+            session.save_or_update( provider )
+            session.flush()
+        
         return self.list( trans )
     
     @web.expose
@@ -1012,25 +1044,32 @@ class CloudController( BaseController ):
                                         workflows=workflows,
                                         shared_by_others=shared_by_others,
                                         ids_in_menu=ids_in_menu )
+    @web.json
+    def json_update( self, trans ):
+        user = trans.get_user()
+        UCIs = trans.sa_session.query( model.UCI ).filter_by( user=user ).filter( model.UCI.c.state != uci_states.DELETED ).all()
+        insd = {} # instance name-state dict
+        for uci in UCIs:
+            dict = {}
+            dict['id'] = uci.id
+            dict['state'] = uci.state
+            if uci.launch_time != None:
+                dict['launch_time'] = str(uci.launch_time)
+                dict['time_ago'] = str(date.distance_of_time_in_words(uci.launch_time, date.datetime.utcnow() ) )
+            else:
+                dict['launch_time'] = None
+                dict['time_ago'] = None
+            insd[uci.name] = dict
+        return insd
     
 ## ---- Utility methods -------------------------------------------------------
 
-def get_UCIs_state( trans ):
+def get_provider( trans, name ):
     user = trans.get_user()
-    instances = trans.sa_session.query( model.UCI ).filter_by( user=user ).filter( model.UCI.c.state != uci_states.DELETED ).all()
-    insd = {} # instance name-state dict
-    for inst in instances:
-        insd[inst.name] = inst.state
+    return trans.app.model.CloudProvider \
+                .filter_by (user=user, name=name) \
+                .first()
         
-    
-def get_UCIs_time_ago( trans ):
-    user = trans.get_user()
-    instances = trans.sa_session.query( model.UCI ).filter_by( user=user ).all()
-    intad = {} # instance name-time-ago dict
-    for inst in instances:
-        if inst.launch_time != None:
-            intad[inst.name] = str(date.distance_of_time_in_words (inst.launch_time, date.datetime.utcnow() ) )
-                
 def get_stored_credentials( trans, id, check_ownership=True ):
     """
     Get StoredUserCredentials from the database by id, verifying ownership. 
@@ -1085,14 +1124,18 @@ def get_uci( trans, id, check_ownership=True ):
     # Looks good
     return live
 
-def get_mi( trans, size='m1.small' ):
+def get_mi( trans, uci, size='m1.small' ):
     """
     Get appropriate machine image (mi) based on instance size.
     TODO: Dummy method - need to implement logic
         For valid sizes, see http://aws.amazon.com/ec2/instance-types/
     """
-    return trans.app.model.CloudImage.filter(
-        trans.app.model.CloudImage.table.c.id==2).first() 
+    if uci.credentials.provider.type == 'ec2':
+        return trans.app.model.CloudImage.filter(
+            trans.app.model.CloudImage.table.c.id==2).first()
+    else:
+        return trans.app.model.CloudImage.filter(
+            trans.app.model.CloudImage.table.c.id==1).first()
 
 def get_stores( trans, uci ):
     """

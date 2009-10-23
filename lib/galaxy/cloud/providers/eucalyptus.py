@@ -51,7 +51,7 @@ class EucalyptusCloudProvider( object ):
     """
     STOP_SIGNAL = object()
     def __init__( self, app ):
-        self.name = "eucalyptus"
+        self.type = "eucalyptus" # cloud provider type (e.g., ec2, eucalyptus, opennebula)
         self.zone = "epc"
         self.key_pair = "galaxy-keypair"
         self.queue = Queue()
@@ -73,7 +73,7 @@ class EucalyptusCloudProvider( object ):
             
             uci_wrapper = self.queue.get()
 #            uci = uci_wrapper.get_uci()
-            log.debug( '[%d] uci name: %s' % ( cnt, uci_wrapper.get_name() ) )
+            log.debug( '[%d] uci type: %s' % ( cnt, uci_wrapper.get_name() ) )
             uci_state = uci_wrapper.get_state()
             if uci_state is self.STOP_SIGNAL:
                 return
@@ -95,17 +95,21 @@ class EucalyptusCloudProvider( object ):
         Establishes eucalyptus cloud connection using user's credentials associated with given UCI
         """
         log.debug( '##### Establishing eucalyptus cloud connection' )
-        # Eucalyptus Public Cloud
-        # TODO: Add option in Galaxy config file to specify these values (i.e., for locally managed Eucalyptus deployments)
-        euca_region = RegionInfo( None, "eucalyptus", "mayhem9.cs.ucsb.edu" )
-        conn = EC2Connection( aws_access_key_id=uci_wrapper.get_access_key(), aws_secret_access_key=uci_wrapper.get_secret_key(), is_secure=False, port=8773, region=euca_region, path="/services/Eucalyptus" )
+        provider = uci_wrapper.get_provider()
+        euca_region = RegionInfo( None, provider.region_name, provider.region_endpoint )
+        conn = EC2Connection( aws_access_key_id=uci_wrapper.get_access_key(), 
+                              aws_secret_access_key=uci_wrapper.get_secret_key(), 
+                              is_secure=provider.is_secure, 
+                              port=provider.port, 
+                              region=euca_region, 
+                              path=provider.path )
         return conn
         
     def set_keypair( self, uci_wrapper, conn ):
         """
         Generate keypair using user's default credentials
         """
-        log.debug( "Getting user's keypair" )
+        log.debug( "Getting user's keypair: '%s'" % self.key_pair )
         kp = conn.get_key_pair( self.key_pair )
         instances = uci_wrapper.get_instances_indexes()
         
@@ -128,7 +132,8 @@ class EucalyptusCloudProvider( object ):
         TODO: Dummy method - need to implement logic
             For valid sizes, see http://aws.amazon.com/ec2/instance-types/
         """
-        return model.CloudImage.filter( model.CloudImage.table.c.id==1 ).first().image_id 
+        log.debug( "image id: '%s'" % model.CloudImage.get( 1 ).image_id )
+        return model.CloudImage.get( 1 ).image_id 
     
 #    def get_instances( self, uci ):
 #        """
@@ -211,6 +216,8 @@ class EucalyptusCloudProvider( object ):
             log.error( "Deleting following volume(s) failed: %s. However, these volumes were successfully deleted: %s. \
                         MANUAL intervention and processing needed." % ( failedList, deletedList ) )
             uci_wrapper.change_state( uci_state=uci_states.ERROR )
+            uci_wrapper.set_error( "Deleting following volume(s) failed: "+failedList+". However, these volumes were successfully deleted: "+deletedList+". \
+                        MANUAL intervention and processing needed." )
             
     def addStorageToUCI( self, name ):
         """ Adds more storage to specified UCI """
@@ -251,7 +258,7 @@ class EucalyptusCloudProvider( object ):
     #                for i in range( len( sgs ) ):
     #                    if sgs[i].name == "galaxy":
     #                        sg.append( sgs[i] )
-    #                        break # only 1 security group w/ this name can exist, so continue                    
+    #                        break # only 1 security group w/ this type can exist, so continue                    
                 
             log.debug( "***** Starting UCI instance '%s'" % uci_wrapper.get_name() )
             log.debug( 'Using following command: conn.run_instances( image_id=%s, key_name=%s )' % ( mi_id, uci_wrapper.get_key_pair_name( i_index ) ) )
@@ -267,7 +274,7 @@ class EucalyptusCloudProvider( object ):
             uci_wrapper.set_instance_id( i_index, i_id )
             s = reservation.instances[0].state
             uci_wrapper.change_state( s, i_id, s )
-            log.debug( "Instance of UCI '%s' started, current state: %s" % ( uci_wrapper.get_name(), uci_wrapper.get_state() ) )
+            log.debug( "Instance of UCI '%s' started, current state: '%s'" % ( uci_wrapper.get_name(), uci_wrapper.get_state() ) )
         
         
         
@@ -310,14 +317,9 @@ class EucalyptusCloudProvider( object ):
         
         # Get all instances associated with given UCI
         il = uci_wrapper.get_instances_ids() # instance list
-#        log.debug( 'List of instances being terminated: %s' % il )
+        log.debug( 'List of instances being terminated: %s' % il )
         rl = conn.get_all_instances( il ) # Reservation list associated with given instances
-        
-#        tState = conn.terminate_instances( il )
-#        # TODO: Need to update instance stop time (for all individual instances)
-#        stop_time = datetime.utcnow()
-#        uci_wrapper.set_stop_time( stop_time )
-                
+                        
         # Initiate shutdown of all instances under given UCI
         cnt = 0
         stopped = []
@@ -406,20 +408,20 @@ class EucalyptusCloudProvider( object ):
         Reason behind this method is to sync state of local DB and real-world resources
         """
         log.debug( "Running general status update for EPC UCIs..." )
-        instances = model.CloudInstance.filter( or_( model.CloudInstance.c.state==instance_states.RUNNING, #"running", 
-                                                     model.CloudInstance.c.state==instance_states.PENDING, #"pending", 
+        instances = model.CloudInstance.filter( or_( model.CloudInstance.c.state==instance_states.RUNNING, 
+                                                     model.CloudInstance.c.state==instance_states.PENDING, 
                                                      model.CloudInstance.c.state==instance_states.SHUTTING_DOWN ) ).all()
         for inst in instances:
-            if self.name == inst.uci.credentials.provider_name:
-                log.debug( "[%s] Running general status update on instance '%s'" % ( inst.uci.credentials.provider_name, inst.instance_id ) )
+            if self.type == inst.uci.credentials.provider.type:
+                log.debug( "[%s] Running general status update on instance '%s'" % ( inst.uci.credentials.provider.type, inst.instance_id ) )
                 self.updateInstance( inst )
             
         stores = model.CloudStore.filter( or_( model.CloudStore.c.status==store_states.IN_USE, 
                                                model.CloudStore.c.status==store_states.CREATING,
                                                model.CloudStore.c.status==None ) ).all()
         for store in stores:
-            if self.name == store.uci.credentials.provider_name:
-                log.debug( "[%s] Running general status update on store '%s'" % ( store.uci.credentials.provider_name, store.volume_id ) )
+            if self.type == store.uci.credentials.provider.type:
+                log.debug( "[%s] Running general status update on store '%s'" % ( store.uci.credentials.provider.type, store.volume_id ) )
                 self.updateStore( store )
         
     def updateInstance( self, inst ):
@@ -431,8 +433,13 @@ class EucalyptusCloudProvider( object ):
         a_key = uci.credentials.access_key
         s_key = uci.credentials.secret_key
         # Get connection
-        euca_region = RegionInfo( None, "eucalyptus", "mayhem9.cs.ucsb.edu" )
-        conn = EC2Connection( aws_access_key_id=a_key, aws_secret_access_key=s_key, is_secure=False, port=8773, region=euca_region, path="/services/Eucalyptus" )
+        euca_region = RegionInfo( None, uci.credentials.provider.region_name, uci.credentials.provider.region_endpoint )
+        conn = EC2Connection( aws_access_key_id=a_key, 
+                              aws_secret_access_key=s_key, 
+                              is_secure=uci.credentials.provider.is_secure, 
+                              port=uci.credentials.provider.port, 
+                              region=euca_region, 
+                              path=uci.credentials.provider.path )
         # Get reservations handle for given instance
         rl= conn.get_all_instances( [inst.instance_id] )
         # Because EPC deletes references to reservations after a short while after instances have terminated, getting an empty list as a response to a query
@@ -475,9 +482,13 @@ class EucalyptusCloudProvider( object ):
         a_key = uci.credentials.access_key
         s_key = uci.credentials.secret_key
         # Get connection
-        euca_region = RegionInfo( None, "eucalyptus", "mayhem9.cs.ucsb.edu" )
-        conn = EC2Connection( aws_access_key_id=a_key, aws_secret_access_key=s_key, is_secure=False, port=8773, region=euca_region, path="/services/Eucalyptus" )
-        # Get reservations handle for given store 
+        euca_region = RegionInfo( None, uci.credentials.provider.region_name, uci.credentials.provider.region_endpoint )
+        conn = EC2Connection( aws_access_key_id=a_key, 
+                              aws_secret_access_key=s_key, 
+                              is_secure=uci.credentials.provider.is_secure, 
+                              port=uci.credentials.provider.port, 
+                              region=euca_region, 
+                              path=uci.credentials.provider.path )# Get reservations handle for given store 
         vl = conn.get_all_volumes( [store.volume_id] )
 #        log.debug( "Store '%s' vl: '%s'" % ( store.volume_id, vl ) )
         # Update store status in local DB with info from cloud provider

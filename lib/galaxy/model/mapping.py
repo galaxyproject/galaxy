@@ -395,14 +395,15 @@ CloudImage.table = Table( "cloud_image", metadata,
     Column( "state", TEXT ) )
 
 """ UserConfiguredInstance (UCI) table """
-UCI.table = Table( "uci", metadata, 
+UCI.table = Table( "cloud_uci", metadata, 
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True, nullable=False ),
-    Column( "credentials_id", Integer, ForeignKey( "cloud_user_credentials.id" ), index=True, nullable=False ),
+    Column( "credentials_id", Integer, ForeignKey( "cloud_user_credentials.id" ), index=True ),
     Column( "name", TEXT ),
     Column( "state", TEXT ),
+    Column( "error", TEXT ),
     Column( "total_size", Integer ),
     Column( "launch_time", DateTime ) )
 
@@ -413,12 +414,13 @@ CloudInstance.table = Table( "cloud_instance", metadata,
     Column( "launch_time", DateTime ),
     Column( "stop_time", DateTime ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True, nullable=False ),
-    Column( "uci_id", Integer, ForeignKey( "uci.id" ), index=True ),
+    Column( "uci_id", Integer, ForeignKey( "cloud_uci.id" ), index=True ),
     Column( "type", TEXT ),
     Column( "reservation_id", TEXT ),
     Column( "instance_id", TEXT ),
     Column( "mi_id", TEXT, ForeignKey( "cloud_image.image_id" ), index=True, nullable=False ),
     Column( "state", TEXT ),
+    Column( "error", TEXT ),
     Column( "public_dns", TEXT ),
     Column( "private_dns", TEXT ),
     Column( "keypair_name", TEXT ),
@@ -431,7 +433,7 @@ CloudStore.table = Table( "cloud_store", metadata,
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "attach_time", DateTime ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True, nullable=False ),
-    Column( "uci_id", Integer, ForeignKey( "uci.id" ), index=True, nullable=False ),
+    Column( "uci_id", Integer, ForeignKey( "cloud_uci.id" ), index=True, nullable=False ),
     Column( "volume_id", TEXT ),
     Column( "size", Integer, nullable=False ),
     Column( "availability_zone", TEXT ),
@@ -439,6 +441,27 @@ CloudStore.table = Table( "cloud_store", metadata,
     Column( "status", TEXT ),
     Column( "device", TEXT ),
     Column( "space_consumed", Integer ) )
+
+CloudProvider.table = Table( "cloud_provider", metadata, 
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True, nullable=False ),
+    Column( "type", TEXT, nullable=False ),
+    Column( "name", TEXT ),
+    Column( "region_connection", TEXT ),
+    Column( "region_name", TEXT ),
+    Column( "region_endpoint", TEXT ),
+    Column( "is_secure", Boolean ),
+    Column( "host", TEXT ),
+    Column( "port", Integer ),
+    Column( "proxy", TEXT ),
+    Column( "proxy_port", TEXT ),
+    Column( "proxy_user", TEXT ),
+    Column( "proxy_pass", TEXT ),
+    Column( "debug", Integer ),
+    Column( "https_connection_factory", TEXT ),
+    Column( "path", TEXT ) )
 
 CloudUserCredentials.table = Table( "cloud_user_credentials", metadata, 
     Column( "id", Integer, primary_key=True ),
@@ -449,7 +472,8 @@ CloudUserCredentials.table = Table( "cloud_user_credentials", metadata,
     Column( "access_key", TEXT ),
     Column( "secret_key", TEXT ),
     Column( "defaultCred", Boolean, default=False ),
-    Column( "provider_name", TEXT ) )
+    Column( "provider_id", Integer, ForeignKey( "cloud_provider.id" ), index=True, nullable=False ) )
+
 # ***************************************************************************
 
 StoredWorkflow.table = Table( "stored_workflow", metadata,
@@ -978,8 +1002,13 @@ assign_mapper( context, CloudStore, CloudStore.table,
                      i=relation( CloudInstance )
                     ) )
 
+assign_mapper( context, CloudProvider, CloudProvider.table,
+    properties=dict( user=relation( User )
+                    ) )
+
 assign_mapper( context, CloudUserCredentials, CloudUserCredentials.table,
-    properties=dict( user=relation( User)
+    properties=dict( user=relation( User),
+                     provider=relation( CloudProvider )
                     ) )
 # ^^^^^^^^^^^^^^^ End cloud table mappings ^^^^^^^^^^^^^^^^^^
 

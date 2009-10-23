@@ -519,16 +519,25 @@ class UCIwrapper( object ):
         vol = model.CloudStore.filter( model.CloudStore.c.volume_id == vol_id ).first()
         vol.i_id = instance_id
         vol.flush()
+        
+    def set_error( self, error ):
+        """
+        Sets error field of given UCI in local Galaxy database
+        """
+        uci = model.UCI.get( self.uci_id )
+        uci.refresh()
+        uci.error = error
+        uci.flush()
 
     # --------- Getter methods -----------------
     
-    def get_provider_name( self ):
-        """ Returns name of cloud  provider associated with given UCI. """ 
+    def get_provider_type( self ):
+        """ Returns type of cloud provider associated with given UCI. """ 
         uci = model.UCI.get( self.uci_id )
         uci.refresh()
-        cred_id = uci.credentials_id
-        cred = model.CloudUserCredentials.get( cred_id )
-        return cred.provider_name
+#        cred_id = uci.credentials_id
+#        cred = model.CloudUserCredentials.get( cred_id )
+        return uci.credentials.provider.type
     
     def get_instances_indexes( self, state=None ):
         """
@@ -651,6 +660,12 @@ class UCIwrapper( object ):
         uci = model.UCI.get( self.uci_id )
         uci.refresh()
         return uci
+    
+    def get_provider( self ):
+        """ Returns database object of cloud provider associated with credentials of given UCI. """
+        uci = model.UCI.get( self.uci_id )
+        uci.refresh()
+        return uci.credentials.provider
     
     def uci_launch_time_set( self ):
         uci = model.UCI.get( self.uci_id )
@@ -1021,7 +1036,7 @@ class CloudProvider( object ):
     def put( self, uci_wrapper ):
         """ Put given request for UCI manipulation into provider's request queue."""
 #        log.debug( "Adding UCI '%s' manipulation request into cloud manager's queue." % uci_wrapper.name )
-        self.cloud_provider[uci_wrapper.get_provider_name()].put( uci_wrapper )
+        self.cloud_provider[uci_wrapper.get_provider_type()].put( uci_wrapper )
     
     
     

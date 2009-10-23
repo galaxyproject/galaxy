@@ -38,8 +38,12 @@
 			</td>
 	   </tr>
 	   <tr>
-	   		<td> Cloud provider: </td>
-			<td> ${str(credDetails.provider_name)[:16]}</td>
+	   		<td> Cloud provider type: </td>
+			<td> ${str(credDetails.provider.type)[:16]}</td>
+	   </tr>
+	   <tr>
+	   		<td> Cloud provider name: </td>
+			<td> ${str(credDetails.provider.name)[:16]}</td>
 	   </tr>
 	   <tr>
 	   		<td> Access key: </td>
@@ -67,6 +71,79 @@
                </div>
 			</td>
 	   </tr>
+	   <tr><td><b>Additional cloud provider information (if available):</b></td></tr>
+	   %if credDetails.provider.region_connection != None:
+	   		<tr>
+		   		<td> Region connection: </td>
+				<td> ${credDetails.provider.region_connection} </td>
+		   	</tr>
+	   %endif
+	   %if credDetails.provider.region_name != None:
+	   		<tr>
+		   		<td> Region name: </td>
+				<td> ${credDetails.provider.region_name} </td>
+		   	</tr>
+	   %endif
+	   %if credDetails.provider.region_endpoint != None:
+	   		<tr>
+		   		<td> Region endpoint: </td>
+				<td> ${credDetails.provider.region_endpoint} </td>
+		   	</tr>
+	   %endif
+	   %if credDetails.provider.is_secure != None:
+	   		<tr>
+		   		<td> Is secure: </td>
+				<td> ${credDetails.provider.is_secure} </td>
+		   	</tr>
+	   %endif
+	   %if credDetails.provider.host != None:
+	   		<tr>
+		   		<td> Host: </td>
+				<td> ${credDetails.provider.host} </td>
+		   	</tr>
+	   %endif
+	   %if credDetails.provider.port != None:
+	   		<tr>
+		   		<td> Port: </td>
+				<td> ${credDetails.provider.port} </td>
+		   	</tr>
+	   %endif
+	   %if credDetails.provider.proxy != None:
+	   		<tr>
+		   		<td> Proxy: </td>
+				<td> ${credDetails.provider.proxy} </td>
+		   	</tr>
+	   %endif
+	   %if credDetails.provider.proxy_port != None:
+	   		<tr>
+		   		<td> Proxy port: </td>
+				<td> ${credDetails.provider.proxy_port} </td>
+		   	</tr>
+	   %endif
+	   %if credDetails.provider.proxy_pass != None:
+	   		<tr>
+		   		<td> Proxy pass: </td>
+				<td> ${credDetails.provider.proxy_pass} </td>
+		   	</tr>
+	   %endif
+	   %if credDetails.provider.debug != None:
+	   		<tr>
+		   		<td> Debug: </td>
+				<td> ${credDetails.provider.debug} </td>
+		   	</tr>
+	   %endif
+	   %if credDetails.provider.https_connection_factory != None:
+	   		<tr>
+		   		<td> HTTPS connection factory: </td>
+				<td> ${credDetails.provider.https_connection_factory} </td>
+		   	</tr>
+	   %endif
+	   %if credDetails.provider.path != None:
+	   		<tr>
+		   		<td> Path: </td>
+				<td> ${credDetails.provider.path} </td>
+		   	</tr>
+	   %endif
 	</table>
 %else:
 	There are no credentials under that name.

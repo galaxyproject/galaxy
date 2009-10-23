@@ -15,11 +15,13 @@ $(function(){
     ${header}
 %endif
 
+%if providers:
+
 <div class="form">
     <div class="form-title">Add credentials</div>
     <div class="form-body">
     <form name="Add credentials" action="${h.url_for( action='add' )}" method="post" >
-        
+
            <%
             cls = "form-row"
             if error.has_key('cred_error'):
@@ -45,11 +47,15 @@ $(function(){
 	            <div class="${cls}">
 	            <label>Cloud provider name:</label>
 	              <div class="form-row-input">
-	              	<select name="providerName" style="width:40em">
-	              		<option value="ec2">Amazon EC2</option>
-						<option value="eucalyptus">Eucalpytus Public Cloud (EPC)</option>
-	              	</select>
-	              </div>
+              		<select name="providerName" style="width:40em">
+	              		<option value="">Select Provider...</option>
+	              		%for provider in providers:
+							<option value="${provider.name}">${provider.name}</option>
+						%endfor
+					</select>
+					<br/>or <a href="${h.url_for( action='add_provider' )}">
+					<span>register additional cloud provider</span></a>
+				  </div>
 				  %if error.has_key('provider_error'):
 	              	<div class="form-row-error-message">${error['provider_error']}</div>
 	              %endif
@@ -95,3 +101,12 @@ $(function(){
         </form>
     </div>
 </div>
+
+%else:
+	In order to add credentials, desired cloud provider needs to be registered.<p/>
+	Register <a href="${h.url_for( action='add_ec2' )}">
+	<span>Amazon EC2 automatically</span></a>
+	or add
+	<a href="${h.url_for( action='add_provider' )}">
+	<span>custom cloud provider</span></a>.
+%endif

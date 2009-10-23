@@ -51,7 +51,7 @@ class EC2CloudProvider( object ):
     """
     STOP_SIGNAL = object()
     def __init__( self, app ):
-        self.name = "ec2"
+        self.type = "ec2" # cloud provider type (e.g., ec2, eucalyptus, opennebula)
         self.zone = "us-east-1a"
         self.key_pair = "galaxy-keypair"
         self.queue = Queue()
@@ -73,7 +73,7 @@ class EC2CloudProvider( object ):
             
             uci_wrapper = self.queue.get()
 #            uci = uci_wrapper.get_uci()
-            log.debug( '[%d] uci name: %s' % ( cnt, uci_wrapper.get_name() ) )
+            log.debug( '[%d] uci type: %s' % ( cnt, uci_wrapper.get_name() ) )
             uci_state = uci_wrapper.get_state()
             if uci_state is self.STOP_SIGNAL:
                 return
@@ -118,6 +118,7 @@ class EC2CloudProvider( object ):
                     uci_wrapper.set_key_pair( inst, kp.name, kp.material )
             else:
                 log.error( "EC2 response error: '%s'" % e )
+                uci_wrapper.set_error( "EC2 response error while creating key pair: " + e )
                 
         return kp.name
     
@@ -194,6 +195,7 @@ class EC2CloudProvider( object ):
         else:
             uci_wrapper.change_state( uci_state=uci_states.ERROR )
             uci_wrapper.set_store_status( vol.id, uci_states.ERROR )
+            uci_wrapper.set_error( "Volume '%s' not found by cloud provider after being created" % vol.id )
 
     def deleteUCI( self, uci_wrapper ):
         """ 
@@ -226,6 +228,8 @@ class EC2CloudProvider( object ):
             log.error( "Deleting following volume(s) failed: %s. However, these volumes were successfully deleted: %s. \
                         MANUAL intervention and processing needed." % ( failedList, deletedList ) )
             uci_wrapper.change_state( uci_state=uci_state.ERROR )
+            uci_wrapper.set_error( "Deleting following volume(s) failed: "+failedList+". However, these volumes were successfully deleted: "+deletedList+". \
+                        MANUAL intervention and processing needed." )
             
     def addStorageToUCI( self, name ):
         """ Adds more storage to specified UCI 
@@ -291,7 +295,7 @@ class EC2CloudProvider( object ):
             uci_wrapper.set_instance_id( i_index, i_id )
             s = reservation.instances[0].state 
             uci_wrapper.change_state( s, i_id, s )
-            log.debug( "Instance of UCI '%s' started, current state: %s" % ( uci_wrapper.get_name(), uci_wrapper.get_state() ) )
+            log.debug( "Instance of UCI '%s' started, current state: '%s'" % ( uci_wrapper.get_name(), uci_wrapper.get_state() ) )
         
         
         
@@ -429,20 +433,20 @@ class EC2CloudProvider( object ):
         Reason behind this method is to sync state of local DB and real-world resources
         """
         log.debug( "Running general status update for EC2 UCIs..." )
-        instances = model.CloudInstance.filter( or_( model.CloudInstance.c.state==instance_states.RUNNING, #"running", 
-                                                     model.CloudInstance.c.state==instance_states.PENDING, #"pending", 
+        instances = model.CloudInstance.filter( or_( model.CloudInstance.c.state==instance_states.RUNNING, 
+                                                     model.CloudInstance.c.state==instance_states.PENDING,  
                                                      model.CloudInstance.c.state==instance_states.SHUTTING_DOWN ) ).all()
         for inst in instances:
-            if self.name == inst.uci.credentials.provider_name:
-                log.debug( "[%s] Running general status update on instance '%s'" % ( inst.uci.credentials.provider_name, inst.instance_id ) )
+            if self.type == inst.uci.credentials.provider.type:
+                log.debug( "[%s] Running general status update on instance '%s'" % ( inst.uci.credentials.provider.type, inst.instance_id ) )
                 self.updateInstance( inst )
             
         stores = model.CloudStore.filter( or_( model.CloudStore.c.status==store_states.IN_USE, 
                                                model.CloudStore.c.status==store_states.CREATING,
                                                model.CloudStore.c.status==None ) ).all()
         for store in stores:
-            if self.name == store.uci.credentials.provider_name:
-                log.debug( "[%s] Running general status update on store '%s'" % ( store.uci.credentials.provider_name, store.volume_id ) )
+            if self.type == store.uci.credentials.provider.type:
+                log.debug( "[%s] Running general status update on store '%s'" % ( store.uci.credentials.provider.type, store.volume_id ) )
                 self.updateStore( store )
         
     def updateInstance( self, inst ):
