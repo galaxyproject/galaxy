@@ -25,9 +25,25 @@ body {
     text-align: center;
 }
 
+input {
+    font-size: 100%;
+}
+
+#nav {
+    padding: 0.5em 0;
+    background:#cccccc;
+    background-image:url(style/panel_header_bg.png);
+    background-position:top center;
+    background-repeat:repeat-x;border-top:solid #999 1px;
+    color:#333;font-weight:bold;
+    }
+
+
+/*
 #nav-controls {
     padding: 15px 0;
 }
+*/
 #nav-controls a {
     color: white;
     padding: 0.1em 0.4em;
@@ -37,6 +53,8 @@ body {
     -webkit-border-radius: 1em;
     -moz-border-radius: 1em;
 }
+
+/*
 #low {
     margin-left: 0.1em;
     float: left;
@@ -45,27 +63,30 @@ body {
     margin-right: 0.1em;
     float: right;
 }
+*/
 
 #overview {
     width: 100%;
     margin: 0px;
-    background: #333;
     color: white;
 }
 
 #overview-viewport {
-    height: 20px;
+    position: relative;
+    height: 14px;
 /*    border-top: solid #666 1px;*/
 /*    border-bottom: solid #aaa 1px;*/
-    background: #888;
+    background: white;
+    border: solid grey 1px;
+    margin: 5px;
 }
 #overview-box {
     position: absolute;
-    margin-top: 1px;
-    height: 16px;
+    margin-top: 0px;
+    height: 14px;
+    background: grey;
     background: #ddd url(images/visualization/draggable_horizontal.png) center center no-repeat;
-    border-style: outset;
-    border-width: 1px;
+    /*border-style: outset;*/
 }
 
 #viewport {
@@ -80,29 +101,25 @@ body {
     height: 100px;
 }
 .track {
-/*    border-top: solid gray 1px;*/
-    border-bottom: solid gray 1px;
+/*    border-top: solid gray 1px; */
+/*    border-bottom: solid gray 1px; */
 }
 
 .track-header {
     text-align: center;
+    padding: 2px 0;
 }
 
 .track-content {
     overflow: hidden;
+    text-align: center;
 }
 
-.track-content.error {
-    text-align: center;
-    padding-top: 10px;
+.track.error {
     background-color: #ECB4AF;
-    height: 30px;
 }
-.track-content.nodata {
-    text-align: center;
-    padding-top: 10px;
+.track.nodata {
     background-color: #ddd;
-    height: 30px;
 }
 
 .loading {
@@ -110,12 +127,21 @@ body {
 }
 
 .label-track {
-    font-weight: bold;
-    font-size: 10px;
-    background-color: #333;
-    color: white;
+    /* font-weight: bold; */
+    /* font-size: 10px; */
+
 }
 .label-track .label {
-    border-left: solid gray 1px;
-    padding-left: 2px;
+    border-left: solid #999 1px;
+    padding: 1px;
+    display: inline-block;
+}
+
+#top-labeltrack {
+    border-bottom: solid #999 1px;
+}
+
+#nav-labeltrack {
+    border-top: solid #999 1px;
+    border-bottom: solid #999 1px;
 }

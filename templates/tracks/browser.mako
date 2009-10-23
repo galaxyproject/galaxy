@@ -105,25 +105,24 @@ ${h.js( "jquery", "jquery.event.drag", "jquery.mousewheel", "lrucache", "trackst
 <div id="content">
     <div id="top-labeltrack"></div>
     <div id="viewport"></div>
+    <div id="nav-labeltrack"></div>
 </div>
 <div id="nav">
-    <div id="nav-labeltrack"></div>
+    <div id="nav-controls">
+        <form name="chr" id="chr" method="get">
+            <select id="chrom" name="chrom" style="width: 15em;">
+                <option value="">Loading</option>
+            </select>
+	    <input id="low" size="12"></input>:<input id="high" size="12"></input>
+            ## <input type="hidden" name="dataset_ids" value="${dataset_ids}" />
+	    <input type="hidden" name="id" value="${id}" />
+            <a href="#" onclick="javascript:view.zoom_in();view.redraw();">+</a>
+            <a href="#" onclick="javascript:view.zoom_out();view.redraw();">-</a>
+        </form>
+    </div>
     <div id="overview">
         <div id="overview-viewport">
             <div id="overview-box"></div>
         </div>
-    </div>
-    <span id="low"></span>
-    <span id="high"></span>
-    <div id="nav-controls">
-        <form name="chr" id="chr" method="get">
-            <select id="chrom" name="chrom">
-                <option value="">Loading</option>
-            </select>
-            ## <input type="hidden" name="dataset_ids" value="${dataset_ids}" />
-	    <input type="hidden" name="id" value="${id}" /> 
-            <a href="#" onclick="javascript:view.zoom_in();view.redraw();">+</a>
-            <a href="#" onclick="javascript:view.zoom_out();view.redraw();">-</a>
-        </form>
     </div>
 </div>

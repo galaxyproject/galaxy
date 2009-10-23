@@ -68,8 +68,8 @@ $.extend( View.prototype, {
             // Minimum width for usability
             width: Math.max( 12, ( ( this.high - this.low ) / this.span ) * $("#overview-viewport").width() )
         }).show();
-        $("#low").text( commatize(this.low) );
-        $("#high").text( commatize(this.high) );
+        $("#low").val( commatize(this.low) );
+        $("#high").val( commatize(this.high) );
         for ( var i = 0, len = this.tracks.length; i < len; i++ ) {
             this.tracks[i].draw();
         }
@@ -204,9 +204,11 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
                                 chrom: track.view.chrom, low: null, high: null,
                                 dataset_id: track.dataset_id }, function ( data ) {
             if (!data || data == "error") {
-                track.content_div.addClass("error").text(DATA_ERROR);
+                track.container_div.addClass("error");
+		track.content_div.text(DATA_ERROR);
             } else if (data == "no data") {
-                track.content_div.addClass("nodata").text(DATA_NONE);
+                track.container_div.addClass("nodata");
+		track.content_div.text(DATA_NONE);
             } else {
                 track.content_div.css( "height", track.height_px + "px" );
                 track.min_value = data.min;
@@ -298,9 +300,11 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                                 high: track.view.max_high, dataset_id: track.dataset_id,
                                 chrom: track.view.chrom }, function ( data ) {
             if (data == "error") {
-                track.content_div.addClass("error").text(DATA_ERROR);
+                track.container_div.addClass("error");
+		track.content_div.text(DATA_ERROR);
             } else if (data.length === 0 || data == "no data") {
-                track.content_div.addClass("nodata").text(DATA_NONE);
+                track.container_div.addClass("nodata");
+		track.content_div.text(DATA_NONE);
             } else {
                 track.content_div.css( "height", track.height_px + "px" );
                 track.values = data;
