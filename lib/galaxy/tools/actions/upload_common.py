@@ -71,7 +71,7 @@ def get_precreated_datasets( trans, params, data_obj, controller='root' ):
     user, roles = trans.get_user_and_roles()
     for id in async_datasets:
         try:
-            data = data_obj.get( int( id ) )
+            data = trans.sa_session.query( data_obj ).get( int( id ) )
         except:
             log.exception( 'Unable to load precreated dataset (%s) sent in upload form' % id )
             continue

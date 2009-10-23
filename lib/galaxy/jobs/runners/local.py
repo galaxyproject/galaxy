@@ -19,6 +19,7 @@ class LocalJobRunner( object ):
     def __init__( self, app ):
         """Start the job runner with 'nworkers' worker threads"""
         self.app = app
+        self.sa_session = app.model.context
         self.queue = Queue()
         self.threads = []
         nworkers = app.config.local_job_queue_workers
@@ -111,7 +112,7 @@ class LocalJobRunner( object ):
                                          shell = True, 
                                          env = env,
                                          preexec_fn = os.setpgrp )
-            job_wrapper.external_output_metadata.set_job_runner_external_pid( external_metadata_proc.pid )
+            job_wrapper.external_output_metadata.set_job_runner_external_pid( external_metadata_proc.pid, self.sa_session )
             external_metadata_proc.wait()
             log.debug( 'execution of external set_meta finished for job %d' % job_wrapper.job_id )
         

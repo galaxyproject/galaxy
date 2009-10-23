@@ -1235,7 +1235,7 @@ class DataToolParameter( ToolParameter ):
         if value in [None, "None"]:
             return None
         if isinstance( value, list ):
-            return [ trans.app.model.HistoryDatasetAssociation.get( v ) for v in value ]
+            return [ trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( v ) for v in value ]
         elif isinstance( value, trans.app.model.HistoryDatasetAssociation ):
             return value
         else:

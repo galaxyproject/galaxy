@@ -609,7 +609,7 @@ class JobWrapper( object ):
             if self.working_directory is not None:
                 shutil.rmtree( self.working_directory )
             if self.app.config.set_metadata_externally:
-                self.external_output_metadata.cleanup_external_metadata()
+                self.external_output_metadata.cleanup_external_metadata( self.sa_session )
         except:
             log.exception( "Unable to cleanup job %d" % self.job_id )
         

@@ -80,6 +80,7 @@ class PBSJobRunner( object ):
         if app.config.pbs_application_server and app.config.outputs_to_working_directory:
             raise Exception( "pbs_application_server (file staging) and outputs_to_working_directory options are mutually exclusive" )
         self.app = app
+        self.sa_session = app.model.context
         # 'watched' and 'queue' are both used to keep track of jobs to watch.
         # 'queue' is used to add new watched jobs, and can be called from
         # any thread (usually by the 'queue_job' method). 'watched' must only
@@ -457,7 +458,7 @@ class PBSJobRunner( object ):
         """
         Seperated out so we can use the worker threads for it.
         """
-        self.stop_job( self.app.model.Job.get( pbs_job_state.job_wrapper.job_id ) )
+        self.stop_job( self.sa_session.query( self.app.model.Job ).get( pbs_job_state.job_wrapper.job_id ) )
         pbs_job_state.job_wrapper.fail( pbs_job_state.fail_message )
         self.cleanup( ( pbs_job_state.ofile, pbs_job_state.efile, pbs_job_state.job_file ) )
 

@@ -391,7 +391,9 @@ class FileParameter( MetadataParameter ):
             return value
         if DATABASE_CONNECTION_AVAILABLE:
             try:
-                return galaxy.model.MetadataFile.get( value )
+                # FIXME: GVK ( 10/23/09 ) Can we get a valid db session without this import?
+                from galaxy.model.mapping import context as sa_session
+                return sa_session.query( galaxy.model.MetadataFile ).get( value )
             except:
                 #value was not a valid id
                 return None
@@ -569,9 +571,9 @@ class JobExternalOutputMetadataWrapper( object ):
             log.debug( 'setting metadata externally failed for %s %s: %s' % ( dataset.__class__.__name__, dataset.id, rstring ) )
         return rval
     
-    def cleanup_external_metadata( self ):
+    def cleanup_external_metadata( self, sa_session ):
         log.debug( 'Cleaning up external metadata files' )
-        for metadata_files in galaxy.model.Job.get( self.job_id ).external_output_metadata:
+        for metadata_files in sa_session.query( galaxy.model.Job ).get( self.job_id ).external_output_metadata:
             #we need to confirm that any MetadataTempFile files were removed, if not we need to remove them
             #can occur if the job was stopped before completion, but a MetadataTempFile is used in the set_meta
             MetadataTempFile.cleanup_from_JSON_dict_filename( metadata_files.filename_out )
@@ -581,7 +583,7 @@ class JobExternalOutputMetadataWrapper( object ):
                     os.remove( fname )
                 except Exception, e:
                     log.debug( 'Failed to cleanup external metadata file (%s) for %s: %s' % ( key, dataset_key, e ) )
-    def set_job_runner_external_pid( self, pid ):
-        for metadata_files in galaxy.model.Job.get( self.job_id ).external_output_metadata:
+    def set_job_runner_external_pid( self, pid, sa_session ):
+        for metadata_files in sa_session.query( galaxy.model.Job ).get( self.job_id ).external_output_metadata:
             metadata_files.job_runner_external_pid = pid
             metadata_files.flush()
