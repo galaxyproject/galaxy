@@ -533,7 +533,7 @@ class JobWrapper( object ):
                         #since if it is edited, the metadata changed on the running output will no longer match
                         #the metadata that was stored to disk for use via the external process, 
                         #and the changes made by the user will be lost, without warning or notice
-                        dataset.metadata.from_JSON_dict( self.external_output_metadata.get_output_filenames_by_dataset( dataset ).filename_out )
+                        dataset.metadata.from_JSON_dict( self.external_output_metadata.get_output_filenames_by_dataset( dataset, self.sa_session ).filename_out )
                     try:
                         assert context.get( 'line_count', None ) is not None
                         if ( not dataset.datatype.composite_type and dataset.dataset.is_multi_byte() ) or self.tool.is_multi_byte:
