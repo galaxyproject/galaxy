@@ -6,8 +6,6 @@
     ${render_msg( msg, messagetype )}
 %endif
 
-<% num_states=len(states_list) %>
-
 <div class="toolForm">
     <div class="toolFormTitle">View request type details</div>
     <div class="toolFormBody">
@@ -38,7 +36,7 @@
                 <label>
                     Possible states 
                 </label>
-                %for element_count, state in enumerate(states_list):
+                %for element_count, state in enumerate(states_list.all()):
                     <div class="form-row">
                         <label>${1+element_count}. ${state.name}</label>
                         ${state.desc}
