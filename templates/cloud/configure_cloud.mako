@@ -24,16 +24,46 @@ ${h.js( "jquery" )}
 		$.getJSON( "${h.url_for( action='json_update' )}", {}, function ( data ) {
 			for (var i in data) {
 			var elem = '#' + data[i].id;
+				// Because of different list managing 'live' vs. 'available' instances, refresh entire 
+				// page on necessary state change.
+				old_state = $(elem + "-state").text();
+				new_state = data[i].state;
+				console.log( "old_state[%d] = %s", i, old_state );
+				console.log( "new_state[%d] = %s", i, new_state );
+				if ( old_state=='pending' && new_state=='running' ) {
+					location.reload(true);
+				}
+				else if ( old_state=='shutting-down' && new_state=='available' ) {
+					location.reload(true);
+				} 
+				else if ( new_state=='shutting-down' || new_state=='shutting-downUCI' ) {
+					$(elem + "-link").text( "" );
+				}
+				xmlhttp = new XMLHttpRequest();
+				xmlhttp.open( "HEAD", "http://127.0.0.1:8080/admin", false );
+				xmlhttp.send( null );
+				//alert(xmlhttp.getAllResponseHeaders())
+				console.log( "xmlhttp.readyState: %s", xmlhttp.readyState );
+				console.log( "xmlhttp.status: %s", xmlhttp.status );
+				if ( new_state=='running' && xmlhttp.readyState==1 ) {
+					console.log ("in ready statsus = 1");
+					//if (xmlhttp.status==200) {
+					//	console.log( "in status = 200" );
+					//	location.reload(true);
+					//}
+				} 
+
+				// Update 'state' and 'time alive' fields
 				$(elem + "-state").text( data[i].state );
 				if (data[i].launch_time) {
-					$(elem + "-launch_time").text( data[i].launch_time.substring(0, 16 ) + " (" + data[i].time_ago + ")" );
+					$(elem + "-launch_time").text( data[i].launch_time.substring(0, 16 ) + " UTC (" + data[i].time_ago + ")" );
 				}
 				else {
 					$(elem + "-launch_time").text( "N/A" );
 				}
 			}
 		});
-		setTimeout("update_state()", 10000);
+		setTimeout("update_state()", 15000);
 	}
 	
 	$(function() {
@@ -141,7 +171,7 @@ ${h.js( "jquery" )}
 								context.write( ')' )
 						%>
 					</td>
-					<td><div align="right">
+					<td id="${ liveInstance.id }-link"><div align="right">
 						%for j, instance in enumerate( liveInstance.instance ):
 						## TODO: Once more instances will be running under the same liveInstance, additional logic will need to be added to account for that
 							%if instance.state == "running":
@@ -165,6 +195,7 @@ ${h.js( "jquery" )}
 	                    <a class="action-button" confirm="Are you sure you want to stop instance '${liveInstance.name}'? Please note that this may take up to 1 minute during which time the page will not refresh." href="${h.url_for( action='stop', id=trans.security.encode_id(liveInstance.id) )}">Stop</a>
 	                    <a class="action-button" href="${h.url_for( action='renameInstance', id=trans.security.encode_id(liveInstance.id) )}">Rename</a>
 	                    <a class="action-button" href="${h.url_for( action='viewInstance', id=trans.security.encode_id(liveInstance.id) )}">View details</a>
+	                    <a class="action-button" href="${h.url_for( action='usageReport', id=trans.security.encode_id(liveInstance.id) )}">Usage report</a>
 	                    </div>
 	                </td>
 	            </tr>    
@@ -230,7 +261,7 @@ ${h.js( "jquery" )}
 	                    <a class="action-button" href="${h.url_for( action='start', id=trans.security.encode_id(prevInstance.id), type='c1.medium' )}"> Start c1.medium</a>
 						<a class="action-button" href="${h.url_for( action='renameInstance', id=trans.security.encode_id(prevInstance.id) )}">Rename</a>
 	                    <a class="action-button" href="${h.url_for( action='addStorage', id=trans.security.encode_id(prevInstance.id) )}" target="_parent">Add storage</a>
-						<a class="action-button" href="${h.url_for( action='usageReport' )}">Usage report</a>
+						<a class="action-button" href="${h.url_for( action='usageReport', id=trans.security.encode_id(prevInstance.id) )}">Usage report</a>
 	                    <a class="action-button" confirm="Are you sure you want to delete instance '${prevInstance.name}'? This will delete all of your data assocaiated with this instance!" href="${h.url_for( action='deleteInstance', id=trans.security.encode_id(prevInstance.id) )}">Delete</a>
 	                    </div>
 	                </td>

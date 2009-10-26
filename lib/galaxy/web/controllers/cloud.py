@@ -165,6 +165,10 @@ class CloudController( BaseController ):
            ( uci.state != uci_states.PENDING ) and \
            ( uci.state != uci_states.DELETING ) and \
            ( uci.state != uci_states.DELETING_UCI ) and \
+           ( uci.state != uci_states.DELETED ) and \
+           ( uci.state != uci_states.RUNNING ) and \
+           ( uci.state != uci_states.NEW_UCI ) and \
+           ( uci.state != uci_states.NEW ) and \
            ( uci.state != uci_states.ERROR ):
             instance = model.CloudInstance()
             instance.user = user
@@ -247,13 +251,16 @@ class CloudController( BaseController ):
     
     @web.expose
     @web.require_login( "use Galaxy cloud" )
-    def usageReport( self, trans ):
+    def usageReport( self, trans, id ):
         user = trans.get_user()
+        id = trans.security.decode_id( id )
         
         prevInstances = trans.sa_session.query( model.CloudInstance ) \
-            .filter_by( user=user, state=instance_states.TERMINATED ) \
+            .filter_by( user=user, state=instance_states.TERMINATED, uci_id=id ) \
             .order_by( desc( model.CloudInstance.c.update_time ) ) \
             .all()
+            
+        log.debug( "id: %s" % id )
         
         return trans.fill_template( "cloud/view_usage.mako", prevInstances = prevInstances ) 
     

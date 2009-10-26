@@ -1,20 +1,29 @@
 <%inherit file="/base.mako"/>
-<%def name="title()">Cloud home</%def>
 
+<%def name="title()">Cloud credentials</%def>
 
 <h2>Credentials details</h2>
 
+<ul class="manage-table-actions">
+    <li>
+        <a class="action-button" href="${h.url_for( action='list' )}">
+            <img src="${h.url_for('/static/images/silk/resultset_previous.png')}" />
+            <span>Return to cloud management console</span>
+        </a>
+    </li>
+</ul>
+	
 %if credDetails:
-	<ul class="manage-table-actions">
-	    <li>
-	        <a class="action-button" href="${h.url_for( action='list' )}">
-	            <img src="${h.url_for('/static/images/silk/resultset_previous.png')}" />
-	            <span>Return to cloud management console</span>
-	        </a>
-	    </li>
-	</ul>
+	${view_cred( credDetails )}
+%else:
+	There are no credentials under that name.
+%endif
 
-    <table class="mange-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
+
+
+
+<%def name="view_cred( credDetails )">
+	<table class="mange-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
        <tr>
        		<td> Credentials name: </td>
 			<td>
@@ -71,7 +80,7 @@
                </div>
 			</td>
 	   </tr>
-	   <tr><td><b>Additional cloud provider information (if available):</b></td></tr>
+	   <tr><td id="addl"><b>Additional cloud provider information (if available):</b></td></tr>
 	   %if credDetails.provider.region_connection != None:
 	   		<tr>
 		   		<td> Region connection: </td>
@@ -145,6 +154,4 @@
 		   	</tr>
 	   %endif
 	</table>
-%else:
-	There are no credentials under that name.
-%endif
+</%def>
