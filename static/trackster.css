@@ -15,14 +15,10 @@ body {
     overflow: auto;
 }
 
-#nav {
+#nav-container {
     position: fixed;
     bottom: 0;
     width: 100%;
-    background: #333;
-    color: white;
-    font-weight: bold;
-    text-align: center;
 }
 
 input {
@@ -36,14 +32,14 @@ input {
     background-position:top center;
     background-repeat:repeat-x;border-top:solid #999 1px;
     color:#333;font-weight:bold;
-    }
-
-
-/*
-#nav-controls {
-    padding: 15px 0;
 }
-*/
+
+
+
+#nav-controls {
+    text-align: center;
+}
+
 #nav-controls a {
     color: white;
     padding: 0.1em 0.4em;
@@ -77,14 +73,13 @@ input {
 /*    border-top: solid #666 1px;*/
 /*    border-bottom: solid #aaa 1px;*/
     background: white;
-    border: solid grey 1px;
+    border: solid gray 1px;
     margin: 5px;
 }
 #overview-box {
     position: absolute;
     margin-top: 0px;
     height: 14px;
-    background: grey;
     background: #ddd url(images/visualization/draggable_horizontal.png) center center no-repeat;
     /*border-style: outset;*/
 }
@@ -143,5 +138,4 @@ input {
 
 #nav-labeltrack {
     border-top: solid #999 1px;
-    border-bottom: solid #999 1px;
 }
