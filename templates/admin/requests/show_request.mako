@@ -180,7 +180,7 @@
                             ${render_sample_form( sample_index, sample[0], sample[1], grid_index, fields_dict)}
                         %endif
                         <td>
-                            %if request.unsubmitted() and grid_index == 0:
+                            %if grid_index == 0:
                                 <a class="action-button" href="${h.url_for( controller='requests_admin', action='delete_sample', request_id=request.id, sample_id=sample_index)}">
                                 <img src="${h.url_for('/static/images/delete_icon.png')}" />
                                 <span></span></a>

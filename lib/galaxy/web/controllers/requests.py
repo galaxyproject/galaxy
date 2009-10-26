@@ -460,7 +460,7 @@ class Requests( BaseController ):
         select_request_type = self.__select_request_type(trans, request_type.id)
         # list of widgets to be rendered on the request form
         widgets = []
-        widgets.append(dict(label='Name', 
+        widgets.append(dict(label='Name of the Experiment', 
                             widget=TextField('name', 40, 
                                              util.restore_text( params.get( 'name', ''  ) )), 
                             helptext='(Required)'))

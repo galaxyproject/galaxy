@@ -358,7 +358,7 @@ class Requests( BaseController ):
         widgets.append(dict(label='Select user',
                             widget=self.__select_user(trans, user_id),
                             helptext='The request would be submitted on behalf of this user (Required)'))
-        widgets.append(dict(label='Name', 
+        widgets.append(dict(label='Name of the Experiment', 
                             widget=TextField('name', 40, 
                                              util.restore_text( params.get( 'name', ''  ) )), 
                             helptext='(Required)'))
@@ -391,7 +391,7 @@ class Requests( BaseController ):
         def __get_email(user):
             return user.email
         user_list = trans.sa_session.query( trans.app.model.User )
-        user_list.sort(key=__get_email)
+        #user_list.sort(key=__get_email)
         for user in user_list:
             if not user.deleted:
                 if userid == str(user.id):
@@ -1038,6 +1038,12 @@ class Requests( BaseController ):
             bar_code = util.restore_text(params.get('sample_%i_bar_code' % index, ''))
             sample.bar_code = bar_code
             sample.flush()
+        # change the state of all the samples to the next state
+        # get the new state
+        new_state = request.type.states[1]
+        for s in request.samples:
+            event = trans.app.model.SampleEvent(s, new_state, 'Bar code added to this sample')
+            event.flush()
         return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                           action='bar_codes',
                                                           request_id=request.id,
