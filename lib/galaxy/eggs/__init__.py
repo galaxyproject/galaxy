@@ -533,9 +533,9 @@ def require( pkg ):
     egg = c.get_for_require( name )
     try:
         if egg is None:
-            pkg_resources.working_set.require( pkg )
+            return pkg_resources.working_set.require( pkg )
         else:
-            pkg_resources.working_set.require( "%s==%s" % ( name, egg.get_vertag() ) )
+            return pkg_resources.working_set.require( "%s==%s" % ( name, egg.get_vertag() ) )
     except pkg_resources.VersionConflict, e:
         # there's a conflicting egg on the pythonpath, remove it
         dist = e.args[0]
@@ -551,9 +551,10 @@ def require( pkg ):
         del working_set.by_key[dist.key]
         working_set.entry_keys[entry] = []
         sys.path.remove(entry)
-        require( pkg )
+        r = require( pkg )
         if location is not None and not location.endswith( '.egg' ):
             working_set.entries.append( location ) # re-add to the set if it's a dir.
+        return r
     except pkg_resources.DistributionNotFound, e:
         # the initial require itself is the first dep, but it can have
         # multiple deps, which will be fetched by the require below.
@@ -566,7 +567,7 @@ def require( pkg ):
         if not egg.have:
             if not egg.fetch():
                 raise EggNotFetchable( egg.name )
-        require( pkg )
+        return require( pkg )
 
 # convenience stuff
 def get_ucs():

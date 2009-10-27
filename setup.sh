@@ -1,5 +1,8 @@
 #!/bin/sh
 
+python ./scripts/check_python.py
+[ $? -ne 0 ] && exit 1
+
 SAMPLES="
 datatypes_conf.xml.sample
 reports_wsgi.ini.sample

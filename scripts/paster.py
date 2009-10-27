@@ -7,7 +7,12 @@ top level directly.
 
 import os, sys
 
-assert sys.version_info[:2] >= ( 2, 4 )
+# ensure supported version
+from check_python import check_python
+try:
+    check_python()
+except:
+    sys.exit( 1 )
 
 new_path = [ os.path.join( os.getcwd(), "lib" ) ]
 new_path.extend( sys.path[1:] ) # remove scripts/ from the path
