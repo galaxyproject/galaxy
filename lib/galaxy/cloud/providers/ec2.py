@@ -95,7 +95,13 @@ class EC2CloudProvider( object ):
         Establishes EC2 cloud connection using user's credentials associated with given UCI
         """
         log.debug( '##### Establishing EC2 cloud connection' )
-        conn = EC2Connection( uci_wrapper.get_access_key(), uci_wrapper.get_secret_key() )
+        provider = uci_wrapper.get_provider()
+        region = RegionInfo( None, provider.region_name, provider.region_endpoint )
+        conn = EC2Connection( aws_access_key_id=uci_wrapper.get_access_key(), 
+                              aws_secret_access_key=uci_wrapper.get_secret_key(), 
+                              is_secure=provider.is_secure, 
+                              region=region, 
+                              path=provider.path )
         return conn
         
     def set_keypair( self, uci_wrapper, conn ):
@@ -458,16 +464,24 @@ class EC2CloudProvider( object ):
         a_key = uci.credentials.access_key
         s_key = uci.credentials.secret_key
         # Get connection
-        conn = EC2Connection( aws_access_key_id=a_key, aws_secret_access_key=s_key )
+        region = RegionInfo( None, uci.credentials.provider.region_name, uci.credentials.provider.region_endpoint )
+        conn = EC2Connection( aws_access_key_id=a_key, 
+                              aws_secret_access_key=s_key, 
+                              is_secure=uci.credentials.provider.is_secure, 
+                              region=region, 
+                              path=uci.credentials.provider.path )
         # Get reservations handle for given instance
         rl= conn.get_all_instances( [inst.instance_id] )
         # Because EPC deletes references to reservations after a short while after instances have terminated, getting an empty list as a response to a query
-        # typically means the instance has successfully shut down but the check was not performed in short enough amount of time. As a result, below code simply
-        # marks given instance as having terminated. Note that an instance might have also crashed and this code will not catch the difference...
+        # typically means the instance has successfully shut down but the check was not performed in short enough amount of time.  Until alternative solution
+        # is found, below code sets state of given UCI to 'error' to indicate to the user something out of ordinary happened.
         if len( rl ) == 0:
             log.info( "Instance ID '%s' was not found by the cloud provider. Instance might have crashed or otherwise been terminated." % inst.instance_id )
+            inst.error = "Instance ID was not found by the cloud provider. Instance might have crashed or otherwise been terminated. State set to 'terminated'."
+            uci.error = "Instance ID '"+inst.instance_id+"' was not found by the cloud provider. Instance might have crashed or otherwise been terminated."+ \
+                "Manual check is recommended."
             inst.state = instance_states.TERMINATED
-            uci.state = uci_states.AVAILABLE
+            uci.state = uci_states.ERROR
             uci.launch_time = None
             inst.flush()
             uci.flush()
@@ -479,11 +493,13 @@ class EC2CloudProvider( object ):
                 if  s != inst.state:
                     inst.state = s
                     inst.flush()
-                    if s == instance_states.TERMINATED: # After instance has shut down, ensure UCI is marked as 'available'
+                     # After instance has shut down, ensure UCI is marked as 'available'
+                    if s == instance_states.TERMINATED and uci.state != uci_states.ERROR:
                         uci.state = uci_states.AVAILABLE
+                        uci.launch_time = None
                         uci.flush()
+                # Making sure state of UCI is updated. Once multiple instances become associated with single UCI, this will need to be changed.
                 if s != uci.state and s != instance_states.TERMINATED: 
-                    # Making sure state of UCI is updated. Once multiple instances become associated with single UCI, this will need to be changed.
                     uci.state = s                    
                     uci.flush() 
                 if cInst.public_dns_name != inst.public_dns:
@@ -501,7 +517,12 @@ class EC2CloudProvider( object ):
         a_key = uci.credentials.access_key
         s_key = uci.credentials.secret_key
         # Get connection
-        conn = EC2Connection( aws_access_key_id=a_key, aws_secret_access_key=s_key )
+        region = RegionInfo( None, uci.credentials.provider.region_name, uci.credentials.provider.region_endpoint )
+        conn = EC2Connection( aws_access_key_id=a_key, 
+                              aws_secret_access_key=s_key, 
+                              is_secure=uci.credentials.provider.is_secure, 
+                              region=region, 
+                              path=uci.credentials.provider.path )
         # Get reservations handle for given store 
         vl = conn.get_all_volumes( [store.volume_id] )
 #        log.debug( "Store '%s' vl: '%s'" % ( store.volume_id, vl ) )

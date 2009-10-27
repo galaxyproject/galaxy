@@ -443,12 +443,15 @@ class EucalyptusCloudProvider( object ):
         # Get reservations handle for given instance
         rl= conn.get_all_instances( [inst.instance_id] )
         # Because EPC deletes references to reservations after a short while after instances have terminated, getting an empty list as a response to a query
-        # typically means the instance has successfully shut down but the check was not performed in short enough amount of time. As a result, below code simply
-        # marks given instance as having terminated. Note that an instance might have also crashed and this code will not catch the difference...
+        # typically means the instance has successfully shut down but the check was not performed in short enough amount of time. Until alternative solution
+        # is found, below code sets state of given UCI to 'error' to indicate to the user something out of ordinary happened.
         if len( rl ) == 0:
             log.info( "Instance ID '%s' was not found by the cloud provider. Instance might have crashed or otherwise been terminated." % inst.instance_id )
+            inst.error = "Instance ID was not found by the cloud provider. Instance might have crashed or otherwise been terminated. State set to 'terminated'."
+            uci.error = "Instance ID '"+inst.instance_id+"' was not found by the cloud provider. Instance might have crashed or otherwise been terminated."+ \
+                "Manual check is recommended."
             inst.state = instance_states.TERMINATED
-            uci.state = uci_states.AVAILABLE
+            uci.state = uci_states.ERROR
             uci.launch_time = None
             inst.flush()
             uci.flush()
@@ -460,11 +463,13 @@ class EucalyptusCloudProvider( object ):
                 if  s != inst.state:
                     inst.state = s
                     inst.flush()
-                    if s == instance_states.TERMINATED: # After instance has shut down, ensure UCI is marked as 'available'
+                    # After instance has shut down, ensure UCI is marked as 'available'
+                    if s == instance_states.TERMINATED and uci.state != uci_states.ERROR: 
                         uci.state = uci_states.AVAILABLE
+                        uci.launch_time = None
                         uci.flush()
+                # Making sure state of UCI is updated. Once multiple instances become associated with single UCI, this will need to be changed.
                 if s != uci.state and s != instance_states.TERMINATED: 
-                    # Making sure state of UCI is updated. Once multiple instances become associated with single UCI, this will need to be changed.
                     uci.state = s                    
                     uci.flush() 
                 if cInst.public_dns_name != inst.public_dns:

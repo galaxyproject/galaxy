@@ -35,24 +35,29 @@ ${h.js( "jquery" )}
 				}
 				else if ( old_state=='shutting-down' && new_state=='available' ) {
 					location.reload(true);
+				}
+				else if ( old_state=='running' && new_state=='available' ) {
+					location.reload(true);
+				}
+				else if ( old_state=='running' && new_state=='error' ) {
+					location.reload(true);
+				}
+				else if ( old_state=='pending' && new_state=='error' ) {
+					location.reload(true);
+				}
+				else if ( old_state=='pending' && new_state=='available' ) {
+					location.reload(true);
 				} 
 				else if ( new_state=='shutting-down' || new_state=='shutting-downUCI' ) {
 					$(elem + "-link").text( "" );
 				}
-				xmlhttp = new XMLHttpRequest();
-				xmlhttp.open( "HEAD", "http://127.0.0.1:8080/admin", false );
-				xmlhttp.send( null );
-				//alert(xmlhttp.getAllResponseHeaders())
-				console.log( "xmlhttp.readyState: %s", xmlhttp.readyState );
-				console.log( "xmlhttp.status: %s", xmlhttp.status );
-				if ( new_state=='running' && xmlhttp.readyState==1 ) {
-					console.log ("in ready statsus = 1");
-					//if (xmlhttp.status==200) {
-					//	console.log( "in status = 200" );
-					//	location.reload(true);
-					//}
-				} 
-
+				// In order to show 'Access Galaxy' button, the whole page needs to be refreshed. So, while Galaxy is starting,
+				// keep refreshing the page. Should be handled better...
+				else if ( $(elem+"-link").text().search('starting') && old_state=='running' && new_state=='running' ) {
+					//location.reload(true);
+					$(elem + "-link").text("Still starting...");
+				}
+				
 				// Update 'state' and 'time alive' fields
 				$(elem + "-state").text( data[i].state );
 				if (data[i].launch_time) {
@@ -184,7 +189,7 @@ ${h.js( "jquery" )}
 									context.write( '<span>Access Galaxy</span>' )
 									context.write( '<img src="'+h.url_for('/static/images/silk/resultset_next.png')+'" /></a></div>' )
 								except urllib2.URLError:
-									context.write( '<span>Galaxy starting...</span>' )
+									context.write( 'Galaxy starting...' )
 								%>
 								
 							%endif
@@ -247,8 +252,10 @@ ${h.js( "jquery" )}
 					      		<a onclick="document.getElementById('short').style.display = 'block'; 
 			                    document.getElementById('full').style.display = 'none'; return 0;" 
 			                    href="javascript:void(0)">
-			                    ${str(prevInstance.error)}
-			                    </a>            
+			                    error:</a><br />
+								${str(prevInstance.error)}
+								<p />
+								<a href="${h.url_for( action='set_uci_state', id=trans.security.encode_id(prevInstance.id), state='available' )}">reset state</a>
 			               </div>
 						%else:
 							${str(prevInstance.state)}
@@ -278,7 +285,7 @@ ${h.js( "jquery" )}
    You have no AWS credentials associated with your Galaxy account: 
 	<a class="action-button" href="${h.url_for( action='add' )}">
         <img src="${h.url_for('/static/images/silk/add.png')}" />
-        <span>Add AWS credentials</span>
+        <span>add credentials</span>
     </a>
 	 or 
 	<a href="http://aws.amazon.com/" target="_blank">

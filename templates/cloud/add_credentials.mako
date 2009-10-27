@@ -103,9 +103,9 @@ $(function(){
 </div>
 
 %else:
-	In order to add credentials, desired cloud provider needs to be registered.<p/>
+	In order to add credentials, desired cloud provider needs to be registered first.<p/>
 	Register <a href="${h.url_for( action='add_ec2' )}">
-	<span>Amazon EC2 automatically</span></a>
+	<span>Amazon EC2 (us-east-1 region) automatically</span></a>
 	or add
 	<a href="${h.url_for( action='add_provider' )}">
 	<span>custom cloud provider</span></a>.

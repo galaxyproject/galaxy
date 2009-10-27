@@ -11,7 +11,19 @@ $(function(){
 	
 	$("#type").change(function() {
 		if ($(this).val() == 'ec2') {
-			$("#name").val("EC2");
+			clear();
+			$("#autofill").attr( 'disabled', true );
+			$("#autofill").attr( 'checked', false );
+			$("#name").val( "EC2" );
+			$("#region_name").val( "us-east-1" );
+			$("#region_endpoint").val( "us-east-1.ec2.amazonaws.com" );
+			$("#is_secure").val("1");
+			$("#debug").val("");
+			$("#path").val("/");
+		}
+		else if ($(this).val() == 'eucalyptus') {
+			clear();
+			$("#autofill").attr( 'disabled', false );
 		}
 	});
 })
@@ -27,12 +39,23 @@ function af(){
 		$("#path").val("/services/Eucalyptus");
 	}
 	else {
-		$("#region_name").val("");
-		$("#region_endpoint").val("");
-		$("#is_secure").val("");
-		$("#port").val("");
-		$("#path").val("");
+		clear();
 	}
+}
+
+function clear() {
+	$("#name").val("");
+	$("#region_name").val("");
+	$("#region_endpoint").val("");
+	$("#is_secure").val("");
+	$("#port").val("");
+	$("#proxy").val("");
+	$("#proxy_port").val("");
+	$("#proxy_user").val("");
+	$("#proxy_pass").val("");
+	$("#debug").val("");
+	$("#https_connection_factory").val("");
+	$("#path").val("");
 
 }
 
@@ -60,8 +83,9 @@ function af(){
 					<option value="eucalyptus">Eucalyptus</option>
 					<option value="ec2">Amazon EC2</option>
 				</select>
-			<br/><input type="checkbox" id="autofill" onclick="javascript:af()">			
-			auto fill using Eucalyptus Public Cloud values
+			<br/>
+			<input type="checkbox" id="autofill" onclick="javascript:af()" disabled="true">			
+				auto fill using Eucalyptus Public Cloud values
 			</div>
 			%if error.has_key('type_error'):
             	<div class="form-row-error-message">${error['type_error']}</div>
@@ -90,9 +114,12 @@ function af(){
             %>
             <div class="${cls}">
             <label>Region name:</label>
-            <div class="form-row-input">
+            <div id="region_selection" class="form-row-input">
             	<input type="text" name="region_name" id="region_name" value="${region_name}" size="40">
             </div>
+			%if error.has_key('name_error'):
+            	<div class="form-row-error-message">${error['name_error']}</div>
+            %endif
 			<div style="clear: both"></div>
             </div>
 			
@@ -107,14 +134,19 @@ function af(){
 			<div style="clear: both"></div>
             </div>
 			
-			<%
+			 <%
             cls = "form-row"
+            if error.has_key('is_secure_error'):
+                cls += " form-row-error"
             %>
             <div class="${cls}">
             <label>Is secure ('O' for False or '1' for True):</label>
             <div class="form-row-input">
             	<input type="text" name="is_secure" id="is_secure" value="${is_secure}" size="40">
             </div>
+			%if error.has_key('is_secure_error'):
+            	<div class="form-row-error-message">${error['is_secure_error']}; you entered: '${is_secure}'</div>
+            %endif
 			<div style="clear: both"></div>
             </div>
 			
