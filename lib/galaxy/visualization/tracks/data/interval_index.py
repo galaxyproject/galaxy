@@ -21,7 +21,11 @@ class IntervalIndexDataProvider( object ):
         for start, end, offset in index.find(chrom, start, end):
             source.seek(offset)
             feature = source.readline().split()
-            payload = { 'start': start, 'end': end, 'name': feature[3], 'strand': feature[5] }
+            payload = { 'start': start, 'end': end, 'name': feature[3] }
+            try:
+                payload['strand'] = feature[5]
+            except IndexError:
+                pass
             try:
                 block_sizes = [ int(n) for n in feature[10].split(',') if n != '']
                 block_starts = [ int(n) for n in feature[11].split(',') if n != '' ]

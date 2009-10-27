@@ -21,6 +21,17 @@ left_img.onload = function() {
     LEFT_STRAND = CONTEXT.createPattern(left_img, "repeat");
 }
 
+var right_img_inv = new Image();
+right_img_inv.src = "../images/visualization/strand_right_inv.png";
+right_img_inv.onload = function() {
+    RIGHT_STRAND_INV = CONTEXT.createPattern(right_img_inv, "repeat");
+}
+var left_img_inv = new Image();
+left_img_inv.src = "../images/visualization/strand_left_inv.png";
+left_img_inv.onload = function() {
+    LEFT_STRAND_INV = CONTEXT.createPattern(left_img_inv, "repeat");
+}
+
 function commatize( number ) {
     number += ''; // Convert to string
 	var rgx = /(\d+)(\d{3})/;
@@ -402,7 +413,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                     y_center = this.slots[feature.name] * this.vertical_gap;
                 
                 if (feature.strand && this.showing_labels) {
-                    if (feature.strand == "+") {
+		    if (feature.strand == "+") {
                         ctx.fillStyle = RIGHT_STRAND;
                     } else if (feature.strand == "-") {
                         ctx.fillStyle = LEFT_STRAND;
@@ -415,26 +426,53 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                 }
                 
                 if (this.showing_labels && ctx.fillText) {
-                    ctx.fillText(feature.name, f_start, y_center + 8);
+                    ctx.fillText(feature.name, f_start - 1, y_center + 8);
                 }
                 
+		// If there is no thickStart/thickEnd, draw the whole thing
+		// as thick. 
                 var exon_start, exon_end;
                 if (feature.exon_start && feature.exon_end) {
                     exon_start = Math.floor( Math.max(0, (feature.exon_start - tile_low) * w_scale) );
                     exon_end = Math.ceil( Math.min(width, (feature.exon_end - tile_low) * w_scale) );
-                }
+                } else {
+		    exon_start = Math.floor( Math.max(0, (feature.start - tile_low) * w_scale) );
+		    exon_end = Math.ceil( Math.min(width, (feature.end - tile_low) * w_scale) );
+		}
                 
-                if (feature.blocks && this.showing_labels) {
-                    for (var k = 0, k_len = feature.blocks.length; k < k_len; k++) {
-                        var block = feature.blocks[k],
+                if (this.showing_labels) {
+		    // If there are no blocks, we treat the feature as one
+		    // big exon
+		    var blocks = feature.blocks;
+		    var arrows_in_blocks = false;
+		    if ( ! blocks ) {
+			blocks = [[feature.start,feature.end]];
+			arrows_in_blocks = true
+		    }
+                    for (var k = 0, k_len = blocks.length; k < k_len; k++) {
+                        var block = blocks[k],
                             block_start = Math.floor( Math.max(0, (block[0] - tile_low) * w_scale) ),
                             block_end = Math.ceil( Math.min(width, (block[1] - tile_low) * w_scale) );
-                        var thickness = 5, y_start = 3;
+			var thickness, y_start;
                         if (exon_start && block_start >= exon_start && block_end <= exon_end) {
-                            thickness = 7;
-                            y_start = 2;
-                        }                    
-                        ctx.fillRect(block_start, y_center + y_start, block_end - block_start, thickness);
+                            thickness = 9;
+                            y_start = 1;
+			    ctx.fillRect(block_start, y_center + y_start, block_end - block_start, thickness);
+			    if ( feature.strand && arrows_in_blocks ) {
+				if (feature.strand == "+") {
+				    ctx.fillStyle = RIGHT_STRAND_INV;
+				} else if (feature.strand == "-") {
+				    ctx.fillStyle = LEFT_STRAND_INV;
+				}
+				ctx.fillRect(block_start, y_center, block_end - block_start, 10);
+				ctx.fillStyle = "#000";
+			    }
+                        } else {
+			    thickness = 5;
+			    y_start = 3;
+			    ctx.fillRect(block_start, y_center + y_start, block_end - block_start, thickness);
+			}
+                        
                         // console.log(block_start, block_end);
                     }
                 }
