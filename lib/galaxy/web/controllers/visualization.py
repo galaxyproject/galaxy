@@ -28,11 +28,13 @@ class VisualizationListGrid( grids.Grid ):
 class VisualizationController( BaseController ):
     
     @web.expose
+    @web.require_login()
     def index( self, trans ):
         return trans.fill_template( "panels.mako", active_view='visualization', main_url=url_for( action='list' ) )
     
     list_grid = VisualizationListGrid()    
     @web.expose
+    @web.require_login()
     def list( self, trans, *args, **kwargs ):
         return self.list_grid( trans, *args, **kwargs )
     

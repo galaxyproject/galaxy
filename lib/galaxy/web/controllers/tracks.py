@@ -63,6 +63,7 @@ class TracksController( BaseController ):
         return trans.fill_template( "tracks/index.mako" )
 
     @web.expose
+    @web.require_login()
     def new_browser( self, trans, dbkey=None, dataset_ids=None, browse=None, title=None ):
         """
         Build a new browser from datasets in the current history. Redirects
