@@ -20,6 +20,12 @@ class LocalJobRunner( object ):
         """Start the job runner with 'nworkers' worker threads"""
         self.app = app
         self.sa_session = app.model.context
+        # put lib into the PYTHONPATH for subprocesses
+        if 'PYTHONPATH' in os.environ:
+            os.environ['PYTHONPATH'] = '%s:%s' % ( os.environ['PYTHONPATH'], os.path.abspath( 'lib' ) )
+        else:
+            os.environ['PYTHONPATH'] = os.path.abspath( 'lib' )
+        # start workers
         self.queue = Queue()
         self.threads = []
         nworkers = app.config.local_job_queue_workers
@@ -54,12 +60,6 @@ class LocalJobRunner( object ):
             return
         # If we were able to get a command line, run the job
         if command_line:
-            env = os.environ
-            if job_wrapper.galaxy_lib_dir is not None:
-                if 'PYTHONPATH' in os.environ:
-                    env['PYTHONPATH'] = "%s:%s" % ( os.environ['PYTHONPATH'], job_wrapper.galaxy_lib_dir )
-                else:
-                    env['PYTHONPATH'] = job_wrapper.galaxy_lib_dir
             try:
                 log.debug( 'executing: %s' % command_line )
                 proc = subprocess.Popen( args = command_line, 
@@ -67,7 +67,7 @@ class LocalJobRunner( object ):
                                          cwd = job_wrapper.working_directory, 
                                          stdout = subprocess.PIPE, 
                                          stderr = subprocess.PIPE,
-                                         env = env,
+                                         env = os.environ,
                                          preexec_fn = os.setpgrp )
                 job_wrapper.set_runner( 'local:///', proc.pid )
                 job_wrapper.change_state( model.Job.states.RUNNING )
@@ -110,7 +110,7 @@ class LocalJobRunner( object ):
             log.debug( 'executing external set_meta script for job %d: %s' % ( job_wrapper.job_id, external_metadata_script ) )
             external_metadata_proc = subprocess.Popen( args = external_metadata_script, 
                                          shell = True, 
-                                         env = env,
+                                         env = os.environ,
                                          preexec_fn = os.setpgrp )
             job_wrapper.external_output_metadata.set_job_runner_external_pid( external_metadata_proc.pid, self.sa_session )
             external_metadata_proc.wait()
