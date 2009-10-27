@@ -2,7 +2,7 @@
   <description></description>
   <command interpreter="python">
     bwa_wrapper.py 
-    --threads="8"
+    --threads="4"
     #if $solidOrSolexa.solidRefGenomeSource.refGenomeSource == "history":
      --ref=$solidOrSolexa.solidRefGenomeSource.ownFile
     #else:

@@ -2,7 +2,7 @@
   <description></description>
   <command interpreter="python">
     bowtie_wrapper.py 
-    --threads="8"
+    --threads="4"
     --input1=$singlePaired.input1
     #if $singlePaired.sPaired == "paired":
      --input2=$singlePaired.input2
