@@ -71,12 +71,12 @@
                    </a>                    
                 </div>
                 <div id="fullComment2" style="DISPLAY: none">
-		      		<nobr><b>${credDetails.secret_key}</b></nobr><br/>
-                    <a onclick="document.getElementById('shortComment2').style.display = 'block'; 
+		      		<a onclick="document.getElementById('shortComment2').style.display = 'block'; 
                     document.getElementById('fullComment2').style.display = 'none'; return 0;" 
                     href="javascript:void(0)">
                     - Hide
-                    </a>            
+                    </a><br />
+					<nobr><b>${credDetails.secret_key}</b></nobr><br/>         
                </div>
 			</td>
 	   </tr>

@@ -109,7 +109,7 @@ ${h.js( "jquery" )}
 				<td>
                     <div popupmenu="cr-${i}-popup">
                     <a class="action-button" href="${h.url_for( action='view', id=trans.security.encode_id(cloudCredential.id) )}">View</a>
-					<a class="action-button" href="${h.url_for( action='rename', id=trans.security.encode_id(cloudCredential.id) )}">Rename</a>
+					<a class="action-button" href="${h.url_for( action='edit', id=trans.security.encode_id(cloudCredential.id) )}">Edit</a>
                     <a class="action-button" confirm="Are you sure you want to delete credentials '${cloudCredential.name}'?" href="${h.url_for( action='delete', id=trans.security.encode_id(cloudCredential.id) )}">Delete</a>
                     </div>
                 </td>

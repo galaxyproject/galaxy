@@ -77,7 +77,7 @@ class CloudController( BaseController ):
         
         cloudCredentials = trans.sa_session.query( model.CloudUserCredentials ) \
             .filter_by( user=user ) \
-            .order_by( desc( model.CloudUserCredentials.c.name ) ) \
+            .order_by( model.CloudUserCredentials.c.name ) \
             .all()
         
         liveInstances = trans.sa_session.query( model.UCI ) \
@@ -387,23 +387,64 @@ class CloudController( BaseController ):
             
     @web.expose
     @web.require_login( "use Galaxy cloud" )
-    def rename( self, trans, id, new_name=None ):
-        stored = get_stored_credentials( trans, id )
-        if new_name is not None:
-            stored.name = new_name
-            trans.sa_session.flush()
-            trans.set_message( "Credentials renamed to '%s'." % new_name )
-            return self.list( trans )
+    def edit( self, trans, id, credName=None, accessKey=None, secretKey=None, edited=False ):
+        error = {}
+        if not edited:
+            credentials = get_stored_credentials( trans, id )
+            return trans.fill_template( "cloud/edit_credentials.mako", 
+                                        credential = credentials,
+                                        error = error
+                                        )
         else:
-            return trans.show_form( 
-                web.FormBuilder( url_for( id=trans.security.encode_id(stored.id) ), "Rename credentials", submit_text="Rename" ) 
-                .add_text( "new_name", "Credentials Name", value=stored.name ) )
-   
+            user = trans.get_user()
+            credentials = get_stored_credentials( trans, id )
+            if credName=='' or len( credName ) > 255:
+                error['cred_error'] = "Credentials name must be between 1 and 255 characters in length."
+            elif trans.app.model.CloudUserCredentials \
+                .filter_by( user=user ) \
+                .filter( and_( trans.app.model.CloudUserCredentials.table.c.id != credentials.id, trans.app.model.CloudUserCredentials.table.c.name==credName ) ) \
+                .first():
+                error['cred_error'] = "Credentials with name '" + credName + "' already exist. Please choose an alternative name."
+            elif accessKey=='' or len( accessKey ) > 255:
+                error['access_key_error'] = "Access key must be between 1 and 255 characters long."
+            elif secretKey=='' or len( secretKey ) > 255:
+                error['secret_key_error'] = "Secret key must be between 1 and 255 characters long."
+            
+            if error:
+                return trans.fill_template( "cloud/edit_credentials.mako", 
+                                        credential = credentials,
+                                        error = error
+                                        )
+            else:
+                # Edit user stored credentials
+                credentials.name = credName
+                credentials.access_key = accessKey
+                credentials.secret_key = secretKey
+                # Persist
+                session = trans.sa_session
+                session.save_or_update( credentials )
+                session.flush()
+                # Log and display the management page
+                trans.set_message( "Credential '%s' edited." % credentials.name )
+#                if defaultCred:
+#                    self.makeDefault( trans, credentials.id)
+                return self.list( trans )   
+
     @web.expose
     @web.require_login( "use Galaxy cloud" )
     def renameInstance( self, trans, id, new_name=None ):
         instance = get_uci( trans, id )
         if new_name is not None:
+            if len(new_name) > 255:
+                error( "Instance name must be less than 255 characters long." )
+            user = trans.get_user()
+            name_exists = trans.sa_session.query( model.UCI ) \
+                .filter_by( user=user, name=new_name ) \
+                .first() 
+            if name_exists:
+                error( "Specified name ('%s') is already used by an existing instance. Please choose an alternative name." % new_name )
+            
+            # Update name in local DB
             instance.name = new_name
             trans.sa_session.flush()
             trans.set_message( "Instance renamed to '%s'." % new_name )
@@ -522,17 +563,27 @@ class CloudController( BaseController ):
     @web.require_login( "delete credentials" )
     def delete( self, trans, id=None ):
         """
-        Delete user's cloud credentials
-        TODO: Because UCI's depend on specific credentials, need to handle case where given credentials are being used by a UCI 
+        Delete user's cloud credentials checking that no registered instances are tied to given credentials.
         """
         # Load credentials from database
+        user = trans.get_user()
         stored = get_stored_credentials( trans, id )
-        # Delete and save
-        sess = trans.sa_session
-        sess.delete( stored )
-        stored.flush()
-        # Display the management page
-        trans.set_message( "Credentials '%s' deleted." % stored.name )
+        UCIs = trans.sa_session.query( model.UCI ) \
+            .filter_by( user=user, credentials_id=stored.id ) \
+            .filter( model.UCI.c.state!=uci_states.DELETED ) \
+            .all()
+        
+        if len(UCIs) == 0:
+            # Delete and save
+            sess = trans.sa_session
+            sess.delete( stored )
+            stored.flush()
+            # Display the management page
+            trans.set_message( "Credentials '%s' deleted." % stored.name )
+            return self.list( trans )
+        
+        error( "Existing instance(s) depend on credentials '%s'. You must delete those instances before being able \
+            to delete these credentials." % stored.name )
         return self.list( trans )
     
     @web.expose
