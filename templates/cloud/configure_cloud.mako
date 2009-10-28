@@ -23,13 +23,13 @@ ${h.js( "jquery" )}
 	function update_state() {
 		$.getJSON( "${h.url_for( action='json_update' )}", {}, function ( data ) {
 			for (var i in data) {
-			var elem = '#' + data[i].id;
+				var elem = '#' + data[i].id;
 				// Because of different list managing 'live' vs. 'available' instances, refresh entire 
 				// page on necessary state change.
 				old_state = $(elem + "-state").text();
 				new_state = data[i].state;
-				console.log( "old_state[%d] = %s", i, old_state );
-				console.log( "new_state[%d] = %s", i, new_state );
+				//console.log( "old_state[%d] = %s", i, old_state );
+				//console.log( "new_state[%d] = %s", i, new_state );
 				if ( old_state=='pending' && new_state=='running' ) {
 					location.reload(true);
 				}
@@ -51,11 +51,27 @@ ${h.js( "jquery" )}
 				else if ( new_state=='shutting-down' || new_state=='shutting-downUCI' ) {
 					$(elem + "-link").text( "" );
 				}
-				// In order to show 'Access Galaxy' button, the whole page needs to be refreshed. So, while Galaxy is starting,
-				// keep refreshing the page. Should be handled better...
-				else if ( $(elem+"-link").text().search('starting') && old_state=='running' && new_state=='running' ) {
-					//location.reload(true);
-					$(elem + "-link").text("Still starting...");
+				
+				// Check if Galaxy website is accessible on given instance; if so, provide link. Otherwise, wait more.
+				else if ( ( $(elem+"-link").text().match('starting') || $(elem+"-link").text()=='' ) && new_state=='running' ) {
+					//console.log ( 'elem.text: ' + $(elem+"-link").text() );
+					$.getJSON( "${h.url_for( action='link_update' )}", { uci_id: data[i].id }, function ( data ) {
+						for (var i in data) {
+							var dns = data[i].public_dns;
+							var uci = '#' + data[i].uci_id;
+							if( !dns ) {
+								$(uci+"-link").text( 'Galaxy starting...' );
+								// http://stackoverflow.com/questions/275931/how-do-you-make-an-element-flash-in-jquery
+								$(uci+"-link").stop().animate({ fontSize: "14px" }, 1000).animate({ fontSize: "12px" }, 1000);
+							}
+							else {
+								$(uci+"-link").html( '<div align="right"><a class="action-button" href="http://'+dns+'" target="_blank">' + 
+									'<span>Access Galaxy</span>'+
+									'<img src="' + "${h.url_for( '/static/images/silk/resultset_next.png' )}" + '" /></div>' );
+								$(uci+"-link").stop().animate({ fontSize: "14px" }, 1000).animate({ fontSize: "12px" }, 1000);
+							}
+						}
+					});
 				}
 				
 				// Update 'state' and 'time alive' fields
@@ -67,6 +83,7 @@ ${h.js( "jquery" )}
 					$(elem + "-launch_time").text( "N/A" );
 				}
 			}
+			console.log('');
 		});
 		setTimeout("update_state()", 15000);
 	}
@@ -74,6 +91,7 @@ ${h.js( "jquery" )}
 	$(function() {
 		update_state();
 	});
+	
 </script>
 </%def>
 
@@ -176,25 +194,8 @@ ${h.js( "jquery" )}
 								context.write( ')' )
 						%>
 					</td>
-					<td id="${ liveInstance.id }-link"><div align="right">
-						%for j, instance in enumerate( liveInstance.instance ):
-						## TODO: Once more instances will be running under the same liveInstance, additional logic will need to be added to account for that
-							%if instance.state == "running":
-								## Wait until Galaxy server starts to show 'Access Galaxy' button
-								<%
-								import urllib2
-								try:
-									urllib2.urlopen("http://"+instance.public_dns)
-									context.write( '<a class="action-button" href="http://'+instance.public_dns+'" target="_blank">' )
-									context.write( '<span>Access Galaxy</span>' )
-									context.write( '<img src="'+h.url_for('/static/images/silk/resultset_next.png')+'" /></a></div>' )
-								except urllib2.URLError:
-									context.write( 'Galaxy starting...' )
-								%>
-								
-							%endif
-						%endfor
-	            	</td>
+					## Handled by JavaScript function
+					<td id="${ liveInstance.id }-link"></td> 
 	                <td>
 	                    <div popupmenu="li-${i}-popup">
 	                    <a class="action-button" confirm="Are you sure you want to stop instance '${liveInstance.name}'? Please note that this may take up to 1 minute during which time the page will not refresh." href="${h.url_for( action='stop', id=trans.security.encode_id(liveInstance.id) )}">Stop</a>

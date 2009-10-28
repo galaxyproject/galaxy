@@ -3,6 +3,7 @@ from galaxy.web.base.controller import *
 import pkg_resources
 pkg_resources.require( "simplejson" )
 import simplejson
+import urllib2
 
 from galaxy.tools.parameters import *
 from galaxy.tools import DefaultToolState
@@ -597,30 +598,18 @@ class CloudController( BaseController ):
         except ValueError:
             pass
         
-        # Check if Amazon EC2 has already been registered by this user
-        ec2_registered = trans.sa_session.query( model.CloudProvider ).filter_by( user=user, type='ec2' ).first()
-        
         if region_name or region_endpoint or name or is_secure or port or proxy or debug or path:
-            log.debug (" in if ")
             if trans.app.model.CloudProvider \
                 .filter_by (user=user, name=name) \
                 .first():
-                log.debug (" in if 2 ")
                 error['name_error'] = "A provider with that name already exist."
             elif name=='' or len( name ) > 255:
-                log.debug (" in if 3")
                 error['name_error'] = "Provider name must be between 1 and 255 characters long."
             elif type=='':
-                log.debug (" in if 4")
                 error['type_error'] = "Provider type must be selected."
-            elif ec2_registered:
-                log.debug (" in if 5")
-                error['type_error'] = "Amazon EC2 has already been registered as a provider."
             elif not (is_secure == 0 or is_secure == 1):
-                log.debug (" in if 6")
                 error['is_secure_error'] = "Field 'is secure' can only take on a value '0' or '1'"
             else:
-                log.debug (" in else ")
                 provider = model.CloudProvider()
                 provider.user = user
                 provider.type = type
@@ -712,26 +701,8 @@ class CloudController( BaseController ):
     @web.require_login( "add Amazon EC2 provider" )
     def add_ec2( self, trans ):
         """ Default provider setup for Amazon's EC2. """
-        user = trans.get_user()
-        # Check if EC2 has already been registered by this user.
-        exists = trans.sa_session.query( model.CloudProvider ) \
-            .filter_by( user=user, type='ec2' ).first()
-        
-        if not exists:
-            self.add_provider( trans, name='Amazon EC2', type='ec2', region_name='us-east-1', region_endpoint='us-east-1.ec2.amazonaws.com', is_secure=1, path='/' )
-            return self.add( trans )
-#            providers = trans.sa_session.query( model.CloudProvider ).filter_by( user=user ).all()
-#            return trans.fill_template( "cloud/add_credentials.mako", 
-#                                        credName = '', 
-#                                        providerName = '', 
-#                                        accessKey = '', 
-#                                        secretKey = '', 
-#                                        error = {}, 
-#                                        providers = providers
-#                                        )
-        
-        trans.show_error_message( "EC2 is already registered as a cloud provider under name '%s'." % exists.name )   
-        return self.list( trans )
+        self.add_provider( trans, name='Amazon EC2', type='ec2', region_name='us-east-1', region_endpoint='us-east-1.ec2.amazonaws.com', is_secure=1, path='/' )
+        return self.add( trans )
     
     @web.json
     def json_update( self, trans ):
@@ -751,6 +722,25 @@ class CloudController( BaseController ):
             insd[uci.name] = dict
         return insd
     
+    @web.json
+    def link_update( self, trans, uci_id=0 ):
+        ild = {} # instance-link-dict
+        dict = {}
+        dict['uci_id'] = uci_id
+        try:
+            user = trans.get_user()
+            # TODO: This query can assumes only one instance under given UCI can be running (i.e., started).
+            inst = trans.sa_session.query( model.CloudInstance ).filter_by( user=user, uci_id=uci_id, state=uci_states.RUNNING ).first()
+            urllib2.urlopen( "http://" + inst.public_dns )
+            dict['public_dns'] = inst.public_dns
+            dict['inst_id'] = inst.id
+            ild['data'] = dict
+            return ild
+        except urllib2.URLError:
+            dict['public_dns'] = False
+            ild['data'] = dict
+            return ild
+        
 ## ---- Utility methods -------------------------------------------------------
 
 def get_provider( trans, name ):
