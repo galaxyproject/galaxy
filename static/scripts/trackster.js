@@ -240,10 +240,10 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
                 var min_label = $("<div class='yaxislabel'>" + track.min_value + "</div>");
                 var max_label = $("<div class='yaxislabel'>" + track.max_value + "</div>");
                 
-                max_label.css({ position: "relative", top: "20px" });
+                max_label.css({ position: "relative", top: "35px" });
                 max_label.prependTo(track.container_div)
                 
-                min_label.css({ position: "relative", top: track.height_px + 50 + "px", });
+                min_label.css({ position: "relative", top: track.height_px + 32 + "px", });
                 min_label.prependTo(track.container_div);
                 
                 track.draw();
@@ -324,6 +324,7 @@ var FeatureTrack = function ( name, dataset_id, height ) {
     this.show_labels_scale = 0.001;
     this.showing_labels = false;
     this.vertical_gap = 10;
+    this.base_color = "#2C3143";
 };
 $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
     init: function() {
@@ -427,7 +428,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
         new_canvas.get(0).height = height;
         // console.log(( tile_low - this.view.low ) * w_scale, tile_index, w_scale);
         var ctx = new_canvas.get(0).getContext("2d");
-        ctx.fillStyle = "#000";
+        ctx.fillStyle = this.base_color;
         ctx.font = "10px monospace";
         ctx.textAlign = "right";
 
@@ -462,7 +463,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                                 ctx.fillStyle = LEFT_STRAND;
                             }
                             ctx.fillRect(f_start, y_center, f_end - f_start, 10);
-                            ctx.fillStyle = "#000";
+                            ctx.fillStyle = this.base_color;
                         }
                         
                         for (var k = 0, k_len = blocks.length; k < k_len; k++) {
@@ -497,7 +498,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                                 ctx.fillStyle = LEFT_STRAND_INV;
                             }
                             ctx.fillRect(f_start, y_center, f_end - f_start, 10);
-                            ctx.fillStyle = "#000";
+                            ctx.fillStyle = this.base_color;
                         }
                     }
                 }
