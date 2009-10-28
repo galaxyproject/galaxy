@@ -5,6 +5,8 @@
 var DENSITY = 1000,
     DATA_ERROR = "There was an error in indexing this dataset.",
     DATA_NONE = "No data for this chrom/contig.",
+    DATA_PENDING = "Currently indexing... please wait",
+    DATA_LOADING = "Loading data...",
     CACHED_TILES = 50,
     CACHED_DATA = 20,
     CONTEXT = $("<canvas></canvas>").get(0).getContext("2d"),
@@ -34,11 +36,11 @@ left_img_inv.onload = function() {
 
 function commatize( number ) {
     number += ''; // Convert to string
-	var rgx = /(\d+)(\d{3})/;
-	while (rgx.test(number)) {
-		number = number.replace(rgx, '$1' + ',' + '$2');
-	}
-	return number;
+    var rgx = /(\d+)(\d{3})/;
+    while (rgx.test(number)) {
+        number = number.replace(rgx, '$1' + ',' + '$2');
+    }
+    return number;
 }
 var View = function( chrom, max_high ) {
     this.chrom = chrom;
@@ -88,7 +90,7 @@ $.extend( View.prototype, {
         $("#viewport").append('<div id="bottom-spacer" style="height: 200px;"></div>');
     },
     zoom_in: function ( point ) {
-        if (this.max_high === 0 || this.high - this.low < 5) {
+        if (this.max_high === 0 || this.high - this.low < 30) {
             return;
         }
         
@@ -96,6 +98,7 @@ $.extend( View.prototype, {
             this.center = point / $(document).width() * (this.high - this.low) + this.low;
         }
         this.zoom_level += 1;
+        this.redraw();
     },
     zoom_out: function () {
         if (this.max_high === 0) {
@@ -106,6 +109,7 @@ $.extend( View.prototype, {
             return;            
         }
         this.zoom_level -= 1;
+        this.redraw();
     }
 });
 
@@ -137,13 +141,13 @@ $.extend( TiledTrack.prototype, Track.prototype, {
         resolution = Math.max( resolution, 1 );
         resolution = Math.min( resolution, 100000 );
 
-	    var parent_element = $("<div style='position: relative;'></div>");
+        var parent_element = $("<div style='position: relative;'></div>");
             this.content_div.children( ":first" ).remove();
             this.content_div.append( parent_element );
 
         var w = this.content_div.width(),
             h = this.content_div.height(),
-	        w_scale = w / range;
+            w_scale = w / range;
 
         var tile_element;
         // Index of first tile that overlaps visible region
@@ -211,21 +215,38 @@ var LineTrack = function ( name, dataset_id, height ) {
 $.extend( LineTrack.prototype, TiledTrack.prototype, {
     init: function() {
         var track = this;
+        track.content_div.text(DATA_LOADING);
         $.getJSON( data_url, {  stats: true, track_type: track.track_type,
                                 chrom: track.view.chrom, low: null, high: null,
                                 dataset_id: track.dataset_id }, function ( data ) {
             if (!data || data == "error") {
                 track.container_div.addClass("error");
-		track.content_div.text(DATA_ERROR);
+                track.content_div.text(DATA_ERROR);
             } else if (data == "no data") {
                 track.container_div.addClass("nodata");
-		track.content_div.text(DATA_NONE);
+                track.content_div.text(DATA_NONE);
+            } else if (data == "pending") {
+                track.container_div.addClass("pending");
+                track.content_div.text(DATA_PENDING);
+                setTimeout(function() { track.init(); }, 5000);
             } else {
+                track.content_div.text("");
                 track.content_div.css( "height", track.height_px + "px" );
                 track.min_value = data.min;
                 track.max_value = data.max;
                 track.vertical_range = track.max_value - track.min_value;
-                track.view.redraw();
+                
+                // Draw y-axis labels
+                var min_label = $("<div class='yaxislabel'>" + track.min_value + "</div>");
+                var max_label = $("<div class='yaxislabel'>" + track.max_value + "</div>");
+                
+                max_label.css({ position: "relative", top: "20px" });
+                max_label.prependTo(track.container_div)
+                
+                min_label.css({ position: "relative", top: track.height_px + 50 + "px", });
+                min_label.prependTo(track.container_div);
+                
+                track.draw();
             }
         });
     },
@@ -307,16 +328,22 @@ var FeatureTrack = function ( name, dataset_id, height ) {
 $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
     init: function() {
         var track = this;
+        track.content_div.text(DATA_LOADING);
         $.getJSON( data_url, {  track_type: track.track_type, low: track.view.max_low, 
                                 high: track.view.max_high, dataset_id: track.dataset_id,
                                 chrom: track.view.chrom }, function ( data ) {
             if (data == "error") {
                 track.container_div.addClass("error");
-		track.content_div.text(DATA_ERROR);
+                track.content_div.text(DATA_ERROR);
             } else if (data.length === 0 || data == "no data") {
                 track.container_div.addClass("nodata");
-		track.content_div.text(DATA_NONE);
+                track.content_div.text(DATA_NONE);
+            } else if (data == "pending") {
+                track.container_div.addClass("pending");
+                track.content_div.text(DATA_PENDING);
+                setTimeout(function() { track.init(); }, 5000);
             } else {
+                track.content_div.text("");
                 track.content_div.css( "height", track.height_px + "px" );
                 track.values = data;
                 track.calc_slots();
@@ -412,68 +439,66 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                     f_end   = Math.ceil( Math.min(width, (feature.end - tile_low) * w_scale) ),
                     y_center = this.slots[feature.name] * this.vertical_gap;
                 
-                if (feature.strand && this.showing_labels) {
-		    if (feature.strand == "+") {
-                        ctx.fillStyle = RIGHT_STRAND;
-                    } else if (feature.strand == "-") {
-                        ctx.fillStyle = LEFT_STRAND;
-                    }
-                    ctx.fillRect(f_start, y_center, f_end - f_start, 10);
-                    ctx.fillStyle = "#000";
-                } else {
-                    ctx.fillStyle = "#000";
+                var thickness, y_start, thick_start = null, thick_end = null;
+                if (feature.thick_start && feature.thick_end) {
+                    thick_start = Math.floor( Math.max(0, (feature.thick_start - tile_low) * w_scale) );
+                    thick_end = Math.ceil( Math.min(width, (feature.thick_end - tile_low) * w_scale) );
+                }
+                if (!this.showing_labels) {
+                    // Non-detail levels
                     ctx.fillRect(f_start, y_center + 5, f_end - f_start, 1);
-                }
-                
-                if (this.showing_labels && ctx.fillText) {
-                    ctx.fillText(feature.name, f_start - 1, y_center + 8);
-                }
-                
-		// If there is no thickStart/thickEnd, draw the whole thing
-		// as thick. 
-                var exon_start, exon_end;
-                if (feature.exon_start && feature.exon_end) {
-                    exon_start = Math.floor( Math.max(0, (feature.exon_start - tile_low) * w_scale) );
-                    exon_end = Math.ceil( Math.min(width, (feature.exon_end - tile_low) * w_scale) );
                 } else {
-		    exon_start = Math.floor( Math.max(0, (feature.start - tile_low) * w_scale) );
-		    exon_end = Math.ceil( Math.min(width, (feature.end - tile_low) * w_scale) );
-		}
-                
-                if (this.showing_labels) {
-		    // If there are no blocks, we treat the feature as one
-		    // big exon
-		    var blocks = feature.blocks;
-		    var arrows_in_blocks = false;
-		    if ( ! blocks ) {
-			blocks = [[feature.start,feature.end]];
-			arrows_in_blocks = true
-		    }
-                    for (var k = 0, k_len = blocks.length; k < k_len; k++) {
-                        var block = blocks[k],
-                            block_start = Math.floor( Math.max(0, (block[0] - tile_low) * w_scale) ),
-                            block_end = Math.ceil( Math.min(width, (block[1] - tile_low) * w_scale) );
-			var thickness, y_start;
-                        if (exon_start && block_start >= exon_start && block_end <= exon_end) {
-                            thickness = 9;
-                            y_start = 1;
-			    ctx.fillRect(block_start, y_center + y_start, block_end - block_start, thickness);
-			    if ( feature.strand && arrows_in_blocks ) {
-				if (feature.strand == "+") {
-				    ctx.fillStyle = RIGHT_STRAND_INV;
-				} else if (feature.strand == "-") {
-				    ctx.fillStyle = LEFT_STRAND_INV;
-				}
-				ctx.fillRect(block_start, y_center, block_end - block_start, 10);
-				ctx.fillStyle = "#000";
-			    }
-                        } else {
-			    thickness = 5;
-			    y_start = 3;
-			    ctx.fillRect(block_start, y_center + y_start, block_end - block_start, thickness);
-			}
+                    // Showing labels, blocks, details
+                    if (ctx.fillText) {
+                        ctx.fillText(feature.name, f_start - 1, y_center + 8);
+                    }
+                    var blocks = feature.blocks;
+                    if (blocks) {
+                        // Draw introns
+                        if (feature.strand) {
+                            if (feature.strand == "+") {
+                                ctx.fillStyle = RIGHT_STRAND;
+                            } else if (feature.strand == "-") {
+                                ctx.fillStyle = LEFT_STRAND;
+                            }
+                            ctx.fillRect(f_start, y_center, f_end - f_start, 10);
+                            ctx.fillStyle = "#000";
+                        }
                         
-                        // console.log(block_start, block_end);
+                        for (var k = 0, k_len = blocks.length; k < k_len; k++) {
+                            var block = blocks[k],
+                                block_start = Math.floor( Math.max(0, (block[0] - tile_low) * w_scale) ),
+                                block_end = Math.ceil( Math.min(width, (block[1] - tile_low) * w_scale) );
+
+                            // Draw the block
+                            thickness = 5;
+                            y_start = 3;
+                            ctx.fillRect(block_start, y_center + y_start, block_end - block_start, thickness);
+
+                            if (thick_start && (block_start < thick_end || block_end > thick_start) ) {
+                                thickness = 9;
+                                y_start = 1;
+                                var block_thick_start = Math.max(block_start, thick_start),
+                                    block_thick_end = Math.min(block_end, thick_end);
+
+                                ctx.fillRect(block_thick_start, y_center + y_start, block_thick_end - block_thick_start, thickness);
+
+                            }
+                        }
+                    } else {
+                        // If there are no blocks, we treat the feature as one big exon
+                        thickness = 9;
+                        y_start = 1;
+                        ctx.fillRect(f_start, y_center + y_start, f_end - f_start, thickness);
+                        if ( feature.strand ) {
+                            if (feature.strand == "+") {
+                                ctx.fillStyle = RIGHT_STRAND_INV;
+                            } else if (feature.strand == "-") {
+                                ctx.fillStyle = LEFT_STRAND_INV;
+                            }
+                            ctx.fillRect(f_start, y_center, f_end - f_start, 10);
+                            ctx.fillStyle = "#000";
+                        }
                     }
                 }
                 j++;

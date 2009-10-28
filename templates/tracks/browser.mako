@@ -30,16 +30,13 @@ ${h.js( "jquery", "jquery.event.drag", "jquery.mousewheel", "lrucache", "trackst
         $(document).bind("mousewheel", function( e, delta ) {
             if (delta > 0) {
                 view.zoom_in(e.pageX);
-                view.redraw();
             } else {
                 view.zoom_out();
-                view.redraw();
             }
         });
         
         $(document).bind("dblclick", function( e ) {
             view.zoom_in(e.pageX);
-            view.redraw();
         });
         
         // To let the overview box be draggable
@@ -96,7 +93,6 @@ ${h.js( "jquery", "jquery.event.drag", "jquery.mousewheel", "lrucache", "trackst
                 });
             });
         })();
-        view.redraw();
         $(window).trigger("resize");
     });
 

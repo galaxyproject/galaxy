@@ -35,8 +35,8 @@ class IntervalIndexDataProvider( object ):
                 pass
     
             try:
-                payload['exon_start'] = int(feature[6])
-                payload['exon_end'] = int(feature[7])
+                payload['thick_start'] = int(feature[6])
+                payload['thick_end'] = int(feature[7])
             except IndexError:
                 pass
 
