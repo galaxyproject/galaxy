@@ -279,7 +279,7 @@ class GridOperation( object ):
             temp['id'] = item.id
             return temp
         else:
-            return dict( operation=operation.label, id=item.id )
+            return dict( operation=self.label, id=item.id )
         
     def allowed( self, item ):
         if self.condition:

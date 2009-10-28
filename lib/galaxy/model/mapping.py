@@ -545,6 +545,8 @@ Page.table = Table( "page", metadata,
             ForeignKey( "page_revision.id", use_alter=True, name='page_latest_revision_id_fk' ), index=True ),
     Column( "title", TEXT ),
     Column( "slug", TEXT, unique=True, index=True ),
+    Column( "published", Boolean, index=True, default=False ), 
+    Column( "deleted", Boolean, index=True, default=False ), 
     )
 
 PageRevision.table = Table( "page_revision", metadata,
