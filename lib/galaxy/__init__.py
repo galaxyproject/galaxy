@@ -12,7 +12,7 @@ Galaxy root package -- this is a namespace package.
 import os, sys
 from distutils.sysconfig import get_config_vars
 
-if ( os.uname()[-1] in ( 'i386', 'ppc' ) and sys.platform == 'darwin' and sys.prefix.startswith( '/System' ) ) or \
+if ( os.uname()[-1] in ( 'i386', 'ppc' ) and sys.platform == 'darwin' and os.path.abspath( sys.prefix ).startswith( '/System' ) ) or \
    ( sys.platform == 'darwin' and get_config_vars().get('UNIVERSALSDK', '').strip() ):
     # Has to be before anything imports pkg_resources
     def _get_platform_monkeypatch():
