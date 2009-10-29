@@ -21,12 +21,21 @@ def upgrade():
 
     Page_table = Table( "page", metadata, autoload=True )
 
-    i = Index( "ix_page_slug", Page_table.c.slug )
-    i.drop()
-    
-    i = Index( "ix_page_slug", Page_table.c.slug, unique=False )
-    i.create()
+    try:
 
+        # Sqlite doesn't support .alter, so we need to drop an recreate
+    
+        i = Index( "ix_page_slug", Page_table.c.slug )
+        i.drop()
+    
+        i = Index( "ix_page_slug", Page_table.c.slug, unique=False )
+        i.create()
+
+    except:
+
+        # Mysql doesn't have a named index, but alter should work
+
+        Page_table.c.slug.alter( unique=False )
 
 def downgrade():
     metadata.reflect()
