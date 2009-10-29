@@ -7,7 +7,7 @@ var DENSITY = 1000,
     DATA_NONE = "No data for this chrom/contig.",
     DATA_PENDING = "Currently indexing... please wait",
     DATA_LOADING = "Loading data...",
-    CACHED_TILES = 50,
+    CACHED_TILES = 5,
     CACHED_DATA = 20,
     CONTEXT = $("<canvas></canvas>").get(0).getContext("2d"),
     RIGHT_STRAND, LEFT_STRAND;
@@ -42,6 +42,36 @@ function commatize( number ) {
     }
     return number;
 }
+
+var Cache = function( num_elements ) {
+    this.num_elements = num_elements;
+    this.obj_cache = {};
+    this.key_ary = [];
+}
+$.extend( Cache.prototype, {
+    get: function( key ) {
+        var index = this.key_ary.indexOf(key);
+        if (index != -1) {
+            // Move to the end
+            this.key_ary.splice(index, 1);
+            this.key_ary.push(key);
+        }
+        return this.obj_cache[key];
+    },
+    set: function( key, value ) {
+        if (!this.obj_cache[key]) {
+            if (this.key_ary.length >= this.num_elements) {
+                // Remove first element
+                var deleted_key = this.key_ary.shift();
+                delete this.obj_cache[deleted_key];
+            }
+            this.key_ary.push(key);
+        }
+        this.obj_cache[key] = value;
+        return value;
+    }
+});
+
 var View = function( chrom, max_high ) {
     this.chrom = chrom;
     this.tracks = [];
@@ -138,16 +168,14 @@ $.extend( TiledTrack.prototype, Track.prototype, {
             range = high - low;
 
         var resolution = Math.pow( 10, Math.ceil( Math.log( range / DENSITY ) / Math.log( 10 ) ) );
-        resolution = Math.max( resolution, 1 );
-        resolution = Math.min( resolution, 100000 );
+        resolution = Math.max( resolution, 0.1 );
+        resolution = Math.min( resolution, 1000000 );
 
         var parent_element = $("<div style='position: relative;'></div>");
             this.content_div.children( ":first" ).remove();
             this.content_div.append( parent_element );
 
-        var w = this.content_div.width(),
-            h = this.content_div.height(),
-            w_scale = w / range;
+        var w_scale = this.content_div.width() / range;
 
         var tile_element;
         // Index of first tile that overlaps visible region
@@ -155,7 +183,7 @@ $.extend( TiledTrack.prototype, Track.prototype, {
         while ( ( tile_index * DENSITY * resolution ) < high ) {
             // Check in cache
             var key = this.view.zoom_level + "_" + tile_index;
-            var cached = this.tile_cache.getItem(key);
+            var cached = this.tile_cache.get(key);
             if ( cached ) {
                 // console.log("cached tile");
                 var tile_low = tile_index * DENSITY * resolution;
@@ -165,10 +193,10 @@ $.extend( TiledTrack.prototype, Track.prototype, {
                 // Our responsibility to move the element to the new parent
                 parent_element.append( cached );
             } else {
-                tile_element = this.draw_tile( resolution, tile_index, parent_element, w_scale, h );
+                tile_element = this.draw_tile( resolution, tile_index, parent_element, w_scale );
             }
             if ( tile_element ) {
-                this.tile_cache.setItem(key, tile_element);
+                this.tile_cache.set(key, tile_element);
             }
             tile_index += 1;
         }

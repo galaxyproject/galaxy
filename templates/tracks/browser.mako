@@ -7,7 +7,7 @@ ${parent.stylesheets()}
 
 <%def name="javascripts()">
 ${parent.javascripts()}
-${h.js( "jquery", "jquery.event.drag", "jquery.mousewheel", "lrucache", "trackster" )}
+${h.js( "jquery", "jquery.event.drag", "jquery.mousewheel", "trackster" )}
 
 <script type="text/javascript">
 
