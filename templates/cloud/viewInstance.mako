@@ -83,12 +83,15 @@
 	   </tr>
 	   <tr>
 	   		<td> Public DNS:</td>
-			<td> ${liveInstance.public_dns} </td>
+			<%
+				lnk="http://"+str(liveInstance.public_dns)
+			%>
+			<td> <a href="${lnk}" target="_blank">${liveInstance.public_dns}</a></td>
 	   </tr>
 	   %if liveInstance.private_dns != None:
 	   <tr>
 	   		<td> Private DNS:</td>
-			<td> ${liveInstance.private_dns} </td>
+			<td> ${liveInstance.private_dns}</td>
 	   </tr>
 	   %endif
 	   %if liveInstance.availability_zone != None:

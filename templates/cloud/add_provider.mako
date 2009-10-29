@@ -117,9 +117,6 @@ function clear() {
             <div id="region_selection" class="form-row-input">
             	<input type="text" name="region_name" id="region_name" value="${region_name}" size="40">
             </div>
-			%if error.has_key('name_error'):
-            	<div class="form-row-error-message">${error['name_error']}</div>
-            %endif
 			<div style="clear: both"></div>
             </div>
 			

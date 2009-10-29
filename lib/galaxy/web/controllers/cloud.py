@@ -104,9 +104,9 @@ class CloudController( BaseController ):
                           model.UCI.c.state==uci_states.SUBMITTED_UCI ) ) \
             .all()
         if pendingInstances:
-            trans.set_message( "Galaxy instance started. NOTE: Please wait about 3-5 minutes for the instance to " 
-                    "start up and then refresh this page. A button to connect to the instance will then appear alongside "
-                    "instance description." )         
+            trans.set_message( "Galaxy instance started. Note that it will take several minutes for the instance to start "
+                                "(typically, 3-5 minutes). Once the instance is running and Galaxy is available, " 
+                                "a button to connect to the instance will then appear alongside instance description." )         
         
 #        log.debug( "provider.is_secure: '%s'" % trans.sa_session.query( model.CloudProvider).filter_by(id=1).first().is_secure )
 #        trans.sa_session.query( model.CloudProvider).filter_by(id=1).first().is_secure=False
@@ -151,17 +151,7 @@ class CloudController( BaseController ):
         stores = get_stores( trans, uci ) 
         # Ensure instance is not already running (or related state) and store relevant data
         # into DB to initiate instance startup by cloud manager
-        if ( len(stores) is not 0 ) and \
-           ( uci.state != uci_states.SUBMITTED ) and \
-           ( uci.state != uci_states.SUBMITTED_UCI ) and \
-           ( uci.state != uci_states.PENDING ) and \
-           ( uci.state != uci_states.DELETING ) and \
-           ( uci.state != uci_states.DELETING_UCI ) and \
-           ( uci.state != uci_states.DELETED ) and \
-           ( uci.state != uci_states.RUNNING ) and \
-           ( uci.state != uci_states.NEW_UCI ) and \
-           ( uci.state != uci_states.NEW ) and \
-           ( uci.state != uci_states.ERROR ):
+        if ( len(stores) is not 0 ) and ( uci.state == uci_states.AVAILABLE ):
             instance = model.CloudInstance()
             instance.user = user
             instance.image = mi
@@ -175,7 +165,7 @@ class CloudController( BaseController ):
             session.save_or_update( uci )
             session.flush()
             # Log  
-            trans.log_event ("User initiated starting of cloud instance '%s'." % uci.name )
+            trans.log_event ("User initiated starting of UCI '%s'." % uci.name )
             trans.set_message( "Galaxy instance started. NOTE: Please wait about 3-5 minutes for the instance to " 
                     "start up and then refresh this page. A button to connect to the instance will then appear alongside "
                     "instance description." )
@@ -268,14 +258,20 @@ class CloudController( BaseController ):
         storedCreds = trans.sa_session.query( model.CloudUserCredentials ).filter_by( user=user ).all()
         if len( storedCreds ) == 0:
             return trans.show_error_message( "You must register credentials before configuring a Galaxy instance." )
+        # TODO: This should be filled automatically but ties to implementation for diff provider is a problem... 
         # Create dict mapping of cloud providers to zones available by those providers
         providersToZones = {}
         for storedCred in storedCreds:
-            if storedCred.provider.type == 'ec2':
+            if storedCred.provider.region_name == 'us-east-1':
                 ec2_zones = ['us-east-1a', 'us-east-1b', 'us-east-1c', 'us-east-1d']
+                providersToZones[storedCred.name] = ec2_zones 
+            elif storedCred.provider.region_name == 'eu-west-1':
+                ec2_zones = ['eu-west-1a', 'eu-west-1b']
                 providersToZones[storedCred.name] = ec2_zones 
             elif storedCred.provider.type == 'eucalyptus':
                 providersToZones[storedCred.name] = ['epc']
+            else:
+                providersToZones[storedCred.name] = ['Unknown provider zone']
         
         if instanceName:
             # Create new user configured instance

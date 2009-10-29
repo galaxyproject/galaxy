@@ -34,8 +34,6 @@ uci_states = Bunch(
     CREATING = "creating"
 )
 
-JOB_WAIT, JOB_ERROR, JOB_INPUT_ERROR, JOB_INPUT_DELETED, JOB_OK, JOB_READY, JOB_DELETED, JOB_ADMIN_DELETED = 'wait', 'error', 'input_error', 'input_deleted', 'ok', 'ready', 'deleted', 'admin_deleted'
-
 class CloudManager( object ):
     """
     Highest level interface to cloud management.
@@ -318,13 +316,16 @@ class UCIwrapper( object ):
         vol.i_id = instance_id
         vol.flush()
         
-    def set_error( self, error ):
+    def set_error( self, error, set_state=False ):
         """
-        Sets error field of given UCI in local Galaxy database
+        Sets error field of given UCI in local Galaxy database. If set_state is set to 'true', 
+        method also sets state of give UCI to 'error'
         """
         uci = model.UCI.get( self.uci_id )
         uci.refresh()
         uci.error = error
+        if set_state:
+            uci.state = uci_states.ERROR
         uci.flush()
 
     # --------- Getter methods -----------------

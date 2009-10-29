@@ -12,6 +12,7 @@ from sqlalchemy import or_
 import galaxy.eggs
 galaxy.eggs.require("boto")
 from boto.ec2.connection import EC2Connection
+from boto.ec2.regioninfo import RegionInfo
 import boto.exception
 
 import logging
@@ -93,12 +94,23 @@ class EC2CloudProvider( object ):
         """
         log.debug( '##### Establishing EC2 cloud connection' )
         provider = uci_wrapper.get_provider()
-        region = RegionInfo( None, provider.region_name, provider.region_endpoint )
-        conn = EC2Connection( aws_access_key_id=uci_wrapper.get_access_key(), 
-                              aws_secret_access_key=uci_wrapper.get_secret_key(), 
-                              is_secure=provider.is_secure, 
-                              region=region, 
-                              path=provider.path )
+        try:
+            region = RegionInfo( None, provider.region_name, provider.region_endpoint )
+        except Exception, e:
+            log.error( "Selecting region with cloud provider failed: %s" % str(e) )
+            uci_wrapper.set_error( "Selecting region with cloud provider failed: " + str(e), True )
+            return None
+        try:
+            conn = EC2Connection( aws_access_key_id=uci_wrapper.get_access_key(), 
+                                  aws_secret_access_key=uci_wrapper.get_secret_key(), 
+                                  is_secure=provider.is_secure, 
+                                  region=region, 
+                                  path=provider.path )
+        except Exception, e:
+            log.error( "Establishing connection with cloud failed: %s" % str(e) )
+            uci_wrapper.set_error( "Establishing connection with cloud failed: " + str(e), True )
+            return None
+        
         return conn
         
     def set_keypair( self, uci_wrapper, conn ):
@@ -120,7 +132,7 @@ class EC2CloudProvider( object ):
                     uci_wrapper.set_key_pair( inst, kp.name, kp.material )
             else:
                 log.error( "EC2 response error: '%s'" % e )
-                uci_wrapper.set_error( "EC2 response error while creating key pair: " + e )
+                uci_wrapper.set_error( "EC2 response error while creating key pair: " + str(e), True )
                 
         return kp.name
     
@@ -235,53 +247,65 @@ class EC2CloudProvider( object ):
         Starts instance(s) of given UCI on the cloud.  
         """ 
         conn = self.get_connection( uci_wrapper )
-#        
-        self.set_keypair( uci_wrapper, conn )
-        i_indexes = uci_wrapper.get_instances_indexes() # Get indexes of i_indexes associated with this UCI whose state is 'None'
-        log.debug( "Starting instances with IDs: '%s' associated with UCI '%s' " % ( uci_wrapper.get_name(), i_indexes ) )
         
-        for i_index in i_indexes:
-            mi_id = self.get_mi_id( uci_wrapper.get_type( i_index ) )
-            uci_wrapper.set_mi( i_index, mi_id )
+        if uci_wrapper.get_state() != uci_states.ERROR:
+            self.set_keypair( uci_wrapper, conn )
+            i_indexes = uci_wrapper.get_instances_indexes() # Get indexes of i_indexes associated with this UCI whose state is 'None'
+            log.debug( "Starting instances with IDs: '%s' associated with UCI '%s' " % ( uci_wrapper.get_name(), i_indexes ) )
             
-            # Check if galaxy security group exists (and create it if it does not)
-            security_group = 'galaxyWeb'
-            log.debug( "Setting up '%s' security group." % security_group )
-            sgs = conn.get_all_security_groups() # security groups
-            gsgt = False # galaxy security group test
-            for sg in sgs:
-                if sg.name == security_group:
-                    gsgt = True
-            # If security group does not exist, create it 
-            if not gsgt:
-                gSecurityGroup = conn.create_security_group(security_group, 'Security group for Galaxy.')
-                gSecurityGroup.authorize( 'tcp', 80, 80, '0.0.0.0/0' ) # Open HTTP port
-                gSecurityGroup.authorize( 'tcp', 22, 22, '0.0.0.0/0' ) # Open SSH port
-            # Start an instance            
-            log.debug( "***** Starting instance for UCI '%s'" % uci_wrapper.get_name() )
-            #TODO: Once multiple volumes can be attached to a single instance, update 'userdata' composition            
-            userdata = uci_wrapper.get_store_volume_id()+"|"+uci_wrapper.get_access_key()+"|"+uci_wrapper.get_secret_key() 
-            log.debug( 'Using following command: conn.run_instances( image_id=%s, key_name=%s, security_groups=[%s], user_data=[OMITTED], instance_type=%s, placement=%s )' 
-                       % ( mi_id, uci_wrapper.get_key_pair_name( i_index ), [security_group], uci_wrapper.get_type( i_index ), uci_wrapper.get_uci_availability_zone() ) )
-            reservation = conn.run_instances( image_id=mi_id, 
-                                              key_name=uci_wrapper.get_key_pair_name( i_index ), 
-                                              security_groups=[security_group], 
-                                              user_data=userdata,
-                                              instance_type=uci_wrapper.get_type( i_index ),  
-                                              placement=uci_wrapper.get_uci_availability_zone() )
-            # Record newly available instance data into local Galaxy database
-            l_time = datetime.utcnow()
-            uci_wrapper.set_launch_time( l_time, i_index=i_index ) # format_time( reservation.i_indexes[0].launch_time ) )
-            if not uci_wrapper.uci_launch_time_set():
-                uci_wrapper.set_uci_launch_time( l_time )
-            uci_wrapper.set_reservation_id( i_index, str( reservation ).split(":")[1] )
-            # TODO: if more than a single instance will be started through single reservation, change this reference to element [0]
-            i_id = str( reservation.instances[0]).split(":")[1] 
-            uci_wrapper.set_instance_id( i_index, i_id )
-            s = reservation.instances[0].state 
-            uci_wrapper.change_state( s, i_id, s )
-            log.debug( "Instance of UCI '%s' started, current state: '%s'" % ( uci_wrapper.get_name(), uci_wrapper.get_state() ) )
-        
+        if uci_wrapper.get_state() != uci_states.ERROR:
+             for i_index in i_indexes:
+                mi_id = self.get_mi_id( uci_wrapper.get_type( i_index ) )
+                uci_wrapper.set_mi( i_index, mi_id )
+                
+                # Check if galaxy security group exists (and create it if it does not)
+                security_group = 'galaxyWeb'
+                log.debug( "Setting up '%s' security group." % security_group )
+                sgs = conn.get_all_security_groups() # security groups
+                gsgt = False # galaxy security group test
+                for sg in sgs:
+                    if sg.name == security_group:
+                        gsgt = True
+                # If security group does not exist, create it 
+                if not gsgt:
+                    gSecurityGroup = conn.create_security_group(security_group, 'Security group for Galaxy.')
+                    gSecurityGroup.authorize( 'tcp', 80, 80, '0.0.0.0/0' ) # Open HTTP port
+                    gSecurityGroup.authorize( 'tcp', 22, 22, '0.0.0.0/0' ) # Open SSH port
+                
+                if uci_wrapper.get_state() != uci_states.ERROR:
+                    # Start an instance            
+                    log.debug( "***** Starting instance for UCI '%s'" % uci_wrapper.get_name() )
+                    #TODO: Once multiple volumes can be attached to a single instance, update 'userdata' composition            
+                    userdata = uci_wrapper.get_store_volume_id()+"|"+uci_wrapper.get_access_key()+"|"+uci_wrapper.get_secret_key() 
+                    log.debug( 'Using following command: conn.run_instances( image_id=%s, key_name=%s, security_groups=[%s], user_data=[OMITTED], instance_type=%s, placement=%s )' 
+                               % ( mi_id, uci_wrapper.get_key_pair_name( i_index ), [security_group], uci_wrapper.get_type( i_index ), uci_wrapper.get_uci_availability_zone() ) )
+                    try:
+                        reservation = conn.run_instances( image_id=mi_id, 
+                                                      key_name=uci_wrapper.get_key_pair_name( i_index ), 
+                                                      security_groups=[security_group], 
+                                                      user_data=userdata,
+                                                      instance_type=uci_wrapper.get_type( i_index ),  
+                                                      placement=uci_wrapper.get_uci_availability_zone() )
+                    except boto.exception.EC2ResponseError, e:
+                        log.error( "EC2 response error when starting UCI '%s': '%s'" % ( uci_wrapper.get_name(), str(e) ) )
+                        uci_wrapper.set_error( "EC2 response error when starting: " + str(e), True )
+                    # Record newly available instance data into local Galaxy database
+                    l_time = datetime.utcnow()
+                    uci_wrapper.set_launch_time( l_time, i_index=i_index ) # format_time( reservation.i_indexes[0].launch_time ) )
+                    if not uci_wrapper.uci_launch_time_set():
+                        uci_wrapper.set_uci_launch_time( l_time )
+                    try:
+                        uci_wrapper.set_reservation_id( i_index, str( reservation ).split(":")[1] )
+                        # TODO: if more than a single instance will be started through single reservation, change this reference to element [0]
+                        i_id = str( reservation.instances[0]).split(":")[1] 
+                        uci_wrapper.set_instance_id( i_index, i_id )
+                        s = reservation.instances[0].state 
+                        uci_wrapper.change_state( s, i_id, s )
+                        log.debug( "Instance of UCI '%s' started, current state: '%s'" % ( uci_wrapper.get_name(), uci_wrapper.get_state() ) )
+                    except boto.exception.EC2ResponseError, e:
+                        log.error( "EC2 response error when retrieving instance information for UCI '%s': '%s'" % ( uci_wrapper.get_name(), str(e) ) )
+                        uci_wrapper.set_error( "EC2 response error when retrieving instance information: " + str(e), True )
+                    
     def stopUCI( self, uci_wrapper):
         """ 
         Stops all of cloud instances associated with given UCI. 
@@ -355,8 +379,8 @@ class EC2CloudProvider( object ):
 
     def update( self ):
         """ 
-        Runs a global status update on all instances that are in 'running', 'pending', "creating", or 'shutting-down' state.
-        Also, runs update on all storage volumes that are in "in-use", "creating", or 'None' state.
+        Runs a global status update on all instances that are in 'running', 'pending', or 'shutting-down' state.
+        Also, runs update on all storage volumes that are in 'in-use', 'creating', or 'None' state.
         Reason behind this method is to sync state of local DB and real-world resources
         """
         log.debug( "Running general status update for EC2 UCIs..." )
@@ -385,14 +409,28 @@ class EC2CloudProvider( object ):
         a_key = uci.credentials.access_key
         s_key = uci.credentials.secret_key
         # Get connection
-        region = RegionInfo( None, uci.credentials.provider.region_name, uci.credentials.provider.region_endpoint )
-        conn = EC2Connection( aws_access_key_id=a_key, 
-                              aws_secret_access_key=s_key, 
-                              is_secure=uci.credentials.provider.is_secure, 
-                              region=region, 
-                              path=uci.credentials.provider.path )
+        try:
+            region = RegionInfo( None, uci.credentials.provider.region_name, uci.credentials.provider.region_endpoint )
+            conn = EC2Connection( aws_access_key_id=a_key, 
+                                  aws_secret_access_key=s_key, 
+                                  is_secure=uci.credentials.provider.is_secure, 
+                                  region=region, 
+                                  path=uci.credentials.provider.path )
+        except boto.exception.EC2ResponseError, e:
+            log.error( "Establishing connection with cloud failed: %s" % str(e) )
+            uci.error( "Establishing connection with cloud failed: " + str(e) )
+            uci.state( uci_states.ERROR )
+            return None
+
         # Get reservations handle for given instance
-        rl= conn.get_all_instances( [inst.instance_id] )
+        try:
+            rl= conn.get_all_instances( [inst.instance_id] )
+        except boto.exception.EC2ResponseError, e:
+            log.error( "Retrieving instance(s) from cloud for UCI '%s' failed: " % ( uci.name, str(e) ) )
+            uci.error( "Retrieving instance(s) from cloud failed: " + str(e) )
+            uci.state( uci_states.ERROR )
+            return None
+
         # Because EPC deletes references to reservations after a short while after instances have terminated, getting an empty list as a response to a query
         # typically means the instance has successfully shut down but the check was not performed in short enough amount of time.  Until alternative solution
         # is found, below code sets state of given UCI to 'error' to indicate to the user something out of ordinary happened.
@@ -409,27 +447,33 @@ class EC2CloudProvider( object ):
         # Update instance status in local DB with info from cloud provider
         for r in rl:
             for i, cInst in enumerate( r.instances ):
-                s = cInst.update()
-                log.debug( "Checking state of cloud instance '%s' associated with UCI '%s' and reservation '%s'. State='%s'" % ( cInst, uci.name, r, s ) )
-                if  s != inst.state:
-                    inst.state = s
-                    inst.flush()
-                     # After instance has shut down, ensure UCI is marked as 'available'
-                    if s == instance_states.TERMINATED and uci.state != uci_states.ERROR:
-                        uci.state = uci_states.AVAILABLE
-                        uci.launch_time = None
-                        uci.flush()
-                # Making sure state of UCI is updated. Once multiple instances become associated with single UCI, this will need to be changed.
-                if s != uci.state and s != instance_states.TERMINATED: 
-                    uci.state = s                    
-                    uci.flush() 
-                if cInst.public_dns_name != inst.public_dns:
-                    inst.public_dns = cInst.public_dns_name
-                    inst.flush()
-                if cInst.private_dns_name != inst.private_dns:
-                    inst.private_dns = cInst.private_dns_name
-                    inst.flush()
-
+                try:
+                    s = cInst.update()
+                    log.debug( "Checking state of cloud instance '%s' associated with UCI '%s' and reservation '%s'. State='%s'" % ( cInst, uci.name, r, s ) )
+                    if  s != inst.state:
+                        inst.state = s
+                        inst.flush()
+                         # After instance has shut down, ensure UCI is marked as 'available'
+                        if s == instance_states.TERMINATED and uci.state != uci_states.ERROR:
+                            uci.state = uci_states.AVAILABLE
+                            uci.launch_time = None
+                            uci.flush()
+                    # Making sure state of UCI is updated. Once multiple instances become associated with single UCI, this will need to be changed.
+                    if s != uci.state and s != instance_states.TERMINATED: 
+                        uci.state = s                    
+                        uci.flush() 
+                    if cInst.public_dns_name != inst.public_dns:
+                        inst.public_dns = cInst.public_dns_name
+                        inst.flush()
+                    if cInst.private_dns_name != inst.private_dns:
+                        inst.private_dns = cInst.private_dns_name
+                        inst.flush()
+                except boto.exception.EC2ResponseError, e:
+                    log.error( "Updating status of instance(s) from cloud for UCI '%s' failed: " % ( uci.name, str(e) ) )
+                    uci.error( "Updating instance status from cloud failed: " + str(e) )
+                    uci.state( uci_states.ERROR )
+                    return None
+                
     def updateStore( self, store ):
         # Get credentials associated wit this store
         uci_id = store.uci_id
@@ -438,35 +482,55 @@ class EC2CloudProvider( object ):
         a_key = uci.credentials.access_key
         s_key = uci.credentials.secret_key
         # Get connection
-        region = RegionInfo( None, uci.credentials.provider.region_name, uci.credentials.provider.region_endpoint )
-        conn = EC2Connection( aws_access_key_id=a_key, 
+        try:
+            region = RegionInfo( None, uci.credentials.provider.region_name, uci.credentials.provider.region_endpoint )
+            conn = EC2Connection( aws_access_key_id=a_key, 
                               aws_secret_access_key=s_key, 
                               is_secure=uci.credentials.provider.is_secure, 
                               region=region, 
                               path=uci.credentials.provider.path )
+        except boto.exception.EC2ResponseError, e:
+            log.error( "Establishing connection with cloud failed: %s" % str(e) )
+            uci.error( "Establishing connection with cloud failed: " + str(e) )
+            uci.state( uci_states.ERROR )
+            return None
+        
         # Get reservations handle for given store 
-        vl = conn.get_all_volumes( [store.volume_id] )
+        try:
+            vl = conn.get_all_volumes( [store.volume_id] )
 #        log.debug( "Store '%s' vl: '%s'" % ( store.volume_id, vl ) )
+        except boto.exception.EC2ResponseError, e:
+            log.error( "Retrieving volume(s) from cloud for UCI '%s' failed: " % ( uci.name, str(e) ) )
+            uci.error( "Retrieving volume(s) from cloud failed: " + str(e) )
+            uci.state( uci_states.ERROR )
+            return None
+        
         # Update store status in local DB with info from cloud provider
-        if store.status != vl[0].status:
-            # In case something failed during creation of UCI but actual storage volume was created and yet 
-            #  UCI state remained as 'new', try to remedy this by updating UCI state here 
-            if ( store.status == None ) and ( store.volume_id != None ):
-                uci.state = vl[0].status
-                uci.flush()
-                
-            store.status = vl[0].status
-            store.flush()
-        if store.i_id != vl[0].instance_id:
-            store.i_id = vl[0].instance_id
-            store.flush()
-        if store.attach_time != vl[0].attach_time:
-            store.attach_time = vl[0].attach_time
-            store.flush()
-        if store.device != vl[0].device:
-            store.device = vl[0].device
-            store.flush()
-    
+        try:
+            if store.status != vl[0].status:
+                # In case something failed during creation of UCI but actual storage volume was created and yet 
+                #  UCI state remained as 'new', try to remedy this by updating UCI state here 
+                if ( store.status == None ) and ( store.volume_id != None ):
+                    uci.state = vl[0].status
+                    uci.flush()
+                    
+                store.status = vl[0].status
+                store.flush()
+            if store.i_id != vl[0].instance_id:
+                store.i_id = vl[0].instance_id
+                store.flush()
+            if store.attach_time != vl[0].attach_time:
+                store.attach_time = vl[0].attach_time
+                store.flush()
+            if store.device != vl[0].device:
+                store.device = vl[0].device
+                store.flush()
+        except boto.exception.EC2ResponseError, e:
+            log.error( "Updating status of volume(s) from cloud for UCI '%s' failed: " % ( uci.name, str(e) ) )
+            uci.error( "Updating volume status from cloud failed: " + str(e) )
+            uci.state( uci_states.ERROR )
+            return None
+   
 #    def updateUCI( self, uci ):
 #        """ 
 #        Runs a global status update on all storage volumes and all instances that are

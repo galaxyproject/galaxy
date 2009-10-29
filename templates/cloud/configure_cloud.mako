@@ -33,6 +33,11 @@ ${h.js( "jquery" )}
 				if ( old_state=='pending' && new_state=='running' ) {
 					location.reload(true);
 				}
+				else if ( ( old_state=='running' && new_state=='error' ) || ( old_state=='pending' && new_state=='error' ) || \
+					( old_state=='submitted' && new_state=='error' ) || ( old_state=='submittedUCI' && new_state=='error' ) || \
+					( old_state=='shutting-down' && new_state=='error' ) ) {
+					location.reload(true);
+				} 
 				else if ( old_state=='shutting-down' && new_state=='available' ) {
 					location.reload(true);
 				}
@@ -244,14 +249,14 @@ ${h.js( "jquery" )}
 	                	%if state =='error':
 							<div id="short">
 			                   <a onclick="document.getElementById('full').style.display = 'block'; 
-			                    document.getElementById('short').style.display = 'none'; return 0" 
+							    document.getElementById('short').style.display = 'none'; return 0" 
 			                    href="javascript:void(0)">
 			                    error
 			                   </a>                    
 			                </div>
 			                <div id="full" style="DISPLAY: none">
 					      		<a onclick="document.getElementById('short').style.display = 'block'; 
-			                    document.getElementById('full').style.display = 'none'; return 0;" 
+								document.getElementById('full').style.display = 'none'; return 0;" 
 			                    href="javascript:void(0)">
 			                    error:</a><br />
 								${str(prevInstance.error)}

@@ -81,7 +81,7 @@ $(function(){
                 cls += " form-row-error"
             %>
 	            <div class="${cls}">
-	            <label>Permanent storage size (1-1000GB)<br/>NOTE: you will be able to add more storage later:</label>
+	            <label>Permanent storage size (1-1000GB):<br/>(Note: you will be able to add more storage later)</label>
 	              <div class="form-row-input">
 	              	<input type="text" name="volSize" value="${volSize}" size="40">
 	              </div>
@@ -97,7 +97,7 @@ $(function(){
                 cls += " form-row-error"
             %>
 			    <div class="${cls}">
-	            <label>Zone to create storage in</label>
+	            <label>Zone to create storage in:</label>
 	              <div class="form-row-input">
 	              	<select id="zones" name="zone" style="width:40em">
 	              	</select>
