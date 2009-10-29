@@ -138,8 +138,8 @@ class PageController( BaseController ):
                 session.save_or_update( page )
                 session.flush()
                 # Display the management page
-                trans.set_message( "Page '%s' created" % page.title )
-                return self.list( trans )
+                ## trans.set_message( "Page '%s' created" % page.title )
+                return trans.response.send_redirect( web.url_for( action='index' ) )
         return trans.show_form( 
             web.FormBuilder( web.url_for(), "Create new page", submit_text="Submit" )
                 .add_text( "page_title", "Page title", value=page_title, error=page_title_err )
