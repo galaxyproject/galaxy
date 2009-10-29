@@ -12,7 +12,6 @@ from galaxy.datatypes.data import Data
 from galaxy.util.odict import odict
 from galaxy.util.bunch import Bunch
 from galaxy.util.topsort import topsort, topsort_levels, CycleError
-from galaxy.workflow.modules import *
 from galaxy.model.mapping import desc
 from galaxy.model.orm import *
 from datetime import datetime, timedelta
@@ -69,12 +68,6 @@ class CloudController( BaseController ):
         Render cloud main page (management of cloud resources)
         """
         user = trans.get_user()
-#        pendingInstances = trans.sa_session.query( model.UCI ) \
-#            .filter_by( user=user, state="pending" ) \
-#            .all()
-#            
-#        for i inupdate_in range( len ( pendingInstances ) ):
-#            stance_state( trans, pendingInstances[i].id )
         
         cloudCredentials = trans.sa_session.query( model.CloudUserCredentials ) \
             .filter_by( user=user ) \
@@ -104,7 +97,6 @@ class CloudController( BaseController ):
             .all()
         
         # Check after update there are instances in pending state; if so, display message
-        # TODO: Auto-refresh once instance is running
         pendingInstances = trans.sa_session.query( model.UCI ) \
             .filter_by( user=user ) \
             .filter( or_( model.UCI.c.state==uci_states.PENDING, #"pending" , \
@@ -128,7 +120,6 @@ class CloudController( BaseController ):
                                     liveInstances = liveInstances,
                                     prevInstances = prevInstances )
     
-    @web.expose
     @web.require_login( "use Galaxy cloud" )
     def makeDefault( self, trans, id=None ):
         """ 
@@ -337,8 +328,6 @@ class CloudController( BaseController ):
                 inst_error = "No registered cloud images. You must contact administrator to add some before proceeding."
                 log.debug("AttributeError: %s " % str( ae ) )
         
-        #TODO: based on user credentials (i.e., provider) selected, zone options will be different (e.g., EC2: us-east-1a vs EPC: epc)
-        
         return trans.fill_template( "cloud/configure_uci.mako", 
                                     instanceName = instanceName, 
                                     credName = storedCreds, 
@@ -427,8 +416,6 @@ class CloudController( BaseController ):
                 session.flush()
                 # Log and display the management page
                 trans.set_message( "Credential '%s' edited." % credentials.name )
-#                if defaultCred:
-#                    self.makeDefault( trans, credentials.id)
                 return self.list( trans )   
 
     @web.expose
@@ -507,8 +494,6 @@ class CloudController( BaseController ):
                 # Log and display the management page
                 trans.log_event( "User added new credentials" )
                 trans.set_message( "Credential '%s' created" % credentials.name )
-#                if defaultCred:
-#                    self.makeDefault( trans, credentials.id)
                 return self.list( trans )
         
         providers = trans.sa_session.query( model.CloudProvider ).filter_by( user=user ).all()
@@ -520,13 +505,6 @@ class CloudController( BaseController ):
                                     error = error, 
                                     providers = providers
                                     )
-        
-#        return trans.show_form( 
-#            web.FormBuilder( web.url_for(), "Add credentials", submit_text="Add" )
-#                .add_text( "credName", "Credentials name", value="Unnamed credentials", error=cred_error )
-#                .add_text( "providerName", "Cloud provider name", value="ec2 or eucalyptus", error=provider_error )
-#                .add_text( "accessKey", "Access key", value='', error=accessKey_error ) 
-#                .add_password( "secretKey", "Secret key", value='', error=secretKey_error ) )
         
     @web.expose
     @web.require_login( "view credentials" )
@@ -770,18 +748,6 @@ def get_stored_credentials( trans, id, check_ownership=True ):
     # Looks good
     return stored
 
-def get_default_credentials( trans, check_ownership=True ):
-    """
-    Get a StoredUserCredntials from the database by 'default' setting, verifying ownership. 
-    """
-    user = trans.get_user()
-    # Load credentials from database
-    stored = trans.sa_session.query( model.CloudUserCredentials ) \
-        .filter_by (user=user, defaultCred=True) \
-        .first()
-
-    return stored
-
 def get_uci( trans, id, check_ownership=True ):
     """
     Get a UCI object from the database by id, verifying ownership. 
@@ -891,204 +857,3 @@ def get_keypair_name( trans ):
         #    Actually, probably return key_pair to calling method and store name & key from there...
         
     return key_pair.name
-
-def update_instance_state( trans, id ):
-    """
-    Update state of instances associated with given UCI id and store state in local database. Also update
-    state of the given UCI.  
-    """
-    uci = get_uci( trans, id )
-    # Get list of instances associated with given uci as they are stored in local database
-    dbInstances = get_instances( trans, uci ) # TODO: handle list (currently only 1 instance can correspond to 1 UCI)
-    oldState = dbInstances.state
-    # Establish connection with cloud
-    conn = get_connection( trans )
-    # Get actual cloud instance object
-    cloudInstance = get_cloud_instance( conn, dbInstances.instance_id )
-    # Update instance status
-    cloudInstance.update()
-    dbInstances.state = cloudInstance.state
-    log.debug( "Updating instance %s state; current state: %s" % ( str( cloudInstance ).split(":")[1], cloudInstance.state ) )
-    # Update state of UCI (TODO: once more than 1 instance is assoc. w/ 1 UCI, this will be need to be updated differently) 
-    uci.state = dbInstances.state
-    # Persist
-    session = trans.sa_session
-    session.save_or_update( dbInstances )
-    session.save_or_update( uci )
-    session.flush()
-    
-    # If instance is now running, update/process instance (i.e., mount file system, start Galaxy, update DB with DNS)
-    if oldState==instance_states.PENDING and dbInstances.state==instance_states.RUNNING:
-        update_instance( trans, dbInstances, cloudInstance, conn, uci )
-    
-    
-def update_instance( trans, dbInstance, cloudInstance, conn, uci ):
-    """
-    Update instance: connect EBS volume, mount file system, start Galaxy, and update local DB w/ DNS info
-    
-    Keyword arguments:
-    trans -- current transaction
-    dbInstance -- object of 'instance' as it is stored in local database
-    cloudInstance -- object of 'instance' as it resides in the cloud. Functions supported by the cloud API can be
-        instantiated directly on this object.
-    conn -- cloud connection object
-    uci -- UCI object 
-    """
-    dbInstance.public_dns = cloudInstance.dns_name
-    dbInstance.private_dns = cloudInstance.private_dns_name
-
-    # Attach storage volume(s) to instance
-    stores = get_stores( trans, uci )
-    for i, store in enumerate( stores ):
-        log.debug( "Attaching volume '%s' to instance '%s'." % ( store.volume_id, dbInstance.instance_id ) )
-        mntDevice = '/dev/sdb'+str(i)
-        volStat = conn.attach_volume( store.volume_id, dbInstance.instance_id, mntDevice )
-        store.attach_time = datetime.utcnow()
-        store.device = mntDevice
-        store.i_id = dbInstance.instance_id
-        store.status = volStat
-        log.debug ( '***** volume status: %s' % volStat )
-    
-    # Wait until instances have attached and add file system
-    
-    
-    
-    # TODO: mount storage through ZFS
-    # TODO: start Galaxy 
-    
-    # Persist
-    session = trans.sa_session
-    session.save_or_update( dbInstance )
-    session.flush()
-
-def attach_ordered_steps( workflow, steps ):
-    ordered_steps = order_workflow_steps( steps )
-    if ordered_steps:
-        workflow.has_cycles = False
-        for i, step in enumerate( ordered_steps ):
-            step.order_index = i
-            workflow.steps.append( step )
-    else:
-        workflow.has_cycles = True
-        workflow.steps = steps
-
-def edgelist_for_workflow_steps( steps ):
-    """
-    Create a list of tuples representing edges between `WorkflowSteps` based
-    on associated `WorkflowStepConnection`s
-    """
-    edges = []
-    steps_to_index = dict( ( step, i ) for i, step in enumerate( steps ) )
-    for step in steps:
-        edges.append( ( steps_to_index[step], steps_to_index[step] ) )
-        for conn in step.input_connections:
-            edges.append( ( steps_to_index[conn.output_step], steps_to_index[conn.input_step] ) )
-    return edges
-
-def order_workflow_steps( steps ):
-    """
-    Perform topological sort of the steps, return ordered or None
-    """
-    try:
-        edges = edgelist_for_workflow_steps( steps )
-        node_order = topsort( edges )
-        return [ steps[i] for i in node_order ]
-    except CycleError:
-        return None
-    
-def order_workflow_steps_with_levels( steps ):
-    try:
-        return topsort_levels( edgelist_for_workflow_steps( steps ) )
-    except CycleError:
-        return None
-    
-class FakeJob( object ):
-    """
-    Fake job object for datasets that have no creating_job_associations,
-    they will be treated as "input" datasets.
-    """
-    def __init__( self, dataset ):
-        self.is_fake = True
-        self.id = "fake_%s" % dataset.id
-    
-def get_job_dict( trans ):
-    """
-    Return a dictionary of Job -> [ Dataset ] mappings, for all finished
-    active Datasets in the current history and the jobs that created them.
-    """
-    history = trans.get_history()
-    # Get the jobs that created the datasets
-    warnings = set()
-    jobs = odict()
-    for dataset in history.active_datasets:
-        # FIXME: Create "Dataset.is_finished"
-        if dataset.state in ( 'new', 'running', 'queued' ):
-            warnings.add( "Some datasets still queued or running were ignored" )
-            continue
-        
-        #if this hda was copied from another, we need to find the job that created the origial hda
-        job_hda = dataset
-        while job_hda.copied_from_history_dataset_association:
-            job_hda = job_hda.copied_from_history_dataset_association
-        
-        if not job_hda.creating_job_associations:
-            jobs[ FakeJob( dataset ) ] = [ ( None, dataset ) ]
-        
-        for assoc in job_hda.creating_job_associations:
-            job = assoc.job
-            if job in jobs:
-                jobs[ job ].append( ( assoc.name, dataset ) )
-            else:
-                jobs[ job ] = [ ( assoc.name, dataset ) ]
-    return jobs, warnings    
-
-def cleanup_param_values( inputs, values ):
-    """
-    Remove 'Data' values from `param_values`, along with metadata cruft,
-    but track the associations.
-    """
-    associations = []
-    names_to_clean = []
-    # dbkey is pushed in by the framework
-    if 'dbkey' in values:
-        del values['dbkey']
-    root_values = values
-    # Recursively clean data inputs and dynamic selects
-    def cleanup( prefix, inputs, values ):
-        for key, input in inputs.items():
-            if isinstance( input, ( SelectToolParameter, DrillDownSelectToolParameter ) ):
-                if input.is_dynamic:
-                    values[key] = UnvalidatedValue( values[key] )
-            if isinstance( input, DataToolParameter ):
-                tmp = values[key]
-                values[key] = None
-                # HACK: Nested associations are not yet working, but we
-                #       still need to clean them up so we can serialize
-                # if not( prefix ):
-                if tmp: #this is false for a non-set optional dataset
-                    associations.append( ( tmp.hid, prefix + key ) )
-                # Cleanup the other deprecated crap associated with datasets
-                # as well. Worse, for nested datasets all the metadata is
-                # being pushed into the root. FIXME: MUST REMOVE SOON
-                key = prefix + key + "_"
-                for k in root_values.keys():
-                    if k.startswith( key ):
-                        del root_values[k]            
-            elif isinstance( input, Repeat ):
-                group_values = values[key]
-                for i, rep_values in enumerate( group_values ):
-                    rep_index = rep_values['__index__']
-                    prefix = "%s_%d|" % ( key, rep_index )
-                    cleanup( prefix, input.inputs, group_values[i] )
-            elif isinstance( input, Conditional ):
-                group_values = values[input.name]
-                current_case = group_values['__current_case__']
-                prefix = "%s|" % ( key )
-                cleanup( prefix, input.cases[current_case].inputs, group_values )
-    cleanup( "", inputs, values )
-    return associations
-
-
-
-
-
