@@ -488,7 +488,11 @@ def umask_fix_perms( path, umask, unmasked_perms, gid=None ):
     umask-friendly permissions fixing
     """
     perms = unmasked_perms & ~umask
-    st = os.stat( path )
+    try:
+        st = os.stat( path )
+    except OSError, e:
+        log.exception( 'Unable to set permissions or group on %s' % path )
+        return
     # fix modes
     if stat.S_IMODE( st.st_mode ) != perms:
         try:
