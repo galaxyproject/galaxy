@@ -1,0 +1,75 @@
+<?xml version="1.0"?>
+<!DOCTYPE service_bundle SYSTEM "/usr/share/lib/xml/dtd/service_bundle.dtd.1">
+
+<service_bundle type='manifest' name='nginx'>
+
+<service name='application/galaxy' type='service' version='0'>
+
+    <dependency name='net'
+        grouping='require_all'
+        restart_on='none'
+        type='service'>
+        <service_fmri
+            value='svc:/network/loopback'/>
+    </dependency>
+
+    <dependency name='filesystem-local'
+        grouping='require_all'
+        restart_on='none'
+        type='service'>
+        <service_fmri
+            value='svc:/system/filesystem/local:default'/>
+    </dependency>
+
+    <instance name='main' enabled='false'>
+
+        <exec_method name='start'
+            type='method'
+            exec='python -ES ./scripts/paster.py serve universe_wsgi.webapp.ini --log-file=log/main.log --daemon'
+            timeout_seconds='60'>
+            <method_context
+                working_directory='/galaxy'>
+                <method_credential user='galaxy' group='galaxy' />
+                <method_environment>
+                    <envvar name="PATH" value="/opt/local/bin:/bin:/usr/bin" />
+                    <envvar name="TEMP" value="/galaxy/database/tmp" />
+                </method_environment>
+            </method_context>
+
+        </exec_method>
+
+        <exec_method name='stop'
+            type='method'
+            exec=':kill'
+            timeout_seconds='60'>
+            <method_context>
+                <method_credential user='galaxy' group='galaxy' />
+            </method_context>
+        </exec_method>
+
+        <property_group name='general' type='framework'>
+            <propval name='action_authorization' type='astring'
+                value='solaris.smf.manage.galaxy' />
+            <propval name='value_authorization' type='astring'
+                value='solaris.smf.manage.galaxy' />
+        </property_group>
+
+    </instance>
+
+    <stability value='Evolving' />
+
+    <template>
+        <common_name>
+            <loctext xml:lang='C'>
+                Galaxy
+            </loctext>
+        </common_name>
+        <documentation>
+            <doc_link name='galaxyproject.org'
+                uri='http://galaxyproject.org' />
+        </documentation>
+    </template>
+
+</service>
+
+</service_bundle> 

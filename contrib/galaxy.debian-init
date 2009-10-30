@@ -1,0 +1,55 @@
+#!/bin/bash
+
+# Author: James Casbon, 2009
+
+### BEGIN INIT INFO
+# Provides:             galaxy
+# Required-Start:       $network $local_fs $mysql
+# Required-Stop:
+# Default-Start:        2 3 4 5
+# Default-Stop:         0 1 6
+# Short-Description:    Galaxy
+### END INIT INFO
+
+. /lib/lsb/init-functions
+
+USER="galaxy"
+GROUP="nogroup"
+DIR="/home/galaxy/galaxy_dist/"
+PYTHON="/usr/bin/python"
+OPTS="-ES ./scripts/paster.py serve --log-file /home/galaxy/galaxy.log universe_wsgi.ini"
+PIDFILE="/var/run/galaxy.pid"
+
+case "${1:-''}" in
+  'start')
+           log_daemon_msg "Starting Galaxy"
+           if start-stop-daemon --chuid $USER --group $GROUP --start --make-pidfile \
+	             --pidfile $PIDFILE --background --chdir $DIR --exec $PYTHON -- $OPTS; then
+             log_end_msg 0
+           else
+             log_end_msg 1
+	   fi
+
+        ;;
+  'stop')
+           log_daemon_msg "Stopping Galaxy" 
+	   if start-stop-daemon --stop --pidfile $PIDFILE; then
+	     log_end_msg 0
+	   else 
+	     log_end_msg 1
+	   fi
+        ;;
+  'restart')
+           # restart commands here
+	   $0 stop
+	   $0 start
+			   
+        ;;
+  *)      # no parameter specified
+        echo "Usage: $SELF start|stop|restart|reload|force-reload|status"
+        exit 1
+        ;;
+esac
+
+
+
