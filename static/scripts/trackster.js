@@ -7,7 +7,7 @@ var DENSITY = 1000,
     DATA_NONE = "No data for this chrom/contig.",
     DATA_PENDING = "Currently indexing... please wait",
     DATA_LOADING = "Loading data...",
-    CACHED_TILES = 5,
+    CACHED_TILES = 10,
     CACHED_DATA = 20,
     CONTEXT = $("<canvas></canvas>").get(0).getContext("2d"),
     RIGHT_STRAND, LEFT_STRAND;
@@ -22,7 +22,6 @@ left_img.src = "../images/visualization/strand_left.png";
 left_img.onload = function() {
     LEFT_STRAND = CONTEXT.createPattern(left_img, "repeat");
 }
-
 var right_img_inv = new Image();
 right_img_inv.src = "../images/visualization/strand_right_inv.png";
 right_img_inv.onload = function() {
@@ -182,10 +181,10 @@ $.extend( TiledTrack.prototype, Track.prototype, {
         var tile_index = Math.floor( low / resolution / DENSITY );
         while ( ( tile_index * DENSITY * resolution ) < high ) {
             // Check in cache
-            var key = this.view.zoom_level + "_" + tile_index;
+            var key = this.content_div.width() + '_' + this.view.zoom_level + '_' + tile_index;
             var cached = this.tile_cache.get(key);
             if ( cached ) {
-                // console.log("cached tile");
+                // console.log("cached tile " + tile_index);
                 var tile_low = tile_index * DENSITY * resolution;
                 cached.css( {
                     left: ( tile_low - this.view.low ) * w_scale
@@ -194,9 +193,9 @@ $.extend( TiledTrack.prototype, Track.prototype, {
                 parent_element.append( cached );
             } else {
                 tile_element = this.draw_tile( resolution, tile_index, parent_element, w_scale );
-            }
-            if ( tile_element ) {
-                this.tile_cache.set(key, tile_element);
+                if ( tile_element ) {
+                    this.tile_cache.set(key, tile_element);
+                }
             }
             tile_index += 1;
         }
@@ -384,7 +383,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
     calc_slots: function( include_labels ) {
         // console.log("num vals: " + this.values.length);
         var end_ary = [],
-            scale = this.container_div.width() / (this.view.high - this.view.low),
+            scale = this.content_div.width() / (this.view.high - this.view.low),
             labels_scale = this.show_labels_scale,
             max_high = this.view.max_high,
             max_low = this.view.max_low;
@@ -396,14 +395,15 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
         for (var i = 0, len = this.values.length; i < len; i++) {
             var f_start, f_end, feature = this.values[i];
             if (include_labels) {
-                f_start = Math.floor( Math.max(max_low, (feature.start - max_low) * labels_scale) );
+                f_start = Math.floor( (feature.start - max_low) * labels_scale );
                 f_start -= dummy_canvas.measureText(feature.name).width;
-                f_end = Math.ceil( Math.min(max_high, (feature.end - max_low) * labels_scale) );
+                f_end = Math.ceil( (feature.end - max_low) * labels_scale );
             } else {
-                f_start = Math.floor( Math.max(max_low, (feature.start - max_low) * scale) );
-                f_end = Math.ceil( Math.min(max_high, (feature.end - max_low) * scale) );
+                f_start = Math.floor( (feature.start - max_low) * scale );
+                f_end = Math.ceil( (feature.end - max_low) * scale );
             }
             // if (include_labels) { console.log(f_start, f_end); }
+                
             var j = 0;
             while (true) {
                 if (end_ary[j] === undefined || end_ary[j] < f_start) {
@@ -425,7 +425,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
         if (!this.values) { // Still loading
             return null;
         }
-        // console.log("drawing");
+        // console.log("drawing " + tile_index);
         // Once we zoom in enough, show name labels
         if (w_scale > this.show_labels_scale && !this.showing_labels) {
             this.showing_labels = true;
@@ -480,6 +480,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                     // Showing labels, blocks, details
                     if (ctx.fillText) {
                         ctx.fillText(feature.name, f_start - 1, y_center + 8);
+                        // ctx.fillText(commatize(feature.start), f_start - 1, y_center + 8);
                     }
                     var blocks = feature.blocks;
                     if (blocks) {
