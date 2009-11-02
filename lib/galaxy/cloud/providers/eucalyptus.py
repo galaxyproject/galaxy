@@ -6,6 +6,7 @@ from galaxy import model # Database interaction class
 from galaxy.model import mapping
 from galaxy.datatypes.data import nice_size
 from galaxy.util.bunch import Bunch
+from galaxy.cloud import UCIwrapper
 from Queue import Queue
 from sqlalchemy import or_, and_
 
@@ -13,6 +14,8 @@ import galaxy.eggs
 galaxy.eggs.require("boto")
 from boto.ec2.connection import EC2Connection
 from boto.ec2.regioninfo import RegionInfo
+import boto.exception
+import boto
 
 import logging
 log = logging.getLogger( __name__ )
@@ -37,7 +40,8 @@ instance_states = Bunch(
     TERMINATED = "terminated",
     RUNNING = "running",
     PENDING = "pending",
-    SHUTTING_DOWN = "shutting-down"
+    SHUTTING_DOWN = "shutting-down",
+    ERROR = "error"
 )
 
 store_states = Bunch(
@@ -256,12 +260,13 @@ class EucalyptusCloudProvider( object ):
                         uci_wrapper.set_error( "EC2 response error when starting: " + str(e), True )
                         
                     l_time = datetime.utcnow()
-                    uci_wrapper.set_launch_time( l_time, i_index=i_index ) # format_time( reservation.i_indexes[0].launch_time ) )
+#                    uci_wrapper.set_launch_time( l_time, i_index=i_index )
+                    uci_wrapper.set_launch_time( self.format_time( reservation.instances[0].launch_time ), i_index=i_index )
                     if not uci_wrapper.uci_launch_time_set():
                         uci_wrapper.set_uci_launch_time( l_time )
                     try:
                         uci_wrapper.set_reservation_id( i_index, str( reservation ).split(":")[1] )
-                        # TODO: if more than a single instance will be started through single reservation, change this reference to element [0]
+                        # TODO: if more than a single instance will be started through single reservation, change this reference from element [0]
                         i_id = str( reservation.instances[0]).split(":")[1]
                         uci_wrapper.set_instance_id( i_index, i_id )
                         s = reservation.instances[0].state
@@ -371,15 +376,16 @@ class EucalyptusCloudProvider( object ):
         zombies = model.UCI.filter_by( state=uci_states.SUBMITTED ).all()
         for zombie in zombies:
             z_instances = model.CloudInstance.filter_by( uci_id=zombie.id) \
-                .filter( or_( model.CloudInstance.c.state!=instance_states.TERMINATED,
+                .filter( or_( model.CloudInstance.c.state != instance_states.TERMINATED,
                               model.CloudInstance.c.state == None ) ) \
                 .all()
             for z_inst in z_instances:
                 if self.type == z_inst.uci.credentials.provider.type:
-                    log.debug( "z_inst.id: '%s', state: '%s'" % ( z_inst.id, z_inst.state ) )
-#                td = datetime.utcnow() - zombie.update_time
-#                if td.seconds > 180: # if instance has been in SUBMITTED state for more than 3 minutes
-#                    log.debug( "[%s] Running zombie repair update on instance '%s'" % ( inst.uci.credentials.provider.type, inst.id ) )
+#                    log.debug( "z_inst.id: '%s', state: '%s'" % ( z_inst.id, z_inst.state ) )
+                    td = datetime.utcnow() - z_inst.update_time
+                    if td.seconds > 180: # if instance has been in SUBMITTED state for more than 3 minutes
+                        log.debug( "[%s] Running zombie repair update on instance with DB id '%s'" % ( z_inst.uci.credentials.provider.type, z_inst.id ) )
+                        self.processZombie( z_inst )
                 
     def updateInstance( self, inst ):
         
@@ -387,22 +393,7 @@ class EucalyptusCloudProvider( object ):
         uci_id = inst.uci_id
         uci = model.UCI.get( uci_id )
         uci.refresh()
-        a_key = uci.credentials.access_key
-        s_key = uci.credentials.secret_key
-        # Get connection
-        try:
-            euca_region = RegionInfo( None, uci.credentials.provider.region_name, uci.credentials.provider.region_endpoint )
-            conn = EC2Connection( aws_access_key_id=a_key, 
-                                  aws_secret_access_key=s_key, 
-                                  is_secure=uci.credentials.provider.is_secure, 
-                                  port=uci.credentials.provider.port, 
-                                  region=euca_region, 
-                                  path=uci.credentials.provider.path )
-        except boto.exception.EC2ResponseError, e:
-            log.error( "Establishing connection with cloud failed: %s" % str(e) )
-            uci.error( "Establishing connection with cloud failed: " + str(e) )
-            uci.state( uci_states.ERROR )
-            return None
+        conn = self.get_connection_from_uci( uci )
 
         # Get reservations handle for given instance
         try:
@@ -461,22 +452,7 @@ class EucalyptusCloudProvider( object ):
         uci_id = store.uci_id
         uci = model.UCI.get( uci_id )
         uci.refresh()
-        a_key = uci.credentials.access_key
-        s_key = uci.credentials.secret_key
-        # Get connection
-        try:
-            euca_region = RegionInfo( None, uci.credentials.provider.region_name, uci.credentials.provider.region_endpoint )
-            conn = EC2Connection( aws_access_key_id=a_key, 
-                                  aws_secret_access_key=s_key, 
-                                  is_secure=uci.credentials.provider.is_secure, 
-                                  port=uci.credentials.provider.port, 
-                                  region=euca_region, 
-                                  path=uci.credentials.provider.path )
-        except boto.exception.EC2ResponseError, e:
-            log.error( "Establishing connection with cloud failed: %s" % str(e) )
-            uci.error( "Establishing connection with cloud failed: " + str(e) )
-            uci.state( uci_states.ERROR )
-            return None
+        conn = self.get_connection_from_uci( uci )
 
         try:
             vl = conn.get_all_volumes( [store.volume_id] )
@@ -511,6 +487,108 @@ class EucalyptusCloudProvider( object ):
             uci.error( "Updating volume status from cloud failed: " + str(e) )
             uci.state( uci_states.ERROR )
             return None
+
+    def processZombie( self, inst ):
+        """
+        Attempt at discovering if starting an instance was successful but local database was not updated
+        accordingly or if something else failed and instance was never started. Currently, no automatic 
+        repairs are being attempted; instead, appropriate error messages are set.
+        """
+        # Check if any instance-specific information was written to local DB; if 'yes', set instance and UCI's error message 
+        # suggesting manual check.
+        if inst.launch_time != None or inst.reservation_id != None or inst.instance_id != None or inst.keypair_name != None:
+            # Try to recover state - this is best-case effort, so if something does not work immediately, not
+            # recovery steps are attempted. Recovery is based on hope that instance_id is available in local DB; if not,
+            # report as error.
+            # Fields attempting to be recovered are: reservation_id, keypair_name, instance status, and launch_time 
+            if inst.instance_id != None:
+                conn = self.get_connection_from_uci( inst.uci )
+                rl = conn.get_all_instances( [inst.instance_id] ) # reservation list
+                # Update local DB with relevant data from instance
+                if inst.reservation_id == None:
+                    try:
+                        inst.reservation_id = str(rl[0]).split(":")[1]
+                    except: # something failed, so skip
+                        pass
+                
+                if inst.keypair_name == None:
+                    try:
+                        inst.keypair_name = rl[0].instances[0].key_name
+                    except: # something failed, so skip
+                        pass
+                try:
+                    state = rl[0].instances[0].update()
+                    inst.state = state
+                    inst.uci.state = state
+                    inst.flush()
+                    inst.uci.flush()
+                except: # something failed, so skip
+                    pass
+                
+                if inst.launch_time == None:
+                    try:
+                        launch_time = self.format_time( rl[0].instances[0].launch_time )
+                        inst.launch_time = launch_time
+                        inst.flush()
+                        if inst.uci.launch_time == None:
+                            inst.uci.launch_time = launch_time
+                            inst.uci.flush()
+                    except: # something failed, so skip
+                        pass
+            else:
+                inst.error = "Starting a machine instance associated with UCI '" + str(inst.uci.name) + "' seems to have failed. " \
+                             "Because it appears that cloud instance might have gotten started, manual check is recommended."
+                inst.state = instance_states.ERROR
+                inst.uci.error = "Starting a machine instance (DB id: '"+str(inst.id)+"') associated with this UCI seems to have failed. " \
+                                 "Because it appears that cloud instance might have gotten started, manual check is recommended."
+                inst.uci.state = uci_states.ERROR
+                log.error( "Starting a machine instance (DB id: '%s') associated with UCI '%s' seems to have failed. " \
+                           "Because it appears that cloud instance might have gotten started, manual check is recommended." 
+                           % ( inst.id, inst.uci.name ) )
+                inst.flush()
+                inst.uci.flush()             
+                
+        else: #Instance most likely never got processed, so set error message suggesting user to try starting instance again.
+            inst.error = "Starting a machine instance associated with UCI '" + str(inst.uci.name) + "' seems to have failed. " \
+                         "Because it appears that cloud instance never got started, it should be safe to reset state and try " \
+                         "starting the instance again."
+            inst.state = instance_states.ERROR
+            inst.uci.error = "Starting a machine instance (DB id: '"+str(inst.id)+"') associated with this UCI seems to have failed. " \
+                             "Because it appears that cloud instance never got started, it should be safe to reset state and try " \
+                             "starting the instance again."
+            inst.uci.state = uci_states.ERROR
+            log.error( "Starting a machine instance (DB id: '%s') associated with UCI '%s' seems to have failed. " \
+                       "Because it appears that cloud instance never got started, it should be safe to reset state and try " \
+                       "starting the instance again." % ( inst.id, inst.uci.name ) )
+            inst.flush()
+            inst.uci.flush()
+#            uw = UCIwrapper( inst.uci )
+#            log.debug( "Try automatically re-submitting UCI '%s'." % uw.get_name() )
+
+    def get_connection_from_uci( self, uci ):
+        """
+        Establishes and returns connection to cloud provider. Information needed to do so is obtained
+        directly from uci database object.
+        """
+        a_key = uci.credentials.access_key
+        s_key = uci.credentials.secret_key
+        # Get connection
+        try:
+            euca_region = RegionInfo( None, uci.credentials.provider.region_name, uci.credentials.provider.region_endpoint )
+            conn = EC2Connection( aws_access_key_id=a_key, 
+                                  aws_secret_access_key=s_key, 
+                                  is_secure=uci.credentials.provider.is_secure, 
+                                  port=uci.credentials.provider.port, 
+                                  region=euca_region, 
+                                  path=uci.credentials.provider.path )
+        except boto.exception.EC2ResponseError, e:
+            log.error( "Establishing connection with cloud failed: %s" % str(e) )
+            uci.error( "Establishing connection with cloud failed: " + str(e) )
+            uci.state( uci_states.ERROR )
+            return None
+
+        return conn
+    
 #    def updateUCI( self, uci ):
 #        """ 
 #        Runs a global status update on all storage volumes and all instances that are
@@ -556,7 +634,7 @@ class EucalyptusCloudProvider( object ):
         
     # --------- Helper methods ------------
     
-    def format_time( time ):
+    def format_time( self, time ):
         dict = {'T':' ', 'Z':''}
         for i, j in dict.iteritems():
             time = time.replace(i, j)

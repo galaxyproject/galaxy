@@ -24,34 +24,23 @@ ${h.js( "jquery" )}
 		$.getJSON( "${h.url_for( action='json_update' )}", {}, function ( data ) {
 			for (var i in data) {
 				var elem = '#' + data[i].id;
-				// Because of different list managing 'live' vs. 'available' instances, refresh entire 
-				// page on necessary state change.
+				// Because of different list managing 'live' vs. 'available' instances, reload url on various state changes
 				old_state = $(elem + "-state").text();
 				new_state = data[i].state;
 				//console.log( "old_state[%d] = %s", i, old_state );
 				//console.log( "new_state[%d] = %s", i, new_state );
-				if ( old_state=='pending' && new_state=='running' ) {
-					location.reload(true);
+				if ( ( old_state=='pending' && new_state=='running' ) ||  ( old_state=='shutting-down' && new_state=='available' ) || \
+					 ( old_state=='running' && new_state=='available' ) || ( old_state=='running' && new_state=='error' ) || \
+					 ( old_state=='pending' && new_state=='error' ) || ( old_state=='pending' && new_state=='available' ) || \
+					 ( old_state=='submitted' && new_state=='available' ) ) {
+					var url = "${h.url_for( controller='cloud', action='list')}";
+					location.replace( url );
 				}
 				else if ( ( old_state=='running' && new_state=='error' ) || ( old_state=='pending' && new_state=='error' ) || \
 					( old_state=='submitted' && new_state=='error' ) || ( old_state=='submittedUCI' && new_state=='error' ) || \
 					( old_state=='shutting-down' && new_state=='error' ) ) {
-					location.reload(true);
-				} 
-				else if ( old_state=='shutting-down' && new_state=='available' ) {
-					location.reload(true);
-				}
-				else if ( old_state=='running' && new_state=='available' ) {
-					location.reload(true);
-				}
-				else if ( old_state=='running' && new_state=='error' ) {
-					location.reload(true);
-				}
-				else if ( old_state=='pending' && new_state=='error' ) {
-					location.reload(true);
-				}
-				else if ( old_state=='pending' && new_state=='available' ) {
-					location.reload(true);
+					var url = "${h.url_for( controller='cloud', action='list')}";
+					location.replace( url );
 				} 
 				else if ( new_state=='shutting-down' || new_state=='shutting-downUCI' ) {
 					$(elem + "-link").text( "" );
@@ -88,7 +77,6 @@ ${h.js( "jquery" )}
 					$(elem + "-launch_time").text( "N/A" );
 				}
 			}
-			console.log('');
 		});
 		setTimeout("update_state()", 15000);
 	}
@@ -243,20 +231,20 @@ ${h.js( "jquery" )}
 	                    ${prevInstance.name} (${prevInstance.credentials.name})
 	                    <a id="pi-${i}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
 	                </td>
-	                <td>${str(prevInstance.total_size)}</td> <!-- TODO: Change to show vol size once available--> 
+	                <td>${str(prevInstance.total_size)}</td> 
 	                <td>
 	                	<%state = str(prevInstance.state)%> 
 	                	%if state =='error':
-							<div id="short">
-			                   <a onclick="document.getElementById('full').style.display = 'block'; 
-							    document.getElementById('short').style.display = 'none'; return 0" 
+							<div id="${prevInstance.name}-short">
+			                   <a onclick="document.getElementById('${prevInstance.name}-full').style.display = 'block'; 
+							    document.getElementById('${prevInstance.name}-short').style.display = 'none'; return 0" 
 			                    href="javascript:void(0)">
 			                    error
 			                   </a>                    
 			                </div>
-			                <div id="full" style="DISPLAY: none">
-					      		<a onclick="document.getElementById('short').style.display = 'block'; 
-								document.getElementById('full').style.display = 'none'; return 0;" 
+			                <div id="${prevInstance.name}-full" style="DISPLAY: none">
+					      		<a onclick="document.getElementById('${prevInstance.name}-short').style.display = 'block'; 
+								document.getElementById('${prevInstance.name}-full').style.display = 'none'; return 0;" 
 			                    href="javascript:void(0)">
 			                    error:</a><br />
 								${str(prevInstance.error)}

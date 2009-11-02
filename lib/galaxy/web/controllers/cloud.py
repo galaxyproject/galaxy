@@ -151,7 +151,17 @@ class CloudController( BaseController ):
         stores = get_stores( trans, uci ) 
         # Ensure instance is not already running (or related state) and store relevant data
         # into DB to initiate instance startup by cloud manager
-        if ( len(stores) is not 0 ) and ( uci.state == uci_states.AVAILABLE ):
+        if ( len(stores) is not 0 ) and \
+           ( uci.state != uci_states.SUBMITTED ) and \
+           ( uci.state != uci_states.SUBMITTED_UCI ) and \
+           ( uci.state != uci_states.PENDING ) and \
+           ( uci.state != uci_states.DELETING ) and \
+           ( uci.state != uci_states.DELETING_UCI ) and \
+           ( uci.state != uci_states.DELETED ) and \
+           ( uci.state != uci_states.RUNNING ) and \
+           ( uci.state != uci_states.NEW_UCI ) and \
+           ( uci.state != uci_states.NEW ) and \
+           ( uci.state != uci_states.ERROR ):
             instance = model.CloudInstance()
             instance.user = user
             instance.image = mi
@@ -171,7 +181,7 @@ class CloudController( BaseController ):
                     "instance description." )
             return self.list( trans )
         
-        trans.show_error_message( "Cannot start instance that is in state '%s'." % uci.state )
+        error( "Cannot start instance that is in state '%s'." % uci.state )
         return self.list( trans )
     
     @web.expose
