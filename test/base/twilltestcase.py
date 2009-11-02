@@ -922,7 +922,7 @@ class TwillTestCase( unittest.TestCase ):
     def create_new_account_as_admin( self, email='test4@bx.psu.edu', password='testuser' ):
         """Create a new account for another user"""
         self.home()
-        self.visit_url( "%s/admin/create_new_user?email=%s&password=%s&confirm=%s&user_create_button=Create&subscribe=False" \
+        self.visit_url( "%s/user/create?admin_view=True&email=%s&password=%s&confirm=%s&create_user_button=Submit&subscribe=False" \
                         % ( self.url, email, password, password ) )
         try:
             self.check_page_for_string( "Created new user account" )
