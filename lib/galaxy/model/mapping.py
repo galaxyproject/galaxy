@@ -47,6 +47,7 @@ User.table = Table( "galaxy_user", metadata,
     Column( "username", TrimmedString( 255 ), index=True, unique=True ),
     Column( "password", TrimmedString( 40 ), nullable=False ),
     Column( "external", Boolean, default=False ),
+    Column( "form_values_id", Integer, ForeignKey( "form_values.id" ), index=True ),
     Column( "deleted", Boolean, index=True, default=False ),
     Column( "purged", Boolean, index=True, default=False ) )
 
@@ -781,6 +782,8 @@ assign_mapper( context, User, User.table,
                      _preferences=relation( UserPreference, backref="user", collection_class=attribute_mapped_collection('name')),
 #                     addresses=relation( UserAddress,
 #                                         primaryjoin=( User.table.c.id == UserAddress.table.c.user_id ) )
+                      values=relation( FormValues,
+                                       primaryjoin=( User.table.c.form_values_id == FormValues.table.c.id ) ),
                      ) )
                      
 # Set up proxy so that this syntax is possible:

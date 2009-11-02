@@ -6,6 +6,9 @@ from galaxy.model.orm import *
 from galaxy import util
 import logging, os, string, re
 from random import choice
+from galaxy.web.controllers.forms import get_all_forms
+from galaxy.web.form_builder import * 
+from galaxy.web.controllers import admin
 
 log = logging.getLogger( __name__ )
 
@@ -23,10 +26,11 @@ require_login_creation_template = require_login_template % "  If you don't alrea
 VALID_USERNAME_RE = re.compile( "^[a-z0-9\-]+$" )
 
 class User( BaseController ):
-    edit_address_id = None
+
     @web.expose
     def index( self, trans, **kwd ):
         return trans.fill_template( '/user/index.mako', user=trans.get_user() )
+
     @web.expose
     def change_password(self, trans, old_pass='', new_pass='', conf_pass='', **kwd):
         old_pass_err = new_pass_err = conf_pass_err = ''
@@ -158,50 +162,392 @@ class User( BaseController ):
             msg += '  <a href="%s">Click here</a> to return to the login page.' % web.url_for( controller='user', action='login' )
         return trans.show_ok_message( msg, refresh_frames=refresh_frames )
     @web.expose
-    def create( self, trans, email='', password='', confirm='', subscribe=False ):
+    def create( self, trans, **kwd ):
+        params = util.Params( kwd )
+        email = util.restore_text( params.get('email', '') )
+        username = util.restore_text( params.get('username', '') )
+        password = util.restore_text( params.get('password', '') )
+        confirm = util.restore_text( params.get('confirm', '') )
+        subscribe = params.get('subscribe', False)
+        admin_view = params.get('admin_view', 'False')
+        msg = util.restore_text( params.get( 'msg', ''  ) )
+        messagetype = params.get( 'messagetype', 'done' )
         if trans.app.config.require_login:
             refresh_frames = [ 'masthead', 'history', 'tools' ]
         else:
             refresh_frames = [ 'masthead', 'history' ]
         if not trans.app.config.allow_user_creation and not trans.user_is_admin():
             return trans.show_error_message( 'User registration is disabled.  Please contact your Galaxy administrator for an account.' )
-        email_error = password_error = confirm_error = None
-        if email:
-            if len( email ) == 0 or "@" not in email or "." not in email:
-                email_error = "Please enter a real email address"
-            elif len( email ) > 255:
-                email_error = "Email address exceeds maximum allowable length"
-            elif trans.sa_session.query( trans.app.model.User ).filter_by( email=email ).all():
-                email_error = "User with that email already exists"
-            elif len( password ) < 6:
-                password_error = "Please use a password of at least 6 characters"
-            elif password != confirm:
-                confirm_error = "Passwords do not match"
-            else:
-                user = trans.app.model.User( email=email )
-                user.set_password_cleartext( password )
-                user.flush()
-                trans.app.security_agent.create_private_user_role( user )
-                # We set default user permissions, before we log in and set the default history permissions
-                trans.app.security_agent.user_set_default_permissions( user, default_access_private = trans.app.config.new_user_dataset_access_role_default_private )
+        #
+        # Create the user, save all the user info and login to Galaxy
+        # 
+        if params.get('create_user_button', None) == "Submit":
+            # check email and password validity
+            error = self.__validate(trans, params, email, password, confirm)
+            if error:
+                kwd[ 'msg' ] = error
+                kwd[ 'messagetype' ] = 'error'
+                kwd[ 'create_user_button' ] = None
+                return trans.response.send_redirect( web.url_for( controller='user', 
+                                                                  action='create',
+                                                                  **kwd ) )
+            # all the values are valid
+            user = trans.app.model.User( email=email )
+            user.set_password_cleartext( password )
+            user.username = username
+            user.flush()
+            trans.app.security_agent.create_private_user_role( user )
+            # We set default user permissions, before we log in and set the default history permissions
+            trans.app.security_agent.user_set_default_permissions( user, default_access_private = trans.app.config.new_user_dataset_access_role_default_private )
+            # save user info
+            self.__save_user_info(trans, user, action='create', new_user=True, **kwd)
+            if subscribe:
+                mail = os.popen("%s -t" % trans.app.config.sendmail_path, 'w')
+                mail.write("To: %s\nFrom: %s\nSubject: Join Mailing List\n\nJoin Mailing list." % (trans.app.config.mailing_join_addr,email) )
+                if mail.close():
+                    return trans.show_warn_message( "Now logged in as " + user.email+". However, subscribing to the mailing list has failed.", refresh_frames=refresh_frames )
+            if admin_view == 'False':
                 # The handle_user_login() method has a call to the history_set_default_permissions() method
                 # (needed when logging in with a history), user needs to have default permissions set before logging in
                 trans.handle_user_login( user )
                 trans.log_event( "User created a new account" )
                 trans.log_event( "User logged in" )
-                #subscribe user to email list
-                if subscribe:
-                    mail = os.popen("%s -t" % trans.app.config.sendmail_path, 'w')
-                    mail.write("To: %s\nFrom: %s\nSubject: Join Mailing List\n\nJoin Mailing list." % (trans.app.config.mailing_join_addr,email) )
-                    if mail.close():
-                        return trans.show_warn_message( "Now logged in as " + user.email+". However, subscribing to the mailing list has failed.", refresh_frames=refresh_frames )
+                # subscribe user to email list
                 return trans.show_ok_message( "Now logged in as " + user.email, refresh_frames=refresh_frames )
-        return trans.show_form( 
-            web.FormBuilder( web.url_for(), "Create account", submit_text="Create" )
-                .add_text( "email", "Email address", value=email, error=email_error )
-                .add_password( "password", "Password", value='', error=password_error ) 
-                .add_password( "confirm", "Confirm password", value='', error=confirm_error ) 
-                .add_input( "checkbox","Subscribe To Mailing List","subscribe", value='subscribe' ) )
+            else:
+                trans.response.send_redirect( web.url_for( controller='admin',
+                                                           action='users',
+                                                           message='Created new user account (%s)' % user.email,
+                                                           status='done' ) )
+        else:
+            #
+            # Show the user registration form
+            #
+            user_info_select, user_info_form, login_info, widgets = self.__user_info_ui(trans, **kwd)
+            return trans.fill_template( '/user/register.mako',
+                                        user_info_select=user_info_select,
+                                        user_info_form=user_info_form, widgets=widgets, 
+                                        login_info=login_info, admin_view=admin_view,
+                                        msg=msg, messagetype=messagetype)
+
+    def __save_user_info(self, trans, user, action, new_user=True, **kwd):
+        '''
+        This method saves the user information for new users as well as editing user
+        info for existing users. For new users, the user info form is retrieved from 
+        the one that user has selected. And for existing users, the user info form is 
+        retrieved from the db.
+        '''
+        params = util.Params( kwd )
+        # get all the user information forms
+        user_info_forms = get_all_forms( trans, filter=dict(deleted=False),
+                                         form_type=trans.app.model.FormDefinition.types.USER_INFO )
+        # if there are no user forms available then there is nothing to save
+        if not len( user_info_forms ):
+            return
+        if new_user:
+            user_info_type = params.get( 'user_info_select', 'none'  )
+            try:
+                user_info_form = trans.sa_session.query( trans.app.model.FormDefinition ).get(int(user_info_type))
+            except:
+                return trans.response.send_redirect( web.url_for( controller='user',
+                                                                  action=action,
+                                                                  msg='Invalid user information form id',
+                                                                  messagetype='error') )
+        else:
+            user_info_form = user.values.form_definition
+        values = []
+        for index, field in enumerate(user_info_form.fields):
+            if field['type'] == 'AddressField':
+                value = util.restore_text(params.get('field_%i' % index, ''))
+                if value == 'new':
+                    # save this new address in the list of this user's addresses
+                    user_address = trans.app.model.UserAddress( user=user )
+                    user_address.desc = util.restore_text(params.get('field_%i_short_desc' % index, ''))
+                    user_address.name = util.restore_text(params.get('field_%i_name' % index, ''))
+                    user_address.institution = util.restore_text(params.get('field_%i_institution' % index, ''))
+                    user_address.address = util.restore_text(params.get('field_%i_address1' % index, ''))+' '+util.restore_text(params.get('field_%i_address2' % index, ''))
+                    user_address.city = util.restore_text(params.get('field_%i_city' % index, ''))
+                    user_address.state = util.restore_text(params.get('field_%i_state' % index, ''))
+                    user_address.postal_code = util.restore_text(params.get('field_%i_postal_code' % index, ''))
+                    user_address.country = util.restore_text(params.get('field_%i_country' % index, ''))
+                    user_address.phone = util.restore_text(params.get('field_%i_phone' % index, ''))
+                    user_address.flush()
+                    trans.user.refresh()
+                    values.append(int(user_address.id))
+                elif value == unicode('none'):
+                    values.append('')
+                else:
+                    values.append(int(value))
+            else:
+                values.append(util.restore_text(params.get('field_%i' % index, '')))
+        if new_user:
+            form_values = trans.app.model.FormValues(user_info_form, values)
+            form_values.flush()
+            user.values = form_values
+        else:  # editing the user info of an existing user
+            user.values.content = values
+            user.values.flush()
+        user.flush()
+    def __validate_email(self, trans, params, email, user=None):
+        error = None
+        if user:
+            if user.email == email:
+                return None 
+        if len(email) == 0 or "@" not in email or "." not in email:
+            error = "Please enter a real email address"
+        elif len(email) > 255:
+            error = "Email address exceeds maximum allowable length"
+        elif trans.sa_session.query( trans.app.model.User ).filter_by(email=email).all():
+            error = "User with that email already exists"
+        return error
+    def __validate_password(self, trans, params, password, confirm):
+        error = None
+        if len(password) < 6:
+            error = "Please use a password of at least 6 characters"
+        elif password != confirm:
+            error = "Passwords do not match"
+        return error
+            
+    def __validate(self, trans, params, email, password, confirm):
+        error = self.__validate_email(trans, params, email)
+        if error:
+            return error
+        error = self.__validate_password(trans, params, password, confirm)
+        if error:
+            return error
+        if len(get_all_forms( trans, 
+                                filter=dict(deleted=False),
+                                form_type=trans.app.model.FormDefinition.types.USER_INFO )):
+            if params.get('user_info_select', 'none') == 'none':
+                return 'Select the user type and the user information'
+        return None
+    
+    def __user_info_ui(self, trans, user=None, **kwd):
+        '''
+        This method creates the user type select box & user information form widgets 
+        and is called during user registration and editing user information.
+        If there exists only one user information form then show it after main
+        login info. However, if there are more than one user info forms then 
+        show a selectbox containing all the forms, then the user can select 
+        the one that fits the user's description the most
+        '''
+        params = util.Params( kwd )
+        # get all the user information forms
+        user_info_forms = get_all_forms( trans, filter=dict(deleted=False),
+                                        form_type=trans.app.model.FormDefinition.types.USER_INFO )
+        user_info_select = None
+        if user:
+            if user.values:
+                selected_user_form_id = user.values.form_definition.id
+            else:
+                selected_user_form_id = 'none'
+        else:
+            selected_user_form_id = params.get( 'user_info_select', 'none'  )
+        # when there are more than one user information forms then show a select box
+        # list all these forms
+        if len(user_info_forms) > 1:
+            # create the select box
+            user_info_select = SelectField('user_info_select', refresh_on_change=True, 
+                                           refresh_on_change_values=[str(u.id) for u in user_info_forms])
+            if selected_user_form_id == 'none':
+                user_info_select.add_option('Select one', 'none', selected=True)
+            else:
+                user_info_select.add_option('Select one', 'none')
+            for u in user_info_forms:
+                if selected_user_form_id == str(u.id):
+                    user_info_select.add_option(u.name, u.id, selected=True)
+                else:
+                    user_info_select.add_option(u.name, u.id)
+        # when there is just one user information form the just render that form
+        elif len(user_info_forms) == 1:
+            selected_user_form_id = user_info_forms[0].id
+        # now, create the selected user form widgets starting with the basic 
+        # login information 
+        if user:
+            login_info = { 'Email': TextField( 'email', 40, user.email ),
+                           'Public Username': TextField( 'username', 40, user.username ),
+                           'Current Password': PasswordField( 'current', 40, '' ),
+                           'New Password': PasswordField( 'password', 40, '' ),
+                           'Confirm': PasswordField( 'confirm', 40, '' ) }
+        else:
+            login_info = { 'Email': TextField( 'email', 40, 
+                                               util.restore_text( params.get('email', '') ) ),
+                           'Public Username': TextField( 'username', 40, 
+                                                         util.restore_text( params.get('username', '') ) ),
+                           'Password': PasswordField( 'password', 40, 
+                                                              util.restore_text( params.get('password', '') ) ),
+                           'Confirm': PasswordField( 'confirm', 40, 
+                                                     util.restore_text( params.get('confirm', '') ) ),
+                           'Subscribe To Mailing List': CheckboxField( 'subscribe', 
+                                                                       util.restore_text( params.get('subscribe', '') ) ) }
+        # user information
+        try:
+            user_info_form = trans.sa_session.query( trans.app.model.FormDefinition ).get(int(selected_user_form_id))
+        except:
+            return user_info_select, None, login_info, None
+        if user:
+            if user.values:
+                widgets = user_info_form.get_widgets(user=user, 
+                                                     contents=user.values.content, 
+                                                     **kwd)
+            else:
+                widgets = user_info_form.get_widgets(None, contents=[], **kwd)
+        else:
+            widgets = user_info_form.get_widgets(None, contents=[], **kwd)
+        return user_info_select, user_info_form, login_info, widgets
+
+    @web.expose
+    def show_info( self, trans, **kwd ):
+        '''
+        This method displays the user information page which consists of login 
+        information, public username, reset password & other user information 
+        obtained during registration
+        '''
+        params = util.Params( kwd )
+        msg = util.restore_text( params.get( 'msg', ''  ) )
+        messagetype = params.get( 'messagetype', 'done' )
+        # check if this method is called from the admin perspective,
+        if params.get('admin_view', 'False') == 'True':
+            try:
+                user = trans.sa_session.query( trans.app.model.User ).get( int( params.get( 'user_id', None ) ) )
+            except:
+                return trans.response.send_redirect( web.url_for( controller='admin',
+                                                                  action='users',
+                                                                  message='Invalid user',
+                                                                  status='error' ) )
+            admin_view = True
+        else:
+            user = trans.user
+            admin_view = False
+        user_info_select, user_info_form, login_info, widgets = self.__user_info_ui(trans, user, **kwd)
+        # user's addresses
+        show_filter = util.restore_text( params.get( 'show_filter', 'Active'  ) )
+        if show_filter == 'All':
+            addresses = [address for address in user.addresses]
+        elif show_filter == 'Deleted':
+            addresses = [address for address in user.addresses if address.deleted]
+        else:
+            addresses = [address for address in user.addresses if not address.deleted]
+        return trans.fill_template( '/user/info.mako', user=user, admin_view=admin_view,
+                                    user_info_select=user_info_select,
+                                    user_info_form=user_info_form, widgets=widgets, 
+                                    login_info=login_info,
+                                    addresses=addresses, show_filter=show_filter,
+                                    msg=msg, messagetype=messagetype)
+    @web.expose
+    def edit_info( self, trans, **kwd ):
+        params = util.Params( kwd )
+        msg = util.restore_text( params.get( 'msg', ''  ) )
+        messagetype = params.get( 'messagetype', 'done' )
+        if params.get('admin_view', 'False') == 'True':
+            try:
+                user = trans.sa_session.query( trans.app.model.User ).get( int( params.get( 'user_id', None ) ) )
+            except:
+                return trans.response.send_redirect( web.url_for( controller='admin',
+                                                                  action='users',
+                                                                  message='Invalid user',
+                                                                  status='error' ) )
+        else:
+            user = trans.user
+        #
+        # Editing login info (email & username)
+        #
+        if params.get('login_info_button', None) == 'Save':
+            email = util.restore_text( params.get('email', '') )
+            username = util.restore_text( params.get('username', '') )
+            # validate the new values
+            error = self.__validate_email(trans, params, email, user)
+            if error:
+                return trans.response.send_redirect( web.url_for( controller='user',
+                                                                  action='show_info',
+                                                                  msg=error,
+                                                                  messagetype='error') )
+            # the new email & username
+            user.email = email
+            user.username = username
+            user.flush()
+            msg = 'The login information has been updated with the changes'
+            if params.get('admin_view', 'False') == 'True':
+                return trans.response.send_redirect( web.url_for( controller='user',
+                                                                  action='show_info',
+                                                                  user_id=user.id,
+                                                                  admin_view=True,
+                                                                  msg=msg,
+                                                                  messagetype='done' ) )
+            return trans.response.send_redirect( web.url_for( controller='user',
+                                                              action='show_info',
+                                                              msg=msg,
+                                                              messagetype='done') )
+        #
+        # Change password 
+        #
+        elif params.get('change_password_button', None) == 'Save':
+            password = util.restore_text( params.get('password', '') )
+            confirm = util.restore_text( params.get('confirm', '') )
+            # when from the user perspective, validate the current password
+            if params.get('admin_view', 'False') == 'False':
+                current = util.restore_text( params.get('current', '') )
+                if not trans.user.check_password( current ):
+                    return trans.response.send_redirect( web.url_for( controller='user',
+                                                                      action='show_info',
+                                                                      msg='Invalid current password',
+                                                                      messagetype='error') )
+            # validate the new values
+            error = self.__validate_password(trans, params, password, confirm)
+            if error:
+                if params.get('admin_view', 'False') == 'True':
+                    return trans.response.send_redirect( web.url_for( controller='user',
+                                                                      action='show_info',
+                                                                      user_id=user.id,
+                                                                      admin_view=True,
+                                                                      msg=error,
+                                                                      messagetype='error' ) )
+                return trans.response.send_redirect( web.url_for( controller='user',
+                                                                  action='show_info',
+                                                                  msg=error,
+                                                                  messagetype='error') )
+            # save new password
+            user.set_password_cleartext( password )
+            user.flush()
+            trans.log_event( "User change password" )
+            msg = 'The password has been changed.'
+            if params.get('admin_view', 'False') == 'True':
+                return trans.response.send_redirect( web.url_for( controller='user',
+                                                                  action='show_info',
+                                                                  user_id=user.id,
+                                                                  admin_view=True,
+                                                                  msg=msg,
+                                                                  messagetype='done' ) )
+            return trans.response.send_redirect( web.url_for( controller='user',
+                                                              action='show_info',
+                                                              msg=msg,
+                                                              messagetype='done') )
+        #
+        # Edit user information
+        #
+        elif params.get('edit_user_info_button', None) == 'Save':
+            self.__save_user_info(trans, user, "show_info", new_user=False, **kwd)
+            msg = "The user information has been updated with the changes."
+            if params.get('admin_view', 'False') == 'True':
+                return trans.response.send_redirect( web.url_for( controller='user',
+                                                                  action='show_info',
+                                                                  user_id=user.id,
+                                                                  admin_view=True,
+                                                                  msg=msg,
+                                                                  messagetype='done' ) )
+            return trans.response.send_redirect( web.url_for( controller='user',
+                                                              action='show_info',
+                                                              msg=msg,
+                                                              messagetype='done') )
+        else:
+            if params.get('admin_view', 'False') == 'True':
+                return trans.response.send_redirect( web.url_for( controller='user',
+                                                                  action='show_info',
+                                                                  user_id=user.id,
+                                                                  admin_view=True ) )
+            return trans.response.send_redirect( web.url_for( controller='user',
+                                                              action='show_info' ) )
+
     @web.expose
     def reset_password( self, trans, email=None, **kwd ):
         error = ''
@@ -305,7 +651,7 @@ class User( BaseController ):
                                                             country=country, phone=phone)
                 user_address.flush()
                 return trans.response.send_redirect( web.url_for( controller='user',
-                                                                  action='manage_addresses',
+                                                                  action='show_info',
                                                                   msg='Address <b>%s</b> has been added' % user_address.desc,
                                                                   messagetype='done') )
         
@@ -322,109 +668,123 @@ class User( BaseController ):
                 .add_text( "country", "Country", value=country, error=country_error )
                 .add_text( "phone", "Phone", value=phone, error=phone_error ) )
     @web.expose
-    def edit_address( self, trans, address_id=None, short_desc='', name='', institution='', address1='',  
-                     address2='', city='', state='', postal_code='', country='', phone='' ):
-        import sys
-        
-        if trans.app.config.require_login:
-            refresh_frames = [ 'masthead', 'history', 'tools' ]
-        else:
-            refresh_frames = [ 'masthead', 'history' ]
-        if not trans.app.config.allow_user_creation and not trans.user_is_admin():
-            return trans.show_error_message( 'User registration is disabled.  Please contact your Galaxy administrator for an account.' )
-        short_desc_error = name_error = institution_error = address1_error = city_error = None
-        address2_error = state_error = postal_code_error = country_error = phone_error = None
-        if short_desc:
-            if not len( short_desc ):
-                short_desc_error = 'Enter a short description for this address'
-            elif not len( name ):
-                name_error = 'Enter the full name'
-            elif not len( institution ):
-                institution_error = 'Enter the institution associated with the user'
-            elif not len ( address1 ):
-                address1_error = 'Enter the address'
-            elif not len( city ):
-                city_error = 'Enter the city'
-            elif not len( state ):
-                state_error = 'Enter the state/province/region'
-            elif not len( postal_code ):
-                postal_code_error = 'Enter the postal code'
-            elif not len( country ):
-                country_error = 'Enter the country'
+    def edit_address( self, trans, **kwd ):
+        params = util.Params( kwd )
+        msg = util.restore_text( params.get( 'msg', ''  ) )
+        messagetype = params.get( 'messagetype', 'done' )
+        admin_view = params.get( 'admin_view', 'False'  )
+        error = ''
+        user = trans.sa_session.query( trans.app.model.User ).get( int( params.get( 'user_id', None ) ) )
+        try:
+            user_address = trans.sa_session.query( trans.app.model.UserAddress ).get(int(params.get( 'address_id', None  )))
+        except:
+            return trans.response.send_redirect( web.url_for( controller='user',
+                                                              action='show_info',
+                                                              user_id=user.id,
+                                                              admin_view=admin_view,
+                                                              msg='Invalid address ID',
+                                                              messagetype='error' ) )
+        if params.get( 'edit_address_button', None  ) == 'Save changes':
+            if not len( util.restore_text( params.get( 'short_desc', ''  ) ) ):
+                error = 'Enter a short description for this address'
+            elif not len( util.restore_text( params.get( 'name', ''  ) ) ):
+                error = 'Enter the full name'
+            elif not len( util.restore_text( params.get( 'institution', ''  ) ) ):
+                error = 'Enter the institution associated with the user'
+            elif not len ( util.restore_text( params.get( 'address1', ''  ) ) ):
+                error = 'Enter the address'
+            elif not len( util.restore_text( params.get( 'city', ''  ) ) ):
+                error = 'Enter the city'
+            elif not len( util.restore_text( params.get( 'state', ''  ) ) ):
+                error = 'Enter the state/province/region'
+            elif not len( util.restore_text( params.get( 'postal_code', ''  ) ) ):
+                error = 'Enter the postal code'
+            elif not len( util.restore_text( params.get( 'country', ''  ) ) ):
+                error = 'Enter the country'
             else:
-                if self.edit_address_id:
-                    try:
-                        user_address = trans.sa_session.query( trans.app.model.UserAddress ).get( int( self.edit_address_id ) )
-                    except:
-                        return trans.response.send_redirect( web.url_for( controller='user',
-                                                                          action='manage_addresses',
-                                                                          msg='Invalid address ID',
-                                                                          messagetype='error') )
-                    user_address.desc = short_desc
-                    user_address.name = name
-                    user_address.institution = institution
-                    user_address.address = address1+' '+address2
-                    user_address.city = city
-                    user_address.state = state
-                    user_address.postal_code = postal_code
-                    user_address.country = country
-                    user_address.phone = phone
-                    user_address.flush()
-                    self.edit_address_id = None
+                user_address.desc = util.restore_text( params.get( 'short_desc', ''  ) )
+                user_address.name = util.restore_text( params.get( 'name', ''  ) )
+                user_address.institution = util.restore_text( params.get( 'institution', ''  ) )
+                user_address.address = util.restore_text( params.get( 'address1', ''  ) )+' '+util.restore_text( params.get( 'address2', ''  ) )
+                user_address.city = util.restore_text( params.get( 'city', ''  ) )
+                user_address.state = util.restore_text( params.get( 'state', ''  ) )
+                user_address.postal_code = util.restore_text( params.get( 'postal_code', ''  ) )
+                user_address.country = util.restore_text( params.get( 'country', ''  ) )
+                user_address.phone = util.restore_text( params.get( 'phone', ''  ) )
+                user_address.flush()
+                msg = 'Changes made to address <b>%s</b> are saved.' % user_address.desc
+                if admin_view == 'True':
                     return trans.response.send_redirect( web.url_for( controller='user',
-                                                                      action='manage_addresses',
-                                                                      msg='Changes made to address <b>%s</b> are saved.' % user_address.desc,
-                                                                      messagetype='done') )
-                self.edit_address_id = address_id
-        return trans.show_form( 
-            web.FormBuilder( web.url_for(), "Edit address", submit_text="Save changes" )
-                .add_text( "short_desc", "Short address description", value=short_desc, error=short_desc_error )
-                .add_text( "name", "Name", value=name, error=name_error )
-                .add_text( "institution", "Institution", value=institution, error=institution_error )
-                .add_text( "address1", "Address Line 1", value=address1, error=address1_error )
-                .add_text( "address2", "Address Line 2", value=address2, error=address2_error )
-                .add_text( "city", "City", value=city, error=city_error )
-                .add_text( "state", "State/Province/Region", value=state, error=state_error )
-                .add_text( "postal_code", "Postal Code", value=postal_code, error=postal_code_error )
-                .add_text( "country", "Country", value=country, error=country_error )
-                .add_text( "phone", "Phone", value=phone, error=phone_error ) )
-    @web.expose
-    def delete_address( self, trans, address_id=None):
-        if trans.app.config.require_login:
-            refresh_frames = [ 'masthead', 'history', 'tools' ]
+                                                                      action='show_info',
+                                                                      user_id=user.id,
+                                                                      admin_view=True,
+                                                                      msg=msg,
+                                                                      messagetype='done' ) )
+                return trans.response.send_redirect( web.url_for( controller='user',
+                                                                  action='show_info',
+                                                                  msg=msg,
+                                                                  messagetype='done') )
         else:
-            refresh_frames = [ 'masthead', 'history' ]
-        if not trans.app.config.allow_user_creation and not trans.user_is_admin():
-            return trans.show_error_message( 'User registration is disabled.  Please contact your Galaxy administrator for an account.' )
+            # show the address form with the current values filled in
+            # create the widgets for each address field
+            widgets = []
+            widgets.append(dict(label='Short description',
+                                widget=TextField( 'short_desc', 40, user_address.desc ) ) )
+            widgets.append(dict(label='Name',
+                                widget=TextField( 'name', 40, user_address.name ) ) )
+            widgets.append(dict(label='Institution',
+                                widget=TextField( 'institution', 40, user_address.institution ) ) )
+            widgets.append(dict(label='Address Line 1',
+                                widget=TextField( 'address1', 40, user_address.address ) ) )
+            widgets.append(dict(label='City',
+                                widget=TextField( 'city', 40, user_address.city ) ) )
+            widgets.append(dict(label='State',
+                                widget=TextField( 'state', 40, user_address.state ) ) )
+            widgets.append(dict(label='Postal Code',
+                                widget=TextField( 'postal_code', 40, user_address.postal_code ) ) )
+            widgets.append(dict(label='Country',
+                                widget=TextField( 'country', 40, user_address.country ) ) )
+            widgets.append(dict(label='Phone',
+                                widget=TextField( 'phone', 40, user_address.phone ) ) )
+            return trans.fill_template( 'user/edit_address.mako', user=user,
+                                        address=user_address, admin_view=admin_view,
+                                        widgets=widgets, msg=msg, messagetype=messagetype)
+    @web.expose
+    def delete_address( self, trans, address_id=None, user_id=None, admin_view='False'):
         try:
             user_address = trans.sa_session.query( trans.app.model.UserAddress ).get( int( address_id ) )
         except:
-            return trans.fill_template( 'user/address.mako',
-                                        msg='Invalid address ID',
-                                        messagetype='error' )
+            return trans.response.send_redirect( web.url_for( controller='user',
+                                                              action='show_info',
+                                                              user_id=user_id,
+                                                              admin_view=admin_view,
+                                                              msg='Invalid address ID',
+                                                              messagetype='error' ) )
         user_address.deleted = True
         user_address.flush()
         return trans.response.send_redirect( web.url_for( controller='user',
-                                                          action='manage_addresses',
+                                                          action='show_info',
+                                                          admin_view=admin_view,
+                                                          user_id=user_id,
                                                           msg='Address <b>%s</b> deleted' % user_address.desc,
                                                           messagetype='done') )
     @web.expose
-    def undelete_address( self, trans, address_id=None):
-        if trans.app.config.require_login:
-            refresh_frames = [ 'masthead', 'history', 'tools' ]
-        else:
-            refresh_frames = [ 'masthead', 'history' ]
-        if not trans.app.config.allow_user_creation and not trans.user_is_admin():
-            return trans.show_error_message( 'User registration is disabled.  Please contact your Galaxy administrator for an account.' )
+    def undelete_address( self, trans, address_id=None, user_id=None, admin_view='False'):
         try:
             user_address = trans.sa_session.query( trans.app.model.UserAddress ).get( int( address_id ) )
         except:
-            return trans.fill_template( 'user/address.mako',
-                                        msg='Invalid address ID',
-                                        messagetype='error' )
+            return trans.response.send_redirect( web.url_for( controller='user',
+                                                              action='show_info',
+                                                              user_id=user_id,
+                                                              admin_view=admin_view,
+                                                              msg='Invalid address ID',
+                                                              messagetype='error' ) )
         user_address.deleted = False
         user_address.flush()
         return trans.response.send_redirect( web.url_for( controller='user',
-                                                          action='manage_addresses',
-                                                          msg='Address <b>%s</b> is restored' % user_address.desc,
+                                                          action='show_info',
+                                                          admin_view=admin_view,
+                                                          user_id=user_id,
+                                                          msg='Address <b>%s</b> undeleted' % user_address.desc,
                                                           messagetype='done') )
+

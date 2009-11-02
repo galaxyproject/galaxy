@@ -41,7 +41,7 @@ class UserListGrid( grids.Grid ):
     model_class = model.User
     template='/admin/user/grid.mako'
     columns = [
-        EmailColumn( "Email", link=( lambda item: dict( operation="user", id=item.id ) ), attach_popup=True ),
+        EmailColumn( "Email", link=( lambda item: dict( operation="information", id=item.id ) ), attach_popup=True ),
         UserNameColumn( "User Name", attach_popup=False ),
         GroupsColumn( "Groups", attach_popup=False ),
         RolesColumn( "Roles", attach_popup=False ),
@@ -51,13 +51,15 @@ class UserListGrid( grids.Grid ):
         grids.GridColumn( "Deleted", key="deleted", visible=False )
     ]
     operations = [
-        grids.GridOperation( "reset_password", condition=( lambda item: not item.deleted ), allow_multiple=True )
+        grids.GridOperation( "Manage Roles & Groups", condition=( lambda item: not item.deleted ), allow_multiple=False )
+        
     ]
     #TODO: enhance to account for trans.app.config.allow_user_deletion here so that we can eliminate these operations if 
     # the setting is False
-    operations.append( grids.GridOperation( "delete", condition=( lambda item: not item.deleted ), allow_multiple=True ) )
-    operations.append( grids.GridOperation( "undelete", condition=( lambda item: item.deleted ), allow_multiple=True ) )
-    operations.append( grids.GridOperation( "purge", condition=( lambda item: item.deleted ), allow_multiple=True ) )
+    operations.append( grids.GridOperation( "Reset Password", condition=( lambda item: not item.deleted ), allow_multiple=True, allow_popup=False ) )
+    operations.append( grids.GridOperation( "Delete", condition=( lambda item: not item.deleted ), allow_multiple=True ) )
+    operations.append( grids.GridOperation( "Undelete", condition=( lambda item: item.deleted ), allow_multiple=True ) )
+    operations.append( grids.GridOperation( "Purge", condition=( lambda item: item.deleted ), allow_multiple=True ) )
     standard_filters = [
         grids.GridColumnFilter( "Active", args=dict( deleted=False ) ),
         grids.GridColumnFilter( "Deleted", args=dict( deleted=True ) ),
@@ -530,6 +532,9 @@ class Admin( BaseController ):
     @web.expose
     @web.require_admin
     def create_new_user( self, trans, **kwargs ):
+        return trans.response.send_redirect( web.url_for( controller='user',
+                                                          action='create',
+                                                          admin_view='True' ) )
         email = ''
         password = ''
         confirm = ''
@@ -731,9 +736,9 @@ class Admin( BaseController ):
     def users( self, trans, **kwargs ):      
         if 'operation' in kwargs:
             operation = kwargs['operation'].lower()
-            if operation == "user":
+            if operation == "roles":
                 return self.user( trans, **kwargs )
-            if operation == "reset_password":
+            if operation == "reset password":
                 return self.reset_user_password( trans, **kwargs )
             if operation == "delete":
                 return self.mark_user_deleted( trans, **kwargs )
@@ -743,8 +748,31 @@ class Admin( BaseController ):
                 return self.purge_user( trans, **kwargs )
             if operation == "create":
                 return self.create_new_user( trans, **kwargs )
+            if operation == "information":
+                return self.user_info( trans, **kwargs )
         # Render the list view
         return self.user_list_grid( trans, **kwargs )
+    @web.expose
+    @web.require_admin
+    def user_info( self, trans, **kwd ):
+        '''
+        This method displays the user information page which consists of login 
+        information, public username, reset password & other user information 
+        obtained during registration
+        '''
+        print 'KWD', kwd
+        user_id = kwd.get( 'id', None )
+        if not user_id:
+            message += "Invalid user id (%s) received" % str( user_id )
+            trans.response.send_redirect( web.url_for( controller='admin',
+                                                       action='users',
+                                                       message=util.sanitize_text( message ),
+                                                       status='error' ) )
+        user = get_user( trans, user_id )
+        return trans.response.send_redirect( web.url_for( controller='user',
+                                                          action='show_info',
+                                                          user_id=user.id,
+                                                          admin_view=True ) )
     @web.expose
     @web.require_admin
     def user( self, trans, **kwd ):

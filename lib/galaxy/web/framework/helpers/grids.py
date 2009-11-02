@@ -266,10 +266,11 @@ class GridColumn( object ):
         return accepted_filters
 
 class GridOperation( object ):
-    def __init__( self, label, key=None, condition=None, allow_multiple=True, target=None, url_args=None ):
+    def __init__( self, label, key=None, condition=None, allow_multiple=True, allow_popup=True, target=None, url_args=None ):
         self.label = label
         self.key = key
         self.allow_multiple = allow_multiple
+        self.allow_popup = allow_popup
         self.condition = condition
         self.target = target
         self.url_args = url_args

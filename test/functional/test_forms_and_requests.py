@@ -41,16 +41,11 @@ class TestFormsAndRequests( TwillTestCase ):
         self.login( email='test@bx.psu.edu' )
         # create a form
         global form_one_name
-        name = form_one_name
         desc = "This is Form One's description"
         formtype = galaxy.model.FormDefinition.types.REQUEST
-        self.create_form( name=name, desc=desc, formtype=formtype, num_fields=0 )
+        self.create_form( name=form_one_name, desc=desc, formtype=formtype, num_fields=0 )
         # Get the form_definition object for later tests
-        form_one = sa_session.query( galaxy.model.FormDefinition ) \
-                             .filter( and_( galaxy.model.FormDefinition.table.c.name==name,
-                                            galaxy.model.FormDefinition.table.c.desc==desc,
-                                            galaxy.model.FormDefinition.table.c.type==formtype ) ) \
-                             .all()[-1]
+        form_one = get_latest_form(form_one_name)
         assert form_one is not None, 'Problem retrieving form named "%s" from the database' % name
         # edit form & add few more fields
         new_name = "Request Form (Renamed)"
@@ -83,20 +78,18 @@ class TestFormsAndRequests( TwillTestCase ):
     def test_015_create_sample_form( self ):
         """Testing creating another form (for samples)"""
         global form_two_name
-        name = form_two_name
         desc = "This is Form One's description"
         formtype = 'Sequencing Sample Form'
-        self.create_form( name=name, desc=desc, formtype=formtype )
+        self.create_form( name=form_two_name, desc=desc, formtype=formtype )
         self.home()
         self.visit_page( 'forms/manage' )
-        self.check_page_for_string( name )
+        self.check_page_for_string( form_two_name )
         self.check_page_for_string( desc )
         self.check_page_for_string( formtype )
     def test_020_create_request_type( self ):
         """Testing creating a new requestype"""
         request_form = get_latest_form(form_one_name)
         sample_form = get_latest_form(form_two_name)
-        print request_form.id, sample_form.id
         self.create_request_type(request_type_name, "test request type", 
                                  str(request_form.id), str(sample_form.id), sample_states )
         global request_type
@@ -179,7 +172,6 @@ class TestFormsAndRequests( TwillTestCase ):
                    % ( self.url, address1[ 'short_desc' ], address1[ 'name' ], address1[ 'institution' ], 
                        address1[ 'address1' ], address1[ 'address2' ], address1[ 'city' ], address1[ 'state' ], 
                        address1[ 'postal_code' ], address1[ 'country' ], address1[ 'phone' ] )
-        print url_str
         self.visit_url( url_str )
         self.check_page_for_string( 'Address <b>%s</b> has been added' % address1[ 'short_desc' ] )
         global regular_user
@@ -201,8 +193,6 @@ class TestFormsAndRequests( TwillTestCase ):
         # create the request
         request_name, request_desc = 'Request One', 'Request One Description'
         self.create_request(request_type.id, request_name, request_desc, library_one.id, 'none', fields)
-        self.check_page_for_string( request_name )
-        self.check_page_for_string( request_desc )
         global request_one
         request_one = sa_session.query( galaxy.model.Request ) \
                                 .filter( and_( galaxy.model.Request.table.c.name==request_name,
@@ -216,18 +206,11 @@ class TestFormsAndRequests( TwillTestCase ):
                     ( 'Sample Two', [ 'S2 Field 0 Value' ] ) ]
         # add samples to this request
         self.add_samples( request_one.id, request_one.name, samples )
-        for sample_name, fields in samples:
-            self.check_page_for_string( sample_name )
-            self.check_page_for_string( 'Unsubmitted' )
-            for field_value in fields:
-                self.check_page_for_string( field_value )
         # edit this request
         fields = ['option2', str(user_address.id), 'field three value (edited)'] 
         self.edit_request(request_one.id, request_one.name, request_one.name+' (Renamed)', 
                           request_one.desc+' (Re-described)', library_one.id, folder_one.id, fields)
         sa_session.refresh( request_one )
-        self.check_page_for_string( request_name+' (Renamed)' )
-        self.check_page_for_string( request_desc+' (Re-described)' )
         # check if the request is showing in the 'unsubmitted' filter
         self.home()
         self.visit_url( '%s/requests/list?show_filter=Unsubmitted' % self.url )
@@ -256,15 +239,10 @@ class TestFormsAndRequests( TwillTestCase ):
         # set bar codes for the samples
         bar_codes = [ '1234567890', '0987654321' ]
         self.add_bar_codes( request_one.id, request_one.name, bar_codes )
-        self.check_page_for_string( 'Bar codes has been saved for this request' )
         # change the states of all the samples of this request
         for sample in request_one.samples:
-            self.change_sample_state( sample.name, sample.id, request_type.states[1].id )
-            self.check_page_for_string( request_type.states[1].name )
-            self.check_page_for_string( request_type.states[1].desc )
-            self.change_sample_state( sample.name, sample.id, request_type.states[2].id )
-            self.check_page_for_string( request_type.states[2].name )
-            self.check_page_for_string( request_type.states[2].desc )
+            self.change_sample_state( sample.name, sample.id, request_type.states[1].id, request_type.states[1].name )
+            self.change_sample_state( sample.name, sample.id, request_type.states[2].id, request_type.states[2].name )
         self.home()
         sa_session.refresh( request_one )
         # check if the request's state is now set to 'complete'
@@ -300,11 +278,6 @@ class TestFormsAndRequests( TwillTestCase ):
                     ( 'Sample Two', [ 'S2 Field 0 Value' ] ) ]
         # add samples to this request
         self.add_samples( request_two.id, request_two.name, samples )
-        for sample_name, fields in samples:
-            self.check_page_for_string( sample_name )
-            self.check_page_for_string( 'Unsubmitted' )
-            for field_value in fields:
-                self.check_page_for_string( field_value )
         # submit the request
         self.submit_request( request_two.id, request_two.name )
         sa_session.refresh( request_two )

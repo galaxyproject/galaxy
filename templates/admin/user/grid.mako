@@ -195,7 +195,7 @@
                         <td>
                             <div popupmenu="grid-${i}-popup">
                                 %for operation in grid.operations:
-                                    %if operation.allowed( item ):
+                                    %if operation.allowed( item ) and operation.allow_popup:
                                         <a class="action-button" href="${url( operation=operation.label, id=item.id )}">${operation.label}</a>
                                     %endif
                                 %endfor

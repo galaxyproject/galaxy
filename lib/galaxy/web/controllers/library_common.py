@@ -242,7 +242,8 @@ class LibraryCommon( BaseController ):
             trans.response.send_redirect( web.url_for( controller='forms',
                                                        action='new',
                                                        msg=msg,
-                                                       messagetype='done' ) )
+                                                       messagetype='done',
+                                                       form_type=trans.app.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE ) )
         if params.get( 'add_info_template_button', False ):
             form = trans.sa_session.query( trans.app.model.FormDefinition ).get( int( kwd[ 'form_id' ] ) )
             #fields = list( copy.deepcopy( form.fields ) )

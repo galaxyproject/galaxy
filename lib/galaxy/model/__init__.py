@@ -1098,7 +1098,8 @@ class MetadataFile( object ):
 class FormDefinition( object ):
     types = Bunch(  REQUEST = 'Sequencing Request Form',
                     SAMPLE = 'Sequencing Sample Form',
-                    LIBRARY_INFO_TEMPLATE = 'Library information template'  )
+                    LIBRARY_INFO_TEMPLATE = 'Library information template',
+                    USER_INFO = 'User Information'  )
     def __init__(self, name=None, desc=None, fields=[], 
                  form_definition_current=None, form_type=None, layout=None):
         self.name = name
@@ -1203,21 +1204,6 @@ class Request( object ):
         self.folder = folder
         self.state = state
         self.samples_list = []
-    def add_sample(self, sample_name=None, sample_desc=None, sample_values=None):
-        # create a form_values row
-        values = trans.app.model.FormValues(self.type.sample_form, sample_values)
-        values.flush()   
-        sample = Sample(sample_name, sample_desc, self, values)
-        sample.flush()
-        # set the initial state            
-        state = self.type.states[0]
-        event = SampleEvent(sample, state)
-        event.flush()
-        # add this sample to the member array
-        self.samples_list.append(sample)
-        return sample
-    def delete_sample(self, sample_name):
-        pass
     def has_sample(self, sample_name):
         for s in self.samples:
             if s.name == sample_name:

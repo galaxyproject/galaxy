@@ -596,13 +596,82 @@ class TwillTestCase( unittest.TestCase ):
     # Functions associated with user accounts
     def create( self, email='test@bx.psu.edu', password='testuser' ):
         self.home()
-        self.visit_page( "user/create?email=%s&password=%s&confirm=%s" % ( email, password, password ) )
+        self.visit_page( "user/create?email=%s&password=%s&confirm=%s&create_user_button=Submit" % ( email, password, password ) )
         self.check_page_for_string( "Now logged in as %s" %email )
         self.home()
         # Make sure a new private role was created for the user
         self.visit_page( "user/set_default_permissions" )
         self.check_page_for_string( email )
         self.home()
+    def create_user_with_info( self, email, password, username, user_info_forms, user_info_form_id, user_info_values ):
+        '''
+        This method registers a new user and also provides use info
+        '''
+        self.home()
+        if user_info_forms == 'multiple':
+            self.visit_page( "user/create?user_info_select=%i&admin_view=False" % user_info_form_id )
+        else:
+            self.visit_page( "user/create?admin_view=False" )
+        self.check_page_for_string( "Create account" )
+        tc.fv( "1", "email", email )
+        tc.fv( "1", "password", password )
+        tc.fv( "1", "confirm", password )
+        tc.fv( "1", "username", username )
+        if user_info_forms == 'multiple':
+            self.check_page_for_string( "User type" )
+        for index, info_value in enumerate(user_info_values):
+            tc.fv( "1", "field_%i" % index, info_value )
+        tc.submit( "create_user_button" )
+        self.check_page_for_string( "Now logged in as %s" % email )
+    def create_user_with_info_as_admin( self, email, password, username, user_info_forms, user_info_form_id, user_info_values ):
+        '''
+        This method registers a new user and also provides use info as an admin
+        '''
+        self.home()
+        if user_info_forms == 'multiple':
+            self.visit_page( "admin/users?operation=create?user_info_select=%i&admin_view=False" % user_info_form_id )
+        else:
+            self.visit_page( "admin/users?operation=create" )
+        self.check_page_for_string( "Create account" )
+        tc.fv( "1", "email", email )
+        tc.fv( "1", "password", password )
+        tc.fv( "1", "confirm", password )
+        tc.fv( "1", "username", username )
+        if user_info_forms == 'multiple':
+            self.check_page_for_string( "User type" )
+        for index, info_value in enumerate(user_info_values):
+            tc.fv( "1", "field_%i" % index, info_value )
+        tc.submit( "create_user_button" )
+        self.check_page_for_string( "Created new user account (%s)" % email )
+    def edit_login_info( self, new_email, new_username ):
+        self.home()
+        self.visit_page( "user/show_info" )
+        self.check_page_for_string( "Manage User Information" )
+        tc.fv( "1", "email", new_email )
+        tc.fv( "1", "username", new_username )
+        tc.submit( "login_info_button" )
+        self.check_page_for_string( 'The login information has been updated with the changes' )
+        self.check_page_for_string( new_email )
+        self.check_page_for_string( new_username )
+    def change_password( self, password, new_password ):
+        self.home()
+        self.visit_page( "user/show_info" )
+        self.check_page_for_string( "Manage User Information" )
+        tc.fv( "2", "current", password )
+        tc.fv( "2", "password", new_password )
+        tc.fv( "2", "confirm", new_password )
+        tc.submit( "change_password_button" )
+        self.check_page_for_string( 'The password has been changed.' )
+    def edit_user_info( self, info_values ):
+        self.home()
+        self.visit_page( "user/show_info" )
+        self.check_page_for_string( "Manage User Information" )
+        for index, info_value in enumerate(info_values):
+            tc.fv( "3", "field_%i" % index, info_value )
+        tc.submit( "edit_user_info_button" )
+        self.check_page_for_string( "The user information has been updated with the changes." )
+        for value in info_values:
+            self.check_page_for_string( value )
     def user_set_default_permissions( self, permissions_out=[], permissions_in=[], role_id=2 ): # role.id = 2 is Private Role for test2@bx.psu.edu 
         # NOTE: Twill has a bug that requires the ~/user/permissions page to contain at least 1 option value 
         # in each select list or twill throws an exception, which is: ParseError: OPTION outside of SELECT
@@ -1161,19 +1230,8 @@ class TwillTestCase( unittest.TestCase ):
         for index, field_value in enumerate(fields):
             tc.fv( "1", "field_%i" % index, field_value )
         tc.submit( "create_request_button" )
-    def create_request_admin( self, request_type_id, user_id, name, desc, library_id, fields ):
-        self.home()
-        self.visit_url( "%s/requests_admin/new?create=True&select_request_type=%i&library_id=%i" % ( self.url, 
-                                                                                                     request_type_id,
-                                                                                                     library_id ) )
-        self.check_page_for_string( 'Add a new request' )
-        tc.fv( "1", "select_user", str(user_id) )
-        tc.fv( "1", "name", name )
-        tc.fv( "1", "desc", desc )
-        tc.fv( "1", "library_id", str(library_id) )
-        for index, field_value in enumerate(fields):
-            tc.fv( "1", "field_%i" % index, field_value )
-        tc.submit( "create_request_button" )
+        self.check_page_for_string( name )
+        self.check_page_for_string( desc )
     def edit_request( self, request_id, name, new_name, new_desc, new_library_id, new_folder_id, new_fields):
         self.home()
         self.visit_url( "%s/requests/edit?request_id=%i&show=True" % (self.url, request_id) )
@@ -1185,6 +1243,8 @@ class TwillTestCase( unittest.TestCase ):
         for index, field_value in enumerate(new_fields):
             tc.fv( "1", "field_%i" % index, field_value )
         tc.submit( "save_changes_request_button" )
+        self.check_page_for_string( new_name )
+        self.check_page_for_string( new_desc )
     def add_samples( self, request_id, request_name, samples ):
         self.home()
         self.visit_url( "%s/requests/list?sort=-create_time&operation=show_request&id=%s" % ( self.url, self.security.encode_id( request_id ) ))
@@ -1196,6 +1256,11 @@ class TwillTestCase( unittest.TestCase ):
             for field_index, field_value in enumerate(fields):
                 tc.fv( "1", "sample_%i_field_%i" % ( sample_index, field_index ), field_value )
         tc.submit( "save_samples_button" )
+        for sample_name, fields in samples:
+            self.check_page_for_string( sample_name )
+            self.check_page_for_string( 'Unsubmitted' )
+            for field_value in fields:
+                self.check_page_for_string( field_value )
     def submit_request( self, request_id, request_name ):
         self.home()
         self.visit_url( "%s/requests/submit_request?id=%i" % ( self.url, request_id ))
@@ -1207,21 +1272,15 @@ class TwillTestCase( unittest.TestCase ):
         for index, bar_code in enumerate(bar_codes):
             tc.fv( "1", "sample_%i_bar_code" % index, bar_code )
         tc.submit( "save_bar_codes" )
-    def change_sample_state( self, sample_name, sample_id, new_state_id, comment='' ):
+        self.check_page_for_string( 'Bar codes has been saved for this request' )
+    def change_sample_state( self, sample_name, sample_id, new_state_id, new_state_name, comment='' ):
         self.home()
         self.visit_url( "%s/requests_admin/show_events?sample_id=%i" % (self.url, sample_id) )
         self.check_page_for_string( 'Events for Sample "%s"' % sample_name )
         tc.fv( "1", "select_state", str(new_state_id) )
         tc.fv( "1", "comment", comment )
         tc.submit( "add_event_button" )
-    # Address stuff
-    def create_address( self, address ):
-        self.home()
-        self.visit_url( "%s/user/new_address" % self.url )
-        self.check_page_for_string( 'New address' )
-        for name, value in address.iteritems():
-            tc.fv( "1", name, value )
-        tc.submit( "Save_button" )
+        self.check_page_for_string( new_state_name )
     # Library stuff
     def create_library( self, name='Library One', description='This is Library One' ):
         """Create a new library"""
