@@ -122,6 +122,15 @@
                     <div class="toolTitle"><a href="${h.url_for( controller='requests_admin', action='list')}" target="galaxy_main">Manage requests</a></div>
                   </div>
                 </div>
+				<div class="toolSectionTitle">
+                  <span>Cloud</span>
+                </div>
+				<div class="toolSectionBody">
+                  <div class="toolSectionBg">
+				  	<div class="toolTitle"><a href="${h.url_for( controller='cloud', action='listMachineImages' )}" target="galaxy_main">List machine images</a></div>
+                    <div class="toolTitle"><a href="${h.url_for( controller='cloud', action='addNewImage' )}" target="galaxy_main">Add machine image</a></div>
+                  </div>
+                </div>
             </div>
         </div>    
     </div>

@@ -350,8 +350,8 @@ class CloudController( BaseController ):
                     "<br />Note: you will be able to add more storage later", value='', error=vol_error ) )
         
     @web.expose
-    @web.require_login( "add a cloud image" )
-    #@web.require_admin
+    #@web.require_login( "add a cloud image" )
+    @web.require_admin
     def addNewImage( self, trans, image_id='', manifest='', state=None ):
         error = None
         if image_id:
@@ -373,14 +373,32 @@ class CloudController( BaseController ):
                 trans.log_event( "New cloud image added: '%s'" % image.image_id )
                 trans.set_message( "Cloud image '%s' added." % image.image_id )
                 if state:
-                    image.state= state
-                return self.list( trans )
-            
+                    image.state = state
+                images = trans.sa_session.query( model.CloudImage ).all()
+                return trans.fill_template( '/cloud/list_images.mako', images=images )
+               
         return trans.show_form(
             web.FormBuilder( web.url_for(), "Add new cloud image", submit_text="Add" )
                 .add_text( "image_id", "Machine Image ID (AMI or EMI)", value='', error=error )
                 .add_text( "manifest", "Manifest", value='', error=error ) )
-            
+    
+    @web.expose
+    @web.require_login( "use Galaxy cloud" )
+    def listMachineImages( self, trans ):
+        images = trans.sa_session.query( model.CloudImage ).all()
+        return trans.fill_template( '/cloud/list_images.mako', images=images )
+    
+    @web.expose
+    @web.require_admin
+    def deleteImage( self, trans, id=None ):
+        if not isinstance( id, int ):
+            id = trans.security.decode_id( id )
+
+        image = trans.sa_session.query( model.CloudImage ).get( id )
+        image.delete()
+        image.flush()
+        return self.listMachineImages( trans )
+        
     @web.expose
     @web.require_login( "use Galaxy cloud" )
     def edit( self, trans, id, credName=None, accessKey=None, secretKey=None, edited=False ):
