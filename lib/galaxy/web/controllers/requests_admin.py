@@ -377,8 +377,10 @@ class Requests( BaseController ):
                                     msg=msg,
                                     messagetype=messagetype)
     def __select_user(self, trans, userid):
+        user_list = trans.sa_session.query( trans.app.model.User )\
+                                    .order_by( trans.app.model.User.email.asc() )
         user_ids = ['none']
-        for user in trans.sa_session.query( trans.app.model.User ):
+        for user in user_list:
             if not user.deleted:
                 user_ids.append(str(user.id))
         select_user = SelectField('select_user', 
@@ -388,10 +390,6 @@ class Requests( BaseController ):
             select_user.add_option('Select one', 'none', selected=True)
         else:
             select_user.add_option('Select one', 'none')
-        def __get_email(user):
-            return user.email
-        user_list = trans.sa_session.query( trans.app.model.User )
-        #user_list.sort(key=__get_email)
         for user in user_list:
             if not user.deleted:
                 if userid == str(user.id):
@@ -399,7 +397,6 @@ class Requests( BaseController ):
                 else:
                     select_user.add_option(user.email, user.id)
         return select_user
-        
     def __library_ui(self, trans, user, request=None, **kwd):
         '''
         This method creates the data library & folder selectbox for new &
