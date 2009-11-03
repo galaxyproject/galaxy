@@ -24,11 +24,12 @@
 		<colgroup width="13%"></colgroup>
 		<colgroup width="70%"></colgroup>
 		<colgroup width="5%"></colgroup>
-		
+		<colgroup width="5%"></colgroup>
 		<tr class="header">
 			<th>#</th>
             <th>Machime image ID</th>
 			<th>Manifest</th>
+			<th>Edit</th>
 			<th>Delete</th>
             <th></th>
         </tr>
@@ -49,10 +50,13 @@
 					N/A
 				%endif
 				</td>
-				<td><div align="center">
-					<a confirm="Are you sure you want to delete machine image '${image.image_id}'?" 
+				<td>
+					<a href="${h.url_for( controller='cloud', action='editImage', image_id=image.image_id, manifest=image.manifest, id=trans.security.encode_id(image.id) )}">e</a>
+				</td>
+				<td>
+					<a confirm="Are you sure you want to delete machine image '${image.image_id}'? Note that this may result in users' UCI's not to work any more!" 
 					   href="${h.url_for( controller='cloud', action='deleteImage', id=trans.security.encode_id(image.id) )}">x</a>
-				</div></td>
+				</td>
 			</tr>
 		%endfor
 	</table>

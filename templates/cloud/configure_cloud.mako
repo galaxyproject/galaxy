@@ -284,12 +284,4 @@ ${h.js( "jquery" )}
 	 or 
 	<a href="http://aws.amazon.com/" target="_blank">
         open AWS account with Amazon</a>.
-	
 %endif
-
-<p /><br />
-<ul class="manage-table-actions">
-	<li>
-		<a class="action-button" href="${h.url_for( action='addNewImage' )}"><span>Add new image</span></a>
-	</li>
-</ul>

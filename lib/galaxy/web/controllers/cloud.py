@@ -350,16 +350,17 @@ class CloudController( BaseController ):
                     "<br />Note: you will be able to add more storage later", value='', error=vol_error ) )
         
     @web.expose
-    #@web.require_login( "add a cloud image" )
     @web.require_admin
     def addNewImage( self, trans, image_id='', manifest='', state=None ):
-        error = None
+        id_error = None
+        manifest_error = None
         if image_id:
-            if len( image_id ) > 255:
-                error = "Image ID name exceeds maximum allowable length."
+            if image_id=='' or len( image_id ) > 255:
+                id_error = "Image ID must be between 1 and 255 characters long."
             elif trans.app.model.CloudUserCredentials.filter(  
                     trans.app.model.CloudImage.table.c.image_id==image_id ).first():
-                error = "Image with that ID is already registered."
+                id_error = "Image with ID '" + image_id + "' is already registered. \
+                    Please choose another ID.ga"
             else:
                 # Create new image
                 image = model.CloudImage()
@@ -379,8 +380,8 @@ class CloudController( BaseController ):
                
         return trans.show_form(
             web.FormBuilder( web.url_for(), "Add new cloud image", submit_text="Add" )
-                .add_text( "image_id", "Machine Image ID (AMI or EMI)", value='', error=error )
-                .add_text( "manifest", "Manifest", value='', error=error ) )
+                .add_text( "image_id", "Machine Image ID (AMI or EMI)", value='', error=id_error )
+                .add_text( "manifest", "Manifest", value='', error=manifest_error ) )
     
     @web.expose
     @web.require_login( "use Galaxy cloud" )
@@ -398,7 +399,44 @@ class CloudController( BaseController ):
         image.delete()
         image.flush()
         return self.listMachineImages( trans )
-        
+    
+    @web.expose
+    @web.require_admin
+    def editImage( self, trans, image_id, manifest, id=None, edited=False ):
+        error = {}
+        if not isinstance( id, int ):
+            id = trans.security.decode_id( id )
+                
+        if not edited:
+            image = trans.sa_session.query( model.CloudImage ).get( id )
+            return trans.fill_template( "cloud/edit_image.mako", 
+                                        image = image,
+                                        error = error
+                                        )
+        else:
+            image = trans.sa_session.query( model.CloudImage ).get( id )
+            if image_id=='' or len( image_id ) > 255:
+                error['id_error'] = "Image ID must be between 1 and 255 characters in length."
+            elif trans.app.model.CloudImage \
+                .filter( and_( trans.app.model.CloudImage.table.c.id != image.id, trans.app.model.CloudImage.table.c.image_id==image_id ) ) \
+                .first():
+                error['id_error'] = "Image with ID '" + image_id + "' already exist. Please choose an alternative name."
+            if error:
+                return trans.fill_template( "cloud/edit_image.mako", 
+                                            image = image,
+                                            error = error
+                                            )
+            else:
+                image.image_id = image_id
+                image.manifest = manifest
+                # Persist
+                session = trans.sa_session
+                session.save_or_update( image )
+                session.flush()
+                # Log and display the management page
+                trans.set_message( "Image '%s' edited." % image.image_id )
+                return self.listMachineImages( trans )
+
     @web.expose
     @web.require_login( "use Galaxy cloud" )
     def edit( self, trans, id, credName=None, accessKey=None, secretKey=None, edited=False ):
