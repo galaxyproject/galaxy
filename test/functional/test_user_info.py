@@ -75,7 +75,7 @@ class TestUserInfo( TwillTestCase ):
         # user a new user with 'Student' user info form
         form_one = get_latest_form(form_one_name)
         user_info_values=['Educational', 'Penn State']
-        self.create_user_with_info( 'test1@bx.psu.edu', 'testuser', 'test1', 
+        self.create_user_with_info( 'test11@bx.psu.edu', 'testuser', 'test11', 
                                     user_info_forms='multiple',
                                     user_info_form_id=form_one.id, 
                                     user_info_values=user_info_values )
@@ -98,7 +98,7 @@ class TestUserInfo( TwillTestCase ):
         # user a new user with 'Student' user info form
         form_one = get_latest_form(form_one_name)
         user_info_values=['Educational', 'Penn State']
-        self.create_user_with_info( 'test2@bx.psu.edu', 'testuser', 'test2', 
+        self.create_user_with_info( 'test12@bx.psu.edu', 'testuser', 'test12', 
                                     user_info_forms='single',
                                     user_info_form_id=form_one.id, 
                                     user_info_values=user_info_values )
@@ -110,31 +110,31 @@ class TestUserInfo( TwillTestCase ):
     def test_015_edit_user_info( self ):
         """Testing editing user info as a regular user"""
         self.logout()
-        self.login( 'test1@bx.psu.edu' )
+        self.login( 'test11@bx.psu.edu' )
         user = sa_session.query( galaxy.model.User ) \
-                         .filter( and_( galaxy.model.User.table.c.email=='test1@bx.psu.edu' ) ).first()
-        self.edit_login_info( new_email='test1_new@bx.psu.edu', new_username='test1_new' )
+                         .filter( and_( galaxy.model.User.table.c.email=='test11@bx.psu.edu' ) ).first()
+        self.edit_login_info( new_email='test11_new@bx.psu.edu', new_username='test11_new' )
         self.change_password('testuser', 'new_testuser')
         self.edit_user_info( ['Research', 'PSU'] )
     def test_020_create_user_as_admin( self ):
         ''' Testing creating users as an admin '''
         self.logout()
-        self.login( 'test2@bx.psu.edu' )
+        self.login( 'test@bx.psu.edu' )
         form_one = get_latest_form(form_one_name)
         user_info_values=['Educational', 'Penn State']
-        self.create_user_with_info( 'test3@bx.psu.edu', 'testuser', 'test3', 
+        self.create_user_with_info( 'test13@bx.psu.edu', 'testuser', 'test13', 
                                     user_info_forms='single',
                                     user_info_form_id=form_one.id, 
                                     user_info_values=user_info_values )
         self.logout()
         self.login( 'test@bx.psu.edu' )
         user = sa_session.query( galaxy.model.User ) \
-                         .filter( and_( galaxy.model.User.table.c.email=='test3@bx.psu.edu' ) ).first()
+                         .filter( and_( galaxy.model.User.table.c.email=='test13@bx.psu.edu' ) ).first()
         self.home()
         page = "admin/users?id=%s&operation=information&f-deleted=False" % self.security.encode_id( user.id )
         self.visit_page( page )
         self.check_page_for_string( 'Manage User Information' )
-        self.check_page_for_string( 'test3@bx.psu.edu' )
+        self.check_page_for_string( 'test13@bx.psu.edu' )
         for value in user_info_values:
             self.check_page_for_string( value )        
         # lets delete the 'Student' user info form
