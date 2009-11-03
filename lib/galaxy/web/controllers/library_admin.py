@@ -432,7 +432,7 @@ class LibraryAdmin( BaseController ):
             # The user clicked the Save button on the 'Change data type' form
             if ldda.datatype.allow_datatype_change and trans.app.datatypes_registry.get_datatype_by_extension( params.datatype ).allow_datatype_change:
                 trans.app.datatypes_registry.change_datatype( ldda, params.datatype )
-                trans.app.model.flush()
+                trans.sa_session.flush()
                 msg = "Data type changed for library dataset '%s'" % ldda.name
                 return trans.fill_template( "/admin/library/ldda_edit_info.mako", 
                                             ldda=ldda,
@@ -469,7 +469,7 @@ class LibraryAdmin( BaseController ):
                         setattr( ldda.metadata, name, spec.unwrap( params.get ( name, None ) ) )
                 ldda.metadata.dbkey = dbkey
                 ldda.datatype.after_edit( ldda )
-                trans.app.model.flush()
+                trans.sa_session.flush()
                 msg = 'Attributes updated for library dataset %s' % ldda.name
                 messagetype = 'done'
             return trans.fill_template( "/admin/library/ldda_edit_info.mako", 
@@ -488,7 +488,7 @@ class LibraryAdmin( BaseController ):
                         setattr( ldda.metadata, name, spec.unwrap( spec.get( 'default' ) ) )
             ldda.datatype.set_meta( ldda )
             ldda.datatype.after_edit( ldda )
-            trans.app.model.flush()
+            trans.sa_session.flush()
             msg = 'Attributes updated for library dataset %s' % ldda.name
             return trans.fill_template( "/admin/library/ldda_edit_info.mako", 
                                         ldda=ldda,
@@ -674,6 +674,10 @@ class LibraryAdmin( BaseController ):
         replace_id = params.get( 'replace_id', None )
         if replace_id not in [ None, 'None' ]:
             replace_dataset = trans.sa_session.query( trans.app.model.LibraryDataset ).get( int( replace_id ) )
+            # The name is separately - by the time the new ldda is created,
+            # replace_dataset.name will point to the new ldda, not the one it's
+            # replacing.
+            replace_dataset_name = replace_dataset.name
             if not last_used_build:
                 last_used_build = replace_dataset.library_dataset_dataset_association.dbkey
             # Don't allow multiple datasets to be uploaded when replacing a dataset with a new version
@@ -701,7 +705,7 @@ class LibraryAdmin( BaseController ):
             if created_outputs:
                 total_added = len( created_outputs.values() )
                 if replace_dataset:
-                    msg = "Added %d dataset versions to the library dataset '%s' in the folder '%s'." % ( total_added, replace_dataset.name, folder.name )
+                    msg = "Added %d dataset versions to the library dataset '%s' in the folder '%s'." % ( total_added, replace_dataset_name, folder.name )
                 else:
                     if not folder.parent:
                         # Libraries have the same name as their root_folder

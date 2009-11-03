@@ -156,7 +156,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
                 raise AssertionError( '%s not in history id %d default_permissions after they were changed' % ( value.action, latest_history.id ) )
         # Add a dataset to the history
         self.upload_file( '1.bed' )
-        latest_dataset = galaxy.model.Dataset.query().order_by( desc( galaxy.model.Dataset.table.c.create_time ) ).first()
+        latest_dataset = sa_session.query( galaxy.model.Dataset ).order_by( desc( galaxy.model.Dataset.table.c.create_time ) ).first()
         # Make sure DatasetPermissionss are correct
         if len( latest_dataset.actions ) != len( latest_history.default_permissions ):
             raise AssertionError( '%d DatasetPermissionss were created for dataset id %d when it was created ( should have been %d )' % \

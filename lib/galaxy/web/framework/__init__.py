@@ -139,7 +139,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         self.__galaxy_session = NOT_SET
         base.DefaultWebTransaction.__init__( self, environ )
         self.setup_i18n()
-        self.sa_session.clear()
+        self.sa_session.expunge_all()
         self.debug = asbool( self.app.config.get( 'debug', False ) )
         # Flag indicating whether we are in workflow building mode (means
         # that the current history should not be used for parameter values
@@ -302,12 +302,12 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
             self.galaxy_session = galaxy_session
         # Do we need to flush the session?
         if galaxy_session_requires_flush:
-            objects_to_flush = [ galaxy_session ]
+            sa_session.add( galaxy_session )
             # FIXME: If prev_session is a proper relation this would not
             #        be needed.
             if prev_galaxy_session:
-                objects_to_flush.append( prev_galaxy_session )            
-            sa_session.flush( objects_to_flush )
+                sa_session.add( prev_galaxy_session )            
+            sa_session.flush()
         # If the old session was invalid, get a new history with our new session
         if invalidate_existing_session:
             self.new_history()
@@ -427,7 +427,8 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         if not last_accessed:
             # Only set default history permissions if current history is not from a previous session
             self.app.security_agent.history_set_default_permissions( history, dataset=True, bypass_manage_permission=True )
-        self.sa_session.flush( [ prev_galaxy_session, self.galaxy_session, history ] )
+        self.sa_session.add_all( ( prev_galaxy_session, self.galaxy_session, history ) )
+        self.sa_session.flush()
         # This method is not called from the Galaxy reports, so the cookie will always be galaxysession
         self.__update_session_cookie( name='galaxysession' )
     def handle_user_logout( self ):
@@ -439,7 +440,8 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         prev_galaxy_session = self.galaxy_session
         prev_galaxy_session.is_valid = False
         self.galaxy_session = self.__create_new_session( prev_galaxy_session )
-        self.sa_session.flush( [ prev_galaxy_session, self.galaxy_session ] )
+        self.sa_session.add_all( ( prev_galaxy_session, self.galaxy_session ) )
+        self.sa_session.flush()
         # This method is not called from the Galaxy reports, so the cookie will always be galaxysession
         self.__update_session_cookie( name='galaxysession' )
         
@@ -466,7 +468,8 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
     def set_history( self, history ):
         if history and not history.deleted:
             self.galaxy_session.current_history = history
-        self.sa_session.flush( [ self.galaxy_session ] )
+        self.sa_session.add( self.galaxy_session )
+        self.sa_session.flush()
     history = property( get_history, set_history )
     def new_history( self, name=None ):
         """
@@ -489,7 +492,8 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         # Set the user's default history permissions
         self.app.security_agent.history_set_default_permissions( history )
         # Save
-        self.sa_session.flush( [ self.galaxy_session, history ] )
+        self.sa_session.add_all( ( self.galaxy_session, history ) )
+        self.sa_session.flush()
         return history
 
     def get_user( self ):
@@ -498,7 +502,8 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
     def set_user( self, user ):
         """Set the current user."""
         self.galaxy_session.user = user
-        self.sa_session.flush( [ self.galaxy_session ] )
+        self.sa_session.add( self.galaxy_session )
+        self.sa_session.flush()
     user = property( get_user, set_user )
 
     def get_user_and_roles( self ):

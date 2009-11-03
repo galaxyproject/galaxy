@@ -77,7 +77,7 @@ class ASync( BaseController ):
                 data.state = data.blurb = jobs.JOB_ERROR
                 data.info  = "Error -> %s" % STATUS
             
-            trans.model.flush()
+            trans.sa_session.flush()
             
             return "Data %s with status %s received. OK" % (data_id, STATUS)
    
@@ -112,7 +112,7 @@ class ASync( BaseController ):
             data.flush()
             open( data.file_name, 'wb' ).close() #create the file
             trans.history.add_dataset( data, genome_build=GALAXY_BUILD )
-            trans.model.flush()
+            trans.sa_session.flush()
             trans.log_event( "Added dataset %d to history %d" %(data.id, trans.history.id ), tool_id=tool_id )
 
             try:
@@ -132,6 +132,6 @@ class ASync( BaseController ):
                 data.info  = str(e)
                 data.state = data.blurb = data.states.ERROR
             
-            trans.model.flush()
+            trans.sa_session.flush()
 
         return trans.fill_template('tool_executed.tmpl', out_data={}, tool=tool, config=self.app.config )

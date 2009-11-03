@@ -277,7 +277,7 @@ class RootController( BaseController ):
                     if not __ok_to_edit_metadata( data.id ):
                         return trans.show_error_message( "This dataset is currently being used as input or output.  You cannot change datatype until the jobs have completed or you have canceled them." )
                     trans.app.datatypes_registry.change_datatype( data, params.datatype )
-                    trans.app.model.flush()
+                    trans.sa_session.flush()
                 else:
                     return trans.show_error_message( "You are unable to change datatypes in this manner. Changing %s to %s is not allowed." % ( data.extension, params.datatype ) )
             elif params.save:
@@ -303,7 +303,7 @@ class RootController( BaseController ):
                     data.datatype.after_edit( data )
                 else:
                     msg = ' (Metadata could not be changed because this dataset is currently being used as input or output. You must cancel or wait for these jobs to complete before changing metadata.)'
-                trans.app.model.flush()
+                trans.sa_session.flush()
                 return trans.show_ok_message( "Attributes updated%s" % msg, refresh_frames=['history'] )
             elif params.detect:
                 # The user clicked the Auto-detect button on the 'Edit Attributes' form
@@ -322,7 +322,7 @@ class RootController( BaseController ):
                     msg = 'Attributes updated'
                     data.set_meta()
                     data.datatype.after_edit( data )
-                trans.app.model.flush()
+                trans.sa_session.flush()
                 return trans.show_ok_message( msg, refresh_frames=['history'] )
             elif params.convert_data:
                 target_type = kwd.get("target_type", None)
@@ -383,7 +383,7 @@ class RootController( BaseController ):
                     if job.check_if_output_datasets_deleted():
                         job.mark_deleted()                
                         self.app.job_manager.job_stop_queue.put( job.id )
-            self.app.model.flush()
+            trans.sa_session.flush()
 
     @web.expose
     def delete( self, trans, id = None, show_deleted_on_refresh = False, **kwd):
@@ -432,7 +432,7 @@ class RootController( BaseController ):
         for dataset in history.datasets:
             dataset.deleted = True
             dataset.clear_associated_files()
-        self.app.model.flush()
+        trans.sa_session.flush()
         trans.log_event( "History id %s cleared" % (str(history.id)) )
         trans.response.send_redirect( url_for("/index" ) )
     @web.expose

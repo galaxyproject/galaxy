@@ -198,8 +198,6 @@ class ToolRunner( BaseController ):
                                 # pasted data
                                 datasets.append( create_dataset( 'Pasted Entry' ) )
                                 break
-        if datasets:
-            trans.model.flush()
         return [ d.id for d in datasets ]
 
     @web.expose

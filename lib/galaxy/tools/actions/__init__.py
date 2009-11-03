@@ -235,7 +235,7 @@ class DefaultToolAction( object ):
                 # Store output 
                 out_data[ name ] = data
                 # Store all changes to database
-                trans.app.model.flush()
+                trans.sa_session.flush()
         # Add all the top-level (non-child) datasets to the history
         for name in out_data.keys():
             if name not in child_dataset_names and name not in incoming: #don't add children; or already existing datasets, i.e. async created
@@ -248,7 +248,7 @@ class DefaultToolAction( object ):
             child_dataset = out_data[ child_name ]
             parent_dataset.children.append( child_dataset )
         # Store data after custom code runs 
-        trans.app.model.flush()
+        trans.sa_session.flush()
         # Create the job object
         job = trans.app.model.Job()
         job.session_id = trans.get_galaxy_session().id
@@ -274,7 +274,8 @@ class DefaultToolAction( object ):
                 job.add_input_dataset( name, None )
         for name, dataset in out_data.iteritems():
             job.add_output_dataset( name, dataset )
-        trans.app.model.flush()
+        trans.sa_session.add( job )
+        trans.sa_session.flush()
         # Some tools are not really executable, but jobs are still created for them ( for record keeping ).
         # Examples include tools that redirect to other applications ( epigraph ).  These special tools must
         # include something that can be retrieved from the params ( e.g., REDIRECT_URL ) to keep the job

@@ -29,6 +29,7 @@ def get_latest_form(form_name):
                          .filter( galaxy.model.FormDefinitionCurrent.table.c.deleted==False ) \
                          .order_by( galaxy.model.FormDefinitionCurrent.table.c.create_time.desc() )
     for fdc in fdc_list:
+        sa_session.refresh( fdc.latest_form )
         if form_name == fdc.latest_form.name:
             return fdc.latest_form
     return None

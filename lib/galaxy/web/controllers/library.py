@@ -421,7 +421,7 @@ class Library( BaseController ):
             if trans.app.security_agent.can_modify_library_item( user, roles, ldda ):
                 if ldda.datatype.allow_datatype_change and trans.app.datatypes_registry.get_datatype_by_extension( params.datatype ).allow_datatype_change:
                     trans.app.datatypes_registry.change_datatype( ldda, params.datatype )
-                    trans.app.model.flush()
+                    trans.sa_session.flush()
                     msg = "Data type changed for library dataset '%s'" % ldda.name
                     messagetype = 'done'
                 else:
@@ -463,7 +463,7 @@ class Library( BaseController ):
                             setattr( ldda.metadata, name, spec.unwrap( params.get ( name, None ) ) )
                     ldda.metadata.dbkey = dbkey
                     ldda.datatype.after_edit( ldda )
-                    trans.app.model.flush()
+                    trans.sa_session.flush()
                     msg = 'Attributes updated for library dataset %s' % ldda.name
                     messagetype = 'done'
             else:
@@ -486,7 +486,7 @@ class Library( BaseController ):
                             setattr( ldda.metadata, name, spec.unwrap( spec.get( 'default' ) ) )
                 ldda.datatype.set_meta( ldda )
                 ldda.datatype.after_edit( ldda )
-                trans.app.model.flush()
+                trans.sa_session.flush()
                 msg = 'Attributes updated for library dataset %s' % ldda.name
                 messagetype = 'done'
             else:

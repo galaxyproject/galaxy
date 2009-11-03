@@ -335,7 +335,7 @@ class DatasetInterface( BaseController ):
             assert topmost_parent in history.datasets, "Data does not belong to current history"
             # Mark undeleted
             data.mark_undeleted()
-            self.app.model.flush()
+            trans.sa_session.flush()
             trans.log_event( "Dataset id %s has been undeleted" % str(id) )
             return True
         return False
@@ -407,7 +407,7 @@ class DatasetInterface( BaseController ):
                             hist.add_dataset( data.copy( copy_children = True ) )
                 if history in target_histories:
                     refresh_frames = ['history']
-                trans.app.model.flush()
+                trans.sa_session.flush()
                 done_msg = "%i datasets copied to %i histories." % ( len( source_dataset_ids ) - invalid_datasets, len( target_histories ) )
                 trans.sa_session.refresh( history )
         elif create_new_history:

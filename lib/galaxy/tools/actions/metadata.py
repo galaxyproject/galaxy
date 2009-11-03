@@ -26,7 +26,8 @@ class SetMetadataToolAction( ToolAction ):
             job.tool_version = tool.version
         except:
             job.tool_version = "1.0.0"
-        job.flush() #ensure job.id is available
+        trans.sa_session.add( job )
+        trans.sa_session.flush() #ensure job.id is available
         
         #add parameters to job_parameter table
         # Store original dataset state, so we can restore it. A separate table might be better (no chance of 'losing' the original state)? 
@@ -49,7 +50,7 @@ class SetMetadataToolAction( ToolAction ):
         #Need a special state here to show that metadata is being set and also allow the job to run
         #   i.e. if state was set to 'running' the set metadata job would never run, as it would wait for input (the dataset to set metadata on) to be in a ready state
         dataset.state = dataset.states.SETTING_METADATA
-        trans.app.model.flush()
+        trans.sa_session.flush()
         
         # Queue the job for execution
         trans.app.job_queue.put( job.id, tool )

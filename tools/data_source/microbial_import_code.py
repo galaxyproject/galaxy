@@ -123,7 +123,7 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr
             data = app.datatypes_registry.change_datatype( data, file_type )
             data.init_meta()
             data.set_peek()
-            app.model.flush()
+            data.flush()
         elif fields[0] == "#NewFile":
             description = fields[1]
             chr = fields[2]
@@ -137,7 +137,7 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr
             newdata.flush()
             app.security_agent.copy_dataset_permissions( base_dataset.dataset, newdata.dataset )
             history.add_dataset( newdata )
-            app.model.flush()
+            history.flush()
             try:
                 copyfile(filepath,newdata.file_name)
                 newdata.info = newdata.name
@@ -148,4 +148,4 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr
             newdata.dbkey = dbkey
             newdata.init_meta()
             newdata.set_peek()
-            app.model.flush()
+            newdata.flush()

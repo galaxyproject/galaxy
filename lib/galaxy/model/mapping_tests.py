@@ -19,16 +19,17 @@ class MappingTests( unittest.TestCase ):
         d1 = model.HistoryDatasetAssociation( extension="interval", metadata=dict(chromCol=1,startCol=2,endCol=3 ), history=h2, create_dataset=True )
         #h2.queries.append( q1 )
         #h2.queries.append( model.Query( "h2->q2" ) )
-        model.context.current.flush()
-        model.context.current.clear()
+        model.session.add_all( ( u, h1, h2, d1 ) )
+        model.session.flush()
+        model.session.expunge_all()
         # Check
-        users = model.context.current.query( model.User ).all()
+        users = model.session.query( model.User ).all()
         assert len( users ) == 1
         assert users[0].email == "james@foo.bar.baz"
         assert users[0].password == "password"
         assert len( users[0].histories ) == 1
         assert users[0].histories[0].name == "History 1"    
-        hists = model.context.current.query( model.History ).all()
+        hists = model.session.query( model.History ).all()
         assert hists[0].name == "History 1"
         assert hists[1].name == ( "H" * 255 )
         assert hists[0].user == users[0]
@@ -38,9 +39,9 @@ class MappingTests( unittest.TestCase ):
         assert hists[1].datasets[0].file_name == os.path.join( "/tmp", *directory_hash_id( id ) ) + ( "/dataset_%d.dat" % id )
         # Do an update and check
         hists[1].name = "History 2b"
-        model.context.current.flush()
-        model.context.current.clear()
-        hists = model.context.current.query( model.History ).all()
+        model.session.flush()
+        model.session.expunge_all()
+        hists = model.session.query( model.History ).all()
         assert hists[0].name == "History 1"
         assert hists[1].name == "History 2b"
         # gvk TODO need to ad test for GalaxySessions, but not yet sure what they should look like.

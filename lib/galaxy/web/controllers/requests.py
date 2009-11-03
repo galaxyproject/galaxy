@@ -294,7 +294,7 @@ class Requests( BaseController ):
             # save all the new/unsaved samples entered by the user
             if edit_mode == 'False':
                 for index in range(len(current_samples)-len(request.samples)):
-                    sample_index = index + len(request.samples)
+                    sample_index = len(request.samples)
                     sample_name = util.restore_text( params.get( 'sample_%i_name' % sample_index, ''  ) )
                     sample_values = []
                     for field_index in range(len(request.type.sample_form.fields)):

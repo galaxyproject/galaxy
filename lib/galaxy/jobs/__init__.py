@@ -199,7 +199,7 @@ class JobQueue( object ):
             try:
                 # Clear the session for each job so we get fresh states for
                 # job and all datasets
-                self.sa_session.clear()
+                self.sa_session.expunge_all()
                 # Get the real job entity corresponding to the wrapper (if we
                 # are tracking in the database this is probably cached in
                 # the session from the origianl query above)
@@ -346,7 +346,7 @@ class JobWrapper( object ):
         Prepare the job to run by creating the working directory and the
         config files.
         """
-        self.sa_session.clear() #this prevents the metadata reverting that has been seen in conjunction with the PBS job runner
+        self.sa_session.expunge_all() #this prevents the metadata reverting that has been seen in conjunction with the PBS job runner
         if not os.path.exists( self.working_directory ):
             os.mkdir( self.working_directory )
         # Restore parameters from the database
@@ -477,7 +477,7 @@ class JobWrapper( object ):
         the contents of the output files. 
         """
         # default post job setup
-        self.sa_session.clear()
+        self.sa_session.expunge_all()
         job = self.sa_session.query( model.Job ).get( self.job_id )
         # if the job was deleted, don't finish it
         if job.state == job.states.DELETED:

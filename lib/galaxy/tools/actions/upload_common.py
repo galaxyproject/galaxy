@@ -121,6 +121,7 @@ def new_history_upload( trans, uploaded_dataset, state=None ):
     trans.history.add_dataset( hda, genome_build = uploaded_dataset.dbkey )
     permissions = trans.app.security_agent.history_get_default_permissions( trans.history )
     trans.app.security_agent.set_all_dataset_permissions( hda.dataset, permissions )
+    trans.sa_session.flush()
     return hda
 
 def new_library_upload( trans, uploaded_dataset, library_bunch, state=None ):
@@ -291,7 +292,8 @@ def create_job( trans, params, tool, json_file_path, data_list, folder=None ):
         for i, dataset in enumerate( data_list ):
             job.add_output_dataset( 'output%i' % i, dataset )
     job.state = job.states.NEW
-    trans.app.model.flush()
+    trans.sa_session.add( job )
+    trans.sa_session.flush()
 
     # Queue the job for execution
     trans.app.job_queue.put( job.id, tool )
