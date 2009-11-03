@@ -179,7 +179,7 @@ class TestHistory( TwillTestCase ):
         self.share_current_history( regular_user1.email,
                                     check_str=history3.name )
         # Check out list of histories to make sure history3 was shared
-        self.view_stored_active_histories( check_str='operation=sharing">shared' )
+        self.view_stored_active_histories( check_str='operation=sharing' )
         # Enable importing history3 via a URL
         self.enable_import_via_link( self.security.encode_id( history3.id ),
                                      check_str='Unshare',

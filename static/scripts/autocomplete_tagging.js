@@ -309,7 +309,7 @@ jQuery.fn.autocomplete_tagging = function(options) {
 	  new_value = new_value.replace(/^\s+|\s+$/g,"");
 	    
 	  // Too short?
-	  if (new_value.length < 3)
+	  if (new_value.length < 2)
 	    return false;
 	    
 	  //

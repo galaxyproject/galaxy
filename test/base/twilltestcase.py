@@ -1,7 +1,7 @@
 import pkg_resources
 pkg_resources.require( "twill==0.9" )
 
-import StringIO, os, sys, random, filecmp, time, unittest, urllib, logging, difflib, zipfile, tempfile
+import StringIO, os, sys, random, filecmp, time, unittest, urllib, logging, difflib, zipfile, tempfile, re
 from itertools import *
 
 import twill
@@ -311,20 +311,20 @@ class TwillTestCase( unittest.TestCase ):
     def view_stored_active_histories( self, check_str='' ):
         self.home()
         self.visit_page( "history/list" )
-        self.check_page_for_string( 'Stored histories' )
+        self.check_page_for_string( 'Saved Histories' )
         self.check_page_for_string( '<input type="checkbox" name="id" value=' )
-        self.check_page_for_string( 'operation=Rename&id' )
-        self.check_page_for_string( 'operation=Switch&id' )
-        self.check_page_for_string( 'operation=Delete&id' )
+        self.check_page_for_string( 'operation=Rename' )
+        self.check_page_for_string( 'operation=Switch' )
+        self.check_page_for_string( 'operation=Delete' )
         if check_str:
             self.check_page_for_string( check_str )
         self.home()
     def view_stored_deleted_histories( self, check_str='' ):
         self.home()
         self.visit_page( "history/list?f-deleted=True" )
-        self.check_page_for_string( 'Stored histories' )
+        self.check_page_for_string( 'Saved Histories' )
         self.check_page_for_string( '<input type="checkbox" name="id" value=' )
-        self.check_page_for_string( 'operation=Undelete&id' )
+        self.check_page_for_string( 'operation=Undelete' )
         if check_str:
             self.check_page_for_string( check_str )
         self.home()
@@ -723,14 +723,14 @@ class TwillTestCase( unittest.TestCase ):
     # Functions associated with browsers, cookies, HTML forms and page visits
     
     def check_page_for_string( self, patt ):
-        """Looks for 'patt' in the current browser page"""
+        """Looks for 'patt' in the current browser page"""        
         page = self.last_page()
         for subpatt in patt.split():
             if page.find( patt ) == -1:
                 fname = self.write_temp_file( page )
                 errmsg = "no match to '%s'\npage content written to '%s'" % ( patt, fname )
                 raise AssertionError( errmsg )
-
+    
     def write_temp_file( self, content ):
         fd, fname = tempfile.mkstemp( suffix='.html', prefix='twilltestcase-' )
         f = os.fdopen( fd, "w" )

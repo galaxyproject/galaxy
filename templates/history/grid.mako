@@ -29,71 +29,20 @@
             });
             
             // Set up autocomplete for tag filter input.
-            var t = $("#input-tag-filter");
-            t.keyup( function( e ) 
-            {
-                if ( e.keyCode == 27 ) 
-        	    {
-        	        // Escape key
-        	        $(this).trigger( "blur" );
-        	    } else if (
-        		        ( e.keyCode == 13 ) || // Return Key
-        		        ( e.keyCode == 188 ) || // Comma
-        		        ( e.keyCode == 32 ) // Space
-        		        )
-        	    {
-            	    //
-            	    // Check input.
-            	    //
-
-            	    new_value = this.value;
-
-            	    // Do nothing if return key was used to autocomplete.
-            	    if (return_key_pressed_for_autocomplete == true)
-            	    {
-            	        return_key_pressed_for_autocomplete = false;
-            	        return false;
-            	    }
-
-            	    // Suppress space after a ":"
-            	    if ( new_value.indexOf(": ", new_value.length - 2) != -1)
-            	    {
-            	        this.value = new_value.substring(0, new_value.length-1);
-            	        return false;
-            	    }
-
-            	    // Remove trigger keys from input.
-            	    if ( (e.keyCode == 188) || (e.keyCode == 32) )
-            	        new_value = new_value.substring( 0 , new_value.length - 1 );
-
-            	    // Trim whitespace.
-            	    new_value = new_value.replace(/^\s+|\s+$/g,"");
-
-            	    // Too short?
-            	    if (new_value.length < 3)
-            	        return false;
-
-            	    //
-            	    // New tag OK.
-            	    //
-            	}
-        	});
+            var t = $("#input-tags-filter");
             
-            // Add autocomplete to input.
-            var format_item_func = function(key, row_position, num_rows, value, search_term) 
-            {
-                tag_name_and_value = value.split(":");
-                return (tag_name_and_value.length == 1 ? tag_name_and_value[0] :tag_name_and_value[1]);
-                //var array = new Array(key, value, row_position, num_rows,
-                //search_term ); return "\"" + array.join("*") + "\"";
-            }
             var autocomplete_options = 
-                { selectFirst: false, formatItem : format_item_func, autoFill: false, highlight: false, mustMatch: true };
+                { selectFirst: false, autoFill: false, highlight: false, mustMatch: false };
 
             t.autocomplete("${h.url_for( controller='tag', action='tag_autocomplete_data', item_class='History' )}", autocomplete_options);
-
             
-            $("#page-select").change(navigate_to_page);
+            // Set up autocomplete for name filter input.
+            var t2 = $("#input-name-filter");
+            
+            var autocomplete_options = 
+                { selectFirst: false, autoFill: false, highlight: false, mustMatch: false };
+                
+            t2.autocomplete("${h.url_for( controller='history', action='name_autocomplete_data' )}", autocomplete_options);              
         });
         ## Can this be moved into base.mako?
         %if refresh_frames:
@@ -125,21 +74,52 @@
             %endif
         %endif
         
+        // Filter and sort args for grid.
+        var filter_args = ${h.to_json_string(cur_filter_dict)};
+        var sort_key = "${sort_key}";
+        
         //
-        // Add a tag to the current grid filter; this adds the tag to the filter and then issues a request to refresh the grid.
+        // Add tag to grid filter.
         //
         function add_tag_to_grid_filter(tag_name, tag_value)
         {
-            // Use tag as a filter: replace TAGNAME with tag_name and issue query.
-            <%
-                url_args = {}
-                if "tags" in cur_filter_dict and cur_filter_dict["tags"] != "All":
-                    url_args["f-tags"] = cur_filter_dict["tags"].encode("utf-8") + ", TAGNAME"
-                else:
-                    url_args["f-tags"] = "TAGNAME"
-            %>
-            var url_base = "${url( url_args )}";
-            var url = url_base.replace("TAGNAME", tag_name);
+            // Put tag name and value together.
+            var tag = tag_name + (tag_value != null && tag_value != "" ? ":" + tag_value : "");
+            add_condition_to_grid_filter("tags", tag, true);         
+        }
+        
+        //
+        // Add a filter to the current grid filter; this adds the filter and then issues a request to refresh the grid.
+        //
+        function add_condition_to_grid_filter(name, value, append)
+        {
+            // Update filter arg with new condition.            
+            if (append)
+            {
+                // Append value.
+                var cur_val = filter_args[name];
+                if (cur_val != "All")
+                    cur_val = cur_val + ", " + value;
+                else
+                    cur_val = value;
+                filter_args[name] = cur_val;
+            }
+            else
+            {
+                // Replace value.
+                filter_args[name] = value;
+            }
+            
+            // Build URL with filter args, sort key.
+            var filter_arg_value_strs = new Array();
+            var i = 0;
+            for (arg in filter_args)
+            {
+                filter_arg_value_strs[i++] = "f-" + arg + "=" + filter_args[arg];
+            }
+            var filter_str = filter_arg_value_strs.join("&");
+            var url_base = "${h.url_for( controller='history', action='list')}";
+            var url = url_base + "?" + filter_str + "&sort=" + sort_key;
             self.location = url;
         }
         
@@ -154,7 +134,7 @@
             var url = url_base.replace("PAGE", page_num);
             self.location = url;
         }
-        
+
     </script>
 </%def>
 
@@ -175,47 +155,95 @@
 
 <div class="grid-header">
     <h2>${grid.title}</h2>
-
-    ## Print grid filter.
-    <form name="history_actions" action="javascript:add_tag_to_grid_filter($('#input-tag-filter').attr('value'))" method="get" >
-        <strong>Filter:&nbsp;&nbsp;&nbsp;</strong>
-        %for column in grid.columns:
-            %if column.filterable:
-                <span> by ${column.label.lower()}:</span>
-                ## For now, include special case to handle tags.
-                %if column.key == "tags":
-                    %if cur_filter_dict[column.key] != "All":
-                        <span class="filter" "style='font-style: italic'">
-                            ${cur_filter_dict[column.key]}
-                        </span>
-                        <span>|</span>
+    
+    ## Search box and more options filter at top of grid.
+    <div>
+        ## Grid search. TODO: use more elegant way to get free text search column.
+        <% column = grid.columns[-1] %>
+        <% use_form = False %>
+        %for i, filter in enumerate( column.get_accepted_filters() ):
+            %if i > 0:
+                <span>|</span>
+            %endif
+            %if column.key in cur_filter_dict and cur_filter_dict[column.key] == filter.args[column.key]:
+                <span class="filter" "style='font-style: italic'">${filter.label}</span>
+            %elif filter.label == "FREETEXT":
+                <form name="history_actions" 
+                    action="javascript:add_condition_to_grid_filter($('#input-${column.key}-filter').attr('name'),$('#input-${column.key}-filter').attr('value'),false)" 
+                    method="get" >
+                    ${column.label}:
+                    %if column.key in cur_filter_dict and cur_filter_dict[column.key] != "All":
+                        <span style="font-style: italic">${cur_filter_dict[column.key]}</span>
+                        <% filter_all = GridColumnFilter( "", { column.key : "All" } ) %>
+                        <a href="${url( filter_all.get_url_args() )}"><img src="${h.url_for('/static/images/delete_tag_icon_gray.png')}"/></a>
+                        |
                     %endif
-                    <input id="input-tag-filter" name="f-tags" type="text" value="" size="15"/>
-                    <span>|</span>
-                %endif
-        
-                ## Handle other columns.
-                %for i, filter in enumerate( column.get_accepted_filters() ):
-                    %if i > 0:
-                        <span>|</span>
-                    %endif
-                    %if cur_filter_dict[column.key] == filter.args[column.key]:
-                        <span class="filter" "style='font-style: italic'">${filter.label}</span>
-                    %else:
-                        <span class="filter"><a href="${url( filter.get_url_args() )}">${filter.label}</a></span>
-                    %endif
-                %endfor
-                <span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+                    <span><input id="input-${column.key}-filter" name="${column.key}" type="text" value="" size="15"/></span>
+                <% use_form = True %>
+            %else:
+                <span class="filter"><a href="${url( filter.get_url_args() )}">${filter.label}</a></span>
             %endif
         %endfor
-        
-        ## Link to clear all filters. TODO: this should be the default filter or an empty filter.
-        <%
-            args = { "deleted" : "False", "tags" : "All" }
-            no_filter = GridColumnFilter("Clear Filter", args)
-        %>
-        <span><a href="${url( no_filter.get_url_args() )}">${no_filter.label}</a></span>
-    </form>
+        | <a href="" onclick="javascript:$('#more-search-options').slideToggle('fast');return false;">Advanced Search</a>
+        %if use_form:
+            </form>
+        %endif        
+    </div>
+    
+    ## Advanced Search
+    <div id="more-search-options" style="display: none; padding-top: 5px">
+        <table style="border: 1px solid gray;">
+            <tr><td style="text-align: left" colspan="100">
+                Advanced Search | 
+                <a href=""# onclick="javascript:$('#more-search-options').slideToggle('fast');return false;">Close</a> |
+                ## Link to clear all filters.
+                <%
+                    no_filter = GridColumnFilter("Clear All", default_filter_dict)
+                %>
+                <a href="${url( no_filter.get_url_args() )}">${no_filter.label}</a>
+            </td></tr>
+            %for column in grid.columns:
+                %if column.filterable:
+                    <tr>
+                        ## Show div if current filter has value that is different from the default filter.
+                        %if cur_filter_dict[column.key] != default_filter_dict[column.key]:
+                            <script type="text/javascript">
+                                $('#more-search-options').css("display", "block");
+                            </script>
+                        %endif
+                        <td style="padding-left: 10px">${column.label.lower()}:</td>
+                        <td>
+                        <% use_form = False %>
+                        %for i, filter in enumerate( column.get_accepted_filters() ):
+                            %if i > 0:
+                                <span>|</span>
+                            %endif
+                            %if cur_filter_dict[column.key] == filter.args[column.key]:
+                                <span class="filter" style="font-style: italic">${filter.label}</span>
+                            %elif filter.label == "FREETEXT":
+                                <form name="history_actions"            action="javascript:add_condition_to_grid_filter($('#input-${column.key}-filter').attr('name'),$('#input-${column.key}-filter').attr('value'),true)" 
+                                    method="get" >
+                                    %if column.key in cur_filter_dict and cur_filter_dict[column.key] != "All":
+                                        <span style="font-style: italic">${cur_filter_dict[column.key]}</span>
+                                        <% filter_all = GridColumnFilter( "", { column.key : "All" } ) %>
+                                        <a href="${url( filter_all.get_url_args() )}"><img src="${h.url_for('/static/images/delete_tag_icon_gray.png')}"/></a>
+                                        |
+                                    %endif
+                                    <span><input id="input-${column.key}-filter" name="${column.key}" type="text" value="" size="15"/></span>
+                                <% use_form = True %>
+                            %else:
+                                <span class="filter"><a href="${url( filter.get_url_args() )}">${filter.label}</a></span>
+                            %endif
+                        %endfor
+                        %if use_form:
+                            </form>
+                        %endif
+                        </td>
+                    </tr>
+                %endif
+            %endfor
+        </table>
+    </div>
 </div>
 <form name="history_actions" action="${url()}" method="post" >
     <input type="hidden" name="page" value="${cur_page_num}">
@@ -291,7 +319,7 @@
                                         extra = ""
                                 %>
                                 %if href:                    
-                                    <td><div class="menubutton split" style="float: left;"><a class="label" href="${href}">${v}${extra}</a> </td>
+                                    <td><div class="menubutton split" style="float: left;"><a class="label" href="${href}">${v}</a>${extra}</td>
                                 %else:
                                     <td >${v}${extra}</td>
                                 %endif    
