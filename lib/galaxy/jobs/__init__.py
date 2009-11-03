@@ -174,7 +174,7 @@ class JobQueue( object ):
         if self.track_jobs_in_database:
             for j in self.sa_session.query( model.Job ) \
                             .options( lazyload( "external_output_metadata" ), lazyload( "parameters" ) ) \
-                            .filter( model.Job.c.state == model.Job.states.NEW ):
+                            .filter( model.Job.state == model.Job.states.NEW ):
                 job = JobWrapper( j, self.app.toolbox.tools_by_id[ j.tool_id ], self )
                 new_jobs.append( job )
         else:
