@@ -1,6 +1,7 @@
 <% _=n_ %>
 ## Render the dataset `data` as history item, using `hid` as the displayed id
 <%def name="render_dataset( data, hid, show_deleted_on_refresh = False, user_owns_dataset = True )">
+    <a name="${trans.security.encode_id( data.id )}"></a>
     <%
     	if data.state in ['no state','',None]:
     	    data_state = "queued"
@@ -21,7 +22,6 @@
     %endif
 
     ## Header row for history items (name, state, action buttons)
-    <a name="${trans.security.encode_id(data.id)}"></a>
 	<div style="overflow: hidden;" class="historyItemTitleBar">		
 	    <div class="historyItemButtons">
             %if data_state == "upload":

@@ -92,8 +92,6 @@
 
             t.autocomplete("${h.url_for( controller='tag', action='tag_autocomplete_data', item_class='HistoryDatasetAssociation' )}", autocomplete_options);
 
-            //t.addClass("tag-input");
-
             return t;
         });
         ## Can this be moved into base.mako?
@@ -110,7 +108,14 @@
             %endif
             %if 'history' in refresh_frames:
                 if ( parent.frames && parent.frames.galaxy_history ) {
-                    parent.frames.galaxy_history.location.href="${h.url_for( controller='root', action='history', hda_id=str(ids) )}";
+                    ## If available, include HDA ids to seek to in history request.
+                    <% 
+                        hda_id = None
+                        if seek_hda_ids:
+                            hda_id = str( seek_hda_ids[0] ) # Use only the first id.
+                            print hda_id
+                    %>
+                    parent.frames.galaxy_history.location.href="${h.url_for( controller='root', action='history', hda_id=hda_id )}";
                     if ( parent.force_right_panel ) {
                         parent.force_right_panel( 'show' );
                     }

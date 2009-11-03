@@ -45,6 +45,11 @@ ${traceback}
 """
 
 class HistoryDatasetAssociationListGrid( grids.Grid ):
+    # Custom columns for grid.
+    class HistoryColumn( grids.GridColumn ):
+        def get_value( self, trans, grid, hda):
+            return hda.history.name
+        
     class StatusColumn( grids.GridColumn ):
         def get_value( self, trans, grid, hda ):
             if hda.deleted:
@@ -52,6 +57,7 @@ class HistoryDatasetAssociationListGrid( grids.Grid ):
             return ""
         def get_link( self, trans, grid, hda ):
             return None
+            
     class TagsColumn( grids.GridColumn ):
         def __init__(self, col_name, key, filterable):
             grids.GridColumn.__init__(self, col_name, key=key, filterable=filterable)
@@ -107,14 +113,16 @@ class HistoryDatasetAssociationListGrid( grids.Grid ):
             return accepted_filters
 
     # Grid definition
-    title = "Stored Datasets"
+    title = "Saved Datasets"
     model_class = model.HistoryDatasetAssociation
     template='/dataset/grid.mako'
     default_sort_key = "-create_time"
     columns = [
-         grids.GridColumn( "Name", key="name",
-                                # Link name to dataset's history.
+        grids.GridColumn( "Name", key="name",
+                            # Link name to dataset's history.
                               link=( lambda item: iff( item.history.deleted, None, dict( operation="switch", id=item.id ) ) ) ),
+        HistoryColumn( "History", key="history", 
+                        link=( lambda item: iff( item.history.deleted, None, dict( operation="switch_history", id=item.id ) ) ) ),
         TagsColumn( "Tags", key="tags", filterable=True ),
         StatusColumn( "Status", key="deleted", attach_popup=False ),
         grids.GridColumn( "Created", key="create_time", format=time_ago ),
@@ -285,8 +293,9 @@ class DatasetInterface( BaseController ):
                     log.warn( "Invalid history_dataset_association id '%r' passed to list", hda_id )
 
             if hdas:
-                
-                if operation == "switch":
+                if operation == "switch" or operation == "switch_history":
+                    # Switch to a history that the HDA resides in.
+                    
                     # Convert hda to histories.
                     histories = []
                     for hda in hdas:
@@ -295,8 +304,11 @@ class DatasetInterface( BaseController ):
                     # Use history controller to switch the history. TODO: is this reasonable?
                     status, message = trans.webapp.controllers['history']._list_switch( trans, histories )
                     
-                    # Current history changed, refresh history frame
-                    trans.template_context['refresh_frames'] = ['history']        
+                    # Current history changed, refresh history frame; if switching to a dataset, set hda seek.
+                    trans.template_context['refresh_frames'] = ['history']
+                    if operation == "switch":
+                        hda_ids = [ trans.security.encode_id( hda.id ) for hda in hdas ]
+                        trans.template_context[ 'seek_hda_ids' ] = hda_ids
 
         # Render the list view
         return self.stored_list_grid( trans, status=status, message=message, **kwargs )
