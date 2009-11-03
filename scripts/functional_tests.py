@@ -155,7 +155,7 @@ def main():
     
     log.info( "Functional tests will be run against %s:%s" % ( galaxy_test_host, galaxy_test_port ) )
     
-    rval = False
+    success = False
     
     try:
         
@@ -186,7 +186,7 @@ def main():
         
         result = test_runner.run( tests )
         
-        rval = result.wasSuccessful()
+        success = result.wasSuccessful()
         
     except:
         log.exception( "Failure running tests" )
@@ -206,7 +206,10 @@ def main():
         app = None
         log.info( "Embedded Universe application stopped" )
         
-    return rval
+    if success:
+        return 0
+    else:
+        return 1
 
 if __name__ == "__main__":
-    main()
+    sys.exit( main() )
