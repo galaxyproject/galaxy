@@ -3,6 +3,12 @@ import re
 
 class TagHandler( object ):
     
+    # Minimum tag length.
+    min_tag_len = 2
+    
+    # Maximum tag length.
+    max_tag_len = 255
+    
     # Tag separator.
     tag_separators = ',;'
     
@@ -215,7 +221,7 @@ class TagHandler( object ):
             scrubbed_name = scrubbed_name[1:]
             
         # If name is too short or too long, return None.
-        if len(scrubbed_name) < 3 or len(scrubbed_name) > 255:
+        if len(scrubbed_name) < self.min_tag_len or len(scrubbed_name) > self.max_tag_len:
             return None
                 
         return scrubbed_name

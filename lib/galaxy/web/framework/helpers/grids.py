@@ -183,6 +183,7 @@ class Grid( object ):
                                     query=query,
                                     cur_page_num = page_num,
                                     num_pages = num_pages,
+                                    default_filter_dict=self.default_filter,
                                     cur_filter_dict=cur_filter_dict,
                                     sort_key=sort_key,
                                     encoded_sort_key=encoded_sort_key,
