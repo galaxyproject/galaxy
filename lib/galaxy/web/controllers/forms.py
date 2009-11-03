@@ -450,7 +450,7 @@ class Forms( BaseController ):
         # create corresponding row in the form_definition_current table
         fd.form_definition_current = fdc
         fdc.latest_form = fd
-        trans.sa_session.save_or_update( fdc )
+        trans.sa_session.add( fdc )
         trans.sa_session.flush()
         msg = "The new form named '%s' has been created. " % (fd.name)
         return fd, msg

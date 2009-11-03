@@ -7,7 +7,7 @@ pkg_resources.require( "sqlalchemy-migrate" )
 
 from migrate.versioning import repository, schema
 from sqlalchemy import *
-from sqlalchemy.exceptions import NoSuchTableError
+from sqlalchemy.exc import NoSuchTableError
 
 log = logging.getLogger( __name__ )
 

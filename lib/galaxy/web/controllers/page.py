@@ -135,7 +135,7 @@ class PageController( BaseController ):
                 page_revision.content = ""
                 # Persist
                 session = trans.sa_session
-                session.save_or_update( page )
+                session.add( page )
                 session.flush()
                 # Display the management page
                 ## trans.set_message( "Page '%s' created" % page.title )

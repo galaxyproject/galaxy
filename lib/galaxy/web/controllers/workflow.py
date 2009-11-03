@@ -30,7 +30,7 @@ class WorkflowController( BaseController ):
         user = trans.get_user()
         workflows = trans.sa_session.query( model.StoredWorkflow ) \
             .filter_by( user=user, deleted=False ) \
-            .order_by( desc( model.StoredWorkflow.c.update_time ) ) \
+            .order_by( desc( model.StoredWorkflow.table.c.update_time ) ) \
             .all()
         shared_by_others = trans.sa_session \
             .query( model.StoredWorkflowUserShareAssociation ) \
@@ -53,13 +53,13 @@ class WorkflowController( BaseController ):
         user = trans.get_user()
         workflows = trans.sa_session.query( model.StoredWorkflow ) \
             .filter_by( user=user, deleted=False ) \
-            .order_by( desc( model.StoredWorkflow.c.update_time ) ) \
+            .order_by( desc( model.StoredWorkflow.table.c.update_time ) ) \
             .all()
         shared_by_others = trans.sa_session \
             .query( model.StoredWorkflowUserShareAssociation ) \
             .filter_by( user=user ) \
-            .filter( model.StoredWorkflow.c.deleted == False ) \
-            .order_by( desc( model.StoredWorkflow.c.update_time ) ) \
+            .filter( model.StoredWorkflow.deleted == False ) \
+            .order_by( desc( model.StoredWorkflow.table.c.update_time ) ) \
             .all()
         return trans.fill_template( "workflow/list_for_run.mako",
                                     workflows = workflows,
@@ -91,7 +91,7 @@ class WorkflowController( BaseController ):
                 share.stored_workflow = stored
                 share.user = other
                 session = trans.sa_session
-                session.save_or_update( share )
+                session.add( share )
                 session.flush()
                 trans.set_message( "Workflow '%s' shared with user '%s'" % ( stored.name, other.email ) )
                 return trans.response.send_redirect( url_for( controller='workflow', action='sharing', id=id ) )
@@ -142,7 +142,7 @@ class WorkflowController( BaseController ):
             share.stored_workflow = stored
             share.user = trans.user
             session = trans.sa_session
-            session.save_or_update( share )
+            session.add( share )
             session.flush()
             # Redirect to load galaxy frames.
             return trans.response.send_redirect( url_for( controller='workflow' ) )
@@ -180,7 +180,7 @@ class WorkflowController( BaseController ):
         new_stored.user = user
         # Persist
         session = trans.sa_session
-        session.save_or_update( new_stored )
+        session.add( new_stored )
         session.flush()
         # Display the management page
         trans.set_message( 'Clone created with name "%s"' % new_stored.name )
@@ -205,7 +205,7 @@ class WorkflowController( BaseController ):
             stored_workflow.latest_workflow = workflow
             # Persist
             session = trans.sa_session
-            session.save_or_update( stored_workflow )
+            session.add( stored_workflow )
             session.flush()
             # Display the management page
             trans.set_message( "Workflow '%s' created" % stored_workflow.name )
@@ -514,7 +514,7 @@ class WorkflowController( BaseController ):
             stored.name = workflow_name
             workflow.stored_workflow = stored
             stored.latest_workflow = workflow
-            trans.sa_session.save_or_update( stored )
+            trans.sa_session.add( stored )
             trans.sa_session.flush()
             # Index page with message
             return trans.show_message( "Workflow '%s' created from current history." % workflow_name )
@@ -656,12 +656,12 @@ class WorkflowController( BaseController ):
             ids_in_menu = set( [ x.stored_workflow_id for x in user.stored_workflow_menu_entries ] )
             workflows = trans.sa_session.query( model.StoredWorkflow ) \
                 .filter_by( user=user, deleted=False ) \
-                .order_by( desc( model.StoredWorkflow.c.update_time ) ) \
+                .order_by( desc( model.StoredWorkflow.table.c.update_time ) ) \
                 .all()
             shared_by_others = trans.sa_session \
                 .query( model.StoredWorkflowUserShareAssociation ) \
                 .filter_by( user=user ) \
-                .filter( model.StoredWorkflow.c.deleted == False ) \
+                .filter( model.StoredWorkflow.deleted == False ) \
                 .all()
             return trans.fill_template( "workflow/configure_menu.mako",
                                         workflows=workflows,

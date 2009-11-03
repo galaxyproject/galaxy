@@ -17,7 +17,7 @@ with a shortened name.
 """
 from sqlalchemy import *
 from sqlalchemy.orm import *
-from sqlalchemy.exceptions import *
+from sqlalchemy.exc import *
 from migrate import *
 from migrate.changeset import *
 import sys, logging

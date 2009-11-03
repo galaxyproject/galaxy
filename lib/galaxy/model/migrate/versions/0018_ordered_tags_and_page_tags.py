@@ -5,7 +5,7 @@ This migration script provides support for (a) ordering tags by recency and
 
 from sqlalchemy import *
 from sqlalchemy.orm import *
-from sqlalchemy.exceptions import *
+from sqlalchemy.exc import *
 from migrate import *
 import migrate.changeset
 

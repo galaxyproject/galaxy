@@ -12,7 +12,7 @@ handler.setFormatter( formatter )
 log.addHandler( handler )
 
 metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, transactional=False ) )
+db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
 User_table = Table( "galaxy_user", metadata, autoload=True )
 HistoryDatasetAssociation_table = Table( "history_dataset_association", metadata, autoload=True )
 

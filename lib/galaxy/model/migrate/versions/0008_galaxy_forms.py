@@ -11,7 +11,7 @@ This migration script adds the following new tables for supporting Galaxy forms:
 """
 from sqlalchemy import *
 from sqlalchemy.orm import *
-from sqlalchemy.exceptions import *
+from sqlalchemy.exc import *
 from migrate import *
 from migrate.changeset import *
 
@@ -31,7 +31,7 @@ log.addHandler( handler )
 from galaxy.model.custom_types import *
 
 metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, transactional=False ) )
+db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
 
 def display_migration_details():
     print "========================================"

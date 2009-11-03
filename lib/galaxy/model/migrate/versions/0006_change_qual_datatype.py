@@ -16,7 +16,7 @@ handler.setFormatter( formatter )
 log.addHandler( handler )
 
 metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, transactional=False ) )
+db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
 
 def display_migration_details():
     print "========================================"

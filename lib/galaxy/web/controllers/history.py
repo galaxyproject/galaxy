@@ -726,7 +726,7 @@ class HistoryController( BaseController ):
                     share.history = history
                     share.user = send_to_user
                     session = trans.sa_session
-                    session.save_or_update( share )
+                    session.add( share )
                     session.flush()
                     if history not in shared_histories:
                         shared_histories.append( history )

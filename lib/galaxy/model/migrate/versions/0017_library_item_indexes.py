@@ -16,7 +16,7 @@ handler.setFormatter( formatter )
 log.addHandler( handler )
 
 metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, transactional=False ) )
+db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
 LibraryFolder_table = Table( "library_folder", metadata, autoload=True )
 LibraryDatasetDatasetAssociation_table = Table( "library_dataset_dataset_association", metadata, autoload=True )
 LibraryDataset_table = Table( "library_dataset", metadata, autoload=True )

@@ -15,22 +15,36 @@ __all__ = [ 'assign_mapper' ]
 
 from sqlalchemy import util, exceptions
 import types
-from sqlalchemy.orm import mapper, Query
+from sqlalchemy.orm import Query
+from sqlalchemy.orm import mapper as sqla_mapper
 
-def _monkeypatch_session_method(name, session, class_, make_list=False):
-    def do(self, *args, **kwargs):
-        if make_list:
-            self = [ self ]
-        return getattr(session, name)( self, *args, **kwargs )
+def _monkeypatch_session_method( name, session, class_ ):
+    # TODO: eliminate this method by fixing the session flushes
+    def do( self, *args, **kwargs ):
+        if self not in session.deleted:
+            session.add( self )
+        return session.flush() 
     try:
         do.__name__ = name
     except:
         pass
-    if not hasattr(class_, name):
-        setattr(class_, name, do)
-
+    if not hasattr( class_, name ):
+        setattr( class_, name, do )
+def session_mapper( scoped_session, class_, *args, **kwargs ):
+    def mapper( cls, *arg, **kw ):
+        validate = kw.pop( 'validate', False )
+        if cls.__init__ is object.__init__:
+            def __init__( self, **kwargs ):
+                for key, value in kwargs.items():
+                    if validate:
+                        if not cls_mapper.has_property( key ):
+                            raise TypeError( "Invalid __init__ argument: '%s'" % key )
+                    setattr( self, key, value )
+            cls.__init__ = __init__
+        cls.query = scoped_session.query_property()
+        _monkeypatch_session_method( 'flush', scoped_session, cls )
+        return sqla_mapper( cls, *arg, **kw )
+    return mapper( class_, *args, **kwargs )
 def assign_mapper( session, class_, *args, **kwargs ):
-    m = class_.mapper = session.mapper( class_, *args, **kwargs )
-    for name in ( 'flush', ):
-        _monkeypatch_session_method( name, session, class_, make_list=True )
+    m = class_.mapper = session_mapper( session, class_, *args, **kwargs )
     return m

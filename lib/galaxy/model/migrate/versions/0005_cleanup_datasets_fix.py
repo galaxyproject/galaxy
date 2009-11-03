@@ -23,7 +23,7 @@ from galaxy.util.bunch import Bunch
 
 
 metadata = MetaData( migrate_engine )
-context = scoped_session( sessionmaker( autoflush=False, transactional=False ) )
+context = scoped_session( sessionmaker( autoflush=False, autocommit=True ) )
 
 
 ## classes
@@ -662,7 +662,7 @@ def upgrade():
     log.debug( "Fixing a discrepancy concerning deleted shared history items." )
     affected_items = 0
     start_time = time.time()
-    for dataset in context.query( Dataset ).filter( and_( Dataset.c.deleted == True, Dataset.c.purged == False ) ):
+    for dataset in context.query( Dataset ).filter( and_( Dataset.deleted == True, Dataset.purged == False ) ):
         for dataset_instance in dataset.history_associations + dataset.library_associations:
             if not dataset_instance.deleted:
                 dataset.deleted = False

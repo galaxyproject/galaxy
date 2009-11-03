@@ -18,7 +18,7 @@ from sqlalchemy.orm.collections import attribute_mapped_collection
 from sqlalchemy.ext.associationproxy import association_proxy
 
 metadata = MetaData()
-context = Session = scoped_session( sessionmaker( autoflush=False, transactional=False ) )
+context = Session = scoped_session( sessionmaker( autoflush=False, autocommit=True ) )
 
 # For backward compatibility with "context.current"
 context.current = Session
