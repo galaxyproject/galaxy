@@ -18,19 +18,19 @@ from galaxy.eggs import Crate, GalaxyConfig
 
 c = Crate()
 c.parse()
+galaxy_config = GalaxyConfig()
+names = []
 if len( sys.argv ) == 1:
-    galaxy_config = GalaxyConfig()
-    ignore = []
-    for name in c.get_names():
-        if not galaxy_config.check_conditional( name ):
-            ignore.append( name )
-    c.scramble( ignore=ignore )
+    names = c.get_names()
+elif sys.argv[1] == 'all':
+    names = galaxy_config.always_conditional
 else:
-    if sys.argv[1] == 'all':
-        c.scramble()
-    else:
-        egg = c.get( sys.argv[1] )
-        if egg is None:
-            print "error: %s not in eggs.ini" % sys.argv[1]
-            sys.exit( 1 )
-        egg.scramble()
+# Scramble a specific egg
+    egg = c.get( sys.argv[1] )
+    if egg is None:
+        print "error: %s not in eggs.ini" % sys.argv[1]
+        sys.exit( 1 )
+    egg.scramble()
+    sys.exit( 0 )
+ignore = filter( lambda x: not galaxy_config.check_conditional( x ), list( names ) )
+c.scramble( ignore=ignore )

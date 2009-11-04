@@ -14,11 +14,12 @@ import pkg_resources
 # within tools.  i don't know of any way around this. -ndc
 galaxy_dir = os.path.abspath( os.path.join( os.path.dirname( __file__ ), "..", "..", ".." ) )
 
-class NewEgg( Exception ):
-    pass
-
 class EggNotFetchable( Exception ):
-    pass
+    def __init__( self, eggs ):
+        if type( eggs ) in ( list, tuple ):
+            self.eggs = eggs
+        else:
+            self.eggs = [ eggs ]
 
 class PlatformNotSupported( Exception ):
     pass
@@ -157,6 +158,14 @@ class Egg( object ):
     # scramble helper methods
     def get_archive_path( self, url ):
         return os.path.join( Egg.archive_dir, (url.rsplit( '/', 1 ))[1] )
+    def get_tld( self, names ):
+        tld = names[0].split( os.path.sep, 1 )[0]
+        for name in names:
+            try:
+                assert tld == name.split( os.path.sep, 1 )[0]
+            except:
+                raise Exception( "get_tld(): Archive contains multiple top-level directories!" )
+        return tld
     def fetch_source( self ):
         if not os.access( Egg.archive_dir, os.F_OK ):
             os.makedirs( Egg.archive_dir )
@@ -195,7 +204,7 @@ class Egg( object ):
         log.warning( "  %s" % self.buildpath )
     def unpack_zip( self, source_path, unpack_path ):
         z = zipfile.ZipFile( source_path, "r" )
-        tld = ( z.namelist()[0].split( os.path.sep, 1 ) )[0]
+        tld = self.get_tld( z.namelist() )
         cur = os.getcwd()
         os.chdir( unpack_path )
         for fn in z.namelist():
@@ -211,12 +220,12 @@ class Egg( object ):
         os.chdir( cur )
     def unpack_tar( self, source_path, unpack_path ):
         t = tarfile.open( source_path, "r" )
-        tld = ( t.getnames()[0].split( os.path.sep, 1 ) )[0]
+        members = filter( lambda x: "ez_setup" not in x.name and "pax_global_header" != x.name, t.getmembers() )
+        tld = self.get_tld( [ x.name for x in members ] )
         cur = os.getcwd()
         os.chdir( unpack_path )
-        for member in t.getmembers():
-            if "ez_setup" not in member.name:
-                t.extract( member )
+        for member in members:
+            t.extract( member )
         t.close()
         os.rename( tld, self.name )
         os.chdir( cur )
@@ -265,7 +274,7 @@ class Crate( object ):
         self.eggs = {}
         self.config = CSConfigParser()
         self.repo = None
-        self.no_download = []
+        self.no_auto = []
         self.platform = { 'peak' : get_platform( platform=True, peak=True ), 'galaxy' : get_platform( platform=True, peak=False ) }
         self.noplatform = { 'peak' : get_platform( platform=False, peak=True ), 'galaxy' : get_platform( platform=False, peak=False ) }
     def parse( self ):
@@ -273,7 +282,7 @@ class Crate( object ):
             raise Exception( "unable to read egg config from %s" % Crate.config_file )
         try:
             self.repo = self.config.get( "general", "repository" )
-            self.no_download = self.config.get( "general", "no_download" ).split()
+            self.no_auto = self.config.get( "general", "no_auto" ).split()
         except ConfigParser.NoSectionError:
             raise Exception( "eggs.ini is missing required section [general]" )
         #except ConfigParser.NoOptionError:
@@ -316,19 +325,19 @@ class Crate( object ):
         return True
     def fetch( self, ignore=[] ):
         """
-	Fetch all eggs in the crate (ignoring any that you want to
-	ignore).  If your platform isn't available, it'll attempt to
-	download all the noplatform eggs before failing.
+        Fetch all eggs in the crate (ignoring any that you want to
+        ignore).  If your platform isn't available, it'll attempt to
+        download all the noplatform eggs before failing.
         """
         skip_platform = False
-        ignore.extend( self.no_download )
+        ignore.extend( self.no_auto )
+        missing = []
         try:
             f = urllib2.urlopen( "%s/%s" % ( self.repo, self.platform['galaxy'] ) )
             f.close()
         except urllib2.HTTPError, e:
             if e.code == 404:
                 skip_platform = True
-                missing = []
         for egg in self.eggs.itervalues():
             if ignore is not None:
                 if egg.name in ignore:
@@ -336,11 +345,18 @@ class Crate( object ):
             if skip_platform and egg.platform['galaxy'] == self.platform['galaxy']:
                 missing.append( egg.name )
                 continue
-            egg.fetch()
+            try:
+                egg.fetch()
+            except EggNotFetchable:
+                missing.append( egg.name )
         if skip_platform:
             raise PlatformNotSupported( self.platform['galaxy'] )
+        if missing:
+            raise EggNotFetchable( missing )
         return True
     def scramble( self, ignore=None ):
+        # Crate-scrambling the no_auto eggs makes no sense
+        ignore.extend( self.no_auto )
         for egg in self.eggs.itervalues():
             if ignore is not None:
                 if egg.name in ignore:
@@ -379,21 +395,14 @@ class DistCrate( Crate ):
         if self.config.read( DistCrate.dist_config_file ) == []:
             raise Exception( "unable to read dist egg config from %s" % DistCrate.dist_config_file )
         try:
-            self.hosts = self.dictize_list_of_tuples( self.config.items( "hosts" ) )
-            self.groups = self.dictize_list_of_tuples( self.config.items( "groups" ) )
+            self.hosts = dict( self.config.items( "hosts" ) )
+            self.groups = dict( self.config.items( "groups" ) )
+            self.ignore = dict( self.config.items( "ignore" ) )
         except ConfigParser.NoSectionError, e:
             raise Exception( "eggs.ini is missing required section: %s" % e )
         self.platforms = self.get_platforms( self.build_on )
         self.noplatforms = self.get_platforms( 'noplatform' )
         Crate.parse( self )
-    def dictize_list_of_tuples( self, lot ):
-        """
-	Makes a list of 2-value tuples into a dict.
-        """
-        d = {}
-        for k, v in lot:
-            d[k] = v
-        return d
     def get_platforms( self, wanted ):
         # find all the members of a group and process them
         if self.groups.has_key( wanted ):
@@ -409,8 +418,8 @@ class DistCrate( Crate ):
             raise Exception( "unknown platform: %s" % wanted )
     def parse_egg_section( self, eggs, type ):
         """
-	Overrides the base class's method.  Here we use the third arg
-	to find out what type of egg we'll be building.
+        Overrides the base class's method.  Here we use the third arg
+        to find out what type of egg we'll be building.
         """
         if type == "platform":
             platforms = self.platforms
@@ -418,14 +427,16 @@ class DistCrate( Crate ):
             platforms = self.noplatforms
         for name, version in eggs:
             for platform in platforms:
-		# can't use the regular methods here because we're not
-		# actually ON the target platform
+                # can't use the regular methods here because we're not
+                # actually ON the target platform
                 if type == "platform":
                     gplat = platform
                     pplat = platform.rsplit('-', 1)[0]
                 elif type == "noplatform":
                     gplat = "%s-noplatform" % platform.split('-', 1)[0]
                     pplat = platform.split('-', 1)[0]
+                if name in self.ignore and gplat in self.ignore[name].split():
+                    continue
                 egg = Egg()
                 try:
                     egg.tag = self.config.get( "tags", name )
@@ -448,75 +459,31 @@ class DistCrate( Crate ):
 
 class GalaxyConfig:
     config_file = os.path.join( galaxy_dir, "universe_wsgi.ini" )
+    always_conditional = ( 'GeneTrack', )
     def __init__( self ):
         self.config = ConfigParser.ConfigParser()
         if self.config.read( GalaxyConfig.config_file ) == []:
             raise Exception( "error: unable to read Galaxy config from %s" % GalaxyConfig.config_file )
     # TODO: conditionals should really be handled better than this
     def check_conditional( self, egg_name ):
-        if egg_name == "psycopg2":
+        if egg_name == "pysqlite":
+            # SQLite is different since it can be specified in two config vars and defaults to True
             try:
-                if self.config.get( "app:main", "database_connection" ).startswith( "postgres://" ):
-                    return True
-                else:
-                    return False
-            except:
-                return False
-        elif egg_name == "pysqlite":
-            try:
-                # database connection is the sqlite alchemy dialect (not really
-                # a documented usage in Galaxy, but it would work)
-                if self.config.get( "app:main", "database_connection" ).startswith( "sqlite://" ):
-                    return True
-                else:
-                    return False
-            # database connection is unset, so sqlite is the default
+                return self.config.get( "app:main", "database_connection" ).startswith( "sqlite://" )
             except:
                 return True
-        elif egg_name == "DRMAA_python":
-            try:
-                runners = self.config.get( "app:main", "start_job_runners" ).split(",")
-                if "sge" in runners:
-                    return True
-                else:
-                    return False
-            except:
-                return False
-        elif egg_name == "pbs_python":
-            try:
-                runners = self.config.get( "app:main", "start_job_runners" ).split(",")
-                if "pbs" in runners:
-                    return True
-                else:
-                    return False
-            except:
-                return False
-        elif egg_name == "threadframe":
-            try:
-                if self.config.get( "app:main", "use_heartbeat" ):
-                    return True
-                else:
-                    return False
-            except:
-                return False
-        elif egg_name == "guppy":
-            try:
-                if self.config.get( "app:main", "use_memdump" ):
-                    return True
-                else:
-                    return False
-            except:
-                return False
-        elif egg_name == "MySQL_python":
-            try:
-                if self.config.get( "app:main", "database_connection" ).startswith( "mysql://" ):
-                    return True
-                else:
-                    return False
-            except:
-                return False
         else:
-            return True
+            try:
+                return { "psycopg2":        lambda: self.config.get( "app:main", "database_connection" ).startswith( "postgres://" ),
+                         "MySQL_python":    lambda: self.config.get( "app:main", "database_connection" ).startswith( "mysql://" ),
+                         "DRMAA_python":    lambda: "sge" in self.config.get( "app:main", "start_job_runners" ).split(","),
+                         "pbs_python":      lambda: "pbs" in self.config.get( "app:main", "start_job_runners" ).split(","),
+                         "threadframe":     lambda: self.config.get( "app:main", "use_heartbeat" ),
+                         "guppy":           lambda: self.config.get( "app:main", "use_memdump" ),
+                         "GeneTrack":       lambda: sys.version_info[:2] >= ( 2, 5 ),
+                       }.get( egg_name, lambda: True )()
+            except:
+                return False
 
 def require( pkg ):
     # add the egg dirs to sys.path if they're not already there

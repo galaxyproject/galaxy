@@ -25,26 +25,28 @@ if len( sys.argv ) == 3:
     c.platform = { 'peak' : sys.argv[2].rsplit('-',1)[0], 'galaxy' : sys.argv[2] }
 c.parse()
 try:
+    galaxy_config = GalaxyConfig()
+    names = []
     if len( sys.argv ) == 1:
-        galaxy_config = GalaxyConfig()
-        ignore = []
-        for name in c.get_names():
-            if not galaxy_config.check_conditional( name ):
-                ignore.append( name )
-        c.fetch( ignore=ignore )
+        names = c.get_names()
+    elif sys.argv[1] == 'all':
+        names = galaxy_config.always_conditional
     else:
-        if sys.argv[1] == 'all':
-            c.fetch()
-        else:
-            egg = c.get( sys.argv[1] )
-            if egg is None:
-                print "error: %s not in eggs.ini" % sys.argv[1]
-                sys.exit( 1 )
-            egg.fetch()
+        # Fetch a specific egg
+        egg = c.get( sys.argv[1] )
+        if egg is None:
+            print "error: %s not in eggs.ini" % sys.argv[1]
+            sys.exit( 1 )
+        egg.fetch()
+        sys.exit( 0 )
+    ignore = filter( lambda x: not galaxy_config.check_conditional( x ), list( names ) )
+    c.fetch( ignore )
 except EggNotFetchable, e:
-    print "One of the python eggs necessary to run Galaxy couldn't be downloaded"
-    print "automatically.  You may want to try building it by hand with:"
-    print "  python scripts/scramble.py %s" % e
+    print "One or more of the python eggs necessary to run Galaxy couldn't be"
+    print "downloaded automatically.  You may want to try building them by"
+    print "hand with:"
+    for egg in e.eggs:
+        print "  python scripts/scramble.py %s" % egg
     sys.exit( 1 )
 except PlatformNotSupported, e:
     print "Your platform (%s) is not supported." % e
