@@ -5,6 +5,8 @@ cd `dirname $0`
 LINKS="
 /depot/data2/galaxy/alignseq.loc
 /depot/data2/galaxy/binned_scores.loc
+/depot/data2/galaxy/blastdb.loc
+/depot/data2/galaxy/bowtie_indices.loc
 /depot/data2/galaxy/encode_datasets.loc
 /home/universe/linux-i686/HYPHY
 /depot/data2/galaxy/liftOver.loc
@@ -14,6 +16,9 @@ LINKS="
 /depot/data2/galaxy/phastOdds.loc
 /depot/data2/galaxy/quality_scores.loc
 /depot/data2/galaxy/regions.loc
+/depot/data2/galaxy/sam_fa_indices.loc
+/depot/data2/galaxy/sequence_index_base.loc
+/depot/data2/galaxy/sequence_index_color.loc
 /depot/data2/galaxy/taxonomy
 /depot/data2/galaxy/twobit.loc
 "

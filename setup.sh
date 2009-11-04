@@ -9,8 +9,11 @@ reports_wsgi.ini.sample
 tool_conf.xml.sample
 universe_wsgi.ini.sample
 tool-data/alignseq.loc.sample
+tool-data/annotation_profiler_options.xml.sample
+tool-data/annotation_profiler_valid_builds.txt.sample
 tool-data/binned_scores.loc.sample
 tool-data/blastdb.loc.sample
+tool-data/bowtie_indices.loc.sample
 tool-data/encode_datasets.loc.sample
 tool-data/liftOver.loc.sample
 tool-data/maf_index.loc.sample
@@ -19,6 +22,9 @@ tool-data/microbial_data.loc.sample
 tool-data/phastOdds.loc.sample
 tool-data/quality_scores.loc.sample
 tool-data/regions.loc.sample
+tool-data/sam_fa_indices.loc.sample
+tool-data/sequence_index_base.loc.sample
+tool-data/sequence_index_color.loc.sample
 tool-data/twobit.loc.sample
 "
 
