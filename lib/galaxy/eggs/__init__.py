@@ -20,6 +20,8 @@ class EggNotFetchable( Exception ):
             self.eggs = eggs
         else:
             self.eggs = [ eggs ]
+    def __str__( self ):
+        return ' '.join( self.eggs )
 
 class PlatformNotSupported( Exception ):
     pass
