@@ -26,19 +26,24 @@ ${h.js( "jquery" )}
 				var elem = '#' + data[i].id;
 				// Because of different list managing 'live' vs. 'available' instances, reload url on various state changes
 				old_state = $(elem + "-state").text();
+				prev_old_state = $(elem + "-state-p").text();
 				new_state = data[i].state;
 				//console.log( "old_state[%d] = %s", i, old_state );
+				//console.log( "prev_old_state[%d] = %s", i, prev_old_state );
 				//console.log( "new_state[%d] = %s", i, new_state );
 				if ( ( old_state=='pending' && new_state=='running' ) ||  ( old_state=='shutting-down' && new_state=='available' ) || \
 					 ( old_state=='running' && new_state=='available' ) || ( old_state=='running' && new_state=='error' ) || \
 					 ( old_state=='pending' && new_state=='error' ) || ( old_state=='pending' && new_state=='available' ) || \
-					 ( old_state=='submitted' && new_state=='available' ) ) {
+					 ( old_state=='submitted' && new_state=='available' ) || ( prev_old_state.match('newUCI') && new_state=='available' ) || \
+					 ( prev_old_state.match('new') && new_state=='available' ) ) {
 					var url = "${h.url_for( controller='cloud', action='list')}";
 					location.replace( url );
 				}
 				else if ( ( old_state=='running' && new_state=='error' ) || ( old_state=='pending' && new_state=='error' ) || \
 					( old_state=='submitted' && new_state=='error' ) || ( old_state=='submittedUCI' && new_state=='error' ) || \
-					( old_state=='shutting-down' && new_state=='error' ) ) {
+					( old_state=='shutting-down' && new_state=='error' ) || ( prev_old_state.match('newUCI') && new_state=='error' ) || \
+					( prev_old_state.match('new') && new_state=='error' ) || ( prev_old_state.match('available') && new_state=='error' ) || \
+					( prev_old_state.match('deleting') && new_state=='error' ) || ( prev_old_state.match('deletingUCI') && new_state=='error' ) ) {
 					var url = "${h.url_for( controller='cloud', action='list')}";
 					location.replace( url );
 				} 
@@ -56,13 +61,13 @@ ${h.js( "jquery" )}
 							if( !dns ) {
 								$(uci+"-link").text( 'Galaxy starting...' );
 								// http://stackoverflow.com/questions/275931/how-do-you-make-an-element-flash-in-jquery
-								$(uci+"-link").stop().animate({ fontSize: "14px" }, 1000).animate({ fontSize: "12px" }, 1000);
+								//$(uci+"-link").stop().animate({ fontSize: "14px" }, 1000).animate({ fontSize: "12px" }, 1000);
 							}
 							else {
 								$(uci+"-link").html( '<div align="right"><a class="action-button" href="http://'+dns+'" target="_blank">' + 
 									'<span>Access Galaxy</span>'+
 									'<img src="' + "${h.url_for( '/static/images/silk/resultset_next.png' )}" + '" /></div>' );
-								$(uci+"-link").stop().animate({ fontSize: "14px" }, 1000).animate({ fontSize: "12px" }, 1000);
+								//$(uci+"-link").stop().animate({ fontSize: "14px" }, 1000).animate({ fontSize: "12px" }, 1000);
 							}
 						}
 					});
@@ -92,6 +97,7 @@ ${h.js( "jquery" )}
  
 %if cloudCredentials:
 	## Manage user credentials
+	<h3>Your registered credentials</h3>
 	<ul class="manage-table-actions">
 	    <li>
 	        <a class="action-button" href="${h.url_for( action='add' )}">
@@ -131,7 +137,7 @@ ${h.js( "jquery" )}
 	## *****************************************************
 	## Manage live instances
 	<p />
-	<h2>Manage your cloud instances</h2>
+	<h3>Manage your cloud instances</h3>
 	<ul class="manage-table-actions">
 	    <li>
 	        <a class="action-button" href="${h.url_for( action='configureNew' )}">
@@ -232,7 +238,7 @@ ${h.js( "jquery" )}
 	                    <a id="pi-${i}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
 	                </td>
 	                <td>${str(prevInstance.total_size)}</td> 
-	                <td>
+	                <td id="${ prevInstance.id }-state-p">
 	                	<%state = str(prevInstance.state)%> 
 	                	%if state =='error':
 							<div id="${prevInstance.name}-short">
@@ -249,7 +255,9 @@ ${h.js( "jquery" )}
 			                    error:</a><br />
 								${str(prevInstance.error)}
 								<p />
+								<div style="font-size:10px;">
 								<a href="${h.url_for( action='set_uci_state', id=trans.security.encode_id(prevInstance.id), state='available' )}">reset state</a>
+								</div>
 			               </div>
 						%else:
 							${str(prevInstance.state)}

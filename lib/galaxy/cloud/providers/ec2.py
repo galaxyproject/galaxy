@@ -45,7 +45,8 @@ instance_states = Bunch(
 
 store_states = Bunch(
     IN_USE = "in-use",
-    CREATING = "creating"
+    CREATING = "creating",
+    ERROR = "error"
 )
 
 class EC2CloudProvider( object ):
@@ -94,7 +95,7 @@ class EC2CloudProvider( object ):
         """
         Establishes EC2 cloud connection using user's credentials associated with given UCI
         """
-        log.debug( '##### Establishing EC2 cloud connection' )
+        log.debug( 'Establishing %s cloud connection' % self.type )
         provider = uci_wrapper.get_provider()
         try:
             region = RegionInfo( None, provider.region_name, provider.region_endpoint )
@@ -276,7 +277,7 @@ class EC2CloudProvider( object ):
                 
                 if uci_wrapper.get_state() != uci_states.ERROR:
                     # Start an instance            
-                    log.debug( "***** Starting instance for UCI '%s'" % uci_wrapper.get_name() )
+                    log.debug( "Starting instance for UCI '%s'" % uci_wrapper.get_name() )
                     #TODO: Once multiple volumes can be attached to a single instance, update 'userdata' composition            
                     userdata = uci_wrapper.get_store_volume_id()+"|"+uci_wrapper.get_access_key()+"|"+uci_wrapper.get_secret_key() 
                     log.debug( 'Using following command: conn.run_instances( image_id=%s, key_name=%s, security_groups=[%s], user_data=[OMITTED], instance_type=%s, placement=%s )' 
@@ -401,9 +402,19 @@ class EC2CloudProvider( object ):
                                                model.CloudStore.c.status==store_states.CREATING,
                                                model.CloudStore.c.status==None ) ).all()
         for store in stores:
-            if self.type == store.uci.credentials.provider.type:
+            if self.type == store.uci.credentials.provider.type and store.volume_id != None:
                 log.debug( "[%s] Running general status update on store '%s'" % ( store.uci.credentials.provider.type, store.volume_id ) )
                 self.updateStore( store )
+            else:
+                log.error( "[%s] There exists an entry for UCI (%s) storage volume without an ID. Storage volume might have been created with "
+                           "cloud provider though. Manual check is recommended." % ( store.uci.credentials.provider.type, store.uci.name ) )
+                store.uci.error = "There exists an entry in local database for a storage volume without an ID. Storage volume might have been created " \
+                            "with cloud provider though. Manual check is recommended. After understanding what happened, local database etry for given " \
+                            "storage volume should be updated."
+                store.status = store_states.ERROR
+                store.uci.state = uci_states.ERROR
+                store.uci.flush()
+                store.flush()
                 
         # Attempt at updating any zombie UCIs (i.e., instances that have been in SUBMITTED state for longer than expected - see below for exact time)
         zombies = model.UCI.filter_by( state=uci_states.SUBMITTED ).all()
@@ -605,6 +616,7 @@ class EC2CloudProvider( object ):
         Establishes and returns connection to cloud provider. Information needed to do so is obtained
         directly from uci database object.
         """
+        log.debug( 'Establishing %s cloud connection' % self.type )
         a_key = uci.credentials.access_key
         s_key = uci.credentials.secret_key
         # Get connection

@@ -52,11 +52,14 @@ instance_states = Bunch(
     SHUTTING_DOWN = "shutting-down"
 )
 
+store_states = Bunch(
+    IN_USE = "in-use",
+    CREATING = "creating",
+    ERROR = "error"
+)
+
 class CloudController( BaseController ):
-    
-#    def __init__( self ):
-#        self.cloudManager = CloudManager()
-    
+       
     @web.expose
     def index( self, trans ):
         return trans.fill_template( "cloud/index.mako" )
@@ -76,22 +79,22 @@ class CloudController( BaseController ):
         
         liveInstances = trans.sa_session.query( model.UCI ) \
             .filter_by( user=user ) \
-            .filter( or_( model.UCI.c.state==uci_states.RUNNING, #"running", 
-                          model.UCI.c.state==uci_states.PENDING, #"pending",
-                          model.UCI.c.state==uci_states.SUBMITTED, #"submitted", 
-                          model.UCI.c.state==uci_states.SUBMITTED_UCI, #"submittedUCI",
-                          model.UCI.c.state==uci_states.SHUTTING_DOWN, #"shutting-down",
+            .filter( or_( model.UCI.c.state==uci_states.RUNNING,  
+                          model.UCI.c.state==uci_states.PENDING, 
+                          model.UCI.c.state==uci_states.SUBMITTED, 
+                          model.UCI.c.state==uci_states.SUBMITTED_UCI,
+                          model.UCI.c.state==uci_states.SHUTTING_DOWN,
                           model.UCI.c.state==uci_states.SHUTTING_DOWN_UCI ) ) \
             .order_by( desc( model.UCI.c.update_time ) ) \
             .all()
             
         prevInstances = trans.sa_session.query( model.UCI ) \
             .filter_by( user=user ) \
-            .filter( or_( model.UCI.c.state==uci_states.AVAILABLE, #"available", 
-                          model.UCI.c.state==uci_states.NEW, #"new", 
-                          model.UCI.c.state==uci_states.NEW_UCI, #"newUCI", 
-                          model.UCI.c.state==uci_states.ERROR, #"error", 
-                          model.UCI.c.state==uci_states.DELETING, #"deleting",
+            .filter( or_( model.UCI.c.state==uci_states.AVAILABLE,  
+                          model.UCI.c.state==uci_states.NEW, 
+                          model.UCI.c.state==uci_states.NEW_UCI, 
+                          model.UCI.c.state==uci_states.ERROR,  
+                          model.UCI.c.state==uci_states.DELETING,
                           model.UCI.c.state==uci_states.DELETING_UCI ) ) \
             .order_by( desc( model.UCI.c.update_time ) ) \
             .all()
@@ -99,8 +102,8 @@ class CloudController( BaseController ):
         # Check after update there are instances in pending state; if so, display message
         pendingInstances = trans.sa_session.query( model.UCI ) \
             .filter_by( user=user ) \
-            .filter( or_( model.UCI.c.state==uci_states.PENDING, #"pending" , \
-                          model.UCI.c.state==uci_states.SUBMITTED, #"submitted" , \
+            .filter( or_( model.UCI.c.state==uci_states.PENDING, 
+                          model.UCI.c.state==uci_states.SUBMITTED, 
                           model.UCI.c.state==uci_states.SUBMITTED_UCI ) ) \
             .all()
         if pendingInstances:
@@ -124,6 +127,7 @@ class CloudController( BaseController ):
     def makeDefault( self, trans, id=None ):
         """ 
         Set current credentials as default.
+        *NOT USED*
         """
         currentDefault = get_default_credentials (trans)
         if currentDefault:
@@ -137,8 +141,7 @@ class CloudController( BaseController ):
         # TODO: Fix bug that when this function returns, top Galaxy tab bar is missing from the webpage  
         return self.list( trans ) #trans.fill_template( "cloud/configure_cloud.mako",
                #awsCredentials = awsCredentials )
-               
-
+        
     @web.expose
     @web.require_login( "start Galaxy cloud instance" )
     def start( self, trans, id, type='m1.small' ):
@@ -149,19 +152,9 @@ class CloudController( BaseController ):
         uci = get_uci( trans, id )
         mi = get_mi( trans, uci, type )
         stores = get_stores( trans, uci ) 
-        # Ensure instance is not already running (or related state) and store relevant data
+        # Ensure instance is available and then store relevant data
         # into DB to initiate instance startup by cloud manager
-        if ( len(stores) is not 0 ) and \
-           ( uci.state != uci_states.SUBMITTED ) and \
-           ( uci.state != uci_states.SUBMITTED_UCI ) and \
-           ( uci.state != uci_states.PENDING ) and \
-           ( uci.state != uci_states.DELETING ) and \
-           ( uci.state != uci_states.DELETING_UCI ) and \
-           ( uci.state != uci_states.DELETED ) and \
-           ( uci.state != uci_states.RUNNING ) and \
-           ( uci.state != uci_states.NEW_UCI ) and \
-           ( uci.state != uci_states.NEW ) and \
-           ( uci.state != uci_states.ERROR ):
+        if ( len(stores) is not 0 ) and ( uci.state == uci_states.AVAILABLE ):
             instance = model.CloudInstance()
             instance.user = user
             instance.image = mi
@@ -181,7 +174,10 @@ class CloudController( BaseController ):
                     "instance description." )
             return self.list( trans )
         
-        error( "Cannot start instance that is in state '%s'." % uci.state )
+        if len(stores) == 0:
+            error( "This instance does not have any storage volumes associated it and thus cannot be started." )
+        else:
+            error( "Cannot start instance that is in state '%s'." % uci.state )
         return self.list( trans )
     
     @web.expose
@@ -228,7 +224,10 @@ class CloudController( BaseController ):
             trans.set_message( "Galaxy instance '%s' marked for deletion." % name )
             return self.list( trans )
         
-        trans.set_message( "Instance '%s' is already marked for deletion." % uci.name )
+        if uci.state != uci_states.ERROR:
+            trans.set_message( "Cannot delete instance in state ERROR." )
+        else:
+            trans.set_message( "Instance '%s' is already marked for deletion." % uci.name )
         return self.list( trans )
     
     @web.expose
@@ -251,8 +250,6 @@ class CloudController( BaseController ):
             .filter_by( user=user, state=instance_states.TERMINATED, uci_id=id ) \
             .order_by( desc( model.CloudInstance.c.update_time ) ) \
             .all()
-            
-        log.debug( "id: %s" % id )
         
         return trans.fill_template( "cloud/view_usage.mako", prevInstances = prevInstances ) 
     
@@ -284,6 +281,12 @@ class CloudController( BaseController ):
                 providersToZones[storedCred.name] = ['Unknown provider zone']
         
         if instanceName:
+            # Check if volume size is entered as an integer
+            try:
+                volSize = int( volSize )
+            except ValueError:
+                error['vol_error'] = "Volume size must be integer value between 1 and 1000."
+                
             # Create new user configured instance
             try:
                 if trans.app.model.UCI \
@@ -299,9 +302,6 @@ class CloudController( BaseController ):
                     error['vol_error'] = "You must specify volume size as an integer value between 1 and 1000."
                 elif ( int( volSize ) < 1 ) or ( int( volSize ) > 1000 ):
                     error['vol_error'] = "Volume size must be integer value between 1 and 1000."
-#                elif type( volSize ) != type( 1 ): # Check if volSize is int
-#                    log.debug( "volSize='%s'" % volSize )
-#                    error['vol_error'] = "Volume size must be integer value between 1 and 1000."
                 elif zone=='':
                     error['zone_error'] = "You must select zone where this UCI will be registered."
                 else:
@@ -311,14 +311,14 @@ class CloudController( BaseController ):
                     uci.credentials = trans.app.model.CloudUserCredentials.filter(
                         trans.app.model.CloudUserCredentials.table.c.name==credName ).first()
                     uci.user= user
-                    uci.total_size = volSize # This is OK now because new instance is being created. 
+                    uci.total_size = volSize # This is OK now because new instance is being created and only one storage volume can be created at UCI creation time 
                     uci.state = uci_states.NEW_UCI
                     
                     storage = model.CloudStore()
                     storage.user = user
                     storage.uci = uci
                     storage.size = volSize
-                    storage.availability_zone = zone # TODO: Give user choice here. Also, enable region selection.
+                    storage.availability_zone = zone 
                     # Persist
                     session = trans.sa_session
                     session.save_or_update( uci )
@@ -333,7 +333,7 @@ class CloudController( BaseController ):
             except AttributeError, ae:
                 inst_error = "No registered cloud images. You must contact administrator to add some before proceeding."
                 log.debug("AttributeError: %s " % str( ae ) )
-        
+            
         return trans.fill_template( "cloud/configure_uci.mako", 
                                     instanceName = instanceName, 
                                     credName = storedCreds, 
@@ -341,14 +341,7 @@ class CloudController( BaseController ):
                                     zone = zone, 
                                     error = error, 
                                     providersToZones = providersToZones )
-                
-        return trans.show_form( 
-            web.FormBuilder( web.url_for(), "Configure new instance", submit_text="Add" )
-                .add_text( "instanceName", "Instance name", value="Unnamed instance", error=inst_error ) 
-                .add_text( "credName", "Name of registered credentials to use", value="", error=cred_error )
-                .add_text( "volSize", "Permanent storage size (1GB - 1000GB)"  
-                    "<br />Note: you will be able to add more storage later", value='', error=vol_error ) )
-        
+    
     @web.expose
     @web.require_admin
     def addNewImage( self, trans, image_id='', manifest='', state=None ):
@@ -851,6 +844,7 @@ def get_stores( trans, uci ):
     user = trans.get_user()
     stores = trans.sa_session.query( model.CloudStore ) \
             .filter_by( user=user, uci_id=uci.id ) \
+            .filter( model.CloudStore.c.status != store_states.ERROR ) \
             .all()
             
     return stores
@@ -867,19 +861,6 @@ def get_instances( trans, uci ):
             #.all() #TODO: return all but need to edit calling method(s) to handle list
             
     return instances
-
-def get_cloud_instance( conn, instance_id ):
-    """
-    Returns a cloud instance representation of the instance id, i.e., cloud instance object that cloud API can be invoked on
-    """
-    # get_all_instances func. takes a list of desired instance id's, so create a list first
-    idLst = list() 
-    idLst.append( instance_id )
-    # Retrieve cloud instance based on passed instance id. get_all_instances( idLst ) method returns reservation ID. Because
-    # we are passing only 1 ID, we can retrieve only the first element of the returning list. Furthermore, because (for now!)
-    # only 1 instance corresponds each individual reservation, grab only the first element of the returned list of instances.
-    cloudInstance = conn.get_all_instances( [instance_id] )[0].instances[0]
-    return cloudInstance
 
 def get_connection( trans, credName ):
     """
@@ -900,22 +881,3 @@ def get_connection( trans, credName ):
     else:
         error( "You must specify default credentials before starting an instance." )
         return 0
-
-def get_keypair_name( trans ):
-    """
-    Generate keypair using user's default credentials
-    """
-    conn = get_connection( trans )
-    
-    log.debug( "Getting user's keypair" )
-    key_pair = conn.get_key_pair( 'galaxy-keypair' )
-    
-    try:
-        return key_pair.name
-    except AttributeError: # No keypair under this name exists so create it
-        log.debug( 'No keypair found, creating keypair' )
-        key_pair = conn.create_key_pair( 'galaxy-keypair' )
-        # TODO: Store key_pair.material into instance table - this is the only time private key can be retrieved
-        #    Actually, probably return key_pair to calling method and store name & key from there...
-        
-    return key_pair.name

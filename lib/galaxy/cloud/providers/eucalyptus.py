@@ -46,7 +46,8 @@ instance_states = Bunch(
 
 store_states = Bunch(
     IN_USE = "in-use",
-    CREATING = "creating"
+    CREATING = "creating",
+    ERROR = "error"
 )
 
 class EucalyptusCloudProvider( object ):
@@ -96,7 +97,7 @@ class EucalyptusCloudProvider( object ):
         """
         Establishes eucalyptus cloud connection using user's credentials associated with given UCI
         """
-        log.debug( '##### Establishing eucalyptus cloud connection' )
+        log.debug( 'Establishing %s cloud connection.' % self.type )
         provider = uci_wrapper.get_provider()
         try:
             euca_region = RegionInfo( None, provider.region_name, provider.region_endpoint )
@@ -170,14 +171,14 @@ class EucalyptusCloudProvider( object ):
         and registers relevant information in Galaxy database.
         """
         conn = self.get_connection( uci_wrapper )
+        
+        # Because only 1 storage volume may be created at UCI config time, index of this storage volume in local Galaxy DB w.r.t
+        # current UCI is 0; therefore, it can be referenced in following code
+        log.info( "Creating volume in zone '%s'..." % uci_wrapper.get_uci_availability_zone() )
         if uci_wrapper.get_uci_availability_zone()=='':
             log.info( "Availability zone for UCI (i.e., storage volume) was not selected, using default zone: %s" % self.zone )
             uci_wrapper.set_store_availability_zone( self.zone )
         
-        #TODO: check if volume associated with UCI already exists (if server crashed for example) and don't recreate it
-        log.info( "Creating volume in zone '%s'..." % uci_wrapper.get_uci_availability_zone() )
-        # Because only 1 storage volume may be created at UCI config time, index of this storage volume in local Galaxy DB w.r.t
-        # current UCI is 0, so reference it in following methods
         vol = conn.create_volume( uci_wrapper.get_store_size( 0 ), uci_wrapper.get_uci_availability_zone(), snapshot=None )
         uci_wrapper.set_store_volume_id( 0, vol.id ) 
         
@@ -209,15 +210,14 @@ class EucalyptusCloudProvider( object ):
                 failedList.append( v.volume_id )
             
         # Delete UCI if all of associated 
-        log.debug( "count=%s, len(vl)=%s" % (count, len( vl ) ) )
         if count == len( vl ):
             uci_wrapper.delete()
         else:
             log.error( "Deleting following volume(s) failed: %s. However, these volumes were successfully deleted: %s. \
-                        MANUAL intervention and processing needed." % ( failedList, deletedList ) )
+                        Manual intervention and processing needed." % ( str( failedList ), str( deletedList ) ) )
             uci_wrapper.change_state( uci_state=uci_states.ERROR )
-            uci_wrapper.set_error( "Deleting following volume(s) failed: "+failedList+". However, these volumes were successfully deleted: "+deletedList+". \
-                        MANUAL intervention and processing needed." )
+            uci_wrapper.set_error( "Deleting following volume(s) failed: "+str(failedList)+". However, these volumes were \
+                        successfully deleted: "+str(deletedList)+". Manual intervention and processing needed." )
             
     def addStorageToUCI( self, name ):
         """ Adds more storage to specified UCI """
@@ -250,7 +250,7 @@ class EucalyptusCloudProvider( object ):
                 uci_wrapper.set_mi( i_index, mi_id )
                            
                 if uci_wrapper.get_state() != uci_states.ERROR:
-                    log.debug( "***** Starting UCI instance '%s'" % uci_wrapper.get_name() )
+                    log.debug( "Starting UCI instance '%s'" % uci_wrapper.get_name() )
                     log.debug( 'Using following command: conn.run_instances( image_id=%s, key_name=%s )' % ( mi_id, uci_wrapper.get_key_pair_name( i_index ) ) )
                     try:
                         reservation = conn.run_instances( image_id=mi_id, key_name=uci_wrapper.get_key_pair_name( i_index ) )
@@ -368,9 +368,19 @@ class EucalyptusCloudProvider( object ):
                                                model.CloudStore.c.status==store_states.CREATING,
                                                model.CloudStore.c.status==None ) ).all()
         for store in stores:
-            if self.type == store.uci.credentials.provider.type:
+            if self.type == store.uci.credentials.provider.type and store.volume_id != None:
                 log.debug( "[%s] Running general status update on store '%s'" % ( store.uci.credentials.provider.type, store.volume_id ) )
                 self.updateStore( store )
+            else:
+                log.error( "[%s] There exists an entry for UCI (%s) storage volume without an ID. Storage volume might have been created with "
+                           "cloud provider though. Manual check is recommended." % ( store.uci.credentials.provider.type, store.uci.name ) )
+                store.uci.error = "There exists an entry in local database for a storage volume without an ID. Storage volume might have been created " \
+                            "with cloud provider though. Manual check is recommended. After understanding what happened, local database etry for given " \
+                            "storage volume should be updated."
+                store.status = store_states.ERROR
+                store.uci.state = uci_states.ERROR
+                store.uci.flush()
+                store.flush()
         
         # Attempt at updating any zombie UCIs (i.e., instances that have been in SUBMITTED state for longer than expected - see below for exact time)
         zombies = model.UCI.filter_by( state=uci_states.SUBMITTED ).all()
@@ -455,6 +465,7 @@ class EucalyptusCloudProvider( object ):
         conn = self.get_connection_from_uci( uci )
 
         try:
+            log.debug( "vol id: " % store.volume_id )
             vl = conn.get_all_volumes( [store.volume_id] )
         except boto.exception.EC2ResponseError, e:
             log.error( "Retrieving volume(s) from cloud for UCI '%s' failed: " % ( uci.name, str(e) ) )
@@ -570,6 +581,7 @@ class EucalyptusCloudProvider( object ):
         Establishes and returns connection to cloud provider. Information needed to do so is obtained
         directly from uci database object.
         """
+        log.debug( 'Establishing %s cloud connection.' % self.type )
         a_key = uci.credentials.access_key
         s_key = uci.credentials.secret_key
         # Get connection
