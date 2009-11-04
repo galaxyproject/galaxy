@@ -1,13 +1,15 @@
 /* Trackster
     2009, James Taylor, Kanwei Li
 */
+var DEBUG = false;
 
 var DENSITY = 1000,
     DATA_ERROR = "There was an error in indexing this dataset.",
     DATA_NONE = "No data for this chrom/contig.",
     DATA_PENDING = "Currently indexing... please wait",
     DATA_LOADING = "Loading data...",
-    CACHED_TILES = 10,
+    CACHED_TILES_FEATURE = 10,
+    CACHED_TILES_LINE = 30,
     CACHED_DATA = 20,
     CONTEXT = $("<canvas></canvas>").get(0).getContext("2d"),
     RIGHT_STRAND, LEFT_STRAND;
@@ -104,6 +106,9 @@ $.extend( View.prototype, {
         this.high = Math.ceil(high);
         this.center = Math.round( this.low + (this.high - this.low) / 2 );
         
+        // 10^log10(range / DENSITY) Close approximation for browser window, assuming DENSITY = window width
+        this.resolution = Math.pow( 10, Math.ceil( Math.log( (this.high - this.low) / DENSITY ) / Math.LN10 ) );
+        
         // Overview
         $("#overview-box").css( {
             left: ( this.low / this.span ) * $("#overview-viewport").width(),
@@ -157,18 +162,16 @@ $.extend( Track.prototype, {
 });
 
 var TiledTrack = function() {
-    this.tile_cache = new Cache(CACHED_TILES);
-    // this.tile_cache = {};
 };
 $.extend( TiledTrack.prototype, Track.prototype, {
     draw: function() {
         var low = this.view.low,
             high = this.view.high,
-            range = high - low;
-
-        var resolution = Math.pow( 10, Math.ceil( Math.log( range / DENSITY ) / Math.log( 10 ) ) );
-        resolution = Math.max( resolution, 0.1 );
-        resolution = Math.min( resolution, 1000000 );
+            range = high - low,
+            resolution = this.view.resolution;
+            
+        
+        if (DEBUG) { $("#debug").text(resolution); }
 
         var parent_element = $("<div style='position: relative;'></div>");
             this.content_div.children( ":first" ).remove();
@@ -187,7 +190,7 @@ $.extend( TiledTrack.prototype, Track.prototype, {
                 // console.log("cached tile " + tile_index);
                 var tile_low = tile_index * DENSITY * resolution;
                 cached.css( {
-                    left: ( tile_low - this.view.low ) * w_scale
+                    left: ( tile_low - low ) * w_scale
                 });
                 // Our responsibility to move the element to the new parent
                 parent_element.append( cached );
@@ -229,6 +232,7 @@ $.extend( LabelTrack.prototype, Track.prototype, {
 });
 
 var LineTrack = function ( name, dataset_id, height ) {
+    this.tile_cache = new Cache(CACHED_TILES_LINE);
     Track.call( this, name, $("#viewport") );
     TiledTrack.call( this );
     
@@ -236,6 +240,7 @@ var LineTrack = function ( name, dataset_id, height ) {
     this.height_px = (height ? height : 100);
     this.container_div.addClass( "line-track" );
     this.dataset_id = dataset_id;
+    this.data_queue = {};
     this.cache = new Cache(CACHED_DATA); // We need to cache some data because of
                                          // asynchronous calls
 };
@@ -282,11 +287,17 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
             low = position * DENSITY * resolution,
             high = ( position + 1 ) * DENSITY * resolution,
             key = resolution + "_" + position;
-            
-        $.getJSON( data_url, { track_type: this.track_type, chrom: this.view.chrom, low: low, high: high, dataset_id: this.dataset_id }, function ( data ) {
-            track.cache[key] = data;
-            $(document).trigger( "redraw" );
-        });
+        
+        if (!track.data_queue[key]) {
+            track.data_queue[key] = true;
+            $.getJSON( data_url, {  track_type: this.track_type, chrom: this.view.chrom, 
+                                    low: low, high: high, dataset_id: this.dataset_id,
+                                    resolution: this.view.resolution }, function ( data ) {
+                track.cache[key] = data;
+                delete track.data_queue[key];
+                track.draw();
+            });
+        }            
     },
     draw_tile: function( resolution, tile_index, parent_element, w_scale ) {
         if (!this.vertical_range) { // We don't have the necessary information yet
@@ -340,6 +351,7 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
 });
 
 var FeatureTrack = function ( name, dataset_id, height ) {
+    this.tile_cache = new Cache(CACHED_TILES_FEATURE);
     Track.call( this, name, $("#viewport") );
     TiledTrack.call( this );
     
@@ -409,9 +421,9 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                 if (end_ary[j] === undefined || end_ary[j] < f_start) {
                     end_ary[j] = f_end;
                     if (include_labels) {
-                        this.zi_slots[feature.name] = j;
+                        this.zi_slots[feature.uid] = j;
                     } else {
-                        this.zo_slots[feature.name] = j;
+                        this.zo_slots[feature.uid] = j;
                     }
                     break;
                 }
@@ -466,7 +478,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
             if (feature.start <= tile_high && feature.end >= tile_low) {
                 var f_start = Math.floor( Math.max(0, (feature.start - tile_low) * w_scale) ),
                     f_end   = Math.ceil( Math.min(width, (feature.end - tile_low) * w_scale) ),
-                    y_center = this.slots[feature.name] * this.vertical_gap;
+                    y_center = this.slots[feature.uid] * this.vertical_gap;
                 
                 var thickness, y_start, thick_start = null, thick_end = null;
                 if (feature.thick_start && feature.thick_end) {

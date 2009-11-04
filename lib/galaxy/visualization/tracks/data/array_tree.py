@@ -31,11 +31,16 @@ class ArrayTreeDataProvider( object ):
         f.close()
         return { 'max': float( max(root_summary.maxs) ), 'min': float( min(root_summary.mins) ) }
     
-    def get_data( self, chrom, start, end ):
+    def get_data( self, chrom, start, end, **kwargs ):
         start = int( start )
         end = int( end )
-        level = int( ceil( log( end - start, BLOCK_SIZE ) ) ) - 1
-
+        resolution = max(1, ceil(float(kwargs['resolution'])))
+        
+        level = int( floor( log( resolution, BLOCK_SIZE ) ) )
+        level = max( level, 0 )
+        stepsize = BLOCK_SIZE ** level
+        step1 = stepsize * BLOCK_SIZE
+        
         # Open the file
         f = open( self.dataset.file_name )
         d = FileArrayTreeDict( f )
@@ -47,22 +52,20 @@ class ArrayTreeDataProvider( object ):
         # Is the requested level valid?
         assert 0 <= level <= chrom_array_tree.levels
         # Calculate the actual start/range/step of the block we're getting
-        size = BLOCK_SIZE ** (level+1)
-        block_start = ( start // BLOCK_SIZE ) * BLOCK_SIZE
-        block_step = size // BLOCK_SIZE
-        indexes = range( block_start, block_start + size, block_step )
-        # Return either data point or a summary depending on the level
-        if level > 0:
-            s = chrom_array_tree.get_summary( start, level )
-            f.close()
-            if s is not None:
-                return zip( indexes,  map( float, s.sums / s.counts ) )
+        
+        results = []
+        for block_start in range( start, end, stepsize * BLOCK_SIZE ):
+            # print block_start
+            # Return either data point or a summary depending on the level
+            indexes = range( block_start, block_start + stepsize * BLOCK_SIZE, stepsize )
+            if level > 0:
+                s = chrom_array_tree.get_summary( block_start, level )
+                if s is not None:
+                    results.extend( zip( indexes,  map( float, s.sums / s.counts ) ) )
             else:
-                return None
-        else:
-            v = chrom_array_tree.get_leaf( start )
-            f.close()
-            if v is not None:
-                return zip( indexes, map( float, v ) )
-            else:
-                return None
+                v = chrom_array_tree.get_leaf( block_start )
+                if v is not None:
+                    results.extend( zip( indexes, map( float, v ) ) )
+        
+        f.close()
+        return results

@@ -8,6 +8,8 @@ import pkg_resources; pkg_resources.require( "bx-python" )
 from bx.arrays.array_tree import *
 from bx.arrays.wiggle import IntervalReader
 
+BLOCK_SIZE = 1000
+
 def main():
    
     input_fname = sys.argv[1]
@@ -16,7 +18,7 @@ def main():
     reader = IntervalReader( open( input_fname ) )
     
     # Fill array from wiggle
-    d = array_tree_dict_from_wiggle_reader( reader, {} )
+    d = array_tree_dict_from_wiggle_reader( reader, {}, block_size = BLOCK_SIZE )
     
     for value in d.itervalues():
         value.root.build_summary()

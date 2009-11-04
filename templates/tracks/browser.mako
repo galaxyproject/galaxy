@@ -122,6 +122,7 @@ ${h.js( "jquery", "jquery.event.drag", "jquery.mousewheel", "trackster" )}
                 <a href="#" onclick="javascript:view.zoom_in();view.redraw();">+</a>
                 <a href="#" onclick="javascript:view.zoom_out();view.redraw();">-</a>
             </form>
+            <div id="debug" style="float: right"></div>
         </div>
     </div>
 </div>

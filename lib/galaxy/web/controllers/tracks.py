@@ -184,7 +184,7 @@ class TracksController( BaseController ):
         return manifest
 
     @web.json
-    def data( self, trans, dataset_id, track_type, chrom, low, high, stats=False ):
+    def data( self, trans, dataset_id, track_type, chrom, low, high, **kwargs ):
         """
         Called by the browser to request a block of data
         """
@@ -216,10 +216,10 @@ class TracksController( BaseController ):
         data_provider = dataset_type_to_data_provider[ converted_dataset_type ]( converted_dataset, dataset )
 
         # Return stats if we need them
-        if stats: return data_provider.get_stats( chrom )
+        if 'stats' in kwargs: return data_provider.get_stats( chrom )
 
         # Get the requested chunk of data
-        return data_provider.get_data( chrom, low, high )
+        return data_provider.get_data( chrom, low, high, **kwargs )
 
     def __dataset_as_type( self, trans, dataset, type ):
         """
