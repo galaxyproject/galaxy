@@ -23,7 +23,7 @@ def src_split( src ):
     fields = src.split( SRC_SPLIT_CHAR, 1 )
     spec = fields.pop( 0 )
     if fields:
-        chrom = fields
+        chrom = fields.pop( 0 )
     else:
         chrom = spec
     return spec, chrom
