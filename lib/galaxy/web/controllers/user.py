@@ -571,6 +571,8 @@ class User( BaseController ):
                 return trans.show_ok_message( "Password has been reset and emailed to: %s.  <a href='%s'>Click here</a> to return to the login form." % ( email, web.url_for( action='login' ) ) )
         elif email != None:
             error = "The specified user does not exist"
+        elif email is None:
+            email = ""
         return trans.show_form( 
             web.FormBuilder( web.url_for(), "Reset Password", submit_text="Submit" )
                 .add_text( "email", "Email", value=email, error=error ) )
