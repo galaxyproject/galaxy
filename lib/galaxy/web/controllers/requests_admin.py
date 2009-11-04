@@ -266,8 +266,10 @@ class Requests( BaseController ):
 #---- Request Creation ----------------------------------------------------------
 #    
     def __select_request_type(self, trans, rtid):
+        requesttype_list = trans.sa_session.query( trans.app.model.RequestType )\
+                                           .order_by( trans.app.model.RequestType.name.asc() )
         rt_ids = ['none']
-        for rt in trans.sa_session.query( trans.app.model.RequestType ):
+        for rt in requesttype_list:
             if not rt.deleted:
                 rt_ids.append(str(rt.id))
         select_reqtype = SelectField('select_request_type', 
@@ -277,7 +279,7 @@ class Requests( BaseController ):
             select_reqtype.add_option('Select one', 'none', selected=True)
         else:
             select_reqtype.add_option('Select one', 'none')
-        for rt in trans.sa_session.query( trans.app.model.RequestType ):
+        for rt in requesttype_list:
             if not rt.deleted:
                 if rtid == rt.id:
                     select_reqtype.add_option(rt.name, rt.id, selected=True)
@@ -799,7 +801,7 @@ class Requests( BaseController ):
             # save all the new/unsaved samples entered by the user
             if edit_mode == 'False':
                 for index in range(len(current_samples)-len(request.samples)):
-                    sample_index = index + len(request.samples)
+                    sample_index = len(request.samples)
                     sample_name = util.restore_text( params.get( 'sample_%i_name' % sample_index, ''  ) )
                     sample_values = []
                     for field_index in range(len(request.type.sample_form.fields)):
@@ -992,7 +994,7 @@ class Requests( BaseController ):
             bar_code = util.restore_text(params.get('sample_%i_bar_code' % index, ''))
             # check for empty bar code
             if not bar_code.strip():
-                msg = 'Please fill the bar code for sample <b>%s</b>.' % request.samples[index].name
+                msg = 'Please fill the barcode for sample <b>%s</b>.' % request.samples[index].name
                 break
             # check all the unsaved bar codes
             count = 0
@@ -1000,8 +1002,8 @@ class Requests( BaseController ):
                 if bar_code == util.restore_text(params.get('sample_%i_bar_code' % i, '')):
                     count = count + 1
             if count > 1:
-                msg = '''The bar code <b>%s</b> of sample <b>%s</b> already belongs
-                         another sample in this request. The sample bar codes must
+                msg = '''The barcode <b>%s</b> of sample <b>%s</b> belongs
+                         another sample in this request. The sample barcodes must
                          be unique throughout the system''' % \
                          (bar_code, request.samples[index].name)
                 break
@@ -1009,7 +1011,7 @@ class Requests( BaseController ):
             all_samples = trans.sa_session.query( trans.app.model.Sample )
             for sample in all_samples:
                 if bar_code == sample.bar_code:
-                    msg = '''The bar code <b>%s</b> of sample <b>%s</b> already 
+                    msg = '''The bar code <b>%s</b> of sample <b>%s</b>  
                              belongs another sample. The sample bar codes must be 
                              unique throughout the system''' % \
                              (bar_code, request.samples[index].name)
@@ -1044,7 +1046,7 @@ class Requests( BaseController ):
         return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                           action='bar_codes',
                                                           request_id=request.id,
-                                                          msg='Bar codes has been saved for this request',
+                                                          msg='Bar codes have been saved for this request',
                                                           messagetype='done'))
                     
     def __set_request_state(self, request):
@@ -1162,8 +1164,8 @@ class Requests( BaseController ):
         if params.get( 'create', False ):
             return trans.fill_template( '/admin/requests/create_request_type.mako', 
                                         request_forms=get_all_forms( trans, 
-                                                             filter=dict(deleted=False),
-                                                             form_type=trans.app.model.FormDefinition.types.REQUEST ),
+                                                                     filter=dict(deleted=False),
+                                                                     form_type=trans.app.model.FormDefinition.types.REQUEST ),
                                         sample_forms=get_all_forms( trans, 
                                                              filter=dict(deleted=False),
                                                              form_type=trans.app.model.FormDefinition.types.SAMPLE ),

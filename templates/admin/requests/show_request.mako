@@ -195,7 +195,7 @@
 
 <div class="toolForm">
     ##<div class="toolFormTitle">Samples (${len(request.samples)})</div>
-    <form id="edit_form" name="edit_form" action="${h.url_for( controller='requests_admin', action='show_request' )}" enctype="multipart/form-data" method="post" >
+    <form id="show_request" name="show_request" action="${h.url_for( controller='requests_admin', action='show_request', edit_mode=edit_mode )}" enctype="multipart/form-data" method="post" >
         <div class="form-row">
             %if current_samples: 
                 %if not request.type.sample_form.layout:

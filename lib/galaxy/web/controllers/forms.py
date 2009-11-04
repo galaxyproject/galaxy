@@ -60,7 +60,9 @@ class Forms( BaseController ):
             form_type_selectbox.add_option('Select one', 'none', selected=True)
         else:
             form_type_selectbox.add_option('Select one', 'none')
-        for ft in trans.app.model.FormDefinition.types.items():
+        fd_types = trans.app.model.FormDefinition.types.items()
+        fd_types.sort()
+        for ft in fd_types:
             if selected == ft[1]:
                 form_type_selectbox.add_option(ft[1], ft[1], selected=True)
             else:

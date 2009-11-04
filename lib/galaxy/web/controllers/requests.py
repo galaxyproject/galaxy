@@ -304,8 +304,7 @@ class Requests( BaseController ):
                     s = trans.app.model.Sample(sample_name, '', request, form_values)
                     s.flush()
             else:
-                for index in range(len(current_samples)):
-                    sample_index = index
+                for sample_index in range(len(current_samples)):
                     sample_name = current_samples[sample_index][0]
                     new_sample_name = util.restore_text( params.get( 'sample_%i_name' % sample_index, ''  ) )
                     sample_values = []
@@ -379,8 +378,10 @@ class Requests( BaseController ):
                                     details=details,
                                     edit_mode=edit_mode)
     def __select_request_type(self, trans, rtid):
+        requesttype_list = trans.sa_session.query( trans.app.model.RequestType )\
+                                           .order_by( trans.app.model.RequestType.name.asc() )
         rt_ids = ['none']
-        for rt in trans.sa_session.query( trans.app.model.RequestType ):
+        for rt in requesttype_list:
             if not rt.deleted:
                 rt_ids.append(str(rt.id))
         select_reqtype = SelectField('select_request_type', 
@@ -390,7 +391,7 @@ class Requests( BaseController ):
             select_reqtype.add_option('Select one', 'none', selected=True)
         else:
             select_reqtype.add_option('Select one', 'none')
-        for rt in trans.sa_session.query( trans.app.model.RequestType ):
+        for rt in requesttype_list:
             if not rt.deleted:
                 if rtid == rt.id:
                     select_reqtype.add_option(rt.name, rt.id, selected=True)

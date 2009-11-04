@@ -1272,7 +1272,7 @@ class TwillTestCase( unittest.TestCase ):
         for index, bar_code in enumerate(bar_codes):
             tc.fv( "1", "sample_%i_bar_code" % index, bar_code )
         tc.submit( "save_bar_codes" )
-        self.check_page_for_string( 'Bar codes has been saved for this request' )
+        self.check_page_for_string( 'Bar codes have been saved for this request' )
     def change_sample_state( self, sample_name, sample_id, new_state_id, new_state_name, comment='' ):
         self.home()
         self.visit_url( "%s/requests_admin/show_events?sample_id=%i" % (self.url, sample_id) )
