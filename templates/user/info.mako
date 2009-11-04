@@ -99,7 +99,7 @@ $( function() {
             </div>
         </form>
     %endif
-    <form name="user_info" id="user_info" action="${h.url_for( controller='user', action='new_address' )}" method="post" >
+    <form name="user_info" id="user_info" action="${h.url_for( controller='user', action='new_address', user_id=user.id, admin_view=admin_view )}" method="post" >
         <div class="toolFormTitle">User Addresses</div>
         <div class="toolFormBody">
             %if user.addresses:

@@ -272,7 +272,7 @@ class User( BaseController ):
                     user_address.country = util.restore_text(params.get('field_%i_country' % index, ''))
                     user_address.phone = util.restore_text(params.get('field_%i_phone' % index, ''))
                     user_address.flush()
-                    trans.user.refresh()
+                    trans.sa_session.refresh( user )
                     values.append(int(user_address.id))
                 elif value == unicode('none'):
                     values.append('')
@@ -618,57 +618,81 @@ class User( BaseController ):
             # User not logged in, history group must be only public
             return trans.show_error_message( "You must be logged in to change your default permitted actions." )
     @web.expose
-    def new_address( self, trans, short_desc='', name='', institution='', address1='',  
-                     address2='', city='', state='', postal_code='', country='', phone='' ):
-        if trans.app.config.require_login:
-            refresh_frames = [ 'masthead', 'history', 'tools' ]
-        else:
-            refresh_frames = [ 'masthead', 'history' ]
+    def new_address( self, trans, **kwd ):
+        params = util.Params( kwd )
+        msg = util.restore_text( params.get( 'msg', ''  ) )
+        messagetype = params.get( 'messagetype', 'done' )
+        admin_view = params.get( 'admin_view', 'False'  )
+        error = ''
+        user = trans.sa_session.query( trans.app.model.User ).get( int( params.get( 'user_id', None ) ) )
         if not trans.app.config.allow_user_creation and not trans.user_is_admin():
             return trans.show_error_message( 'User registration is disabled.  Please contact your Galaxy administrator for an account.' )
-        short_desc_error = name_error = institution_error = address1_error = city_error = None
-        address2_error = state_error = postal_code_error = country_error = phone_error = None
-        if short_desc:
-            if not len( short_desc ):
-                short_desc_error = 'Enter a short description for this address'
-            elif not len( name ):
-                name_error = 'Enter the full name'
-            elif not len( institution ):
-                institution_error = 'Enter the institution associated with the user'
-            elif not len ( address1 ):
-                address1_error = 'Enter the address'
-            elif not len( city ):
-                city_error = 'Enter the city'
-            elif not len( state ):
-                state_error = 'Enter the state/province/region'
-            elif not len( postal_code ):
-                postal_code_error = 'Enter the postal code'
-            elif not len( country ):
-                country_error = 'Enter the country'
+        if params.get( 'save_new_address_button', None  ) == 'Save':
+            if not len( util.restore_text( params.get( 'short_desc', ''  ) ) ):
+                error = 'Enter a short description for this address'
+            elif not len( util.restore_text( params.get( 'name', ''  ) ) ):
+                error = 'Enter the full name'
+            elif not len( util.restore_text( params.get( 'institution', ''  ) ) ):
+                error = 'Enter the institution associated with the user'
+            elif not len ( util.restore_text( params.get( 'address1', ''  ) ) ):
+                error = 'Enter the address'
+            elif not len( util.restore_text( params.get( 'city', ''  ) ) ):
+                error = 'Enter the city'
+            elif not len( util.restore_text( params.get( 'state', ''  ) ) ):
+                error = 'Enter the state/province/region'
+            elif not len( util.restore_text( params.get( 'postal_code', ''  ) ) ):
+                error = 'Enter the postal code'
+            elif not len( util.restore_text( params.get( 'country', ''  ) ) ):
+                error = 'Enter the country'
             else:
-                user_address = trans.app.model.UserAddress( user=trans.user, desc=short_desc, 
-                                                            name=name, institution=institution, 
-                                                            address=address1+' '+address2, city=city, 
-                                                            state=state, postal_code=postal_code, 
-                                                            country=country, phone=phone)
+                user_address = trans.app.model.UserAddress( user=user )
+                user_address.desc = util.restore_text( params.get( 'short_desc', ''  ) )
+                user_address.name = util.restore_text( params.get( 'name', ''  ) )
+                user_address.institution = util.restore_text( params.get( 'institution', ''  ) )
+                user_address.address = util.restore_text( params.get( 'address1', ''  ) )+' '+util.restore_text( params.get( 'address2', ''  ) )
+                user_address.city = util.restore_text( params.get( 'city', ''  ) )
+                user_address.state = util.restore_text( params.get( 'state', ''  ) )
+                user_address.postal_code = util.restore_text( params.get( 'postal_code', ''  ) )
+                user_address.country = util.restore_text( params.get( 'country', ''  ) )
+                user_address.phone = util.restore_text( params.get( 'phone', ''  ) )
                 user_address.flush()
+                msg = 'Address <b>%s</b> has been added' % user_address.desc
+                if admin_view == 'True':
+                    return trans.response.send_redirect( web.url_for( controller='user',
+                                                                      action='show_info',
+                                                                      admin_view=True,
+                                                                      user_id=user.id,
+                                                                      msg=msg,
+                                                                      messagetype='done') )
                 return trans.response.send_redirect( web.url_for( controller='user',
                                                                   action='show_info',
-                                                                  msg='Address <b>%s</b> has been added' % user_address.desc,
+                                                                  msg=msg,
                                                                   messagetype='done') )
-        
-        return trans.show_form( 
-            web.FormBuilder( web.url_for(), "New address", submit_text="Save" )
-                .add_text( "short_desc", "Short address description", value=short_desc, error=short_desc_error )
-                .add_text( "name", "Name", value=name, error=name_error )
-                .add_text( "institution", "Institution", value=institution, error=institution_error )
-                .add_text( "address1", "Address Line 1", value=address1, error=address1_error )
-                .add_text( "address2", "Address Line 2", value=address2, error=address2_error )
-                .add_text( "city", "City", value=city, error=city_error )
-                .add_text( "state", "State/Province/Region", value=state, error=state_error )
-                .add_text( "postal_code", "Postal Code", value=postal_code, error=postal_code_error )
-                .add_text( "country", "Country", value=country, error=country_error )
-                .add_text( "phone", "Phone", value=phone, error=phone_error ) )
+        else:
+            # show the address form with the current values filled in
+            # create the widgets for each address field
+            widgets = []
+            widgets.append(dict(label='Short description',
+                                widget=TextField( 'short_desc', 40, '' ) ) )
+            widgets.append(dict(label='Name',
+                                widget=TextField( 'name', 40, '' ) ) )
+            widgets.append(dict(label='Institution',
+                                widget=TextField( 'institution', 40, '' ) ) )
+            widgets.append(dict(label='Address Line 1',
+                                widget=TextField( 'address1', 40, '' ) ) )
+            widgets.append(dict(label='City',
+                                widget=TextField( 'city', 40, '' ) ) )
+            widgets.append(dict(label='State',
+                                widget=TextField( 'state', 40, '' ) ) )
+            widgets.append(dict(label='Postal Code',
+                                widget=TextField( 'postal_code', 40, '' ) ) )
+            widgets.append(dict(label='Country',
+                                widget=TextField( 'country', 40, '' ) ) )
+            widgets.append(dict(label='Phone',
+                                widget=TextField( 'phone', 40, '' ) ) )
+            return trans.fill_template( 'user/new_address.mako', user=user,
+                                        admin_view=admin_view,
+                                        widgets=widgets, msg=msg, messagetype=messagetype)
     @web.expose
     def edit_address( self, trans, **kwd ):
         params = util.Params( kwd )

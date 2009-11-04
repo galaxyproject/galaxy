@@ -7,7 +7,7 @@
 %endif
 </br>
 </br>
-<h3>Edit address</h3>
+<h3>New address</h3>
 
 <ul class="manage-table-actions">
     <li>
@@ -16,8 +16,8 @@
     </li>
 </ul>
 <div class="toolForm">
-<form name="login_info" id="login_info" action="${h.url_for( controller='user', action='edit_address', admin_view=admin_view, address_id=address.id, user_id=user.id )}" method="post" >
-    <div class="toolFormTitle">Edit address</div>
+<form name="login_info" id="login_info" action="${h.url_for( controller='user', action='new_address', admin_view=admin_view, user_id=user.id )}" method="post" >
+    <div class="toolFormTitle">New address</div>
     <div class="toolFormBody">
         %for field in widgets:
             <div class="form-row">
@@ -26,7 +26,7 @@
             </div>
         %endfor
         <div class="form-row">
-            <input type="submit" name="edit_address_button" value="Save changes">
+            <input type="submit" name="save_new_address_button" value="Save">
         </div>
     </div>
 </form>
