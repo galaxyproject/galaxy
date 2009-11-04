@@ -1,0 +1,1 @@
+python  amqp_publisher.py -p 3 -c galaxy_amq.ini

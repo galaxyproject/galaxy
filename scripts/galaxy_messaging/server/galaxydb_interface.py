@@ -1,6 +1,6 @@
 #/usr/bin/python
 
-from datetime import datetime, timedelta
+from datetime import datetime
 import sys
 import optparse
 import os
@@ -99,10 +99,9 @@ class GalaxyDbInterface(object):
         if new_state_id == -1:
             return
         log.debug('Updating sample_id %i state to %s' % (sample_id, new_state))
-        d = timedelta(hours=4)
         i = self.event_table.insert()
-        i.execute(update_time=datetime.now()+d, 
-                  create_time=datetime.now()+d,
+        i.execute(update_time=datetime.utcnow(), 
+                  create_time=datetime.utcnow(),
                   sample_id=sample_id, 
                   sample_state_id=int(new_state_id), 
                   comment='bar code scanner')
@@ -122,7 +121,6 @@ class GalaxyDbInterface(object):
         else:
             request_state = 'Submitted'
         log.debug('Updating request_id %i state to "%s"' % (self.request_id, request_state))
-        d = timedelta(hours=4)
         i = self.request_table.update(whereclause=self.request_table.c.id==self.request_id,
                                       values={self.request_table.c.state: request_state})
         i.execute()
@@ -132,20 +130,20 @@ class GalaxyDbInterface(object):
 if __name__ == '__main__':
     print '''This file should not be run directly. To start the Galaxy AMQP Listener:
     %sh run_galaxy_listener.sh'''
-#    dbstr = 'postgres://postgres:postgres@localhost/galaxy_ft'
-#
-#    parser = optparse.OptionParser()
-#    parser.add_option('-n', '--name', help='name of the sample field', dest='name', \
-#                      action='store', default='bar_code')
-#    parser.add_option('-v', '--value', help='value of the sample field', dest='value', \
-#                      action='store')
-#    parser.add_option('-s', '--state', help='new state of the sample', dest='state', \
-#                      action='store')
-#    (opts, args) = parser.parse_args()
-#
-#    gs = GalaxyDbInterface(dbstr)
-#    sample_id = gs.get_sample_id(field_name=opts.name, value=opts.value)
-#    gs.change_state(sample_id, opts.state)
+    dbstr = 'postgres://postgres:postgres@localhost/galaxy_uft'
+
+    parser = optparse.OptionParser()
+    parser.add_option('-n', '--name', help='name of the sample field', dest='name', \
+                      action='store', default='bar_code')
+    parser.add_option('-v', '--value', help='value of the sample field', dest='value', \
+                      action='store')
+    parser.add_option('-s', '--state', help='new state of the sample', dest='state', \
+                      action='store')
+    (opts, args) = parser.parse_args()
+
+    gs = GalaxyDbInterface(dbstr)
+    sample_id = gs.get_sample_id(field_name=opts.name, value=opts.value)
+    gs.change_state(sample_id, opts.state)
 
             
 
