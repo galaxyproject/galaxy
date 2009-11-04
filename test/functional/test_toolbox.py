@@ -128,4 +128,4 @@ def build_tests():
             for j, testdef in enumerate( tool.tests ):
                 name = "%s ( %s ) > %s" % ( tool.name, tool.id, testdef.name )
                 testcase = get_case( testdef, name )
-                G[ 'testcase_%d_%d' % ( i, j ) ] = testcase
+                G[ testcase.__name__ ] = testcase
