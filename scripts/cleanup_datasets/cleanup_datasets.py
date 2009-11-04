@@ -387,7 +387,6 @@ def _purge_folder( folder, app, remove_from_disk, info_only = False ):
 class CleanupDatasetsApplication( object ):
     """Encapsulates the state of a Universe application"""
     def __init__( self, database_connection=None, file_path=None ):
-        print >> sys.stderr, "python path is: " + ", ".join( sys.path )
         if database_connection is None:
             raise Exception( "CleanupDatasetsApplication requires a database_connection value" )
         if file_path is None:
