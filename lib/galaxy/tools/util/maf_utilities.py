@@ -20,9 +20,12 @@ GAP_CHARS = [ '-' ]
 SRC_SPLIT_CHAR = '.'
 
 def src_split( src ):
-    spec, chrom = bx.align.maf.src_split( src )
-    if None in [ spec, chrom ]:
-        spec = chrom = src
+    fields = src.split( SRC_SPLIT_CHAR, 1 )
+    spec = fields.pop( 0 )
+    if fields:
+        chrom = fields
+    else:
+        chrom = spec
     return spec, chrom
 
 def src_merge( spec, chrom, contig = None ):
@@ -530,7 +533,7 @@ def get_fasta_header( component, attributes = {}, suffix = None ):
     if suffix:
         header = "%s%s" % ( header, suffix )
     else:
-        header = "%s%s" % ( header, bx.align.src_split( component.src )[ 0 ] )
+        header = "%s%s" % ( header, src_split( component.src )[ 0 ] )
     return header
 
 def get_attributes_from_fasta_header( header ):
