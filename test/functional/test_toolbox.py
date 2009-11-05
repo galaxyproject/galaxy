@@ -10,11 +10,11 @@ toolbox = None
 
 class ToolTestCase( TwillTestCase ):
     """Abstract test case that runs tests based on a `galaxy.tools.test.ToolTest`"""
-    def do_it( self ):
+    def do_it( self, testdef ):
         # If the test generation had an error, raise
-        if self.testdef.error:
-            if self.testdef.exception:
-                raise self.testdef.exception
+        if testdef.error:
+            if testdef.exception:
+                raise testdef.exception
             else:
                 raise Exception( "Test parse failure" )
         # Start with a new history
@@ -31,13 +31,13 @@ class ToolTestCase( TwillTestCase ):
         if len( self.get_history_as_data_list() ) > 0:
             raise AssertionError("ToolTestCase.do_it failed")
         # Upload any needed files
-        for fname, extra in self.testdef.required_files:
+        for fname, extra in testdef.required_files:
             self.upload_file( fname, ftype=extra.get( 'ftype', 'auto' ), dbkey=extra.get( 'dbkey', 'hg17' ) )
             print "Uploaded file: ", fname, ", ftype: ", extra.get( 'ftype', 'auto' ), ", extra: ", extra
         # We need to handle the case where we've uploaded a valid compressed file since the upload
         # tool will have uncompressed it on the fly.
         all_inputs = {}
-        for name, value, _ in self.testdef.inputs:
+        for name, value, _ in testdef.inputs:
             if value:
                 for end in [ '.zip', '.gz' ]:
                     if value.endswith( end ):
@@ -46,27 +46,25 @@ class ToolTestCase( TwillTestCase ):
             all_inputs[ name ] = value
         # See if we have a grouping.Repeat element
         repeat_name = None
-        for input_name, input_value in self.testdef.tool.inputs_by_page[0].items():
+        for input_name, input_value in testdef.tool.inputs_by_page[0].items():
             if isinstance( input_value, grouping.Repeat ):
                 repeat_name = input_name
                 break
         # Do the first page
-        page_inputs =  self.__expand_grouping(self.testdef.tool.inputs_by_page[0], all_inputs)
+        page_inputs =  self.__expand_grouping(testdef.tool.inputs_by_page[0], all_inputs)
         # Run the tool
-        self.run_tool( self.testdef.tool.id, repeat_name=repeat_name, **page_inputs )
+        self.run_tool( testdef.tool.id, repeat_name=repeat_name, **page_inputs )
         print "page_inputs (0)", page_inputs
         # Do other pages if they exist
-        for i in range( 1, self.testdef.tool.npages ):
-            page_inputs = self.__expand_grouping(self.testdef.tool.inputs_by_page[i], all_inputs)
+        for i in range( 1, testdef.tool.npages ):
+            page_inputs = self.__expand_grouping(testdef.tool.inputs_by_page[i], all_inputs)
             self.submit_form( **page_inputs )
             print "page_inputs (%i)" % i, page_inputs
         # Check the result
-        assert len( self.testdef.outputs ) == 1, "ToolTestCase does not deal with multiple outputs properly yet."
-        for name, file in self.testdef.outputs:
+        assert len( testdef.outputs ) == 1, "ToolTestCase does not deal with multiple outputs properly yet."
+        for name, file in testdef.outputs:
             self.verify_dataset_correctness( file )
         self.delete_history( id=self.security.encode_id( latest_history.id ) )
-    def shortDescription( self ):
-        return self.name
 
     def __expand_grouping( self, tool_inputs, declared_inputs, prefix='' ):
         expanded_inputs = {}
@@ -103,15 +101,6 @@ class ToolTestCase( TwillTestCase ):
                     expanded_inputs[value.name] = declared_inputs[value.name]
         return expanded_inputs
 
-def get_case( testdef, name ):
-    """Dynamically generate a `ToolTestCase` for `testdef`"""
-    n = "TestForTool_" + testdef.tool.id.replace( ' ', '_' )
-    s = ( ToolTestCase, )
-    def test_tool( self ):
-        self.do_it()
-    d = dict( testdef=testdef, test_tool=test_tool, name=name )
-    return new.classobj( n, s, d )
-
 def build_tests():
     """
     If the module level variable `toolbox` is set, generate `ToolTestCase`
@@ -125,7 +114,14 @@ def build_tests():
     for i, tool_id in enumerate( toolbox.tools_by_id ):
         tool = toolbox.tools_by_id[ tool_id ]
         if tool.tests:
+            # Create a new subclass of ToolTestCase dynamically adding methods
+            # names test_tool_XXX that run each test defined in the tool.
+            n = "TestForTool_" + tool.id.replace( ' ', '_' )
+            s = ( ToolTestCase, )
+            d = dict()
             for j, testdef in enumerate( tool.tests ):
-                name = "%s ( %s ) > %s" % ( tool.name, tool.id, testdef.name )
-                testcase = get_case( testdef, name )
-                G[ testcase.__name__ ] = testcase
+                def test_tool( self ):
+                    self.do_it( testdef )
+                test_tool.__doc__ = "%s ( %s ) > %s" % ( tool.name, tool.id, testdef.name )
+                d['test_tool_%06d' % j] = test_tool
+            G[ n ] = new.classobj( n, s, d )
