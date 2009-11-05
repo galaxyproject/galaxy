@@ -126,9 +126,9 @@
         //
         // Initiate navigation when user selects a page to view.
         //
-        function navigate_to_page()
+        function navigate_to_page(page_select)
         {
-            page_num = $(this).val();
+            page_num = $(page_select).val();
             <% url_args = {"page" : "PAGE"} %>
             var url_base = "${url( url_args )}";
             var url = url_base.replace("PAGE", page_num);
@@ -360,7 +360,7 @@
                         %endif
                         ## Go to page select box.
                         <span>| Select:</span>
-                        <select id="page-select" onchange="navigate_to_page()">
+                        <select id="page-select" onchange="navigate_to_page(this)">
                             <option value=""></option>
                             %for page_index in range(1, num_pages + 1):
                                 %if page_index == cur_page_num:
