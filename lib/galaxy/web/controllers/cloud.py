@@ -626,12 +626,13 @@ class CloudController( BaseController ):
                       proxy_user='', proxy_pass='', debug='', https_connection_factory='', path='' ):
         user = trans.get_user()
         error = {}
-        try:
-            is_secure = int(is_secure)
-        except ValueError:
-            pass
         
         if region_name or region_endpoint or name or is_secure or port or proxy or debug or path:
+            try:
+                is_secure = int(is_secure)
+            except ValueError:
+                error['is_secure_error'] = "Field 'is secure' can only take on a value '0' or '1'"
+        
             if trans.app.model.CloudProvider \
                 .filter_by (user=user, name=name) \
                 .first():
@@ -657,9 +658,11 @@ class CloudController( BaseController ):
                 else:
                     provider.region_endpoint = None
                 
-                if is_secure=='0':
+                if is_secure==0:
+                    log.debug("is_secure is false")
                     provider.is_secure = False
                 else:
+                    log.debug("is_secure is true")
                     provider.is_secure = True
                 
                 if host:

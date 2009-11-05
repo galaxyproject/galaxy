@@ -402,19 +402,19 @@ class EC2CloudProvider( object ):
                                                model.CloudStore.c.status==store_states.CREATING,
                                                model.CloudStore.c.status==None ) ).all()
         for store in stores:
-            if self.type == store.uci.credentials.provider.type and store.volume_id != None:
-                log.debug( "[%s] Running general status update on store '%s'" % ( store.uci.credentials.provider.type, store.volume_id ) )
+            if self.type == store.uci.credentials.provider.type: # and store.volume_id != None:
+                log.debug( "[%s] Running general status update on store with local database ID: '%s'" % ( store.uci.credentials.provider.type, store.id ) )
                 self.updateStore( store )
-            else:
-                log.error( "[%s] There exists an entry for UCI (%s) storage volume without an ID. Storage volume might have been created with "
-                           "cloud provider though. Manual check is recommended." % ( store.uci.credentials.provider.type, store.uci.name ) )
-                store.uci.error = "There exists an entry in local database for a storage volume without an ID. Storage volume might have been created " \
-                            "with cloud provider though. Manual check is recommended. After understanding what happened, local database etry for given " \
-                            "storage volume should be updated."
-                store.status = store_states.ERROR
-                store.uci.state = uci_states.ERROR
-                store.uci.flush()
-                store.flush()
+#            else:
+#                log.error( "[%s] There exists an entry for UCI (%s) storage volume without an ID. Storage volume might have been created with "
+#                           "cloud provider though. Manual check is recommended." % ( store.uci.credentials.provider.type, store.uci.name ) )
+#                store.uci.error = "There exists an entry in local database for a storage volume without an ID. Storage volume might have been created " \
+#                            "with cloud provider though. Manual check is recommended. After understanding what happened, local database entry for given " \
+#                            "storage volume should be updated."
+#                store.status = store_states.ERROR
+#                store.uci.state = uci_states.ERROR
+#                store.uci.flush()
+#                store.flush()
                 
         # Attempt at updating any zombie UCIs (i.e., instances that have been in SUBMITTED state for longer than expected - see below for exact time)
         zombies = model.UCI.filter_by( state=uci_states.SUBMITTED ).all()
@@ -509,30 +509,31 @@ class EC2CloudProvider( object ):
             return None
         
         # Update store status in local DB with info from cloud provider
-        try:
-            if store.status != vl[0].status:
-                # In case something failed during creation of UCI but actual storage volume was created and yet 
-                #  UCI state remained as 'new', try to remedy this by updating UCI state here 
-                if ( store.status == None ) and ( store.volume_id != None ):
-                    uci.state = vl[0].status
-                    uci.flush()
-                    
-                store.status = vl[0].status
-                store.flush()
-            if store.i_id != vl[0].instance_id:
-                store.i_id = vl[0].instance_id
-                store.flush()
-            if store.attach_time != vl[0].attach_time:
-                store.attach_time = vl[0].attach_time
-                store.flush()
-            if store.device != vl[0].device:
-                store.device = vl[0].device
-                store.flush()
-        except boto.exception.EC2ResponseError, e:
-            log.error( "Updating status of volume(s) from cloud for UCI '%s' failed: " % ( uci.name, str(e) ) )
-            uci.error( "Updating volume status from cloud failed: " + str(e) )
-            uci.state( uci_states.ERROR )
-            return None
+        if len(vl) > 0:
+            try:
+                if store.status != vl[0].status:
+                    # In case something failed during creation of UCI but actual storage volume was created and yet 
+                    #  UCI state remained as 'new', try to remedy this by updating UCI state here 
+                    if ( store.status == None ) and ( store.volume_id != None ):
+                        uci.state = vl[0].status
+                        uci.flush()
+                        
+                    store.status = vl[0].status
+                    store.flush()
+                if store.i_id != vl[0].instance_id:
+                    store.i_id = vl[0].instance_id
+                    store.flush()
+                if store.attach_time != vl[0].attach_time:
+                    store.attach_time = vl[0].attach_time
+                    store.flush()
+                if store.device != vl[0].device:
+                    store.device = vl[0].device
+                    store.flush()
+            except boto.exception.EC2ResponseError, e:
+                log.error( "Updating status of volume(s) from cloud for UCI '%s' failed: " % ( uci.name, str(e) ) )
+                uci.error( "Updating volume status from cloud failed: " + str(e) )
+                uci.state( uci_states.ERROR )
+                return None
    
     def processZombie( self, inst ):
         """

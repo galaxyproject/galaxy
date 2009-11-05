@@ -60,6 +60,10 @@
 			</tr>
 		%endfor
 	</table>
+%else:
+	<h3>There are no registered machine images.</h3><br />
+	<a href="${h.url_for( controller='cloud', action='addNewImage' )}" target="galaxy_main">Add machine image now?</a>
+
 %endif
 
 
