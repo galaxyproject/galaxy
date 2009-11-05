@@ -17,10 +17,10 @@ eggs.require( "Paste" )
 eggs.require( "PasteDeploy" )
 eggs.require( "Cheetah" )
 
-import atexit, logging, os, sys, tempfile
+import atexit, logging, os, os.path, sys, tempfile
 import twill, unittest, time
-import os, os.path, subprocess, sys, threading
-import httplib
+import subprocess, sys, threading, random
+import httplib, socket
 from paste import httpserver
 import galaxy.app
 from galaxy.app import UniverseApplication
@@ -31,7 +31,8 @@ from galaxy.util import bunch
 log = logging.getLogger( "functional_tests.py" )
 
 default_galaxy_test_host = "localhost"
-default_galaxy_test_port = "8777"
+default_galaxy_test_port_min = 8000
+default_galaxy_test_port_max = 9999
 default_galaxy_locales = 'en'
 default_galaxy_test_file_dir = "test-data"
 
@@ -40,7 +41,7 @@ def main():
     # ---- Configuration ------------------------------------------------------
     
     galaxy_test_host = os.environ.get( 'GALAXY_TEST_HOST', default_galaxy_test_host )
-    galaxy_test_port = os.environ.get( 'GALAXY_TEST_PORT', default_galaxy_test_port )
+    galaxy_test_port = os.environ.get( 'GALAXY_TEST_PORT', None )
     if 'HTTP_ACCEPT_LANGUAGE' not in os.environ:
         os.environ['HTTP_ACCEPT_LANGUAGE'] = default_galaxy_locales
     galaxy_test_file_dir = os.environ.get( 'GALAXY_TEST_FILE_DIR', default_galaxy_test_file_dir )
@@ -75,7 +76,6 @@ def main():
     
     # What requires these?        
     os.environ['GALAXY_TEST_HOST'] = galaxy_test_host
-    os.environ['GALAXY_TEST_PORT'] = galaxy_test_port
     os.environ['GALAXY_TEST_FILE_DIR'] = galaxy_test_file_dir
             
     # ---- Build Application --------------------------------------------------
@@ -115,7 +115,25 @@ def main():
     if start_server:
         
         webapp = buildapp.app_factory( dict(), use_translogger = False, app=app )
-        server = httpserver.serve( webapp, host=galaxy_test_host, port=galaxy_test_port, start_loop=False )
+
+        if galaxy_test_port is not None:
+            server = httpserver.serve( webapp, host=galaxy_test_host, port=galaxy_test_port, start_loop=False )
+        else:
+            random.seed()
+            for i in range( 0, 9 ):
+                try:
+                    galaxy_test_port = str( random.randint( default_galaxy_test_port_min, default_galaxy_test_port_max ) )
+                    log.debug( "Attempting to serve app on randomly chosen port: %s" % galaxy_test_port )
+                    server = httpserver.serve( webapp, host=galaxy_test_host, port=galaxy_test_port, start_loop=False )
+                    break
+                except socket.error, e:
+                    if e[0] == 98:
+                        continue
+                    raise
+            else:
+                raise Exception( "Unable to open a port between %s and %s to start Galaxy server" % ( default_galaxy_test_port_min, default_galaxy_test_port_max ) )
+        os.environ['GALAXY_TEST_PORT'] = galaxy_test_port
+
         t = threading.Thread( target=server.serve_forever )
         t.start()
 
