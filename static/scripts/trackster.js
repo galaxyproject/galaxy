@@ -189,8 +189,12 @@ $.extend( TiledTrack.prototype, Track.prototype, {
             if ( cached ) {
                 // console.log("cached tile " + tile_index);
                 var tile_low = tile_index * DENSITY * resolution;
+                var left = ( tile_low - low ) * w_scale;
+                if (this.left_offset) {
+                    left -= this.left_offset;
+                }
                 cached.css( {
-                    left: ( tile_low - low ) * w_scale
+                    left: left
                 });
                 // Our responsibility to move the element to the new parent
                 parent_element.append( cached );
@@ -364,6 +368,7 @@ var FeatureTrack = function ( name, dataset_id, height ) {
     this.showing_labels = false;
     this.vertical_gap = 10;
     this.base_color = "#2C3143";
+    this.left_offset = 200;
 };
 $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
     init: function() {
@@ -462,9 +467,9 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
         new_canvas.css({
             position: "absolute",
             top: 0,
-            left: ( tile_low - this.view.low ) * w_scale
+            left: ( tile_low - this.view.low ) * w_scale - this.left_offset
         });
-        new_canvas.get(0).width = width;
+        new_canvas.get(0).width = width + this.left_offset;
         new_canvas.get(0).height = height;
         // console.log(( tile_low - this.view.low ) * w_scale, tile_index, w_scale);
         var ctx = new_canvas.get(0).getContext("2d");
@@ -487,11 +492,11 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                 }
                 if (!this.showing_labels) {
                     // Non-detail levels
-                    ctx.fillRect(f_start, y_center + 5, f_end - f_start, 1);
+                    ctx.fillRect(f_start + this.left_offset, y_center + 5, f_end - f_start, 1);
                 } else {
                     // Showing labels, blocks, details
-                    if (ctx.fillText) {
-                        ctx.fillText(feature.name, f_start - 1, y_center + 8);
+                    if (ctx.fillText && feature.start > tile_low) {
+                        ctx.fillText(feature.name, f_start - 1 + this.left_offset, y_center + 8);
                         // ctx.fillText(commatize(feature.start), f_start - 1, y_center + 8);
                     }
                     var blocks = feature.blocks;
@@ -503,7 +508,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                             } else if (feature.strand == "-") {
                                 ctx.fillStyle = LEFT_STRAND;
                             }
-                            ctx.fillRect(f_start, y_center, f_end - f_start, 10);
+                            ctx.fillRect(f_start + this.left_offset, y_center, f_end - f_start, 10);
                             ctx.fillStyle = this.base_color;
                         }
                         
@@ -511,11 +516,11 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                             var block = blocks[k],
                                 block_start = Math.floor( Math.max(0, (block[0] - tile_low) * w_scale) ),
                                 block_end = Math.ceil( Math.min(width, (block[1] - tile_low) * w_scale) );
-
+                            if (block_start > block_end) { continue; }
                             // Draw the block
                             thickness = 5;
                             y_start = 3;
-                            ctx.fillRect(block_start, y_center + y_start, block_end - block_start, thickness);
+                            ctx.fillRect(block_start + this.left_offset, y_center + y_start, block_end - block_start, thickness);
 
                             if (thick_start && (block_start < thick_end || block_end > thick_start) ) {
                                 thickness = 9;
@@ -523,7 +528,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                                 var block_thick_start = Math.max(block_start, thick_start),
                                     block_thick_end = Math.min(block_end, thick_end);
 
-                                ctx.fillRect(block_thick_start, y_center + y_start, block_thick_end - block_thick_start, thickness);
+                                ctx.fillRect(block_thick_start + this.left_offset, y_center + y_start, block_thick_end - block_thick_start, thickness);
 
                             }
                         }
@@ -531,14 +536,14 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                         // If there are no blocks, we treat the feature as one big exon
                         thickness = 9;
                         y_start = 1;
-                        ctx.fillRect(f_start, y_center + y_start, f_end - f_start, thickness);
+                        ctx.fillRect(f_start + this.left_offset, y_center + y_start, f_end - f_start, thickness);
                         if ( feature.strand ) {
                             if (feature.strand == "+") {
                                 ctx.fillStyle = RIGHT_STRAND_INV;
                             } else if (feature.strand == "-") {
                                 ctx.fillStyle = LEFT_STRAND_INV;
                             }
-                            ctx.fillRect(f_start, y_center, f_end - f_start, 10);
+                            ctx.fillRect(f_start + this.left_offset, y_center, f_end - f_start, 10);
                             ctx.fillStyle = this.base_color;
                         }
                     }

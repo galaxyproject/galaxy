@@ -25,7 +25,9 @@ input {
     font-size: 100%;
 }
 
-/*canvas{ border-right: 1px solid red; } /* debugging */
+/*canvas{ 
+    border-left: 1px solid green;
+    border-right: 1px solid red; } /* debugging */
 #nav {
     padding: 0.5em 0;
     background:#cccccc;
@@ -34,8 +36,6 @@ input {
     background-repeat:repeat-x;border-top:solid #999 1px;
     color:#333;font-weight:bold;
 }
-
-
 
 #nav-controls {
     text-align: center;
@@ -50,17 +50,6 @@ input {
     -webkit-border-radius: 1em;
     -moz-border-radius: 1em;
 }
-
-/*
-#low {
-    margin-left: 0.1em;
-    float: left;
-}
-#high {
-    margin-right: 0.1em;
-    float: right;
-}
-*/
 
 #overview {
     width: 100%;
