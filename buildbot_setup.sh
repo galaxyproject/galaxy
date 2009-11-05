@@ -25,6 +25,7 @@ LINKS="
 
 SAMPLES="
 datatypes_conf.xml.sample
+universe_wsgi.ini.sample
 "
 
 DIRS="
