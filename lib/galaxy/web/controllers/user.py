@@ -680,6 +680,8 @@ class User( BaseController ):
                                 widget=TextField( 'institution', 40, '' ) ) )
             widgets.append(dict(label='Address Line 1',
                                 widget=TextField( 'address1', 40, '' ) ) )
+            widgets.append(dict(label='Address Line 2',
+                                widget=TextField( 'address2', 40, '' ) ) )
             widgets.append(dict(label='City',
                                 widget=TextField( 'city', 40, '' ) ) )
             widgets.append(dict(label='State',
@@ -762,6 +764,8 @@ class User( BaseController ):
                                 widget=TextField( 'institution', 40, user_address.institution ) ) )
             widgets.append(dict(label='Address Line 1',
                                 widget=TextField( 'address1', 40, user_address.address ) ) )
+            widgets.append(dict(label='Address Line 2',
+                                widget=TextField( 'address2', 40, '' ) ) )
             widgets.append(dict(label='City',
                                 widget=TextField( 'city', 40, user_address.city ) ) )
             widgets.append(dict(label='State',

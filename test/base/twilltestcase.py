@@ -1281,6 +1281,23 @@ class TwillTestCase( unittest.TestCase ):
         tc.fv( "1", "comment", comment )
         tc.submit( "add_event_button" )
         self.check_page_for_string( new_state_name )
+    def add_user_address( self, user_id, address_dict ):
+        self.home()
+        self.visit_url( "%s/user/new_address?admin_view=False&user_id=%i" % ( self.url, user_id ) )
+        self.check_page_for_string( 'New address' )
+        for field_name, value in address_dict.items():
+            tc.fv( "1", field_name, value )
+        tc.submit( "save_new_address_button" )
+        self.check_page_for_string( 'Address <b>%s</b> has been added' % address_dict[ 'short_desc' ] )
+    def add_user_address_as_admin( self, user_id, address_dict ):
+        self.home()
+        self.visit_url( "%s/user/new_address?admin_view=True&user_id=%i" % ( self.url, user_id ) )
+        self.check_page_for_string( 'New address' )
+        for field_name, value in address_dict.items():
+            tc.fv( "1", field_name, value )
+        tc.submit( "save_new_address_button" )
+        self.check_page_for_string( 'Address <b>%s</b> has been added' % address_dict[ 'short_desc' ] )
+        
     # Library stuff
     def create_library( self, name='Library One', description='This is Library One' ):
         """Create a new library"""

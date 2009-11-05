@@ -168,13 +168,7 @@ class TestFormsAndRequests( TwillTestCase ):
         # create address
         self.logout()
         self.login( email='test1@bx.psu.edu' )
-        self.home()
-        url_str = '%s/user/new_address?short_desc=%s&name=%s&institution=%s&address1=%s&address2=%s&city=%s&state=%s&postal_code=%s&country=%s&phone=%s' \
-                   % ( self.url, address1[ 'short_desc' ], address1[ 'name' ], address1[ 'institution' ], 
-                       address1[ 'address1' ], address1[ 'address2' ], address1[ 'city' ], address1[ 'state' ], 
-                       address1[ 'postal_code' ], address1[ 'country' ], address1[ 'phone' ] )
-        self.visit_url( url_str )
-        self.check_page_for_string( 'Address <b>%s</b> has been added' % address1[ 'short_desc' ] )
+        self.add_user_address( regular_user1.id, address1 )
         global regular_user
         regular_user = sa_session.query( galaxy.model.User ) \
                                  .filter( galaxy.model.User.table.c.email=='test1@bx.psu.edu' ) \
