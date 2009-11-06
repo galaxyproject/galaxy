@@ -161,7 +161,7 @@
       <param name="refGenomeSource" value="indexed" />
       <param name="indices" value="phiX" />
       <param name="sPaired" value="single" />
-      <param name="input1" value="bwa_wrapper_in1.fastq" />
+      <param name="input1" value="bwa_wrapper_in1.fastq" ftype="fastqsanger" />
       <param name="source_select" value="pre_set" />
       <param name="suppressHeader" value="true" />
       <output name="output" file="bwa_wrapper_out0.sam" ftype="sam" />
@@ -171,7 +171,7 @@
       <param name="refGenomeSource" value="history" />
       <param name="ownFile" value="phiX.fa" />
       <param name="sPaired" value="single" />
-      <param name="input1" value="bwa_wrapper_in0.fastq" />
+      <param name="input1" value="bwa_wrapper_in0.fastq" ftype="fastqsanger" />
       <param name="source_select" value="pre_set" />
       <param name="suppressHeader" value="true" />
       <output name="output" file="bwa_wrapper_out0b.sam" ftype="sam" />
@@ -181,7 +181,7 @@
       <param name="refGenomeSource" value="indexed" />
       <param name="indices" value="phiX" />
       <param name="sPaired" value="single" />
-      <param name="input1" value="bwa_wrapper_in2.fastq" />
+      <param name="input1" value="bwa_wrapper_in2.fastq" ftype="fastqsanger" />
       <param name="source_select" value="full" />
       <param name="maxEditDist" value="0" />  
       <param name="fracMissingAligns" value="0.04" />  
@@ -208,8 +208,8 @@
       <param name="refGenomeSource" value="indexed" />
       <param name="indices" value="phiX" />
       <param name="sPaired" value="paired" />
-      <param name="input1" value="bwa_wrapper_in3.fastq" />
-      <param name="input2" value="bwa_wrapper_in4.fastq" />
+      <param name="input1" value="bwa_wrapper_in3.fastq" ftype="fastqsanger" />
+      <param name="input2" value="bwa_wrapper_in4.fastq" ftype="fastqsanger" />
       <param name="source_select" value="full" />
       <param name="maxEditDist" value="0" />  
       <param name="fracMissingAligns" value="0.04" />  
@@ -236,7 +236,7 @@
       <param name="refGenomeSource" value="indexed" />
       <param name="indices" value="phiX" />
       <param name="sPaired" value="single" />
-      <param name="input1" value="bwa_wrapper_in1.fastq" />
+      <param name="input1" value="bwa_wrapper_in1.fastq" ftype="fastqsanger" />
       <param name="source_select" value="full" />
       <param name="maxEditDist" value="0" />  
       <param name="fracMissingAligns" value="0.04" />  
@@ -263,8 +263,8 @@
       <param name="refGenomeSource" value="indexed" />
       <param name="indices" value="phiX" />
       <param name="sPaired" value="paired" />
-      <param name="input1" value="bwa_wrapper_in5.fastq" />
-      <param name="input2" value="bwa_wrapper_in6.fastq" />
+      <param name="input1" value="bwa_wrapper_in5.fastq" ftype="fastqsanger" />
+      <param name="input2" value="bwa_wrapper_in6.fastq" ftype="fastqsanger" />
       <param name="source_select" value="full" />
       <param name="maxEditDist" value="0" />  
       <param name="fracMissingAligns" value="0.04" />  
@@ -285,7 +285,7 @@
       <param name="maxOccurPairing" value="100000" />
       <param name="suppressHeader" value="true" />
       <output name="output" file="bwa_wrapper_out4.sam" ftype="sam" />
-    </test> 
+    </test>
   </tests> 
   <help>
     	
