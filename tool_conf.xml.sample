@@ -128,7 +128,6 @@
     <tool file="visualization/genetrack_indexer.xml" />
     <tool file="visualization/genetrack_peak_prediction.xml" />
   </section>
-  </section>
   <section name="Regional Variation" id="regVar">
     <tool file="regVariation/windowSplitter.xml" />
     <tool file="regVariation/featureCounter.xml" />
