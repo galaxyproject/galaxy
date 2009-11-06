@@ -35,17 +35,23 @@ if tag is not None:
 sys.argv.append( "--no-svn-revision" )
 sys.argv.append( "bdist_egg" )
 
-print "scramble.py: Creating setup.py for GeneTrack"
-setup_py = """from setuptools import setup, find_packages
+if not os.access( 'setup.py', os.F_OK ):
+    print "scramble.py: Creating setup.py for GeneTrack"
+    setup_py = """from os import walk
+from os.path import join
+from setuptools import setup, find_packages
+def walk_files( top ):
+    for dir, dirs, files in walk( top ):
+        yield( dir, [ join( dir, f ) for f in files ] )
 setup(
         name = "GeneTrack",
         version = "2.0.0-beta-1",
-        package_data = {'':["*.*"]},
-        packages = find_packages(),
-        zip_safe = True,
+        packages = ['genetrack','genetrack.scripts'],
+        data_files = [ f for f in walk_files('tests') ],
+        zip_safe = False
 )
 """
-open( 'setup.py', 'w' ).write( setup_py )
+    open( 'setup.py', 'w' ).write( setup_py )
 
 
 # do it
