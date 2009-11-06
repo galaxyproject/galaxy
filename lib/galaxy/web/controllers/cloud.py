@@ -76,6 +76,11 @@ class CloudController( BaseController ):
             .filter_by( user=user ) \
             .order_by( model.CloudUserCredentials.c.name ) \
             .all()
+            
+        cloudProviders = trans.sa_session.query( model.CloudProvider ) \
+            .filter_by( user=user ) \
+            .order_by( model.CloudUserCredentials.c.name ) \
+            .all()
         
         liveInstances = trans.sa_session.query( model.UCI ) \
             .filter_by( user=user ) \

@@ -101,75 +101,20 @@ CloudProvider_table = Table( "cloud_provider", metadata,
 
 def upgrade():
     metadata.reflect()
-    log.debug( "Creating cloud_image table." ) 
-    try:
-        CloudImage_table.create()
-    except Exception, e:
-        log.debug( "Creating cloud_image table failed. Table probably exists already." )
-    log.debug( "Creating cloud_uci table." ) 
-    try:
-        UCI_table.create()
-    except Exception, e:
-        log.debug( "Creating UCI table failed. Table probably exists already." )
-    try:
-        CloudUserCredentials_table.create()
-    except Exception, e:
-        log.debug( "Creating cloud_image table failed. Table probably exists already." )
-    log.debug( "Creating cloud_provider table." ) 
-    try:
-        CloudProvider_table.create()
-    except Exception, e:
-        log.debug( "Creating cloud_provider table failed. Table probably exists already." )
-    log.debug( "Creating cloud_instance table." ) 
-    #try:
+    
+    CloudImage_table.create()
+    UCI_table.create()
+    CloudUserCredentials_table.create()
+    CloudProvider_table.create()
     CloudInstance_table.create()
-    #except Exception, e:
-    #    log.debug( "Creating cloud_instance table failed. Table probably exists already." )
-    #log.debug( "Creating cloud_store table." ) 
-    #try:
     CloudStore_table.create()
-    #except Exception:
-    #    log.debug( "Creating cloud_store table failed. Table probably exists already." )
     
 def downgrade():
     metadata.reflect()
-    try:
-        #log.debug( "Would drop cloud_image table." ) 
-        CloudImage_table.drop() #Enable before release
-    except Exception, e:
-        log.debug( "Dropping cloud_image table failed: %s" % str( e ) ) 
     
-#    try:
-#        #log.debug( "Would drop cloud_instance table." )
-#        print "inst"
+    CloudImage_table.drop() 
     CloudInstance_table.drop()
-#    except Exception, e:
-#        log.debug( "Dropping cloud_instance table failed: %s" % str( e ) )  
-        
-#    try:
-#        #log.debug( "Would drop cloud_store table." )
-#        print "store"
     CloudStore_table.drop()
-#    except Exception, e:
-#        log.debug( "Dropping cloud_store table failed: %s" % str( e ) )  
-        
-    try:
-        log.debug( "Would drop cloud_user_credentials table." )
-        CloudUserCredentials_table.drop() #Enable before putting final version
-    except Exception, e:
-        log.debug( "Dropping cloud_user_credentials table failed: %s" % str( e ) )  
-        
-    try:
-        log.debug( "Would drop UCI table." )
-        UCI_table.drop()
-    except Exception, e:
-        log.debug( "Dropping UCI table failed: %s" % str( e ) )  
-        
-    try:
-        log.debug( "Would drop cloud_provider table." )
-        CloudProvider_table.drop()
-    except Exception, e:
-        log.debug( "Dropping cloud_provider table failed: %s" % str( e ) )  
-    
-        
-    
+    CloudUserCredentials_table.drop() 
+    UCI_table.drop()
+    CloudProvider_table.drop()

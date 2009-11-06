@@ -506,6 +506,7 @@ class EC2CloudProvider( object ):
             log.error( "Retrieving volume(s) from cloud for UCI '%s' failed: " % ( uci.name, str(e) ) )
             uci.error( "Retrieving volume(s) from cloud failed: " + str(e) )
             uci.state( uci_states.ERROR )
+            uci.flush()
             return None
         
         # Update store status in local DB with info from cloud provider
