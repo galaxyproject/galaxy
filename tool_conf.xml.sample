@@ -125,6 +125,9 @@
     <tool file="visualization/GMAJ.xml" />
     <tool file="visualization/LAJ.xml" />
     <tool file="visualization/build_ucsc_custom_track.xml" />
+    <tool file="visualization/genetrack_indexer.xml" />
+    <tool file="visualization/genetrack_peak_prediction.xml" />
+  </section>
   </section>
   <section name="Regional Variation" id="regVar">
     <tool file="regVariation/windowSplitter.xml" />

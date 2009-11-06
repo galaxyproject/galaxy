@@ -1,0 +1,54 @@
+<tool id="bed2genetrack" name="Visualize BED file">
+  
+  <description> - creates a visualization from a bed file</description>
+
+  <command interpreter="python">
+    genetrack_indexer.py -i $input -o $output -s $shift -v 0 -f BED -x 
+  </command>
+    
+  <inputs>
+    
+    <param format="bed" name="input" type="data" help="Input data">
+      <label>Select input bed file</label>
+    </param>
+    
+    <param name="shift" size="4" type="integer" value="0" help="distance in basepairs">
+        <label>Shift at 5' end</label>
+    </param>
+
+    <!-- this parameter is currently not used, may not be feasible to use it
+    <param name="coverage" type="select" label="Full coverage">
+      <option value="no">NO</option>
+      <option value="yes">YES</option>
+    </param>
+    -->
+  
+  </inputs>
+
+  <outputs>  
+    <data format="genetrack" name="output" />
+  </outputs>
+   
+<help>
+**Help**
+
+This tool will create a visualization of the bed file that is selected. 
+
+**Parameters**
+
+- **Shift at 5' end** should be used when the location of interest is at a fixed distance from
+  the 5' end for **all sequenced fragments**! 
+  
+  For example if the sequenced sample consists
+  mono-nucleosomal DNA (146bp) we should expect that 
+  each nucleosome midpoint is located at 73 bp from the 5' end of the fragment. 
+  Therefore we would enter 73 as the shift parameter. Once corrected the reads 
+  on each strand will coincide and indicate the actual midpoints 
+  of the nucleosomes.
+  
+  When shifting the averaging process in GeneTrack is able correct for longer or shorter
+  than expected fragment sizes as long as the errors are reasonably random.
+
+</help>
+
+</tool>

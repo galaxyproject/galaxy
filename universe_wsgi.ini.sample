@@ -93,7 +93,8 @@ use_new_layout = true
 # Comma separated list of UCSC / gbrowse / GeneTrack browsers to use for viewing
 ucsc_display_sites = main,test,archaea,ucla
 gbrowse_display_sites = main,test,tair
-genetrack_display_sites = main,test
+# Define your GeneTrack servers in tool-data/shared/genetrack/genetrack_sites.txt
+#genetrack_display_sites =
 
 # Serving static files (needed if running standalone)
 static_enabled = True

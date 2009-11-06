@@ -1,0 +1,59 @@
+<tool id="predict2genetrack" name="Peak predictor">
+  
+  <description> - generates peak predictions from an index file</description>
+
+  <command interpreter="python">
+      genetrack_peak_prediction.py -i $input -o $output --level=$level --sigma=$sigma --mode=$mode --exclusion=$exclusion --strand=$strand -v 0 
+  </command>
+    
+  <inputs>
+    
+    <param format="genetrack" name="input" type="data" help="Input data" label="Select input data"/>
+ 
+    <param name="method" type="select" label="Smoothing method" help="The function used to average nearby read values">
+      <option value="gauss">Gaussian kernel</option>
+      <!-- <option value="yes">Moving averages</option> -->
+    </param>
+  
+    <param name="sigma" size="4" type="integer" value="10" label="Smoothing factor" help="The interval over which each read is averaged" />
+        
+
+    <param name="mode" type="select" label="Peak prediction" help="Peak prediction method"> 
+      <option value="nolap">Maximal non-overlapping</option>
+      <!-- <option value="above">Above a threshold</option> -->
+      <option value="all">All peaks</option>
+    </param>
+  
+    <param name="exclusion" type="integer" size="4" value="0" help="The minimal distance between peaks"  label="Peak-to-peak distance">
+    </param>
+
+    <param name="level" size="4" type="float" value="1" label="Threshold" help="Return only peaks above this value" />
+    
+    <param name="strand" type="select" label="Strands" help="Combine strand data or predict on each strand separately">
+      <option value="all">Merge strands</option>
+      <!-- <option value="yes1">Above a threshold</option> -->
+      <option value="two">Separate strands</option>
+    </param>
+
+  </inputs>
+
+  <outputs>  
+    <data format="bed" name="output" />
+  </outputs>
+   
+<help>
+**Help**
+
+This tool will generate genome wide peak prediction from an index file.
+
+**Parameters**
+
+- **Smoothing method** the function used to average nearby values
+
+- **Smoothing value** the factor used in the method
+
+- **Prediction method** the function used to average nearby values
+
+</help>
+
+</tool>

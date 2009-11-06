@@ -1,3 +1,7 @@
 # GeneTrack sites
-main	http://www.genetrack.org/
-test	http://www.test.genetrack.org/
+#
+# The key(s) should be added to universe_wsgi.ini as the value of
+# genetrack_display_sites
+#
+# key		site url
+psu_galaxy	http://genetrack.g2.bx.psu.edu/galaxy
