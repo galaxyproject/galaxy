@@ -79,7 +79,7 @@ class CloudController( BaseController ):
             
         cloudProviders = trans.sa_session.query( model.CloudProvider ) \
             .filter_by( user=user ) \
-            .order_by( model.CloudUserCredentials.c.name ) \
+            .order_by( model.CloudProvider.c.name ) \
             .all()
         
         liveInstances = trans.sa_session.query( model.UCI ) \
@@ -126,7 +126,8 @@ class CloudController( BaseController ):
         return trans.fill_template( "cloud/configure_cloud.mako",
                                     cloudCredentials = cloudCredentials,
                                     liveInstances = liveInstances,
-                                    prevInstances = prevInstances )
+                                    prevInstances = prevInstances,
+                                    cloudProviders = cloudProviders )
     
     @web.require_login( "use Galaxy cloud" )
     def makeDefault( self, trans, id=None ):
@@ -597,7 +598,6 @@ class CloudController( BaseController ):
         return trans.fill_template( "cloud/viewInstance.mako",
                                     liveInstance = instances )
         
-
     @web.expose
     @web.require_login( "delete credentials" )
     def delete( self, trans, id=None ):
@@ -636,7 +636,7 @@ class CloudController( BaseController ):
             try:
                 is_secure = int(is_secure)
             except ValueError:
-                error['is_secure_error'] = "Field 'is secure' can only take on a value '0' or '1'"
+                error['is_secure_error'] = "Field 'is secure' can only take on an integer value '0' or '1'"
         
             if trans.app.model.CloudProvider \
                 .filter_by (user=user, name=name) \
@@ -647,7 +647,7 @@ class CloudController( BaseController ):
             elif type=='':
                 error['type_error'] = "Provider type must be selected."
             elif not (is_secure == 0 or is_secure == 1):
-                error['is_secure_error'] = "Field 'is secure' can only take on a value '0' or '1'"
+                error['is_secure_error'] = "Field 'is secure' can only take on an integer value '0' or '1'"
             else:
                 provider = model.CloudProvider()
                 provider.user = user
@@ -664,10 +664,8 @@ class CloudController( BaseController ):
                     provider.region_endpoint = None
                 
                 if is_secure==0:
-                    log.debug("is_secure is false")
                     provider.is_secure = False
                 else:
-                    log.debug("is_secure is true")
                     provider.is_secure = True
                 
                 if host:
@@ -745,6 +743,150 @@ class CloudController( BaseController ):
         self.add_provider( trans, name='Amazon EC2', type='ec2', region_name='us-east-1', region_endpoint='us-east-1.ec2.amazonaws.com', is_secure=1, path='/' )
         return self.add( trans )
     
+    @web.expose
+    @web.require_login( "use Galaxy cloud" )
+    def view_provider( self, trans, id=None ):
+        """
+        View details about given cloud provider
+        """
+        # Load credentials from database
+        provider = get_provider_by_id( trans, id )
+        
+        return trans.fill_template( "cloud/view_provider.mako", 
+                                   provider = provider )
+    
+    @web.expose
+    @web.require_login( "use Galaxy cloud" )
+    def edit_provider( self, trans, id, name='', type='', region_name='', region_endpoint='', is_secure='', host='', port='', proxy='', proxy_port='',
+                      proxy_user='', proxy_pass='', debug='', https_connection_factory='', path='', edited=False ):
+        error = {}
+        if edited == False:
+            provider = get_provider_by_id( trans, id )
+            return trans.fill_template( "cloud/edit_provider.mako", 
+                                        provider = provider,
+                                        error = error
+                                        )
+        else:
+            user = trans.get_user()
+            provider = get_provider_by_id( trans, id )
+            
+            try:
+                is_secure = int(is_secure)
+            except ValueError:
+                error['is_secure_error'] = "Field 'is secure' can only take on an integer value '0' or '1'"
+        
+            if name=='' or len( name ) > 255:
+                error['name_error'] = "Cloud provider name must be between 1 and 255 characters in length."
+            elif trans.app.model.CloudProvider \
+                .filter_by( user=user ) \
+                .filter( and_( trans.app.model.CloudProvider.table.c.id != provider.id, trans.app.model.CloudProvider.table.c.name == name ) ) \
+                .first():
+                error['name_error'] = "Cloud provider with name '" + name + "' already exist. Please choose an alternative name."
+            elif not ( is_secure == 0 or is_secure == 1):
+                error['is_secure_error'] = "Field 'is secure' can only take on an integer value '0' or '1'"
+            
+            if error:
+                return trans.fill_template( "cloud/edit_provider.mako", 
+                                            provider = provider,
+                                            error = error
+                                            )
+            else:
+                provider.name = name
+                if region_name and region_name != 'None':
+                    provider.region_name = region_name
+                else:
+                    provider.region_name = None
+                
+                if region_endpoint and region_endpoint != 'None':
+                    provider.region_endpoint = region_endpoint
+                else:
+                    provider.region_endpoint = None
+                
+                if is_secure==0:
+                    provider.is_secure = False
+                else:
+                    provider.is_secure = True
+                
+                if host and host != 'None':
+                    provider.host = host
+                else:
+                    provider.host = None
+                
+                if port and port != 'None':
+                    provider.port = port
+                else:
+                    provider.port = None
+                
+                if proxy and proxy != 'None':
+                    provider.proxy = proxy
+                else:
+                    provider.proxy = None
+                
+                if proxy_port and proxy_port != 'None':
+                    provider.proxy_port = proxy_port
+                else:
+                    provider.proxy_port = None
+                
+                if proxy_user and proxy_user != 'None':
+                    provider.proxy_user = proxy_user
+                else:
+                    provider.proxy_user = None
+                
+                if proxy_pass and proxy_pass != 'None':
+                    provider.proxy_pass = proxy_pass
+                else:
+                    provider.proxy_pass = None
+                
+                if debug and debug != 'None':
+                    provider.debug = debug
+                else:
+                    provider.debug = None
+                
+                if https_connection_factory and https_connection_factory != 'None':
+                    provider.https_connection_factory = https_connection_factory
+                else:
+                    provider.https_connection_factory = None
+                
+                if path and path != 'None':
+                    provider.path = path
+                else:
+                    provider.path = None
+                # Persist
+                session = trans.sa_session
+                session.save_or_update( provider )
+                session.flush()
+                # Log and display the management page
+                trans.log_event( "User edited cloud provider: '%s'" % name )
+                trans.set_message( "Cloud provider '%s' edited." % name )
+                return self.list( trans )
+    
+    @web.expose
+    @web.require_login( "delete credentials" )
+    def delete_provider( self, trans, id=None ):
+        """
+        Delete use-registered cloud provider checking that no registered credentials are tied to given provider.
+        """
+        # Load provider from database
+        user = trans.get_user()
+        provider = get_provider_by_id( trans, id )
+        creds = trans.sa_session.query( model.CloudUserCredentials ) \
+            .filter_by( user=user, provider_id=provider.id ) \
+            .filter( model.UCI.c.state!=uci_states.DELETED ) \
+            .all()
+        
+        if len( creds ) == 0:
+            # Delete and save
+            sess = trans.sa_session
+            sess.delete( provider )
+            provider.flush()
+            # Display the management page
+            trans.set_message( "Cloud provider '%s' deleted." % provider.name )
+            return self.list( trans )
+        
+        error( "Existing credentails depend on cloud provider '%s'. You must delete those credentials before being able \
+            to delete this cloud provider." % provider.name )
+        return self.list( trans )
+    
     @web.json
     def json_update( self, trans ):
         user = trans.get_user()
@@ -789,6 +931,24 @@ def get_provider( trans, name ):
     return trans.app.model.CloudProvider \
                 .filter_by (user=user, name=name) \
                 .first()
+                
+def get_provider_by_id( trans, id, check_ownership=True ):
+    # Check if 'id' is in int (i.e., it was called from this program) or
+    #    it was passed from the web (in which case decode it)
+    if not isinstance( id, int ):
+        id = trans.security.decode_id( id )
+
+    stored = trans.sa_session.query( model.CloudProvider ).get( id )
+    if not stored:
+        error( "Cloud provider not found" )
+    # Verify ownership
+    user = trans.get_user()
+    if not user:
+        error( "Must be logged in to use the cloud." )
+    if check_ownership and not( stored.user == user ):
+        error( "Cloud provider '%s' is not registered by current user." % stored.name )
+    # Looks good
+    return stored
         
 def get_stored_credentials( trans, id, check_ownership=True ):
     """
