@@ -36,16 +36,17 @@
   <tests>
     <test>
       <param name="indexSource" value="history" /> 
-      <param name="input1" value="sam_to_bam_in1.sam" ftype="sam" />
+      <param name="input1" value="sam_to_bam_in1.sam" ftype="sam" dbkey="chrM" />
       <param name="ref_file" value="chrM.fa" ftype="fasta" />
       <output name="output1" file="sam_to_bam_out1.bam" />
     </test>
+<!--  chrM is not a built-in dbkey (in the builds.txt list) so can't be tested
     <test>
       <param name="indexSource" value="built_in" />
       <param name="input1" value="sam_to_bam_in2.sam" ftype="sam" dbkey="chrM" />
-      <param name="ref_file" value="chrM.fa" ftype="fasta" />
       <output name="output1" file="sam_to_bam_out2.bam" />
     </test>
+-->
   </tests>
   <help>
 
