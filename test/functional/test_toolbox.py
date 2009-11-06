@@ -120,8 +120,11 @@ def build_tests():
             s = ( ToolTestCase, )
             d = dict()
             for j, testdef in enumerate( tool.tests ):
-                def test_tool( self ):
-                    self.do_it( testdef )
-                test_tool.__doc__ = "%s ( %s ) > %s" % ( tool.name, tool.id, testdef.name )
-                d['test_tool_%06d' % j] = test_tool
+                def make_test_method( td ):
+                    def test_tool( self ):
+                        self.do_it( td )
+                    return test_tool
+                m = make_test_method( testdef )
+                m.__doc__ = "%s ( %s ) > %s" % ( tool.name, tool.id, testdef.name )
+                d['test_tool_%06d' % j] = m
             G[ n ] = new.classobj( n, s, d )
