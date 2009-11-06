@@ -25,6 +25,8 @@ galaxy.eggs.require("boto")
 from boto.ec2.connection import EC2Connection
 from boto.ec2.regioninfo import RegionInfo
 from galaxy.cloud import CloudManager
+import boto.exception
+import boto
 
 import logging
 log = logging.getLogger( __name__ )
@@ -270,21 +272,37 @@ class CloudController( BaseController ):
         user = trans.get_user()
         storedCreds = trans.sa_session.query( model.CloudUserCredentials ).filter_by( user=user ).all()
         if len( storedCreds ) == 0:
-            return trans.show_error_message( "You must register credentials before configuring a Galaxy instance." )
-        # TODO: This should be filled automatically but ties to implementation for diff provider is a problem... 
+            return trans.show_error_message( "You must register credentials before configuring a Galaxy cloud instance." )
         # Create dict mapping of cloud providers to zones available by those providers
         providersToZones = {}
         for storedCred in storedCreds:
-            if storedCred.provider.region_name == 'us-east-1':
-                ec2_zones = ['us-east-1a', 'us-east-1b', 'us-east-1c', 'us-east-1d']
-                providersToZones[storedCred.name] = ec2_zones 
-            elif storedCred.provider.region_name == 'eu-west-1':
-                ec2_zones = ['eu-west-1a', 'eu-west-1b']
-                providersToZones[storedCred.name] = ec2_zones 
-            elif storedCred.provider.type == 'eucalyptus':
-                providersToZones[storedCred.name] = ['epc']
+            zones = None
+            conn = get_connection( trans, storedCred )
+            if conn != None:
+                avail_zones = []
+                try:
+                    zones = conn.get_all_zones()
+                    for zone in zones:
+                        zone = str( zone ).split(':')[1]
+                        avail_zones.append( zone )
+                        providersToZones[storedCred.name] = avail_zones
+                except boto.exception.EC2ResponseError, e:
+                    log.error( "Retrieving zones for credentials '%s' failed." % storedCred.name )
+                    providersToZones[storedCred.name] = ['Unknown provider zone']
             else:
                 providersToZones[storedCred.name] = ['Unknown provider zone']
+        
+            # Hard-coded solution
+#            if storedCred.provider.storedCred.provider.region_name == 'us-east-1':
+#                ec2_zones = ['us-east-1a', 'us-east-1b', 'us-east-1c', 'us-east-1d']
+#                providersToZones[storedCred.name] = ec2_zones 
+#            elif storedCred.provider.region_name == 'eu-west-1':
+#                ec2_zones = ['eu-west-1a', 'eu-west-1b']
+#                providersToZones[storedCred.name] = ec2_zones 
+#            elif storedCred.provider.type == 'eucalyptus':
+#                providersToZones[storedCred.name] = ['epc']
+#            else:
+#                providersToZones[storedCred.name] = ['Unknown provider zone']
         
         if instanceName:
             # Check if volume size is entered as an integer
@@ -1030,22 +1048,30 @@ def get_instances( trans, uci ):
             
     return instances
 
-def get_connection( trans, credName ):
+def get_connection( trans, creds ):
     """
-    Establishes EC2 connection using user's default credentials
+    Establishes cloud connection using user's credentials
     """
-    log.debug( '##### Establishing cloud connection.' )
-    user = trans.get_user()
-    creds = trans.sa_session.query( model.CloudUserCredentials ).filter_by( user=user, name=credName ).first()
+    log.debug( 'Establishing cloud connection.' )
+#    user = trans.get_user()
+#    creds = trans.sa_session.query( model.CloudUserCredentials ) \
+#        .filter_by( user=user, name=credName ) \
+#        .first()
+        #.filter( model.CloudUserCredentials.c.deleted != True ) \ MOVE TO LINE ABOVE ONCE DELETE COLUMS ARE IMPLEMENTED
+        
     if creds:
         a_key = creds.access_key
         s_key = creds.secret_key
-        # Amazon EC2
-        #conn = EC2Connection( a_key, s_key )
-        # Eucalyptus Public Cloud
-        euca_region = RegionInfo( None, "eucalyptus", "mayhem9.cs.ucsb.edu" )
-        conn = EC2Connection( aws_access_key_id=a_key, aws_secret_access_key=s_key, is_secure=False, port=8773, region=euca_region, path="/services/Eucalyptus" )
+        try:
+            euca_region = RegionInfo( None, creds.provider.region_name, creds.provider.region_endpoint )
+            conn = EC2Connection( aws_access_key_id=a_key, 
+                                  aws_secret_access_key=s_key, 
+                                  is_secure=creds.provider.is_secure, 
+                                  port=creds.provider.port, 
+                                  region=euca_region, 
+                                  path=creds.provider.path )
+        except boto.exception.EC2ResponseError, e:
+            log.error( "Establishing connection with cloud failed: %s" % str(e) )
+            return None
+
         return conn
-    else:
-        error( "You must specify default credentials before starting an instance." )
-        return 0

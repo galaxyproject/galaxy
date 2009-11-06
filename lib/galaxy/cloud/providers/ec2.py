@@ -633,6 +633,7 @@ class EC2CloudProvider( object ):
             log.error( "Establishing connection with cloud failed: %s" % str(e) )
             uci.error( "Establishing connection with cloud failed: " + str(e) )
             uci.state( uci_states.ERROR )
+            uci.flush()
             return None
 
         return conn
