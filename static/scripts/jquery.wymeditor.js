@@ -446,7 +446,7 @@ jQuery.fn.wymeditor = function(options) {
               + "<ul>"
               + WYMeditor.TOOLS_ITEMS
               // Add Galaxy Tools.
-              + Galaxy.TOOLS_ITEMS
+              //+ Galaxy.TOOLS_ITEMS
               + "</ul>"
               + "</div>",
               
@@ -862,7 +862,7 @@ WYMeditor.editor.prototype.init = function() {
             }
         }
 
-      boxHtml = h.replaceAll(boxHtml, Galaxy.TOOLS_ITEMS, sTools);
+      //boxHtml = h.replaceAll(boxHtml, Galaxy.TOOLS_ITEMS, sTools);
 
       //construct classes list
       var aClasses = eval(this._options.classesItems);
