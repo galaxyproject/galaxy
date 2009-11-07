@@ -167,43 +167,12 @@
     </style>
 </%def>
 
-<div class="grid-header">
-    <h2>${grid.title}</h2>
+<%namespace file="../grid_common.mako" import="*" />
 
-    ## Print grid filter.
-    <form name="dataset_actions" action="javascript:add_tag_to_grid_filter($('#input-tag-filter').attr('value'))" method="get" >
-        <strong>Filter:&nbsp;&nbsp;&nbsp;</strong>
-        %for column in grid.columns:
-            %if column.filterable:
-                <span> by ${column.label.lower()}:</span>
-                ## For now, include special case to handle tags.
-                %if column.key == "tags":
-                    %if cur_filter_dict[column.key] != "All":
-                        <span class="filter" "style='font-style: italic'">
-                            ${cur_filter_dict[column.key]}
-                        </span>
-                        <span>|</span>
-                    %endif
-                    <input id="input-tag-filter" name="f-tags" type="text" value="" size="15"/>
-                    <span>|</span>
-                %endif
-        
-                ## Handle other columns.
-                %for i, filter in enumerate( column.get_accepted_filters() ):
-                    %if i > 0:
-                        <span>|</span>
-                    %endif
-                    %if cur_filter_dict[column.key] == filter.args[column.key]:
-                        <span class="filter" "style='font-style: italic'">${filter.label}</span>
-                    %else:
-                        <span class="filter"><a href="${url( filter.get_url_args() )}">${filter.label}</a></span>
-                    %endif
-                %endfor
-                <span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
-            %endif
-        %endfor
-    </form>
-</div>
+## Print grid header.
+${render_grid_filters()}
+
+## Print grid.
 <form name="dataset_actions" action="${url()}" method="post" >
     <table class="grid">
         <thead>

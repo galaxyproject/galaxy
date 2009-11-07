@@ -246,7 +246,7 @@ class History( object ):
         # This needs to be a list
         return [ hda for hda in self.datasets if not hda.dataset.deleted ]
     def get_display_name( self ):
-        ## History name can be either a string or a unicode object. If string, convert to unicode object assuming 'utf-8' format.
+        """ History name can be either a string or a unicode object. If string, convert to unicode object assuming 'utf-8' format. """
         history_name = self.name
         if isinstance(history_name, str):
             history_name = unicode(history_name, 'utf-8')

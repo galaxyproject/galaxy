@@ -105,7 +105,7 @@ class TagsController ( BaseController ):
         
         # Build select statement.
         cols_to_select = [ item_tag_assoc_class.table.c.tag_id, func.count('*') ] 
-        from_obj = item_tag_assoc_class.table.join(item_class.table).join(Tag)
+        from_obj = item_tag_assoc_class.table.join(item_class.table).join(Tag.table)
         where_clause = and_(self._get_column_for_filtering_item_by_user_id(item_class)==trans.get_user().id,
                             Tag.table.c.name.like(q + "%"))
         order_by = [ func.count("*").desc() ]
@@ -154,7 +154,7 @@ class TagsController ( BaseController ):
         
         # Build select statement.
         cols_to_select = [ item_tag_assoc_class.table.c.value, func.count('*') ] 
-        from_obj = item_tag_assoc_class.table.join(item_class.table).join(Tag)
+        from_obj = item_tag_assoc_class.table.join(item_class.table).join(Tag.table)
         where_clause = and_(self._get_column_for_filtering_item_by_user_id(item_class)==trans.get_user().id,
                             Tag.table.c.id==tag.id,
                             item_tag_assoc_class.table.c.value.like(tag_value + "%"))

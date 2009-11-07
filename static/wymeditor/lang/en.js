@@ -40,6 +40,10 @@ WYMeditor.STRINGS['en'] = {
     Containers:       'Containers',
     Classes:          'Classes',
     Status:           'Status',
-    Source_Code:      'Source code'
+    Source_Code:      'Source code',
+    
+    // Galaxy replacements.
+    History:            'History',
+    Dataset:            'Dataset',
 };
 

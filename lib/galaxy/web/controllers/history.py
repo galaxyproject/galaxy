@@ -2,7 +2,6 @@ from galaxy.web.base.controller import *
 from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy import util
 from galaxy.model.mapping import desc
-from galaxy.model import History
 from galaxy.model.orm import *
 from galaxy.util.json import *
 from galaxy.util.odict import odict
@@ -19,29 +18,9 @@ SUCCESS, INFO, WARNING, ERROR = "done", "info", "warning", "error"
 
 class HistoryListGrid( grids.Grid ):
     # Custom column types
-    class NameColumn( grids.GridColumn ):
-        def __init( self, key, link, attach_popup, filterable ):
-            grids.GridColumn.__init__(self, key, link, attach_popup)
-        
-        def get_value( self, trans, grid, history ):
+    class NameColumn( grids.TextColumn ):
+        def get_value(self, trans, grid, history):
             return history.get_display_name()
-            
-        def filter( self, db_session, query, column_filter ):
-            """ Modify query to filter histories by name. """
-            if column_filter == "All":
-                pass
-            elif column_filter:
-                query = query.filter( func.lower( History.name ).like( "%" + column_filter.lower() + "%" ) )
-            return query
-        def get_accepted_filters( self ):
-               """ Returns a list of accepted filters for this column. """
-               accepted_filter_labels_and_vals = odict()
-               accepted_filter_labels_and_vals["FREETEXT"] = "FREETEXT"
-               accepted_filters = []
-               for label, val in accepted_filter_labels_and_vals.iteritems():
-                   args = { self.key: val }
-                   accepted_filters.append( grids.GridColumnFilter( label, args) )
-               return accepted_filters
             
     class DatasetsByStateColumn( grids.GridColumn ):
         def get_value( self, trans, grid, history ):
@@ -53,6 +32,7 @@ class HistoryListGrid( grids.Grid ):
                 else:
                     rval.append( '' )
             return rval
+            
     class StatusColumn( grids.GridColumn ):
         def get_value( self, trans, grid, history ):
             if history.deleted:
@@ -66,44 +46,6 @@ class HistoryListGrid( grids.Grid ):
             if item.users_shared_with or item.importable:
                 return dict( operation="sharing" )
             return None
-            
-    class TagsColumn( grids.GridColumn ):
-        def __init__( self, col_name, key, filterable ):
-            grids.GridColumn.__init__(self, col_name, key=key, filterable=filterable)
-            # Tags cannot be sorted.
-            self.sortable = False
-            self.tag_elt_id_gen = 0
-        def get_value( self, trans, grid, history ):
-            self.tag_elt_id_gen += 1
-            elt_id="tagging-elt" + str( self.tag_elt_id_gen )
-            div_elt = "<div id=%s></div>" % elt_id
-            return div_elt + trans.fill_template( "/tagging_common.mako", trans=trans, tagged_item=history, 
-                                                    elt_id = elt_id, in_form="true", input_size="20", tag_click_fn="add_tag_to_grid_filter" )
-        def filter( self, db_session, query, column_filter ):
-            """ Modify query to filter histories by tag. """
-            if column_filter == "All":
-                pass
-            elif column_filter:
-                # Parse filter to extract multiple tags.
-                tag_handler = TagHandler()
-                raw_tags = tag_handler.parse_tags( column_filter.encode("utf-8") )
-                for name, value in raw_tags.items():
-                    if name:
-                        # Search for tag names.
-                        query = query.filter( History.tags.any( func.lower( model.HistoryTagAssociation.user_tname ).like( "%" + name.lower() + "%" ) ) )
-                        if value:
-                            # Search for tag values.
-                            query = query.filter( History.tags.any( func.lower( model.HistoryTagAssociation.user_value ).like( "%" + value.lower() + "%" ) ) )
-            return query
-        def get_accepted_filters( self ):
-            """ Returns a list of accepted filters for this column. """
-            accepted_filter_labels_and_vals = odict()
-            accepted_filter_labels_and_vals["FREETEXT"] = "FREETEXT"
-            accepted_filters = []
-            for label, val in accepted_filter_labels_and_vals.iteritems():
-                args = { self.key: val }
-                accepted_filters.append( grids.GridColumnFilter( label, args) )
-            return accepted_filters
                 
     class DeletedColumn( grids.GridColumn ):
        def get_accepted_filters( self ):
@@ -122,12 +64,12 @@ class HistoryListGrid( grids.Grid ):
                 pass
             elif column_filter:
                 if column_filter == "private":
-                    query = query.filter( History.users_shared_with == None )
-                    query = query.filter( History.importable == False )
+                    query = query.filter( model.History.users_shared_with == None )
+                    query = query.filter( model.History.importable == False )
                 elif column_filter == "shared":
-                    query = query.filter( History.users_shared_with != None )
+                    query = query.filter( model.History.users_shared_with != None )
                 elif column_filter == "importable":
-                    query = query.filter( History.importable == True )
+                    query = query.filter( model.History.importable == True )
             return query
         def get_accepted_filters( self ):
             """ Returns a list of accepted filters for this column. """
@@ -141,43 +83,6 @@ class HistoryListGrid( grids.Grid ):
                 args = { self.key: val }
                 accepted_filters.append( grids.GridColumnFilter( label, args) )
             return accepted_filters
-           
-    class FreeTextSearchColumn( grids.GridColumn ):
-        def filter( self, db_session, query, column_filter ):
-            """ Modify query to search tags and history names. """
-            if column_filter == "All":
-                pass
-            elif column_filter:
-                # Build tags filter.
-                tag_handler = TagHandler()
-                raw_tags = tag_handler.parse_tags( column_filter.encode("utf-8") )
-                tags_filter = None
-                for name, value in raw_tags.items():
-                    if name:
-                        # Search for tag names.
-                        tags_filter = History.tags.any( func.lower( model.HistoryTagAssociation.user_tname ).like( "%" + name.lower() + "%" ) )
-                        if value:
-                            # Search for tag values.
-                            tags_filter = and_( tags_filter, func.lower( History.tags.any( model.HistoryTagAssociation.user_value ).like( "%" + value.lower() + "%" ) ) )
-                
-                # Build history name filter.
-                history_name_filter = func.lower( History.name ).like( "%" + column_filter.lower() + "%" )
-            
-                # Apply filters to query.
-                if tags_filter:
-                    query = query.filter( or_( tags_filter, history_name_filter ) )
-                else:
-                    query = query.filter( history_name_filter )
-            return query
-        def get_accepted_filters( self ):
-            """ Returns a list of accepted filters for this column. """
-            accepted_filter_labels_and_vals = odict()
-            accepted_filter_labels_and_vals["FREETEXT"] = "FREETEXT"
-            accepted_filters = []
-            for label, val in accepted_filter_labels_and_vals.iteritems():
-                args = { self.key: val }
-                accepted_filters.append( grids.GridColumnFilter( label, args) )
-            return accepted_filters
 
     # Grid definition
     title = "Saved Histories"
@@ -185,19 +90,25 @@ class HistoryListGrid( grids.Grid ):
     template='/history/grid.mako'
     default_sort_key = "-create_time"
     columns = [
-        NameColumn( "Name", key="name",
+        NameColumn( "Name", key="name", model_class=model.History,
                           link=( lambda history: iff( history.deleted, None, dict( operation="switch", id=history.id ) ) ),
-                          attach_popup=True, filterable=True ),
+                          attach_popup=True, filterable="advanced" ),
         DatasetsByStateColumn( "Datasets (by state)", ncells=4 ),
-        TagsColumn( "Tags", key="tags", filterable=True),
+        grids.TagsColumn( "Tags", "tags", model.History, model.HistoryTagAssociation, filterable="advanced"),
         StatusColumn( "Status", attach_popup=False ),
         grids.GridColumn( "Created", key="create_time", format=time_ago ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
         # Columns that are valid for filtering but are not visible.
-        DeletedColumn( "Deleted", key="deleted", visible=False, filterable=True ),
-        SharingColumn( "Shared", key="shared", visible=False, filterable=True ),
-        FreeTextSearchColumn( "Search", key="free-text-search", visible=False ) # Not filterable because it's the default search.
+        DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" ),
+        SharingColumn( "Shared", key="shared", visible=False, filterable="advanced" ),
     ]
+    columns.append( 
+        grids.MulticolFilterColumn(  
+        "Search", 
+        cols_to_filter=[ columns[0], columns[2] ], 
+        key="free-text-search", visible=False, filterable="default" )
+                )
+                
     operations = [
         grids.GridOperation( "Switch", allow_multiple=False, condition=( lambda item: not item.deleted ) ),
         grids.GridOperation( "Share", condition=( lambda item: not item.deleted )  ),
@@ -464,7 +375,7 @@ class HistoryController( BaseController ):
             return
 
         ac_data = ""
-        for history in trans.sa_session.query( History ).filter_by( user=user ).filter( func.lower( History.name ) .like(q.lower() + "%") ):
+        for history in trans.sa_session.query( model.History ).filter_by( user=user ).filter( func.lower( model.History.name ) .like(q.lower() + "%") ):
             ac_data = ac_data + history.name + "\n"
         return ac_data
         

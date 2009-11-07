@@ -1,4 +1,4 @@
-<%! from galaxy.web.framework.helpers.grids import GridColumnFilter %>
+<%! from galaxy.web.framework.helpers.grids import TextColumn, GridColumnFilter %>
 
 <%inherit file="/base.mako"/>
 <%def name="title()">${grid.title}</%def>
@@ -153,98 +153,12 @@
     </style>
 </%def>
 
-<div class="grid-header">
-    <h2>${grid.title}</h2>
-    
-    ## Search box and more options filter at top of grid.
-    <div>
-        ## Grid search. TODO: use more elegant way to get free text search column.
-        <% column = grid.columns[-1] %>
-        <% use_form = False %>
-        %for i, filter in enumerate( column.get_accepted_filters() ):
-            %if i > 0:
-                <span>|</span>
-            %endif
-            %if column.key in cur_filter_dict and cur_filter_dict[column.key] == filter.args[column.key]:
-                <span class="filter" "style='font-style: italic'">${filter.label}</span>
-            %elif filter.label == "FREETEXT":
-                <form name="history_actions" 
-                    action="javascript:add_condition_to_grid_filter($('#input-${column.key}-filter').attr('name'),$('#input-${column.key}-filter').attr('value'),false)" 
-                    method="get" >
-                    ${column.label}:
-                    %if column.key in cur_filter_dict and cur_filter_dict[column.key] != "All":
-                        <span style="font-style: italic">${cur_filter_dict[column.key]}</span>
-                        <% filter_all = GridColumnFilter( "", { column.key : "All" } ) %>
-                        <a href="${url( filter_all.get_url_args() )}"><img src="${h.url_for('/static/images/delete_tag_icon_gray.png')}"/></a>
-                        |
-                    %endif
-                    <span><input id="input-${column.key}-filter" name="${column.key}" type="text" value="" size="15"/></span>
-                <% use_form = True %>
-            %else:
-                <span class="filter"><a href="${url( filter.get_url_args() )}">${filter.label}</a></span>
-            %endif
-        %endfor
-        | <a href="" onclick="javascript:$('#more-search-options').slideToggle('fast');return false;">Advanced Search</a>
-        %if use_form:
-            </form>
-        %endif        
-    </div>
-    
-    ## Advanced Search
-    <div id="more-search-options" style="display: none; padding-top: 5px">
-        <table style="border: 1px solid gray;">
-            <tr><td style="text-align: left" colspan="100">
-                Advanced Search | 
-                <a href=""# onclick="javascript:$('#more-search-options').slideToggle('fast');return false;">Close</a> |
-                ## Link to clear all filters.
-                <%
-                    no_filter = GridColumnFilter("Clear All", default_filter_dict)
-                %>
-                <a href="${url( no_filter.get_url_args() )}">${no_filter.label}</a>
-            </td></tr>
-            %for column in grid.columns:
-                %if column.filterable:
-                    <tr>
-                        ## Show div if current filter has value that is different from the default filter.
-                        %if cur_filter_dict[column.key] != default_filter_dict[column.key]:
-                            <script type="text/javascript">
-                                $('#more-search-options').css("display", "block");
-                            </script>
-                        %endif
-                        <td style="padding-left: 10px">${column.label.lower()}:</td>
-                        <td>
-                        <% use_form = False %>
-                        %for i, filter in enumerate( column.get_accepted_filters() ):
-                            %if i > 0:
-                                <span>|</span>
-                            %endif
-                            %if cur_filter_dict[column.key] == filter.args[column.key]:
-                                <span class="filter" style="font-style: italic">${filter.label}</span>
-                            %elif filter.label == "FREETEXT":
-                                <form name="history_actions"            action="javascript:add_condition_to_grid_filter($('#input-${column.key}-filter').attr('name'),$('#input-${column.key}-filter').attr('value'),true)" 
-                                    method="get" >
-                                    %if column.key in cur_filter_dict and cur_filter_dict[column.key] != "All":
-                                        <span style="font-style: italic">${cur_filter_dict[column.key]}</span>
-                                        <% filter_all = GridColumnFilter( "", { column.key : "All" } ) %>
-                                        <a href="${url( filter_all.get_url_args() )}"><img src="${h.url_for('/static/images/delete_tag_icon_gray.png')}"/></a>
-                                        |
-                                    %endif
-                                    <span><input id="input-${column.key}-filter" name="${column.key}" type="text" value="" size="15"/></span>
-                                <% use_form = True %>
-                            %else:
-                                <span class="filter"><a href="${url( filter.get_url_args() )}">${filter.label}</a></span>
-                            %endif
-                        %endfor
-                        %if use_form:
-                            </form>
-                        %endif
-                        </td>
-                    </tr>
-                %endif
-            %endfor
-        </table>
-    </div>
-</div>
+<%namespace file="../grid_common.mako" import="*" />
+
+## Print grid header.
+${render_grid_filters()}
+
+## Print grid.
 <form name="history_actions" action="${url()}" method="post" >
     <input type="hidden" name="page" value="${cur_page_num}">
     <table class="grid">

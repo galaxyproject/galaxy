@@ -1,6 +1,7 @@
 from galaxy.model import *
 from galaxy.model.orm import *
 
+from galaxy.tags.tag_handler import TagHandler
 from galaxy.web import url_for
 from galaxy.util.json import from_json_string, to_json_string
 
@@ -87,18 +88,51 @@ class Grid( object ):
                     column_filter = kwargs.get( "f-" + column.key )
                 elif column.key in base_filter:
                     column_filter = base_filter.get( column.key )
-
+                    
+                # Method (1) combines a mix of strings and lists of strings into a single string and (2) attempts to de-jsonify all strings.
+                def from_json_string_recurse(item):
+                   decoded_list = []
+                   if isinstance( item, basestring):
+                       try:
+                           # Not clear what we're decoding, so recurse to ensure that we catch everything.
+                            decoded_item = from_json_string( item ) 
+                            if isinstance( decoded_item, list):
+                                decoded_list = from_json_string_recurse( decoded_item )
+                            else:
+                                decoded_list = [ str( decoded_item ) ]
+                       except ValueError:
+                           decoded_list = [ str( item ) ]
+                   elif isinstance( item, list):
+                       return_val = []
+                       for element in item:
+                           a_list = from_json_string_recurse( element )
+                           decoded_list = decoded_list + a_list
+                   return decoded_list
+                                        
                 # If column filter found, apply it.
                 if column_filter is not None:
+                    # TextColumns may have a mix of json and strings.
+                    if isinstance( column, TextColumn ):
+                        column_filter = from_json_string_recurse( column_filter )
+                        if len( column_filter ) == 1:
+                            column_filter = column_filter[0]
                     # Update query.
                     query = column.filter( trans.sa_session, query, column_filter )
                     # Upate current filter dict.
                     cur_filter_dict[ column.key ] = column_filter
-                    # Carry filter along to newly generated urls; make sure filter is a string so 
+                    # Carry filter along to newly generated urls; make sure filter is a string so
                     # that we can encode to UTF-8 and thus handle user input to filters.
-                    if not isinstance( column_filter, basestring ):
-                        column_filter = unicode(column_filter)
-                    extra_url_args[ "f-" + column.key ] = column_filter.encode("utf-8")
+                    if isinstance( column_filter, list ):
+                        # Filter is a list; process each item.
+                        for filter in column_filter:
+                            if not isinstance( filter, basestring ):
+                                filter = unicode( filter ).encode("utf-8")
+                        extra_url_args[ "f-" + column.key ] = to_json_string( column_filter ) 
+                    else:
+                        # Process singleton filter.
+                        if not isinstance( column_filter, basestring ):
+                            column_filter = unicode(column_filter)
+                        extra_url_args[ "f-" + column.key ] = column_filter.encode("utf-8")
                     
         # Process sort arguments.
         sort_key = sort_order = None
@@ -218,9 +252,12 @@ class Grid( object ):
         return query
     
 class GridColumn( object ):
-    def __init__( self, label, key=None, method=None, format=None, link=None, attach_popup=False, visible=True, ncells=1, filterable=False ):
+    def __init__( self, label, key=None, model_class=None, method=None, format=None, link=None, attach_popup=False, visible=True, ncells=1, 
+                    # Valid values for filterable are ['default', 'advanced', None]
+                    filterable=None ):
         self.label = label
         self.key = key
+        self.model_class = model_class
         self.method = method
         self.format = format
         self.link = link
@@ -265,6 +302,88 @@ class GridColumn( object ):
             args = { self.key: val }
             accepted_filters.append( GridColumnFilter( val, args) )
         return accepted_filters
+        
+# Generic column that employs freetext and, hence, supports freetext, case-independent filtering.
+class TextColumn( GridColumn ):
+    def filter( self, db_session, query, column_filter ):
+        """ Modify query to filter using free text, case independence. """
+        if column_filter == "All":
+            pass
+        elif column_filter:
+            query = query.filter( self.get_filter( column_filter ) )
+        return query
+    def get_filter( self, column_filter ):
+        """ Returns a SQLAlchemy criterion derived from column_filter. """
+        # This is a pretty ugly way to get the key attribute of model_class. TODO: Can this be fixed?
+        model_class_key_field = eval( "self.model_class." + self.key )
+        
+        if isinstance( column_filter, basestring ):
+            return func.lower( model_class_key_field ).like( "%" + column_filter.lower() + "%" )
+        elif isinstance( column_filter, list ):
+            composite_filter = True
+            for filter in column_filter:
+                composite_filter = and_( composite_filter, func.lower( model_class_key_field ).like( "%" + filter.lower() + "%" ) )
+            return composite_filter
+
+# Generic column that supports tagging.        
+class TagsColumn( TextColumn ):
+    def __init__( self, col_name, key, model_class, model_tag_association_class, filterable ):
+        GridColumn.__init__(self, col_name, key=key, model_class=model_class, filterable=filterable)
+        self.model_tag_association_class = model_tag_association_class
+        # Tags cannot be sorted.
+        self.sortable = False
+        self.tag_elt_id_gen = 0
+    def get_value( self, trans, grid, item ):
+        self.tag_elt_id_gen += 1
+        elt_id="tagging-elt" + str( self.tag_elt_id_gen )
+        div_elt = "<div id=%s></div>" % elt_id
+        return div_elt + trans.fill_template( "/tagging_common.mako", trans=trans, tagged_item=item, 
+                                                elt_id = elt_id, in_form="true", input_size="20", tag_click_fn="add_tag_to_grid_filter" )
+    def filter( self, db_session, query, column_filter ):
+        """ Modify query to filter model_class by tag. Multiple filters are ANDed. """
+        if column_filter == "All":
+            pass
+        elif column_filter:
+            query = query.filter( self.get_filter( column_filter ) )
+        return query
+    def get_filter( self, column_filter ):
+            # Parse filter to extract multiple tags.
+            tag_handler = TagHandler()
+            if isinstance( column_filter, list ):
+                # Collapse list of tags into a single string; this is redundant but effective. TODO: fix this by iterating over tags.
+                column_filter = ",".join( column_filter )
+            raw_tags = tag_handler.parse_tags( column_filter.encode("utf-8") )
+            filter = True
+            for name, value in raw_tags.items():
+                if name:
+                    # Search for tag names.
+                    filter = and_( filter, self.model_class.tags.any( func.lower( self.model_tag_association_class.user_tname ).like( "%" + name.lower() + "%" ) ) )
+                    if value:
+                        # Search for tag values.
+                        filter = and_( filter, self.model_class.tags.any( func.lower( self.model_tag_association_class.user_value ).like( "%" + value.lower() + "%" ) ) )
+            return filter
+            
+# Column that performs multicolumn filtering.
+class MulticolFilterColumn( TextColumn ):
+    def __init__( self, col_name, cols_to_filter, key, visible, filterable="default" ):
+        GridColumn.__init__( self, col_name, key=key, visible=visible, filterable=filterable)
+        self.cols_to_filter = cols_to_filter
+    def filter( self, db_session, query, column_filter ):
+        """ Modify query to filter model_class by tag. Multiple filters are ANDed. """
+        if column_filter == "All":
+            return query
+        if isinstance( column_filter, list):
+            composite_filter = True
+            for filter in column_filter:
+                part_composite_filter = False
+                for column in self.cols_to_filter:
+                    part_composite_filter = or_( part_composite_filter, column.get_filter( filter ) )
+                composite_filter = and_( composite_filter, part_composite_filter )
+        else:
+            composite_filter = False
+            for column in self.cols_to_filter:
+                composite_filter = or_( composite_filter, column.get_filter( column_filter ) )
+        return query.filter( composite_filter )
 
 class GridOperation( object ):
     def __init__( self, label, key=None, condition=None, allow_multiple=True, allow_popup=True, target=None, url_args=None ):

@@ -1,7 +1,6 @@
 import logging, os, string, shutil, re, socket, mimetypes, smtplib, urllib
 
 from galaxy.web.base.controller import *
-from galaxy.tags.tag_handler import TagHandler
 from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy import util, datatypes, jobs, web, model
 from cgi import escape, FieldStorage
@@ -49,55 +48,7 @@ class HistoryDatasetAssociationListGrid( grids.Grid ):
     class HistoryColumn( grids.GridColumn ):
         def get_value( self, trans, grid, hda):
             return hda.history.name
-        
-    class StatusColumn( grids.GridColumn ):
-        def get_value( self, trans, grid, hda ):
-            if hda.deleted:
-                return "deleted"
-            return ""
-        def get_link( self, trans, grid, hda ):
-            return None
             
-    class TagsColumn( grids.GridColumn ):
-        def __init__(self, col_name, key, filterable):
-            grids.GridColumn.__init__(self, col_name, key=key, filterable=filterable)
-            # Tags cannot be sorted.
-            self.sortable = False
-            self.tag_elt_id_gen = 0
-        def get_value( self, trans, grid, hda ):
-            self.tag_elt_id_gen += 1
-            elt_id="tagging-elt" + str( self.tag_elt_id_gen )
-            div_elt = "<div id=%s></div>" % elt_id
-            return div_elt + trans.fill_template( "/tagging_common.mako", trans=trans, tagged_item=hda, 
-                                                    elt_id = elt_id, in_form="true", input_size="20", tag_click_fn="add_tag_to_grid_filter" )
-        def filter( self, db_session, query, column_filter ):
-            """ Modify query to include only hdas with tags in column_filter. """
-            if column_filter == "All":
-                pass
-            elif column_filter:
-                # Parse filter to extract multiple tags.
-                tag_handler = TagHandler()
-                raw_tags = tag_handler.parse_tags( column_filter.encode("utf-8") )
-                for name, value in raw_tags.items():
-                    tag = tag_handler.get_tag_by_name( db_session, name )
-                    if tag:
-                        query = query.filter( model.HistoryDatasetAssociation.tags.any( tag_id=tag.id ) )
-                        if value:
-                            query = query.filter( model.HistoryDatasetAssociation.tags.any( value=value.lower() ) )
-                    else: 
-                        # Tag doesn't exist; unclear what to do here, but the literal thing to do is add the criterion, which
-                        # will then yield a query that returns no results.
-                        query = query.filter( model.HistoryDatasetAssociation.tags.any( user_tname=name ) )
-            return query
-        def get_accepted_filters( self ):
-               """ Returns a list of accepted filters for this column. """
-               accepted_filter_labels_and_vals = { "All": "All" }
-               accepted_filters = []
-               for label, val in accepted_filter_labels_and_vals.items():
-                   args = { self.key: val }
-                   accepted_filters.append( grids.GridColumnFilter( label, args) )
-               return accepted_filters
-             
     class StatusColumn( grids.GridColumn ):
         def get_value( self, trans, grid, hda ):
             if hda.deleted:
@@ -118,19 +69,25 @@ class HistoryDatasetAssociationListGrid( grids.Grid ):
     template='/dataset/grid.mako'
     default_sort_key = "-create_time"
     columns = [
-        grids.GridColumn( "Name", key="name",
+        grids.TextColumn( "Name", key="name", model_class=model.HistoryDatasetAssociation,
                             # Link name to dataset's history.
-                              link=( lambda item: iff( item.history.deleted, None, dict( operation="switch", id=item.id ) ) ) ),
+                              link=( lambda item: iff( item.history.deleted, None, dict( operation="switch", id=item.id ) ) ), filterable="advanced" ),
         HistoryColumn( "History", key="history", 
                         link=( lambda item: iff( item.history.deleted, None, dict( operation="switch_history", id=item.id ) ) ) ),
-        TagsColumn( "Tags", key="tags", filterable=True ),
+        grids.TagsColumn( "Tags", "tags", model.HistoryDatasetAssociation, model.HistoryDatasetAssociationTagAssociation, filterable="advanced" ),
         StatusColumn( "Status", key="deleted", attach_popup=False ),
         grids.GridColumn( "Created", key="create_time", format=time_ago ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
     ]
+    columns.append( 
+        grids.MulticolFilterColumn(  
+        "Search", 
+        cols_to_filter=[ columns[0], columns[2] ], 
+        key="free-text-search", visible=False, filterable="default" )
+                )
     operations = []
     standard_filters = []
-    default_filter = dict( deleted="False", tags="All" )
+    default_filter = dict( name="All", deleted="False", tags="All" )
     preserve_state = False
     use_paging = True
     num_rows_per_page = 50
