@@ -36,6 +36,8 @@
     
     <script type='text/javascript' src="${h.url_for('/static/scripts/jquery.wymeditor.js')}"> </script>
     
+    <script type='text/javascript' src="${h.url_for('/static/scripts/jquery.autocomplete.js')}"> </script>
+    
     <script type="text/javascript">
     ## Completely replace WYM's dialog handling
     WYMeditor.editor.prototype.dialog = function( dialogType, dialogFeatures, bodyHtml ) {
@@ -181,7 +183,49 @@
                         hide_modal();
                     }
                 }
-            )
+            );
+        }
+        
+        // HISTORY DIALOG
+        if ( dialogType == Galaxy.DIALOG_HISTORY ) {
+            show_modal(
+                "Insert History",
+                "<div class='row'>"
+                    + "<label>History Name</label><br>"
+                    + "<input id='history_name_input' type='text' class='wym_galaxy_history_name' value='' size='40' />"
+                    + "</div>"
+                    + "<div class='row'>"
+                    + "<label>Select History</label><br>"
+                    + "<input type='text' class='wym_galaxy_history_selected' value='' size='40' />"
+                    + "</div>"
+                    ,
+                    {
+                    "Insert": function() {
+                         var sUrl = jQuery(wym._options.hrefSelector).val();
+                            if(sUrl.length > 0) {
+
+                              wym._exec(WYMeditor.CREATE_LINK, sStamp);
+
+                              jQuery("a[href=" + sStamp + "]", wym._doc.body)
+                                  .attr(WYMeditor.HREF, sUrl)
+                                  .attr(WYMeditor.TITLE, jQuery(wym._options.titleSelector).val());
+                        hide_modal();
+                        
+                        // TODO: remove autocomplete.
+                    },
+                    "Cancel": function() {
+                        hide_modal();
+                        
+                        // TODO: remove autocomplete.
+                    }
+                }
+            );
+
+            // Set up autocomplete for name input.
+            var t = $("#history_name_input");
+            var autocomplete_options = 
+                { selectFirst: false, autoFill: false, highlight: false, mustMatch: false };
+            t.autocomplete("${h.url_for( controller='history', action='name_autocomplete_data' )}", autocomplete_options);
         }
     };
     </script>
@@ -282,6 +326,7 @@
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}
+    ${h.css( "autocomplete_tagging" )}
 </%def>
 
 <%def name="center_panel()">

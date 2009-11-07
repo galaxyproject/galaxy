@@ -68,11 +68,126 @@ class PageAllPublishedGrid( grids.Grid ):
     ]
     def apply_default_filter( self, trans, query, **kwargs ):
         return query.filter_by( deleted=False, published=True )
+        
+# Custom column types
+class NameColumn( grids.GridColumn ):
+    def __init( self, key, link, attach_popup, filterable ):
+        grids.GridColumn.__init__(self, key, link, attach_popup)
+
+    def get_value( self, trans, grid, history ):
+        return history.get_display_name()
+
+    def filter( self, db_session, query, column_filter ):
+        """ Modify query to filter histories by name. """
+        if column_filter == "All":
+            pass
+        elif column_filter:
+            query = query.filter( func.lower( History.name ).like( "%" + column_filter.lower() + "%" ) )
+        return query
+    def get_accepted_filters( self ):
+           """ Returns a list of accepted filters for this column. """
+           accepted_filter_labels_and_vals = odict()
+           accepted_filter_labels_and_vals["FREETEXT"] = "FREETEXT"
+           accepted_filters = []
+           for label, val in accepted_filter_labels_and_vals.iteritems():
+               args = { self.key: val }
+               accepted_filters.append( grids.GridColumnFilter( label, args) )
+           return accepted_filters
+           
+class TagsColumn( grids.GridColumn ):
+   def __init__( self, col_name, key, filterable ):
+       grids.GridColumn.__init__(self, col_name, key=key, filterable=filterable)
+       # Tags cannot be sorted.
+       self.sortable = False
+       self.tag_elt_id_gen = 0
+   def get_value( self, trans, grid, history ):
+       self.tag_elt_id_gen += 1
+       elt_id="tagging-elt" + str( self.tag_elt_id_gen )
+       div_elt = "<div id=%s></div>" % elt_id
+       return div_elt + trans.fill_template( "/tagging_common.mako", trans=trans, tagged_item=history, 
+                                               elt_id = elt_id, in_form="true", input_size="20", tag_click_fn="add_tag_to_grid_filter" )
+   def filter( self, db_session, query, column_filter ):
+       """ Modify query to filter histories by tag. """
+       if column_filter == "All":
+           pass
+       elif column_filter:
+           # Parse filter to extract multiple tags.
+           tag_handler = TagHandler()
+           raw_tags = tag_handler.parse_tags( column_filter.encode("utf-8") )
+           for name, value in raw_tags.items():
+               if name:
+                   # Search for tag names.
+                   query = query.filter( History.tags.any( func.lower( model.HistoryTagAssociation.user_tname ).like( "%" + name.lower() + "%" ) ) )
+                   if value:
+                       # Search for tag values.
+                       query = query.filter( History.tags.any( func.lower( model.HistoryTagAssociation.user_value ).like( "%" + value.lower() + "%" ) ) )
+       return query
+   def get_accepted_filters( self ):
+       """ Returns a list of accepted filters for this column. """
+       accepted_filter_labels_and_vals = odict()
+       accepted_filter_labels_and_vals["FREETEXT"] = "FREETEXT"
+       accepted_filters = []
+       for label, val in accepted_filter_labels_and_vals.iteritems():
+           args = { self.key: val }
+           accepted_filters.append( grids.GridColumnFilter( label, args) )
+       return accepted_filters
+       
+class FreeTextSearchColumn( grids.GridColumn ):
+   def filter( self, db_session, query, column_filter ):
+       """ Modify query to search tags and history names. """
+       if column_filter == "All":
+           pass
+       elif column_filter:
+           # Build tags filter.
+           tag_handler = TagHandler()
+           raw_tags = tag_handler.parse_tags( column_filter.encode("utf-8") )
+           tags_filter = None
+           for name, value in raw_tags.items():
+               if name:
+                   # Search for tag names.
+                   tags_filter = History.tags.any( func.lower( model.HistoryTagAssociation.user_tname ).like( "%" + name.lower() + "%" ) )
+                   if value:
+                       # Search for tag values.
+                       tags_filter = and_( tags_filter, func.lower( History.tags.any( model.HistoryTagAssociation.user_value ).like( "%" + value.lower() + "%" ) ) )
+
+           # Build history name filter.
+           history_name_filter = func.lower( History.name ).like( "%" + column_filter.lower() + "%" )
+
+           # Apply filters to query.
+           if tags_filter:
+               query = query.filter( or_( tags_filter, history_name_filter ) )
+           else:
+               query = query.filter( history_name_filter )
+       return query
+   def get_accepted_filters( self ):
+       """ Returns a list of accepted filters for this column. """
+       accepted_filter_labels_and_vals = odict()
+       accepted_filter_labels_and_vals["FREETEXT"] = "FREETEXT"
+       accepted_filters = []
+       for label, val in accepted_filter_labels_and_vals.iteritems():
+           args = { self.key: val }
+           accepted_filters.append( grids.GridColumnFilter( label, args) )
+       return accepted_filters
+        
+class HistorySelectionGrid( grids.Grid ):
+    # Grid definition.
+    template='/page/history_selection_grid.mako'
+    title = "Saved Histories"
+    model_class = model.History
+    default_sort_key = "-update_time"
+    columns = [
+        NameColumn( "Name", key="name", filterable=True ),
+        TagsColumn( "Tags", key="tags", filterable=True),
+        grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
+        # Columns that are valid for filtering but are not visible.
+        FreeTextSearchColumn( "Search", key="free-text-search", visible=False ) # Not filterable because it's the default search.
+    ]
 
 class PageController( BaseController ):
     
     _page_list = PageListGrid()
     _all_published_list = PageAllPublishedGrid()
+    _history_selection_grid = HistorySelectionGrid()
     
     @web.expose
     @web.require_login()  
@@ -239,5 +354,9 @@ class PageController( BaseController ):
         if page is None:
             raise web.httpexceptions.HTTPNotFound()
         return trans.fill_template( "page/display.mako", page=page )
-    
-    
+        
+    @web.expose
+    @web.require_login("select a history from saved histories")
+    def list_histories_for_selection( self, trans, **kwargs ):
+        # Render the list view
+        return self._history_selection_grid( trans, status=status, message=message, **kwargs )
