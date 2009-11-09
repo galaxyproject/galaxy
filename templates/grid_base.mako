@@ -286,7 +286,7 @@ ${self.grid_table()}
                                         if operation.target:
                                             target = "target='" + operation.target + "'"
                                         %>
-                                        <a class="action-button" ${target} href="${url( operation=operation.label, id=item.id )}">${operation.label}</a>  
+                                        <a class="action-button" ${target} href="${ url( **operation.get_url_args( item ) ) }">${operation.label}</a>  
                                     %endif
                                 %endfor
                             </div>

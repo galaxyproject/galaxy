@@ -60,7 +60,7 @@
                 %if i > 0:
                     <span>|</span>
                 %endif
-                %if cur_filter_dict[column.key] == filter.args[column.key]:
+                %if column.key in cur_filter_dict and column.key in filter.args and cur_filter_dict[column.key] == filter.args[column.key]:
                     <span class="filter" style="font-style: italic">${filter.label}</span>
                 %else:
                     <span class="filter"><a href="${url( filter.get_url_args() )}">${filter.label}</a></span>
