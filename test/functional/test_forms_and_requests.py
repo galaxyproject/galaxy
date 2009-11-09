@@ -274,7 +274,7 @@ class TestFormsAndRequests( TwillTestCase ):
         # add samples to this request
         self.add_samples( request_two.id, request_two.name, samples )
         # submit the request
-        self.submit_request( request_two.id, request_two.name )
+        self.submit_request_as_admin( request_two.id, request_two.name )
         sa_session.refresh( request_two )
         # check if the request is showing in the 'submitted' filter
         self.home()

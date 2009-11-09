@@ -1263,7 +1263,11 @@ class TwillTestCase( unittest.TestCase ):
                 self.check_page_for_string( field_value )
     def submit_request( self, request_id, request_name ):
         self.home()
-        self.visit_url( "%s/requests/submit_request?id=%i" % ( self.url, request_id ))
+        self.visit_url( "%s/requests/list?operation=Submit&id=%s" % ( self.url, self.security.encode_id( request_id ) ))
+        self.check_page_for_string( 'The request <b>%s</b> has been submitted.' % request_name )
+    def submit_request_as_admin( self, request_id, request_name ):
+        self.home()
+        self.visit_url( "%s/requests_admin/list?operation=Submit&id=%s" % ( self.url, self.security.encode_id( request_id ) ))
         self.check_page_for_string( 'The request <b>%s</b> has been submitted.' % request_name )
     def reject_request( self, request_id, request_name ):
         self.home()
