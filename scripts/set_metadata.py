@@ -8,6 +8,7 @@ top level directly.
 
 import logging
 logging.basicConfig()
+log = logging.getLogger( __name__ )
 
 import os, sys, cPickle
 assert sys.version_info[:2] >= ( 2, 4 )
@@ -24,6 +25,7 @@ import galaxy.model.mapping #need to load this before we unpickle, in order to s
 galaxy.model.Job() #this looks REAL stupid, but it is REQUIRED in order for SA to insert parameters into the classes defined by the mappers --> it appears that instantiating ANY mapper'ed class would suffice here
 galaxy.datatypes.metadata.DATABASE_CONNECTION_AVAILABLE = False #Let metadata know that there is no database connection, and to just assume object ids are valid
 from galaxy.util import stringify_dictionary_keys
+from sqlalchemy.orm import clear_mappers
 
 def __main__():
     file_path = sys.argv.pop( 1 )
@@ -48,5 +50,6 @@ def __main__():
             simplejson.dump( ( True, 'Metadata has been set successfully' ), open( filename_results_code, 'wb+' ) ) #setting metadata has suceeded
         except Exception, e:
             simplejson.dump( ( False, str( e ) ), open( filename_results_code, 'wb+' ) ) #setting metadata has failed somehow
+    clear_mappers()
 
 __main__()
