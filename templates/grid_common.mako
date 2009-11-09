@@ -73,57 +73,52 @@
 
 ## Print grid search/filtering UI.
 <%def name="render_grid_filters()">
-    <div class="grid-header">
-        <h2>${grid.title}</h2>
-    
-        ## Default search.
-        <div>
-            <table><tr>
-                <td>
-                    <table>
-                    %for column in grid.columns:
-                        %if column.filterable == "default":
-                           ${render_grid_column_filter(column)}
-                        %endif
-                    %endfor
-                    </table>
-                </td>
-                <td>
-                    ##|
-                    ##<% filter_all = GridColumnFilter( "", { column.key : "All" } ) %>
-                    ##<a href="${url( filter_all.get_url_args() )}">Clear All</a>                                
-                    | <a href="" onclick="javascript:$('#more-search-options').slideToggle('fast');return false;">Advanced Search</a>
-                </td>
-            </tr></table>
-        </div>
-    
-        
-        ## Advanced search.
-        <div id="more-search-options" style="display: none; padding-top: 5px">
-            <table style="border: 1px solid gray;">
-                <tr><td style="text-align: left" colspan="100">
-                    Advanced Search | 
-                    <a href=""# onclick="javascript:$('#more-search-options').slideToggle('fast');return false;">Close</a> |
-                    ## Link to clear all filters.
-                    <%
-                        no_filter = GridColumnFilter("Clear All", default_filter_dict)
-                    %>
-                    <a href="${url( no_filter.get_url_args() )}">${no_filter.label}</a>
-                </td></tr>
-                %for column in grid.columns:            
-                    %if column.filterable == "advanced":
-                        ## Show div if current filter has value that is different from the default filter.
-                        %if column.key in cur_filter_dict and column.key in default_filter_dict and \
-                            cur_filter_dict[column.key] != default_filter_dict[column.key]:
-                            <script type="text/javascript">
-                                $('#more-search-options').css("display", "block");
-                            </script>
-                        %endif
-                
-                        ${render_grid_column_filter(column)}
+    ## Standard search.
+    <div>
+        <table><tr>
+            <td>
+                <table>
+                %for column in grid.columns:
+                    %if column.filterable == "standard":
+                       ${render_grid_column_filter(column)}
                     %endif
                 %endfor
-            </table>
-        </div>
+                </table>
+            </td>
+            <td>
+                ##|
+                ##<% filter_all = GridColumnFilter( "", { column.key : "All" } ) %>
+                ##<a href="${url( filter_all.get_url_args() )}">Clear All</a>                                
+                | <a href="" onclick="javascript:$('#more-search-options').slideToggle('fast');return false;">Advanced Search</a>
+            </td>
+        </tr></table>
+    </div>
+    
+    ## Advanced search.
+    <div id="more-search-options" style="display: none; padding-top: 5px">
+        <table style="border: 1px solid gray;">
+            <tr><td style="text-align: left" colspan="100">
+                Advanced Search | 
+                <a href=""# onclick="javascript:$('#more-search-options').slideToggle('fast');return false;">Close</a> |
+                ## Link to clear all filters.
+                <%
+                    no_filter = GridColumnFilter("Clear All", default_filter_dict)
+                %>
+                <a href="${url( no_filter.get_url_args() )}">${no_filter.label}</a>
+            </td></tr>
+            %for column in grid.columns:            
+                %if column.filterable == "advanced":
+                    ## Show div if current filter has value that is different from the default filter.
+                    %if column.key in cur_filter_dict and column.key in default_filter_dict and \
+                        cur_filter_dict[column.key] != default_filter_dict[column.key]:
+                        <script type="text/javascript">
+                            $('#more-search-options').css("display", "block");
+                        </script>
+                    %endif
+            
+                    ${render_grid_column_filter(column)}
+                %endif
+            %endfor
+        </table>
     </div>
 </%def>

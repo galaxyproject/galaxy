@@ -83,7 +83,7 @@ class HistoryDatasetAssociationListGrid( grids.Grid ):
         grids.MulticolFilterColumn(  
         "Search", 
         cols_to_filter=[ columns[0], columns[2] ], 
-        key="free-text-search", visible=False, filterable="default" )
+        key="free-text-search", visible=False, filterable="standard" )
                 )
     operations = []
     standard_filters = []

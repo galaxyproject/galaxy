@@ -16,7 +16,7 @@ class Grid( object ):
     title = ""
     exposed = True
     model_class = None
-    template = "grid.mako"
+    template = "grid_base.mako"
     global_actions = []
     columns = []
     operations = []
@@ -99,9 +99,9 @@ class Grid( object ):
                             if isinstance( decoded_item, list):
                                 decoded_list = from_json_string_recurse( decoded_item )
                             else:
-                                decoded_list = [ str( decoded_item ) ]
+                                decoded_list = [ unicode( decoded_item ) ]
                        except ValueError:
-                           decoded_list = [ str( item ) ]
+                           decoded_list = [ unicode ( item ) ]
                    elif isinstance( item, list):
                        return_val = []
                        for element in item:
