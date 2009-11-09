@@ -85,7 +85,7 @@ class Requests( BaseController ):
                 return self.__show_request(trans, id, kwargs.get('add_sample', False))
             elif operation == "submit":
                 id = trans.security.decode_id(kwargs['id'])
-                return self.__submit(trans, id)
+                return self.__submit_request(trans, id)
             elif operation == "delete":
                 id = trans.security.decode_id(kwargs['id'])
                 return self.__delete_request(trans, id)
@@ -642,6 +642,8 @@ class Requests( BaseController ):
                     values.append('')
                 else:
                     values.append(int(value))
+            elif field['type'] == 'CheckboxField':
+                values.append(CheckboxField.is_checked( params.get('field_%i' % index, '') )) 
             else:
                 values.append(util.restore_text(params.get('field_%i' % index, '')))
         form_values = trans.app.model.FormValues(request_type.request_form, values)
@@ -799,7 +801,7 @@ class Requests( BaseController ):
                                                           status='done',
                                                           message='The request <b>%s</b> has been undeleted.' % request.name,                                                          
                                                           **kwd) )
-    def __submit(self, trans, id):
+    def __submit_request(self, trans, id):
         try:
             request = trans.sa_session.query( trans.app.model.Request ).get( id )
         except:

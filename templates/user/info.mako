@@ -76,28 +76,34 @@ $( function() {
             <input type="submit" name="change_password_button" value="Save">
         </div>
     </form>
-    %if user.values:
-        <form name="user_info" id="user_info" action="${h.url_for( controller='user', action='edit_info', user_id=user.id, admin_view=admin_view )}" method="post" >
-            <div class="toolFormTitle">User information</div>
-            %if user_info_form:
-                %for field in widgets:
-                    <div class="form-row">
-                        <label>${field['label']}</label>
-                        ${field['widget'].get_html()}
-                        <div class="toolParamHelp" style="clear: both;">
-                            ${field['helptext']}
-                        </div>
-                        <div style="clear: both"></div>
-                    </div>
-                %endfor
-                %if not user_info_select:
-                    <input type="hidden" name="user_info_select" value="${user_info_form.id}"/>
-                %endif   
-            %endif
+    %if user.values or user_info_forms:
+    <form name="user_info" id="user_info" action="${h.url_for( controller='user', action='edit_info', user_id=user.id, admin_view=admin_view )}" method="post" >
+        <div class="toolFormTitle">User information</div>
+        %if user_info_select:
             <div class="form-row">
-                <input type="submit" name="edit_user_info_button" value="Save">
+                <label>User type</label>
+                ${user_info_select.get_html()}
             </div>
-        </form>
+        %endif
+        
+        %for field in widgets:
+            <div class="form-row">
+                <label>${field['label']}</label>
+                ${field['widget'].get_html()}
+                <div class="toolParamHelp" style="clear: both;">
+                    ${field['helptext']}
+                </div>
+                <div style="clear: both"></div>
+            </div>
+        %endfor
+        %if not user_info_select:
+            <input type="hidden" name="user_info_select" value="${user_info_form.id}"/>
+        %endif  
+    
+        <div class="form-row">
+            <input type="submit" name="edit_user_info_button" value="Save">
+        </div>
+    </form>
     %endif
     <form name="user_info" id="user_info" action="${h.url_for( controller='user', action='new_address', user_id=user.id, admin_view=admin_view )}" method="post" >
         <div class="toolFormTitle">User Addresses</div>

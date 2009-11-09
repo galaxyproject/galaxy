@@ -37,6 +37,7 @@ class RequestsListGrid( grids.Grid ):
     operations = [
         grids.GridOperation( "Submit", allow_multiple=False, condition=( lambda item: not item.deleted and item.unsubmitted() and item.samples )  ),
         grids.GridOperation( "Edit", allow_multiple=False, condition=( lambda item: not item.deleted )  ),
+        grids.GridOperation( "Reject", allow_multiple=False, condition=( lambda item: not item.deleted and item.submitted() )  ),
         grids.GridOperation( "Delete", allow_multiple=False, condition=( lambda item: not item.deleted and item.unsubmitted() )  ),
         grids.GridOperation( "Undelete", condition=( lambda item: item.deleted ) ),    
     ]
@@ -94,7 +95,7 @@ class Requests( BaseController ):
                 return self.__show_request(trans, id, status, message)
             elif operation == "submit":
                 id = trans.security.decode_id(kwargs['id'])
-                return self.__submit(trans, id)
+                return self.__submit_request(trans, id)
             elif operation == "edit":
                 id = trans.security.decode_id(kwargs['id'])
                 return self.__edit_request(trans, id)
@@ -104,6 +105,9 @@ class Requests( BaseController ):
             elif operation == "undelete":
                 id = trans.security.decode_id(kwargs['id'])
                 return self.__undelete_request(trans, id)
+            elif operation == "reject":
+                id = trans.security.decode_id(kwargs['id'])
+                return self.__reject_request(trans, id)
         if 'show_filter' in kwargs.keys():
             if kwargs['show_filter'] == 'All':
                 self.request_grid.default_filter = {}
@@ -226,7 +230,7 @@ class Requests( BaseController ):
                                                           status='done',
                                                           message='The request <b>%s</b> has been undeleted.' % request.name,                                                          
                                                           **kwd) )
-    def __submit(self, trans, id):
+    def __submit_request(self, trans, id):
         try:
             request = trans.sa_session.query( trans.app.model.Request ).get( id )
         except:
@@ -582,6 +586,8 @@ class Requests( BaseController ):
                     values.append('')
                 else:
                     values.append(int(value))
+            elif field['type'] == 'CheckboxField':
+                values.append(CheckboxField.is_checked( params.get('field_%i' % index, '') )) 
             else:
                 values.append(util.restore_text(params.get('field_%i' % index, '')))
         form_values = trans.app.model.FormValues(request_type.request_form, values)
@@ -689,6 +695,28 @@ class Requests( BaseController ):
         return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                           action='list',
                                                           show_filter=trans.app.model.Request.states.SUBMITTED,
+                                                          **kwd) )
+    def __reject_request(self, trans, id):
+        try:
+            request = trans.sa_session.query( trans.app.model.Request ).get( id )
+        except:
+            msg = "Invalid request ID"
+            log.warn( msg )
+            return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                              action='list',
+                                                              status='error',
+                                                              message=msg,
+                                                              **kwd) )
+        # change request's submitted field
+        request.state = request.states.UNSUBMITTED
+        request.flush()
+        kwd = {}
+        kwd['id'] = trans.security.encode_id(request.id)
+        kwd['status'] = 'done'
+        kwd['message'] = 'The request <b>%s</b> is now unsubmitted.' % request.name
+        return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                          action='list',
+                                                          show_filter=trans.app.model.Request.states.UNSUBMITTED,
                                                           **kwd) )
     def __update_samples(self, request, **kwd):
         '''

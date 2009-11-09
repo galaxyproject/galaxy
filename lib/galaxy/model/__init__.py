@@ -1170,7 +1170,7 @@ class FormDefinition( object ):
                     else:
                         field_widget.add_option( option, option )
             elif field[ 'type' ] == 'CheckboxField':
-                field_widget.checked = value
+                field_widget.set_checked( value )
             if field[ 'required' ] == 'required':
                 req = 'Required'
             else:
@@ -1231,7 +1231,9 @@ class Sample( object ):
         self.values = form_values
         self.bar_code = bar_code
     def current_state(self):
-        return self.events[0].state
+        if self.events:
+            return self.events[0].state
+        return None
 
 class SampleState( object ):
     def __init__(self, name=None, desc=None, request_type=None):

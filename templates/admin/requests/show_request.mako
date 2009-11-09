@@ -14,8 +14,14 @@
 <ul class="manage-table-actions">
     %if request.unsubmitted() and request.samples:
         <li>
-            <a class="action-button" confirm="More samples cannot be added to this request once it is submitted. Click OK to submit." href="${h.url_for( controller='requests_admin', action='submit_request', id=request.id)}">
+            <a class="action-button" confirm="More samples cannot be added to this request once it is submitted. Click OK to submit." href="${h.url_for( controller='requests_admin', action='list', operation='Submit', id=trans.security.encode_id(request.id) )}">
             <span>Submit request</span></a>
+        </li>
+    %endif
+    %if request.submitted():
+        <li>
+            <a class="action-button" href="${h.url_for( controller='requests_admin', action='list', operation='Reject', id=trans.security.encode_id(request.id))}">
+            <span>Reject request</span></a>
         </li>
     %endif
     %if request.submitted() and request.samples:
@@ -24,6 +30,7 @@
             <span>Bar codes</span></a>
         </li>
     %endif
+
 </ul>
 
 
@@ -76,7 +83,9 @@
         <td>
             %if sample.request.unsubmitted():
                 Unsubmitted
-            %else:    
+            %elif not sample.current_state():
+                New
+            %else:
                 <a href="${h.url_for( controller='requests_admin', action='show_events', sample_id=sample.id)}">${sample.current_state().name}</a>
             %endif    
         </td>

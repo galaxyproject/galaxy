@@ -760,7 +760,6 @@ class Admin( BaseController ):
         information, public username, reset password & other user information 
         obtained during registration
         '''
-        print 'KWD', kwd
         user_id = kwd.get( 'id', None )
         if not user_id:
             message += "Invalid user id (%s) received" % str( user_id )
@@ -772,7 +771,7 @@ class Admin( BaseController ):
         return trans.response.send_redirect( web.url_for( controller='user',
                                                           action='show_info',
                                                           user_id=user.id,
-                                                          admin_view=True ) )
+                                                          admin_view=True, **kwd ) )
     @web.expose
     @web.require_admin
     def user( self, trans, **kwd ):

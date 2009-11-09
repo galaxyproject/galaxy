@@ -118,6 +118,14 @@ class CheckboxField(BaseField):
             return True
         else:
             return False
+    def set_checked(self, value):
+        if type(value) == type('a'):
+            if value.lower() in [ "yes", "true", "on" ]:
+                self.checked = True
+            else:
+                self.checked = False
+        else:
+            self.checked = value
 
 class FileField(BaseField):
     """

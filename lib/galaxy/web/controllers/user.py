@@ -168,7 +168,7 @@ class User( BaseController ):
         username = util.restore_text( params.get('username', '') )
         password = util.restore_text( params.get('password', '') )
         confirm = util.restore_text( params.get('confirm', '') )
-        subscribe = params.get('subscribe', False)
+        subscribe = CheckboxField.is_checked( params.get('subscribe', '') ) 
         admin_view = params.get('admin_view', 'False')
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
@@ -241,10 +241,10 @@ class User( BaseController ):
         # get all the user information forms
         user_info_forms = get_all_forms( trans, filter=dict(deleted=False),
                                          form_type=trans.app.model.FormDefinition.types.USER_INFO )
-        # if there are no user forms available then there is nothing to save
-        if not len( user_info_forms ):
-            return
         if new_user:
+            # if there are no user forms available then there is nothing to save
+            if not len( user_info_forms ):
+                return
             user_info_type = params.get( 'user_info_select', 'none'  )
             try:
                 user_info_form = trans.sa_session.query( trans.app.model.FormDefinition ).get(int(user_info_type))
@@ -254,7 +254,25 @@ class User( BaseController ):
                                                                   msg='Invalid user information form id',
                                                                   messagetype='error') )
         else:
-            user_info_form = user.values.form_definition
+            if user.values:
+                user_info_form = user.values.form_definition
+            else:
+                # user was created before any of the user_info forms were created
+                if len(user_info_forms) > 1:
+                    # when there are multiple user_info forms and the user or admin
+                    # can change the user_info form 
+                    user_info_type = params.get( 'user_info_select', 'none'  )
+                    try:
+                        user_info_form = trans.sa_session.query( trans.app.model.FormDefinition ).get(int(user_info_type))
+                    except:
+                        return trans.response.send_redirect( web.url_for( controller='user',
+                                                                          action=action,
+                                                                          msg='Invalid user information form id',
+                                                                          messagetype='error') )      
+                else:
+                    # when there is only one user_info form then there is no way
+                    # to change the user_info form 
+                    user_info_form = user_info_forms[0]
         values = []
         for index, field in enumerate(user_info_form.fields):
             if field['type'] == 'AddressField':
@@ -278,13 +296,17 @@ class User( BaseController ):
                     values.append('')
                 else:
                     values.append(int(value))
+            elif field['type'] == 'CheckboxField':
+                values.append(CheckboxField.is_checked( params.get('field_%i' % index, '') )) 
             else:
                 values.append(util.restore_text(params.get('field_%i' % index, '')))
-        if new_user:
+        if new_user or not user.values:
+            # new user or existing 
             form_values = trans.app.model.FormValues(user_info_form, values)
             form_values.flush()
             user.values = form_values
-        else:  # editing the user info of an existing user
+        elif user.values:  
+            # editing the user info of an existing user with existing user info
             user.values.content = values
             user.values.flush()
         user.flush()
@@ -340,7 +362,7 @@ class User( BaseController ):
             if user.values:
                 selected_user_form_id = user.values.form_definition.id
             else:
-                selected_user_form_id = 'none'
+                selected_user_form_id = params.get( 'user_info_select', 'none'  )
         else:
             selected_user_form_id = params.get( 'user_info_select', 'none'  )
         # when there are more than one user information forms then show a select box
@@ -428,10 +450,12 @@ class User( BaseController ):
             addresses = [address for address in user.addresses if address.deleted]
         else:
             addresses = [address for address in user.addresses if not address.deleted]
+        user_info_forms = get_all_forms( trans, filter=dict(deleted=False),
+                                         form_type=trans.app.model.FormDefinition.types.USER_INFO )
         return trans.fill_template( '/user/info.mako', user=user, admin_view=admin_view,
                                     user_info_select=user_info_select,
                                     user_info_form=user_info_form, widgets=widgets, 
-                                    login_info=login_info,
+                                    login_info=login_info, user_info_forms=user_info_forms,
                                     addresses=addresses, show_filter=show_filter,
                                     msg=msg, messagetype=messagetype)
     @web.expose

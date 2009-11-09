@@ -14,7 +14,7 @@
 <ul class="manage-table-actions">
     %if request.unsubmitted() and request.samples:
         <li>
-            <a class="action-button" confirm="More samples cannot be added to this request once it is submitted. Click OK to submit." href="${h.url_for( controller='requests', action='submit_request', id=request.id)}">
+            <a class="action-button" confirm="More samples cannot be added to this request once it is submitted. Click OK to submit." href="${h.url_for( controller='requests', action='list', operation='Submit', id=trans.security.encode_id(request.id) )}">
             <span>Submit request</span></a>
         </li>
     %endif

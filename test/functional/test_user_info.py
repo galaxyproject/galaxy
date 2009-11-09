@@ -43,6 +43,10 @@ class TestUserInfo( TwillTestCase ):
                   dict(name='Name of Organization',
                        desc='',
                        type='TextField',
+                       required='optional'),
+                  dict(name='Contact for feedback',
+                       desc='',
+                       type='CheckboxField',
                        required='optional')]
         form_one = get_latest_form(form_one_name)
         self.form_add_field(form_one.id, form_one.name, form_one.desc, form_one.type, field_index=len(form_one.fields), fields=fields)
@@ -65,6 +69,10 @@ class TestUserInfo( TwillTestCase ):
                   dict(name='Name of Organization',
                        desc='',
                        type='TextField',
+                       required='optional'),
+                  dict(name='Contact for feedback',
+                       desc='',
+                       type='CheckboxField',
                        required='optional')]
         form_two = get_latest_form(form_two_name)
         self.form_add_field(form_two.id, form_two.name, form_two.desc, form_two.type, field_index=len(form_one.fields), fields=fields)
@@ -75,7 +83,7 @@ class TestUserInfo( TwillTestCase ):
         self.logout()
         # user a new user with 'Student' user info form
         form_one = get_latest_form(form_one_name)
-        user_info_values=['Educational', 'Penn State']
+        user_info_values=['Educational', 'Penn State', True]
         self.create_user_with_info( 'test11@bx.psu.edu', 'testuser', 'test11', 
                                     user_info_forms='multiple',
                                     user_info_form_id=form_one.id, 
@@ -83,8 +91,9 @@ class TestUserInfo( TwillTestCase ):
         self.home()
         self.visit_page( "user/show_info" )
         self.check_page_for_string( "Manage User Information" )
-        for value in user_info_values:
-            self.check_page_for_string( value )
+        self.check_page_for_string( user_info_values[0] )
+        self.check_page_for_string( user_info_values[1] )
+        self.check_page_for_string( '<input type="checkbox" name="field_2" value="true" checked>' )
     def test_010_user_reqistration_single_user_info_forms( self ):
         ''' Testing user registration with a single user info form '''
         # lets delete the 'Researcher' user info form
@@ -98,7 +107,7 @@ class TestUserInfo( TwillTestCase ):
         self.logout()
         # user a new user with 'Student' user info form
         form_one = get_latest_form(form_one_name)
-        user_info_values=['Educational', 'Penn State']
+        user_info_values=['Educational', 'Penn State', True]
         self.create_user_with_info( 'test12@bx.psu.edu', 'testuser', 'test12', 
                                     user_info_forms='single',
                                     user_info_form_id=form_one.id, 
@@ -106,8 +115,9 @@ class TestUserInfo( TwillTestCase ):
         self.home()
         self.visit_page( "user/show_info" )
         self.check_page_for_string( "Manage User Information" )
-        for value in user_info_values:
-            self.check_page_for_string( value )
+        self.check_page_for_string( user_info_values[0] )
+        self.check_page_for_string( user_info_values[1] )
+        self.check_page_for_string( '<input type="checkbox" name="field_2" value="true" checked>' )
     def test_015_edit_user_info( self ):
         """Testing editing user info as a regular user"""
         self.logout()
@@ -122,7 +132,7 @@ class TestUserInfo( TwillTestCase ):
         self.logout()
         self.login( 'test@bx.psu.edu' )
         form_one = get_latest_form(form_one_name)
-        user_info_values=['Educational', 'Penn State']
+        user_info_values=['Educational', 'Penn State', True]
         self.create_user_with_info( 'test13@bx.psu.edu', 'testuser', 'test13', 
                                     user_info_forms='single',
                                     user_info_form_id=form_one.id, 
@@ -136,8 +146,9 @@ class TestUserInfo( TwillTestCase ):
         self.visit_page( page )
         self.check_page_for_string( 'Manage User Information' )
         self.check_page_for_string( 'test13@bx.psu.edu' )
-        for value in user_info_values:
-            self.check_page_for_string( value )        
+        self.check_page_for_string( user_info_values[0] )
+        self.check_page_for_string( user_info_values[1] )
+        self.check_page_for_string( '<input type="checkbox" name="field_2" value="true" checked>' )
         # lets delete the 'Student' user info form
         self.login( 'test@bx.psu.edu' )
         form_one_latest = get_latest_form(form_one_name)

@@ -288,3 +288,15 @@ class TestFormsAndRequests( TwillTestCase ):
         self.visit_url( '%s/requests_admin/list?show_filter=All' % self.url )
         self.check_page_for_string( request_one.name )
         self.check_page_for_string( request_two.name )
+    def test_45_reject_request( self ):
+        self.logout()
+        self.login( email='test@bx.psu.edu' )
+        self.reject_request( request_two.id, request_two.name )
+        sa_session.refresh( request_two )
+        # check if the request is showing in the 'unsubmitted' filter
+        self.home()
+        self.visit_url( '%s/requests_admin/list?show_filter=Unsubmitted' % self.url )
+        self.check_page_for_string( request_two.name )
+        # check if the request's state is now set to 'submitted'
+        assert request_two.state is not request_two.states.UNSUBMITTED, "The state of the request '%s' should be set to '%s'" \
+            % ( request_two.name, request_two.states.UNSUBMITTED )
