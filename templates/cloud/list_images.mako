@@ -21,14 +21,18 @@
  
 	<table class="mange-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
         <colgroup width="2%"></colgroup>
+		<colgroup width="10%"></colgroup>
 		<colgroup width="13%"></colgroup>
-		<colgroup width="70%"></colgroup>
+		<colgroup width="55%"></colgroup>
+		<colgroup width="10%"></colgroup>
 		<colgroup width="5%"></colgroup>
 		<colgroup width="5%"></colgroup>
 		<tr class="header">
 			<th>#</th>
-            <th>Machime image ID</th>
+            <th>Provider type</th>
+			<th>Machime image ID</th>
 			<th>Manifest</th>
+			<th>Architecture</th>
 			<th>Edit</th>
 			<th>Delete</th>
             <th></th>
@@ -37,6 +41,13 @@
             <tr>
             	<td>${i+1}</td>
                 <td>
+				%if image.provider_type:
+					${image.provider_type}
+				%else:
+					N/A
+				%endif
+				</td>
+				<td>
 				%if image.image_id:
 					${image.image_id}
 				%else:
@@ -46,6 +57,13 @@
 				<td>
 				%if image.manifest:
 					${image.manifest}
+				%else:
+					N/A
+				%endif
+				</td>
+				<td>
+				%if image.architecture:
+					${image.architecture}
 				%else:
 					N/A
 				%endif

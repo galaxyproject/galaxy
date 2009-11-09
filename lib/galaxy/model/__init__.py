@@ -951,7 +951,6 @@ class CloudInstance( object ):
         self.instance_id = None
         self.mi = None
         self.state = None
-        self.keypair_name = None
         self.public_dns = None
         self.availability_zone = None
         

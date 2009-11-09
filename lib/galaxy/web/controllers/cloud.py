@@ -76,11 +76,13 @@ class CloudController( BaseController ):
         
         cloudCredentials = trans.sa_session.query( model.CloudUserCredentials ) \
             .filter_by( user=user ) \
+            .filter( model.CloudUserCredentials.c.deleted != True ) \
             .order_by( model.CloudUserCredentials.c.name ) \
             .all()
             
         cloudProviders = trans.sa_session.query( model.CloudProvider ) \
             .filter_by( user=user ) \
+            .filter( model.CloudProvider.c.deleted != True ) \
             .order_by( model.CloudProvider.c.name ) \
             .all()
         
@@ -131,25 +133,6 @@ class CloudController( BaseController ):
                                     prevInstances = prevInstances,
                                     cloudProviders = cloudProviders )
     
-    @web.require_login( "use Galaxy cloud" )
-    def makeDefault( self, trans, id=None ):
-        """ 
-        Set current credentials as default.
-        *NOT USED*
-        """
-        currentDefault = get_default_credentials (trans)
-        if currentDefault:
-            currentDefault.defaultCred = False
-        
-        newDefault = get_stored_credentials( trans, id )
-        newDefault.defaultCred = True
-        trans.sa_session.flush()
-        trans.set_message( "Credentials '%s' set as default." % newDefault.name )
-        
-        # TODO: Fix bug that when this function returns, top Galaxy tab bar is missing from the webpage  
-        return self.list( trans ) #trans.fill_template( "cloud/configure_cloud.mako",
-               #awsCredentials = awsCredentials )
-        
     @web.expose
     @web.require_login( "start Galaxy cloud instance" )
     def start( self, trans, id, type='m1.small' ):
@@ -158,14 +141,14 @@ class CloudController( BaseController ):
         """
         user = trans.get_user()
         uci = get_uci( trans, id )
-        mi = get_mi( trans, uci, type )
+#        mi = get_mi( trans, uci, type )
         stores = get_stores( trans, uci ) 
         # Ensure instance is available and then store relevant data
         # into DB to initiate instance startup by cloud manager
         if ( len(stores) is not 0 ) and ( uci.state == uci_states.AVAILABLE ):
             instance = model.CloudInstance()
             instance.user = user
-            instance.image = mi
+#            instance.image = mi
             instance.uci = uci
             instance.availability_zone = stores[0].availability_zone # Bc. all EBS volumes need to be in the same avail. zone, just check 1st
             instance.type = type
@@ -177,9 +160,9 @@ class CloudController( BaseController ):
             session.flush()
             # Log  
             trans.log_event ("User initiated starting of UCI '%s'." % uci.name )
-            trans.set_message( "Galaxy instance started. NOTE: Please wait about 3-5 minutes for the instance to " 
-                    "start up and then refresh this page. A button to connect to the instance will then appear alongside "
-                    "instance description." )
+            trans.set_message( "Galaxy instance started. NOTE: Please wait about 5 minutes for the instance to " 
+                    "start up. A button to connect to the instance will appear alongside "
+                    "instance description once cloud instance of Galaxy is ready." )
             return self.list( trans )
         
         if len(stores) == 0:
@@ -270,10 +253,10 @@ class CloudController( BaseController ):
         inst_error = vol_error = cred_error = None
         error = {}
         user = trans.get_user()
-        storedCreds = trans.sa_session.query( model.CloudUserCredentials ).filter_by( user=user ).all()
+        storedCreds = trans.sa_session.query( model.CloudUserCredentials ).filter_by( user=user, deleted=False ).all()
         if len( storedCreds ) == 0:
             return trans.show_error_message( "You must register credentials before configuring a Galaxy cloud instance." )
-        # Create dict mapping of cloud providers to zones available by those providers
+        # Create dict mapping of cloud-providers-to-zones available by those providers
         providersToZones = {}
         for storedCred in storedCreds:
             zones = None
@@ -314,8 +297,7 @@ class CloudController( BaseController ):
             # Create new user configured instance
             try:
                 if trans.app.model.UCI \
-                    .filter_by (user=user) \
-                    .filter(  and_( trans.app.model.UCI.table.c.name==instanceName, trans.app.model.UCI.table.c.state!=uci_states.DELETED ) ) \
+                    .filter_by (user=user, deleted=False, name=instanceName ) \
                     .first():
                     error['inst_error'] = "An instance with that name already exist."
                 elif instanceName=='' or len( instanceName ) > 255:
@@ -327,7 +309,7 @@ class CloudController( BaseController ):
                 elif ( int( volSize ) < 1 ) or ( int( volSize ) > 1000 ):
                     error['vol_error'] = "Volume size must be integer value between 1 and 1000."
                 elif zone=='':
-                    error['zone_error'] = "You must select zone where this UCI will be registered."
+                    error['zone_error'] = "You must select a zone where this UCI will be registered."
                 else:
                     # Capture user configured instance information
                     uci = model.UCI()
@@ -349,14 +331,12 @@ class CloudController( BaseController ):
                     session.save_or_update( storage )
                     session.flush()
                     # Log and display the management page
-                    trans.log_event( "User configured new cloud instance" )
+                    trans.log_event( "User configured new cloud instance: '%s'" % instanceName )
                     trans.set_message( "New Galaxy instance '%s' configured. Once instance status shows 'available' you will be able to start the instance." % instanceName )
                     return self.list( trans )
-            except ValueError:
-                vol_error = "Volume size must be specified as an integer value only, between 1 and 1000."
             except AttributeError, ae:
                 inst_error = "No registered cloud images. You must contact administrator to add some before proceeding."
-                log.debug("AttributeError: %s " % str( ae ) )
+                log.debug("AttributeError when registering new UCI '%s': %s " % ( instanceName, str( ae ) ) )
             
         return trans.fill_template( "cloud/configure_uci.mako", 
                                     instanceName = instanceName, 
@@ -368,21 +348,29 @@ class CloudController( BaseController ):
     
     @web.expose
     @web.require_admin
-    def addNewImage( self, trans, image_id='', manifest='', state=None ):
-        id_error = None
-        manifest_error = None
-        if image_id:
-            if image_id=='' or len( image_id ) > 255:
-                id_error = "Image ID must be between 1 and 255 characters long."
-            elif trans.app.model.CloudUserCredentials.filter(  
-                    trans.app.model.CloudImage.table.c.image_id==image_id ).first():
-                id_error = "Image with ID '" + image_id + "' is already registered. \
-                    Please choose another ID.ga"
+    def addNewImage( self, trans, provider_type='', image_id='', manifest='', architecture='', state=None ):
+        #id_error = arch_error = provider_error = manifest_error = None
+        error = {}
+        if provider_type or image_id or manifest or architecture:
+            if provider_type=='':
+                error['provider_error'] = "You must select cloud provider type for this machine image."
+            elif image_id=='' or len( image_id ) > 255:
+                error['id_error'] = "Image ID must be between 1 and 255 characters long."
+            elif trans.app.model.CloudUserCredentials \
+                    .filter_by( deleted=False ) \
+                    .filter( trans.app.model.CloudImage.table.c.image_id == image_id ) \
+                    .first():
+                error['id_error'] = "Image with ID '" + image_id + "' is already registered. \
+                    Please choose another ID."
+            elif architecture=='':
+                error['arch_error'] = "You must select architecture type for this machine image."
             else:
                 # Create new image
                 image = model.CloudImage()
+                image.provider_type = provider_type
                 image.image_id = image_id
                 image.manifest = manifest
+                image.architecture = architecture
                 # Persist
                 session = trans.sa_session
                 session.save_or_update( image )
@@ -394,16 +382,24 @@ class CloudController( BaseController ):
                     image.state = state
                 images = trans.sa_session.query( model.CloudImage ).all()
                 return trans.fill_template( '/cloud/list_images.mako', images=images )
-               
-        return trans.show_form(
-            web.FormBuilder( web.url_for(), "Add new cloud image", submit_text="Add" )
-                .add_text( "image_id", "Machine Image ID (AMI or EMI)", value='', error=id_error )
-                .add_text( "manifest", "Manifest", value='', error=manifest_error ) )
+        
+        return trans.fill_template( "cloud/add_image.mako",
+                                    provider_type = provider_type,
+                                    image_id = image_id,
+                                    manifest = manifest,
+                                    architecture = architecture,
+                                    error = error )
+#        return trans.show_form(
+#            web.FormBuilder( web.url_for(), "Add new cloud image", submit_text="Add" )
+#                .add_text( "provider_type", "Provider type", value='ec2 or eucalyptus', error=provider_error )
+#                .add_text( "image_id", "Machine Image ID (AMI or EMI)", value='', error=id_error )
+#                .add_text( "manifest", "Manifest", value='', error=manifest_error )
+#                .add_text( "architecture", "Architecture", value='i386 or x86_64', error=arch_error ) )
     
     @web.expose
     @web.require_login( "use Galaxy cloud" )
     def listMachineImages( self, trans ):
-        images = trans.sa_session.query( model.CloudImage ).all()
+        images = trans.sa_session.query( model.CloudImage ).filter( trans.app.model.CloudImage.table.c.deleted != True ).all()
         return trans.fill_template( '/cloud/list_images.mako', images=images )
     
     @web.expose
@@ -413,13 +409,13 @@ class CloudController( BaseController ):
             id = trans.security.decode_id( id )
 
         image = trans.sa_session.query( model.CloudImage ).get( id )
-        image.delete()
+        image.deleted = True
         image.flush()
         return self.listMachineImages( trans )
     
     @web.expose
     @web.require_admin
-    def editImage( self, trans, image_id, manifest, id=None, edited=False ):
+    def editImage( self, trans, provider_type='', image_id='', manifest='', architecture='', id='', edited=False ):
         error = {}
         if not isinstance( id, int ):
             id = trans.security.decode_id( id )
@@ -435,9 +431,12 @@ class CloudController( BaseController ):
             if image_id=='' or len( image_id ) > 255:
                 error['id_error'] = "Image ID must be between 1 and 255 characters in length."
             elif trans.app.model.CloudImage \
+                .filter_by( deleted=False ) \
                 .filter( and_( trans.app.model.CloudImage.table.c.id != image.id, trans.app.model.CloudImage.table.c.image_id==image_id ) ) \
                 .first():
                 error['id_error'] = "Image with ID '" + image_id + "' already exist. Please choose an alternative name."
+            elif architecture=='' or len( architecture ) > 255:
+                error['arch_error'] = "Architecture type must be between 1 and 255 characters long."
             if error:
                 return trans.fill_template( "cloud/edit_image.mako", 
                                             image = image,
@@ -446,12 +445,13 @@ class CloudController( BaseController ):
             else:
                 image.image_id = image_id
                 image.manifest = manifest
+                image.architecture = architecture
                 # Persist
                 session = trans.sa_session
                 session.save_or_update( image )
                 session.flush()
                 # Log and display the management page
-                trans.set_message( "Image '%s' edited." % image.image_id )
+                trans.set_message( "Machine image '%s' edited." % image.image_id )
                 return self.listMachineImages( trans )
 
     @web.expose
@@ -548,8 +548,10 @@ class CloudController( BaseController ):
         if credName or providerName or accessKey or secretKey:
             if credName=='' or len( credName ) > 255:
                 error['cred_error'] = "Credentials name must be between 1 and 255 characters in length."
-            elif trans.app.model.CloudUserCredentials.filter_by( user=user ).filter(  
-                    trans.app.model.CloudUserCredentials.table.c.name==credName ).first():
+            elif trans.app.model.CloudUserCredentials \
+                    .filter_by( user=user, deleted=False ) \
+                    .filter( trans.app.model.CloudUserCredentials.table.c.name == credName ) \
+                    .first():
                 error['cred_error'] = "Credentials with that name already exist."
             elif providerName=='':
                 error['provider_error'] = "You must select cloud provider associated with these credentials."
@@ -627,13 +629,12 @@ class CloudController( BaseController ):
         stored = get_stored_credentials( trans, id )
         UCIs = trans.sa_session.query( model.UCI ) \
             .filter_by( user=user, credentials_id=stored.id ) \
-            .filter( model.UCI.c.state!=uci_states.DELETED ) \
+            .filter( model.UCI.c.deleted != True ) \
             .all()
         
         if len(UCIs) == 0:
             # Delete and save
-            sess = trans.sa_session
-            sess.delete( stored )
+            stored.deleted = True
             stored.flush()
             # Display the management page
             trans.set_message( "Credentials '%s' deleted." % stored.name )
@@ -658,6 +659,7 @@ class CloudController( BaseController ):
         
             if trans.app.model.CloudProvider \
                 .filter_by (user=user, name=name) \
+                .filter( model.CloudProvider.c.deleted != True ) \
                 .first():
                 error['name_error'] = "A provider with that name already exist."
             elif name=='' or len( name ) > 255:
@@ -889,13 +891,13 @@ class CloudController( BaseController ):
         provider = get_provider_by_id( trans, id )
         creds = trans.sa_session.query( model.CloudUserCredentials ) \
             .filter_by( user=user, provider_id=provider.id ) \
-            .filter( model.UCI.c.state!=uci_states.DELETED ) \
+            .filter( model.CloudUserCredentials.c.deleted != True ) \
             .all()
-        
+            
         if len( creds ) == 0:
             # Delete and save
-            sess = trans.sa_session
-            sess.delete( provider )
+            #sess = trans.sa_session
+            provider.deleted = True
             provider.flush()
             # Display the management page
             trans.set_message( "Cloud provider '%s' deleted." % provider.name )
@@ -908,7 +910,7 @@ class CloudController( BaseController ):
     @web.json
     def json_update( self, trans ):
         user = trans.get_user()
-        UCIs = trans.sa_session.query( model.UCI ).filter_by( user=user ).filter( model.UCI.c.state != uci_states.DELETED ).all()
+        UCIs = trans.sa_session.query( model.UCI ).filter_by( user=user ).filter( model.UCI.c.deleted != True ).all()
         insd = {} # instance name-state dict
         for uci in UCIs:
             dict = {}

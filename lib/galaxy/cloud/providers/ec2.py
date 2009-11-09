@@ -58,11 +58,12 @@ class EC2CloudProvider( object ):
         self.type = "ec2" # cloud provider type (e.g., ec2, eucalyptus, opennebula)
         self.zone = "us-east-1a"
         self.key_pair = "galaxy-keypair"
+        self.security_group = "galaxyWeb"
         self.queue = Queue()
         
         self.threads = []
         nworkers = 5
-        log.info( "Starting EC2 cloud controller workers" )
+        log.info( "Starting EC2 cloud controller workers..." )
         for i in range( nworkers  ):
             worker = threading.Thread( target=self.run_next )
             worker.start()
@@ -116,28 +117,43 @@ class EC2CloudProvider( object ):
         
         return conn
         
-    def set_keypair( self, uci_wrapper, conn ):
+    def check_key_pair( self, uci_wrapper, conn ):
         """
         Generate keypair using user's default credentials
         """
-        log.debug( "Getting user's keypair" )
-        instances = uci_wrapper.get_instances_indexes()
+        log.debug( "Getting user's key pair: '%s'" % self.key_pair )
         try:
             kp = conn.get_key_pair( self.key_pair )
-            for inst in instances:
-                uci_wrapper.set_key_pair( inst, kp.name )
-            return kp.name
+            uci_kp = uci_wrapper.get_key_pair_name()
+            uci_material = uci_wrapper.get_key_pair_material()
+            if kp.name != uci_kp or uci_material == None:
+                try: # key pair exists on the cloud but not in local database, so re-generate it (i.e., delete and then create)
+                    conn.delete_key_pair( self.key_pair )
+                except boto.exception.EC2ResponseError:
+                    pass
+                kp = self.create_key_pair( conn )
+                uci_wrapper.set_key_pair( kp.name, kp.material )
+            else:
+                return kp.name
         except boto.exception.EC2ResponseError, e: # No keypair under this name exists so create it
             if e.code == 'InvalidKeyPair.NotFound': 
                 log.info( "No keypair found, creating keypair '%s'" % self.key_pair )
-                kp = conn.create_key_pair( self.key_pair )
-                for inst in instances:
-                    uci_wrapper.set_key_pair( inst, kp.name, kp.material )
+                kp = self.create_key_pair( conn )
+                uci_wrapper.set_key_pair( kp.name, kp.material )
             else:
                 log.error( "EC2 response error: '%s'" % e )
-                uci_wrapper.set_error( "EC2 response error while creating key pair: " + str(e), True )
-                
-        return kp.name
+                uci_wrapper.set_error( "EC2 response error while creating key pair: " + str( e ), True )
+                        
+        if kp != None:
+            return kp.name
+        else:
+            return None
+    
+    def create_key_pair( self, conn ):
+        try:
+            return conn.create_key_pair( self.key_pair )
+        except boto.exception.EC2ResponseError, e: 
+            return None
     
     def get_mi_id( self, type ):
         """
@@ -170,7 +186,6 @@ class EC2CloudProvider( object ):
             log.info( "Availability zone for UCI (i.e., storage volume) was not selected, using default zone: %s" % self.zone )
             uci_wrapper.set_store_availability_zone( self.zone )
         
-        #TODO: check if volume associated with UCI already exists (if server crashed for example) and don't recreate it
         log.info( "Creating volume in zone '%s'..." % uci_wrapper.get_uci_availability_zone() )
         # Because only 1 storage volume may be created at UCI config time, index of this storage volume in local Galaxy DB w.r.t
         # current UCI is 0, so reference it in following methods
@@ -196,7 +211,7 @@ class EC2CloudProvider( object ):
         else:
             uci_wrapper.change_state( uci_state=uci_states.ERROR )
             uci_wrapper.set_store_status( vol.id, uci_states.ERROR )
-            uci_wrapper.set_error( "Volume '%s' not found by cloud provider after being created" % vol.id )
+            uci_wrapper.set_error( "Volume '%s' not found by EC2 after being created" % vol.id )
 
     def deleteUCI( self, uci_wrapper ):
         """ 
@@ -215,14 +230,13 @@ class EC2CloudProvider( object ):
             log.debug( "Deleting volume with id='%s'" % v.volume_id )
             if conn.delete_volume( v.volume_id ):
                 deletedList.append( v.volume_id )
-                v.delete()
+                v.deleted = True
                 v.flush()
                 count += 1
             else:
                 failedList.append( v.volume_id )
             
         # Delete UCI if all of associated 
-        log.debug( "count=%s, len(vl)=%s" % (count, len( vl ) ) )
         if count == len( vl ):
             uci_wrapper.delete()
         else:
@@ -249,31 +263,34 @@ class EC2CloudProvider( object ):
         """
         Starts instance(s) of given UCI on the cloud.  
         """ 
-        conn = self.get_connection( uci_wrapper )
-        
         if uci_wrapper.get_state() != uci_states.ERROR:
-            self.set_keypair( uci_wrapper, conn )
-            i_indexes = uci_wrapper.get_instances_indexes() # Get indexes of i_indexes associated with this UCI whose state is 'None'
-            log.debug( "Starting instances with IDs: '%s' associated with UCI '%s' " % ( uci_wrapper.get_name(), i_indexes ) )
-            
-        if uci_wrapper.get_state() != uci_states.ERROR:
+             conn = self.get_connection( uci_wrapper )
+             self.check_key_pair( uci_wrapper, conn )
+             
+             i_indexes = uci_wrapper.get_instances_indexes( state=None ) # Get indexes of i_indexes associated with this UCI whose state is 'None'
+             log.debug( "Starting instances with IDs: '%s' associated with UCI '%s' " % ( uci_wrapper.get_name(), i_indexes ) )
              for i_index in i_indexes:
                 mi_id = self.get_mi_id( uci_wrapper.get_type( i_index ) )
                 uci_wrapper.set_mi( i_index, mi_id )
                 
                 # Check if galaxy security group exists (and create it if it does not)
-                security_group = 'galaxyWeb'
-                log.debug( "Setting up '%s' security group." % security_group )
-                sgs = conn.get_all_security_groups() # security groups
-                gsgt = False # galaxy security group test
-                for sg in sgs:
-                    if sg.name == security_group:
-                        gsgt = True
-                # If security group does not exist, create it 
-                if not gsgt:
-                    gSecurityGroup = conn.create_security_group(security_group, 'Security group for Galaxy.')
-                    gSecurityGroup.authorize( 'tcp', 80, 80, '0.0.0.0/0' ) # Open HTTP port
-                    gSecurityGroup.authorize( 'tcp', 22, 22, '0.0.0.0/0' ) # Open SSH port
+                log.debug( "Setting up '%s' security group." % self.security_group )
+                try:
+                    conn.get_all_security_groups( [self.security_group] ) # security groups
+                except boto.exception.EC2ResponseError, e:
+                    if e.code == 'InvalidGroup.NotFound': 
+                        log.info( "No security group found, creating security group '%s'" % self.security_group )
+                        try:
+                            gSecurityGroup = conn.create_security_group(self.security_group, 'Security group for Galaxy.')
+                            gSecurityGroup.authorize( 'tcp', 80, 80, '0.0.0.0/0' ) # Open HTTP port
+                            gSecurityGroup.authorize( 'tcp', 22, 22, '0.0.0.0/0' ) # Open SSH port
+                        except boto.exception.EC2ResponseError, ex:
+                            log.error( "EC2 response error while creating security group: '%s'" % e )
+                            uci_wrapper.set_error( "EC2 response error while creating security group: " + str( e ), True )
+                    else:
+                        log.error( "EC2 response error while retrieving security group: '%s'" % e )
+                        uci_wrapper.set_error( "EC2 response error while retrieving security group: " + str( e ), True )
+            
                 
                 if uci_wrapper.get_state() != uci_states.ERROR:
                     # Start an instance            
@@ -281,34 +298,40 @@ class EC2CloudProvider( object ):
                     #TODO: Once multiple volumes can be attached to a single instance, update 'userdata' composition            
                     userdata = uci_wrapper.get_store_volume_id()+"|"+uci_wrapper.get_access_key()+"|"+uci_wrapper.get_secret_key() 
                     log.debug( 'Using following command: conn.run_instances( image_id=%s, key_name=%s, security_groups=[%s], user_data=[OMITTED], instance_type=%s, placement=%s )' 
-                               % ( mi_id, uci_wrapper.get_key_pair_name( i_index ), [security_group], uci_wrapper.get_type( i_index ), uci_wrapper.get_uci_availability_zone() ) )
+                               % ( mi_id, uci_wrapper.get_key_pair_name( i_index ), self.security_group, uci_wrapper.get_type( i_index ), uci_wrapper.get_uci_availability_zone() ) )
+                    reservation = None
                     try:
                         reservation = conn.run_instances( image_id=mi_id, 
-                                                      key_name=uci_wrapper.get_key_pair_name( i_index ), 
-                                                      security_groups=[security_group], 
-                                                      user_data=userdata,
-                                                      instance_type=uci_wrapper.get_type( i_index ),  
-                                                      placement=uci_wrapper.get_uci_availability_zone() )
+                                                          key_name=uci_wrapper.get_key_pair_name( i_index ), 
+                                                          security_groups=[self.security_group], 
+                                                          user_data=userdata,
+                                                          instance_type=uci_wrapper.get_type( i_index ),  
+                                                          placement=uci_wrapper.get_uci_availability_zone() )
                     except boto.exception.EC2ResponseError, e:
                         log.error( "EC2 response error when starting UCI '%s': '%s'" % ( uci_wrapper.get_name(), str(e) ) )
                         uci_wrapper.set_error( "EC2 response error when starting: " + str(e), True )
+                    except Exception, ex:
+                        log.error( "Error when starting UCI '%s': '%s'" % ( uci_wrapper.get_name(), str( ex ) ) )
+                        uci_wrapper.set_error( "Cloud provider error when starting: " + str( ex ), True )
                     # Record newly available instance data into local Galaxy database
-                    l_time = datetime.utcnow()
+#                    l_time = datetime.utcnow()
 #                    uci_wrapper.set_launch_time( l_time, i_index=i_index ) # format_time( reservation.i_indexes[0].launch_time ) )
-                    uci_wrapper.set_launch_time( self.format_time( reservation.instances[0].launch_time ), i_index=i_index )
-                    if not uci_wrapper.uci_launch_time_set():
-                        uci_wrapper.set_uci_launch_time( l_time )
-                    try:
-                        uci_wrapper.set_reservation_id( i_index, str( reservation ).split(":")[1] )
-                        # TODO: if more than a single instance will be started through single reservation, change this reference to element [0]
-                        i_id = str( reservation.instances[0]).split(":")[1] 
-                        uci_wrapper.set_instance_id( i_index, i_id )
-                        s = reservation.instances[0].state 
-                        uci_wrapper.change_state( s, i_id, s )
-                        log.debug( "Instance of UCI '%s' started, current state: '%s'" % ( uci_wrapper.get_name(), uci_wrapper.get_state() ) )
-                    except boto.exception.EC2ResponseError, e:
-                        log.error( "EC2 response error when retrieving instance information for UCI '%s': '%s'" % ( uci_wrapper.get_name(), str(e) ) )
-                        uci_wrapper.set_error( "EC2 response error when retrieving instance information: " + str(e), True )
+                    if reservation:
+                        uci_wrapper.set_launch_time( self.format_time( reservation.instances[0].launch_time ), i_index=i_index )
+                        if not uci_wrapper.uci_launch_time_set():
+                            uci_wrapper.set_uci_launch_time( self.format_time( reservation.instances[0].launch_time ) )
+                        try:
+                            uci_wrapper.set_reservation_id( i_index, str( reservation ).split(":")[1] )
+                            # TODO: if more than a single instance will be started through single reservation, change this reference to element [0]
+                            i_id = str( reservation.instances[0]).split(":")[1] 
+                            uci_wrapper.set_instance_id( i_index, i_id )
+                            s = reservation.instances[0].state 
+                            uci_wrapper.change_state( s, i_id, s )
+                            uci_wrapper.set_security_group_name( self.security_group, i_id=i_id )
+                            log.debug( "Instance of UCI '%s' started, current state: '%s'" % ( uci_wrapper.get_name(), uci_wrapper.get_state() ) )
+                        except boto.exception.EC2ResponseError, e:
+                            log.error( "EC2 response error when retrieving instance information for UCI '%s': '%s'" % ( uci_wrapper.get_name(), str(e) ) )
+                            uci_wrapper.set_error( "EC2 response error when retrieving instance information: " + str(e), True )
                     
     def stopUCI( self, uci_wrapper):
         """ 
@@ -544,11 +567,11 @@ class EC2CloudProvider( object ):
         """
         # Check if any instance-specific information was written to local DB; if 'yes', set instance and UCI's error message 
         # suggesting manual check.
-        if inst.launch_time != None or inst.reservation_id != None or inst.instance_id != None or inst.keypair_name != None:
+        if inst.launch_time != None or inst.reservation_id != None or inst.instance_id != None:
             # Try to recover state - this is best-case effort, so if something does not work immediately, not
             # recovery steps are attempted. Recovery is based on hope that instance_id is available in local DB; if not,
             # report as error.
-            # Fields attempting to be recovered are: reservation_id, keypair_name, instance status, and launch_time 
+            # Fields attempting to be recovered are: reservation_id, instance status, and launch_time 
             if inst.instance_id != None:
                 conn = self.get_connection_from_uci( inst.uci )
                 rl = conn.get_all_instances( [inst.instance_id] ) # reservation list
@@ -559,11 +582,6 @@ class EC2CloudProvider( object ):
                     except: # something failed, so skip
                         pass
                 
-                if inst.keypair_name == None:
-                    try:
-                        inst.keypair_name = rl[0].instances[0].key_name
-                    except: # something failed, so skip
-                        pass
                 try:
                     state = rl[0].instances[0].update()
                     inst.state = state

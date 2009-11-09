@@ -48,11 +48,11 @@
 	   </tr>
 	   <tr>
 	   		<td> Cloud provider type: </td>
-			<td> ${str(credDetails.provider.type)[:16]}</td>
+			<td> ${str(credDetails.provider.type)}</td>
 	   </tr>
 	   <tr>
 	   		<td> Cloud provider name: </td>
-			<td> ${str(credDetails.provider.name)[:16]}</td>
+			<td> ${str(credDetails.provider.name)}</td>
 	   </tr>
 	   <tr>
 	   		<td> Access key: </td>
@@ -76,7 +76,7 @@
                     href="javascript:void(0)">
                     - Hide
                     </a><br />
-					<nobr><b>${credDetails.secret_key}</b></nobr><br/>         
+					<nobr>${credDetails.secret_key}</nobr><br/>         
                </div>
 			</td>
 	   </tr>

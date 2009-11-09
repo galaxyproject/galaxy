@@ -94,19 +94,25 @@
 			<td> ${liveInstance.private_dns}</td>
 	   </tr>
 	   %endif
+	   %if liveInstance.security_group != None:
+	   <tr>
+	   		<td> Security group zone:</td>
+			<td> ${liveInstance.security_group} </td>
+	   </tr>
+	   %endif
 	   %if liveInstance.availability_zone != None:
 	   <tr>
 	   		<td> Availabilty zone:</td>
 			<td> ${liveInstance.availability_zone} </td>
 	   </tr>
 	   %endif
-	   %if liveInstance.keypair_name != None:
+	   %if liveInstance.uci.key_pair_name != None:
 	   <tr>
 	   		<td> Keypair file name:</td>
-			<td> ${liveInstance.keypair_name} </td>
+			<td> ${liveInstance.uci.key_pair_name} </td>
 	   </tr>
 	   %endif
-	   %if liveInstance.keypair_material != None:
+	   %if liveInstance.uci.key_pair_material != None:
 	   <tr>
 	   		<td> Keypair material:</td>
 			<div id="shortComment2">
@@ -117,7 +123,7 @@
                </a>                    
             </div>
             <div id="fullComment2" style="DISPLAY: none">
-	      		<nobr><b>${liveInstance.keypair_material}</b></nobr><br/>
+	      		<nobr><b>${liveInstance.uci.key_pair_material}</b></nobr><br/>
                 <a onclick="document.getElementById('shortComment2').style.display = 'block'; 
                 document.getElementById('fullComment2').style.display = 'none'; return 0;" 
                 href="javascript:void(0)">

@@ -42,8 +42,11 @@ ${h.js( "jquery" )}
 				else if ( ( old_state=='running' && new_state=='error' ) || ( old_state=='pending' && new_state=='error' ) || \
 					( old_state=='submitted' && new_state=='error' ) || ( old_state=='submittedUCI' && new_state=='error' ) || \
 					( old_state=='shutting-down' && new_state=='error' ) || ( prev_old_state.match('newUCI') && new_state=='error' ) || \
-					( prev_old_state.match('new') && new_state=='error' ) || ( prev_old_state.match('available') && new_state=='error' ) || \
+					( prev_old_state.match('new') && new_state=='error' ) || \
 					( prev_old_state.match('deleting') && new_state=='error' ) || ( prev_old_state.match('deletingUCI') && new_state=='error' ) ) {
+					// TODO: Following clause causes constant page refresh for an exception thrown as a result of instance not starting correctly - need alternative method!
+					//( prev_old_state.match('available') && new_state=='error' ) || \
+					
 					var url = "${h.url_for( controller='cloud', action='list')}";
 					location.replace( url );
 				} 

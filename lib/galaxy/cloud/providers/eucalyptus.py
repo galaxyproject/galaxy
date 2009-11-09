@@ -63,7 +63,7 @@ class EucalyptusCloudProvider( object ):
         
         self.threads = []
         nworkers = 5
-        log.info( "Starting eucalyptus cloud controller workers" )
+        log.info( "Starting eucalyptus cloud controller workers..." )
         for i in range( nworkers  ):
             worker = threading.Thread( target=self.run_next )
             worker.start()
@@ -74,7 +74,6 @@ class EucalyptusCloudProvider( object ):
         """Run the next job, waiting until one is available if necessary"""
         cnt = 0
         while 1:
-            #log.debug( '[%d] run_next->queue.qsize(): %s' % ( cnt, self.queue.qsize() ) )
             uci_wrapper = self.queue.get()
             uci_state = uci_wrapper.get_state()
             if uci_state is self.STOP_SIGNAL:
@@ -90,7 +89,7 @@ class EucalyptusCloudProvider( object ):
                 elif uci_state==uci_states.SHUTTING_DOWN:
                     self.stopUCI( uci_wrapper )
             except:
-                log.exception( "Uncaught exception executing request." )
+                log.exception( "Uncaught exception executing cloud request." )
             cnt += 1
             
     def get_connection( self, uci_wrapper ):
@@ -120,28 +119,43 @@ class EucalyptusCloudProvider( object ):
         
         return conn
         
-    def set_keypair( self, uci_wrapper, conn ):
+    def check_key_pair( self, uci_wrapper, conn ):
         """
-        Generate keypair using user's default credentials
+        Generate key pair using user's credentials
         """
-        log.debug( "Getting user's keypair: '%s'" % self.key_pair )
-        instances = uci_wrapper.get_instances_indexes()
+        log.debug( "Getting user's key pair: '%s'" % self.key_pair )
         try:
             kp = conn.get_key_pair( self.key_pair )
-            for inst in instances:
-                uci_wrapper.set_key_pair( inst, kp.name )
-            return kp.name
+            uci_kp = uci_wrapper.get_key_pair_name()
+            uci_material = uci_wrapper.get_key_pair_material()
+            if kp.name != uci_kp or uci_material == None:
+                try: # key pair exists on the cloud but not in local database, so re-generate it (i.e., delete and then create)
+                    conn.delete_key_pair( self.key_pair )
+                except boto.exception.EC2ResponseError:
+                    pass
+                kp = self.create_key_pair( conn )
+                uci_wrapper.set_key_pair( kp.name, kp.material )
+            else:
+                return kp.name
         except boto.exception.EC2ResponseError, e: # No keypair under this name exists so create it
             if e.code == 'InvalidKeyPair.NotFound': 
                 log.info( "No keypair found, creating keypair '%s'" % self.key_pair )
-                kp = conn.create_key_pair( self.key_pair )
-                for inst in instances:
-                    uci_wrapper.set_key_pair( inst, kp.name, kp.material )
+                kp = self.create_key_pair( conn )
+                uci_wrapper.set_key_pair( kp.name, kp.material )
             else:
                 log.error( "EC2 response error: '%s'" % e )
-                uci_wrapper.set_error( "EC2 response error while creating key pair: " + str(e), True )
+                uci_wrapper.set_error( "Cloud provider response error while creating key pair: " + str( e ), True )
                         
-        return kp.name
+        if kp != None:
+            return kp.name
+        else:
+            return None
+    
+    def create_key_pair( self, conn ):
+        try:
+            return conn.create_key_pair( self.key_pair )
+        except boto.exception.EC2ResponseError, e: 
+            return None
     
     def get_mi_id( self, type ):
         """
@@ -203,7 +217,7 @@ class EucalyptusCloudProvider( object ):
             log.debug( "Deleting volume with id='%s'" % v.volume_id )
             if conn.delete_volume( v.volume_id ):
                 deletedList.append( v.volume_id )
-                v.delete()
+                v.deleted = True
                 v.flush()
                 count += 1
             else:
@@ -236,46 +250,50 @@ class EucalyptusCloudProvider( object ):
         """
         Starts instance(s) of given UCI on the cloud.  
         """ 
-        conn = self.get_connection( uci_wrapper )
-#        
         if uci_wrapper.get_state() != uci_states.ERROR:
-            self.set_keypair( uci_wrapper, conn )
-        
-        i_indexes = uci_wrapper.get_instances_indexes() # Get indexes of i_indexes associated with this UCI
-        
-        if uci_wrapper.get_state() != uci_states.ERROR:
+            conn = self.get_connection( uci_wrapper )
+            self.check_key_pair( uci_wrapper, conn )
+            
+            i_indexes = uci_wrapper.get_instances_indexes( state=None ) # Get indexes of i_indexes associated with this UCI
             for i_index in i_indexes:
                 mi_id = self.get_mi_id( uci_wrapper.get_type( i_index ) )
-                log.debug( "mi_id: %s, uci_wrapper.get_key_pair_name( i_index ): %s" % ( mi_id, uci_wrapper.get_key_pair_name( i_index ) ) )
+                log.debug( "mi_id: %s, uci_wrapper.get_key_pair_name(): %s" % ( mi_id, uci_wrapper.get_key_pair_name() ) )
                 uci_wrapper.set_mi( i_index, mi_id )
                            
-                if uci_wrapper.get_state() != uci_states.ERROR:
+                if uci_wrapper.get_state() != uci_states.ERROR and uci_wrapper.get_key_pair_name() != None:
                     log.debug( "Starting UCI instance '%s'" % uci_wrapper.get_name() )
-                    log.debug( 'Using following command: conn.run_instances( image_id=%s, key_name=%s )' % ( mi_id, uci_wrapper.get_key_pair_name( i_index ) ) )
+                    log.debug( 'Using following command: conn.run_instances( image_id=%s, key_name=%s )' % ( mi_id, uci_wrapper.get_key_pair_name() ) )
+                    reservation = None
                     try:
-                        reservation = conn.run_instances( image_id=mi_id, key_name=uci_wrapper.get_key_pair_name( i_index ) )
+                        reservation = conn.run_instances( image_id=mi_id, key_name=uci_wrapper.get_key_pair_name() )
                         #reservation = conn.run_instances( image_id=instance.image, key_name=instance.keypair_name, security_groups=['galaxy'], instance_type=instance.type,  placement=instance.availability_zone )
                     except boto.exception.EC2ResponseError, e:
-                        log.error( "EC2 response error when starting UCI '%s': '%s'" % ( uci_wrapper.get_name(), str(e) ) )
-                        uci_wrapper.set_error( "EC2 response error when starting: " + str(e), True )
-                        
-                    l_time = datetime.utcnow()
+                        log.error( "EC2 response error when starting UCI '%s': '%s'" % ( uci_wrapper.get_name(), str( e ) ) )
+                        uci_wrapper.set_error( "Cloud provider response error when starting: " + str( e ), True )
+                    except Exception, ex:
+                        log.error( "Error when starting UCI '%s': '%s'" % ( uci_wrapper.get_name(), str( ex ) ) )
+                        uci_wrapper.set_error( "Cloud provider error when starting: " + str( ex ), True )
+#                    l_time = datetime.utcnow()
 #                    uci_wrapper.set_launch_time( l_time, i_index=i_index )
-                    uci_wrapper.set_launch_time( self.format_time( reservation.instances[0].launch_time ), i_index=i_index )
-                    if not uci_wrapper.uci_launch_time_set():
-                        uci_wrapper.set_uci_launch_time( l_time )
-                    try:
-                        uci_wrapper.set_reservation_id( i_index, str( reservation ).split(":")[1] )
-                        # TODO: if more than a single instance will be started through single reservation, change this reference from element [0]
-                        i_id = str( reservation.instances[0]).split(":")[1]
-                        uci_wrapper.set_instance_id( i_index, i_id )
-                        s = reservation.instances[0].state
-                        uci_wrapper.change_state( s, i_id, s )
-                        log.debug( "Instance of UCI '%s' started, current state: '%s'" % ( uci_wrapper.get_name(), uci_wrapper.get_state() ) )
-                    except boto.exception.EC2ResponseError, e:
-                        log.error( "EC2 response error when retrieving instance information for UCI '%s': '%s'" % ( uci_wrapper.get_name(), str(e) ) )
-                        uci_wrapper.set_error( "EC2 response error when retrieving instance information: " + str(e), True )
-                    
+                    if reservation:
+                        uci_wrapper.set_launch_time( self.format_time( reservation.instances[0].launch_time ), i_index=i_index )
+                        if not uci_wrapper.uci_launch_time_set():
+                            uci_wrapper.set_uci_launch_time( self.format_time( reservation.instances[0].launch_time ) )
+                        try:
+                            uci_wrapper.set_reservation_id( i_index, str( reservation ).split(":")[1] )
+                            # TODO: if more than a single instance will be started through single reservation, change this reference from element [0]
+                            i_id = str( reservation.instances[0]).split(":")[1]
+                            uci_wrapper.set_instance_id( i_index, i_id )
+                            s = reservation.instances[0].state
+                            uci_wrapper.change_state( s, i_id, s )
+                            log.debug( "Instance of UCI '%s' started, current state: '%s'" % ( uci_wrapper.get_name(), uci_wrapper.get_state() ) )
+                        except boto.exception.EC2ResponseError, e:
+                            log.error( "EC2 response error when retrieving instance information for UCI '%s': '%s'" % ( uci_wrapper.get_name(), str(e) ) )
+                            uci_wrapper.set_error( "Cloud provider response error when retrieving instance information: " + str(e), True )
+                
+                if uci_wrapper.get_key_pair_name() == None:
+                    log.debug( "Key pair for UCI '%s' is NULL." % uci_wrapper.get_name() )
+                    uci_wrapper.set_error( "Key pair not found. Try resetting the state and starting the instance again.", True )
         
     def stopUCI( self, uci_wrapper):
         """ 
@@ -294,7 +312,7 @@ class EucalyptusCloudProvider( object ):
         notStopped = []
         for r in rl:
             for inst in r.instances:
-                log.debug( "Sending stop signal to instance '%s' associated with reservation '%s'." % ( inst, r ) )
+                log.debug( "Sending stop signal to instance '%s' associated with reservation '%s' (UCI: %s)." % ( inst, r, uci_wrapper.get_name() ) )
                 inst.stop()
                 uci_wrapper.set_stop_time( datetime.utcnow(), i_id=inst.id )
                 uci_wrapper.change_state( instance_id=inst.id, i_state=inst.update() )
@@ -385,16 +403,17 @@ class EucalyptusCloudProvider( object ):
         # Attempt at updating any zombie UCIs (i.e., instances that have been in SUBMITTED state for longer than expected - see below for exact time)
         zombies = model.UCI.filter_by( state=uci_states.SUBMITTED ).all()
         for zombie in zombies:
-            z_instances = model.CloudInstance.filter_by( uci_id=zombie.id) \
-                .filter( or_( model.CloudInstance.c.state != instance_states.TERMINATED,
-                              model.CloudInstance.c.state == None ) ) \
+            log.debug( "zombie UCI: %s" % zombie.name )
+            z_instances = model.CloudInstance \
+                .filter_by( uci_id=zombie.id, state=None ) \
                 .all()
             for z_inst in z_instances:
                 if self.type == z_inst.uci.credentials.provider.type:
 #                    log.debug( "z_inst.id: '%s', state: '%s'" % ( z_inst.id, z_inst.state ) )
                     td = datetime.utcnow() - z_inst.update_time
+                    log.debug( "z_inst.id: %s, time delta is %s sec" % ( z_inst.id, td.seconds ) )
                     if td.seconds > 180: # if instance has been in SUBMITTED state for more than 3 minutes
-                        log.debug( "[%s] Running zombie repair update on instance with DB id '%s'" % ( z_inst.uci.credentials.provider.type, z_inst.id ) )
+                        log.debug( "[%s](td=%s) Running zombie repair update on instance with DB id '%s'" % ( z_inst.uci.credentials.provider.type, td.seconds, z_inst.id ) )
                         self.processZombie( z_inst )
                 
     def updateInstance( self, inst ):
@@ -509,11 +528,11 @@ class EucalyptusCloudProvider( object ):
         """
         # Check if any instance-specific information was written to local DB; if 'yes', set instance and UCI's error message 
         # suggesting manual check.
-        if inst.launch_time != None or inst.reservation_id != None or inst.instance_id != None or inst.keypair_name != None:
+        if inst.launch_time != None or inst.reservation_id != None or inst.instance_id != None:
             # Try to recover state - this is best-case effort, so if something does not work immediately, not
             # recovery steps are attempted. Recovery is based on hope that instance_id is available in local DB; if not,
             # report as error.
-            # Fields attempting to be recovered are: reservation_id, keypair_name, instance status, and launch_time 
+            # Fields attempting to be recovered are: reservation_id, instance status, and launch_time 
             if inst.instance_id != None:
                 conn = self.get_connection_from_uci( inst.uci )
                 rl = conn.get_all_instances( [inst.instance_id] ) # reservation list
@@ -524,11 +543,6 @@ class EucalyptusCloudProvider( object ):
                     except: # something failed, so skip
                         pass
                 
-                if inst.keypair_name == None:
-                    try:
-                        inst.keypair_name = rl[0].instances[0].key_name
-                    except: # something failed, so skip
-                        pass
                 try:
                     state = rl[0].instances[0].update()
                     inst.state = state

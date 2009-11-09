@@ -21,8 +21,22 @@ $(function(){
     <div class="form-title">Edit image</div>
     <div class="form-body">
 	<form name="edit_image" action="${h.url_for( action='editImage', id=trans.security.encode_id(image.id), edited="true" )}" method="post" >
-	
-           <%
+			<%
+            cls = "form-row"
+            if error.has_key('provider_error'):
+                cls += " form-row-error"
+            %>
+	            <div class="${cls}">
+	            <label>Provider type:</label>
+	              <div class="form-row-input">
+	              	${image.provider_type}
+	              </div>
+				  %if error.has_key('provider_error'):
+	              	<div class="form-row-error-message">${error['provider_error']}</div>
+	              %endif
+	              <div style="clear: both"></div>
+                </div>
+           	<%
             cls = "form-row"
             if error.has_key('id_error'):
                 cls += " form-row-error"
@@ -52,7 +66,21 @@ $(function(){
 	              %endif
 	              <div style="clear: both"></div>
 	            </div>
-			
+			<%
+            cls = "form-row"
+            if error.has_key('arch_error'):
+                cls += " form-row-error"
+            %>
+	            <div class="${cls}">
+	            <label>Architecture:</label>
+	              <div class="form-row-input">
+	              	<input type="text" name="architecture" value="${image.architecture}" size="40">
+	              </div>
+				  %if error.has_key('arch_error'):
+	              	<div class="form-row-error-message">${error['arch_error']}</div>
+	              %endif
+	              <div style="clear: both"></div>
+	            </div>
 			
             <div class="form-row"><input type="submit" value="Save"></div>
         </form>

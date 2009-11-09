@@ -390,9 +390,12 @@ CloudImage.table = Table( "cloud_image", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "provider_type", TEXT ),
     Column( "image_id", TEXT, nullable=False ),
     Column( "manifest", TEXT ),
-    Column( "state", TEXT ) )
+    Column( "state", TEXT ),
+    Column( "architecture", TEXT ),
+    Column( "deleted", Boolean, default=False ) )
 
 """ UserConfiguredInstance (UCI) table """
 UCI.table = Table( "cloud_uci", metadata, 
@@ -401,11 +404,14 @@ UCI.table = Table( "cloud_uci", metadata,
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True, nullable=False ),
     Column( "credentials_id", Integer, ForeignKey( "cloud_user_credentials.id" ), index=True ),
+    Column( "key_pair_name", TEXT ),
+    Column( "key_pair_material", TEXT ),
     Column( "name", TEXT ),
     Column( "state", TEXT ),
     Column( "error", TEXT ),
     Column( "total_size", Integer ),
-    Column( "launch_time", DateTime ) )
+    Column( "launch_time", DateTime ),
+    Column( "deleted", Boolean, default=False ) )
 
 CloudInstance.table = Table( "cloud_instance", metadata, 
     Column( "id", Integer, primary_key=True ),
@@ -418,13 +424,12 @@ CloudInstance.table = Table( "cloud_instance", metadata,
     Column( "type", TEXT ),
     Column( "reservation_id", TEXT ),
     Column( "instance_id", TEXT ),
-    Column( "mi_id", TEXT, ForeignKey( "cloud_image.image_id" ), index=True, nullable=False ),
+    Column( "mi_id", TEXT, ForeignKey( "cloud_image.image_id" ), index=True ),
     Column( "state", TEXT ),
     Column( "error", TEXT ),
     Column( "public_dns", TEXT ),
     Column( "private_dns", TEXT ),
-    Column( "keypair_name", TEXT ),
-    Column( "keypair_material", TEXT ),
+    Column( "security_group", TEXT ),
     Column( "availability_zone", TEXT ) )
 
 CloudStore.table = Table( "cloud_store", metadata, 
@@ -437,10 +442,22 @@ CloudStore.table = Table( "cloud_store", metadata,
     Column( "volume_id", TEXT ),
     Column( "size", Integer, nullable=False ),
     Column( "availability_zone", TEXT ),
-    Column( "i_id", TEXT, ForeignKey( "cloud_instance.instance_id" ), index=True ),
+    Column( "i_id", TEXT, ForeignKey( "cloud_instance.instance_id" ) ),
     Column( "status", TEXT ),
     Column( "device", TEXT ),
-    Column( "space_consumed", Integer ) )
+    Column( "space_consumed", Integer ),
+    Column( "deleted", Boolean, default=False ) )
+
+CloudUserCredentials.table = Table( "cloud_user_credentials", metadata, 
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True, nullable=False ),
+    Column( "provider_id", Integer, ForeignKey( "cloud_provider.id" ), index=True, nullable=False ),
+    Column( "name", TEXT ),
+    Column( "access_key", TEXT ),
+    Column( "secret_key", TEXT ),
+    Column( "deleted", Boolean, default=False ) )
 
 CloudProvider.table = Table( "cloud_provider", metadata, 
     Column( "id", Integer, primary_key=True ),
@@ -461,19 +478,8 @@ CloudProvider.table = Table( "cloud_provider", metadata,
     Column( "proxy_pass", TEXT ),
     Column( "debug", Integer ),
     Column( "https_connection_factory", TEXT ),
-    Column( "path", TEXT ) )
-
-CloudUserCredentials.table = Table( "cloud_user_credentials", metadata, 
-    Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True, nullable=False ),
-    Column( "name", TEXT ),
-    Column( "access_key", TEXT ),
-    Column( "secret_key", TEXT ),
-    Column( "defaultCred", Boolean, default=False ),
-    Column( "provider_id", Integer, ForeignKey( "cloud_provider.id" ), index=True, nullable=False ) )
-
+    Column( "path", TEXT ),
+    Column( "deleted", Boolean, default=False ) )
 # ***************************************************************************
 
 StoredWorkflow.table = Table( "stored_workflow", metadata,

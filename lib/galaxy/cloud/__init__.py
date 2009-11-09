@@ -23,6 +23,7 @@ uci_states = Bunch(
     NEW = "new",
     DELETING_UCI = "deletingUCI",
     DELETING = "deleting",
+    DELETED = "deleted",
     SUBMITTED_UCI = "submittedUCI",
     SUBMITTED = "submitted",
     SHUTTING_DOWN_UCI = "shutting-downUCI",
@@ -139,16 +140,15 @@ class CloudMonitor( object ):
 
         for uci_wrapper in new_requests:
             session.clear()
-            self.provider.put( uci_wrapper )
+            self.put( uci_wrapper )
         
         # Done with the session
         mapping.Session.remove()
                  
-    def put( self, job_id, tool ):
-        """Add a job to the queue (by job identifier)"""
-        if not self.track_jobs_in_database:
-            self.queue.put( ( job_id, tool.id ) )
-            self.sleeper.wake()
+    def put( self, uci_wrapper ):
+        """Add a request to the queue."""
+        self.provider.put( uci_wrapper )
+        self.sleeper.wake()
     
     def shutdown( self ):
         """Attempts to gracefully shut down the worker thread"""
@@ -156,7 +156,7 @@ class CloudMonitor( object ):
             # We're not the real queue, do nothing
             return
         else:
-            log.info( "sending stop signal to worker thread" )
+            log.info( "Sending stop signal to worker thread" )
             self.running = False
             self.sleeper.wake()
             log.info( "cloud manager stopped" )
@@ -175,7 +175,7 @@ class UCIwrapper( object ):
         """
         Sets state for UCI and/or UCI's instance with instance_id as provided by cloud provider and stored in local
         Galaxy database. 
-        Need to provide either state for the UCI or instance_id and it's state or all arguments.
+        Need to provide either: (1) state for the UCI, or (2) instance_id and it's state, or (3) all arguments.
         """
 #        log.debug( "Changing state - new uci_state: %s, instance_id: %s, i_state: %s" % ( uci_state, instance_id, i_state ) )
         if uci_state is not None:
@@ -198,22 +198,22 @@ class UCIwrapper( object ):
         instance.image = mi
         instance.flush()
         
-    def set_key_pair( self, i_index, key_name, key_material=None ):
+    def set_key_pair( self, key_name, key_material=None ):
         """
-        Single UCI may instantiate many instances, i_index refers to the numeric index
-        of instance controlled by this UCI as it is stored in local DB (see get_instances_ids()).
+        Sets key pair value for current UCI.
         """
-        instance = model.CloudInstance.get( i_index )
-        instance.keypair_name = key_name
+        uci = model.UCI.get( self.uci_id )
+        uci.refresh()
+        uci.key_pair_name = key_name
         if key_material is not None:
-            instance.keypair_material = key_material
-        instance.flush()
+            uci.key_pair_material = key_material
+        uci.flush()
     
     def set_launch_time( self, launch_time, i_index=None, i_id=None ):
         """
-        Stores launch time in local database for instance with specified index (as it is stored in local
-        Galaxy database) or with specified instance ID (as obtained from the cloud provider AND stored
-        in local Galaxy Database). Only one of i_index or i_id needs to be provided.
+        Stores launch time in local database for instance with specified index - i_index (as it is stored in local
+        Galaxy database) or with specified instance ID - i_id (as obtained from the cloud provider AND stored
+        in local Galaxy Database). Either 'i_index' or 'i_id' needs to be provided.
         """
         if i_index != None:
             instance = model.CloudInstance.get( i_index )
@@ -231,6 +231,11 @@ class UCIwrapper( object ):
         uci.flush()
     
     def set_stop_time( self, stop_time, i_index=None, i_id=None ):
+        """
+        Stores stop time in local database for instance with specified index - i_index (as it is stored in local
+        Galaxy database) or with specified instance ID - i_id (as obtained from the cloud provider AND stored
+        in local Galaxy Database). Either 'i_index' or 'i_id' needs to be provided.
+        """
         if i_index != None:
             instance = model.CloudInstance.get( i_index )
             instance.stop_time = stop_time
@@ -245,6 +250,21 @@ class UCIwrapper( object ):
         uci.refresh()
         uci.launch_time = None
         uci.flush()
+        
+    def set_security_group_name( self, security_group_name, i_index=None, i_id=None ):
+        """
+        Stores security group name in local database for instance with specified index - i_index (as it is stored in local
+        Galaxy database) or with specified instance ID - i_id (as obtained from the cloud provider AND stored
+        in local Galaxy Database). Either 'i_index' or 'i_id' needs to be provided.
+        """
+        if i_index != None:
+            instance = model.CloudInstance.get( i_index )
+            instance.security_group = security_group_name
+            instance.flush()
+        elif i_id != None:
+            instance = model.CloudInstance.filter_by( uci_id=self.uci_id, instance_id=i_id).first()
+            instance.security_group = security_group_name
+            instance.flush()
     
     def set_reservation_id( self, i_index, reservation_id ):
         instance = model.CloudInstance.get( i_index )
@@ -382,19 +402,35 @@ class UCIwrapper( object ):
         uci.refresh()
         return uci.name
     
-    def get_key_pair_name( self, i_index=None, i_id=None ):
+    def get_key_pair_name( self ):
+        """
+        Returns keypair name associated with given UCI.
+        """
+        uci = model.UCI.get( self.uci_id )
+        uci.refresh()
+        return uci.key_pair_name
+    
+    def get_key_pair_material( self ):
+        """
+        Returns keypair material (i.e., private key) associated with given UCI.
+        """
+        uci = model.UCI.get( self.uci_id )
+        uci.refresh()
+        return uci.key_pair_material
+        
+    def get_security_group_name( self, i_index=None, i_id=None ):
         """
         Given EITHER instance index as it is stored in local Galaxy database OR instance ID as it is 
-        obtained from cloud provider and stored in local Galaxy database, return keypair name assocaited
+        obtained from cloud provider and stored in local Galaxy database, return security group name associated
         with given instance.
         """
         if i_index != None:
             instance = model.CloudInstance.get( i_index )
-            return instance.keypair_name
+            return instance.security_group
         elif i_id != None:
             instance = model.CloudInstance.filter_by( uci_id=self.uci_id, instance_id=i_id).first()
-            return instance.keypair_name
-        
+            return instance.security_group
+    
     def get_access_key( self ):
         uci = model.UCI.get( self.uci_id )
         uci.refresh()
@@ -469,8 +505,8 @@ class UCIwrapper( object ):
     def delete( self ):
         uci = model.UCI.get( self.uci_id )
         uci.refresh()
-#        uci.delete()
-        uci.state = 'deleted' # for bookkeeping reasons, mark as deleted but don't actually delete.
+        uci.state = uci_states.DELETED # for bookkeeping reasons, mark as deleted but don't actually delete.
+        uci.deleted = True
         uci.flush()
     
 class CloudProvider( object ):
