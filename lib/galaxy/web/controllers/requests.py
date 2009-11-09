@@ -838,45 +838,6 @@ class Requests( BaseController ):
                                                           **kwd) )
     @web.expose
     @web.require_login( "create/submit sequencing requests" )
-    def submit_request(self, trans, **kwd):
-        params = util.Params( kwd )
-        try:
-            id = int(params.get('id', False))
-            request = trans.sa_session.query( trans.app.model.Request ).get( id )
-        except:
-            msg = "Invalid request ID"
-            log.warn( msg )
-            return trans.response.send_redirect( web.url_for( controller='requests',
-                                                              action='list',
-                                                              status='error',
-                                                              message=msg,
-                                                              **kwd) )
-        msg = self.__validate(trans, request)
-        if msg:
-            return trans.response.send_redirect( web.url_for( controller='requests',
-                                                              action='edit',
-                                                              messagetype = 'error',
-                                                              msg=msg,
-                                                              request_id=request.id,
-                                                              show='True') )
-        # get the new state
-        new_state = request.type.states[0]
-        for s in request.samples:
-            event = trans.app.model.SampleEvent(s, new_state, 'Samples submitted to the system')
-            event.flush()
-        # change request's submitted field
-        request.state = request.states.SUBMITTED
-        request.flush()
-        kwd['id'] = trans.security.encode_id(request.id)
-        kwd['status'] = 'done'
-        kwd['message'] = 'The request <b>%s</b> has been submitted.' % request.name
-        return trans.response.send_redirect( web.url_for( controller='requests',
-                                                          action='list',
-                                                          show_filter=trans.app.model.Request.states.SUBMITTED,
-                                                          **kwd) )
-
-    @web.expose
-    @web.require_login( "create/submit sequencing requests" )
     def show_events(self, trans, **kwd):
         params = util.Params( kwd )
         try:
