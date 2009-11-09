@@ -106,7 +106,7 @@ class HistoryListGrid( grids.Grid ):
         grids.MulticolFilterColumn(  
         "Search", 
         cols_to_filter=[ columns[0], columns[2] ], 
-        key="free-text-search", visible=False, filterable="default" )
+        key="free-text-search", visible=False, filterable="standard" )
                 )
                 
     operations = [
@@ -807,13 +807,13 @@ class HistoryController( BaseController ):
             history = get_history( trans, history_id )
             if history and history.user_id == user.id:
                 histories.append( history )
-                cur_names.append( history.name )
+                cur_names.append( history.get_display_name() )
         if not name or len( histories ) != len( name ):
             return trans.fill_template( "/history/rename.mako", histories=histories )
         change_msg = ""
         for i in range(len(histories)):
             if histories[i].user_id == user.id:
-                if name[i] == histories[i].name:
+                if name[i] == histories[i].get_display_name():
                     change_msg = change_msg + "<p>History: "+cur_names[i]+" is already named: "+name[i]+"</p>"
                 elif name[i] not in [None,'',' ']:
                     name[i] = escape(name[i])
