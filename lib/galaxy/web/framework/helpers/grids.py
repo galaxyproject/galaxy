@@ -21,7 +21,7 @@ class Grid( object ):
     columns = []
     operations = []
     standard_filters = []
-    default_filter = None
+    default_filter = {}
     default_sort_key = None
     preserve_state = False
     
