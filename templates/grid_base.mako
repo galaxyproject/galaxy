@@ -296,6 +296,14 @@ ${self.grid_table()}
             </tbody>
             <tfoot>
             ## Row for navigating among pages.
+            <%
+                # Mapping between item class and plural term for item.
+                items_plural = "items"
+                if grid.model_class == History:
+                    items_plural = "histories"
+                elif grid.model_class == HistoryDatasetAssociation:
+                     items_plural = "datasets"
+            %>
             %if num_pages > 1:
                 <tr>
                     <td></td>
@@ -328,7 +336,7 @@ ${self.grid_table()}
                         </select>
                         ## Show all link.
                         <% args = { "page" : "all" } %>
-                        <span>| <a href="${url( args )}">Show all histories on one page</a></span>
+                        <span>| <a href="${url( args )}">Show all ${items_plural} on one page</a></span>
                     </td>
                 </tr>    
             %endif
@@ -336,15 +344,7 @@ ${self.grid_table()}
                     ## Grid operations.
                     <td></td>
                     <td colspan="100">
-                        <%
-                            # Mapping between item class and plural term for item.
-                            plural = "items"
-                            if grid.model_class == History:
-                                plural = "histories"
-                            elif grid.model_class == HistoryDatasetAssociation:
-                                 plural = "datasets"
-                        %>
-                        For <span class="grid-selected-count"></span> selected ${plural}:
+                        For <span class="grid-selected-count"></span> selected ${items_plural}:
                         %for operation in grid.operations:
                             %if operation.allow_multiple:
                                 <input type="submit" name="operation" value="${operation.label}" class="action-button">
