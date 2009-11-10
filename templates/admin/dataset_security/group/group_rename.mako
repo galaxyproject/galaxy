@@ -24,7 +24,7 @@
             </div>
             <div class="form-row">
                 <div style="float: left; width: 250px; margin-right: 10px;">
-                    <input type="hidden" name="group_id" value="${group.id}"/>
+                    <input type="hidden" name="id" value="${ trans.security.encode_id( group.id )}"/>
                 </div>
                 <div style="clear: both"></div>
             </div>

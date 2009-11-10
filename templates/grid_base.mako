@@ -1,5 +1,6 @@
 <%!
-    from galaxy.model import History, HistoryDatasetAssociation
+    from galaxy.model import History, HistoryDatasetAssociation, User, Role, Group
+    import galaxy.util
     def inherit(context):
         if context.get('use_panels'):
             return '/base_panels.mako'
@@ -11,7 +12,7 @@
 ## Render the grid's basic elements. Each of these elements can be subclassed.
 %if message:
     <p>
-        <div class="${message_type}message transient-message">${message}</div>
+        <div class="${message_type}message transient-message">${util.restore_text( message )}</div>
         <div style="clear: both"></div>
     </p>
 %endif
@@ -303,6 +304,12 @@ ${self.grid_table()}
                     items_plural = "histories"
                 elif grid.model_class == HistoryDatasetAssociation:
                      items_plural = "datasets"
+                elif grid.model_class == User:
+                    items_plural = "users"
+                elif grid.model_class == Role:
+                    items_plural = "roles"
+                elif grid.model_class == Group:
+                    items_plural = "groups"
             %>
             %if num_pages > 1:
                 <tr>

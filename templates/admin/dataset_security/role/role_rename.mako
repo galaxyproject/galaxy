@@ -31,7 +31,7 @@
             </div>
             <div class="form-row">
                 <div style="float: left; width: 250px; margin-right: 10px;">
-                    <input type="hidden" name="role_id" value="${role.id}"/>
+                    <input type="hidden" name="id" value="${trans.security.encode_id( role.id )}"/>
                 </div>
                 <div style="clear: both"></div>
             </div>

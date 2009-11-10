@@ -780,8 +780,8 @@ class TestHistory( TwillTestCase ):
         self.delete_history( id=self.security.encode_id( history4.id ) )
         self.delete_history( id=self.security.encode_id( history5.id ) )
         # Eliminate Sharing role for: test@bx.psu.edu, test2@bx.psu.edu
-        self.mark_role_deleted( str( sharing_role.id ), sharing_role.name )
-        self.purge_role( str( sharing_role.id ), sharing_role.name )
+        self.mark_role_deleted( self.security.encode_id( sharing_role.id ), sharing_role.name )
+        self.purge_role( self.security.encode_id( sharing_role.id ), sharing_role.name )
         # Manually delete the sharing role from the database
         sa_session.refresh( sharing_role )
         sa_session.delete( sharing_role )

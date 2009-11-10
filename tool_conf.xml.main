@@ -8,6 +8,7 @@
     <tool file="data_source/biomart.xml" />
     <tool file="data_source/gramene_mart.xml" />
     <tool file="data_source/flymine.xml" />
+    <tool file="data_source/eupathdb.xml" />
     <tool file="data_source/encode_db.xml" />
     <tool file="data_source/epigraph_import.xml" />
   </section>
@@ -27,6 +28,7 @@
     <tool file="filters/catWrapper.xml" />
     <tool file="filters/condense_characters.xml" />
     <tool file="filters/convert_characters.xml" />
+    <tool file="filters/mergeCols.xml" />
     <tool file="filters/CreateInterval.xml" />
     <tool file="filters/cutWrapper.xml" />
     <tool file="filters/changeCase.xml" />
@@ -34,15 +36,17 @@
     <tool file="filters/remove_beginning.xml" />
     <tool file="filters/headWrapper.xml" />
     <tool file="filters/tailWrapper.xml" />
+     <tool file="filters/trimmer.xml" />
   </section>
   <section name="Convert Formats" id="convert">
     <tool file="filters/bed2gff.xml" />
     <tool file="fasta_tools/fasta_to_tabular.xml" />
     <tool file="filters/gff2bed.xml" />
     <tool file="maf/maf_to_bed.xml" />
-    <tool file="maf/maf_to_interval.xml" />
+    <tool file="maf/maf_to_interval.xml" /> 
     <tool file="maf/maf_to_fasta.xml" />
     <tool file="fasta_tools/tabular_to_fasta.xml" />
+    <tool file="fastx_toolkit/fastq_to_fasta.xml" />
   </section>
   <section name="FASTA manipulation" id="fasta_manipulation">
     <tool file="fasta_tools/fasta_compute_length.xml" />
@@ -50,6 +54,9 @@
     <tool file="fasta_tools/fasta_concatenate_by_species.xml" />
     <tool file="fasta_tools/fasta_to_tabular.xml" />
     <tool file="fasta_tools/tabular_to_fasta.xml" />
+    <tool file="fastx_toolkit/fasta_formatter.xml" />
+    <tool file="fastx_toolkit/fasta_nucleotide_changer.xml" />
+    <tool file="fastx_toolkit/fastx_collapser.xml" />
   </section>
   <section name="Filter and Sort" id="filter">
     <tool file="stats/filtering.xml" />
@@ -80,9 +87,7 @@
     <tool file="maf/maf_limit_size.xml"/>
     <tool file="maf/maf_by_block_number.xml"/>
     <tool file="maf/maf_filter.xml"/>
-    <!--    
     <tool file="maf/maf_reverse_complement.xml"/>
-    -->
   </section>
   <section name="Get Genomic Scores" id="scores">
     <tool file="stats/wiggle_to_simple.xml" />
@@ -90,7 +95,7 @@
     <tool file="extract/phastOdds/phastOdds_tool.xml" />
   </section>
   <section name="Operate on Genomic Intervals" id="bxops">
-  	<tool file="new_operations/intersect.xml" />  
+    <tool file="new_operations/intersect.xml" />  
     <tool file="new_operations/subtract.xml" />
     <tool file="new_operations/merge.xml" />
     <tool file="new_operations/concat.xml" />
@@ -146,12 +151,6 @@
     <tool file="taxonomy/find_diag_hits.xml" />
     <tool file="taxonomy/lca.xml" />
     <tool file="taxonomy/poisson2test.xml" />
-  </section>
-  <section name="Short Read Analysis" id="short_read_analysis">
-    <tool file="metag_tools/short_reads_figure_score.xml" />
-    <tool file="metag_tools/short_reads_trim_seq.xml" />
-    <tool file="metag_tools/megablast_wrapper.xml" />
-    <tool file="metag_tools/megablast_xml_parser.xml" /> 
   </section>
   <section name="EMBOSS" id="EMBOSSLite">
     <tool file="emboss_5/emboss_antigenic.xml" />
@@ -261,5 +260,38 @@
     <tool file="emboss_5/emboss_wobble.xml" />
     <tool file="emboss_5/emboss_wordcount.xml" />
     <tool file="emboss_5/emboss_wordmatch.xml" /> 
+  </section>
+  <label text="NGS Toolbox Beta" id="ngs" />
+  <section name="NGS: QC and manipulation" id="cshl_library_information">
+    <label text="Generic FASTQ data" id="fastq" />
+        <tool file="next_gen_conversion/fastq_gen_conv.xml" />
+        <tool file="fastx_toolkit/fastq_quality_converter.xml" />
+        <tool file="fastx_toolkit/fastx_quality_statistics.xml" />
+        <tool file="fastx_toolkit/fastq_quality_boxplot.xml" />
+        <tool file="fastx_toolkit/fastx_nucleotides_distribution.xml" />
+        <tool file="metag_tools/split_paired_reads.xml" />
+    <label text="Roche-454 data" id="454" />
+        <tool file="metag_tools/short_reads_figure_score.xml" />
+        <tool file="metag_tools/short_reads_trim_seq.xml" />
+    <label text="AB-SOLiD data" id="solid" />
+        <tool file="next_gen_conversion/solid_to_fastq.xml" />
+        <tool file="solid_tools/solid_qual_stats.xml" />
+        <tool file="solid_tools/solid_qual_boxplot.xml" />
+  </section>
+  <section name="NGS: Mapping" id="solexa_tools">
+   <tool file="sr_mapping/bowtie_wrapper.xml" />
+   <tool file="sr_mapping/bwa_wrapper.xml" />
+  <!-- <tool file="sr_mapping/lastz_wrapper.xml" /> -->
+   <tool file="metag_tools/megablast_wrapper.xml" />
+   <tool file="metag_tools/megablast_xml_parser.xml" />
+  </section>
+  <section name="NGS: SAM Tools" id="samtools">
+   <tool file="samtools/sam_bitwise_flag_filter.xml" />
+   <tool file="samtools/sam2interval.xml" />
+   <tool file="samtools/sam_to_bam.xml" />
+   <tool file="samtools/sam_merge.xml" />
+   <tool file="samtools/sam_pileup.xml" />
+   <tool file="samtools/pileup_parser.xml" />
+   <tool file="samtools/pileup_interval.xml" />
   </section>
 </toolbox>

@@ -2,20 +2,31 @@ import string, sys
 from datetime import datetime, timedelta
 from galaxy import util, datatypes
 from galaxy.web.base.controller import *
+from galaxy.util.odict import odict
 from galaxy.model.orm import *
 from galaxy.web.framework.helpers import time_ago, iff, grids
 import logging
 log = logging.getLogger( __name__ )
 
+# States for passing messages
+SUCCESS, INFO, WARNING, ERROR = "done", "info", "warning", "error"
+
 class UserListGrid( grids.Grid ):
-    class EmailColumn( grids.GridColumn ):
+    class EmailColumn( grids.TextColumn ):
         def get_value( self, trans, grid, user ):
             return user.email
-    class UserNameColumn( grids.GridColumn ):
+    class UserNameColumn( grids.TextColumn ):
         def get_value( self, trans, grid, user ):
             if user.username:
                 return user.username
             return 'not set'
+    class StatusColumn( grids.GridColumn ):
+        def get_value( self, trans, grid, user ):
+            if user.purged:
+                return "purged"
+            elif user.deleted:
+                return "deleted"
+            return ""
     class GroupsColumn( grids.GridColumn ):
         def get_value( self, trans, grid, user ):
             if user.groups:
@@ -36,56 +47,242 @@ class UserListGrid( grids.Grid ):
             if user.galaxy_sessions:
                 return self.format( user.galaxy_sessions[ 0 ].update_time )
             return 'never'
+    class DeletedColumn( grids.GridColumn ):
+       def get_accepted_filters( self ):
+           """ Returns a list of accepted filters for this column. """
+           accepted_filter_labels_and_vals = { "active" : "False", "deleted" : "True", "all": "All" }
+           accepted_filters = []
+           for label, val in accepted_filter_labels_and_vals.items():
+               args = { self.key: val }
+               accepted_filters.append( grids.GridColumnFilter( label, args) )
+           return accepted_filters
+
     # Grid definition
     title = "Users"
     model_class = model.User
     template='/admin/user/grid.mako'
+    default_sort_key = "email"
     columns = [
-        EmailColumn( "Email", link=( lambda item: dict( operation="information", id=item.id ) ), attach_popup=True ),
-        UserNameColumn( "User Name", attach_popup=False ),
+        EmailColumn( "Email",
+                     key="email",
+                     model_class=model.User,
+                     link=( lambda item: dict( operation="information", id=item.id ) ),
+                     attach_popup=True,
+                     filterable="advanced" ),
+        UserNameColumn( "User Name",
+                        key="username",
+                        model_class=model.User,
+                        attach_popup=False,
+                        filterable="advanced" ),
         GroupsColumn( "Groups", attach_popup=False ),
         RolesColumn( "Roles", attach_popup=False ),
         ExternalColumn( "External", attach_popup=False ),
         LastLoginColumn( "Last Login", format=time_ago ),
-        # Valid for filtering but invisible
-        grids.GridColumn( "Deleted", key="deleted", visible=False )
+        StatusColumn( "Status", attach_popup=False ),
+        # Columns that are valid for filtering but are not visible.
+        DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" )
+    ]
+    columns.append( grids.MulticolFilterColumn( "Search", 
+                                                cols_to_filter=[ columns[0], columns[1] ], 
+                                                key="free-text-search",
+                                                visible=False,
+                                                filterable="standard" ) )
+    global_actions = [
+        grids.GridAction( "Create new user", dict( controller='admin', action='users', operation='create' ) )
     ]
     operations = [
         grids.GridOperation( "Manage Roles & Groups", condition=( lambda item: not item.deleted ), allow_multiple=False )
-        
     ]
     #TODO: enhance to account for trans.app.config.allow_user_deletion here so that we can eliminate these operations if 
     # the setting is False
     operations.append( grids.GridOperation( "Reset Password", condition=( lambda item: not item.deleted ), allow_multiple=True, allow_popup=False ) )
     operations.append( grids.GridOperation( "Delete", condition=( lambda item: not item.deleted ), allow_multiple=True ) )
-    operations.append( grids.GridOperation( "Undelete", condition=( lambda item: item.deleted ), allow_multiple=True ) )
-    operations.append( grids.GridOperation( "Purge", condition=( lambda item: item.deleted ), allow_multiple=True ) )
+    operations.append( grids.GridOperation( "Undelete", condition=( lambda item: item.deleted and not item.purged ), allow_multiple=True ) )
+    operations.append( grids.GridOperation( "Purge", condition=( lambda item: item.deleted and not item.purged ), allow_multiple=True ) )
+    standard_filters = [
+        grids.GridColumnFilter( "Active", args=dict( deleted=False ) ),
+        grids.GridColumnFilter( "Deleted", args=dict( deleted=True, purged=False ) ),
+        grids.GridColumnFilter( "Purged", args=dict( purged=True ) ),
+        grids.GridColumnFilter( "All", args=dict( deleted='All' ) )
+    ]
+    default_filter = dict( email="All", username="All", deleted="False", purged="False" )
+    num_rows_per_page = 50
+    preserve_state = False
+    use_paging = True
+    def get_current_item( self, trans ):
+        return trans.user
+    def build_initial_query( self, session ):
+        return session.query( self.model_class )
+
+class RoleListGrid( grids.Grid ):
+    class NameColumn( grids.TextColumn ):
+        def get_value( self, trans, grid, role ):
+            return role.name
+    class DescriptionColumn( grids.TextColumn ):
+        def get_value( self, trans, grid, role ):
+            if role.description:
+                return role.description
+            return ''
+    class TypeColumn( grids.TextColumn ):
+        def get_value( self, trans, grid, role ):
+            return role.type
+    class StatusColumn( grids.GridColumn ):
+        def get_value( self, trans, grid, role ):
+            if role.deleted:
+                return "deleted"
+            return ""
+    class DeletedColumn( grids.GridColumn ):
+       def get_accepted_filters( self ):
+           """ Returns a list of accepted filters for this column. """
+           accepted_filter_labels_and_vals = { "active" : "False", "deleted" : "True", "all": "All" }
+           accepted_filters = []
+           for label, val in accepted_filter_labels_and_vals.items():
+               args = { self.key: val }
+               accepted_filters.append( grids.GridColumnFilter( label, args) )
+           return accepted_filters
+    class GroupsColumn( grids.GridColumn ):
+        def get_value( self, trans, grid, role ):
+            if role.groups:
+                return len( role.groups )
+            return 0
+    class UsersColumn( grids.GridColumn ):
+        def get_value( self, trans, grid, role ):
+            if role.users:
+                return len( role.users )
+            return 0
+
+    # Grid definition
+    title = "Roles"
+    model_class = model.Role
+    template='/admin/dataset_security/role/grid.mako'
+    default_sort_key = "name"
+    columns = [
+        NameColumn( "Name",
+                    key="name",
+                    link=( lambda item: dict( controller="admin", action="role", id=item.id ) ),
+                    model_class=model.Role,
+                    attach_popup=True,
+                    filterable="advanced" ),
+        DescriptionColumn( "Description",
+                           key='description',
+                           model_class=model.Role,
+                           attach_popup=False,
+                           filterable="advanced" ),
+        TypeColumn( "Type",
+                    key='type',
+                    model_class=model.Role,
+                    attach_popup=False,
+                    filterable="advanced" ),
+        GroupsColumn( "Groups", attach_popup=False ),
+        UsersColumn( "Users", attach_popup=False ),
+        StatusColumn( "Status", attach_popup=False ),
+        # Columns that are valid for filtering but are not visible.
+        DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" )
+    ]
+    columns.append( grids.MulticolFilterColumn( "Search", 
+                                                cols_to_filter=[ columns[0], columns[1], columns[2] ], 
+                                                key="free-text-search",
+                                                visible=False,
+                                                filterable="standard" ) )
+    global_actions = [
+        grids.GridAction( "Add new role", dict( controller='admin', action='roles', operation='create' ) )
+    ]
+    operations = [ grids.GridOperation( "Delete", condition=( lambda item: not item.deleted ), allow_multiple=True ),
+                   grids.GridOperation( "Undelete", condition=( lambda item: item.deleted ), allow_multiple=True ),
+                   grids.GridOperation( "Purge", condition=( lambda item: item.deleted ), allow_multiple=True ) ]
     standard_filters = [
         grids.GridColumnFilter( "Active", args=dict( deleted=False ) ),
         grids.GridColumnFilter( "Deleted", args=dict( deleted=True ) ),
         grids.GridColumnFilter( "All", args=dict( deleted='All' ) )
     ]
-    default_filter = dict( deleted=False )
+    default_filter = dict( name="All", deleted="False", description="All", type="All" )
+    num_rows_per_page = 50
+    preserve_state = False
+    use_paging = True
     def get_current_item( self, trans ):
-        return trans.user
+        return None
     def build_initial_query( self, session ):
         return session.query( self.model_class )
     def apply_default_filter( self, trans, query, **kwargs ):
-        email_filter = kwargs.get( "email_filter", None )
-        if email_filter:
-            if email_filter == 'all':
-                return query
-            else:
-                return query.filter( or_( trans.app.model.User.table.c.email.like( '%s' % email_filter.lower() + '%' ),
-                                          trans.app.model.User.table.c.email.like( '%s' % email_filter.upper() + '%' ) ) )
-        elif query.count() > 200:
-            return query.filter( or_( trans.app.model.User.table.c.email.like( 'A%' ),
-                                      trans.app.model.User.table.c.email.like( 'a%' ) ) )
-        return query
+        return query.filter( model.Role.type != model.Role.types.PRIVATE )
+
+class GroupListGrid( grids.Grid ):
+    class NameColumn( grids.TextColumn ):
+        def get_value( self, trans, grid, group ):
+            return group.name
+    class StatusColumn( grids.GridColumn ):
+        def get_value( self, trans, grid, group ):
+            if group.deleted:
+                return "deleted"
+            return ""
+    class DeletedColumn( grids.GridColumn ):
+       def get_accepted_filters( self ):
+           """ Returns a list of accepted filters for this column. """
+           accepted_filter_labels_and_vals = { "active" : "False", "deleted" : "True", "all": "All" }
+           accepted_filters = []
+           for label, val in accepted_filter_labels_and_vals.items():
+               args = { self.key: val }
+               accepted_filters.append( grids.GridColumnFilter( label, args) )
+           return accepted_filters
+    class RolesColumn( grids.GridColumn ):
+        def get_value( self, trans, grid, group ):
+            if group.roles:
+                return len( group.roles )
+            return 0
+    class UsersColumn( grids.GridColumn ):
+        def get_value( self, trans, grid, group ):
+            if group.members:
+                return len( group.members )
+            return 0
+
+    # Grid definition
+    title = "Groups"
+    model_class = model.Group
+    template='/admin/dataset_security/group/grid.mako'
+    default_sort_key = "name"
+    columns = [
+        NameColumn( "Name",
+                    key="name",
+                    link=( lambda item: dict( controller="admin", action="group", id=item.id ) ),
+                    model_class=model.Group,
+                    attach_popup=True,
+                    filterable="advanced" ),
+        UsersColumn( "Users", attach_popup=False ),
+        RolesColumn( "Roles", attach_popup=False ),
+        StatusColumn( "Status", attach_popup=False ),
+        # Columns that are valid for filtering but are not visible.
+        DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" )
+    ]
+    columns.append( grids.MulticolFilterColumn( "Search", 
+                                                cols_to_filter=[ columns[0], columns[1], columns[2] ], 
+                                                key="free-text-search",
+                                                visible=False,
+                                                filterable="standard" ) )
+    global_actions = [
+        grids.GridAction( "Add new group", dict( controller='admin', action='groups', operation='create' ) )
+    ]
+    operations = [ grids.GridOperation( "Delete", condition=( lambda item: not item.deleted ), allow_multiple=True ),
+                   grids.GridOperation( "Undelete", condition=( lambda item: item.deleted ), allow_multiple=True ),
+                   grids.GridOperation( "Purge", condition=( lambda item: item.deleted ), allow_multiple=True ) ]
+    standard_filters = [
+        grids.GridColumnFilter( "Active", args=dict( deleted=False ) ),
+        grids.GridColumnFilter( "Deleted", args=dict( deleted=True ) ),
+        grids.GridColumnFilter( "All", args=dict( deleted='All' ) )
+    ]
+    default_filter = dict( name="All", deleted="False" )
+    num_rows_per_page = 50
+    preserve_state = False
+    use_paging = True
+    def get_current_item( self, trans ):
+        return None
+    def build_initial_query( self, session ):
+        return session.query( self.model_class )
 
 class Admin( BaseController ):
     
     user_list_grid = UserListGrid()
+    role_list_grid = RoleListGrid()
+    group_list_grid = GroupListGrid()
     
     @web.expose
     @web.require_admin
@@ -117,17 +314,23 @@ class Admin( BaseController ):
     # Galaxy Role Stuff
     @web.expose
     @web.require_admin
-    def roles( self, trans, **kwd ):
-        params = util.Params( kwd )
-        msg = util.restore_text( params.get( 'msg', ''  ) )
-        messagetype = params.get( 'messagetype', 'done' )
-        roles = trans.sa_session.query( trans.app.model.Role ).filter( and_( trans.app.model.Role.table.c.deleted==False,
-                                                                             trans.app.model.Role.table.c.type != trans.app.model.Role.types.PRIVATE ) ) \
-                                                              .order_by( trans.app.model.Role.table.c.name )
-        return trans.fill_template( '/admin/dataset_security/roles.mako',
-                                    roles=roles,
-                                    msg=msg,
-                                    messagetype=messagetype )
+    def roles( self, trans, **kwargs ):
+        if 'operation' in kwargs:
+            operation = kwargs['operation'].lower()
+            if operation == "roles":
+                return self.role( trans, **kwargs )
+            if operation == "create":
+                return self.create_role( trans, **kwargs )
+            if operation == "delete":
+                return self.mark_role_deleted( trans, **kwargs )
+            if operation == "undelete":
+                return self.undelete_role( trans, **kwargs )
+            if operation == "purge":
+                return self.purge_role( trans, **kwargs )
+            if operation == "manage users & groups":
+                return self.role( trans, **kwargs )
+        # Render the list view
+        return self.role_list_grid( trans, **kwargs )
     @web.expose
     @web.require_admin
     def create_role( self, trans, **kwd ):
@@ -164,7 +367,7 @@ class Admin( BaseController ):
                     ( group.name, role.name, len( in_users ), len( in_groups ) )
                 else:
                     msg = "Role '%s' has been created with %d associated users and %d associated groups" % ( role.name, len( in_users ), len( in_groups ) )
-                trans.response.send_redirect( web.url_for( controller='admin', action='roles', msg=util.sanitize_text( msg ), messagetype='done' ) )
+                trans.response.send_redirect( web.url_for( controller='admin', action='roles', message=util.sanitize_text( msg ), status='done' ) )
             trans.response.send_redirect( web.url_for( controller='admin', action='create_role', msg=util.sanitize_text( msg ), messagetype='error' ) )
         out_users = []
         for user in trans.sa_session.query( trans.app.model.User ) \
@@ -176,7 +379,7 @@ class Admin( BaseController ):
                                      .filter( trans.app.model.Group.table.c.deleted==False ) \
                                      .order_by( trans.app.model.Group.table.c.name ):
             out_groups.append( ( group.id, group.name ) )
-        return trans.fill_template( '/admin/dataset_security/role_create.mako',
+        return trans.fill_template( '/admin/dataset_security/role/role_create.mako',
                                     in_users=[],
                                     out_users=out_users,
                                     in_groups=[],
@@ -189,7 +392,7 @@ class Admin( BaseController ):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
-        role = trans.sa_session.query( trans.app.model.Role ).get( int( params.role_id ) )
+        role = get_role( trans, params.id )
         if params.get( 'role_members_edit_button', False ):
             in_users = [ trans.sa_session.query( trans.app.model.User ).get( x ) for x in util.listify( params.in_users ) ]
             for ura in role.users:
@@ -210,7 +413,7 @@ class Admin( BaseController ):
             trans.app.security_agent.set_entity_role_associations( roles=[ role ], users=in_users, groups=in_groups )
             trans.sa_session.refresh( role )
             msg = "Role '%s' has been updated with %d associated users and %d associated groups" % ( role.name, len( in_users ), len( in_groups ) )
-            trans.response.send_redirect( web.url_for( action='roles', msg=util.sanitize_text( msg ), messagetype=messagetype ) )
+            trans.response.send_redirect( web.url_for( action='roles', message=util.sanitize_text( msg ), status=messagetype ) )
         elif params.get( 'rename', False ):
             if params.rename == 'submitted':
                 old_name = role.name
@@ -218,17 +421,17 @@ class Admin( BaseController ):
                 new_description = util.restore_text( params.description )
                 if not new_name:
                     msg = 'Enter a valid name'
-                    return trans.fill_template( '/admin/dataset_security/role_rename.mako', role=role, msg=msg, messagetype='error' )
+                    return trans.fill_template( '/admin/dataset_security/role/role_rename.mako', role=role, msg=msg, messagetype='error' )
                 elif trans.sa_session.query( trans.app.model.Role ).filter( trans.app.model.Role.table.c.name==new_name ).first():
                     msg = 'A role with that name already exists'
-                    return trans.fill_template( '/admin/dataset_security/role_rename.mako', role=role, msg=msg, messagetype='error' )
+                    return trans.fill_template( '/admin/dataset_security/role/role_rename.mako', role=role, msg=msg, messagetype='error' )
                 else:
                     role.name = new_name
                     role.description = new_description
                     role.flush()
                     msg = "Role '%s' has been renamed to '%s'" % ( old_name, new_name )
-                    return trans.response.send_redirect( web.url_for( action='roles', msg=util.sanitize_text( msg ), messagetype='done' ) )
-            return trans.fill_template( '/admin/dataset_security/role_rename.mako', role=role, msg=msg, messagetype=messagetype )
+                    return trans.response.send_redirect( web.url_for( action='roles', message=util.sanitize_text( msg ), status='done' ) )
+            return trans.fill_template( '/admin/dataset_security/role/role_rename.mako', role=role, msg=msg, messagetype=messagetype )
         in_users = []
         out_users = []
         in_groups = []
@@ -273,7 +476,7 @@ class Admin( BaseController ):
                     library_dataset_actions[ library ][ folder_path ].append( dp.action )
                 except:
                     library_dataset_actions[ library ][ folder_path ] = [ dp.action ]
-        return trans.fill_template( '/admin/dataset_security/role.mako',
+        return trans.fill_template( '/admin/dataset_security/role/role.mako',
                                     role=role,
                                     in_users=in_users,
                                     out_users=out_users,
@@ -286,33 +489,20 @@ class Admin( BaseController ):
     @web.require_admin
     def mark_role_deleted( self, trans, **kwd ):
         params = util.Params( kwd )
-        role = trans.sa_session.query( trans.app.model.Role ).get( int( params.role_id ) )
+        role = get_role( trans, params.id )
         role.deleted = True
         role.flush()
-        msg = "Role '%s' has been marked as deleted." % role.name
-        trans.response.send_redirect( web.url_for( action='roles', msg=util.sanitize_text( msg ), messagetype='done' ) )
-    @web.expose
-    @web.require_admin
-    def deleted_roles( self, trans, **kwd ):
-        params = util.Params( kwd )
-        msg = util.restore_text( params.get( 'msg', ''  ) )
-        messagetype = params.get( 'messagetype', 'done' )
-        roles = trans.sa_session.query( trans.app.model.Role ) \
-                                .filter( trans.app.model.Role.table.c.deleted==True ) \
-                                .order_by( trans.app.model.Role.table.c.name )
-        return trans.fill_template( '/admin/dataset_security/deleted_roles.mako', 
-                                    roles=roles, 
-                                    msg=msg,
-                                    messagetype=messagetype )
+        message = "Role '%s' has been marked as deleted." % role.name
+        trans.response.send_redirect( web.url_for( action='roles', message=util.sanitize_text( message ), status='done' ) )
     @web.expose
     @web.require_admin
     def undelete_role( self, trans, **kwd ):
         params = util.Params( kwd )
-        role = trans.sa_session.query( trans.app.model.Role ).get( int( params.role_id ) )
+        role = get_role( trans, params.id )
         role.deleted = False
         role.flush()
-        msg = "Role '%s' has been marked as not deleted." % role.name
-        trans.response.send_redirect( web.url_for( action='roles', msg=util.sanitize_text( msg ), messagetype='done' ) )
+        message = "Role '%s' has been marked as not deleted." % role.name
+        trans.response.send_redirect( web.url_for( action='roles', message=util.sanitize_text( message ), status='done' ) )
     @web.expose
     @web.require_admin
     def purge_role( self, trans, **kwd ):
@@ -324,11 +514,10 @@ class Admin( BaseController ):
         # - GroupRoleAssociations where role_id == Role.id
         # - DatasetPermissionss where role_id == Role.id
         params = util.Params( kwd )
-        role = trans.sa_session.query( trans.app.model.Role ).get( int( params.role_id ) )
+        role = get_role( trans, params.id )
         if not role.deleted:
-            # We should never reach here, but just in case there is a bug somewhere...
-            msg = "Role '%s' has not been deleted, so it cannot be purged." % role.name
-            trans.response.send_redirect( web.url_for( action='roles', msg=util.sanitize_text( msg ), messagetype='error' ) )
+            message = "Role '%s' has not been deleted, so it cannot be purged." % role.name
+            trans.response.send_redirect( web.url_for( action='roles', message=util.sanitize_text( message ), status='error' ) )
         # Delete UserRoleAssociations
         for ura in role.users:
             user = trans.sa_session.query( trans.app.model.User ).get( ura.user_id )
@@ -353,54 +542,60 @@ class Admin( BaseController ):
         for dp in role.dataset_actions:
             trans.sa_session.delete( dp )
             dp.flush()
-        msg = "The following have been purged from the database for role '%s': " % role.name
-        msg += "DefaultUserPermissions, DefaultHistoryPermissions, UserRoleAssociations, GroupRoleAssociations, DatasetPermissionss."
-        trans.response.send_redirect( web.url_for( action='deleted_roles', msg=util.sanitize_text( msg ), messagetype='done' ) )
+        message = "The following have been purged from the database for role '%s': " % role.name
+        message += "DefaultUserPermissions, DefaultHistoryPermissions, UserRoleAssociations, GroupRoleAssociations, DatasetPermissionss."
+        trans.response.send_redirect( web.url_for( action='roles', message=util.sanitize_text( message ), status='done' ) )
 
     # Galaxy Group Stuff
     @web.expose
     @web.require_admin
-    def groups( self, trans, **kwd ):
-        params = util.Params( kwd )
-        msg = util.restore_text( params.get( 'msg', ''  ) )
-        messagetype = params.get( 'messagetype', 'done' )
-        groups = trans.sa_session.query( trans.app.model.Group ) \
-                                 .filter( trans.app.model.Group.table.c.deleted==False ) \
-                                 .order_by( trans.app.model.Group.table.c.name )
-        return trans.fill_template( '/admin/dataset_security/groups.mako', 
-                                    groups=groups, 
-                                    msg=msg,
-                                    messagetype=messagetype )
+    def groups( self, trans, **kwargs ):
+        if 'operation' in kwargs:
+            operation = kwargs['operation'].lower()
+            if operation == "groups":
+                return self.group( trans, **kwargs )
+            if operation == "create":
+                return self.create_group( trans, **kwargs )
+            if operation == "delete":
+                return self.mark_group_deleted( trans, **kwargs )
+            if operation == "undelete":
+                return self.undelete_group( trans, **kwargs )
+            if operation == "purge":
+                return self.purge_group( trans, **kwargs )
+            if operation == "manage users & roles":
+                return self.group( trans, **kwargs )
+        # Render the list view
+        return self.group_list_grid( trans, **kwargs )
     @web.expose
     @web.require_admin
     def group( self, trans, **kwd ):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
-        group = trans.sa_session.query( trans.app.model.Group ).get( int( params.group_id ) )
+        group = get_group( trans, params.id )
         if params.get( 'group_roles_users_edit_button', False ):
             in_roles = [ trans.sa_session.query( trans.app.model.Role ).get( x ) for x in util.listify( params.in_roles ) ]
             in_users = [ trans.sa_session.query( trans.app.model.User ).get( x ) for x in util.listify( params.in_users ) ]
             trans.app.security_agent.set_entity_group_associations( groups=[ group ], roles=in_roles, users=in_users )
             trans.sa_session.refresh( group )
             msg += "Group '%s' has been updated with %d associated roles and %d associated users" % ( group.name, len( in_roles ), len( in_users ) )
-            trans.response.send_redirect( web.url_for( action='groups', msg=util.sanitize_text( msg ), messagetype=messagetype ) )
+            trans.response.send_redirect( web.url_for( action='groups', message=util.sanitize_text( msg ), status=messagetype ) )
         if params.get( 'rename', False ):
             if params.rename == 'submitted':
                 old_name = group.name
                 new_name = util.restore_text( params.name )
                 if not new_name:
                     msg = 'Enter a valid name'
-                    return trans.fill_template( '/admin/dataset_security/group_rename.mako', group=group, msg=msg, messagetype='error' )
+                    return trans.fill_template( '/admin/dataset_security/group/group_rename.mako', group=group, msg=msg, messagetype='error' )
                 elif trans.sa_session.query( trans.app.model.Group ).filter( trans.app.model.Group.table.c.name==new_name ).first():
                     msg = 'A group with that name already exists'
-                    return trans.fill_template( '/admin/dataset_security/group_rename.mako', group=group, msg=msg, messagetype='error' )
+                    return trans.fill_template( '/admin/dataset_security/group/group_rename.mako', group=group, msg=msg, messagetype='error' )
                 else:
                     group.name = new_name
                     group.flush()
                     msg = "Group '%s' has been renamed to '%s'" % ( old_name, new_name )
                     return trans.response.send_redirect( web.url_for( action='groups', msg=util.sanitize_text( msg ), messagetype='done' ) )
-            return trans.fill_template( '/admin/dataset_security/group_rename.mako', group=group, msg=msg, messagetype=messagetype )
+            return trans.fill_template( '/admin/dataset_security/group/group_rename.mako', group=group, msg=msg, messagetype=messagetype )
         in_roles = []
         out_roles = []
         in_users = []
@@ -420,7 +615,7 @@ class Admin( BaseController ):
             else:
                 out_users.append( ( user.id, user.email ) )
         msg += 'Group %s is currently associated with %d roles and %d users' % ( group.name, len( in_roles ), len( in_users ) )
-        return trans.fill_template( '/admin/dataset_security/group.mako',
+        return trans.fill_template( '/admin/dataset_security/group/group.mako',
                                     group=group,
                                     in_roles=in_roles,
                                     out_roles=out_roles,
@@ -455,7 +650,7 @@ class Admin( BaseController ):
                     gra = trans.app.model.GroupRoleAssociation( group, role )
                     gra.flush()
                 msg = "Group '%s' has been created with %d associated users and %d associated roles" % ( name, len( in_users ), len( in_roles ) )
-                trans.response.send_redirect( web.url_for( controller='admin', action='groups', msg=util.sanitize_text( msg ), messagetype='done' ) )
+                trans.response.send_redirect( web.url_for( controller='admin', action='groups', message=util.sanitize_text( msg ), status='done' ) )
             trans.response.send_redirect( web.url_for( controller='admin', action='create_group', msg=util.sanitize_text( msg ), messagetype='error' ) )
         out_users = []
         for user in trans.sa_session.query( trans.app.model.User ) \
@@ -467,7 +662,7 @@ class Admin( BaseController ):
                                     .filter( trans.app.model.Role.table.c.deleted==False ) \
                                     .order_by( trans.app.model.Role.table.c.name ):
             out_roles.append( ( role.id, role.name ) )
-        return trans.fill_template( '/admin/dataset_security/group_create.mako',
+        return trans.fill_template( '/admin/dataset_security/group/group_create.mako',
                                     in_users=[],
                                     out_users=out_users,
                                     in_roles=[],
@@ -478,44 +673,31 @@ class Admin( BaseController ):
     @web.require_admin
     def mark_group_deleted( self, trans, **kwd ):
         params = util.Params( kwd )
-        group = trans.sa_session.query( trans.app.model.Group ).get( int( params.group_id ) )
+        group = get_group( trans, params.id )
         group.deleted = True
         group.flush()
         msg = "Group '%s' has been marked as deleted." % group.name
-        trans.response.send_redirect( web.url_for( action='groups', msg=util.sanitize_text( msg ), messagetype='done' ) )
-    @web.expose
-    @web.require_admin
-    def deleted_groups( self, trans, **kwd ):
-        params = util.Params( kwd )
-        msg = util.restore_text( params.get( 'msg', ''  ) )
-        messagetype = params.get( 'messagetype', 'done' )
-        groups = trans.sa_session.query( trans.app.model.Group ) \
-                                 .filter( trans.app.model.Group.table.c.deleted==True ) \
-                                 .order_by( trans.app.model.Group.table.c.name )
-        return trans.fill_template( '/admin/dataset_security/deleted_groups.mako', 
-                                    groups=groups, 
-                                    msg=msg,
-                                    messagetype=messagetype )
+        trans.response.send_redirect( web.url_for( action='groups', message=util.sanitize_text( msg ), status='done' ) )
     @web.expose
     @web.require_admin
     def undelete_group( self, trans, **kwd ):
         params = util.Params( kwd )
-        group = trans.sa_session.query( trans.app.model.Group ).get( int( params.group_id ) )
+        group = get_group( trans, params.id )
         group.deleted = False
         group.flush()
         msg = "Group '%s' has been marked as not deleted." % group.name
-        trans.response.send_redirect( web.url_for( action='groups', msg=util.sanitize_text( msg ), messagetype='done' ) )
+        trans.response.send_redirect( web.url_for( action='groups', message=util.sanitize_text( msg ), status='done' ) )
     @web.expose
     @web.require_admin
     def purge_group( self, trans, **kwd ):
         # This method should only be called for a Group that has previously been deleted.
         # Purging a deleted Group simply deletes all UserGroupAssociations and GroupRoleAssociations.
         params = util.Params( kwd )
-        group = trans.sa_session.query( trans.app.model.Group ).get( int( params.group_id ) )
+        group = get_group( trans, params.id )
         if not group.deleted:
             # We should never reach here, but just in case there is a bug somewhere...
             msg = "Group '%s' has not been deleted, so it cannot be purged." % group.name
-            trans.response.send_redirect( web.url_for( action='groups', msg=util.sanitize_text( msg ), messagetype='error' ) )
+            trans.response.send_redirect( web.url_for( action='groups', message=util.sanitize_text( msg ), status='error' ) )
         # Delete UserGroupAssociations
         for uga in group.users:
             trans.sa_session.delete( uga )
@@ -525,8 +707,8 @@ class Admin( BaseController ):
             trans.sa_session.delete( gra )
             gra.flush()
         # Delete the Group
-        msg = "The following have been purged from the database for group '%s': UserGroupAssociations, GroupRoleAssociations." % group.name
-        trans.response.send_redirect( web.url_for( action='deleted_groups', msg=util.sanitize_text( msg ), messagetype='done' ) )
+        message = "The following have been purged from the database for group '%s': UserGroupAssociations, GroupRoleAssociations." % group.name
+        trans.response.send_redirect( web.url_for( action='groups', message=util.sanitize_text( message ), status='done' ) )
 
     # Galaxy User Stuff
     @web.expose
@@ -645,11 +827,12 @@ class Admin( BaseController ):
             message = "No user ids received for deleting"
             trans.response.send_redirect( web.url_for( action='users', message=message, status='error' ) )
         ids = util.listify( id )
+        message = "Deleted %d users: " % len( ids )
         for user_id in ids:
             user = get_user( trans, user_id )
             user.deleted = True
             user.flush()
-        message = "Deleted %d users" % len( ids )
+            message += " %s " % user.email
         trans.response.send_redirect( web.url_for( action='users', message=util.sanitize_text( message ), status='done' ) )
     @web.expose
     @web.require_admin
@@ -660,13 +843,15 @@ class Admin( BaseController ):
             trans.response.send_redirect( web.url_for( action='users', message=message, status='error' ) )
         ids = util.listify( id )
         count = 0
+        undeleted_users = ""
         for user_id in ids:
             user = get_user( trans, user_id )
             if user.deleted:
                 user.deleted = False
                 user.flush()
                 count += 1
-        message = "Undeleted %d users" % count
+                undeleted_users += " %s" % user.email
+        message = "Undeleted %d users: %s" % ( count, undeleted_users )
         trans.response.send_redirect( web.url_for( action='users',
                                                    message=util.sanitize_text( message ),
                                                    status='done' ) )
@@ -691,6 +876,7 @@ class Admin( BaseController ):
                                                        message=util.sanitize_text( message ),
                                                        status='error' ) )
         ids = util.listify( id )
+        message = "Purged %d users: " % len( ids )
         for user_id in ids:
             user = get_user( trans, user_id )
             if not user.deleted:
@@ -726,7 +912,7 @@ class Admin( BaseController ):
             # Purge the user
             user.purged = True
             user.flush()
-        message = "Purged %d users" % len( ids )
+            message += "%s " % user.email
         trans.response.send_redirect( web.url_for( controller='admin',
                                                    action='users',
                                                    message=util.sanitize_text( message ),
@@ -750,6 +936,8 @@ class Admin( BaseController ):
                 return self.create_new_user( trans, **kwargs )
             if operation == "information":
                 return self.user_info( trans, **kwargs )
+            if operation == "manage roles & groups":
+                return self.user( trans, **kwargs )
         # Render the list view
         return self.user_list_grid( trans, **kwargs )
     @web.expose
@@ -772,6 +960,14 @@ class Admin( BaseController ):
                                                           action='show_info',
                                                           user_id=user.id,
                                                           admin_view=True, **kwd ) )
+    @web.expose
+    @web.require_admin
+    def name_autocomplete_data( self, trans, q=None, limit=None, timestamp=None ):
+        """Return autocomplete data for user emails"""
+        ac_data = ""
+        for user in trans.sa_session.query( User ).filter_by( deleted=False ).filter( func.lower( User.email ).like( q.lower() + "%" ) ):
+            ac_data = ac_data + user.email + "\n"
+        return ac_data
     @web.expose
     @web.require_admin
     def user( self, trans, **kwd ):
@@ -932,5 +1128,21 @@ def get_user( trans, id ):
     id = trans.security.decode_id( id )
     user = trans.sa_session.query( model.User ).get( id )
     if not user:
-        err+msg( "User not found" )
+        return trans.show_error_message( "User not found for id (%s)" % str( id ) )
     return user
+def get_role( trans, id ):
+    """Get a Role from the database by id."""
+    # Load user from database
+    id = trans.security.decode_id( id )
+    role = trans.sa_session.query( model.Role ).get( id )
+    if not role:
+        return trans.show_error_message( "Role not found for id (%s)" % str( id ) )
+    return role
+def get_group( trans, id ):
+    """Get a Group from the database by id."""
+    # Load user from database
+    id = trans.security.decode_id( id )
+    group = trans.sa_session.query( model.Group ).get( id )
+    if not group:
+        return trans.show_error_message( "Group not found for id (%s)" % str( id ) )
+    return group

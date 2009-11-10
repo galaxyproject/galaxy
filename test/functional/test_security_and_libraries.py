@@ -327,8 +327,12 @@ class TestSecurityAndLibraries( TwillTestCase ):
         name = 'Role One'
         description = "This is Role Ones description"
         user_ids=[ str( admin_user.id ), str( regular_user1.id ), str( regular_user3.id ) ]
-        self.create_role( name=name, description=description, in_user_ids=user_ids, in_group_ids=[],
-                          create_group_for_role='yes', private_role=admin_user.email )
+        self.create_role( name=name,
+                          description=description,
+                          in_user_ids=user_ids,
+                          in_group_ids=[],
+                          create_group_for_role='yes',
+                          private_role=admin_user.email )
         # Get the role object for later tests
         global role_one
         role_one = sa_session.query( galaxy.model.Role ).filter( galaxy.model.Role.table.c.name==name ).first()
@@ -352,13 +356,13 @@ class TestSecurityAndLibraries( TwillTestCase ):
         # Rename the role
         rename = "Role One's been Renamed"
         redescription="This is Role One's Re-described"
-        self.rename_role( str( role_one.id ), name=rename, description=redescription )
+        self.rename_role( self.security.encode_id( role_one.id ), name=rename, description=redescription )
         self.home()
         self.visit_page( 'admin/roles' )
         self.check_page_for_string( rename )
         self.check_page_for_string( redescription )
         # Reset the role back to the original name and description
-        self.rename_role( str( role_one.id ), name=name, description=description )
+        self.rename_role( self.security.encode_id( role_one.id ), name=name, description=description )
     def test_050_create_group( self ):
         """Testing creating new group with 3 members and 1 associated role, then renaming it"""
         name = "Group One's Name"
@@ -384,12 +388,12 @@ class TestSecurityAndLibraries( TwillTestCase ):
                                   % ( len( group_one.roles ), group_one.id, len( role_ids ) ) )
         # Rename the group
         rename = "Group One's been Renamed"
-        self.rename_group( str( group_one.id ), name=rename, )
+        self.rename_group( self.security.encode_id( group_one.id ), name=rename, )
         self.home()
         self.visit_page( 'admin/groups' )
         self.check_page_for_string( rename )
         # Reset the group back to the original name
-        self.rename_group( str( group_one.id ), name=name )
+        self.rename_group( self.security.encode_id( group_one.id ), name=name )
     def test_055_add_members_and_role_to_group( self ):
         """Testing editing user membership and role associations of an existing group"""
         name = 'Group Two'
@@ -405,10 +409,12 @@ class TestSecurityAndLibraries( TwillTestCase ):
         if group_two.roles:
             raise AssertionError( '%d GroupRoleAssociations were created for group id %d when it was created ( should have been 0 )' \
                               % ( len( group_two.roles ), group_two.id ) )
-        group_two_id = str( group_two.id )
         user_ids = [ str( regular_user1.id )  ]
         role_ids = [ str( role_one.id ) ]
-        self.associate_users_and_roles_with_group( group_two.id, group_two.name, user_ids=user_ids, role_ids=role_ids )
+        self.associate_users_and_roles_with_group( self.security.encode_id( group_two.id ),
+                                                   group_two.name,
+                                                   user_ids=user_ids,
+                                                   role_ids=role_ids )
     def test_060_create_role_with_user_and_group_associations( self ):
         """Testing creating a role with user and group associations"""
         # NOTE: To get this to work with twill, all select lists on the ~/admin/role page must contain at least
@@ -421,7 +427,11 @@ class TestSecurityAndLibraries( TwillTestCase ):
         group_ids=[ str( group_two.id ) ]
         private_role=admin_user.email
         # Create the role
-        self.create_role( name=name, description=description, in_user_ids=user_ids, in_group_ids=group_ids, private_role=private_role )
+        self.create_role( name=name,
+                          description=description,
+                          in_user_ids=user_ids,
+                          in_group_ids=group_ids,
+                          private_role=private_role )
         # Get the role object for later tests
         global role_two
         role_two = sa_session.query( galaxy.model.Role ).filter( galaxy.model.Role.table.c.name==name ).first()
@@ -451,7 +461,11 @@ class TestSecurityAndLibraries( TwillTestCase ):
         user_ids=[]
         group_ids=[]
         private_role=admin_user.email
-        self.create_role( name=name, description=description, in_user_ids=user_ids, in_group_ids=group_ids, private_role=private_role )
+        self.create_role( name=name,
+                          description=description,
+                          in_user_ids=user_ids,
+                          in_group_ids=group_ids,
+                          private_role=private_role )
         # Get the role object for later tests
         global role_three
         role_three = sa_session.query( galaxy.model.Role ).filter( galaxy.model.Role.table.c.name==name ).first()
@@ -466,8 +480,11 @@ class TestSecurityAndLibraries( TwillTestCase ):
         for uga in admin_user.groups:
             group_ids.append( str( uga.group_id ) )
         check_str = "User '%s' has been updated with %d associated roles and %d associated groups" % ( admin_user.email, len( role_ids ), len( group_ids ) )
-        self.associate_roles_and_groups_with_user( self.security.encode_id( admin_user.id ), str( admin_user.email ),
-                                                   in_role_ids=role_ids, in_group_ids=group_ids, check_str=check_str )
+        self.associate_roles_and_groups_with_user( self.security.encode_id( admin_user.id ),
+                                                   str( admin_user.email ),
+                                                   in_role_ids=role_ids,
+                                                   in_group_ids=group_ids,
+                                                   check_str=check_str )
         sa_session.refresh( admin_user )
         # admin_user should now be associated with 4 roles: private, role_one, role_two, role_three
         if len( admin_user.roles ) != 4:
@@ -1374,7 +1391,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.home()
         self.visit_url( '%s/admin/groups' % self.url )
         self.check_page_for_string( group_two.name )
-        self.mark_group_deleted( str( group_two.id ), group_two.name )
+        self.mark_group_deleted( self.security.encode_id( group_two.id ), group_two.name )
         sa_session.refresh( group_two )
         if not group_two.deleted:
             raise AssertionError( '%s was not correctly marked as deleted.' % group_two.name )
@@ -1386,7 +1403,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
     def test_175_undelete_group( self ):
         """Testing undeleting a deleted group"""
         # Logged in as admin_user
-        self.undelete_group( str( group_two.id ), group_two.name )
+        self.undelete_group( self.security.encode_id( group_two.id ), group_two.name )
         sa_session.refresh( group_two )
         if group_two.deleted:
             raise AssertionError( '%s was not correctly marked as not deleted.' % group_two.name )
@@ -1396,7 +1413,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.home()
         self.visit_url( '%s/admin/roles' % self.url )
         self.check_page_for_string( role_two.name )
-        self.mark_role_deleted( str( role_two.id ), role_two.name )
+        self.mark_role_deleted( self.security.encode_id( role_two.id ), role_two.name )
         sa_session.refresh( role_two )
         if not role_two.deleted:
             raise AssertionError( '%s was not correctly marked as deleted.' % role_two.name )
@@ -1408,7 +1425,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
     def test_185_undelete_role( self ):
         """Testing undeleting a deleted role"""
         # Logged in as admin_user
-        self.undelete_role( str( role_two.id ), role_two.name )
+        self.undelete_role( self.security.encode_id( role_two.id ), role_two.name )
     def test_190_mark_dataset_deleted( self ):
         """Testing marking a library dataset as deleted"""
         # Logged in as admin_user
@@ -1541,59 +1558,57 @@ class TestSecurityAndLibraries( TwillTestCase ):
     def test_235_purge_group( self ):
         """Testing purging a group"""
         # Logged in as admin_user
-        group_id = str( group_two.id )
-        self.mark_group_deleted( group_id, group_two.name )
-        self.purge_group( group_id, group_two.name )
+        self.mark_group_deleted( self.security.encode_id( group_two.id ), group_two.name )
+        self.purge_group( self.security.encode_id( group_two.id ), group_two.name )
         # Make sure there are no UserGroupAssociations
         uga = sa_session.query( galaxy.model.UserGroupAssociation ) \
-                        .filter( galaxy.model.UserGroupAssociation.table.c.group_id == group_id ) \
+                        .filter( galaxy.model.UserGroupAssociation.table.c.group_id == group_two.id ) \
                         .first()
         if uga:
-            raise AssertionError( "Purging the group did not delete the UserGroupAssociations for group_id '%s'" % group_id )
+            raise AssertionError( "Purging the group did not delete the UserGroupAssociations for group_id '%s'" % group_two.id )
         # Make sure there are no GroupRoleAssociations
         gra = sa_session.query( galaxy.model.GroupRoleAssociation ) \
-                        .filter( galaxy.model.GroupRoleAssociation.table.c.group_id == group_id ) \
+                        .filter( galaxy.model.GroupRoleAssociation.table.c.group_id == group_two.id ) \
                         .first()
         if gra:
-            raise AssertionError( "Purging the group did not delete the GroupRoleAssociations for group_id '%s'" % group_id )
+            raise AssertionError( "Purging the group did not delete the GroupRoleAssociations for group_id '%s'" % group_two.id )
         # Undelete the group for later test runs
-        self.undelete_group( group_id, group_two.name )
+        self.undelete_group( self.security.encode_id( group_two.id ), group_two.name )
     def test_240_purge_role( self ):
         """Testing purging a role"""
         # Logged in as admin_user
-        role_id = str( role_two.id )
-        self.mark_role_deleted( role_id, role_two.name )
-        self.purge_role( role_id, role_two.name )
+        self.mark_role_deleted( self.security.encode_id( role_two.id ), role_two.name )
+        self.purge_role( self.security.encode_id( role_two.id ), role_two.name )
         # Make sure there are no UserRoleAssociations
         uras = sa_session.query( galaxy.model.UserRoleAssociation ) \
-                         .filter( galaxy.model.UserRoleAssociation.table.c.role_id == role_id ) \
+                         .filter( galaxy.model.UserRoleAssociation.table.c.role_id == role_two.id ) \
                          .all()
         if uras:
-            raise AssertionError( "Purging the role did not delete the UserRoleAssociations for role_id '%s'" % role_id )
+            raise AssertionError( "Purging the role did not delete the UserRoleAssociations for role_id '%s'" % role_two.id )
         # Make sure there are no DefaultUserPermissions associated with the Role
         dups = sa_session.query( galaxy.model.DefaultUserPermissions ) \
-                         .filter( galaxy.model.DefaultUserPermissions.table.c.role_id == role_id ) \
+                         .filter( galaxy.model.DefaultUserPermissions.table.c.role_id == role_two.id ) \
                          .all()
         if dups:
-            raise AssertionError( "Purging the role did not delete the DefaultUserPermissions for role_id '%s'" % role_id )
+            raise AssertionError( "Purging the role did not delete the DefaultUserPermissions for role_id '%s'" % role_two.id )
         # Make sure there are no DefaultHistoryPermissions associated with the Role
         dhps = sa_session.query( galaxy.model.DefaultHistoryPermissions ) \
-                         .filter( galaxy.model.DefaultHistoryPermissions.table.c.role_id == role_id ) \
+                         .filter( galaxy.model.DefaultHistoryPermissions.table.c.role_id == role_two.id ) \
                          .all()
         if dhps:
-            raise AssertionError( "Purging the role did not delete the DefaultHistoryPermissions for role_id '%s'" % role_id )
+            raise AssertionError( "Purging the role did not delete the DefaultHistoryPermissions for role_id '%s'" % role_two.id )
         # Make sure there are no GroupRoleAssociations
         gra = sa_session.query( galaxy.model.GroupRoleAssociation ) \
-                        .filter( galaxy.model.GroupRoleAssociation.table.c.role_id == role_id ) \
+                        .filter( galaxy.model.GroupRoleAssociation.table.c.role_id == role_two.id ) \
                         .first()
         if gra:
-            raise AssertionError( "Purging the role did not delete the GroupRoleAssociations for role_id '%s'" % role_id )
+            raise AssertionError( "Purging the role did not delete the GroupRoleAssociations for role_id '%s'" % role_two.id )
         # Make sure there are no DatasetPermissionss
         dp = sa_session.query( galaxy.model.DatasetPermissions ) \
-                       .filter( galaxy.model.DatasetPermissions.table.c.role_id == role_id ) \
+                       .filter( galaxy.model.DatasetPermissions.table.c.role_id == role_two.id ) \
                        .first()
         if dp:
-            raise AssertionError( "Purging the role did not delete the DatasetPermissionss for role_id '%s'" % role_id )
+            raise AssertionError( "Purging the role did not delete the DatasetPermissionss for role_id '%s'" % role_two.id )
     def test_245_manually_unpurge_role( self ):
         """Testing manually un-purging a role"""
         # Logged in as admin_user
@@ -1601,7 +1616,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         # TODO: If we decide to implement the GUI feature for un-purging a role, replace this with a method call
         role_two.purged = False
         role_two.flush()
-        self.undelete_role( str( role_two.id ), role_two.name )
+        self.undelete_role( self.security.encode_id( role_two.id ), role_two.name )
     def test_250_purge_library( self ):
         """Testing purging a library"""
         # Logged in as admin_user
@@ -1815,8 +1830,8 @@ class TestSecurityAndLibraries( TwillTestCase ):
         # Eliminate all non-private roles
         ##################
         for role in [ role_one, role_two, role_three ]:
-            self.mark_role_deleted( str( role.id ), role.name )
-            self.purge_role( str( role.id ), role.name )
+            self.mark_role_deleted( self.security.encode_id( role.id ), role.name )
+            self.purge_role( self.security.encode_id( role.id ), role.name )
             # Manually delete the role from the database
             sa_session.refresh( role )
             sa_session.delete( role )
@@ -1825,8 +1840,8 @@ class TestSecurityAndLibraries( TwillTestCase ):
         # Eliminate all groups
         ##################
         for group in [ group_zero, group_one, group_two ]:
-            self.mark_group_deleted( str( group.id ), group.name )
-            self.purge_group( str( group.id ), group.name )
+            self.mark_group_deleted( self.security.encode_id( group.id ), group.name )
+            self.purge_group( self.security.encode_id( group.id ), group.name )
             # Manually delete the group from the database
             sa_session.refresh( group )
             sa_session.delete( group )
@@ -1846,7 +1861,6 @@ class TestSecurityAndLibraries( TwillTestCase ):
         # Change DefaultHistoryPermissions for regular_user1 back to the default
         permissions_in = [ 'DATASET_MANAGE_PERMISSIONS' ]
         permissions_out = [ 'DATASET_ACCESS' ]
-        role_id = str( regular_user1_private_role.id )
-        self.user_set_default_permissions( permissions_in=permissions_in, permissions_out=permissions_out, role_id=role_id )
+        self.user_set_default_permissions( permissions_in=permissions_in, permissions_out=permissions_out, role_id=str( regular_user1_private_role.id ) )
         self.logout()
         self.login( email=admin_user.email )
