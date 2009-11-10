@@ -52,24 +52,25 @@
   <configfiles>
     <configfile name="fill_options_file">&lt;%
 import simplejson
-%&gt;#set $__fill_options = {}
+%&gt;
+#set $__fill_options = {}
 #if $fill_empty_columns['fill_empty_columns_switch'] == 'fill_empty':
-#set $__fill_options['fill_unjoined_only'] = $fill_empty_columns['fill_columns_by'].value == 'fill_unjoined_only'
-#if $fill_empty_columns['do_fill_empty_columns']['column_fill_type'] == 'single_fill_value':
-#set $__start_fill = $fill_empty_columns['do_fill_empty_columns']['fill_value'].value
-#else:
-#set $__start_fill = ""
-#end if
-#set $__fill_options['file1_columns'] = [ $__start_fill for i in range( int( $input1.metadata.columns ) ) ]
-#set $__fill_options['file2_columns'] = [ $__start_fill for i in range( int( $input2.metadata.columns ) ) ]
-#if $fill_empty_columns['do_fill_empty_columns']['column_fill_type'] == 'fill_value_by_column':
-#for column_fill1 in $fill_empty_columns['do_fill_empty_columns']['column_fill1']:
-#set $__fill_options['file1_columns'][ int( column_fill1['column_number1'].value ) - 1 ] = column_fill1['fill_value1'].value
-#end for
-#for column_fill2 in $fill_empty_columns['do_fill_empty_columns']['column_fill2']:
-#set $__fill_options['file2_columns'][ int( column_fill2['column_number2'].value ) - 1 ] = column_fill2['fill_value2'].value
-#end for
-#end if
+    #set $__fill_options['fill_unjoined_only'] = $fill_empty_columns['fill_columns_by'].value == 'fill_unjoined_only'
+    #if $fill_empty_columns['do_fill_empty_columns']['column_fill_type'] == 'single_fill_value':
+        #set $__start_fill = $fill_empty_columns['do_fill_empty_columns']['fill_value'].value
+    #else:
+        #set $__start_fill = ""
+    #end if
+    #set $__fill_options['file1_columns'] = [ __start_fill for i in range( int( $input1.metadata.columns ) ) ]
+    #set $__fill_options['file2_columns'] = [ __start_fill for i in range( int( $input2.metadata.columns ) ) ]
+    #if $fill_empty_columns['do_fill_empty_columns']['column_fill_type'] == 'fill_value_by_column':
+        #for column_fill1 in $fill_empty_columns['do_fill_empty_columns']['column_fill1']:
+            #set $__fill_options['file1_columns'][ int( column_fill1['column_number1'].value ) - 1 ] = column_fill1['fill_value1'].value
+        #end for
+        #for column_fill2 in $fill_empty_columns['do_fill_empty_columns']['column_fill2']:
+            #set $__fill_options['file2_columns'][ int( column_fill2['column_number2'].value ) - 1 ] = column_fill2['fill_value2'].value
+        #end for
+    #end if
 #end if
 ${simplejson.dumps( __fill_options )}
     </configfile>

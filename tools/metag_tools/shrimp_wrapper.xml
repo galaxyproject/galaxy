@@ -1,11 +1,11 @@
 <tool id="shrimp_wrapper" name="SHRiMP for Letter-space" version="1.0.0">
   <description>reads mapping against reference sequence </description>
   <command interpreter="python">
-    #if     ($type_of_reads.single_or_paired=="single" and $param.skip_or_full=="skip"):#shrimp_wrapper.py $input_target $output1 $output2 $input_query
-    #elif   ($type_of_reads.single_or_paired=="paired" and $param.skip_or_full=="skip"):#shrimp_wrapper.py $input_target $output1 $output2 $type_of_reads.input1,$type_of_reads.input2,$type_of_reads.insertion_size
-    #elif   ($type_of_reads.single_or_paired=="single" and $param.skip_or_full=="full"):#shrimp_wrapper.py $input_target $output1 $output2 $input_query                                                              $param.spaced_seed $param.seed_matches_per_window $param.seed_hit_taboo_length $param.seed_generation_taboo_length $param.seed_window_length $param.max_hits_per_read $param.max_read_length $param.kmer $param.sw_match_value $param.sw_mismatch_value $param.sw_gap_open_ref $param.sw_gap_open_query $param.sw_gap_ext_ref $param.sw_gap_ext_query $param.sw_hit_threshold 
-    #elif   ($type_of_reads.single_or_paired=="paired" and $param.skip_or_full=="full"):#shrimp_wrapper.py $input_target $output1 $output2 $type_of_reads.input1,$type_of_reads.input2,$type_of_reads.insertion_size $param.spaced_seed $param.seed_matches_per_window $param.seed_hit_taboo_length $param.seed_generation_taboo_length $param.seed_window_length $param.max_hits_per_read $param.max_read_length $param.kmer $param.sw_match_value $param.sw_mismatch_value $param.sw_gap_open_ref $param.sw_gap_open_query $param.sw_gap_ext_ref $param.sw_gap_ext_query $param.sw_hit_threshold
-    #end if
+    #if     ($type_of_reads.single_or_paired=="single" and $param.skip_or_full=="skip") #shrimp_wrapper.py $input_target $output1 $output2 $input_query
+    #elif   ($type_of_reads.single_or_paired=="paired" and $param.skip_or_full=="skip") #shrimp_wrapper.py $input_target $output1 $output2 $type_of_reads.input1,$type_of_reads.input2,$type_of_reads.insertion_size
+    #elif   ($type_of_reads.single_or_paired=="single" and $param.skip_or_full=="full") #shrimp_wrapper.py $input_target $output1 $output2 $input_query                                                              $param.spaced_seed $param.seed_matches_per_window $param.seed_hit_taboo_length $param.seed_generation_taboo_length $param.seed_window_length $param.max_hits_per_read $param.max_read_length $param.kmer $param.sw_match_value $param.sw_mismatch_value $param.sw_gap_open_ref $param.sw_gap_open_query $param.sw_gap_ext_ref $param.sw_gap_ext_query $param.sw_hit_threshold 
+    #elif   ($type_of_reads.single_or_paired=="paired" and $param.skip_or_full=="full") #shrimp_wrapper.py $input_target $output1 $output2 $type_of_reads.input1,$type_of_reads.input2,$type_of_reads.insertion_size $param.spaced_seed $param.seed_matches_per_window $param.seed_hit_taboo_length $param.seed_generation_taboo_length $param.seed_window_length $param.max_hits_per_read $param.max_read_length $param.kmer $param.sw_match_value $param.sw_mismatch_value $param.sw_gap_open_ref $param.sw_gap_open_query $param.sw_gap_ext_ref $param.sw_gap_ext_query $param.sw_hit_threshold
+    #end if#
   </command>
     <inputs>
         <page>

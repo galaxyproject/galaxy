@@ -7,6 +7,7 @@ if os.path.dirname( sys.argv[0] ) != "":
 # find setuptools
 scramble_lib = os.path.join( "..", "..", "..", "lib" )
 sys.path.append( scramble_lib )
+import get_platform # fixes fat python 2.5
 from ez_setup import use_setuptools
 use_setuptools( download_delay=8, to_dir=scramble_lib )
 from setuptools import *
@@ -25,20 +26,26 @@ for dir in [ "build", "dist" ]:
         shutil.rmtree( dir )
 
 # patch
-for file in [ "src/NameMapper.py", "src/Tests/NameMapper.py" ]:
-    if not os.access( "%s.orig" %file, os.F_OK ):
-        print "scramble_it(): Patching", file
-        shutil.copyfile( file, "%s.orig" %file )
-        i = open( "%s.orig" %file, "r" )
-        o = open( file, "w" )
-        for line in i.readlines():
-            if line.startswith("__author__ ="):
-                print >>o, "from __future__ import generators"
-            elif line == "from __future__ import generators\n":
-                continue
+file = "SetupConfig.py"
+if not os.access( "%s.orig" %file, os.F_OK ):
+    print "scramble.py(): Patching", file
+    shutil.copyfile( file, "%s.orig" %file )
+    i = open( "%s.orig" %file, "r" )
+    o = open( file, "w" )
+    comment = False
+    for line in i.readlines():
+        if line == "        install_requires = [\n":
+            comment = True
+            print >>o, "#" + line,
+        elif comment and line == "        ]\n":
+            comment = False
+            print >>o, "#" + line,
+        elif comment:
+            print >>o, "#" + line,
+        else:
             print >>o, line,
-        i.close()
-        o.close()
+    i.close()
+    o.close()
 
 # reset args for distutils
 me = sys.argv[0]

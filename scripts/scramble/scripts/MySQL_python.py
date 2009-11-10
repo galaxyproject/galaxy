@@ -57,6 +57,7 @@ if os.path.dirname( sys.argv[0] ) != "":
 # find setuptools
 scramble_lib = os.path.join( "..", "..", "..", "lib" )
 sys.path.append( scramble_lib )
+import get_platform # fixes fat python 2.5
 from ez_setup import use_setuptools
 use_setuptools( download_delay=8, to_dir=scramble_lib )
 from setuptools import *

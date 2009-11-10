@@ -140,6 +140,7 @@ class Egg( object ):
             cmd = "ssh %s 'cd %s; %s -ES %s'" % ( self.build_host, self.buildpath, self.python, "scramble.py" )
         else:
             cmd = "%s -ES %s" % ( self.python, "scramble.py" )
+        log.debug( 'Executing: %s' % cmd )
         p = subprocess.Popen( args = cmd, shell = True, cwd = self.buildpath )
         r = p.wait()
         if r != 0:

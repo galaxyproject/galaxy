@@ -1,10 +1,10 @@
 <tool id="pileup_parser" name="Filter pileup">
   <description>on coverage and SNPs</description>
   <command interpreter="perl">
-    #if   $pileup_type.type_select == "six":    #pileup_parser.pl $input "3" "5" "6" "4" $qv_cutoff $cvrg_cutoff $snps_only $interval "2" $out_file1
-    #elif $pileup_type.type_select == "ten":    #pileup_parser.pl $input "3" "9" "10" "8" $qv_cutoff $cvrg_cutoff $snps_only $interval "2" $out_file1
-    #elif $pileup_type.type_select == "manual": #pileup_parser.pl $input $pileup_type.ref_base_column $pileup_type.read_bases_column $pileup_type.read_qv_column $pileup_type.cvrg_column $qv_cutoff $cvrg_cutoff $snps_only $interval $pileup_type.coord_column $out_file1
-    #end if
+    #if   $pileup_type.type_select == "six"    #pileup_parser.pl $input "3" "5" "6" "4" $qv_cutoff $cvrg_cutoff $snps_only $interval "2" $out_file1
+    #elif $pileup_type.type_select == "ten"    #pileup_parser.pl $input "3" "9" "10" "8" $qv_cutoff $cvrg_cutoff $snps_only $interval "2" $out_file1
+    #elif $pileup_type.type_select == "manual" #pileup_parser.pl $input $pileup_type.ref_base_column $pileup_type.read_bases_column $pileup_type.read_qv_column $pileup_type.cvrg_column $qv_cutoff $cvrg_cutoff $snps_only $interval $pileup_type.coord_column $out_file1
+    #end if#
   </command>
   <inputs>
     <param name="input" type="data" format="tabular" label="Select dataset"/>

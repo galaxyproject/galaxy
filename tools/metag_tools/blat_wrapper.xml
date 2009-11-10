@@ -1,10 +1,9 @@
 <tool id="blat_wrapper" name="BLAT" version="1.0.0">
   <description> compare sequencing reads against UCSC genome builds</description>
   <command interpreter="python">
-    #if $source.source_select=="database":#blat_wrapper.py 0 $source.dbkey $input_query $output1 $iden $tile_size $one_off
-    #else:#blat_wrapper.py 1 $source.input_target $input_query $output1 $iden $tile_size $one_off
-    #end if
-    ${GALAXY_DATA_INDEX_DIR}
+    #if $source.source_select=="database" #blat_wrapper.py 0 $source.dbkey $input_query $output1 $iden $tile_size $one_off
+    #else                                 #blat_wrapper.py 1 $source.input_target $input_query $output1 $iden $tile_size $one_off
+    #end if# ${GALAXY_DATA_INDEX_DIR}
   </command>
 	<inputs>
 	<conditional name="source">

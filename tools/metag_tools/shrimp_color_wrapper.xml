@@ -1,9 +1,9 @@
 <tool id="shrimp_color_wrapper" name="SHRiMP for Color-space" version="1.0.0">
   <description>reads mapping against reference sequence </description>
   <command interpreter="python">
-    #if     $param.skip_or_full=="skip":#shrimp_color_wrapper.py $input_target $input_query $output1 
-    #else   #shrimp_color_wrapper.py $input_target $input_query $output1 $param.spaced_seed $param.seed_matches_per_window $param.seed_hit_taboo_length $param.seed_generation_taboo_length $param.seed_window_length $param.max_hits_per_read $param.max_read_length $param.kmer $param.sw_match_value $param.sw_mismatch_value $param.sw_gap_open_ref $param.sw_gap_open_query $param.sw_gap_ext_ref $param.sw_gap_ext_query $param.sw_crossover_penalty $param.sw_full_hit_threshold $param.sw_vector_hit_threshold  
-    #end if
+    #if $param.skip_or_full=="skip" #shrimp_color_wrapper.py $input_target $input_query $output1 
+    #else                           #shrimp_color_wrapper.py $input_target $input_query $output1 $param.spaced_seed $param.seed_matches_per_window $param.seed_hit_taboo_length $param.seed_generation_taboo_length $param.seed_window_length $param.max_hits_per_read $param.max_read_length $param.kmer $param.sw_match_value $param.sw_mismatch_value $param.sw_gap_open_ref $param.sw_gap_open_query $param.sw_gap_ext_ref $param.sw_gap_ext_query $param.sw_crossover_penalty $param.sw_full_hit_threshold $param.sw_vector_hit_threshold  
+    #end if#
   </command>
     <inputs>
         <page>
