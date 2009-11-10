@@ -1,11 +1,9 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
 
-
 %if msg:
     ${render_msg( msg, messagetype )}
 %endif
-
 
 <div class="grid-header">
     <h2>Sequencing Request "${request.name}"</h2>
@@ -41,6 +39,8 @@
             <div class="toolParamHelp" style="clear: both;">
                 <i>${' (required)' }</i>
             </div>
+        </td>
+        <td>
         </td>
         <td>
         </td>
@@ -80,11 +80,10 @@
         ${sample.name}
     </td>
     %if grid_index == 0:
+        <td>${sample.bar_code}</td>
         <td>
             %if sample.request.unsubmitted():
                 Unsubmitted
-            %elif not sample.current_state():
-                New
             %else:
                 <a href="${h.url_for( controller='requests_admin', action='show_events', sample_id=sample.id)}">${sample.current_state().name}</a>
             %endif    
@@ -150,6 +149,7 @@
                 <th>No.</th>
                 <th>Sample Name</th>
                 %if grid_index == 0:
+                    <th>Barcode</th>
                     <th>State</th>
                 %endif
                 %for index, field in fields_dict.items():

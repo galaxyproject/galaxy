@@ -36,7 +36,7 @@
                 <label>
                     Possible states 
                 </label>
-                %for element_count, state in enumerate(states_list.all()):
+                %for element_count, state in enumerate(states_list):
                     <div class="form-row">
                         <label>${1+element_count}. ${state.name}</label>
                         ${state.desc}

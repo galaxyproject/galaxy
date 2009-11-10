@@ -1034,10 +1034,11 @@ class Requests( BaseController ):
             event = trans.app.model.SampleEvent(s, new_state, 'Bar code added to this sample')
             event.flush()
         return trans.response.send_redirect( web.url_for( controller='requests_admin',
-                                                          action='bar_codes',
-                                                          request_id=request.id,
-                                                          msg='Bar codes have been saved for this request',
-                                                          messagetype='done'))
+                                                          action='list',
+                                                          operation='show_request',
+                                                          id=trans.security.encode_id(request.id),
+                                                          message='Bar codes have been saved for this request',
+                                                          status='done'))
                     
     def __set_request_state(self, request):
         # check if all the samples of the current request are in the final state
@@ -1183,11 +1184,10 @@ class Requests( BaseController ):
                                                               messagetype='done') )
         elif params.get('view', False):
             rt = trans.sa_session.query( trans.app.model.RequestType ).get( int( util.restore_text( params.id ) ) )
-            ss_list = trans.sa_session.query( trans.app.model.SampleState ).filter( trans.app.model.SampleState.table.c.request_type_id == rt.id )
             return trans.fill_template( '/admin/requests/view_request_type.mako', 
                                         request_type=rt,
                                         forms=get_all_forms( trans ),
-                                        states_list=ss_list,
+                                        states_list=rt.states,
                                         deleted=False,
                                         show_deleted=False,
                                         msg=msg,

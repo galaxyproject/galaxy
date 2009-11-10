@@ -245,7 +245,7 @@ class TestFormsAndRequests( TwillTestCase ):
         self.check_page_for_string( request_one.name )
         assert request_one.state is not request_one.states.COMPLETE, "The state of the request '%s' should be set to '%s'" \
             % ( request_one.name, request_one.states.COMPLETE )
-    def test_40_admin_create_request_on_behalf_of_regular_user( self ):
+    def test_040_admin_create_request_on_behalf_of_regular_user( self ):
         """Testing creating and submitting a request as an admin on behalf of a regular user"""
         self.logout()
         self.login( email='test@bx.psu.edu' )
@@ -288,7 +288,8 @@ class TestFormsAndRequests( TwillTestCase ):
         self.visit_url( '%s/requests_admin/list?show_filter=All' % self.url )
         self.check_page_for_string( request_one.name )
         self.check_page_for_string( request_two.name )
-    def test_45_reject_request( self ):
+    def test_045_reject_request( self ):
+        '''Testing rejecting a request'''
         self.logout()
         self.login( email='test@bx.psu.edu' )
         self.reject_request( request_two.id, request_two.name )
