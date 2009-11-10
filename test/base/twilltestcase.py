@@ -59,6 +59,10 @@ class TwillTestCase( unittest.TestCase ):
                     diff_slice[6].startswith( '-/CreationDate' ) and diff_slice[7].startswith( '-/ModDate' ) \
                     and diff_slice[8].startswith( '+/CreationDate' ) and diff_slice[9].startswith( '+/ModDate' ):
                         return True
+                for line in diff_slice:
+                    for char in line:
+                        if ord( char ) > 128:
+                            raise AssertionError( "Binary data detected, not displaying diff" )
                 raise AssertionError( "".join( diff_slice ) )
         return True
 
