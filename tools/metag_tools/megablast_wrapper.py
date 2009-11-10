@@ -1,9 +1,24 @@
 #! /usr/bin/python
 """
 run megablast for metagenomics data
+
+usage: %prog [options]
+   -d, --db_build=d: The database to use
+   -i, --input=i: Input FASTQ candidate file
+   -w, --word_size=w: Size of best perfect match
+   -c, --identity_cutoff=c: Report hits at or above this identity
+   -e, --eval_cutoff=e: Expectation value cutoff
+   -f, --filter_query=f: Filter out low complexity regions
+   -x, --index_dir=x: Data index directory
+   -o, --output=o: Output file
+   
+usage: %prog db_build input_file word_size identity_cutoff eval_cutoff filter_query index_dir output_file
 """
 
 import sys, os, tempfile
+from galaxy import eggs
+import pkg_resources; pkg_resources.require( "bx-python" )
+from bx.cookbook import doc_optparse
 
 assert sys.version_info[:2] >= ( 2, 4 )
 
@@ -12,16 +27,18 @@ def stop_err( msg ):
     sys.exit()
 
 def __main__():
+    #Parse Command Line
+    options, args = doc_optparse.parse( __doc__ )
     
-    db_build = sys.argv[1]
-    query_filename = sys.argv[2].strip()
-    output_filename = sys.argv[3].strip()
-    mega_word_size = sys.argv[4]        # -W
-    mega_iden_cutoff = sys.argv[5]      # -p
-    mega_evalue_cutoff = sys.argv[6]      # -e
+    db_build = options.db_build
+    query_filename = options.input.strip()
+    output_filename = options.output.strip()
+    mega_word_size = options.word_size        # -W
+    mega_iden_cutoff = options.identity_cutoff      # -p
+    mega_evalue_cutoff = options.eval_cutoff      # -e
     mega_temp_output = tempfile.NamedTemporaryFile().name
-    mega_filter = sys.argv[7]           # -F
-    GALAXY_DATA_INDEX_DIR = sys.argv[8]
+    mega_filter = options.filter_query           # -F
+    GALAXY_DATA_INDEX_DIR = options.index_dir
     DB_LOC = "%s/blastdb.loc" % GALAXY_DATA_INDEX_DIR
 
     # megablast parameters
@@ -81,7 +98,7 @@ def __main__():
         output.write( "%s\n" % new_line )
     output.close()
     
-    os.unlink( mega_temp_output ) #remove the tempfile that we just reformated the contents of
+    os.unlink( mega_temp_output ) #remove the tempfile that we just reformatted the contents of
     
     if invalid_lines:
         print "Unable to parse %d lines. Keep the default format." % invalid_lines

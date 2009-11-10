@@ -1,6 +1,16 @@
 <tool id="megablast_wrapper" name="Megablast" version="1.0.0">
 	<description> compare short reads against nt and wgs databases</description>
-	<command interpreter="python">megablast_wrapper.py $source_select $input_query $output1 $word_size $iden_cutoff $evalue_cutoff $filter_query ${GALAXY_DATA_INDEX_DIR}</command>
+	<command interpreter="python">
+	  megablast_wrapper.py 
+	   --db_build=$source_select
+	   --input=$input_query
+	   --word_size=$word_size
+	   --identity_cutoff=$iden_cutoff
+	   --eval_cutoff=$evalue_cutoff 
+	   --filter_query=$filter_query
+	   --index_dir=${GALAXY_DATA_INDEX_DIR}
+	   --output=$output1
+	</command>
 	<inputs>
 		<param name="input_query" type="data" format="fasta" label="Compare these sequences"/> 
 		<param name="source_select" type="select" display="radio" label="against target database">
@@ -29,7 +39,7 @@
 	<tests>
 		<test>
 			<param name="input_query" value="megablast_wrapper_test1.fa" ftype="fasta"/>
-			<param name="source_select" value="test" />
+			<param name="source_select" value="phiX" />
 			<param name="word_size" value="28" />
 			<param name="iden_cutoff" value="99.0" />
 			<param name="evalue_cutoff" value="10.0" />
