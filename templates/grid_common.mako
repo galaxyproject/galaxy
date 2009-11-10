@@ -86,10 +86,23 @@
                 </table>
             </td>
             <td>
+                ## Clear the standard search.
                 ##|
                 ##<% filter_all = GridColumnFilter( "", { column.key : "All" } ) %>
-                ##<a href="${url( filter_all.get_url_args() )}">Clear All</a>                                
-                | <a href="" onclick="javascript:$('#more-search-options').slideToggle('fast');return false;">Advanced Search</a>
+                ##<a href="${url( filter_all.get_url_args() )}">Clear All</a>
+                
+                ## Only show advanced search if there are filterable columns.
+                <%
+                    show_advanced_search = False
+                    for column in grid.columns:
+                        if column.filterable == "advanced":
+                            show_advanced_search = True
+                            break
+                        endif
+                %>
+                %if show_advanced_search:
+                    | <a href="" onclick="javascript:$('#more-search-options').slideToggle('fast');return false;">Advanced Search</a>
+                %endif
             </td>
         </tr></table>
     </div>

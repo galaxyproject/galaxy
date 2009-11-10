@@ -12,30 +12,31 @@ def format_bool( b ):
     else:
         return ""
 
-class PublicURLColumn( grids.GridColumn ):
+class PublicURLColumn( grids.TextColumn ):
     def get_value( self, trans, grid, item ):
-        username = trans.user.username or "???"
+        username = item.user.username or "???"
         return username + "/" + item.slug
     def get_link( self, trans, grid, item ):
-        if trans.user.username:
+        if item.user.username:
             return dict( action='display_by_username_and_slug', username=item.user.username, slug=item.slug )
         else:
             return None
         
-class OwnerColumn( grids.GridColumn ):
+class OwnerColumn( grids.TextColumn ):
     def get_value( self, trans, grid, item ):
         return item.user.username
 
 class PageListGrid( grids.Grid ):
     # Grid definition
     use_panels = True
-    title = "Your pages"
+    title = "Pages"
     model_class = model.Page
+    default_filter = { "published" : "All"}
     default_sort_key = "-create_time"
     columns = [
         grids.TextColumn( "Title", key="title", model_class=model.Page, attach_popup=True, filterable="standard" ),
         PublicURLColumn( "Public URL" ),
-        grids.GridColumn( "Published", key="published", format=format_bool, filterable="advanced" ),
+        grids.GridColumn( "Published", key="published", format=format_bool, filterable="standard" ),
         grids.GridColumn( "Created", key="create_time", format=time_ago ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
     ]
@@ -56,13 +57,13 @@ class PageListGrid( grids.Grid ):
 class PageAllPublishedGrid( grids.Grid ):
     # Grid definition
     use_panels = True
-    title = "Published pages from all users"
+    title = "Published Pages From All Users"
     model_class = model.Page
     default_sort_key = "-create_time"
     columns = [
-        grids.GridColumn( "Title", key="title" ),
+        grids.TextColumn( "Title", model_class=model.Page, key="title", filterable="standard" ),
         PublicURLColumn( "Public URL" ),
-        OwnerColumn( "Published by" ), 
+        OwnerColumn( "Published by", model_class=model.User, key="username" ), 
         grids.GridColumn( "Created", key="create_time", format=time_ago ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
     ]

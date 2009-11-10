@@ -21,6 +21,7 @@ class Grid( object ):
     columns = []
     operations = []
     standard_filters = []
+    # Any columns that are filterable (either standard or advanced) should have a default value set in the default filter.
     default_filter = {}
     default_sort_key = None
     preserve_state = False
@@ -320,10 +321,10 @@ class TextColumn( GridColumn ):
         if isinstance( column_filter, basestring ):
             return func.lower( model_class_key_field ).like( "%" + column_filter.lower() + "%" )
         elif isinstance( column_filter, list ):
-            composite_filter = True
+            clause_list = []
             for filter in column_filter:
-                composite_filter = and_( composite_filter, func.lower( model_class_key_field ).like( "%" + filter.lower() + "%" ) )
-            return composite_filter
+                clause_list.append( func.lower( model_class_key_field ).like( "%" + filter.lower() + "%" ) )
+            return and_( *clause_list )
 
 # Generic column that supports tagging.        
 class TagsColumn( TextColumn ):
@@ -353,15 +354,15 @@ class TagsColumn( TextColumn ):
                 # Collapse list of tags into a single string; this is redundant but effective. TODO: fix this by iterating over tags.
                 column_filter = ",".join( column_filter )
             raw_tags = tag_handler.parse_tags( column_filter.encode("utf-8") )
-            filter = True
+            clause_list = []
             for name, value in raw_tags.items():
                 if name:
                     # Search for tag names.
-                    filter = and_( filter, self.model_class.tags.any( func.lower( self.model_tag_association_class.user_tname ).like( "%" + name.lower() + "%" ) ) )
+                    clause_list.append( self.model_class.tags.any( func.lower( self.model_tag_association_class.user_tname ).like( "%" + name.lower() + "%" ) ) )
                     if value:
                         # Search for tag values.
-                        filter = and_( filter, self.model_class.tags.any( func.lower( self.model_tag_association_class.user_value ).like( "%" + value.lower() + "%" ) ) )
-            return filter
+                        clause_list.append( self.model_class.tags.any( func.lower( self.model_tag_association_class.user_value ).like( "%" + value.lower() + "%" ) ) )
+            return and_( *clause_list )
             
 # Column that performs multicolumn filtering.
 class MulticolFilterColumn( TextColumn ):
@@ -373,17 +374,20 @@ class MulticolFilterColumn( TextColumn ):
         if column_filter == "All":
             return query
         if isinstance( column_filter, list):
-            composite_filter = True
+            clause_list = []
             for filter in column_filter:
-                part_composite_filter = False
+                part_clause_list = []
                 for column in self.cols_to_filter:
-                    part_composite_filter = or_( part_composite_filter, column.get_filter( filter ) )
-                composite_filter = and_( composite_filter, part_composite_filter )
+                    part_clause_list.append( column.get_filter( filter ) )
+                clause_list.append( or_( *part_clause_list ) )
+            complete_filter = and_( *clause_list )
         else:
-            composite_filter = False
+            clause_list = []
             for column in self.cols_to_filter:
-                composite_filter = or_( composite_filter, column.get_filter( column_filter ) )
-        return query.filter( composite_filter )
+                clause_list.append( column.get_filter( column_filter ) )
+            complete_filter = or_( *clause_list )
+        
+        return query.filter( complete_filter )
 
 class GridOperation( object ):
     def __init__( self, label, key=None, condition=None, allow_multiple=True, allow_popup=True, target=None, url_args=None ):
