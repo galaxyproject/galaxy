@@ -1651,7 +1651,7 @@ class TwillTestCase( unittest.TestCase ):
                 t.extract( n, tmpd )
             t.close()
         elif zipfile.is_zipfile( archive ):
-            z = zipfile.open( archive )
+            z = zipfile.ZipFile( archive, 'r' )
             for n in z.namelist():
                 mkdir( n )
                 open( os.path.join( tmpd, n ), 'wb' ).write( z.read( n ) )
