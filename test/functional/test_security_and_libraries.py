@@ -6,6 +6,7 @@ from base.twilltestcase import *
 not_logged_in_security_msg = 'You must be logged in as an administrator to access this feature.'
 logged_in_security_msg = 'You must be an administrator to access this feature.'
 
+import sys
 class TestSecurityAndLibraries( TwillTestCase ):
     def test_000_admin_features_when_not_logged_in( self ):
         """Testing admin_features when not logged in"""
@@ -1385,6 +1386,14 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.home()
         self.logout()
         self.login( email=admin_user.email )
+    def test_167_download_archive_of_library_files( self ):
+        """Testing downloading an archive of files from the library"""
+        for format in ( 'tbz', 'tgz', 'zip' ):
+            archive = self.download_archive_of_library_files( str( library_one.id ),
+                                                              ( str( ldda_one.id ), str( ldda_two.id ) ),
+                                                              format )
+            self.check_archive_contents( archive, ( ldda_one, ldda_two ) )
+            os.remove( archive )
     def test_170_mark_group_deleted( self ):
         """Testing marking a group as deleted"""
         # Logged in as admin_user

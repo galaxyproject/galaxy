@@ -1,7 +1,7 @@
 import pkg_resources
 pkg_resources.require( "twill==0.9" )
 
-import StringIO, os, sys, random, filecmp, time, unittest, urllib, logging, difflib, zipfile, tempfile, re
+import StringIO, os, sys, random, filecmp, time, unittest, urllib, logging, difflib, tarfile, zipfile, tempfile, re, shutil
 from itertools import *
 
 import twill
@@ -736,8 +736,8 @@ class TwillTestCase( unittest.TestCase ):
                 errmsg = "no match to '%s'\npage content written to '%s'" % ( patt, fname )
                 raise AssertionError( errmsg )
     
-    def write_temp_file( self, content ):
-        fd, fname = tempfile.mkstemp( suffix='.html', prefix='twilltestcase-' )
+    def write_temp_file( self, content, suffix='.html' ):
+        fd, fname = tempfile.mkstemp( suffix=suffix, prefix='twilltestcase-' )
         f = os.fdopen( fd, "w" )
         f.write( content )
         f.close()
@@ -1616,6 +1616,60 @@ class TwillTestCase( unittest.TestCase ):
             self.check_page_for_string( check_str_after_submit )
         self.library_wait( library_id, controller='library' )
         self.home()
+    def download_archive_of_library_files( self, library_id, ldda_ids, format ):
+        self.home()
+        self.visit_url( "%s/library/browse_library?obj_id=%s" % ( self.url, library_id ) )
+        for ldda_id in ldda_ids:
+            tc.fv( "1", "ldda_ids", ldda_id )
+        tc.fv( "1", "do_action", format )
+        tc.submit( "action_on_datasets_button" )
+        tc.code( 200 )
+        archive = self.write_temp_file( self.last_page(), suffix=format )
+        self.home()
+        return archive
+    def check_archive_contents( self, archive, lddas ):
+        def get_ldda_path( ldda ):
+            path = ""
+            parent_folder = ldda.library_dataset.folder
+            while parent_folder is not None:
+                if parent_folder.parent is None:
+                    path = os.path.join( parent_folder.library_root[0].name, path )
+                    break
+                path = os.path.join( parent_folder.name, path )
+                parent_folder = parent_folder.parent
+            path += ldda.name
+            return path
+        def mkdir( file ):
+            dir = os.path.join( tmpd, os.path.dirname( file ) )
+            if not os.path.exists( dir ):
+                os.makedirs( dir )
+        tmpd = tempfile.mkdtemp()
+        if tarfile.is_tarfile( archive ):
+            t = tarfile.open( archive )
+            for n in t.getnames():
+                mkdir( n )
+                t.extract( n, tmpd )
+            t.close()
+        elif zipfile.is_zipfile( archive ):
+            z = zipfile.open( archive )
+            for n in z.namelist():
+                mkdir( n )
+                open( os.path.join( tmpd, n ), 'wb' ).write( z.read( n ) )
+            z.close()
+        else:
+            raise Exception( 'Unable to read archive: %s' % archive )
+        for ldda in lddas:
+            orig_file = self.get_filename( ldda.name )
+            downloaded_file = os.path.join( tmpd, get_ldda_path( ldda ) )
+            assert os.path.exists( downloaded_file )
+            try:
+                self.files_diff( orig_file, downloaded_file )
+            except AssertionError, err:
+                errmsg = 'Library item %s different than expected, difference:\n' % ldda.name
+                errmsg += str( err )
+                errmsg += 'Unpacked archive remains in: %s\n' % tmpd
+                raise AssertionError( errmsg )
+        shutil.rmtree( tmpd )
     def delete_library_item( self, library_id, library_item_id, library_item_name, library_item_type='library_dataset' ):
         """Mark a library item as deleted"""
         self.home()
