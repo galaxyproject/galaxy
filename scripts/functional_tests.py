@@ -71,6 +71,9 @@ def main():
             default_cluster_job_runner = os.environ['GALAXY_TEST_DEF_RUNNER']
         else:
             default_cluster_job_runner = 'local:///'
+        set_metadata_externally = False
+        if 'GALAXY_SET_METADATA_EXTERNALLY' in os.environ:
+            set_metadata_externally = True
             
     print "Database connection:", database_connection
     
@@ -104,6 +107,7 @@ def main():
                                    admin_users = 'test@bx.psu.edu',
                                    library_import_dir = galaxy_test_file_dir,
                                    user_library_import_dir = os.path.join( galaxy_test_file_dir, 'users' ),
+                                   set_metadata_externally = set_metadata_externally,
                                    global_conf = { "__file__": "universe_wsgi.ini.sample" } )
         
         log.info( "Embedded Universe application started" );
