@@ -254,12 +254,12 @@ class Bam( data.Binary ):
         tmpf1 = tempfile.NamedTemporaryFile(dir=tmp_dir)
         tmpf1bai = '%s.bai' % tmpf1.name
         try:
-            subprocess.check_call(['cd', tmp_dir], shell=True)
-            subprocess.check_call('cp %s %s' % (dataset.file_name, tmpf1.name), shell=True)
-            subprocess.check_call('samtools index %s' % tmpf1.name, shell=True)
-            subprocess.check_call('cp %s %s' % (tmpf1bai, index_file.file_name), shell=True)
-        except subprocess.CalledProcessError:
-            sys.stderr.write('There was a problem creating the index for the BAM file\n')
+            os.system('cd %s' % tmp_dir)
+            os.system('cp %s %s' % (dataset.file_name, tmpf1.name))
+            os.system('samtools index %s' % tmpf1.name)
+            os.system('cp %s %s' % (tmpf1bai, index_file.file_name))
+        except Exception, ex:
+            sys.stderr.write('There was a problem creating the index for the BAM file\n%s\n' + str(ex))
         tmpf1.close()
         if os.path.exists(tmpf1bai):
             os.remove(tmpf1bai)
