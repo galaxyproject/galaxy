@@ -219,8 +219,6 @@ class Registry( object ):
             builder = self.datatypes_by_extension[ext]
         except KeyError:
             builder = data.Text()
-            if ext is not None:
-                self.log.warning('unknown extension in data factory %s', ext)
         return builder
 
     def change_datatype(self, data, ext ):
