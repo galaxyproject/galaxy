@@ -8,9 +8,24 @@ host = 127.0.0.1
 use_threadpool = true
 threadpool_workers = 10
 
-# ---- Galaxy Web Interface -------------------------------------------------
+# ---- HTTP gzip compression ----
+# If planning to run Galaxy as a production service, we recommend running Galaxy 
+# through a proxy and enabling gzip compression there (instructions at 
+# http://bitbucket.org/galaxy/galaxy-central/wiki/Config/ProductionServer )
+# but you may also turn on Paste's built-in gzip compressor by uncommenting the following lines
+# and also the 'filter-with = gzip' line under [app:main]. This will reduce network traffic
+# and should speed up the interface, especially the visualization module.
+# [filter:gzip]
+# use = egg:Paste#gzip
 
+# ---- Galaxy Web Interface -------------------------------------------------
 [app:main]
+
+# Uncomment following line to enable Paste gzip compression
+# filter-with = gzip
+
+# Uncomment following line below to enable visualization module
+# enable_tracks = True
 
 # Specifies the factory for the universe WSGI application
 paste.app_factory = galaxy.web.buildapp:app_factory
