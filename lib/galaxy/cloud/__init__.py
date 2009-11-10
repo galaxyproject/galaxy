@@ -34,6 +34,14 @@ uci_states = Bunch(
     ERROR = "error",
     CREATING = "creating"
 )
+instance_states = Bunch(
+    TERMINATED = "terminated",
+    SUBMITTED = "submitted",
+    RUNNING = "running",
+    PENDING = "pending",
+    SHUTTING_DOWN = "shutting-down",
+    ERROR = "error"
+)
 
 class CloudManager( object ):
     """
@@ -338,14 +346,23 @@ class UCIwrapper( object ):
         
     def set_error( self, error, set_state=False ):
         """
-        Sets error field of given UCI in local Galaxy database. If set_state is set to 'true', 
-        method also sets state of give UCI to 'error'
+        Sets error field of given UCI in local Galaxy database as well as any instances associated with
+        this UCI whose state is 'None' or 'SUBMITTED'. If set_state is set to 'true', 
+        method also sets state of give UCI and corresponding instances to 'error'
         """
         uci = model.UCI.get( self.uci_id )
         uci.refresh()
         uci.error = error
         if set_state:
             uci.state = uci_states.ERROR
+            instances = model.CloudInstance \
+                .filter_by( uci=uci ) \
+                .filter( or_( model.CloudInstance.c.state==None, model.CloudInstance.c.state==instance_states.SUBMITTED ) ) \
+                .all()
+            for i in instances:
+                i.error = error
+                i.state = instance_states.ERROR
+                i.flush()
         uci.flush()
 
     # --------- Getter methods -----------------
@@ -357,6 +374,15 @@ class UCIwrapper( object ):
 #        cred_id = uci.credentials_id
 #        cred = model.CloudUserCredentials.get( cred_id )
         return uci.credentials.provider.type
+    
+    def get_type( self, i_index ):
+        instance = model.CloudInstance.get( i_index )
+        return instance.type 
+        
+    def get_state( self ):
+        uci = model.UCI.get( self.uci_id )
+        uci.refresh()
+        return uci.state
     
     def get_instances_indexes( self, state=None ):
         """
@@ -371,15 +397,6 @@ class UCIwrapper( object ):
             il.append( i.id )
             
         return il
-    
-    def get_type( self, i_index ):
-        instance = model.CloudInstance.get( i_index )
-        return instance.type 
-        
-    def get_state( self ):
-        uci = model.UCI.get( self.uci_id )
-        uci.refresh()
-        return uci.state
     
     def get_instance_state( self, instance_id ):
         uci = model.UCI.get( self.uci_id )

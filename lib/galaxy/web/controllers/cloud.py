@@ -49,9 +49,11 @@ uci_states = Bunch(
 
 instance_states = Bunch(
     TERMINATED = "terminated",
+    SUBMITTED = "submitted",
     RUNNING = "running",
     PENDING = "pending",
-    SHUTTING_DOWN = "shutting-down"
+    SHUTTING_DOWN = "shutting-down",
+    ERROR = "error"
 )
 
 store_states = Bunch(
@@ -141,15 +143,14 @@ class CloudController( BaseController ):
         """
         user = trans.get_user()
         uci = get_uci( trans, id )
-#        mi = get_mi( trans, uci, type )
         stores = get_stores( trans, uci ) 
         # Ensure instance is available and then store relevant data
         # into DB to initiate instance startup by cloud manager
         if ( len(stores) is not 0 ) and ( uci.state == uci_states.AVAILABLE ):
             instance = model.CloudInstance()
             instance.user = user
-#            instance.image = mi
             instance.uci = uci
+            instance.state = instance_states.SUBMITTED
             instance.availability_zone = stores[0].availability_zone # Bc. all EBS volumes need to be in the same avail. zone, just check 1st
             instance.type = type
             uci.state = uci_states.SUBMITTED_UCI
@@ -253,39 +254,6 @@ class CloudController( BaseController ):
         inst_error = vol_error = cred_error = None
         error = {}
         user = trans.get_user()
-        storedCreds = trans.sa_session.query( model.CloudUserCredentials ).filter_by( user=user, deleted=False ).all()
-        if len( storedCreds ) == 0:
-            return trans.show_error_message( "You must register credentials before configuring a Galaxy cloud instance." )
-        # Create dict mapping of cloud-providers-to-zones available by those providers
-        providersToZones = {}
-        for storedCred in storedCreds:
-            zones = None
-            conn = get_connection( trans, storedCred )
-            if conn != None:
-                avail_zones = []
-                try:
-                    zones = conn.get_all_zones()
-                    for zone in zones:
-                        zone = str( zone ).split(':')[1]
-                        avail_zones.append( zone )
-                        providersToZones[storedCred.name] = avail_zones
-                except boto.exception.EC2ResponseError, e:
-                    log.error( "Retrieving zones for credentials '%s' failed." % storedCred.name )
-                    providersToZones[storedCred.name] = ['Unknown provider zone']
-            else:
-                providersToZones[storedCred.name] = ['Unknown provider zone']
-        
-            # Hard-coded solution
-#            if storedCred.provider.storedCred.provider.region_name == 'us-east-1':
-#                ec2_zones = ['us-east-1a', 'us-east-1b', 'us-east-1c', 'us-east-1d']
-#                providersToZones[storedCred.name] = ec2_zones 
-#            elif storedCred.provider.region_name == 'eu-west-1':
-#                ec2_zones = ['eu-west-1a', 'eu-west-1b']
-#                providersToZones[storedCred.name] = ec2_zones 
-#            elif storedCred.provider.type == 'eucalyptus':
-#                providersToZones[storedCred.name] = ['epc']
-#            else:
-#                providersToZones[storedCred.name] = ['Unknown provider zone']
         
         if instanceName:
             # Check if volume size is entered as an integer
@@ -337,14 +305,48 @@ class CloudController( BaseController ):
             except AttributeError, ae:
                 inst_error = "No registered cloud images. You must contact administrator to add some before proceeding."
                 log.debug("AttributeError when registering new UCI '%s': %s " % ( instanceName, str( ae ) ) )
+        else:
+            storedCreds = trans.sa_session.query( model.CloudUserCredentials ).filter_by( user=user, deleted=False ).all()
+            if len( storedCreds ) == 0:
+                return trans.show_error_message( "You must register credentials before configuring a Galaxy cloud instance." )
+            # Create dict mapping of cloud-providers-to-zones available by those providers
+            providersToZones = {}
+            for storedCred in storedCreds:
+                zones = None
+                conn = get_connection( trans, storedCred )
+                if conn != None:
+                    avail_zones = []
+                    try:
+                        zones = conn.get_all_zones()
+                        for z in zones:
+                            z = str( z ).split(':')[1]
+                            avail_zones.append( z )
+                            providersToZones[storedCred.name] = avail_zones
+                    except boto.exception.EC2ResponseError, e:
+                        log.error( "Retrieving zones for credentials '%s' failed: %s" % ( storedCred.name, e ) )
+                        providersToZones[storedCred.name] = [ "Retrieving zones failed: " + str( e ) ]
+                else:
+                    providersToZones[storedCred.name] = ['Connection with cloud provider could not be established.']
             
-        return trans.fill_template( "cloud/configure_uci.mako", 
-                                    instanceName = instanceName, 
-                                    credName = storedCreds, 
-                                    volSize = volSize, 
-                                    zone = zone, 
-                                    error = error, 
-                                    providersToZones = providersToZones )
+                # Hard-coded solution
+    #            if storedCred.provider.storedCred.provider.region_name == 'us-east-1':
+    #                ec2_zones = ['us-east-1a', 'us-east-1b', 'us-east-1c', 'us-east-1d']
+    #                providersToZones[storedCred.name] = ec2_zones 
+    #            elif storedCred.provider.region_name == 'eu-west-1':
+    #                ec2_zones = ['eu-west-1a', 'eu-west-1b']
+    #                providersToZones[storedCred.name] = ec2_zones 
+    #            elif storedCred.provider.type == 'eucalyptus':
+    #                providersToZones[storedCred.name] = ['epc']
+    #            else:
+    #                providersToZones[storedCred.name] = ['Unknown provider zone']
+            
+            return trans.fill_template( "cloud/configure_uci.mako", 
+                                        instanceName = instanceName, 
+                                        credName = storedCreds, 
+                                        volSize = volSize, 
+                                        zone = zone, 
+                                        error = error, 
+                                        providersToZones = providersToZones )
     
     @web.expose
     @web.require_admin

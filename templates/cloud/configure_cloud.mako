@@ -28,14 +28,15 @@ ${h.js( "jquery" )}
 				old_state = $(elem + "-state").text();
 				prev_old_state = $(elem + "-state-p").text();
 				new_state = data[i].state;
-				//console.log( "old_state[%d] = %s", i, old_state );
-				//console.log( "prev_old_state[%d] = %s", i, prev_old_state );
-				//console.log( "new_state[%d] = %s", i, new_state );
+				console.log( "old_state[%d] = %s", i, old_state );
+				console.log( "prev_old_state[%d] = %s", i, prev_old_state );
+				console.log( "new_state[%d] = %s", i, new_state );
 				if ( ( old_state=='pending' && new_state=='running' ) ||  ( old_state=='shutting-down' && new_state=='available' ) || \
 					 ( old_state=='running' && new_state=='available' ) || ( old_state=='running' && new_state=='error' ) || \
 					 ( old_state=='pending' && new_state=='error' ) || ( old_state=='pending' && new_state=='available' ) || \
 					 ( old_state=='submitted' && new_state=='available' ) || ( prev_old_state.match('newUCI') && new_state=='available' ) || \
-					 ( prev_old_state.match('new') && new_state=='available' ) ) {
+					 ( prev_old_state.match('new') && new_state=='available' ) || ( prev_old_state.match('deletingUCI') && new_state=='deleted' ) || \
+					 ( prev_old_state.match('deleting') && new_state=='deleted' ) ) {
 					var url = "${h.url_for( controller='cloud', action='list')}";
 					location.replace( url );
 				}
@@ -50,7 +51,8 @@ ${h.js( "jquery" )}
 					var url = "${h.url_for( controller='cloud', action='list')}";
 					location.replace( url );
 				} 
-				else if ( new_state=='shutting-down' || new_state=='shutting-downUCI' ) {
+				
+				if ( new_state=='shutting-down' || new_state=='shutting-downUCI' ) {
 					$(elem + "-link").text( "" );
 				}
 				
@@ -198,7 +200,7 @@ ${h.js( "jquery" )}
 			<colgroup width="25%"></colgroup>
 			<colgroup width="10%"></colgroup>
 			<tr class="header">
-	            <th>Instance name (credentials)</th>
+	            <th>Live instance name (credentials)</th>
 				<th>Storage size (GB)</th>
 				<th>State</th>
 	            <th>Alive since</th>
@@ -255,24 +257,23 @@ ${h.js( "jquery" )}
 				</tr>
 			%endif
 	    </table>
-		
+		<p />
 		## *****************************************************
 		## Manage previously configured instances
-		<table class="mange-table noHR" border="0" cellspacing="0" cellpadding="0" width="100%">
+		## <table class="mange-table noHR" border="0" cellspacing="0" cellpadding="0" width="100%">
+		<table class="mange-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
 	        <colgroup width="40%"></colgroup>
 			<colgroup width="15%"></colgroup>
 			<colgroup width="10%"></colgroup>
-			<colgroup width="35%"></colgroup>
-			##<tr class="header">
-	            ##<th>Previously configured instances</th>
-	            ##<th>Storage size (GB)</th>
-				##<th>State</th>
-	            ##<th>Alive since</th>
-				##<th></th>
-				##<th></th>
-				##<th></th>
-				##<th></th>
-	        ##</tr>
+			<colgroup width="25%"></colgroup>
+			<colgroup width="10%"></colgroup>
+			<tr class="header">
+	            <th>Configured instance name (credentials)</th>
+				<th>Storage size (GB)</th>
+				<th>State</th>
+	            <th></th>
+				<th></th>
+	        </tr>
 	        
 			%if prevInstances:
 				%for i, prevInstance in enumerate( prevInstances ):
@@ -307,8 +308,7 @@ ${h.js( "jquery" )}
 								${str(prevInstance.state)}
 							%endif
 						</td>
-						<td>N/A</td>
-		                <td>
+						<td>
 		                    <div popupmenu="pi-${i}-popup">
 		                    <a class="action-button" href="${h.url_for( action='start', id=trans.security.encode_id(prevInstance.id), type='m1.small' )}"> Start m1.small</a>
 		                    <a class="action-button" href="${h.url_for( action='start', id=trans.security.encode_id(prevInstance.id), type='c1.medium' )}"> Start c1.medium</a>

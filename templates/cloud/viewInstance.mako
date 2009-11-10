@@ -115,21 +115,22 @@
 	   %if liveInstance.uci.key_pair_material != None:
 	   <tr>
 	   		<td> Keypair material:</td>
-			<div id="shortComment2">
-               <a onclick="document.getElementById('fullComment2').style.display = 'block'; 
-                document.getElementById('shortComment2').style.display = 'none'; return 0" 
+			<td>
+			<div id="short">
+               <a onclick="document.getElementById('full').style.display = 'block'; 
+                document.getElementById('short').style.display = 'none'; return 0" 
                 href="javascript:void(0)">
                 + Show
                </a>                    
             </div>
-            <div id="fullComment2" style="DISPLAY: none">
-	      		<nobr><b>${liveInstance.uci.key_pair_material}</b></nobr><br/>
-                <a onclick="document.getElementById('shortComment2').style.display = 'block'; 
-                document.getElementById('fullComment2').style.display = 'none'; return 0;" 
+            <div id="full" style="DISPLAY: none">
+	      		<a onclick="document.getElementById('short').style.display = 'block'; 
+                document.getElementById('full').style.display = 'none'; return 0;" 
                 href="javascript:void(0)">
-                - Hide
-                </a>            
-           </div>
+                - Hide</a>
+                ${liveInstance.uci.key_pair_material}<br/>
+            </div>
+			</td>
 	   </tr>
 	   %endif
 	   
