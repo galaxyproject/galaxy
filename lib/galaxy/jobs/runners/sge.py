@@ -143,7 +143,7 @@ class SGEJobRunner( object ):
         if sge_queue_name is not None:
             jt.setNativeSpecification( "-q %s" % sge_queue_name )
 
-        script = sge_template % (job_wrapper.galaxy_lib_dir, os.getcwd(), command_line)
+        script = sge_template % (job_wrapper.galaxy_lib_dir, os.path.abspath( job_wrapper.working_directory ), command_line)
         fh = file( jt.remoteCommand, "w" )
         fh.write( script )
         fh.close()

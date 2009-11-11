@@ -205,7 +205,7 @@ class PBSJobRunner( object ):
             job_attrs[3].value = stageout
             job_attrs[4].name = pbs.ATTR_N
             job_attrs[4].value = "%s_%s" % ( job_wrapper.job_id, job_wrapper.tool.id )
-            exec_dir = os.path.abspath( os.getcwd() )
+            exec_dir = os.path.abspath( job_wrapper.working_directory )
         # If not, we're using NFS
         else:
             job_attrs = pbs.new_attropl(3)
@@ -215,7 +215,7 @@ class PBSJobRunner( object ):
             job_attrs[1].value = efile
             job_attrs[2].name = pbs.ATTR_N
             job_attrs[2].value = "%s_%s" % ( job_wrapper.job_id, job_wrapper.tool.id )
-            exec_dir = os.getcwd()
+            exec_dir = os.path.abspath( job_wrapper.working_directory )
 
         # write the job script
         if self.app.config.pbs_stage_path != '':
