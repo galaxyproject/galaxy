@@ -208,11 +208,13 @@ class PBSJobRunner( object ):
             exec_dir = os.path.abspath( os.getcwd() )
         # If not, we're using NFS
         else:
-            job_attrs = pbs.new_attropl(2)
+            job_attrs = pbs.new_attropl(3)
             job_attrs[0].name = pbs.ATTR_o
             job_attrs[0].value = ofile
             job_attrs[1].name = pbs.ATTR_e
             job_attrs[1].value = efile
+            job_attrs[2].name = pbs.ATTR_N
+            job_attrs[2].value = "%s" % job_wrapper.job_id
             exec_dir = os.getcwd()
 
         # write the job script
