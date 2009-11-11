@@ -36,7 +36,7 @@
   <tests>
     <test>
       <param name="indexSource" value="history" /> 
-      <param name="input1" value="sam_to_bam_in1.sam" ftype="sam" dbkey="chrM" />
+      <param name="input1" value="sam_to_bam_in1.sam" ftype="sam" />
       <param name="ref_file" value="chrM.fa" ftype="fasta" />
       <output name="output1" file="sam_to_bam_out1.bam" />
     </test>
