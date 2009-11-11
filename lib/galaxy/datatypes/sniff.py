@@ -249,6 +249,9 @@ def guess_ext( fname, sniff_order=None, is_multi_byte=False ):
     >>> fname = get_test_fname('alignment.lav')
     >>> guess_ext(fname)
     'lav'
+    >>> fname = get_test_fname('1.sff')
+    >>> guess_ext(fname)
+    'sff'
     """
     if sniff_order is None:
         datatypes_registry = registry.Registry()

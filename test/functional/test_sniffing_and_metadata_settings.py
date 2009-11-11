@@ -246,6 +246,17 @@ class SniffingAndMetaDataSettings( TwillTestCase ):
         assert latest_hda is not None, "Problem retrieving fastq hda from the database"
         if not latest_hda.name == '2gen.fastq' and not latest_hda.extension == 'fastq':
             raise AssertionError, "fastq data type was not correctly sniffed."
+    def test_0100_sff_datatype( self ):
+        """Testing correctly sniffing sff format upon upload"""
+        self.upload_file( '1.sff' )
+        self.verify_dataset_correctness( '1.sff' )
+        self.check_history_for_string( 'format: <span class="sff">sff' )
+        latest_hda = sa_session.query( galaxy.model.HistoryDatasetAssociation ) \
+                               .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ) \
+                               .first()
+        assert latest_hda is not None, "Problem retrieving sff hda from the database"
+        if not latest_hda.name == '1.sff' and not latest_hda.extension == 'sff':
+            raise AssertionError, "sff data type was not correctly sniffed."
     def test_9999_clean_up( self ):
         self.delete_history( id=self.security.encode_id( history1.id ) )
         self.logout()

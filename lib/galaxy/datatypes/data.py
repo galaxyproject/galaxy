@@ -1,4 +1,4 @@
-import logging, os, sys, time, tempfile
+import logging, os, sys, time, tempfile, binascii
 from galaxy import util
 from galaxy.util.odict import odict
 from galaxy.util.bunch import Bunch
@@ -455,3 +455,35 @@ def get_line_count(file_name):
 
 class Newick( Text ):
     pass
+
+class Sff( Binary ):
+    """ Standard Flowgram Format (SFF) """
+    file_ext = "sff"
+    def __init__( self, **kwd ):
+        Binary.__init__(self, **kwd)
+    def init_meta( self, dataset, copy_from=None ):
+        Binary.init_meta( self, dataset, copy_from=copy_from )
+    def sniff( self, filename ):
+        '''
+        The first 4 bytes of any sff file is '.sff'
+        
+        >>> fname = get_test_fname( '1.sff' )
+        >>> Sff().sniff( fname )
+        True
+        '''
+        header = open( filename ).read(4)
+        if binascii.b2a_hex( header ) == binascii.hexlify( '.sff' ):
+            return True
+        return False
+    def set_peek( self, dataset ):
+        if not dataset.dataset.purged:
+            dataset.peek  = "Binary sff file" 
+            dataset.blurb = nice_size( dataset.get_size() )
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except:
+            return "sff file (%s)" % ( nice_size( dataset.get_size() ) )

@@ -133,6 +133,7 @@ class Registry( object ):
                 'qual454'     : qualityscore.QualityScore454(),
                 'sam'         : tabular.Sam(), 
                 'scf'         : images.Scf(),
+                'sff'         : data.Sff(),
                 'tabular'     : tabular.Tabular(),
                 'taxonomy'    : tabular.Taxonomy(),
                 'txt'         : data.Text(),
@@ -162,6 +163,7 @@ class Registry( object ):
                 'qual454'     : 'text/plain',
                 'sam'         : 'text/plain',
                 'scf'         : 'application/octet-stream',
+                'sff'         : 'application/octet-stream',
                 'tabular'     : 'text/plain',
                 'taxonomy'    : 'text/plain',
                 'txt'         : 'text/plain',
@@ -172,6 +174,7 @@ class Registry( object ):
         # because some formats are much more flexibly defined than others.
         if len(self.sniff_order) < 1:
             self.sniff_order = [
+                data.Sff(),
                 xml.BlastXml(),
                 sequence.Maf(),
                 sequence.Lav(),

@@ -234,6 +234,10 @@ def add_file( dataset, json_file, output_path ):
             else:
                 ext = dataset.file_type
             data_type = ext
+        elif data_type == 'binary' and ext == 'auto':
+            # currently we are only sniffing sff binary files
+            ext = sniff.guess_ext( dataset.path )
+            data_type = ext
     # Save job info for the framework
     if ext == 'auto' and dataset.ext:
         ext = dataset.ext
