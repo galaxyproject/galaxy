@@ -91,12 +91,8 @@ class GalaxyRBACAgent( RBACAgent ):
             ( self.model.LibraryDatasetDatasetAssociation, self.model.LibraryDatasetDatasetAssociationPermissions ) )
     @property
     def sa_session( self ):
-        """
-        Returns a SQLAlchemy session -- currently just gets the current
-        session from the threadlocal session context, but this is provided
-        to allow migration toward a more SQLAlchemy 0.4 style of use.
-        """
-        return self.model.context.current
+        """Returns a SQLAlchemy session"""
+        return self.model.context
     def allow_dataset_action( self, roles, action, dataset ):
         """
         Returns true when user has permission to perform an action on an
@@ -183,24 +179,29 @@ class GalaxyRBACAgent( RBACAgent ):
         raise 'No valid method of associating provided components: %s' % kwd
     def associate_user_group( self, user, group ):
         assoc = self.model.UserGroupAssociation( user, group )
-        assoc.flush()
+        self.sa_session.add( assoc )
+        self.sa_session.flush()
         return assoc
     def associate_user_role( self, user, role ):
         assoc = self.model.UserRoleAssociation( user, role )
-        assoc.flush()
+        self.sa_session.add( assoc )
+        self.sa_session.flush()
         return assoc
     def associate_group_role( self, group, role ):
         assoc = self.model.GroupRoleAssociation( group, role )
-        assoc.flush()
+        self.sa_session.add( assoc )
+        self.sa_session.flush()
         return assoc
     def associate_action_dataset_role( self, action, dataset, role ):
         assoc = self.model.DatasetPermissions( action, dataset, role )
-        assoc.flush()
+        self.sa_session.add( assoc )
+        self.sa_session.flush()
         return assoc
     def create_private_user_role( self, user ):
         # Create private role
         role = self.model.Role( name=user.email, description='Private Role for ' + user.email, type=self.model.Role.types.PRIVATE )
-        role.flush()
+        self.sa_session.add( role )
+        self.sa_session.flush()
         # Add user to role
         self.associate_components( role=role, user=user )
         return role
@@ -228,13 +229,13 @@ class GalaxyRBACAgent( RBACAgent ):
         # Delete all of the current default permissions for the user
         for dup in user.default_permissions:
             self.sa_session.delete( dup )
-            dup.flush()
         # Add the new default permissions for the user
         for action, roles in permissions.items():
             if isinstance( action, Action ):
                 action = action.action
             for dup in [ self.model.DefaultUserPermissions( user, action, role ) for role in roles ]:
-                dup.flush()
+                self.sa_session.add( dup )
+        self.sa_session.flush()
         if history:
             for history in user.active_histories:
                 self.history_set_default_permissions( history, permissions=permissions, dataset=dataset, bypass_manage_permission=bypass_manage_permission )
@@ -258,13 +259,13 @@ class GalaxyRBACAgent( RBACAgent ):
         # Delete all of the current default permission for the history
         for dhp in history.default_permissions:
             self.sa_session.delete( dhp )
-            dhp.flush()
         # Add the new default permissions for the history
         for action, roles in permissions.items():
             if isinstance( action, Action ):
                 action = action.action
             for dhp in [ self.model.DefaultHistoryPermissions( history, action, role ) for role in roles ]:
-                dhp.flush()
+                self.sa_session.add( dhp )
+        self.sa_session.flush()
         if dataset:
             # Only deal with datasets that are not purged
             for hda in history.activatable_datasets:
@@ -296,13 +297,13 @@ class GalaxyRBACAgent( RBACAgent ):
         # or the dataset is inaccessible.  See admin/library_dataset_dataset_association()
         for dp in dataset.actions:
             self.sa_session.delete( dp )
-            dp.flush()
         # Add the new permissions on the dataset
         for action, roles in permissions.items():
             if isinstance( action, Action ):
                 action = action.action
             for dp in [ self.model.DatasetPermissions( action, dataset, role ) for role in roles ]:
-                dp.flush()
+                self.sa_session.add( dp )
+        self.sa_session.flush()
     def set_dataset_permission( self, dataset, permission={} ):
         """
         Set a specific permission on a dataset, leaving all other current permissions on the dataset alone
@@ -317,10 +318,10 @@ class GalaxyRBACAgent( RBACAgent ):
             for dp in dataset.actions:
                 if dp.action == action:
                     self.sa_session.delete( dp )
-                    dp.flush()
             # Add the new specific permission on the dataset
             for dp in [ self.model.DatasetPermissions( action, dataset, role ) for role in roles ]:
-                dp.flush()
+                self.sa_session.add( dp )
+        self.sa_session.flush()
     def dataset_is_public( self, dataset ):
         # A dataset is considered public if there are no "access" actions associated with it.  Any
         # other actions ( 'manage permissions', 'edit metadata' ) are irrelevant.
@@ -331,7 +332,7 @@ class GalaxyRBACAgent( RBACAgent ):
         for dp in dataset.actions:
             if dp.action == self.permitted_actions.DATASET_ACCESS.action:
                 self.sa_session.delete( dp )
-                dp.flush()
+        self.sa_session.flush()
     def get_dataset_permissions( self, dataset ):
         """
         Return a dictionary containing the actions and associated roles on dataset.
@@ -374,7 +375,8 @@ class GalaxyRBACAgent( RBACAgent ):
         if sharing_role is None:
             sharing_role = self.model.Role( name = "Sharing role for: " + ", ".join( [ u.email for u in users ] ),
                                             type = self.model.Role.types.SHARING )
-            sharing_role.flush()
+            self.sa_session.add( sharing_role )
+            self.sa_session.flush()
             for user in users:
                 self.associate_components( user=user, role=sharing_role )
         self.set_dataset_permission( dataset, { self.permitted_actions.DATASET_ACCESS : [ sharing_role ] } )
@@ -382,7 +384,6 @@ class GalaxyRBACAgent( RBACAgent ):
         # Set new permissions on library_item, eliminating all current permissions
         for role_assoc in library_item.actions:
             self.sa_session.delete( role_assoc )
-            role_assoc.flush()
         # Add the new permissions on library_item
         for item_class, permission_class in self.library_item_assocs:
             if isinstance( library_item, item_class ):
@@ -390,7 +391,8 @@ class GalaxyRBACAgent( RBACAgent ):
                     if isinstance( action, Action ):
                         action = action.action
                     for role_assoc in [ permission_class( action, library_item, role ) for role in roles ]:
-                        role_assoc.flush()
+                        self.sa_session.add( role_assoc )
+        self.sa_session.flush()
     def get_library_dataset_permissions( self, library_dataset ):
         # Permissions will always be the same for LibraryDatasets and associated
         # LibraryDatasetDatasetAssociations
@@ -424,7 +426,8 @@ class GalaxyRBACAgent( RBACAgent ):
                 for name, action in self.permitted_actions.items():
                     if not permission_class.filter_by( role_id = private_role.id, action = action.action ).first():
                         lp = permission_class( action.action, target_library_item, private_role )
-                        lp.flush()
+                        self.sa_session.add( lp )
+                        self.sa_session.flush()
             else:
                 raise 'Invalid class (%s) specified for target_library_item (%s)' % \
                     ( target_library_item.__class__, target_library_item.__class__.__name__ )
@@ -475,7 +478,7 @@ class GalaxyRBACAgent( RBACAgent ):
             if delete_existing_assocs:
                 for a in user.non_private_roles + user.groups:
                     self.sa_session.delete( a )
-                    a.flush()
+                    self.sa_session.flush()
             self.sa_session.refresh( user )
             for role in roles:
                 # Make sure we are not creating an additional association with a PRIVATE role
@@ -488,7 +491,7 @@ class GalaxyRBACAgent( RBACAgent ):
             if delete_existing_assocs:
                 for a in group.roles + group.users:
                     self.sa_session.delete( a )
-                    a.flush()
+                    self.sa_session.flush()
             for role in roles:
                 self.associate_components( group=group, role=role )
             for user in users:
@@ -498,7 +501,7 @@ class GalaxyRBACAgent( RBACAgent ):
             if delete_existing_assocs:
                 for a in role.users + role.groups:
                     self.sa_session.delete( a )
-                    a.flush()
+                    self.sa_session.flush()
             for user in users:
                 self.associate_components( user=user, role=role )
             for group in groups:
@@ -571,7 +574,8 @@ class HostAgent( RBACAgent ):
             self.permitted_actions = permitted_actions
     @property
     def sa_session( self ):
-        return self.model.context.current
+        """Returns a SQLAlchemy session"""
+        return self.model.context
     def allow_action( self, addr, action, **kwd ):
         if 'dataset' in kwd and action == self.permitted_actions.DATASET_ACCESS:
             hda = kwd['dataset']
@@ -614,7 +618,8 @@ class HostAgent( RBACAgent ):
             hdadaa.update_time = datetime.utcnow()
         else:
             hdadaa = self.model.HistoryDatasetAssociationDisplayAtAuthorization( hda=hda, user=user, site=site )
-        hdadaa.flush()
+        self.sa_session.add( hdadaa )
+        self.sa_session.flush()
 
 def get_permitted_actions( filter=None ):
     '''Utility method to return a subset of RBACAgent's permitted actions'''

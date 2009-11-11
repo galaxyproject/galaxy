@@ -391,9 +391,9 @@ class FileParameter( MetadataParameter ):
             return value
         if DATABASE_CONNECTION_AVAILABLE:
             try:
-                # FIXME: GVK ( 10/23/09 ) Can we get a valid db session without this import?
-                from galaxy.model.mapping import context as sa_session
-                return sa_session.query( galaxy.model.MetadataFile ).get( value )
+                # FIXME: GVK ( 11/11/09 ) had to add the monkey patch back into assignmapper for the get
+                # method for this since Metadata has no hook into mapping.context ( the salalchemy session ).
+                return galaxy.model.MetadataFile.get( value )
             except:
                 #value was not a valid id
                 return None

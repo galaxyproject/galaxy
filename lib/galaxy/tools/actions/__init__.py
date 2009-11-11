@@ -44,9 +44,11 @@ class DefaultToolAction( object ):
                             new_data = data.datatype.convert_dataset( trans, data, target_ext, return_output = True, visible = False ).values()[0]
                             new_data.hid = data.hid
                             new_data.name = data.name
-                            new_data.flush()
+                            trans.sa_session.add( new_data )
+                            trans.sa_session.flush()
                             assoc.dataset = new_data
-                            assoc.flush()
+                            trans.sa_session.add( assoc )
+                            trans.sa_session.flush()
                             data = new_data
                 user, roles = trans.get_user_and_roles()
                 if data and not trans.app.security_agent.can_access_dataset( roles, data.dataset ):
@@ -198,7 +200,8 @@ class DefaultToolAction( object ):
                                                 ext = when_elem.get( 'format', ext )
                     data = trans.app.model.HistoryDatasetAssociation( extension=ext, create_dataset=True )
                     # Commit the dataset immediately so it gets database assigned unique id
-                    data.flush()
+                    trans.sa_session.add( data )
+                    trans.sa_session.flush()
                     trans.app.security_agent.set_all_dataset_permissions( data.dataset, output_permissions )
                 # Create an empty file immediately
                 open( data.file_name, "w" ).close()
@@ -241,7 +244,8 @@ class DefaultToolAction( object ):
             if name not in child_dataset_names and name not in incoming: #don't add children; or already existing datasets, i.e. async created
                 data = out_data[ name ]
                 trans.history.add_dataset( data, set_hid = set_output_hid )
-                data.flush()
+                trans.sa_session.add( data )
+                trans.sa_session.flush()
         # Add all the children to their parents
         for parent_name, child_name in parent_to_child_pairs:
             parent_dataset = out_data[ parent_name ]
@@ -293,7 +297,8 @@ class DefaultToolAction( object ):
             # Job should not be queued, so set state to ok
             job.state = JOB_OK
             job.info = "Redirected to: %s" % redirect_url
-            job.flush()
+            trans.sa_session.add( job )
+            trans.sa_session.flush()
             trans.response.send_redirect( url_for( controller='tool_runner', action='redirect', redirect_url=redirect_url ) )
         else:
             # Queue the job for execution

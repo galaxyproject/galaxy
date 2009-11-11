@@ -56,7 +56,8 @@ def main():
                 galaxy.datatypes.tabular.Tabular().set_meta(data)
             else:
                 data.set_meta()
-            data.flush()
+            app.model.context.add( data )
+            app.model.context.flush()
             
     #Search out maf datatypes and make sure that available species is set.
     #print "Seeking out maf files and setting available species."

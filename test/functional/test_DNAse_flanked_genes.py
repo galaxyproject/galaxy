@@ -43,7 +43,7 @@ class AnalysisDNAseHSSFlankedGenes( TwillTestCase ):
         # form will not be displayed on ted edit attributes page.
         for dp in latest_hda.dataset.actions:
             sa_session.delete( dp )
-            dp.flush()
+            sa_session.flush()
         sa_session.refresh( latest_hda.dataset )
         self.edit_hda_attribute_info( str( latest_hda.id ), new_name="DNAse HS" )
         self.check_metadata_for_string( "DNAse HS" )
@@ -69,7 +69,7 @@ class AnalysisDNAseHSSFlankedGenes( TwillTestCase ):
                                .first()
         for dp in latest_hda.dataset.actions:
             sa_session.delete( dp )
-            dp.flush()
+            sa_session.flush()
         sa_session.refresh( latest_hda.dataset )
         self.edit_hda_attribute_info( str( latest_hda.id ), new_name="Genes" )
         self.check_metadata_for_string( "Genes" )
@@ -82,7 +82,7 @@ class AnalysisDNAseHSSFlankedGenes( TwillTestCase ):
                                .first()
         for dp in latest_hda.dataset.actions:
             sa_session.delete( dp )
-            dp.flush()
+            sa_session.flush()
         sa_session.refresh( latest_hda.dataset )
         self.edit_hda_attribute_info( str( latest_hda.id ), new_name="Flanks" )
         self.check_metadata_for_string( "Flanks" )

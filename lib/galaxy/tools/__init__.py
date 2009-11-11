@@ -272,7 +272,10 @@ class Tool:
         self.app = app
         # Parse XML element containing configuration
         self.parse( root )
-        
+    @property
+    def sa_session( self ):
+        """Returns a SQLAlchemy session"""
+        return self.app.model.context
     def parse( self, root ):
         """
         Read tool configuration from the element `root` and fill in `self`.
@@ -863,7 +866,7 @@ class Tool:
         if 'async_datasets' in inputs and inputs['async_datasets'] not in [ 'None', '', None ]:
             for id in inputs['async_datasets'].split(','):
                 try:
-                    data = trans.sa_session.query( trans.model.HistoryDatasetAssociation ).get( int( id ) )
+                    data = self.sa_session.query( trans.model.HistoryDatasetAssociation ).get( int( id ) )
                 except:
                     log.exception( 'Unable to load precreated dataset (%s) sent in upload form' % id )
                     continue
@@ -874,7 +877,8 @@ class Tool:
                 else:
                     data.state = data.states.ERROR
                     data.info = 'Upload of this dataset was interrupted.  Please try uploading again or'
-                    data.flush()
+                    self.sa_session.add( data )
+                    self.sa_session.flush()
         # It's unlikely the user will ever see this.
         return 'message.mako', dict( message_type='error', message='Your upload was interrupted.  If this was uninentional, please retry it.', refresh_frames=[], cont=None )
 
@@ -1454,7 +1458,8 @@ class Tool:
                 if data.missing_meta(): 
                     data = app.datatypes_registry.change_datatype( data, 'tabular' )
             data.set_peek()
-            data.flush()
+            self.sa_session.add( data )
+            self.sa_session.flush()
 
     def collect_associated_files( self, output, job_working_directory ):
         for name, hda in output.items():
@@ -1493,7 +1498,8 @@ class Tool:
                 self.app.security_agent.copy_dataset_permissions( outdata.dataset, child_dataset.dataset )
                 # Move data from temp location to dataset location
                 shutil.move( filename, child_dataset.file_name )
-                child_dataset.flush()
+                self.sa_session.add( child_dataset )
+                self.sa_session.flush()
                 child_dataset.set_size()
                 child_dataset.name = "Secondary Dataset (%s)" % ( designation )
                 child_dataset.init_meta()
@@ -1507,16 +1513,19 @@ class Tool:
                 if job:
                     assoc = self.app.model.JobToOutputDatasetAssociation( '__new_child_file_%s|%s__' % ( name, designation ), child_dataset )
                     assoc.job = job
-                    assoc.flush()
+                    self.sa_session.add( assoc )
+                    self.sa_session.flush()
                 child_dataset.state = outdata.state
-                child_dataset.flush()
+                self.sa_session.add( child_dataset )
+                self.sa_session.flush()
                 # Add child to return dict 
                 children[name][designation] = child_dataset
                 for dataset in outdata.dataset.history_associations: #need to update all associated output hdas, i.e. history was shared with job running
                     if outdata == dataset: continue
                     # Create new child dataset
                     child_data = child_dataset.copy( parent_id = dataset.id )
-                    child_data.flush()
+                    self.sa_session.add( child_dataset )
+                    self.sa_session.flush()
         return children
         
     def collect_primary_datasets( self, output):
@@ -1540,7 +1549,8 @@ class Tool:
                 # Create new primary dataset
                 primary_data = self.app.model.HistoryDatasetAssociation( extension=ext, designation=designation, visible=visible, dbkey=dbkey, create_dataset=True )
                 self.app.security_agent.copy_dataset_permissions( outdata.dataset, primary_data.dataset )
-                primary_data.flush()
+                self.sa_session.add( primary_data )
+                self.sa_session.flush()
                 # Move data from temp location to dataset location
                 shutil.move( filename, primary_data.file_name )
                 primary_data.set_size()
@@ -1558,9 +1568,11 @@ class Tool:
                 if job:
                     assoc = self.app.model.JobToOutputDatasetAssociation( '__new_primary_file_%s|%s__' % ( name, designation ), primary_data )
                     assoc.job = job
-                    assoc.flush()
+                    self.sa_session.add( assoc )
+                    self.sa_session.flush()
                 primary_data.state = outdata.state
-                primary_data.flush()
+                self.sa_session.add( primary_data )
+                self.sa_session.flush()
                 outdata.history.add_dataset( primary_data )
                 # Add dataset to return dict 
                 primary_datasets[name][designation] = primary_data
@@ -1568,7 +1580,8 @@ class Tool:
                     if outdata == dataset: continue
                     new_data = primary_data.copy()
                     dataset.history.add( new_data )
-                    new_data.flush()
+                    self.sa_session.add( new_data )
+                    self.sa_session.flush()
         return primary_datasets
 
 class SetMetadataTool( Tool ):
@@ -1581,7 +1594,8 @@ class SetMetadataTool( Tool ):
             # For now, we'll leave the default metadata and set the state back to its original.
             dataset.datatype.after_edit( dataset )
             dataset.state = param_dict.get( '__ORIGINAL_DATASET_STATE__' )
-            dataset.flush()
+            self.sa_session.add( dataset )
+            self.sa_session.flush()
 
         
 # ---- Utility classes to be factored out -----------------------------------

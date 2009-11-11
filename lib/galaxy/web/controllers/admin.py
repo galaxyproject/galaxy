@@ -350,23 +350,24 @@ class Admin( BaseController ):
             else:
                 # Create the role
                 role = trans.app.model.Role( name=name, description=description, type=trans.app.model.Role.types.ADMIN )
-                role.flush()
+                trans.sa_session.add( role )
                 # Create the UserRoleAssociations
                 for user in [ trans.sa_session.query( trans.app.model.User ).get( x ) for x in in_users ]:
                     ura = trans.app.model.UserRoleAssociation( user, role )
-                    ura.flush()
+                    trans.sa_session.add( ura )
                 # Create the GroupRoleAssociations
                 for group in [ trans.sa_session.query( trans.app.model.Group ).get( x ) for x in in_groups ]:
                     gra = trans.app.model.GroupRoleAssociation( group, role )
-                    gra.flush()
+                    trans.sa_session.add( gra )
                 if create_group_for_role == 'yes':
                     # Create the group
                     group = trans.app.model.Group( name=name )
-                    group.flush()
+                    trans.sa_session.add( group )
                     msg = "Group '%s' has been created, and role '%s' has been created with %d associated users and %d associated groups" % \
                     ( group.name, role.name, len( in_users ), len( in_groups ) )
                 else:
                     msg = "Role '%s' has been created with %d associated users and %d associated groups" % ( role.name, len( in_users ), len( in_groups ) )
+                trans.sa_session.flush()
                 trans.response.send_redirect( web.url_for( controller='admin', action='roles', message=util.sanitize_text( msg ), status='done' ) )
             trans.response.send_redirect( web.url_for( controller='admin', action='create_role', msg=util.sanitize_text( msg ), messagetype='error' ) )
         out_users = []
@@ -402,13 +403,12 @@ class Admin( BaseController ):
                     for dup in user.default_permissions:
                         if role == dup.role:
                             trans.sa_session.delete( dup )
-                            dup.flush()
                     # Delete DefaultHistoryPermissions for previously associated users that have been removed from the role
                     for history in user.histories:
                         for dhp in history.default_permissions:
                             if role == dhp.role:
                                 trans.sa_session.delete( dhp )
-                                dhp.flush()
+                    trans.sa_session.flush()
             in_groups = [ trans.sa_session.query( trans.app.model.Group ).get( x ) for x in util.listify( params.in_groups ) ]
             trans.app.security_agent.set_entity_role_associations( roles=[ role ], users=in_users, groups=in_groups )
             trans.sa_session.refresh( role )
@@ -428,7 +428,8 @@ class Admin( BaseController ):
                 else:
                     role.name = new_name
                     role.description = new_description
-                    role.flush()
+                    trans.sa_session.add( role )
+                    trans.sa_session.flush()
                     msg = "Role '%s' has been renamed to '%s'" % ( old_name, new_name )
                     return trans.response.send_redirect( web.url_for( action='roles', message=util.sanitize_text( msg ), status='done' ) )
             return trans.fill_template( '/admin/dataset_security/role/role_rename.mako', role=role, msg=msg, messagetype=messagetype )
@@ -491,7 +492,8 @@ class Admin( BaseController ):
         params = util.Params( kwd )
         role = get_role( trans, params.id )
         role.deleted = True
-        role.flush()
+        trans.sa_session.add( role )
+        trans.sa_session.flush()
         message = "Role '%s' has been marked as deleted." % role.name
         trans.response.send_redirect( web.url_for( action='roles', message=util.sanitize_text( message ), status='done' ) )
     @web.expose
@@ -500,7 +502,8 @@ class Admin( BaseController ):
         params = util.Params( kwd )
         role = get_role( trans, params.id )
         role.deleted = False
-        role.flush()
+        trans.sa_session.add( role )
+        trans.sa_session.flush()
         message = "Role '%s' has been marked as not deleted." % role.name
         trans.response.send_redirect( web.url_for( action='roles', message=util.sanitize_text( message ), status='done' ) )
     @web.expose
@@ -525,23 +528,19 @@ class Admin( BaseController ):
             for dup in user.default_permissions:
                 if role == dup.role:
                     trans.sa_session.delete( dup )
-                    dup.flush()
             # Delete DefaultHistoryPermissions for associated users
             for history in user.histories:
                 for dhp in history.default_permissions:
                     if role == dhp.role:
                         trans.sa_session.delete( dhp )
-                        dhp.flush()
             trans.sa_session.delete( ura )
-            ura.flush()
         # Delete GroupRoleAssociations
         for gra in role.groups:
             trans.sa_session.delete( gra )
-            gra.flush()
         # Delete DatasetPermissionss
         for dp in role.dataset_actions:
             trans.sa_session.delete( dp )
-            dp.flush()
+        trans.sa_session.flush()
         message = "The following have been purged from the database for role '%s': " % role.name
         message += "DefaultUserPermissions, DefaultHistoryPermissions, UserRoleAssociations, GroupRoleAssociations, DatasetPermissionss."
         trans.response.send_redirect( web.url_for( action='roles', message=util.sanitize_text( message ), status='done' ) )
@@ -592,7 +591,8 @@ class Admin( BaseController ):
                     return trans.fill_template( '/admin/dataset_security/group/group_rename.mako', group=group, msg=msg, messagetype='error' )
                 else:
                     group.name = new_name
-                    group.flush()
+                    trans.sa_session.add( group )
+                    trans.sa_session.flush()
                     msg = "Group '%s' has been renamed to '%s'" % ( old_name, new_name )
                     return trans.response.send_redirect( web.url_for( action='groups', msg=util.sanitize_text( msg ), messagetype='done' ) )
             return trans.fill_template( '/admin/dataset_security/group/group_rename.mako', group=group, msg=msg, messagetype=messagetype )
@@ -640,15 +640,18 @@ class Admin( BaseController ):
             else:
                 # Create the group
                 group = trans.app.model.Group( name=name )
-                group.flush()
+                trans.sa_session.add( group )
+                trans.sa_session.flush()
                 # Create the UserRoleAssociations
                 for user in [ trans.sa_session.query( trans.app.model.User ).get( x ) for x in in_users ]:
                     uga = trans.app.model.UserGroupAssociation( user, group )
-                    uga.flush()
+                    trans.sa_session.add( uga )
+                    trans.sa_session.flush()
                 # Create the GroupRoleAssociations
                 for role in [ trans.sa_session.query( trans.app.model.Role ).get( x ) for x in in_roles ]:
                     gra = trans.app.model.GroupRoleAssociation( group, role )
-                    gra.flush()
+                    trans.sa_session.add( gra )
+                    trans.sa_session.flush()
                 msg = "Group '%s' has been created with %d associated users and %d associated roles" % ( name, len( in_users ), len( in_roles ) )
                 trans.response.send_redirect( web.url_for( controller='admin', action='groups', message=util.sanitize_text( msg ), status='done' ) )
             trans.response.send_redirect( web.url_for( controller='admin', action='create_group', msg=util.sanitize_text( msg ), messagetype='error' ) )
@@ -675,7 +678,8 @@ class Admin( BaseController ):
         params = util.Params( kwd )
         group = get_group( trans, params.id )
         group.deleted = True
-        group.flush()
+        trans.sa_session.add( group )
+        trans.sa_session.flush()
         msg = "Group '%s' has been marked as deleted." % group.name
         trans.response.send_redirect( web.url_for( action='groups', message=util.sanitize_text( msg ), status='done' ) )
     @web.expose
@@ -684,7 +688,8 @@ class Admin( BaseController ):
         params = util.Params( kwd )
         group = get_group( trans, params.id )
         group.deleted = False
-        group.flush()
+        trans.sa_session.add( group )
+        trans.sa_session.flush()
         msg = "Group '%s' has been marked as not deleted." % group.name
         trans.response.send_redirect( web.url_for( action='groups', message=util.sanitize_text( msg ), status='done' ) )
     @web.expose
@@ -701,12 +706,10 @@ class Admin( BaseController ):
         # Delete UserGroupAssociations
         for uga in group.users:
             trans.sa_session.delete( uga )
-            uga.flush()
         # Delete GroupRoleAssociations
         for gra in group.roles:
             trans.sa_session.delete( gra )
-            gra.flush()
-        # Delete the Group
+        trans.sa_session.flush()
         message = "The following have been purged from the database for group '%s': UserGroupAssociations, GroupRoleAssociations." % group.name
         trans.response.send_redirect( web.url_for( action='groups', message=util.sanitize_text( message ), status='done' ) )
 
@@ -756,7 +759,8 @@ class Admin( BaseController ):
                 user.set_password_cleartext( password )
                 if trans.app.config.use_remote_user:
                     user.external = True
-                user.flush()
+                trans.sa_session.add( user )
+                trans.sa_session.flush()
                 trans.app.security_agent.create_private_user_role( user )
                 trans.app.security_agent.user_set_default_permissions( user, history=False, dataset=False )
                 message = 'Created new user account (%s)' % user.email
@@ -804,7 +808,8 @@ class Admin( BaseController ):
                     break
                 else:
                     user.set_password_cleartext( password )
-                    user.flush()
+                    trans.sa_session.add( user )
+                    trans.sa_session.flush()
             if not message and not status:
                 message = "Passwords reset for %d users" % len( ids )
                 status = 'done'
@@ -831,7 +836,8 @@ class Admin( BaseController ):
         for user_id in ids:
             user = get_user( trans, user_id )
             user.deleted = True
-            user.flush()
+            trans.sa_session.add( user )
+            trans.sa_session.flush()
             message += " %s " % user.email
         trans.response.send_redirect( web.url_for( action='users', message=util.sanitize_text( message ), status='done' ) )
     @web.expose
@@ -848,7 +854,8 @@ class Admin( BaseController ):
             user = get_user( trans, user_id )
             if user.deleted:
                 user.deleted = False
-                user.flush()
+                trans.sa_session.add( user )
+                trans.sa_session.flush()
                 count += 1
                 undeleted_users += " %s" % user.email
         message = "Undeleted %d users: %s" % ( count, undeleted_users )
@@ -895,23 +902,22 @@ class Admin( BaseController ):
                     # Delete Dataset
                     if not d.deleted:
                         d.deleted = True
-                        d.flush()
+                        trans.sa_session.add( d )
                     hda.deleted = True
-                    hda.flush()
+                    trans.sa_session.add( hda )
                 h.deleted = True
-                h.flush()
+                trans.sa_session.add( h )
             # Delete UserGroupAssociations
             for uga in user.groups:
                 trans.sa_session.delete( uga )
-                uga.flush()
             # Delete UserRoleAssociations EXCEPT FOR THE PRIVATE ROLE
             for ura in user.roles:
                 if ura.role_id != private_role.id:
                     trans.sa_session.delete( ura )
-                    ura.flush()
             # Purge the user
             user.purged = True
-            user.flush()
+            trans.sa_session.add( user )
+            trans.sa_session.flush()
             message += "%s " % user.email
         trans.response.send_redirect( web.url_for( controller='admin',
                                                    action='users',

@@ -89,9 +89,9 @@ class LibraryAdmin( BaseController ):
                 library = trans.app.model.Library( name = util.restore_text( params.name ), 
                                                    description = util.restore_text( params.description ) )
                 root_folder = trans.app.model.LibraryFolder( name = util.restore_text( params.name ), description = "" )
-                root_folder.flush()
                 library.root_folder = root_folder
-                library.flush()
+                trans.sa_session.add_all( ( library, root_folder ) )
+                trans.sa_session.flush()
                 msg = "The new library named '%s' has been created" % library.name
                 return trans.response.send_redirect( web.url_for( controller='library_admin',
                                                                   action='browse_library',
@@ -116,11 +116,11 @@ class LibraryAdmin( BaseController ):
                 else:
                     library.name = new_name
                     library.description = new_description
-                    library.flush()
                     # Rename the root_folder
                     library.root_folder.name = new_name
                     library.root_folder.description = new_description
-                    library.root_folder.flush()
+                    trans.sa_session.add_all( ( library, library.root_folder ) )
+                    trans.sa_session.flush()
                     msg = "Library '%s' has been renamed to '%s'" % ( old_name, new_name )
                     return trans.response.send_redirect( web.url_for( controller='library_admin',
                                                                       action='library',
@@ -148,15 +148,17 @@ class LibraryAdmin( BaseController ):
                         # to deleted.  This allows for the library to be undeleted ( before it is purged ), 
                         # restoring all of its contents.
                         ldda.deleted = True
-                        ldda.flush()
+                        trans.sa_session.add( ldda )
                     library_dataset.deleted = True
-                    library_dataset.flush()
+                    trans.sa_session.add( library_dataset )
                 library_folder.deleted = True
-                library_folder.flush()
+                trans.sa_session.add( library_folder )
+                trans.sa_session.flush()
             trans.sa_session.refresh( library )
             delete_folder( library.root_folder )
             library.deleted = True
-            library.flush()
+            trans.sa_session.add( library )
+            trans.sa_session.flush()
             msg = "Library '%s' and all of its contents have been marked deleted" % library.name
             return trans.response.send_redirect( web.url_for( action='browse_libraries', msg=util.sanitize_text( msg ), messagetype='done' ) )
         elif action == 'permissions':
@@ -218,14 +220,14 @@ class LibraryAdmin( BaseController ):
                     # us, as well as removing the file from disk.
                     #if not dataset.deleted and len( dataset.active_library_associations ) <= 1: # This is our current ldda
                     dataset.deleted = True
-                    dataset.flush()
                     ldda.deleted = True
-                    ldda.flush()
+                    trans.sa_session.add_all( ( dataset, ldda ) )
                 library_dataset.deleted = True
-                library_dataset.flush()
+                trans.sa_session.add( library_dataset )
             library_folder.deleted = True
             library_folder.purged = True
-            library_folder.flush()
+            trans.sa_session.add( library_folder )
+            trans.sa_session.flush()
         if not library.deleted:
             msg = "Library '%s' has not been marked deleted, so it cannot be purged" % ( library.name )
             return trans.response.send_redirect( web.url_for( controller='library_admin',
@@ -235,7 +237,8 @@ class LibraryAdmin( BaseController ):
         else:
             purge_folder( library.root_folder )
             library.purged = True
-            library.flush()
+            trans.sa_session.add( library )
+            trans.sa_session.flush()
             msg = "Library '%s' and all of its contents have been purged, datasets will be removed from disk via the cleanup_datasets script" % library.name
             return trans.response.send_redirect( web.url_for( controller='library_admin',
                                                               action='deleted_libraries',
@@ -273,7 +276,8 @@ class LibraryAdmin( BaseController ):
                 # ?    unspecified (?)
                 new_folder.genome_build = util.dbnames.default_value
                 folder.add_folder( new_folder )
-                new_folder.flush()
+                trans.sa_session.add( new_folder )
+                trans.sa_session.flush()
                 # New folders default to having the same permissions as their parent folder
                 trans.app.security_agent.copy_library_permissions( folder, new_folder )
                 msg = "New folder named '%s' has been added to the library" % new_folder.name
@@ -305,7 +309,8 @@ class LibraryAdmin( BaseController ):
                 else:
                     folder.name = new_name
                     folder.description = new_description
-                    folder.flush()
+                    trans.sa_session.add( folder )
+                    trans.sa_session.flush()
                     msg = "Folder '%s' has been renamed to '%s'" % ( old_name, new_name )
                     return trans.response.send_redirect( web.url_for( controller='library_admin',
                                                                       action='folder',
@@ -322,7 +327,8 @@ class LibraryAdmin( BaseController ):
                                         messagetype=messagetype )
         elif action == 'delete':
             folder.deleted = True
-            folder.flush()
+            trans.sa_session.add( folder )
+            trans.sa_session.flush()
             msg = "Folder '%s' and all of its contents have been marked deleted" % folder.name
             return trans.response.send_redirect( web.url_for( action='browse_library',
                                                               obj_id=library_id,
@@ -379,7 +385,8 @@ class LibraryAdmin( BaseController ):
                 else:
                     library_dataset.name = new_name
                     library_dataset.info = new_info
-                    library_dataset.flush()
+                    trans.sa_session.add( library_dataset )
+                    trans.sa_session.flush()
                     msg = "Dataset '%s' has been renamed to '%s'" % ( old_name, new_name )
                     messagetype = 'done'
             return trans.fill_template( '/admin/library/library_dataset_info.mako',
@@ -499,7 +506,8 @@ class LibraryAdmin( BaseController ):
                                         messagetype=messagetype )
         elif params.get( 'delete', False ):
             ldda.deleted = True
-            ldda.flush()
+            trans.sa_session.add( ldda )
+            trans.sa_session.flush()
             msg = 'Dataset %s has been removed from this data library' % ldda.name
             return trans.fill_template( "/admin/library/ldda_edit_info.mako", 
                                         ldda=ldda,
@@ -893,7 +901,8 @@ class LibraryAdmin( BaseController ):
                 for ldda_id in ldda_ids:
                     ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( ldda_id )
                     ldda.deleted = True
-                    ldda.flush()
+                    trans.sa_session.add( ldda )
+                    trans.sa_session.flush()
                 msg = "The selected datasets have been removed from this data library"
                 trans.response.send_redirect( web.url_for( controller='library_admin',
                                                            action='browse_library',
@@ -930,7 +939,8 @@ class LibraryAdmin( BaseController ):
                 library_item_desc = library_item_type.capitalize()
             library_item = trans.sa_session.query( library_item_types[ library_item_type ] ).get( int( library_item_id ) )
             library_item.deleted = True
-            library_item.flush()
+            trans.sa_session.add( library_item )
+            trans.sa_session.flush()
             msg = util.sanitize_text( "%s '%s' has been marked deleted" % ( library_item_desc, library_item.name ) )
             messagetype = 'done'
         if library_item_type == 'library':
@@ -961,7 +971,8 @@ class LibraryAdmin( BaseController ):
                 messagetype = 'error'
             else:
                 library_item.deleted = False
-                library_item.flush()
+                trans.sa_session.add( library_item )
+                trans.sa_session.flush()
                 msg = util.sanitize_text( "%s '%s' has been marked undeleted" % ( library_item_desc, library_item.name ) )
                 messagetype = 'done'
         if library_item_type == 'library':

@@ -18,8 +18,20 @@ import types
 from sqlalchemy.orm import Query
 from sqlalchemy.orm import mapper as sqla_mapper
 
+def _monkeypatch_query_method( name, session, class_ ):
+    # TODO: eliminate this method by fixing the single query in ~/datatypes/metadata.py ( line 396 )
+    def do(self, *args, **kwargs):
+        return getattr( class_.query, name)(*args, **kwargs)
+    try:
+        do.__name__ = name
+    except:
+        pass
+    if not hasattr(class_, name):
+        setattr(class_, name, classmethod(do))
 def _monkeypatch_session_method( name, session, class_ ):
-    # TODO: eliminate this method by fixing the session flushes
+    # TODO: eliminate this method by fixing the session flushes in ~/model/__init__.py ( 20 of them )
+    # and ~/datatypes/metadata.py ( 4 of them ).  The affected objects have no known hook into mapping.context
+    # ( i.e., sqlalchemy session ).
     def do( self, *args, **kwargs ):
         if self not in session.deleted:
             session.add( self )
@@ -42,6 +54,7 @@ def session_mapper( scoped_session, class_, *args, **kwargs ):
                     setattr( self, key, value )
             cls.__init__ = __init__
         cls.query = scoped_session.query_property()
+        _monkeypatch_query_method( 'get', scoped_session, cls )
         _monkeypatch_session_method( 'flush', scoped_session, cls )
         return sqla_mapper( cls, *arg, **kw )
     return mapper( class_, *args, **kwargs )

@@ -106,12 +106,13 @@ class WorkflowController( BaseController ):
     def sharing( self, trans, id, **kwargs ):
         session = trans.sa_session
         stored = get_stored_workflow( trans, id )
+        session.add( stored )
         if 'enable_import_via_link' in kwargs:
             stored.importable = True
-            stored.flush()
+            session.flush()
         elif 'disable_import_via_link' in kwargs:
             stored.importable = False
-            stored.flush()
+            session.flush()
         elif 'unshare_user' in kwargs:
             user = session.query( model.User ).get( trans.security.decode_id( kwargs['unshare_user' ] ) )
             if not user:
@@ -223,7 +224,8 @@ class WorkflowController( BaseController ):
         stored = get_stored_workflow( trans, id )
         # Marke as deleted and save
         stored.deleted = True
-        stored.flush()
+        trans.sa_session.add( stored )
+        trans.sa_session.flush()
         # Display the management page
         trans.set_message( "Workflow '%s' deleted" % stored.name )
         return self.list( trans )

@@ -28,7 +28,7 @@ class TestMetadataEdit( TwillTestCase ):
         # form will not be displayed on ted edit attributes page.
         for dp in latest_hda.dataset.actions:
             sa_session.delete( dp )
-            dp.flush()
+            sa_session.flush()
         sa_session.refresh( latest_hda.dataset )
         self.check_history_for_string( '1.bed' )
         self.check_metadata_for_string( '1.bed uploaded file unspecified (\?) chromCol value="1" selected endCol value="3" is_strandCol value="true" checked', hid=str( latest_hda.hid ) )

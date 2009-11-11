@@ -46,7 +46,8 @@ class User( BaseController ):
                 conf_pass_err = "New passwords do not match."
             else:
                 user.set_password_cleartext( new_pass )
-                user.flush()
+                trans.sa_session.add( user )
+                trans.sa_session.flush()
                 trans.log_event( "User change password" )
                 return trans.show_ok_message( "Password has been changed for " + user.email)
         # Generate input form        
@@ -74,7 +75,8 @@ class User( BaseController ):
                 conf_email_err = "Email addresses do not match."
             else:
                 user.email = email
-                user.flush()
+                trans.sa_session.add( user )
+                trans.sa_session.flush()
                 trans.log_event( "User change email" )
                 return trans.show_ok_message( "Email has been changed to: " + user.email, refresh_frames=['masthead', 'history'] )        
         return trans.show_form( 
@@ -99,7 +101,8 @@ class User( BaseController ):
                 username_err = "This username is not available"
             else:
                 user.username = username
-                user.flush()
+                trans.sa_session.add( user )
+                trans.sa_session.flush()
                 trans.log_event( "User change username" )
                 return trans.show_ok_message( "Username been set to: " + user.username )
         else:
@@ -195,7 +198,8 @@ class User( BaseController ):
             user = trans.app.model.User( email=email )
             user.set_password_cleartext( password )
             user.username = username
-            user.flush()
+            trans.sa_session.add( user )
+            trans.sa_session.flush()
             trans.app.security_agent.create_private_user_role( user )
             # We set default user permissions, before we log in and set the default history permissions
             trans.app.security_agent.user_set_default_permissions( user, default_access_private = trans.app.config.new_user_dataset_access_role_default_private )
@@ -289,7 +293,8 @@ class User( BaseController ):
                     user_address.postal_code = util.restore_text(params.get('field_%i_postal_code' % index, ''))
                     user_address.country = util.restore_text(params.get('field_%i_country' % index, ''))
                     user_address.phone = util.restore_text(params.get('field_%i_phone' % index, ''))
-                    user_address.flush()
+                    trans.sa_session.add( user_address )
+                    trans.sa_session.flush()
                     trans.sa_session.refresh( user )
                     values.append(int(user_address.id))
                 elif value == unicode('none'):
@@ -303,13 +308,15 @@ class User( BaseController ):
         if new_user or not user.values:
             # new user or existing 
             form_values = trans.app.model.FormValues(user_info_form, values)
-            form_values.flush()
+            trans.sa_session.add( form_values )
+            trans.sa_session.flush()
             user.values = form_values
         elif user.values:  
             # editing the user info of an existing user with existing user info
             user.values.content = values
-            user.values.flush()
-        user.flush()
+            trans.sa_session.add( user.values )
+        trans.sa_session.add( user )
+        trans.sa_session.flush()
     def __validate_email(self, trans, params, email, user=None):
         error = None
         if user:
@@ -489,7 +496,8 @@ class User( BaseController ):
             # the new email & username
             user.email = email
             user.username = username
-            user.flush()
+            trans.sa_session.add( user )
+            trans.sa_session.flush()
             msg = 'The login information has been updated with the changes'
             if params.get('admin_view', 'False') == 'True':
                 return trans.response.send_redirect( web.url_for( controller='user',
@@ -532,7 +540,8 @@ class User( BaseController ):
                                                                   messagetype='error') )
             # save new password
             user.set_password_cleartext( password )
-            user.flush()
+            trans.sa_session.add( user )
+            trans.sa_session.flush()
             trans.log_event( "User change password" )
             msg = 'The password has been changed.'
             if params.get('admin_view', 'False') == 'True':
@@ -590,7 +599,8 @@ class User( BaseController ):
                 if mail.close():
                     return trans.show_error_message( 'Failed to reset password.  If this problem persists, please submit a bug report.' )
                 reset_user.set_password_cleartext( new_pass )
-                reset_user.flush()
+                trans.sa_session.add( reset_user )
+                trans.sa_session.flush()
                 trans.log_event( "User reset password: %s" % email )
                 return trans.show_ok_message( "Password has been reset and emailed to: %s.  <a href='%s'>Click here</a> to return to the login form." % ( email, web.url_for( action='login' ) ) )
         elif email != None:
@@ -679,7 +689,8 @@ class User( BaseController ):
                 user_address.postal_code = util.restore_text( params.get( 'postal_code', ''  ) )
                 user_address.country = util.restore_text( params.get( 'country', ''  ) )
                 user_address.phone = util.restore_text( params.get( 'phone', ''  ) )
-                user_address.flush()
+                trans.sa_session.add( user_address )
+                trans.sa_session.flush()
                 msg = 'Address <b>%s</b> has been added' % user_address.desc
                 if admin_view == 'True':
                     return trans.response.send_redirect( web.url_for( controller='user',
@@ -763,7 +774,8 @@ class User( BaseController ):
                 user_address.postal_code = util.restore_text( params.get( 'postal_code', ''  ) )
                 user_address.country = util.restore_text( params.get( 'country', ''  ) )
                 user_address.phone = util.restore_text( params.get( 'phone', ''  ) )
-                user_address.flush()
+                trans.sa_session.add( user_address )
+                trans.sa_session.flush()
                 msg = 'Changes made to address <b>%s</b> are saved.' % user_address.desc
                 if admin_view == 'True':
                     return trans.response.send_redirect( web.url_for( controller='user',
@@ -815,7 +827,7 @@ class User( BaseController ):
                                                               msg='Invalid address ID',
                                                               messagetype='error' ) )
         user_address.deleted = True
-        user_address.flush()
+        trans.sa_session.flush()
         return trans.response.send_redirect( web.url_for( controller='user',
                                                           action='show_info',
                                                           admin_view=admin_view,
@@ -834,7 +846,7 @@ class User( BaseController ):
                                                               msg='Invalid address ID',
                                                               messagetype='error' ) )
         user_address.deleted = False
-        user_address.flush()
+        trans.sa_session.flush()
         return trans.response.send_redirect( web.url_for( controller='user',
                                                           action='show_info',
                                                           admin_view=admin_view,

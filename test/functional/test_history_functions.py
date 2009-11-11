@@ -352,7 +352,8 @@ class TestHistory( TwillTestCase ):
         global access_action
         access_action = galaxy.model.Dataset.permitted_actions.DATASET_ACCESS.action
         dhp = galaxy.model.DefaultHistoryPermissions( history5, access_action, admin_user_private_role )
-        dhp.flush()
+        sa_session.add( dhp )
+        sa_session.flush()
         sa_session.refresh( history5 )
         global history5_default_permissions
         history5_default_permissions = [ dhp.action for dhp in history5.default_permissions ]
@@ -785,7 +786,7 @@ class TestHistory( TwillTestCase ):
         # Manually delete the sharing role from the database
         sa_session.refresh( sharing_role )
         sa_session.delete( sharing_role )
-        sharing_role.flush()
+        sa_session.flush()
         # Clean up regular_user_1
         self.logout()
         self.login( email=regular_user1.email )

@@ -250,7 +250,9 @@ class TracksController( BaseController ):
         new_dataset = dataset.datatype.convert_dataset( trans, dataset, type, return_output = True, visible = False ).values()[0]
         new_dataset.hid = dataset.hid # Hrrmmm....
         new_dataset.name = dataset.name
-        new_dataset.flush()
+        trans.sa_session.add( new_dataset )
+        trans.sa_session.flush()
         assoc.dataset = new_dataset
-        assoc.flush()
+        trans.sa_session.add( assoc )
+        trans.sa_session.flush()
         return new_dataset

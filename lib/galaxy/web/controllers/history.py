@@ -306,7 +306,8 @@ class HistoryController( BaseController ):
         except:
             association = None
         new_history.add_galaxy_session( galaxy_session, association=association )
-        new_history.flush()
+        trans.sa_session.add( new_history )
+        trans.sa_session.flush()
         trans.set_history( new_history )
         # No message
         return None, None
@@ -335,7 +336,7 @@ class HistoryController( BaseController ):
                     # Current user is the user with which the histories were shared
                     association = trans.sa_session.query( trans.app.model.HistoryUserShareAssociation ).filter_by( user=trans.user, history=history ).one()
                     trans.sa_session.delete( association )
-                    association.flush()
+                    trans.sa_session.flush()
                 message = "Unshared %d shared histories" % len( ids )
                 status = 'done'
         # Render the list view
@@ -348,7 +349,8 @@ class HistoryController( BaseController ):
             return trans.show_error_message( "History (%s) has been shared with others, unshare it before deleting it.  " % history.name )
         if not history.deleted:
             history.deleted = True
-            history.flush()
+            trans.sa_session.add( history )
+            trans.sa_session.flush()
             trans.log_event( "History id %d marked as deleted" % history.id )
         # Regardless of whether it was previously deleted, we make a new history active 
         trans.new_history()
@@ -365,6 +367,7 @@ class HistoryController( BaseController ):
             assert history.user == trans.user
         # Rename
         history.name = new_name
+        trans.sa_session.add( history )
         trans.sa_session.flush()
         
     @web.expose
@@ -406,7 +409,8 @@ class HistoryController( BaseController ):
             except:
                 association = None
             new_history.add_galaxy_session( galaxy_session, association=association )
-            new_history.flush()
+            trans.sa_session.add( new_history )
+            trans.sa_session.flush()
             if not user_history.datasets:
                 trans.set_history( new_history )
             return trans.show_ok_message( """
@@ -424,7 +428,8 @@ class HistoryController( BaseController ):
             except:
                 association = None
             new_history.add_galaxy_session( galaxy_session, association=association )
-            new_history.flush()
+            trans.sa_session.add( new_history )
+            trans.sa_session.flush()
             trans.set_history( new_history )
             return trans.show_ok_message( """
                 History "%s" has been imported. Click <a href="%s">here</a>
@@ -731,9 +736,8 @@ class HistoryController( BaseController ):
                     share = trans.app.model.HistoryUserShareAssociation()
                     share.history = history
                     share.user = send_to_user
-                    session = trans.sa_session
-                    session.add( share )
-                    session.flush()
+                    trans.sa_session.add( share )
+                    trans.sa_session.flush()
                     if history not in shared_histories:
                         shared_histories.append( history )
         if send_to_err:
@@ -752,12 +756,13 @@ class HistoryController( BaseController ):
             if ids:
                 histories = [ get_history( trans, history_id ) for history_id in ids ]
         for history in histories:
+            trans.sa_session.add( history )
             if params.get( 'enable_import_via_link', False ):
                 history.importable = True
-                history.flush()
+                trans.sa_session.flush()
             elif params.get( 'disable_import_via_link', False ):
                 history.importable = False
-                history.flush()
+                trans.sa_session.flush()
             elif params.get( 'unshare_user', False ):
                 user = trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( kwd[ 'unshare_user' ] ) )
                 if not user:
@@ -767,7 +772,7 @@ class HistoryController( BaseController ):
                 if husas:
                     for husa in husas:
                         trans.sa_session.delete( husa )
-                        husa.flush()
+                        trans.sa_session.flush()
         histories = []
         # Get all histories that have been shared with others
         husas = trans.sa_session.query( trans.app.model.HistoryUserShareAssociation ) \
@@ -818,7 +823,8 @@ class HistoryController( BaseController ):
                 elif name[i] not in [None,'',' ']:
                     name[i] = escape(name[i])
                     histories[i].name = name[i]
-                    histories[i].flush()
+                    trans.sa_session.add( histories[i] )
+                    trans.sa_session.flush()
                     change_msg = change_msg + "<p>History: "+cur_names[i]+" renamed to: "+name[i]+"</p>"
                     trans.log_event( "History renamed: id: %s, renamed to: '%s'" % (str(histories[i].id), name[i] ) )
                 else:

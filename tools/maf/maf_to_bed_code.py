@@ -20,7 +20,8 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr
             filepath = fields[2]
             output_data.dbkey = dbkey
             output_data.name = basic_name + " (" + dbkey + ")"
-            output_data.flush()
+            app.model.context.add( output_data )
+            app.model.context.flush()
             output_data_list.append(output_data)
         elif line.startswith("#FILE"):
             fields = line.split("\t")
@@ -30,11 +31,12 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr
             newdata.set_size()
             newdata.extension = "bed"
             newdata.name = basic_name + " (" + dbkey + ")"
-            newdata.flush()
+            app.model.context.add( newdata )
+            app.model.context.flush()
             history.add_dataset( newdata )
             app.security_agent.copy_dataset_permissions( output_data.dataset, newdata.dataset )
-            newdata.flush()
-            history.flush()
+            app.model.context.add( history )
+            app.model.context.flush()
             try:
                 move(filepath,newdata.file_name)
                 newdata.info = newdata.name
@@ -45,11 +47,12 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr
             newdata.dbkey = dbkey
             newdata.init_meta()
             newdata.set_peek()
-            newdata.flush()
+            app.model.context.flush()
             output_data_list.append(newdata)
         else:
             new_stdout = new_stdout + line
         for data in output_data_list:
             if data.state == data.states.OK:
                 data.info = new_stdout
-                data.flush()
+                app.model.context.add( data )
+                app.model.context.flush()

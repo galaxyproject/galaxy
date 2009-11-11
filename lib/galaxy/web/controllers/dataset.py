@@ -356,7 +356,8 @@ class DatasetInterface( BaseController ):
                     if new_history_name:
                         new_history.name = new_history_name
                     new_history.user = user
-                    new_history.flush()
+                    trans.sa_session.add( new_history )
+                    trans.sa_session.flush()
                     target_history_ids.append( new_history.id )
                 if user:
                     target_histories = [ hist for hist in map( trans.sa_session.query( trans.app.model.History ).get, target_history_ids ) if ( hist is not None and hist.user == user )]

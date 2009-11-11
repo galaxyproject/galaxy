@@ -155,7 +155,8 @@ class DatasetInstance( object ):
         # Relationships
         if not dataset and create_dataset:
             dataset = Dataset( state=Dataset.states.NEW )
-            dataset.flush()
+            context.add( dataset )
+            context.flush()
         self.dataset = dataset
         self.parent_id = parent_id
         self.validation_errors = validation_errors
@@ -166,7 +167,8 @@ class DatasetInstance( object ):
         return self.dataset.state
     def set_dataset_state ( self, state ):
         self.dataset.state = state
-        self.dataset.flush() #flush here, because hda.flush() won't flush the Dataset object
+        context.add( self.dataset )
+        context.flush() #flush here, because hda.flush() won't flush the Dataset object
     state = property( get_dataset_state, set_dataset_state )
     def get_file_name( self ):
         return self.dataset.get_file_name()
@@ -327,7 +329,8 @@ class HistoryDatasetAssociation( DatasetInstance ):
                                          parent_id=parent_id, 
                                          copied_from_history_dataset_association=self,
                                          history = target_history )
-        hda.flush()
+        context.add( hda )
+        context.flush()
         hda.set_size()
         # Need to set after flushed, as MetadataFiles require dataset.id
         hda.metadata = self.metadata
@@ -337,7 +340,7 @@ class HistoryDatasetAssociation( DatasetInstance ):
         if not self.datatype.copy_safe_peek:
             # In some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
             hda.set_peek()
-        hda.flush()
+        context.flush()
         return hda
     def to_library_dataset_dataset_association( self, target_folder, replace_dataset=None, parent_id=None ):
         if replace_dataset:
@@ -347,7 +350,8 @@ class HistoryDatasetAssociation( DatasetInstance ):
             # If replace_dataset is None, the Library level permissions will be taken from the folder and applied to the new 
             # LibraryDataset, and the current user's DefaultUserPermissions will be applied to the associated Dataset.
             library_dataset = LibraryDataset( folder=target_folder, name=self.name, info=self.info )
-            library_dataset.flush()
+            context.add( library_dataset )
+            context.flush()
         ldda = LibraryDatasetDatasetAssociation( name=self.name, 
                                                  info=self.info,
                                                  blurb=self.blurb, 
@@ -361,21 +365,24 @@ class HistoryDatasetAssociation( DatasetInstance ):
                                                  parent_id=parent_id,
                                                  copied_from_history_dataset_association=self,
                                                  user=self.history.user )
-        ldda.flush()
+        context.add( ldda )
+        context.flush()
         # Permissions must be the same on the LibraryDatasetDatasetAssociation and the associated LibraryDataset
         # Must set metadata after ldda flushed, as MetadataFiles require ldda.id
         ldda.metadata = self.metadata
         if not replace_dataset:
             target_folder.add_library_dataset( library_dataset, genome_build=ldda.dbkey )
-            target_folder.flush()
+            context.add( target_folder )
+            context.flush()
         library_dataset.library_dataset_dataset_association_id = ldda.id
-        library_dataset.flush()
+        context.add( library_dataset )
+        context.flush()
         for child in self.children:
             child_copy = child.to_library_dataset_dataset_association( target_folder=target_folder, replace_dataset=replace_dataset, parent_id=ldda.id )
         if not self.datatype.copy_safe_peek:
             # In some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
             ldda.set_peek()
-        ldda.flush()
+        context.flush()
         return ldda
     def clear_associated_files( self, metadata_safe = False, purge = False ):
         # metadata_safe = True means to only clear when assoc.metadata_safe == False
@@ -412,13 +419,14 @@ class LibraryDatasetDatasetAssociation( DatasetInstance ):
                                          copied_from_library_dataset_dataset_association=self,
                                          history=target_history,
                                          hid=hid )
-        hda.flush()
+        context.flush()
         hda.metadata = self.metadata #need to set after flushed, as MetadataFiles require dataset.id
         for child in self.children:
             child_copy = child.to_history_dataset_association( target_history=target_history, parent_id=hda.id )
         if not self.datatype.copy_safe_peek:
             hda.set_peek() #in some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
-        hda.flush()
+        context.add( hda )
+        context.flush()
         return hda
     def copy( self, copy_children = False, parent_id = None, target_folder = None ):
         ldda = LibraryDatasetDatasetAssociation( name=self.name, 
@@ -433,7 +441,8 @@ class LibraryDatasetDatasetAssociation( DatasetInstance ):
                                                  parent_id=parent_id, 
                                                  copied_from_library_dataset_dataset_association=self,
                                                  folder=target_folder )
-        ldda.flush()
+        context.add( ldda )
+        context.flush()
          # Need to set after flushed, as MetadataFiles require dataset.id
         ldda.metadata = self.metadata
         if copy_children:
@@ -442,7 +451,7 @@ class LibraryDatasetDatasetAssociation( DatasetInstance ):
         if not self.datatype.copy_safe_peek:
              # In some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
             ldda.set_peek()
-        ldda.flush()
+        context.flush()
         return ldda
     def clear_associated_files( self, metadata_safe = False, purge = False ):
         return
@@ -466,8 +475,8 @@ class LibraryDataset( object ):
     def set_library_dataset_dataset_association( self, ldda ):
         self.library_dataset_dataset_association = ldda
         ldda.library_dataset = self
-        ldda.flush()
-        self.flush()
+        context.add_all( ( self, ldda ) )
+        context.flush()
     def get_info( self ):
         if self.library_dataset_dataset_association:
             return self.library_dataset_dataset_association.info

@@ -113,7 +113,8 @@ class Forms( BaseController ):
         messagetype = params.get( 'messagetype', 'done' )
         fd = trans.sa_session.query( trans.app.model.FormDefinition ).get( int( util.restore_text( params.form_id ) ) )
         fd.form_definition_current.deleted = True
-        fd.form_definition_current.flush()
+        trans.sa_session.add( fd.form_definition_current )
+        trans.sa_session.flush()
         return self._show_forms_list(trans, 
                                      msg='The form definition named %s is deleted.' % fd.name, 
                                      messagetype='done')
@@ -125,7 +126,8 @@ class Forms( BaseController ):
         messagetype = params.get( 'messagetype', 'done' )
         fd = trans.sa_session.query( trans.app.model.FormDefinition ).get( int( util.restore_text( params.form_id ) ) )
         fd.form_definition_current.deleted = False
-        fd.form_definition_current.flush()
+        trans.sa_session.add( fd.form_definition_current )
+        trans.sa_session.flush()
         return self._show_forms_list(trans, 
                                      msg='The form definition named %s is undeleted.' % fd.name, 
                                      messagetype='done')

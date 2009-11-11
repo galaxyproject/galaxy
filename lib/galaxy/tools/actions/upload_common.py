@@ -117,7 +117,8 @@ def new_history_upload( trans, uploaded_dataset, state=None ):
         hda.state = state
     else:
         hda.state = hda.states.QUEUED
-    hda.flush()
+    trans.sa_session.add( hda )
+    trans.sa_session.flush()
     trans.history.add_dataset( hda, genome_build = uploaded_dataset.dbkey )
     permissions = trans.app.security_agent.history_get_default_permissions( trans.history )
     trans.app.security_agent.set_all_dataset_permissions( hda.dataset, permissions )
@@ -142,14 +143,16 @@ def new_library_upload( trans, uploaded_dataset, library_bunch, state=None ):
                 new_folder = trans.app.model.LibraryFolder( name=name, description='Automatically created by upload tool' )
                 new_folder.genome_build = util.dbnames.default_value
                 folder.add_folder( new_folder )
-                new_folder.flush()
+                trans.sa_session.add( new_folder )
+                trans.sa_session.flush()
                 trans.app.security_agent.copy_library_permissions( folder, new_folder )
                 folder = new_folder
     if library_bunch.replace_dataset:
         ld = library_bunch.replace_dataset
     else:
         ld = trans.app.model.LibraryDataset( folder=folder, name=uploaded_dataset.name )
-        ld.flush()
+        trans.sa_session.add( ld )
+        trans.sa_session.flush()
         trans.app.security_agent.copy_library_permissions( folder, ld )
     ldda = trans.app.model.LibraryDatasetDatasetAssociation( name = uploaded_dataset.name,
                                                              extension = uploaded_dataset.file_type,
@@ -162,7 +165,8 @@ def new_library_upload( trans, uploaded_dataset, library_bunch, state=None ):
     else:
         ldda.state = ldda.states.QUEUED
     ldda.message = library_bunch.message
-    ldda.flush()
+    trans.sa_session.add( ldda )
+    trans.sa_session.flush()
     # Permissions must be the same on the LibraryDatasetDatasetAssociation and the associated LibraryDataset
     trans.app.security_agent.copy_library_permissions( ld, ldda )
     if library_bunch.replace_dataset:
@@ -172,9 +176,11 @@ def new_library_upload( trans, uploaded_dataset, library_bunch, state=None ):
         # Copy the current user's DefaultUserPermissions to the new LibraryDatasetDatasetAssociation.dataset
         trans.app.security_agent.set_all_dataset_permissions( ldda.dataset, trans.app.security_agent.user_get_default_permissions( trans.user ) )
         folder.add_library_dataset( ld, genome_build=uploaded_dataset.dbkey )
-        folder.flush()
+        trans.sa_session.add( folder )
+        trans.sa_session.flush()
     ld.library_dataset_dataset_association_id = ldda.id
-    ld.flush()
+    trans.sa_session.add( ld )
+    trans.sa_session.flush()
     # Handle template included in the upload form, if any
     if library_bunch.template and library_bunch.template_field_contents:
         # Since information templates are inherited, the template fields can be displayed on the upload form.
@@ -182,15 +188,18 @@ def new_library_upload( trans, uploaded_dataset, library_bunch, state=None ):
         # for the new library_dataset_dataset_association object.
         # Create a new FormValues object, using the template we previously retrieved
         form_values = trans.app.model.FormValues( library_bunch.template, library_bunch.template_field_contents )
-        form_values.flush()
+        trans.sa_session.add( form_values )
+        trans.sa_session.flush()
         # Create a new info_association between the current ldda and form_values
         info_association = trans.app.model.LibraryDatasetDatasetInfoAssociation( ldda, library_bunch.template, form_values )
-        info_association.flush()
+        trans.sa_session.add( info_association )
+        trans.sa_session.flush()
     # If roles were selected upon upload, restrict access to the Dataset to those roles
     if library_bunch.roles:
         for role in library_bunch.roles:
             dp = trans.app.model.DatasetPermissions( trans.app.security_agent.permitted_actions.DATASET_ACCESS.action, ldda.dataset, role )
-            dp.flush()
+            trans.sa_session.add( dp )
+            trans.sa_session.flush()
     return ldda
 
 def new_upload( trans, uploaded_dataset, library_bunch=None, state=None ):
@@ -210,16 +219,18 @@ def get_uploaded_datasets( trans, params, precreated_datasets, dataset_upload_in
         else:
             data.extension = uploaded_dataset.file_type
             data.dbkey = uploaded_dataset.dbkey
-            data.flush()
+            trans.sa_session.add( data )
+            trans.sa_session.flush()
             if library_bunch:
                 library_bunch.folder.genome_build = uploaded_dataset.dbkey
-                library_bunch.folder.flush()
+                trans.sa_session.add( library_bunch.folder )
+                trans.sa_session.flush()
             else:
                 trans.history.genome_build = uploaded_dataset.dbkey
         uploaded_dataset.data = data
     return uploaded_datasets
 
-def create_paramfile( uploaded_datasets ):
+def create_paramfile( trans, uploaded_datasets ):
     """
     Create the upload tool's JSON "param" file.
     """
@@ -233,7 +244,8 @@ def create_paramfile( uploaded_datasets ):
             data.init_meta()
             for meta_name, meta_value in uploaded_dataset.metadata.iteritems():
                 setattr( data.metadata, meta_name, meta_value )
-            data.flush()
+            trans.sa_session.add( data )
+            trans.sa_session.flush()
             json = dict( file_type = uploaded_dataset.file_type,
                          dataset_id = data.dataset.id,
                          dbkey = uploaded_dataset.dbkey,
@@ -278,7 +290,8 @@ def create_job( trans, params, tool, json_file_path, data_list, folder=None ):
     job.tool_id = tool.id
     job.tool_version = tool.version
     job.state = job.states.UPLOAD
-    job.flush()
+    trans.sa_session.add( job )
+    trans.sa_session.flush()
     log.info( 'tool %s created job id %d' % ( tool.id, job.id ) )
     trans.log_event( 'created job id %d' % job.id, tool_id=tool.id )
 

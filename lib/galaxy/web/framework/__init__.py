@@ -198,7 +198,8 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
                 event.session_id = self.galaxy_session.id   
             except:
                 event.session_id = None
-            event.flush()
+            self.sa_session.add( event )
+            self.sa_session.flush()
     def get_cookie( self, name='galaxysession' ):
         """Convenience method for getting a session cookie"""
         try:
@@ -302,12 +303,12 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
             self.galaxy_session = galaxy_session
         # Do we need to flush the session?
         if galaxy_session_requires_flush:
-            sa_session.add( galaxy_session )
+            self.sa_session.add( galaxy_session )
             # FIXME: If prev_session is a proper relation this would not
             #        be needed.
             if prev_galaxy_session:
-                sa_session.add( prev_galaxy_session )            
-            sa_session.flush()
+                self.sa_session.add( prev_galaxy_session )            
+            self.sa_session.flush()
         # If the old session was invalid, get a new history with our new session
         if invalidate_existing_session:
             self.new_history()
@@ -376,7 +377,8 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
             user = self.app.model.User( email=remote_user_email )
             user.set_password_cleartext( ''.join( random.sample( string.letters + string.digits, 12 ) ) )
             user.external = True
-            user.flush()
+            self.sa_session.add( user )
+            self.sa_session.flush()
             self.app.security_agent.create_private_user_role( user )
             # We set default user permissions, before we log in and set the default history permissions
             self.app.security_agent.user_set_default_permissions( user )

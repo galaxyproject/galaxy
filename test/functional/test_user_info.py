@@ -100,7 +100,8 @@ class TestUserInfo( TwillTestCase ):
         self.login( 'test@bx.psu.edu' )
         form_two_latest = get_latest_form(form_two_name)
         form_two_latest.current.deleted = True
-        form_two_latest.current.flush()
+        sa_session.add( form_two_latest.current )
+        sa_session.flush()
         self.home()
         self.visit_page('forms/manage?show_filter=Deleted')
         self.check_page_for_string(form_two_latest.name)
@@ -153,7 +154,8 @@ class TestUserInfo( TwillTestCase ):
         self.login( 'test@bx.psu.edu' )
         form_one_latest = get_latest_form(form_one_name)
         form_one_latest.current.deleted = True
-        form_one_latest.current.flush()
+        sa_session.add( form_one_latest.current )
+        sa_session.flush()
         self.home()
         self.visit_page('forms/manage?show_filter=Deleted')
         self.check_page_for_string(form_one_latest.name)

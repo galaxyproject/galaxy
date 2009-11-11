@@ -726,8 +726,10 @@ class ColumnListParameter( SelectToolParameter ):
     >>> # Mock up a history (not connected to database)
     >>> from galaxy.model import History, HistoryDatasetAssociation
     >>> from galaxy.util.bunch import Bunch
+    >>> from galaxy.model.mapping import context as sa_session
     >>> hist = History()
-    >>> hist.flush()
+    >>> sa_session.add( hist )
+    >>> sa_session.flush()
     >>> hist.add_dataset( HistoryDatasetAssociation( id=1, extension='interval', create_dataset=True ) )
     >>> dtp =  DataToolParameter( None, XML( '<param name="blah" type="data" format="interval"/>' ) )
     >>> print dtp.name

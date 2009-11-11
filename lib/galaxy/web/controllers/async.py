@@ -109,9 +109,10 @@ class ASync( BaseController ):
             data.dbkey = GALAXY_BUILD
             data.info = GALAXY_INFO
             data.state = data.states.NEW
-            data.flush()
+            trans.sa_session.add( data )
             open( data.file_name, 'wb' ).close() #create the file
             trans.history.add_dataset( data, genome_build=GALAXY_BUILD )
+            trans.sa_session.add( trans.history )
             trans.sa_session.flush()
             trans.log_event( "Added dataset %d to history %d" %(data.id, trans.history.id ), tool_id=tool_id )
 

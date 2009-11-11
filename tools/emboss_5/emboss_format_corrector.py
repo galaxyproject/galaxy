@@ -26,7 +26,8 @@ def exec_after_process( app, inp_data, out_data, param_dict,tool, stdout, stderr
             elif outputType == 'text':
                 outputType = "txt"
             data = app.datatypes_registry.change_datatype(data, outputType)
-            data.flush()
+            app.model.context.add( data )
+            app.model.context.flush()
         data_count+=1
     
     #html filetype correction
@@ -36,7 +37,8 @@ def exec_after_process( app, inp_data, out_data, param_dict,tool, stdout, stderr
         ext = "html"
         if wants_plot == "yes":
             data = app.datatypes_registry.change_datatype(data, ext)
-            data.flush()
+            app.model.context.add( data )
+            app.model.context.flush()
         data_count+=1
     
     #png file correction
@@ -46,5 +48,6 @@ def exec_after_process( app, inp_data, out_data, param_dict,tool, stdout, stderr
         ext = "png"
         if wants_plot == "yes":
             data = app.datatypes_registry.change_datatype(data, ext)
-            data.flush()
+            app.model.context.add( data )
+            app.model.context.flush()
         data_count+=1

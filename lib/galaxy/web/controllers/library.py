@@ -169,11 +169,11 @@ class Library( BaseController ):
                 else:
                     library.name = new_name
                     library.description = new_description
-                    library.flush()
                     # Rename the root_folder
                     library.root_folder.name = new_name
                     library.root_folder.description = new_description
-                    library.root_folder.flush()
+                    trans.sa_session.add_all( ( library, library.root_folder ) )
+                    trans.sa_session.flush()
                     msg = "Library '%s' has been renamed to '%s'" % ( old_name, new_name )
                     return trans.response.send_redirect( web.url_for( controller='library',
                                                                       action='library',
@@ -240,7 +240,8 @@ class Library( BaseController ):
                 # ?    unspecified (?)
                 new_folder.genome_build = util.dbnames.default_value
                 folder.add_folder( new_folder )
-                new_folder.flush()
+                trans.sa_session.add( new_folder )
+                trans.sa_session.flush()
                 # New folders default to having the same permissions as their parent folder
                 trans.app.security_agent.copy_library_permissions( folder, new_folder )
                 msg = "New folder named '%s' has been added to the library" % new_folder.name
@@ -273,7 +274,8 @@ class Library( BaseController ):
                     else:
                         folder.name = new_name
                         folder.description = new_description
-                        folder.flush()
+                        trans.sa_session.add( folder )
+                        trans.sa_session.flush()
                         msg = "Folder '%s' has been renamed to '%s'" % ( old_name, new_name )
                         return trans.response.send_redirect( web.url_for( controller='library',
                                                                           action='folder',
@@ -359,7 +361,8 @@ class Library( BaseController ):
                         else:
                             library_dataset.name = new_name
                             library_dataset.info = new_info
-                            library_dataset.flush()
+                            trans.sa_session.add( library_dataset )
+                            trans.sa_session.flush()
                             msg = "Dataset '%s' has been renamed to '%s'" % ( old_name, new_name )
                             messagetype = 'done'
                 else:
@@ -502,7 +505,8 @@ class Library( BaseController ):
         elif params.get( 'delete', False ):
             if trans.app.security_agent.can_modify_library_item( user, roles, folder ):
                 ldda.deleted = True
-                ldda.flush()
+                trans.sa_session.add( ldda )
+                trans.sa_session.flush()
                 msg = 'Dataset %s has been removed from this data library' % ldda.name
                 messagetype = 'done'
             else:
@@ -894,7 +898,8 @@ class Library( BaseController ):
             for ldda_id in ldda_ids:
                 ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( ldda_id )
                 hda = ldda.to_history_dataset_association( target_history=history, add_to_history = True )
-            history.flush()
+            trans.sa_session.add( history )
+            trans.sa_session.flush()
             msg = "%i dataset(s) have been imported into your history" % len( ldda_ids )
             return trans.response.send_redirect( web.url_for( controller='library',
                                                               action='browse_library',

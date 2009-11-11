@@ -199,7 +199,8 @@ class Requests( BaseController ):
                                                               message='This request cannot be deleted as it is already been submitted',
                                                               **kwd) )
         request.deleted = True
-        request.flush()
+        trans.sa_session.add( request )
+        trans.sa_session.flush()
         kwd = {}
         kwd['id'] = trans.security.encode_id(request.id)
         return trans.response.send_redirect( web.url_for( controller='requests_admin',
@@ -221,7 +222,8 @@ class Requests( BaseController ):
                                                               **kwd) )
         # change request's submitted field
         request.deleted = False
-        request.flush()
+        trans.sa_session.add( request )
+        trans.sa_session.flush()
         kwd = {}
         kwd['id'] = trans.security.encode_id(request.id)
         return trans.response.send_redirect( web.url_for( controller='requests_admin',
@@ -253,10 +255,11 @@ class Requests( BaseController ):
         new_state = request.type.states[0]
         for s in request.samples:
             event = trans.app.model.SampleEvent(s, new_state, 'Samples submitted to the system')
-            event.flush()
+            trans.sa_session.add( event )
         # change request's submitted field
         request.state = request.states.SUBMITTED
-        request.flush()
+        trans.sa_session.add( request )
+        trans.sa_session.flush()
         kwd = {}
         kwd['id'] = trans.security.encode_id(request.id)
         kwd['status'] = 'done'
@@ -579,7 +582,8 @@ class Requests( BaseController ):
                     user_address.postal_code = util.restore_text(params.get('field_%i_postal_code' % index, ''))
                     user_address.country = util.restore_text(params.get('field_%i_country' % index, ''))
                     user_address.phone = util.restore_text(params.get('field_%i_phone' % index, ''))
-                    user_address.flush()
+                    trans.sa_session.add( user_address )
+                    trans.sa_session.flush()
                     trans.sa_session.refresh( trans.user )
                     values.append(int(user_address.id))
                 elif value == unicode('none'):
@@ -591,13 +595,14 @@ class Requests( BaseController ):
             else:
                 values.append(util.restore_text(params.get('field_%i' % index, '')))
         form_values = trans.app.model.FormValues(request_type.request_form, values)
-        form_values.flush()
+        trans.sa_session.add( form_values )
+        trans.sa_session.flush()
         if not request:
             request = trans.app.model.Request(name, desc, request_type, 
                                               user, form_values,
                                               library=library, folder=folder, 
                                               state=trans.app.model.Request.states.UNSUBMITTED)
-            request.flush()
+            trans.sa_session.add( request )
         else:
             request.name = name
             request.desc = desc
@@ -606,7 +611,8 @@ class Requests( BaseController ):
             request.values = form_values
             request.library = library
             request.folder = folder
-            request.flush()
+            trans.sa_session.add( request )
+        trans.sa_session.flush()
         return request
 
 
@@ -671,7 +677,8 @@ class Requests( BaseController ):
                                                               **kwd) )
         # change request's submitted field
         request.state = request.states.UNSUBMITTED
-        request.flush()
+        trans.sa_session.add( request )
+        trans.sa_session.flush()
         kwd = {}
         kwd['id'] = trans.security.encode_id(request.id)
         kwd['status'] = 'done'
@@ -797,9 +804,11 @@ class Requests( BaseController ):
                     for field_index in range(len(request.type.sample_form.fields)):
                         sample_values.append(util.restore_text( params.get( 'sample_%i_field_%i' % (sample_index, field_index), ''  ) ))
                     form_values = trans.app.model.FormValues(request.type.sample_form, sample_values)
-                    form_values.flush()                    
+                    trans.sa_session.add( form_values )
+                    trans.sa_session.flush()                    
                     s = trans.app.model.Sample(sample_name, '', request, form_values)
-                    s.flush()
+                    trans.sa_session.add( s )
+                    trans.sa_session.flush()
             else:
                 for index in range(len(current_samples)):
                     sample_index = index
@@ -812,9 +821,11 @@ class Requests( BaseController ):
                     if sample:
                         form_values = trans.sa_session.query( trans.app.model.FormValues ).get( sample.values.id )
                         form_values.content = sample_values
-                        form_values.flush()
+                        trans.sa_session.add( form_values )
+                        trans.sa_session.flush()
                         sample.name = new_sample_name
-                        sample.flush()
+                        trans.sa_session.add( sample )
+                        trans.sa_session.flush()
             return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                           action='list',
                                                           operation='show_request',
@@ -848,8 +859,7 @@ class Requests( BaseController ):
         s = request.has_sample(sample_name)
         if s:
             trans.sa_session.delete( s )
-            s.flush()
-            request.flush()
+            trans.sa_session.flush()
         del current_samples[sample_index]  
         return trans.fill_template( '/admin/requests/show_request.mako',
                                     request=request,
@@ -1026,21 +1036,22 @@ class Requests( BaseController ):
         for index, sample in enumerate(request.samples):
             bar_code = util.restore_text(params.get('sample_%i_bar_code' % index, ''))
             sample.bar_code = bar_code
-            sample.flush()
+            trans.sa_session.add( sample )
+            trans.sa_session.flush()
         # change the state of all the samples to the next state
         # get the new state
         new_state = request.type.states[1]
         for s in request.samples:
             event = trans.app.model.SampleEvent(s, new_state, 'Bar code added to this sample')
-            event.flush()
+            trans.sa_session.add( event )
+            trans.sa_session.flush()
         return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                           action='list',
                                                           operation='show_request',
                                                           id=trans.security.encode_id(request.id),
                                                           message='Bar codes have been saved for this request',
                                                           status='done'))
-                    
-    def __set_request_state(self, request):
+    def __set_request_state( self, trans, request ):
         # check if all the samples of the current request are in the final state
         complete = True 
         for s in request.samples:
@@ -1050,9 +1061,8 @@ class Requests( BaseController ):
             request.state = request.states.COMPLETE
         else:
             request.state = request.states.SUBMITTED
-        request.flush()
-                
-        
+        trans.sa_session.add( request )
+        trans.sa_session.flush()
     def change_state(self, trans, sample):
         possible_states = sample.request.type.states 
         curr_state = sample.current_state() 
@@ -1089,8 +1099,9 @@ class Requests( BaseController ):
                                                    trans.app.model.SampleState.table.c.id == selected_state ) ) \
                                     .first()
         event = trans.app.model.SampleEvent(sample, new_state, comments)
-        event.flush()
-        self.__set_request_state(sample.request)
+        trans.sa_session.add( event )
+        trans.sa_session.flush()
+        self.__set_request_state( trans, sample.request )
         return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                           action='show_events',
                                                           sample_id=sample.id))
@@ -1208,17 +1219,19 @@ class Requests( BaseController ):
         rt.desc = util.restore_text( params.description ) or ""
         rt.request_form = trans.sa_session.query( trans.app.model.FormDefinition ).get( int( params.request_form_id ) )
         rt.sample_form = trans.sa_session.query( trans.app.model.FormDefinition ).get( int( params.sample_form_id ) )
-        rt.flush()
+        trans.sa_session.add( rt )
+        trans.sa_session.flush()
         # set sample states
         ss_list = trans.sa_session.query( trans.app.model.SampleState ).filter( trans.app.model.SampleState.table.c.request_type_id == rt.id )
         for ss in ss_list:
             trans.sa_session.delete( ss )
-            ss.flush()
+            trans.sa_session.flush()
         for i in range( num_states ):
             name = util.restore_text( params.get( 'state_name_%i' % i, None ))
             desc = util.restore_text( params.get( 'state_desc_%i' % i, None ))
             ss = trans.app.model.SampleState(name, desc, rt) 
-            ss.flush()
+            trans.sa_session.add( ss )
+            trans.sa_session.flush()
         msg = "The new request type named '%s' with %s state(s) has been created" % (rt.name, num_states)
         return rt, msg
     @web.expose
@@ -1229,7 +1242,7 @@ class Requests( BaseController ):
         messagetype = params.get( 'messagetype', 'done' )
         rt = trans.sa_session.query( trans.app.model.RequestType ).get( int( util.restore_text( params.request_type_id ) ) )
         rt.deleted = True
-        rt.flush()
+        trans.sa_session.flush()
         return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                           action='manage_request_types',
                                                           msg='Request type <b>%s</b> has been deleted' % rt.name,
@@ -1242,7 +1255,7 @@ class Requests( BaseController ):
         messagetype = params.get( 'messagetype', 'done' )
         rt = trans.sa_session.query( trans.app.model.RequestType ).get( int( util.restore_text( params.request_type_id ) ) )
         rt.deleted = False
-        rt.flush()
+        trans.sa_session.flush()
         return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                           action='manage_request_types',
                                                           msg='Request type <b>%s</b> has been undeleted' % rt.name,

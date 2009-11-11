@@ -460,7 +460,8 @@ class RootController( BaseController ):
             except:
                 association = None
             new_history.add_galaxy_session( galaxy_session, association=association )
-            new_history.flush()
+            trans.sa_session.add( new_history )
+            trans.sa_session.flush()
             if not user_history.datasets:
                 trans.set_history( new_history )
             trans.log_event( "History imported, id: %s, name: '%s': " % (str(new_history.id) , new_history.name ) )
@@ -479,7 +480,8 @@ class RootController( BaseController ):
             except:
                 association = None
             new_history.add_galaxy_session( galaxy_session, association=association )
-            new_history.flush()
+            trans.sa_session.add( new_history )
+            trans.sa_session.flush()
             trans.set_history( new_history )
             trans.log_event( "History imported, id: %s, name: '%s': " % (str(new_history.id) , new_history.name ) )
             return trans.show_ok_message( """
@@ -506,7 +508,8 @@ class RootController( BaseController ):
             else:
                 permissions = trans.app.security_agent.history_get_default_permissions( history )
                 trans.app.security_agent.set_all_dataset_permissions( data.dataset, permissions )
-            data.flush()
+            trans.sa_session.add( data )
+            trans.sa_session.flush()
             data_file = open( data.file_name, "wb" )
             file_data.file.seek( 0 )
             data_file.write( file_data.file.read() )
@@ -515,11 +518,11 @@ class RootController( BaseController ):
             data.set_size()
             data.init_meta()
             data.set_meta()
-            data.flush()
+            trans.sa_session.flush()
             history.add_dataset( data )
-            history.flush()
+            trans.sa_session.flush()
             data.set_peek()
-            data.flush()
+            trans.sa_session.flush()
             trans.log_event("Added dataset %d to history %d" %(data.id, trans.history.id))
             return trans.show_ok_message("Dataset "+str(data.hid)+" added to history "+str(history_id)+".")
         except Exception, e:
@@ -567,7 +570,8 @@ class RootController( BaseController ):
             ## history = trans.app.model.History.get( old_data.history_id )
             history = trans.get_history()
             history.add_dataset(new_data)
-            new_data.flush()
+            trans.sa_session.add( new_data )
+            trans.sa_session.flush()
             return trans.show_message( "<p>Secondary dataset has been made primary.</p>", refresh_frames=['history'] ) 
         except:
             return trans.show_error_message( "<p>Failed to make secondary dataset primary.</p>" ) 

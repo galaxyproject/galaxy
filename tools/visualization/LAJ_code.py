@@ -36,4 +36,5 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr
     class_name = "edu.psu.cse.bio.laj.LajApplet.class"
     archive = "/static/laj/laj.jar"
     primary_data.peek = create_applet_tag_peek( class_name, archive, params )
-    primary_data.flush()
+    app.model.context.add( primary_data )
+    app.model.context.flush()

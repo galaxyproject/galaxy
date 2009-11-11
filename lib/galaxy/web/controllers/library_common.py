@@ -97,7 +97,7 @@ class LibraryCommon( BaseController ):
                                                        upload_option=upload_option,
                                                        msg=util.sanitize_text( msg ),
                                                        messagetype='error' ) )
-        json_file_path = upload_common.create_paramfile( uploaded_datasets )
+        json_file_path = upload_common.create_paramfile( trans, uploaded_datasets )
         data_list = [ ud.data for ud in uploaded_datasets ]
         return upload_common.create_job( trans, tool_params, tool, json_file_path, data_list, folder=library_bunch.folder )
     def make_library_uploaded_dataset( self, trans, params, name, path, type, library_bunch, in_folder=None ):
@@ -116,7 +116,8 @@ class LibraryCommon( BaseController ):
         if params.get( 'link_data_only', False ):
             uploaded_dataset.link_data_only = True
             uploaded_dataset.data.file_name = os.path.abspath( path )
-            uploaded_dataset.data.flush()
+            trans.sa_session.add( uploaded_dataset.data )
+            trans.sa_session.data.flush()
         return uploaded_dataset
     def get_server_dir_uploaded_datasets( self, trans, params, full_dir, import_dir_desc, library_bunch, err_redirect, msg ):
         files = []
@@ -248,14 +249,16 @@ class LibraryCommon( BaseController ):
             form = trans.sa_session.query( trans.app.model.FormDefinition ).get( int( kwd[ 'form_id' ] ) )
             #fields = list( copy.deepcopy( form.fields ) )
             form_values = trans.app.model.FormValues( form, [] )
-            form_values.flush()
+            trans.sa_session.add( form_values )
+            trans.sa_session.flush()
             if folder_id:
                 assoc = trans.app.model.LibraryFolderInfoAssociation( library_item, form, form_values )
             elif ldda_id:
                 assoc = trans.app.model.LibraryDatasetDatasetInfoAssociation( library_item, form, form_values )
             else:
                 assoc = trans.app.model.LibraryInfoAssociation( library_item, form, form_values )
-            assoc.flush()
+            trans.sa_session.add( assoc )
+            trans.sa_session.flush()
             msg = 'An information template based on the form "%s" has been added to this %s.' % ( form.name, library_item_desc )
             trans.response.send_redirect( web.url_for( controller=cntrller,
                                                        action=response_action,
@@ -315,21 +318,25 @@ class LibraryCommon( BaseController ):
                 # Update existing content only if it has changed
                 if form_values.content != field_contents:
                     form_values.content = field_contents
-                    form_values.flush()
+                    trans.sa_session.add( form_values )
+                    trans.sa_session.flush()
             else:
                 # Inherit the next available info_association so we can get the template
                 info_association, inherited = library_item.get_info_association()
                 template = info_association.template
                 # Create a new FormValues object
                 form_values = trans.app.model.FormValues( template, field_contents )
-                form_values.flush()
+                trans.sa_session.add( form_values )
+                trans.sa_session.flush()
                 # Create a new info_association between the current library item and form_values
                 if library_item_type == 'folder':
                     info_association = trans.app.model.LibraryFolderInfoAssociation( library_item, template, form_values )
-                    info_association.flush()
+                    trans.sa_session.add( info_association )
+                    trans.sa_session.flush()
                 elif library_item_type == 'library_dataset_dataset_association':
                     info_association = trans.app.model.LibraryDatasetDatasetInfoAssociation( library_item, template, form_values )
-                    info_association.flush()
+                    trans.sa_session.add( info_association )
+                    trans.sa_session.flush()
         msg = 'The information has been updated.'
         return trans.response.send_redirect( web.url_for( controller=cntrller,
                                                           action=response_action,

@@ -13,6 +13,7 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr
             data.info = "%s\n%s" % ( new_stdout, stderr )
             data.dbkey = filename_to_build[data.file_name]
             data.name = "%s (%s)" % ( data.name, data.dbkey )
-            data.flush()
+            app.model.context.add( data )
+            app.model.context.flush()
         except:
             continue

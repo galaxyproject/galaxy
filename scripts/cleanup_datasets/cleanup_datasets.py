@@ -105,8 +105,9 @@ def delete_userless_histories( app, cutoff_time, info_only = False, force_retry 
         if not info_only:
             print "Deleting history id ", history.id
             history.deleted = True
+            app.sa_session.add( history )
+            app.sa_session.flush()
         history_count += 1
-    app.model.flush()
     stop = time.time()
     print "Deleted %d histories" % history_count
     print "Elapsed time: ", stop - start
@@ -142,8 +143,9 @@ def purge_histories( app, cutoff_time, remove_from_disk, info_only = False, forc
             #    dhp.delete()
             print "Purging history id ", history.id
             history.purged = True
+            app.sa_session.add( history )
+            app.sa_session.flush()
         history_count += 1
-    app.model.flush()
     stop = time.time()
     print 'Purged %d histories.' % history_count
     print "Elapsed time: ", stop - start
@@ -171,8 +173,9 @@ def purge_libraries( app, cutoff_time, remove_from_disk, info_only = False, forc
         if not info_only:
             print "Purging library id ", library.id
             library.purged = True
+            app.sa_session.add( library )
+            app.sa_session.flush()
         library_count += 1
-    app.model.flush()
     stop = time.time()
     print '# Purged %d libraries .' % library_count
     print "Elapsed time: ", stop - start
@@ -293,7 +296,8 @@ def _purge_dataset_instance( dataset_instance, app, remove_from_disk, include_ch
         print "Deleting dataset_instance ", str( dataset_instance ), " id ", dataset_instance.id
         dataset_instance.mark_deleted( include_children = include_children )
         dataset_instance.clear_associated_files()
-        dataset_instance.flush()
+        app.sa_session.add( dataset_instance )
+        app.sa_session.flush()
         app.sa_session.refresh( dataset_instance.dataset )
     if is_deletable or _dataset_is_deletable( dataset_instance.dataset ):
         # Calling methods may have already checked _dataset_is_deletable, if so, is_deletable should be True
@@ -334,12 +338,16 @@ def _delete_dataset( dataset, app, remove_from_disk, info_only=False, is_deletab
                     except Exception, e:
                         print "Error, exception: %s caught attempting to purge metadata file %s\n" %( str( e ), metadata_file.file_name )
                     metadata_file.purged = True
+                    app.sa_session.add( metadata_file )
+                    app.sa_session.flush()
                 metadata_file.deleted = True
-                #metadata_file.flush()
+                app.sa_session.add( metadata_file )
+                app.sa_session.flush()
             print "%s" % metadata_file.file_name
         print "Deleting dataset id", dataset.id
         dataset.deleted = True
-        app.model.flush()
+        app.sa_session.add( dataset )
+        app.sa_session.flush()
 
 def _purge_dataset( dataset, remove_from_disk, info_only = False ):
     if dataset.deleted:
@@ -356,14 +364,16 @@ def _purge_dataset( dataset, remove_from_disk, info_only = False ):
                             shutil.rmtree( dataset.extra_files_path ) #we need to delete the directory and its contents; os.unlink would always fail on a directory
                     print "Purging dataset id", dataset.id
                     dataset.purged = True
-                    dataset.flush()
+                    app.sa_session.add( dataset )
+                    app.sa_session.flush()
             else:
                 print "This dataset (%i) is not purgable, the file (%s) will not be removed.\n" % ( dataset.id, dataset.file_name )
         except OSError, exc:
             print "Error, dataset file has already been removed: %s" % str( exc )
             print "Purging dataset id", dataset.id
             dataset.purged = True
-            dataset.flush()
+            app.sa_session.add( dataset )
+            app.sa_session.flush()
         except Exception, exc:
             print "Error attempting to purge data file: ", dataset.file_name, " error: ", str( exc )
     else:
@@ -382,7 +392,8 @@ def _purge_folder( folder, app, remove_from_disk, info_only = False ):
         # TODO: should the folder permissions be deleted here?
         print "Purging folder id ", folder.id
         folder.purged = True
-        folder.flush()
+        app.sa_session.add( folder )
+        app.sa_session.flush()
 
 class CleanupDatasetsApplication( object ):
     """Encapsulates the state of a Universe application"""

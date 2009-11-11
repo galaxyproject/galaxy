@@ -390,7 +390,8 @@ class JobWrapper( object ):
         # We need command_line persisted to the db in order for Galaxy to re-queue the job
         # if the server was stopped and restarted before the job finished
         job.command_line = self.command_line
-        job.flush()
+        self.sa_session.add( job )
+        self.sa_session.flush()
         # Return list of all extra files
         extra_filenames = config_filenames
         if param_filename is not None:
@@ -435,11 +436,13 @@ class JobWrapper( object ):
                 dataset.set_size()
                 if dataset.ext == 'auto':
                     dataset.extension = 'data'
-                dataset.flush()
+                self.sa_session.add( dataset )
+                self.sa_session.flush()
             job.state = model.Job.states.ERROR
             job.command_line = self.command_line
             job.info = message
-            job.flush()
+            self.sa_session.add( job )
+            self.sa_session.flush()
         # If the job was deleted, just clean up
         self.cleanup()
         
@@ -452,11 +455,13 @@ class JobWrapper( object ):
             dataset.state = state
             if info:
                 dataset.info = info
-            dataset.flush()
+            self.sa_session.add( dataset )
+            self.sa_session.flush()
         if info:
             job.info = info
         job.state = state
-        job.flush()
+        self.sa_session.add( job )
+        self.sa_session.flush()
 
     def get_state( self ):
         job = self.sa_session.query( model.Job ).get( self.job_id )
@@ -468,7 +473,8 @@ class JobWrapper( object ):
         self.sa_session.refresh( job )
         job.job_runner_name = runner_url
         job.job_runner_external_id = external_id
-        job.flush()
+        self.sa_session.add( job )
+        self.sa_session.flush()
         
     def finish( self, stdout, stderr ):
         """
@@ -554,7 +560,8 @@ class JobWrapper( object ):
                     dataset.blurb = "empty"
                     if dataset.ext == 'auto':
                         dataset.extension = 'txt'
-                dataset.flush()
+                self.sa_session.add( dataset )
+                self.sa_session.flush()
             if context['stderr']:
                 dataset_assoc.dataset.dataset.state = model.Dataset.states.ERROR
             else:
@@ -566,7 +573,6 @@ class JobWrapper( object ):
             # panel stops checking for updates.  So allow the
             # self.sa_session.flush() at the bottom of this method set
             # the state instead.
-            #dataset_assoc.dataset.dataset.flush()
         
         # Save stdout and stderr    
         if len( stdout ) > 32768:
@@ -839,7 +845,8 @@ class JobStopQueue( object ):
                 job.info = error_msg
             else:
                 job.state = job.states.DELETED
-            job.flush()
+            self.sa_session.add( job )
+            self.sa_session.flush()
             # if job is in JobQueue or FooJobRunner's put method,
             # job_runner_name will be unset and the job will be dequeued due to
             # state change above

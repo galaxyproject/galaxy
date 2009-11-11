@@ -1563,7 +1563,8 @@ class TestSecurityAndLibraries( TwillTestCase ):
         # TODO: If we decide to implement the GUI feature for un-purging a user, replace this with a method call
         regular_user3.purged = False
         regular_user3.deleted = False
-        regular_user3.flush()
+        sa_session.add( regular_user3 )
+        sa_session.flush()
     def test_235_purge_group( self ):
         """Testing purging a group"""
         # Logged in as admin_user
@@ -1624,7 +1625,8 @@ class TestSecurityAndLibraries( TwillTestCase ):
         # Manually unpurge, then undelete the role for later test runs
         # TODO: If we decide to implement the GUI feature for un-purging a role, replace this with a method call
         role_two.purged = False
-        role_two.flush()
+        sa_session.add( role_two )
+        sa_session.flush()
         self.undelete_role( self.security.encode_id( role_two.id ), role_two.name )
     def test_250_purge_library( self ):
         """Testing purging a library"""
@@ -1844,7 +1846,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
             # Manually delete the role from the database
             sa_session.refresh( role )
             sa_session.delete( role )
-            role.flush()
+            sa_session.flush()
         ##################
         # Eliminate all groups
         ##################
@@ -1854,7 +1856,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
             # Manually delete the group from the database
             sa_session.refresh( group )
             sa_session.delete( group )
-            group.flush()
+            sa_session.flush()
         ##################
         # Make sure all users are associated only with their private roles
         ##################
