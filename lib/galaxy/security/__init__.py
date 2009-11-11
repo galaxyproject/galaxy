@@ -569,6 +569,9 @@ class HostAgent( RBACAgent ):
         self.model = model
         if permitted_actions:
             self.permitted_actions = permitted_actions
+    @property
+    def sa_session( self ):
+        return self.model.context.current
     def allow_action( self, addr, action, **kwd ):
         if 'dataset' in kwd and action == self.permitted_actions.DATASET_ACCESS:
             hda = kwd['dataset']
