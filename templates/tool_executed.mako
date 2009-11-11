@@ -28,7 +28,7 @@
   }
 
   function refresh() {
-    top.location.href = '${request.base}';
+    top.location.href = '${h.url_for( "/" )}';
   }
 
 </script>
@@ -53,7 +53,7 @@ succesfully or 'error' if problems were encountered.
 </p>
 
 %if tool.options.refresh:
-<p id="refresh_message" style="display: none;">You are now being redirected back to <a href="${request.base}">Galaxy</a></div>
+<p id="refresh_message" style="display: none;">You are now being redirected back to <a href="${h.url_for( '/' )}">Galaxy</a></div>
 %endif
 
 </div>
