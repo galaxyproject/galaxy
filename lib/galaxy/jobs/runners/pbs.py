@@ -222,7 +222,7 @@ class PBSJobRunner( object ):
             script = pbs_symlink_template % (job_wrapper.galaxy_lib_dir, " ".join(job_wrapper.get_input_fnames() + output_files), self.app.config.pbs_stage_path, exec_dir, command_line)
         else:
             if self.app.config.set_metadata_externally:
-                external_metadata_script = job_wrapper.setup_external_metadata( exec_dir = exec_dir, tmp_dir = self.app.config.new_file_path, dataset_files_path = self.app.model.Dataset.file_path, output_fnames = output_fnames, kwds = { 'overwrite' : False } ) #we don't want to overwrite metadata that was copied over in init_meta(), as per established behavior
+                external_metadata_script = job_wrapper.setup_external_metadata( exec_dir = os.path.abspath( os.getcwd() ), tmp_dir = self.app.config.new_file_path, dataset_files_path = self.app.model.Dataset.file_path, output_fnames = output_fnames, kwds = { 'overwrite' : False } ) #we don't want to overwrite metadata that was copied over in init_meta(), as per established behavior
             else:
                 external_metadata_script = ""
             script = pbs_template % ( job_wrapper.galaxy_lib_dir, exec_dir, command_line, external_metadata_script )
