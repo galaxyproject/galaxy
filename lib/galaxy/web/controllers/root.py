@@ -501,7 +501,12 @@ class RootController( BaseController ):
         """Adds a POSTed file to a History"""
         try:
             history = trans.sa_session.query( trans.app.model.History ).get( history_id )
-            data = trans.app.model.HistoryDatasetAssociation( name = name, info = info, extension = ext, dbkey = dbkey, create_dataset = True )
+            data = trans.app.model.HistoryDatasetAssociation( name = name,
+                                                              info = info,
+                                                              extension = ext,
+                                                              dbkey = dbkey,
+                                                              create_dataset = True,
+                                                              sa_session = trans.sa_session )
             if copy_access_from:
                 copy_access_from = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( copy_access_from )
                 trans.app.security_agent.copy_dataset_permissions( copy_access_from.dataset, data.dataset )

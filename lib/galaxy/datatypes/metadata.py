@@ -4,6 +4,7 @@ from galaxy.util import string_as_bool, relpath, stringify_dictionary_keys, list
 from galaxy.util.odict import odict
 from galaxy.web import form_builder
 import galaxy.model
+from sqlalchemy.orm import object_session
 
 import pkg_resources
 pkg_resources.require("simplejson")
@@ -298,7 +299,6 @@ class SelectParameter( MetadataParameter ):
         if not isinstance( value, list ): return [value]
         return value
 
-
 class DBKeyParameter( SelectParameter ):
     def get_html_field( self, value=None, context={}, other_values={}, values=None, **kwd):
         try:
@@ -387,26 +387,28 @@ class FileParameter( MetadataParameter ):
         return "<div>No display available for Metadata Files</div>"
 
     def wrap( self, value ):
+        if value is None:
+            return None
         if isinstance( value, galaxy.model.MetadataFile ) or isinstance( value, MetadataTempFile ):
             return value
         if DATABASE_CONNECTION_AVAILABLE:
             try:
-                # FIXME: GVK ( 11/11/09 ) had to add the monkey patch back into assignmapper for the get
-                # method for this since Metadata has no hook into mapping.context ( the salalchemy session ).
+                # FIXME: this query requires a monkey patch in assignmapper.py since
+                # MetadataParameters do not have a handle to the sqlalchemy session
                 return galaxy.model.MetadataFile.get( value )
             except:
                 #value was not a valid id
                 return None
-        elif value is not None:
+        else:
             mf = galaxy.model.MetadataFile()
             mf.id = value #we assume this is a valid id, since we cannot check it
             return mf
-        return None
-    def make_copy( self, value, target_context = None, source_context = None ):
+    def make_copy( self, value, target_context, source_context ):
         value = self.wrap( value )
         if value:
             new_value = galaxy.model.MetadataFile( dataset = target_context.parent, name = self.spec.name )
-            new_value.flush()
+            object_session( target_context.parent ).add( new_value )
+            object_session( target_context.parent ).flush()
             shutil.copy( value.file_name, new_value.file_name )
             return self.unwrap( new_value )
         return None
@@ -441,7 +443,8 @@ class FileParameter( MetadataParameter ):
     def new_file( self, dataset = None, **kwds ):
         if DATABASE_CONNECTION_AVAILABLE:
             mf = galaxy.model.MetadataFile( name = self.spec.name, dataset = dataset, **kwds )
-            mf.flush() #flush to assign id
+            object_session( dataset ).add( mf )
+            object_session( dataset ).flush() #flush to assign id
             return mf
         else:
             #we need to make a tmp file that is accessable to the head node, 
@@ -557,7 +560,8 @@ class JobExternalOutputMetadataWrapper( object ):
                 #file to store kwds passed to set_meta()
                 metadata_files.filename_kwds = relpath( tempfile.NamedTemporaryFile( dir = tmp_dir, prefix = "metadata_kwds_%s_" % key ).name )
                 simplejson.dump( kwds, open( metadata_files.filename_kwds, 'wb+' ), ensure_ascii=True )
-                metadata_files.flush()
+                sa_session.add( metadata_files )
+                sa_session.flush()
             metadata_files_list.append( metadata_files )
         #return command required to build
         return "%s %s %s %s %s %s" % ( os.path.join( exec_dir, 'set_metadata.sh' ), dataset_files_path, tmp_dir, config_root, datatypes_config, " ".join( map( __metadata_files_list_to_cmd_line, metadata_files_list ) ) )
@@ -586,4 +590,5 @@ class JobExternalOutputMetadataWrapper( object ):
     def set_job_runner_external_pid( self, pid, sa_session ):
         for metadata_files in sa_session.query( galaxy.model.Job ).get( self.job_id ).external_output_metadata:
             metadata_files.job_runner_external_pid = pid
-            metadata_files.flush()
+            sa_session.add( metadata_files )
+            sa_session.flush()

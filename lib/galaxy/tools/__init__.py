@@ -1495,7 +1495,13 @@ class Tool:
                 if visible == "visible": visible = True
                 else: visible = False
                 ext = fields.pop(0).lower()
-                child_dataset = self.app.model.HistoryDatasetAssociation( extension=ext, parent_id=outdata.id, designation=designation, visible=visible, dbkey=outdata.dbkey, create_dataset=True )
+                child_dataset = self.app.model.HistoryDatasetAssociation( extension=ext,
+                                                                          parent_id=outdata.id,
+                                                                          designation=designation,
+                                                                          visible=visible,
+                                                                          dbkey=outdata.dbkey,
+                                                                          create_dataset=True,
+                                                                          sa_session=self.sa_session )
                 self.app.security_agent.copy_dataset_permissions( outdata.dataset, child_dataset.dataset )
                 # Move data from temp location to dataset location
                 shutil.move( filename, child_dataset.file_name )
@@ -1548,7 +1554,12 @@ class Tool:
                 if fields:
                     dbkey = fields[ 0 ]
                 # Create new primary dataset
-                primary_data = self.app.model.HistoryDatasetAssociation( extension=ext, designation=designation, visible=visible, dbkey=dbkey, create_dataset=True )
+                primary_data = self.app.model.HistoryDatasetAssociation( extension=ext,
+                                                                         designation=designation,
+                                                                         visible=visible,
+                                                                         dbkey=dbkey,
+                                                                         create_dataset=True,
+                                                                         sa_session=self.sa_session )
                 self.app.security_agent.copy_dataset_permissions( outdata.dataset, primary_data.dataset )
                 self.sa_session.add( primary_data )
                 self.sa_session.flush()

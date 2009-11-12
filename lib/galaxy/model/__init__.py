@@ -17,6 +17,7 @@ from galaxy.util.hash_util import *
 from galaxy.web.form_builder import *
 import logging
 log = logging.getLogger( __name__ )
+from sqlalchemy.orm import object_session
 
 datatypes_registry = galaxy.datatypes.registry.Registry() #Default Value Required for unit tests
 
@@ -205,7 +206,8 @@ class History( object ):
     def add_dataset( self, dataset, parent_id=None, genome_build=None, set_hid = True ):
         if isinstance( dataset, Dataset ):
             dataset = HistoryDatasetAssociation( dataset = dataset, copied_from = dataset )
-            dataset.flush()
+            object_session( self ).add( dataset )
+            object_session( self ).flush()
         elif not isinstance( dataset, HistoryDatasetAssociation ):
             raise TypeError, "You can only add Dataset and HistoryDatasetAssociation instances to a history ( you tried to add %s )." % str( dataset )
         if parent_id:
@@ -229,7 +231,8 @@ class History( object ):
         if not target_user:
             target_user = self.user
         new_history = History( name=name, user=target_user )
-        new_history.flush()
+        object_session( self ).add( new_history )
+        object_session( self ).flush()
         if activatable:
             hdas = self.activatable_datasets
         else:
@@ -237,9 +240,11 @@ class History( object ):
         for hda in hdas:
             new_hda = hda.copy( copy_children=True, target_history=new_history )
             new_history.add_dataset( new_hda, set_hid = False )
-            new_hda.flush()
+            object_session( self ).add( new_hda )
+            object_session( self ).flush()
         new_history.hid_counter = self.hid_counter
-        new_history.flush()
+        object_session( self ).add( new_history )
+        object_session( self ).flush()
         return new_history
     @property
     def activatable_datasets( self ):
@@ -439,7 +444,7 @@ class DatasetInstance( object ):
     permitted_actions = Dataset.permitted_actions
     def __init__( self, id=None, hid=None, name=None, info=None, blurb=None, peek=None, extension=None, 
                   dbkey=None, metadata=None, history=None, dataset=None, deleted=False, designation=None,
-                  parent_id=None, validation_errors=None, visible=True, create_dataset=False ):
+                  parent_id=None, validation_errors=None, visible=True, create_dataset=False, sa_session=None ):
         self.name = name or "Unnamed dataset"
         self.id = id
         self.info = info
@@ -454,8 +459,10 @@ class DatasetInstance( object ):
         self.visible = visible
         # Relationships
         if not dataset and create_dataset:
+            # Had to pass the sqlalchemy session in order to create a new dataset
             dataset = Dataset( state=Dataset.states.NEW )
-            dataset.flush()
+            sa_session.add( dataset )
+            sa_session.flush()
         self.dataset = dataset
         self.parent_id = parent_id
         self.validation_errors = validation_errors
@@ -466,7 +473,8 @@ class DatasetInstance( object ):
         return self.dataset.state
     def set_dataset_state ( self, state ):
         self.dataset.state = state
-        self.dataset.flush() #flush here, because hda.flush() won't flush the Dataset object
+        object_session( self ).add( self.dataset )
+        object_session( self ).flush() #flush here, because hda.flush() won't flush the Dataset object
     state = property( get_dataset_state, set_dataset_state )
     def get_file_name( self ):
         return self.dataset.get_file_name()
@@ -616,8 +624,11 @@ class HistoryDatasetAssociation( DatasetInstance ):
                   history = None, 
                   copied_from_history_dataset_association = None, 
                   copied_from_library_dataset_dataset_association = None, 
+                  sa_session = None,
                   **kwd ):
-        DatasetInstance.__init__( self, **kwd )
+        # FIXME: sa_session is must be passed to DataSetInstance if the create_dataset 
+        # parameter is True so that the new object can be flushed.  Is there a better way?
+        DatasetInstance.__init__( self, sa_session=sa_session, **kwd )
         self.hid = hid
         # Relationships
         self.history = history
@@ -637,7 +648,8 @@ class HistoryDatasetAssociation( DatasetInstance ):
                                          parent_id=parent_id, 
                                          copied_from_history_dataset_association=self,
                                          history = target_history )
-        hda.flush()
+        object_session( self ).add( hda )
+        object_session( self ).flush()
         hda.set_size()
         # Need to set after flushed, as MetadataFiles require dataset.id
         hda.metadata = self.metadata
@@ -647,7 +659,7 @@ class HistoryDatasetAssociation( DatasetInstance ):
         if not self.datatype.copy_safe_peek:
             # In some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
             hda.set_peek()
-        hda.flush()
+        object_session( self ).flush()
         return hda
     def to_library_dataset_dataset_association( self, target_folder, replace_dataset=None, parent_id=None, user=None ):
         if replace_dataset:
@@ -657,7 +669,8 @@ class HistoryDatasetAssociation( DatasetInstance ):
             # If replace_dataset is None, the Library level permissions will be taken from the folder and applied to the new 
             # LibraryDataset, and the current user's DefaultUserPermissions will be applied to the associated Dataset.
             library_dataset = LibraryDataset( folder=target_folder, name=self.name, info=self.info )
-            library_dataset.flush()
+            object_session( self ).add( library_dataset )
+            object_session( self ).flush()
         if not user:
             user = self.history.user
         ldda = LibraryDatasetDatasetAssociation( name=self.name, 
@@ -673,15 +686,18 @@ class HistoryDatasetAssociation( DatasetInstance ):
                                                  parent_id=parent_id,
                                                  copied_from_history_dataset_association=self,
                                                  user=user )
-        ldda.flush()
+        object_session( self ).add( ldda )
+        object_session( self ).flush()
         # Permissions must be the same on the LibraryDatasetDatasetAssociation and the associated LibraryDataset
         # Must set metadata after ldda flushed, as MetadataFiles require ldda.id
         ldda.metadata = self.metadata
         if not replace_dataset:
             target_folder.add_library_dataset( library_dataset, genome_build=ldda.dbkey )
-            target_folder.flush()
+            object_session( self ).add( target_folder )
+            object_session( self ).flush()
         library_dataset.library_dataset_dataset_association_id = ldda.id
-        library_dataset.flush()
+        object_session( self ).add( library_dataset )
+        object_session( self ).flush()
         for child in self.children:
             child_copy = child.to_library_dataset_dataset_association( target_folder=target_folder,
                                                                        replace_dataset=replace_dataset,
@@ -690,7 +706,7 @@ class HistoryDatasetAssociation( DatasetInstance ):
         if not self.datatype.copy_safe_peek:
             # In some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
             ldda.set_peek()
-        ldda.flush()
+        object_session( self ).flush()
         return ldda
     def clear_associated_files( self, metadata_safe = False, purge = False ):
         # metadata_safe = True means to only clear when assoc.metadata_safe == False
@@ -814,8 +830,8 @@ class LibraryDataset( object ):
     def set_library_dataset_dataset_association( self, ldda ):
         self.library_dataset_dataset_association = ldda
         ldda.library_dataset = self
-        ldda.flush()
-        self.flush()
+        object_session( self ).add_all( ( ldda, self ) )
+        object_session( self ).flush()
     def get_info( self ):
         if self.library_dataset_dataset_association:
             return self.library_dataset_dataset_association.info
@@ -853,8 +869,11 @@ class LibraryDatasetDatasetAssociation( DatasetInstance ):
                   copied_from_library_dataset_dataset_association=None,
                   library_dataset=None,
                   user=None,
+                  sa_session=None,
                   **kwd ):
-        DatasetInstance.__init__( self, **kwd )
+        # FIXME: sa_session is must be passed to DataSetInstance if the create_dataset 
+        # parameter in kwd is True so that the new object can be flushed.  Is there a better way?
+        DatasetInstance.__init__( self, sa_session=sa_session, **kwd )
         self.copied_from_history_dataset_association = copied_from_history_dataset_association
         self.copied_from_library_dataset_dataset_association = copied_from_library_dataset_dataset_association
         self.library_dataset = library_dataset
@@ -872,7 +891,8 @@ class LibraryDatasetDatasetAssociation( DatasetInstance ):
                                          parent_id=parent_id, 
                                          copied_from_library_dataset_dataset_association=self,
                                          history=target_history )
-        hda.flush()
+        object_session( self ).add( hda )
+        object_session( self ).flush()
         hda.metadata = self.metadata #need to set after flushed, as MetadataFiles require dataset.id
         if add_to_history and target_history:
             target_history.add_dataset( hda )
@@ -880,7 +900,7 @@ class LibraryDatasetDatasetAssociation( DatasetInstance ):
             child_copy = child.to_history_dataset_association( target_history = target_history, parent_id = hda.id, add_to_history = False )
         if not self.datatype.copy_safe_peek:
             hda.set_peek() #in some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
-        hda.flush()
+        object_session( self ).flush()
         return hda
     def copy( self, copy_children = False, parent_id = None, target_folder = None ):
         ldda = LibraryDatasetDatasetAssociation( name=self.name, 
@@ -895,7 +915,8 @@ class LibraryDatasetDatasetAssociation( DatasetInstance ):
                                                  parent_id=parent_id, 
                                                  copied_from_library_dataset_dataset_association=self,
                                                  folder=target_folder )
-        ldda.flush()
+        object_session( self ).add( ldda )
+        object_session( self ).flush()
          # Need to set after flushed, as MetadataFiles require dataset.id
         ldda.metadata = self.metadata
         if copy_children:
@@ -904,7 +925,7 @@ class LibraryDatasetDatasetAssociation( DatasetInstance ):
         if not self.datatype.copy_safe_peek:
              # In some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
             ldda.set_peek()
-        ldda.flush()
+        object_session( self ).flush()
         return ldda
     def clear_associated_files( self, metadata_safe = False, purge = False ):
         return

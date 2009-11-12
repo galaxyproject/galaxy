@@ -730,7 +730,7 @@ class ColumnListParameter( SelectToolParameter ):
     >>> hist = History()
     >>> sa_session.add( hist )
     >>> sa_session.flush()
-    >>> hist.add_dataset( HistoryDatasetAssociation( id=1, extension='interval', create_dataset=True ) )
+    >>> hist.add_dataset( HistoryDatasetAssociation( id=1, extension='interval', create_dataset=True, sa_session=sa_session ) )
     >>> dtp =  DataToolParameter( None, XML( '<param name="blah" type="data" format="interval"/>' ) )
     >>> print dtp.name
     blah

@@ -667,7 +667,8 @@ class Requests( BaseController ):
             request.library = library
             request.folder = folder
             request.state = trans.app.model.Request.states.UNSUBMITTED
-            request.flush()
+            trans.sa_session.add( request )
+            trans.sa_session.flush()
         return request
     @web.expose
     @web.require_login( "create/submit sequencing requests" )

@@ -198,7 +198,7 @@ class DefaultToolAction( object ):
                                         if check is not None:
                                             if str( getattr( check, when_elem.get( 'attribute' ) ) ) == when_elem.get( 'value', None ):
                                                 ext = when_elem.get( 'format', ext )
-                    data = trans.app.model.HistoryDatasetAssociation( extension=ext, create_dataset=True )
+                    data = trans.app.model.HistoryDatasetAssociation( extension=ext, create_dataset=True, sa_session=trans.sa_session )
                     # Commit the dataset immediately so it gets database assigned unique id
                     trans.sa_session.add( data )
                     trans.sa_session.flush()

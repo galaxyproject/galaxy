@@ -103,7 +103,7 @@ class ASync( BaseController ):
             #data.state = jobs.JOB_OK
             #history.datasets.add_dataset( data )
             
-            data = trans.app.model.HistoryDatasetAssociation( create_dataset = True, extension = GALAXY_TYPE )
+            data = trans.app.model.HistoryDatasetAssociation( create_dataset=True, sa_session=trans.sa_session, extension=GALAXY_TYPE )
             trans.app.security_agent.set_all_dataset_permissions( data.dataset, trans.app.security_agent.history_get_default_permissions( trans.history ) )
             data.name = GALAXY_NAME
             data.dbkey = GALAXY_BUILD

@@ -112,7 +112,8 @@ def new_history_upload( trans, uploaded_dataset, state=None ):
                                                      extension = uploaded_dataset.file_type,
                                                      dbkey = uploaded_dataset.dbkey, 
                                                      history = trans.history,
-                                                     create_dataset = True )
+                                                     create_dataset = True,
+                                                     sa_session = trans.sa_session )
     if state:
         hda.state = state
     else:
@@ -159,13 +160,14 @@ def new_library_upload( trans, uploaded_dataset, library_bunch, state=None ):
                                                              dbkey = uploaded_dataset.dbkey,
                                                              library_dataset = ld,
                                                              user = trans.user,
-                                                             create_dataset = True )
+                                                             create_dataset = True,
+                                                             sa_session = trans.sa_session )
+    trans.sa_session.add( ldda )
     if state:
         ldda.state = state
     else:
         ldda.state = ldda.states.QUEUED
     ldda.message = library_bunch.message
-    trans.sa_session.add( ldda )
     trans.sa_session.flush()
     # Permissions must be the same on the LibraryDatasetDatasetAssociation and the associated LibraryDataset
     trans.app.security_agent.copy_library_permissions( ld, ldda )
