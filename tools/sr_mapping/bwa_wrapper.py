@@ -5,7 +5,7 @@ Runs BWA on single-end or paired-end data.
 Produces a SAM file containing the mappings.
 """
 
-import optparse, os, sys, tempfile
+import optparse, os, shutil, sys, tempfile
 
 def stop_err( msg ):
     sys.stderr.write( "%s\n" % msg )
@@ -43,13 +43,12 @@ def __main__():
     parser.add_option('', '--dbkey', dest='dbkey', help='')
     parser.add_option('', '--suppressHeader', dest='suppressHeader', help='Suppress header')
     (options, args) = parser.parse_args()
-       
+    # make temp directory for placement of indices and copy reference file there
+    tmp_index_dir = tempfile.mkdtemp()
     # index if necessary
     if options.fileSource == 'history':
-        # make temp directory for placement of indices and copy reference file there
-        tmp_dir = tempfile.gettempdir()
         try:
-            os.system('cp %s %s' % (options.ref, tmp_dir))
+            shutil.copy(options.ref, tmp_index_dir)
         except Exception, erf:
             stop_err('Error creating temp directory for indexing purposes\n' + str(erf))
         try:
@@ -64,9 +63,10 @@ def __main__():
             indexing_cmds = '-c -a %s' % indexingAlg
         else:
             indexing_cmds = '-a %s' % indexingAlg
-        options.ref = os.path.join(tmp_dir,os.path.split(options.ref)[1])
-        cmd1 = 'cd %s; bwa index %s %s 2> /dev/null' % (tmp_dir, indexing_cmds, options.ref)
+        options.ref = os.path.join(tmp_index_dir,os.path.split(options.ref)[1])
+        cmd1 = 'bwa index %s %s 2> /dev/null' % (indexing_cmds, options.ref)
         try:
+            os.chdir(tmp_index_dir)
             os.system(cmd1)
         except Exception, erf:
             stop_err('Error indexing reference sequence\n' + str(erf))
@@ -89,10 +89,10 @@ def __main__():
             gen_alignment_cmds = '-n %s' % options.outputTopN
         elif options.genAlignType == 'paired':
             gen_alignment_cmds = '-a %s -o %s' % (options.maxInsertSize, options.maxOccurPairing)
+#        print 'options.genAlignType: %s and commands: %s' % (options.genAlignType, gen_alignment_cmds)
     # set up output files
     tmp_align_out = tempfile.NamedTemporaryFile()
     tmp_align_out2 = tempfile.NamedTemporaryFile()
-    
     # prepare actual aligning and generate aligning commands
     cmd2 = 'bwa aln %s %s %s > %s 2> /dev/null' % (aligning_cmds, options.ref, options.fastq, tmp_align_out.name)
     cmd2b = ''
@@ -144,5 +144,8 @@ def __main__():
             line = output.readline()
         fout.close()
         tmp_out.close()
+    # clean up temp dir
+    if os.path.exists(tmp_index_dir):
+        shutil.rmtree(tmp_index_dir)
     
 if __name__=="__main__": __main__()

@@ -4,7 +4,7 @@
 Runs Bowtie on single-end or paired-end data.
 """
 
-import optparse, os, sys, tempfile
+import optparse, os, shutil, sys, tempfile
 
 def stop_err( msg ):
     sys.stderr.write( "%s\n" % msg )
@@ -62,7 +62,8 @@ def __main__():
     parser.add_option('', '--indexSettings', dest='index_settings', help='Whether or not indexing options are to be set')
     parser.add_option('', '--suppressHeader', dest='suppressHeader', help='Suppress header')
     (options, args) = parser.parse_args()
-    
+    # make temp directory for placement of indices and copy reference file there if necessary
+    tmp_index_dir = tempfile.mkdtemp()
     # index if necessary
     if options.genomeSource == 'history':
         # set up commands
@@ -85,22 +86,19 @@ def __main__():
                                  ('','--cutoff %s'%options.icutoff)[int(options.icutoff)>0])
             except ValueError:
                 indexing_cmds = ''
-                
-        # make temp directory for placement of indices and copy reference file there
-        tmp_dir = tempfile.gettempdir()
         try:
-            os.system('cp %s %s' % (options.ref, tmp_dir))
+            shutil.copy(options.ref, tmp_index_dir)
         except Exception, erf:
             stop_err('Error creating temp directory for indexing purposes\n' + str(erf))
-        options.ref = os.path.join(tmp_dir,os.path.split(options.ref)[1])
-        cmd1 = 'cd %s; bowtie-build %s -f %s %s 2> /dev/null' % (tmp_dir, indexing_cmds, options.ref, options.ref)
+        options.ref = os.path.join(tmp_index_dir,os.path.split(options.ref)[1])
+        cmd1 = 'bowtie-build %s -f %s %s 2> /dev/null' % (indexing_cmds, options.ref, options.ref)
         try:
+            os.chdir(tmp_index_dir)
             os.system(cmd1)
         except Exception, erf:
             stop_err('Error indexing reference sequence\n' + str(erf))
-    
     # set up aligning and generate aligning command options
-    # automatically set threads to 8 in both cases
+    # automatically set threads in both cases
     if options.params == 'pre_set':
         aligning_cmds = '-p %s -S' % options.threads
     else:
@@ -134,19 +132,16 @@ def __main__():
                              options.threads)
         except ValueError, erf:
             stop_err('Something is wrong with the alignment parameters and the alignment could not be run\n' + str(erf))
-
     # prepare actual aligning commands
     if options.paired == 'paired':
         cmd2 = 'bowtie %s %s -1 %s -2 %s > %s 2> /dev/null' % (aligning_cmds, options.ref, options.input1, options.input2, options.output) 
     else:
         cmd2 = 'bowtie %s %s %s > %s 2> /dev/null' % (aligning_cmds, options.ref, options.input1, options.output) 
-
     # align
     try:
         os.system(cmd2)
     except Exception, erf:
         stop_err("Error aligning sequence\n" + str(erf))
-
     # remove header if necessary
     if options.suppressHeader == 'true':
         tmp_out = tempfile.NamedTemporaryFile()
@@ -171,5 +166,8 @@ def __main__():
             line = output.readline()
         fout.close()
         tmp_out.close()
+    # clean up temp dir
+    if os.path.exists(tmp_index_dir):
+        shutil.rmtree(tmp_index_dir)
 
 if __name__=="__main__": __main__()
