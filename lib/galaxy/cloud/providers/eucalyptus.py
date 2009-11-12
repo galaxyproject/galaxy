@@ -33,7 +33,9 @@ uci_states = Bunch(
     RUNNING = "running",
     PENDING = "pending",
     ERROR = "error",
-    DELETED = "deleted"
+    DELETED = "deleted",
+    SNAPSHOT_UCI = "snapshotUCI",
+    SNAPSHOT = "snapshot"
 )
 
 instance_states = Bunch(
@@ -88,6 +90,8 @@ class EucalyptusCloudProvider( object ):
                     #self.dummyStartUCI( uci_wrapper )
                 elif uci_state==uci_states.SHUTTING_DOWN:
                     self.stopUCI( uci_wrapper )
+                elif uci_state==uci_states.SNAPSHOT:
+                    self.snapshotUCI( uci_wrapper )
             except:
                 log.exception( "Uncaught exception executing cloud request." )
             cnt += 1
@@ -255,8 +259,48 @@ class EucalyptusCloudProvider( object ):
             uci_wrapper.change_state( uci_state=uci_states.ERROR )
             uci_wrapper.set_error( "Deleting following volume(s) failed: "+str(failedList)+". However, these volumes were \
                         successfully deleted: "+str(deletedList)+". Manual intervention and processing needed." )
+    
+    def snapshotUCI( self, uci_wrapper ):
+        """
+        Creates snapshot of all storage volumes associated with this UCI. 
+        """
+        if uci_wrapper.get_state() != uci_states.ERROR:
+            conn = self.get_connection( uci_wrapper )
             
-    def addStorageToUCI( self, name ):
+            snapshots = uci_wrapper.get_snapshots( status = 'submitted' )
+            for snapshot in snapshots:
+                log.debug( "Snapshot DB id: '%s', volume id: '%s'" % ( snapshot.id, snapshot.store.volume_id ) )
+                try:
+                    snap = conn.create_snapshot( volume_id=snapshot.store.volume_id )
+                    snap_id = str( snap ).split(':')[1]
+                    uci_wrapper.set_snapshot_id( snapshot.id, snap_id )
+                    sh = conn.get_all_snapshots( snap_id ) # get updated status
+                    uci_wrapper.set_snapshot_status( status=sh[0].status, snap_id=snap_id )
+                except boto.exception.EC2ResponseError, ex:
+                    log.error( "EC2 response error while creating snapshot: '%s'" % e )
+                    uci_wrapper.set_snapshot_error( error="EC2 response error while creating snapshot: " + str( e ), snap_index=snapshot.id, set_status=True )
+                    uci_wrapper.set_error( "Cloud provider response error while creating snapshot: " + str( e ), True )
+                    return
+                except Exception, ex:
+                    log.error( "Error while creating snapshot: '%s'" % ex )
+                    uci_wrapper.set_snapshot_error( error="Error while creating snapshot: "+str( ex ), snap_index=snapshot.id, set_status=True )
+                    uci_wrapper.set_error( "Error while creating snapshot: " + str( ex ), True )
+                    return
+
+            uci_wrapper.change_state( uci_state=uci_states.AVAILABLE )
+        
+#        if uci_wrapper.get_state() != uci_states.ERROR:
+#            
+#            snapshots = uci_wrapper.get_snapshots( status = 'submitted' )
+#            for snapshot in snapshots:
+#                uci_wrapper.set_snapshot_id( snapshot.id, None, 'euca_error' )
+#            
+#            log.debug( "Eucalyptus snapshot attempted by user for UCI '%s'" % uci_wrapper.get_name() )
+#            uci_wrapper.set_error( "Eucalyptus does not support creation of snapshots at this moment. No snapshot or other changes were performed. \
+#                        Feel free to resent state of this instance and use it normally.", True )
+            
+            
+    def addStorageToUCI( self, uci_wrapper ):
         """ Adds more storage to specified UCI """
     
     def dummyStartUCI( self, uci_wrapper ):
@@ -432,6 +476,16 @@ class EucalyptusCloudProvider( object ):
 #                store.uci.flush()
 #                store.flush()
         
+        # Update pending snapshots or delete ones marked for deletion
+        snapshots = model.CloudSnapshot.filter_by( status='pending', status='delete' ).all()
+        for snapshot in snapshots:
+            if self.type == snapshot.uci.credentials.provider.type and snapshot.status == 'pending':
+                log.debug( "[%s] Running general status update on snapshot '%s'" % ( snapshot.uci.credentials.provider.type, snapshot.snapshot_id ) )
+                self.update_snapshot( snapshot )
+            elif self.type == snapshot.uci.credentials.provider.type and snapshot.status == 'delete':
+                log.debug( "[%s] Initiating deletion of snapshot '%s'" % ( snapshot.uci.credentials.provider.type, snapshot.snapshot_id ) )
+                self.delete_snapshot( snapshot )
+        
         # Attempt at updating any zombie UCIs (i.e., instances that have been in SUBMITTED state for longer than expected - see below for exact time)
         zombies = model.UCI.filter_by( state=uci_states.SUBMITTED ).all()
         for zombie in zombies:
@@ -548,10 +602,86 @@ class EucalyptusCloudProvider( object ):
             except boto.exception.EC2ResponseError, e:
                 log.error( "Updating status of volume(s) from cloud for UCI '%s' failed: " % ( uci.name, str(e) ) )
                 uci.error( "Updating volume status from cloud failed: " + str(e) )
-                uci.state( uci_states.ERROR )
+                uci.state = uci_states.ERROR
                 uci.flush()
                 return None
-
+    
+    def update_snapshot( self, snapshot ):
+        # Get credentials associated wit this store
+        uci_id = snapshot.uci_id
+        uci = model.UCI.get( uci_id )
+        uci.refresh()
+        conn = self.get_connection_from_uci( uci )
+        
+        try:
+            log.debug( "Updating status of snapshot '%s'" % snapshot.snapshot_id )
+            snap = conn.get_all_snapshots( [snapshot.snapshot_id] ) 
+            if len( snap ) > 0:
+                snapshot.status = snap[0].status
+                log.debug( "Snapshot '%s' status: %s" % ( snapshot.snapshot_id, snapshot.status ) )
+                snapshot.flush()
+            else:
+                log.error( "No snapshots returned by cloud provider for UCI '%s'" % uci.name )
+                snapshot.status = 'No snapshots returned by cloud provider.'
+                uci.error = "No snapshots returned by cloud provider."
+                uci.state = uci_states.ERROR
+                uci.flush()
+                snapshot.flush()
+        except boto.exception.EC2ResponseError, e:
+            log.error( "Cloud provider response error while updating snapshot: '%s'" % e )
+            snapshot.status = 'error'
+            snapshot.error = "Cloud provider response error while updating snapshot status: " + str( e )
+            uci.error = "Cloud provider response error while updating snapshot status: " + str( e )
+            uci.state = uci_states.ERROR
+            uci.flush()
+            snapshot.flush()
+        except Exception, ex:
+            log.error( "Error while updating snapshot: '%s'" % ex )
+            snapshot.status = 'error'
+            snapshot.error = "Error while updating snapshot status: " + str( e )
+            uci.error = "Error while updating snapshot status: " + str( ex )
+            uci.state = uci_states.ERROR
+            uci.flush()
+            snapshot.flush()
+            
+    def delete_snapshot( self, snapshot ):
+        if snapshot.status == 'delete':
+            # Get credentials associated wit this store
+            uci_id = snapshot.uci_id
+            uci = model.UCI.get( uci_id )
+            uci.refresh()
+            conn = self.get_connection_from_uci( uci )
+            
+            try:
+                log.debug( "Deleting snapshot '%s'" % snapshot.snapshot_id )
+                snap = conn.delete_snapshot( snapshot.snapshot_id )
+                if snap == True:
+                    snapshot.deleted = True
+                    snapshot.status = 'deleted'
+                    snapshot.flush()
+                return snap
+            except boto.exception.EC2ResponseError, e:
+                log.error( "EC2 response error while deleting snapshot: '%s'" % e )
+                snapshot.status = 'error'
+                snapshot.error = "Cloud provider response error while deleting snapshot: " + str( e )
+                uci.error = "Cloud provider response error while deleting snapshot: " + str( e )
+                uci.state = uci_states.ERROR
+                uci.flush()
+                snapshot.flush()
+            except Exception, ex:
+                log.error( "Error while deleting snapshot: '%s'" % ex )
+                snapshot.status = 'error'
+                snapshot.error = "Cloud provider error while deleting snapshot: " + str( ex )
+                uci.error = "Cloud provider error while deleting snapshot: " + str( ex )
+                uci.state = uci_states.ERROR
+                uci.flush()
+                snapshot.flush()
+        else:
+            log.error( "Cannot delete snapshot '%s' because its status is '%s'. Only snapshots with 'completed' status can be deleted." % ( snapshot.snapshot_id, snapshot.status ) )
+            snapshot.error = "Cannot delete snapshot because its status is '"+snapshot.status+"'. Only snapshots with 'completed' status can be deleted."
+            snapshot.status = 'error'
+            snapshot.flush()
+        
     def processZombie( self, inst ):
         """
         Attempt at discovering if starting an instance was successful but local database was not updated

@@ -80,6 +80,19 @@ CloudStore_table = Table( "cloud_store", metadata,
     Column( "space_consumed", Integer ),
     Column( "deleted", Boolean, default=False ) )
 
+CloudSnapshot_table = Table( "cloud_snapshot", metadata, 
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True, nullable=False ),
+    Column( "uci_id", Integer, ForeignKey( "cloud_uci.id" ), index=True ),
+    Column( "store_id", Integer, ForeignKey( "cloud_store.id" ), index=True, nullable=False ),
+    Column( "snapshot_id", TEXT ),
+    Column( "status", TEXT ),
+    Column( "description", TEXT ),
+    Column( "error", TEXT ),
+    Column( "deleted", Boolean, default=False ) )
+
 CloudUserCredentials_table = Table( "cloud_user_credentials", metadata, 
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
@@ -118,19 +131,21 @@ def upgrade():
     # Load existing tables
     metadata.reflect()
     
-    CloudImage_table.create()
-    UCI_table.create()
-    CloudUserCredentials_table.create()
-    CloudStore_table.create()
-    CloudInstance_table.create()
-    CloudProvider_table.create()
+#    CloudImage_table.create()
+#    UCI_table.create()
+#    CloudUserCredentials_table.create()
+#    CloudStore_table.create()
+    CloudSnapshot_table.create()
+#    CloudInstance_table.create()
+#    CloudProvider_table.create()
     
 def downgrade():
     metadata.reflect()
     
-    CloudImage_table.drop() 
-    CloudInstance_table.drop()
-    CloudStore_table.drop()
-    CloudUserCredentials_table.drop() 
-    UCI_table.drop()
-    CloudProvider_table.drop()
+#    CloudImage_table.drop() 
+#    CloudInstance_table.drop()
+#    CloudStore_table.drop()
+    CloudSnapshot_table.drop()
+#    CloudUserCredentials_table.drop() 
+#    UCI_table.drop()
+#    CloudProvider_table.drop()

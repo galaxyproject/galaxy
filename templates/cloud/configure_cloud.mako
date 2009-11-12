@@ -20,17 +20,26 @@ ${parent.javascripts()}
 ${h.js( "jquery" )}
 
 <script type="text/javascript">
+function trim19(str){
+    var str = str.replace(/^\s\s*/, ''),
+        ws = /\s/,
+        i = str.length;
+    while (ws.test(str.charAt(--i)));
+    return str.slice(0, i + 1);
+}
+
 	function update_state() {
 		$.getJSON( "${h.url_for( action='json_update' )}", {}, function ( data ) {
 			for (var i in data) {
 				var elem = '#' + data[i].id;
 				// Because of different list managing 'live' vs. 'available' instances, reload url on various state changes
 				old_state = $(elem + "-state").text();
-				prev_old_state = $(elem + "-state-p").text();
+				prev_old_state = trim19( $(elem + "-state-p").text() );
 				new_state = data[i].state;
 				console.log( "old_state[%d] = %s", i, old_state );
 				console.log( "prev_old_state[%d] = %s", i, prev_old_state );
 				console.log( "new_state[%d] = %s", i, new_state );
+				//console.log( trim19(prev_old_state) );
 				if ( ( old_state=='pending' && new_state=='running' ) ||  ( old_state=='shutting-down' && new_state=='available' ) || \
 					 ( old_state=='running' && new_state=='available' ) || ( old_state=='running' && new_state=='error' ) || \
 					 ( old_state=='pending' && new_state=='error' ) || ( old_state=='pending' && new_state=='available' ) || \
@@ -44,9 +53,9 @@ ${h.js( "jquery" )}
 					( old_state=='submitted' && new_state=='error' ) || ( old_state=='submittedUCI' && new_state=='error' ) || \
 					( old_state=='shutting-down' && new_state=='error' ) || ( prev_old_state.match('newUCI') && new_state=='error' ) || \
 					( prev_old_state.match('new') && new_state=='error' ) || \
-					( prev_old_state.match('deleting') && new_state=='error' ) || ( prev_old_state.match('deletingUCI') && new_state=='error' ) ) {
+					( prev_old_state.match('deletingUCI') && new_state=='error' ) ) {
 					// TODO: Following clause causes constant page refresh for an exception thrown as a result of instance not starting correctly - need alternative method!
-					//( prev_old_state.match('available') && new_state=='error' ) || \
+					//( prev_old_state.match('available') && new_state=='error' ) || ( prev_old_state.match('deleting') && new_state=='error' ) \
 					
 					var url = "${h.url_for( controller='cloud', action='list')}";
 					location.replace( url );
@@ -80,6 +89,7 @@ ${h.js( "jquery" )}
 				
 				// Update 'state' and 'time alive' fields
 				$(elem + "-state").text( data[i].state );
+				//$(elem + "-state-p").text( data[i].state );
 				if (data[i].launch_time) {
 					$(elem + "-launch_time").text( data[i].launch_time.substring(0, 16 ) + " UTC (" + data[i].time_ago + ")" );
 				}
@@ -313,6 +323,8 @@ ${h.js( "jquery" )}
 		                    <a class="action-button" href="${h.url_for( action='start', id=trans.security.encode_id(prevInstance.id), type='m1.small' )}"> Start m1.small</a>
 		                    <a class="action-button" href="${h.url_for( action='start', id=trans.security.encode_id(prevInstance.id), type='c1.medium' )}"> Start c1.medium</a>
 							<a class="action-button" href="${h.url_for( action='renameInstance', id=trans.security.encode_id(prevInstance.id) )}">Rename</a>
+							<a class="action-button" href="${h.url_for( action='create_snapshot', id=trans.security.encode_id(prevInstance.id) )}">Create snapshot</a>
+							<a class="action-button" href="${h.url_for( action='view_snapshots', id=trans.security.encode_id(prevInstance.id) )}">View snapshots</a>
 		                    <a class="action-button" href="${h.url_for( action='addStorage', id=trans.security.encode_id(prevInstance.id) )}" target="_parent">Add storage</a>
 							<a class="action-button" href="${h.url_for( action='usageReport', id=trans.security.encode_id(prevInstance.id) )}">Usage report</a>
 		                    <a class="action-button" confirm="Are you sure you want to delete instance '${prevInstance.name}'? This will delete all of your data assocaiated with this instance!" href="${h.url_for( action='deleteInstance', id=trans.security.encode_id(prevInstance.id) )}">Delete</a>

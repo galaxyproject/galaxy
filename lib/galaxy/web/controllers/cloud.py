@@ -44,7 +44,9 @@ uci_states = Bunch(
     RUNNING = "running",
     PENDING = "pending",
     ERROR = "error",
-    DELETED = "deleted"
+    DELETED = "deleted",
+    SNAPSHOT_UCI = "snapshotUCI",
+    SNAPSHOT = "snapshot"
 )
 
 instance_states = Bunch(
@@ -106,7 +108,9 @@ class CloudController( BaseController ):
                           model.UCI.c.state==uci_states.NEW_UCI, 
                           model.UCI.c.state==uci_states.ERROR,  
                           model.UCI.c.state==uci_states.DELETING,
-                          model.UCI.c.state==uci_states.DELETING_UCI ) ) \
+                          model.UCI.c.state==uci_states.DELETING_UCI,
+                          model.UCI.c.state==uci_states.SNAPSHOT,
+                          model.UCI.c.state==uci_states.SNAPSHOT_UCI ) ) \
             .order_by( desc( model.UCI.c.update_time ) ) \
             .all()
         
@@ -222,6 +226,87 @@ class CloudController( BaseController ):
             trans.set_message( "Instance '%s' is already marked for deletion." % uci.name )
         return self.list( trans )
     
+    @web.expose
+    @web.require_login( "use Galaxy cloud" )
+    def create_snapshot( self, trans, id ):
+        user = trans.get_user()
+        id = trans.security.decode_id( id )
+        uci = get_uci( trans, id )
+        
+        stores = trans.sa_session.query( model.CloudStore ) \
+            .filter_by( user=user, deleted=False, uci_id=id ) \
+            .all()
+        
+        if ( len( stores ) > 0 ) and ( uci.state == uci_states.AVAILABLE ):  
+            for store in stores:
+                snapshot = model.CloudSnapshot()
+                snapshot.user = user
+                snapshot.uci = uci
+                snapshot.store = store
+                snapshot.status = 'submitted'
+                uci.state = uci_states.SNAPSHOT_UCI
+                # Persist
+                session = trans.sa_session
+                session.save_or_update( snapshot )
+                session.save_or_update( uci )
+                session.flush()
+        elif len( stores ) == 0:
+            error( "No storage volumes found that are associated with this instance." )
+        else:
+            error( "Snapshot can be created only for an instance that is in 'available' state." )
+        
+        # Log and display the management page
+        trans.log_event( "User initiated creation of new snapshot." )
+        trans.set_message( "Creation of new snapshot initiated. " )
+        return self.list( trans )
+    
+    @web.expose
+    @web.require_login( "use Galaxy cloud" )
+    def view_snapshots( self, trans, id=None ):
+        """
+        View details about any snapshots associated with given UCI
+        """
+        user = trans.get_user()
+        id = trans.security.decode_id( id )
+        
+        snaps = trans.sa_session.query( model.CloudSnapshot ) \
+            .filter_by( user=user, uci_id=id, deleted=False ) \
+            .order_by( desc( model.CloudSnapshot.c.update_time ) ) \
+            .all()
+        
+        return trans.fill_template( "cloud/view_snapshots.mako", 
+                                   snaps = snaps )
+    
+    @web.expose
+    @web.require_login( "use Galaxy cloud" )
+    def delete_snapshot( self, trans, uci_id=None, snap_id=None ):
+        """
+        Initiates deletion of a snapshot
+        """
+        user = trans.get_user()
+        snap_id = trans.security.decode_id( snap_id )
+        # Set snapshot as 'ready for deletion' to be picked up by general updater
+        snap = trans.sa_session.query( model.CloudSnapshot ).get( snap_id )
+        
+        if snap.status == 'completed':
+            snap.status = 'delete'
+            snap.flush()
+            trans.set_message( "Snapshot '%s' is marked for deletion. Once the deletion is complete, it will no longer be visible in this list. " 
+                "Please note that this process may take up to a minute." % snap.snapshot_id ) 
+        else:
+            error( "Only snapshots in state 'completed' can be deleted. See the cloud provider directly "
+                               "if you believe the snapshot is available and can be deleted." ) 
+            
+        # Display new list of snapshots
+        uci_id = trans.security.decode_id( uci_id )
+        snaps = trans.sa_session.query( model.CloudSnapshot ) \
+            .filter_by( user=user, uci_id=uci_id, deleted=False ) \
+            .order_by( desc( model.CloudSnapshot.c.update_time ) ) \
+            .all()
+        
+        return trans.fill_template( "cloud/view_snapshots.mako", 
+                                   snaps = snaps )
+        
     @web.expose
     @web.require_login( "add instance storage" )
     def addStorage( self, trans, id ):

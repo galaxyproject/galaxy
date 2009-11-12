@@ -448,6 +448,19 @@ CloudStore.table = Table( "cloud_store", metadata,
     Column( "space_consumed", Integer ),
     Column( "deleted", Boolean, default=False ) )
 
+CloudSnapshot.table = Table( "cloud_snapshot", metadata, 
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True, nullable=False ),
+    Column( "uci_id", Integer, ForeignKey( "cloud_uci.id" ), index=True ),
+    Column( "store_id", Integer, ForeignKey( "cloud_store.id" ), index=True, nullable=False ),
+    Column( "snapshot_id", TEXT ),
+    Column( "status", TEXT ),
+    Column( "description", TEXT ),
+    Column( "error", TEXT ),
+    Column( "deleted", Boolean, default=False ) )
+
 CloudUserCredentials.table = Table( "cloud_user_credentials", metadata, 
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
@@ -995,7 +1008,8 @@ assign_mapper( context, UCI, UCI.table,
     properties=dict( user=relation( User ),
                      credentials=relation( CloudUserCredentials ),
                      instance=relation( CloudInstance, backref='uci' ),
-                     store=relation( CloudStore, backref='uci', cascade='all, delete-orphan' ) 
+                     store=relation( CloudStore, backref='uci', cascade='all, delete-orphan' ),
+                     snapshot=relation( CloudSnapshot, backref='uci' )
                     ) )
 
 assign_mapper( context, CloudInstance, CloudInstance.table,
@@ -1005,7 +1019,12 @@ assign_mapper( context, CloudInstance, CloudInstance.table,
 
 assign_mapper( context, CloudStore, CloudStore.table,
     properties=dict( user=relation( User ),
-                     i=relation( CloudInstance )
+                     i=relation( CloudInstance ),
+                     snapshot=relation( CloudSnapshot, backref="store" )
+                    ) )
+
+assign_mapper( context, CloudSnapshot, CloudSnapshot.table,
+    properties=dict( user=relation( User )
                     ) )
 
 assign_mapper( context, CloudProvider, CloudProvider.table,

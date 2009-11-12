@@ -32,7 +32,8 @@ uci_states = Bunch(
     RUNNING = "running",
     PENDING = "pending",
     ERROR = "error",
-    CREATING = "creating"
+    SNAPSHOT_UCI = "snapshotUCI",
+    SNAPSHOT = "snapshot"
 )
 instance_states = Bunch(
     TERMINATED = "terminated",
@@ -141,7 +142,8 @@ class CloudMonitor( object ):
                 .filter( or_( model.UCI.c.state==uci_states.NEW_UCI,  
                               model.UCI.c.state==uci_states.SUBMITTED_UCI,
                               model.UCI.c.state==uci_states.SHUTTING_DOWN_UCI, 
-                              model.UCI.c.state==uci_states.DELETING_UCI ) ) \
+                              model.UCI.c.state==uci_states.DELETING_UCI,
+                              model.UCI.c.state==uci_states.SNAPSHOT_UCI ) ) \
                 .all():
             uci_wrapper = UCIwrapper( r )
             new_requests.append( uci_wrapper )
@@ -310,6 +312,35 @@ class UCIwrapper( object ):
         vol = model.CloudStore.filter( model.CloudStore.c.volume_id == vol_id ).first()
         vol.status = status
         vol.flush()
+        
+    def set_snapshot_id( self, snap_index, id ):
+        snap = model.CloudSnapshot.get( snap_index )
+        snap.snapshot_id = id
+        snap.flush()
+
+    def set_snapshot_status( self, status, snap_index=None, snap_id=None ):
+        if snap_index != None:
+            snap = model.CloudSnapshot.get( snap_index )
+        elif snap_id != None:
+            snap = model.CloudSnapshot.filter_by( snapshot_id = snap_id).first()
+        else:
+            return
+        snap.status = status
+        snap.flush()
+    
+    def set_snapshot_error( self, error, snap_index=None, snap_id=None, set_status=False ):
+        if snap_index != None:
+            snap = model.CloudSnapshot.get( snap_index )
+        elif snap_id != None:
+            snap = model.CloudSnapshot.filter_by( snapshot_id = snap_id).first()
+        else:
+            return
+        snap.error = error
+        
+        if set_status:
+            snap.status = 'error'
+            
+        snap.flush()
 
     def set_store_availability_zone( self, availability_zone, vol_id=None ):
         """
@@ -501,6 +532,10 @@ class UCIwrapper( object ):
     def get_all_stores( self ):
         """ Returns all storage volumes' database objects associated with this UCI. """
         return model.CloudStore.filter( model.CloudStore.c.uci_id == self.uci_id ).all()
+    
+    def get_snapshots( self, status=None ):
+        """ Returns database objects for all snapshots associated with this UCI and in given status."""
+        return model.CloudSnapshot.filter_by( uci_id=self.uci_id, status=status ).all()
         
     def get_uci( self ):
         """ Returns database object for given UCI. """

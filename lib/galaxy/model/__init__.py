@@ -963,6 +963,13 @@ class CloudStore( object ):
         self.size = None
         self.availability_zone = None
         
+class CloudSnapshot( object ):
+    def __init__( self ):
+        self.id = None
+        self.user = None
+        self.store_id = None
+        self.snapshot_id = None
+        
 class CloudProvider( object ):
     def __init__( self ):
         self.id = None
