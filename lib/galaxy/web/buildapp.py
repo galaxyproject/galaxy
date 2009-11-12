@@ -4,6 +4,7 @@ Provides factory methods to assemble the Galaxy web application
 
 import logging, atexit
 import os, os.path
+import sys, warnings
 
 from inspect import isclass
 
@@ -151,7 +152,12 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
         log.debug( "Enabling 'eval exceptions' middleware" )
     else:
         # Not in interactive debug mode, just use the regular error middleware
-        from paste.exceptions import errormiddleware
+        if sys.version_info[:2] >= ( 2, 6 ):
+            warnings.filterwarnings( 'ignore', '.*', DeprecationWarning, '.*serial_number_generator', 11, True )
+            from paste.exceptions import errormiddleware
+            warnings.filters.pop()
+        else:
+            from paste.exceptions import errormiddleware
         app = errormiddleware.ErrorMiddleware( app, conf )
         log.debug( "Enabling 'error' middleware" )
     # Transaction logging (apache access.log style)

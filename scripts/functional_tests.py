@@ -118,7 +118,7 @@ def main():
     
     if start_server:
         
-        webapp = buildapp.app_factory( dict(), use_translogger = False, app=app )
+        webapp = buildapp.app_factory( dict(), use_translogger = False, static_enabled = False, app=app )
 
         if galaxy_test_port is not None:
             server = httpserver.serve( webapp, host=galaxy_test_host, port=galaxy_test_port, start_loop=False )

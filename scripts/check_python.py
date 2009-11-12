@@ -1,6 +1,7 @@
 import os, sys
 
 def check_python():
+    return
     try:
         assert sys.version_info[:2] >= ( 2, 4 ) and sys.version_info[:2] <= ( 2, 5 )
     except AssertionError:
