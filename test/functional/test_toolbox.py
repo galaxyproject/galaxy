@@ -63,7 +63,7 @@ class ToolTestCase( TwillTestCase ):
         # Check the result
         assert len( testdef.outputs ) == 1, "ToolTestCase does not deal with multiple outputs properly yet."
         for name, file in testdef.outputs:
-            self.verify_dataset_correctness( file )
+            self.verify_dataset_correctness( file, maxseconds=testdef.maxseconds )
         self.delete_history( id=self.security.encode_id( latest_history.id ) )
 
     def __expand_grouping( self, tool_inputs, declared_inputs, prefix='' ):

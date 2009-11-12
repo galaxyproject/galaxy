@@ -11,9 +11,10 @@ class ToolTestBuilder( object ):
     dynamic TestCase class (the unittest framework is very class oriented, 
     doing dynamic tests in this was allows better integration)
     """
-    def __init__( self, tool, name ):
+    def __init__( self, tool, name, maxseconds ):
         self.tool = tool
         self.name = name
+        self.maxseconds = maxseconds
         self.required_files = []
         self.inputs = []
         self.outputs = []

@@ -547,7 +547,8 @@ class Tool:
         self.tests = []
         for i, test_elem in enumerate( tests_elem.findall( 'test' ) ):
             name = test_elem.get( 'name', 'Test-%d' % (i+1) )
-            test = ToolTestBuilder( self, name )
+            maxseconds = int( test_elem.get( 'maxseconds', '120' ) )
+            test = ToolTestBuilder( self, name, maxseconds )
             try:
                 for param_elem in test_elem.findall( "param" ):
                     attrib = dict( param_elem.attrib )

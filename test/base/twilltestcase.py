@@ -513,10 +513,10 @@ class TwillTestCase( unittest.TestCase ):
             hid = elem.get('hid')
             hids.append(hid)
         return hids
-    def verify_dataset_correctness( self, filename, hid=None, wait=True ):
+    def verify_dataset_correctness( self, filename, hid=None, wait=True, maxseconds=120 ):
         """Verifies that the attributes and contents of a history item meet expectations"""
         if wait:
-            self.wait() #wait for job to finish
+            self.wait( maxseconds=maxseconds ) #wait for job to finish
         data_list = self.get_history_as_data_list()
         self.assertTrue( data_list )
         if hid is None: # take last hid
@@ -906,21 +906,23 @@ class TwillTestCase( unittest.TestCase ):
         tc.fv( "1","hgta_doGalaxyQuery", "Send query to Galaxy" )
         self.submit_form( button="Send query to Galaxy" )#, **output_params ) #AssertionError: Attempting to set field 'fbQual' to value '['whole']' in form 'None' threw exception: no matching forms! control: <RadioControl(fbQual=[whole, upstreamAll, endAll])>
 
-    def wait( self, maxiter=20 ):
+    def wait( self, maxseconds=120 ):
         """Waits for the tools to finish"""
-        count = 0
         sleep_amount = 0.1
+        slept = 0
         self.home()
-        while count < maxiter:
-            count += 1
+        while slept <= maxseconds:
             self.visit_page( "history" )
             page = tc.browser.get_html()
             if page.find( '<!-- running: do not change this comment, used by TwillTestCase.wait -->' ) > -1:
                 time.sleep( sleep_amount )
+                slept += sleep_amount
                 sleep_amount *= 2
+                if slept + sleep_amount > maxseconds:
+                    sleep_amount = maxseconds - slept # don't overshoot maxseconds
             else:
                 break
-        self.assertNotEqual(count, maxiter)
+        assert slept < maxseconds
 
     # Dataset Security stuff
     # Tests associated with users
