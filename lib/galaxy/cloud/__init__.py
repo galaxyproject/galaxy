@@ -44,6 +44,15 @@ instance_states = Bunch(
     ERROR = "error"
 )
 
+snapshot_status = Bunch(
+    SUBMITTED = 'submitted',
+    PENDING = 'pending',
+    COMPLETED = 'completed',
+    DELETE = 'delete',
+    DELETED= 'deleted',
+    ERROR = "error"
+)
+
 class CloudManager( object ):
     """
     Highest level interface to cloud management.
@@ -338,7 +347,7 @@ class UCIwrapper( object ):
         snap.error = error
         
         if set_status:
-            snap.status = 'error'
+            snap.status = snapshot_status.ERROR
             
         snap.flush()
 

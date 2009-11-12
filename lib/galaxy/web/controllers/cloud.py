@@ -64,6 +64,15 @@ store_states = Bunch(
     ERROR = "error"
 )
 
+snapshot_status = Bunch(
+    SUBMITTED = 'submitted',
+    PENDING = 'pending',
+    COMPLETED = 'completed',
+    DELETE = 'delete',
+    DELETED= 'deleted',
+    ERROR = "error"
+)
+
 class CloudController( BaseController ):
        
     @web.expose
@@ -243,7 +252,7 @@ class CloudController( BaseController ):
                 snapshot.user = user
                 snapshot.uci = uci
                 snapshot.store = store
-                snapshot.status = 'submitted'
+                snapshot.status = snapshot_status.SUBMITTED
                 uci.state = uci_states.SNAPSHOT_UCI
                 # Persist
                 session = trans.sa_session
@@ -288,8 +297,8 @@ class CloudController( BaseController ):
         # Set snapshot as 'ready for deletion' to be picked up by general updater
         snap = trans.sa_session.query( model.CloudSnapshot ).get( snap_id )
         
-        if snap.status == 'completed':
-            snap.status = 'delete'
+        if snap.status == snapshot_status.COMPLETED:
+            snap.status = snapshot_status.DELETE
             snap.flush()
             trans.set_message( "Snapshot '%s' is marked for deletion. Once the deletion is complete, it will no longer be visible in this list. " 
                 "Please note that this process may take up to a minute." % snap.snapshot_id ) 
