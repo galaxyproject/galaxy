@@ -69,18 +69,18 @@
 				%endif
 				</td>
 				<td>
-					<a href="${h.url_for( controller='cloud', action='editImage', image_id=image.image_id, manifest=image.manifest, id=trans.security.encode_id(image.id) )}">e</a>
+					<a href="${h.url_for( controller='cloud', action='edit_image', image_id=image.image_id, manifest=image.manifest, id=trans.security.encode_id(image.id) )}">e</a>
 				</td>
 				<td>
 					<a confirm="Are you sure you want to delete machine image '${image.image_id}'? Note that this may result in users' UCI's not to work any more!" 
-					   href="${h.url_for( controller='cloud', action='deleteImage', id=trans.security.encode_id(image.id) )}">x</a>
+					   href="${h.url_for( controller='cloud', action='delete_image', id=trans.security.encode_id(image.id) )}">x</a>
 				</td>
 			</tr>
 		%endfor
 	</table>
 %else:
 	<h3>There are no registered machine images.</h3><br />
-	<a href="${h.url_for( controller='cloud', action='addNewImage' )}" target="galaxy_main">Add machine image now?</a>
+	<a href="${h.url_for( controller='cloud', action='add_new_image' )}" target="galaxy_main">Add machine image now?</a>
 
 %endif
 

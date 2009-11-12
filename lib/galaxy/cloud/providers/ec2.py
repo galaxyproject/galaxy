@@ -48,7 +48,7 @@ instance_states = Bunch(
     ERROR = "error"
 )
 
-store_states = Bunch(
+store_status = Bunch(
     IN_USE = "in-use",
     CREATING = "creating",
     DELETED = 'deleted',
@@ -105,14 +105,14 @@ class EC2CloudProvider( object ):
                 elif uci_state==uci_states.SNAPSHOT:
                     self.snapshotUCI( uci_wrapper )
             except:
-                log.exception( "Uncaught exception executing request." )
+                log.exception( "Uncaught exception executing cloud request." )
             cnt += 1
             
     def get_connection( self, uci_wrapper ):
         """
         Establishes EC2 cloud connection using user's credentials associated with given UCI
         """
-        log.debug( 'Establishing %s cloud connection' % self.type )
+        log.debug( 'Establishing %s cloud connection.' % self.type )
         provider = uci_wrapper.get_provider()
         try:
             region = RegionInfo( None, provider.region_name, provider.region_endpoint )
@@ -127,8 +127,8 @@ class EC2CloudProvider( object ):
                                   is_secure=provider.is_secure, 
                                   region=region, 
                                   path=provider.path )
-        except Exception, ex:
-            err = "Establishing connection with cloud failed: " + str( ex )
+        except boto.exception.EC2ResponseError, e:
+            err = "Establishing connection with cloud failed: " + str( e )
             log.error( err )
             uci_wrapper.set_error( err, True )
             return None
@@ -545,8 +545,8 @@ class EC2CloudProvider( object ):
                 self.updateInstance( inst )
             
         # Update storage volume(s)
-        stores = model.CloudStore.filter( or_( model.CloudStore.c.status==store_states.IN_USE, 
-                                               model.CloudStore.c.status==store_states.CREATING,
+        stores = model.CloudStore.filter( or_( model.CloudStore.c.status==store_status.IN_USE, 
+                                               model.CloudStore.c.status==store_status.CREATING,
                                                model.CloudStore.c.status==None ) ).all()
         for store in stores:
             if self.type == store.uci.credentials.provider.type: # and store.volume_id != None:
@@ -558,7 +558,7 @@ class EC2CloudProvider( object ):
 #                store.uci.error = "There exists an entry in local database for a storage volume without an ID. Storage volume might have been created " \
 #                            "with cloud provider though. Manual check is recommended. After understanding what happened, local database entry for given " \
 #                            "storage volume should be updated."
-#                store.status = store_states.ERROR
+#                store.status = store_status.ERROR
 #                store.uci.state = uci_states.ERROR
 #                store.uci.flush()
 #                store.flush()

@@ -156,7 +156,7 @@ function trim19(str){
 	%if cloudCredentials:
 		<ul class="manage-table-actions">
 		    <li>
-		        <a class="action-button" href="${h.url_for( action='add' )}">
+		        <a class="action-button" href="${h.url_for( action='add_credentials' )}">
 		            <img src="${h.url_for('/static/images/silk/add.png')}" />
 		            <span>Add credentials</span>
 		        </a>
@@ -181,9 +181,9 @@ function trim19(str){
 					</td>
 					<td>
 	                    <div popupmenu="cr-${i}-popup">
-	                    <a class="action-button" href="${h.url_for( action='view', id=trans.security.encode_id(cloudCredential.id) )}">View</a>
-						<a class="action-button" href="${h.url_for( action='edit', id=trans.security.encode_id(cloudCredential.id) )}">Edit</a>
-	                    <a class="action-button" confirm="Are you sure you want to delete credentials '${cloudCredential.name}'?" href="${h.url_for( action='delete', id=trans.security.encode_id(cloudCredential.id) )}">Delete</a>
+	                    <a class="action-button" href="${h.url_for( action='view_credentials', id=trans.security.encode_id(cloudCredential.id) )}">View</a>
+						<a class="action-button" href="${h.url_for( action='edit_credentials', id=trans.security.encode_id(cloudCredential.id) )}">Edit</a>
+	                    <a class="action-button" confirm="Are you sure you want to delete credentials '${cloudCredential.name}'?" href="${h.url_for( action='delete_credentials', id=trans.security.encode_id(cloudCredential.id) )}">Delete</a>
 	                    </div>
 	                </td>
 	            </tr>    
@@ -196,7 +196,7 @@ function trim19(str){
 		<h3>Manage your cloud instances</h3>
 		<ul class="manage-table-actions">
 		    <li>
-		        <a class="action-button" href="${h.url_for( action='configureNew' )}">
+		        <a class="action-button" href="${h.url_for( action='configure_new_uci' )}">
 		            <img src="${h.url_for('/static/images/silk/add.png')}" />
 		            <span>Configure new instance</span>
 		        </a>
@@ -253,10 +253,10 @@ function trim19(str){
 						<td id="${ liveInstance.id }-link"></td> 
 		                <td>
 		                    <div popupmenu="li-${i}-popup">
-		                    <a class="action-button" confirm="Are you sure you want to stop instance '${liveInstance.name}'? Please note that this may take up to 1 minute during which time the page will not refresh." href="${h.url_for( action='stop', id=trans.security.encode_id(liveInstance.id) )}">Stop</a>
-		                    <a class="action-button" href="${h.url_for( action='renameInstance', id=trans.security.encode_id(liveInstance.id) )}">Rename</a>
-		                    <a class="action-button" href="${h.url_for( action='viewInstance', id=trans.security.encode_id(liveInstance.id) )}">View details</a>
-		                    <a class="action-button" href="${h.url_for( action='usageReport', id=trans.security.encode_id(liveInstance.id) )}">Usage report</a>
+		                    <a class="action-button" confirm="Are you sure you want to stop instance '${liveInstance.name}'?" href="${h.url_for( action='stop', id=trans.security.encode_id(liveInstance.id) )}">Stop</a>
+		                    <a class="action-button" href="${h.url_for( action='rename_uci', id=trans.security.encode_id(liveInstance.id) )}">Rename</a>
+		                    <a class="action-button" href="${h.url_for( action='view_uci_details', id=trans.security.encode_id(liveInstance.id) )}">View details</a>
+		                    <a class="action-button" href="${h.url_for( action='uci_usage_report', id=trans.security.encode_id(liveInstance.id) )}">Usage report</a>
 		                    </div>
 		                </td>
 		            </tr>    
@@ -322,12 +322,12 @@ function trim19(str){
 		                    <div popupmenu="pi-${i}-popup">
 		                    <a class="action-button" href="${h.url_for( action='start', id=trans.security.encode_id(prevInstance.id), type='m1.small' )}"> Start m1.small</a>
 		                    <a class="action-button" href="${h.url_for( action='start', id=trans.security.encode_id(prevInstance.id), type='c1.medium' )}"> Start c1.medium</a>
-							<a class="action-button" href="${h.url_for( action='renameInstance', id=trans.security.encode_id(prevInstance.id) )}">Rename</a>
-							<a class="action-button" href="${h.url_for( action='create_snapshot', id=trans.security.encode_id(prevInstance.id) )}">Create snapshot</a>
+							<a class="action-button" href="${h.url_for( action='rename_uci', id=trans.security.encode_id(prevInstance.id) )}">Rename</a>
+							<a class="action-button" href="${h.url_for( action='uci_usage_report', id=trans.security.encode_id(prevInstance.id) )}">Usage report</a>
+		                    <a class="action-button" href="${h.url_for( action='create_snapshot', id=trans.security.encode_id(prevInstance.id) )}">Create snapshot</a>
 							<a class="action-button" href="${h.url_for( action='view_snapshots', id=trans.security.encode_id(prevInstance.id) )}">View snapshots</a>
-		                    <a class="action-button" href="${h.url_for( action='addStorage', id=trans.security.encode_id(prevInstance.id) )}" target="_parent">Add storage</a>
-							<a class="action-button" href="${h.url_for( action='usageReport', id=trans.security.encode_id(prevInstance.id) )}">Usage report</a>
-		                    <a class="action-button" confirm="Are you sure you want to delete instance '${prevInstance.name}'? This will delete all of your data assocaiated with this instance!" href="${h.url_for( action='deleteInstance', id=trans.security.encode_id(prevInstance.id) )}">Delete</a>
+		                    <a class="action-button" href="${h.url_for( action='add_storage', id=trans.security.encode_id(prevInstance.id) )}" target="_parent">Add storage</a>
+							<a class="action-button" confirm="Are you sure you want to delete instance '${prevInstance.name}'? This will delete all of your data assocaiated with this instance!" href="${h.url_for( action='delete_uci', id=trans.security.encode_id(prevInstance.id) )}">Delete</a>
 		                    </div>
 		                </td>
 		            </tr>    
@@ -341,7 +341,7 @@ function trim19(str){
 		
 	%else:
 	   You have no credentials associated with your Galaxy account: 
-		<a class="action-button" href="${h.url_for( action='add' )}">
+		<a class="action-button" href="${h.url_for( action='add_credentials' )}">
 	        <img src="${h.url_for('/static/images/silk/add.png')}" />
 	        <span>add credentials</span>
 	    </a>

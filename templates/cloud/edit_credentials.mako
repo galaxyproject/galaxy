@@ -20,7 +20,7 @@ $(function(){
 <div class="form">
     <div class="form-title">Edit credentials</div>
     <div class="form-body">
-	<form name="edit_credentials" action="${h.url_for( action='edit', id=trans.security.encode_id(credential.id), edited="true" )}" method="post" >
+	<form name="edit_credentials" action="${h.url_for( action='edit_credentials', id=trans.security.encode_id(credential.id), edited="true" )}" method="post" >
 	
            <%
             cls = "form-row"

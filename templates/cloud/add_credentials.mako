@@ -20,7 +20,7 @@ $(function(){
 <div class="form">
     <div class="form-title">Add credentials</div>
     <div class="form-body">
-	<form name="Add credentials" action="${h.url_for( action='add' )}" method="post" >
+	<form name="add_credentials" action="${h.url_for( action='add_credentials' )}" method="post" >
 	
            <%
             cls = "form-row"

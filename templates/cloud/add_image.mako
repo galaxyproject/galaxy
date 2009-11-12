@@ -18,7 +18,7 @@ $(function(){
 <div class="form">
     <div class="form-title">Add machine image</div>
     <div class="form-body">
-	<form name="add_image" action="${h.url_for( action='addNewImage' )}" method="post" >
+	<form name="add_image" action="${h.url_for( action='add_new_image' )}" method="post" >
 			<%
             cls = "form-row"
             if error.has_key('provider_error'):

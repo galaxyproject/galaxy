@@ -30,7 +30,7 @@
             </td>
 			<td>
                 <div popupmenu="li-popup">
-                <a class="action-button" href="${h.url_for( action='renameInstance', id=trans.security.encode_id(liveInstance.uci.id) )}">Rename</a>
+                <a class="action-button" href="${h.url_for( action='rename_uci', id=trans.security.encode_id(liveInstance.uci.id) )}">Rename</a>
                 <a class="action-button" confirm="Are you sure you want to stop instance '${liveInstance.uci.name}'?" href="${h.url_for( action='stop', id=trans.security.encode_id(liveInstance.uci.id) )}">Stop</a>
                 </div>
             </td>

@@ -59,7 +59,7 @@ instance_states = Bunch(
     ERROR = "error"
 )
 
-store_states = Bunch(
+store_status = Bunch(
     IN_USE = "in-use",
     CREATING = "creating",
     DELETED = 'deleted',
@@ -135,9 +135,9 @@ class CloudController( BaseController ):
                           model.UCI.c.state==uci_states.SUBMITTED_UCI ) ) \
             .all()
         if pendingInstances:
-            trans.set_message( "Galaxy instance started. Note that it will take several minutes for the instance to start "
-                                "(typically, 3-5 minutes). Once the instance is running and Galaxy is available, " 
-                                "a button to connect to the instance will then appear alongside instance description." )         
+            trans.set_message( "Galaxy instance started. NOTE: Please wait about 5 minutes for the instance to " 
+                               "start up. A button to connect to the instance will appear alongside "
+                               "instance description once cloud instance of Galaxy is ready." )       
         
 #        log.debug( "provider.is_secure: '%s'" % trans.sa_session.query( model.CloudProvider).filter_by(id=1).first().is_secure )
 #        trans.sa_session.query( model.CloudProvider).filter_by(id=1).first().is_secure=False
@@ -152,200 +152,11 @@ class CloudController( BaseController ):
                                     prevInstances = prevInstances,
                                     cloudProviders = cloudProviders )
     
-    @web.expose
-    @web.require_login( "start Galaxy cloud instance" )
-    def start( self, trans, id, type='m1.small' ):
-        """
-        Start a new cloud resource instance
-        """
-        user = trans.get_user()
-        uci = get_uci( trans, id )
-        stores = get_stores( trans, uci ) 
-        # Ensure instance is available and then store relevant data
-        # into DB to initiate instance startup by cloud manager
-        if ( len(stores) is not 0 ) and ( uci.state == uci_states.AVAILABLE ):
-            instance = model.CloudInstance()
-            instance.user = user
-            instance.uci = uci
-            instance.state = instance_states.SUBMITTED
-            instance.availability_zone = stores[0].availability_zone # Bc. all EBS volumes need to be in the same avail. zone, just check 1st
-            instance.type = type
-            uci.state = uci_states.SUBMITTED_UCI
-            # Persist
-            session = trans.sa_session
-            session.save_or_update( instance )
-            session.save_or_update( uci )
-            session.flush()
-            # Log  
-            trans.log_event ("User initiated starting of UCI '%s'." % uci.name )
-            trans.set_message( "Galaxy instance started. NOTE: Please wait about 5 minutes for the instance to " 
-                    "start up. A button to connect to the instance will appear alongside "
-                    "instance description once cloud instance of Galaxy is ready." )
-            return self.list( trans )
-        
-        if len(stores) == 0:
-            error( "This instance does not have any storage volumes associated it and thus cannot be started." )
-        else:
-            error( "Cannot start instance that is in state '%s'." % uci.state )
-        return self.list( trans )
-    
-    @web.expose
-    @web.require_login( "stop Galaxy cloud instance" )
-    def stop( self, trans, id ):
-        """
-        Stop a cloud UCI instance.
-        """
-        uci = get_uci( trans, id )
-        if ( uci.state != uci_states.DELETING ) and \
-           ( uci.state != uci_states.DELETING_UCI ) and \
-           ( uci.state != uci_states.ERROR ) and \
-           ( uci.state != uci_states.SHUTTING_DOWN_UCI ) and \
-           ( uci.state != uci_states.SHUTTING_DOWN ) and \
-           ( uci.state != uci_states.AVAILABLE ):
-            uci.state = uci_states.SHUTTING_DOWN_UCI
-            session = trans.sa_session
-            session.save_or_update( uci )
-            session.flush()
-            trans.log_event( "User stopped cloud instance '%s' (id: %s)" % ( uci.name, uci.id ) )
-            trans.set_message( "Stopping of Galaxy instance '%s' initiated." % uci.name )
-            
-            return self.list( trans )
-        
-        trans.show_error_message( "Cannot stop instance that is in state '%s'." % uci.state )
-        return self.list( trans )
-    
-    @web.expose
-    @web.require_login( "delete user configured Galaxy cloud instance" )
-    def deleteInstance( self, trans, id ):
-        """
-        Deletes User Configured Instance (UCI) from the cloud and local database. NOTE that this implies deletion of 
-        any and all storage associated with this UCI!
-        """
-        uci = get_uci( trans, id )
-        
-        if ( uci.state != uci_states.DELETING_UCI ) and ( uci.state != uci_states.DELETING ) and ( uci.state != uci_states.ERROR ):
-            name = uci.name
-            uci.state = uci_states.DELETING_UCI
-            session = trans.sa_session
-            session.save_or_update( uci )
-            session.flush()
-            trans.log_event( "User marked cloud instance '%s' for deletion." % name )
-            trans.set_message( "Galaxy instance '%s' marked for deletion." % name )
-            return self.list( trans )
-        
-        if uci.state != uci_states.ERROR:
-            trans.set_message( "Cannot delete instance in state ERROR." )
-        else:
-            trans.set_message( "Instance '%s' is already marked for deletion." % uci.name )
-        return self.list( trans )
+    # ----- UCI methods -----
     
     @web.expose
     @web.require_login( "use Galaxy cloud" )
-    def create_snapshot( self, trans, id ):
-        user = trans.get_user()
-        id = trans.security.decode_id( id )
-        uci = get_uci( trans, id )
-        
-        stores = trans.sa_session.query( model.CloudStore ) \
-            .filter_by( user=user, deleted=False, uci_id=id ) \
-            .all()
-        
-        if ( len( stores ) > 0 ) and ( uci.state == uci_states.AVAILABLE ):  
-            for store in stores:
-                snapshot = model.CloudSnapshot()
-                snapshot.user = user
-                snapshot.uci = uci
-                snapshot.store = store
-                snapshot.status = snapshot_status.SUBMITTED
-                uci.state = uci_states.SNAPSHOT_UCI
-                # Persist
-                session = trans.sa_session
-                session.save_or_update( snapshot )
-                session.save_or_update( uci )
-                session.flush()
-        elif len( stores ) == 0:
-            error( "No storage volumes found that are associated with this instance." )
-        else:
-            error( "Snapshot can be created only for an instance that is in 'available' state." )
-        
-        # Log and display the management page
-        trans.log_event( "User initiated creation of new snapshot." )
-        trans.set_message( "Creation of new snapshot initiated. " )
-        return self.list( trans )
-    
-    @web.expose
-    @web.require_login( "use Galaxy cloud" )
-    def view_snapshots( self, trans, id=None ):
-        """
-        View details about any snapshots associated with given UCI
-        """
-        user = trans.get_user()
-        id = trans.security.decode_id( id )
-        
-        snaps = trans.sa_session.query( model.CloudSnapshot ) \
-            .filter_by( user=user, uci_id=id, deleted=False ) \
-            .order_by( desc( model.CloudSnapshot.c.update_time ) ) \
-            .all()
-        
-        return trans.fill_template( "cloud/view_snapshots.mako", 
-                                   snaps = snaps )
-    
-    @web.expose
-    @web.require_login( "use Galaxy cloud" )
-    def delete_snapshot( self, trans, uci_id=None, snap_id=None ):
-        """
-        Initiates deletion of a snapshot
-        """
-        user = trans.get_user()
-        snap_id = trans.security.decode_id( snap_id )
-        # Set snapshot as 'ready for deletion' to be picked up by general updater
-        snap = trans.sa_session.query( model.CloudSnapshot ).get( snap_id )
-        
-        if snap.status == snapshot_status.COMPLETED:
-            snap.status = snapshot_status.DELETE
-            snap.flush()
-            trans.set_message( "Snapshot '%s' is marked for deletion. Once the deletion is complete, it will no longer be visible in this list. " 
-                "Please note that this process may take up to a minute." % snap.snapshot_id ) 
-        else:
-            error( "Only snapshots in state 'completed' can be deleted. See the cloud provider directly "
-                               "if you believe the snapshot is available and can be deleted." ) 
-            
-        # Display new list of snapshots
-        uci_id = trans.security.decode_id( uci_id )
-        snaps = trans.sa_session.query( model.CloudSnapshot ) \
-            .filter_by( user=user, uci_id=uci_id, deleted=False ) \
-            .order_by( desc( model.CloudSnapshot.c.update_time ) ) \
-            .all()
-        
-        return trans.fill_template( "cloud/view_snapshots.mako", 
-                                   snaps = snaps )
-        
-    @web.expose
-    @web.require_login( "add instance storage" )
-    def addStorage( self, trans, id ):
-        instance = get_uci( trans, id )
-        
-        
-        error( "Adding storage to instance '%s' is not supported yet." % instance.name )
-                    
-        return self.list( trans )
-    
-    @web.expose
-    @web.require_login( "use Galaxy cloud" )
-    def usageReport( self, trans, id ):
-        user = trans.get_user()
-        id = trans.security.decode_id( id )
-        
-        prevInstances = trans.sa_session.query( model.CloudInstance ) \
-            .filter_by( user=user, state=instance_states.TERMINATED, uci_id=id ) \
-            .order_by( desc( model.CloudInstance.c.update_time ) ) \
-            .all()
-        
-        return trans.fill_template( "cloud/view_usage.mako", prevInstances = prevInstances ) 
-    
-    @web.expose
-    @web.require_login( "use Galaxy cloud" )
-    def configureNew( self, trans, instanceName='', credName='', volSize='', zone='' ):
+    def configure_new_uci( self, trans, instanceName='', credName='', volSize='', zone='' ):
         """
         Configure and add new cloud instance to user's instance pool
         """
@@ -447,8 +258,255 @@ class CloudController( BaseController ):
                                         providersToZones = providersToZones )
     
     @web.expose
+    @web.require_login( "start Galaxy cloud instance" )
+    def start( self, trans, id, type='m1.small' ):
+        """
+        Start a new cloud resource instance
+        """
+        user = trans.get_user()
+        uci = get_uci( trans, id )
+        stores = get_stores( trans, uci ) 
+        # Ensure instance is available and then store relevant data
+        # into DB to initiate instance startup by cloud manager
+        if ( len(stores) is not 0 ) and ( uci.state == uci_states.AVAILABLE ):
+            instance = model.CloudInstance()
+            instance.user = user
+            instance.uci = uci
+            instance.state = instance_states.SUBMITTED
+            instance.availability_zone = stores[0].availability_zone # Bc. all EBS volumes need to be in the same avail. zone, just check 1st
+            instance.type = type
+            uci.state = uci_states.SUBMITTED_UCI
+            # Persist
+            session = trans.sa_session
+            session.save_or_update( instance )
+            session.save_or_update( uci )
+            session.flush()
+            # Log  
+            trans.log_event ("User initiated starting of UCI '%s'." % uci.name )
+            trans.set_message( "Galaxy instance started. NOTE: Please wait about 5 minutes for the instance to " 
+                    "start up. A button to connect to the instance will appear alongside "
+                    "instance description once cloud instance of Galaxy is ready." )
+            return self.list( trans )
+        
+        if len(stores) == 0:
+            error( "This instance does not have any storage volumes associated it and thus cannot be started." )
+        else:
+            error( "Cannot start instance that is in state '%s'." % uci.state )
+        return self.list( trans )
+    
+    @web.expose
+    @web.require_login( "stop Galaxy cloud instance" )
+    def stop( self, trans, id ):
+        """
+        Stop a cloud UCI instance.
+        """
+        uci = get_uci( trans, id )
+        if ( uci.state != uci_states.DELETING ) and \
+           ( uci.state != uci_states.DELETING_UCI ) and \
+           ( uci.state != uci_states.ERROR ) and \
+           ( uci.state != uci_states.SHUTTING_DOWN_UCI ) and \
+           ( uci.state != uci_states.SHUTTING_DOWN ) and \
+           ( uci.state != uci_states.AVAILABLE ):
+            uci.state = uci_states.SHUTTING_DOWN_UCI
+            session = trans.sa_session
+            session.save_or_update( uci )
+            session.flush()
+            trans.log_event( "User stopped cloud instance '%s' (id: %s)" % ( uci.name, uci.id ) )
+            trans.set_message( "Stopping of Galaxy instance '%s' initiated." % uci.name )
+            
+            return self.list( trans )
+        
+        trans.show_error_message( "Cannot stop instance that is in state '%s'." % uci.state )
+        return self.list( trans )
+    
+    @web.expose
+    @web.require_login( "use Galaxy cloud" )
+    def set_uci_state( self, trans, id, state='available', clear_error=True ):
+        """
+        Sets state of UCI to given state, optionally resets error field, and resets UCI's launch time field to 'None'.
+        """
+        uci = get_uci( trans, id )
+        uci.state = state
+        if clear_error:
+            uci.error = None
+        uci.launch_time = None
+        trans.sa_session.flush()
+        trans.set_message( "Instance '%s' state reset." % uci.name )
+        return self.list( trans )
+   
+    @web.expose
+    @web.require_login( "view instance details" )
+    def view_uci_details( self, trans, id=None ):
+        """
+        View details about running instance
+        """
+        uci = get_uci( trans, id )
+        instances = get_instances( trans, uci ) # TODO: Handle list (will probably need to be done in mako template)
+        
+        return trans.fill_template( "cloud/view_instance.mako",
+                                    liveInstance = instances )
+        
+    @web.expose
+    @web.require_login( "use Galaxy cloud" )
+    def rename_uci( self, trans, id, new_name=None ):
+        instance = get_uci( trans, id )
+        if new_name is not None:
+            if len(new_name) > 255:
+                error( "Instance name must be less than 255 characters long." )
+            user = trans.get_user()
+            name_exists = trans.sa_session.query( model.UCI ) \
+                .filter_by( user=user, name=new_name ) \
+                .first() 
+            if name_exists:
+                error( "Specified name ('%s') is already used by an existing instance. Please choose an alternative name." % new_name )
+            
+            # Update name in local DB
+            instance.name = new_name
+            trans.sa_session.flush()
+            trans.set_message( "Instance renamed to '%s'." % new_name )
+            return self.list( trans )
+        else:
+            return trans.show_form( 
+                web.FormBuilder( url_for( id=trans.security.encode_id(instance.id) ), "Rename instance", submit_text="Rename" )
+                .add_text( "new_name", "Instance name", value=instance.name ) )
+    
+    @web.expose
+    @web.require_login( "use Galaxy cloud" )
+    def uci_usage_report( self, trans, id ):
+        user = trans.get_user()
+        id = trans.security.decode_id( id )
+        
+        prevInstances = trans.sa_session.query( model.CloudInstance ) \
+            .filter_by( user=user, state=instance_states.TERMINATED, uci_id=id ) \
+            .order_by( desc( model.CloudInstance.c.update_time ) ) \
+            .all()
+        
+        return trans.fill_template( "cloud/view_usage.mako", prevInstances = prevInstances ) 
+    
+    @web.expose
+    @web.require_login( "delete user configured Galaxy cloud instance" )
+    def delete_uci( self, trans, id ):
+        """
+        Deletes User Configured Instance (UCI) from the cloud and local database. NOTE that this implies deletion of 
+        any and all storage associated with this UCI!
+        """
+        uci = get_uci( trans, id )
+        
+        if ( uci.state != uci_states.DELETING_UCI ) and ( uci.state != uci_states.DELETING ) and ( uci.state != uci_states.ERROR ):
+            name = uci.name
+            uci.state = uci_states.DELETING_UCI
+            session = trans.sa_session
+            session.save_or_update( uci )
+            session.flush()
+            trans.log_event( "User marked cloud instance '%s' for deletion." % name )
+            trans.set_message( "Galaxy instance '%s' marked for deletion." % name )
+            return self.list( trans )
+        
+        if uci.state != uci_states.ERROR:
+            trans.set_message( "Cannot delete instance in state ERROR." )
+        else:
+            trans.set_message( "Instance '%s' is already marked for deletion." % uci.name )
+        return self.list( trans )
+    
+    # ----- Snapshot methods -----
+    
+    @web.expose
+    @web.require_login( "use Galaxy cloud" )
+    def create_snapshot( self, trans, id ):
+        user = trans.get_user()
+        id = trans.security.decode_id( id )
+        uci = get_uci( trans, id )
+        
+        stores = trans.sa_session.query( model.CloudStore ) \
+            .filter_by( user=user, deleted=False, uci_id=id ) \
+            .all()
+        
+        if ( len( stores ) > 0 ) and ( uci.state == uci_states.AVAILABLE ):  
+            for store in stores:
+                snapshot = model.CloudSnapshot()
+                snapshot.user = user
+                snapshot.uci = uci
+                snapshot.store = store
+                snapshot.status = snapshot_status.SUBMITTED
+                uci.state = uci_states.SNAPSHOT_UCI
+                # Persist
+                session = trans.sa_session
+                session.save_or_update( snapshot )
+                session.save_or_update( uci )
+                session.flush()
+        elif len( stores ) == 0:
+            error( "No storage volumes found that are associated with this instance." )
+        else:
+            error( "Snapshot can be created only for an instance that is in 'available' state." )
+        
+        # Log and display the management page
+        trans.log_event( "User initiated creation of new snapshot." )
+        trans.set_message( "Creation of new snapshot initiated. " )
+        return self.list( trans )
+    
+    @web.expose
+    @web.require_login( "use Galaxy cloud" )
+    def view_snapshots( self, trans, id=None ):
+        """
+        View details about any snapshots associated with given UCI
+        """
+        user = trans.get_user()
+        id = trans.security.decode_id( id )
+        
+        snaps = trans.sa_session.query( model.CloudSnapshot ) \
+            .filter_by( user=user, uci_id=id, deleted=False ) \
+            .order_by( desc( model.CloudSnapshot.c.update_time ) ) \
+            .all()
+        
+        return trans.fill_template( "cloud/view_snapshots.mako", 
+                                   snaps = snaps )
+    
+    @web.expose
+    @web.require_login( "use Galaxy cloud" )
+    def delete_snapshot( self, trans, uci_id=None, snap_id=None ):
+        """
+        Initiates deletion of a snapshot
+        """
+        user = trans.get_user()
+        snap_id = trans.security.decode_id( snap_id )
+        # Set snapshot as 'ready for deletion' to be picked up by general updater
+        snap = trans.sa_session.query( model.CloudSnapshot ).get( snap_id )
+        
+        if snap.status == snapshot_status.COMPLETED:
+            snap.status = snapshot_status.DELETE
+            snap.flush()
+            trans.set_message( "Snapshot '%s' is marked for deletion. Once the deletion is complete, it will no longer be visible in this list. " 
+                "Please note that this process may take up to a minute." % snap.snapshot_id ) 
+        else:
+            error( "Only snapshots in state 'completed' can be deleted. See the cloud provider directly "
+                               "if you believe the snapshot is available and can be deleted." ) 
+            
+        # Display new list of snapshots
+        uci_id = trans.security.decode_id( uci_id )
+        snaps = trans.sa_session.query( model.CloudSnapshot ) \
+            .filter_by( user=user, uci_id=uci_id, deleted=False ) \
+            .order_by( desc( model.CloudSnapshot.c.update_time ) ) \
+            .all()
+        
+        return trans.fill_template( "cloud/view_snapshots.mako", 
+                                   snaps = snaps )
+    
+    # ----- Storage methods -----
+        
+    @web.expose
+    @web.require_login( "add instance storage" )
+    def add_storage( self, trans, id ):
+        instance = get_uci( trans, id )
+        
+        
+        error( "Adding storage to instance '%s' is not supported yet." % instance.name )
+                    
+        return self.list( trans )
+    
+    # ----- Image methods -----
+    @web.expose
     @web.require_admin
-    def addNewImage( self, trans, provider_type='', image_id='', manifest='', architecture='', state=None ):
+    def add_new_image( self, trans, provider_type='', image_id='', manifest='', architecture='', state=None ):
         #id_error = arch_error = provider_error = manifest_error = None
         error = {}
         if provider_type or image_id or manifest or architecture:
@@ -498,24 +556,24 @@ class CloudController( BaseController ):
     
     @web.expose
     @web.require_login( "use Galaxy cloud" )
-    def listMachineImages( self, trans ):
+    def list_machine_images( self, trans ):
         images = trans.sa_session.query( model.CloudImage ).filter( trans.app.model.CloudImage.table.c.deleted != True ).all()
         return trans.fill_template( '/cloud/list_images.mako', images=images )
     
     @web.expose
     @web.require_admin
-    def deleteImage( self, trans, id=None ):
+    def delete_image( self, trans, id=None ):
         if not isinstance( id, int ):
             id = trans.security.decode_id( id )
 
         image = trans.sa_session.query( model.CloudImage ).get( id )
         image.deleted = True
         image.flush()
-        return self.listMachineImages( trans )
+        return self.list_machine_images( trans )
     
     @web.expose
     @web.require_admin
-    def editImage( self, trans, provider_type='', image_id='', manifest='', architecture='', id='', edited=False ):
+    def edit_image( self, trans, provider_type='', image_id='', manifest='', architecture='', id='', edited=False ):
         error = {}
         if not isinstance( id, int ):
             id = trans.security.decode_id( id )
@@ -552,93 +610,13 @@ class CloudController( BaseController ):
                 session.flush()
                 # Log and display the management page
                 trans.set_message( "Machine image '%s' edited." % image.image_id )
-                return self.listMachineImages( trans )
-
-    @web.expose
-    @web.require_login( "use Galaxy cloud" )
-    def edit( self, trans, id, credName=None, accessKey=None, secretKey=None, edited=False ):
-        error = {}
-        if not edited:
-            credentials = get_stored_credentials( trans, id )
-            return trans.fill_template( "cloud/edit_credentials.mako", 
-                                        credential = credentials,
-                                        error = error
-                                        )
-        else:
-            user = trans.get_user()
-            credentials = get_stored_credentials( trans, id )
-            if credName=='' or len( credName ) > 255:
-                error['cred_error'] = "Credentials name must be between 1 and 255 characters in length."
-            elif trans.app.model.CloudUserCredentials \
-                .filter_by( user=user ) \
-                .filter( and_( trans.app.model.CloudUserCredentials.table.c.id != credentials.id, trans.app.model.CloudUserCredentials.table.c.name==credName ) ) \
-                .first():
-                error['cred_error'] = "Credentials with name '" + credName + "' already exist. Please choose an alternative name."
-            elif accessKey=='' or len( accessKey ) > 255:
-                error['access_key_error'] = "Access key must be between 1 and 255 characters long."
-            elif secretKey=='' or len( secretKey ) > 255:
-                error['secret_key_error'] = "Secret key must be between 1 and 255 characters long."
+                return self.list_machine_images( trans )
             
-            if error:
-                return trans.fill_template( "cloud/edit_credentials.mako", 
-                                        credential = credentials,
-                                        error = error
-                                        )
-            else:
-                # Edit user stored credentials
-                credentials.name = credName
-                credentials.access_key = accessKey
-                credentials.secret_key = secretKey
-                # Persist
-                session = trans.sa_session
-                session.save_or_update( credentials )
-                session.flush()
-                # Log and display the management page
-                trans.set_message( "Credential '%s' edited." % credentials.name )
-                return self.list( trans )   
-
-    @web.expose
-    @web.require_login( "use Galaxy cloud" )
-    def renameInstance( self, trans, id, new_name=None ):
-        instance = get_uci( trans, id )
-        if new_name is not None:
-            if len(new_name) > 255:
-                error( "Instance name must be less than 255 characters long." )
-            user = trans.get_user()
-            name_exists = trans.sa_session.query( model.UCI ) \
-                .filter_by( user=user, name=new_name ) \
-                .first() 
-            if name_exists:
-                error( "Specified name ('%s') is already used by an existing instance. Please choose an alternative name." % new_name )
-            
-            # Update name in local DB
-            instance.name = new_name
-            trans.sa_session.flush()
-            trans.set_message( "Instance renamed to '%s'." % new_name )
-            return self.list( trans )
-        else:
-            return trans.show_form( 
-                web.FormBuilder( url_for( id=trans.security.encode_id(instance.id) ), "Rename instance", submit_text="Rename" )
-                .add_text( "new_name", "Instance name", value=instance.name ) )
-            
-    @web.expose
-    @web.require_login( "use Galaxy cloud" )
-    def set_uci_state( self, trans, id, state='available', clear_error=True ):
-        """
-        Sets state of UCI to given state, optionally resets error field, and resets UCI's launch time field to 'None'.
-        """
-        uci = get_uci( trans, id )
-        uci.state = state
-        if clear_error:
-            uci.error = None
-        uci.launch_time = None
-        trans.sa_session.flush()
-        trans.set_message( "Instance '%s' state reset." % uci.name )
-        return self.list( trans )
-   
+    # ----- Credentials methods -----
+    
     @web.expose
     @web.require_login( "add credentials" )
-    def add( self, trans, credName='', accessKey='', secretKey='', providerName='' ):
+    def add_credentials( self, trans, credName='', accessKey='', secretKey='', providerName='' ):
         """
         Add user's cloud credentials stored under name `credName`.
         """
@@ -688,15 +666,58 @@ class CloudController( BaseController ):
                                     )
         
     @web.expose
+    @web.require_login( "use Galaxy cloud" )
+    def edit_credentials( self, trans, id, credName=None, accessKey=None, secretKey=None, edited=False ):
+        error = {}
+        if not edited:
+            credentials = get_stored_credentials( trans, id )
+            return trans.fill_template( "cloud/edit_credentials.mako", 
+                                        credential = credentials,
+                                        error = error
+                                        )
+        else:
+            user = trans.get_user()
+            credentials = get_stored_credentials( trans, id )
+            if credName=='' or len( credName ) > 255:
+                error['cred_error'] = "Credentials name must be between 1 and 255 characters in length."
+            elif trans.app.model.CloudUserCredentials \
+                .filter_by( user=user ) \
+                .filter( and_( trans.app.model.CloudUserCredentials.table.c.id != credentials.id, trans.app.model.CloudUserCredentials.table.c.name==credName ) ) \
+                .first():
+                error['cred_error'] = "Credentials with name '" + credName + "' already exist. Please choose an alternative name."
+            elif accessKey=='' or len( accessKey ) > 255:
+                error['access_key_error'] = "Access key must be between 1 and 255 characters long."
+            elif secretKey=='' or len( secretKey ) > 255:
+                error['secret_key_error'] = "Secret key must be between 1 and 255 characters long."
+            
+            if error:
+                return trans.fill_template( "cloud/edit_credentials.mako", 
+                                        credential = credentials,
+                                        error = error
+                                        )
+            else:
+                # Edit user stored credentials
+                credentials.name = credName
+                credentials.access_key = accessKey
+                credentials.secret_key = secretKey
+                # Persist
+                session = trans.sa_session
+                session.save_or_update( credentials )
+                session.flush()
+                # Log and display the management page
+                trans.set_message( "Credential '%s' edited." % credentials.name )
+                return self.list( trans )   
+        
+    @web.expose
     @web.require_login( "view credentials" )
-    def view( self, trans, id=None ):
+    def view_credentials( self, trans, id=None ):
         """
         View details for user credentials 
         """        
         # Load credentials from database
         stored = get_stored_credentials( trans, id )
         
-        return trans.fill_template( "cloud/view.mako", 
+        return trans.fill_template( "cloud/view_credentials.mako", 
                                    credDetails = stored )
 
     @web.expose
@@ -707,42 +728,33 @@ class CloudController( BaseController ):
         """
 
     @web.expose
-    @web.require_login( "view instance details" )
-    def viewInstance( self, trans, id=None ):
-        """
-        View details about running instance
-        """
-        uci = get_uci( trans, id )
-        instances = get_instances( trans, uci ) # TODO: Handle list (will probably need to be done in mako template)
-        
-        return trans.fill_template( "cloud/viewInstance.mako",
-                                    liveInstance = instances )
-        
-    @web.expose
     @web.require_login( "delete credentials" )
-    def delete( self, trans, id=None ):
+    def delete_credentials( self, trans, id=None ):
         """
         Delete user's cloud credentials checking that no registered instances are tied to given credentials.
         """
         # Load credentials from database
         user = trans.get_user()
         stored = get_stored_credentials( trans, id )
-        UCIs = trans.sa_session.query( model.UCI ) \
-            .filter_by( user=user, credentials_id=stored.id ) \
-            .filter( model.UCI.c.deleted != True ) \
-            .all()
+        # Check if there are any UCIs that depend on these credentials
+        UCI = None
+        UCI = trans.sa_session.query( model.UCI ) \
+            .filter_by( user=user, credentials_id=stored.id, deleted=False ) \
+            .first()
         
-        if len(UCIs) == 0:
+        if UCI == None:
             # Delete and save
             stored.deleted = True
             stored.flush()
             # Display the management page
             trans.set_message( "Credentials '%s' deleted." % stored.name )
             return self.list( trans )
-        
-        error( "Existing instance(s) depend on credentials '%s'. You must delete those instances before being able \
-            to delete these credentials." % stored.name )
-        return self.list( trans )
+        else:
+            error( "Existing instance(s) depend on credentials '%s'. You must delete those instances before being able \
+                to delete these credentials." % stored.name )
+            return self.list( trans )
+    
+    # ----- Provider methods -----
     
     @web.expose
     @web.require_login( "add provider" )
@@ -1007,6 +1019,8 @@ class CloudController( BaseController ):
             to delete this cloud provider." % provider.name )
         return self.list( trans )
     
+    # ----- AJAX methods -----
+    
     @web.json
     def json_update( self, trans ):
         user = trans.get_user()
@@ -1132,7 +1146,7 @@ def get_stores( trans, uci ):
     user = trans.get_user()
     stores = trans.sa_session.query( model.CloudStore ) \
             .filter_by( user=user, uci_id=uci.id ) \
-            .filter( model.CloudStore.c.status != store_states.ERROR ) \
+            .filter( model.CloudStore.c.status != store_status.ERROR ) \
             .all()
             
     return stores

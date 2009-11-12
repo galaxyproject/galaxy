@@ -20,7 +20,7 @@ $(function(){
 <div class="form">
     <div class="form-title">Edit image</div>
     <div class="form-body">
-	<form name="edit_image" action="${h.url_for( action='editImage', id=trans.security.encode_id(image.id), edited="true" )}" method="post" >
+	<form name="edit_image" action="${h.url_for( action='edit_image', id=trans.security.encode_id(image.id), edited="true" )}" method="post" >
 			<%
             cls = "form-row"
             if error.has_key('provider_error'):

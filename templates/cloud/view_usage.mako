@@ -88,7 +88,7 @@
     </table>	
 	<br/>Total number of hours instance was alive: ${total_hours} <br />
 	Note that these are just best effort estimates - true usage should be obtained from respective cloud provider. <br />
-	<%namespace name="view_cred" file="view.mako" />
+	<%namespace name="view_cred" file="view_credentials.mako" />
 	
 	<div id="hide_cred_details">
        This instance uses credentials: 

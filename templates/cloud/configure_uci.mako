@@ -35,7 +35,7 @@ $(function(){
 <div class="form">
     <div class="form-title">Configure new Galaxy instance</div>
     <div class="form-body">
-    <form name="Configure new UCI" action="${h.url_for( action='configureNew' )}" method="post" >
+    <form name="Configure new UCI" action="${h.url_for( action='configure_new_uci' )}" method="post" >
         
            <%
             cls = "form-row"

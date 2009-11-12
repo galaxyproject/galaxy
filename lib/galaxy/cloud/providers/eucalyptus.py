@@ -114,9 +114,9 @@ class EucalyptusCloudProvider( object ):
         log.debug( 'Establishing %s cloud connection.' % self.type )
         provider = uci_wrapper.get_provider()
         try:
-            euca_region = RegionInfo( None, provider.region_name, provider.region_endpoint )
-        except Exception, e:
-            err = "Selecting region with cloud provider failed: " + str( e )
+            region = RegionInfo( None, provider.region_name, provider.region_endpoint )
+        except Exception, ex:
+            err = "Selecting region with cloud provider failed: " + str( ex )
             log.error( err )
             uci_wrapper.set_error( err, True )
             return None        
@@ -125,7 +125,7 @@ class EucalyptusCloudProvider( object ):
                                   aws_secret_access_key=uci_wrapper.get_secret_key(), 
                                   is_secure=provider.is_secure, 
                                   port=provider.port, 
-                                  region=euca_region, 
+                                  region=region, 
                                   path=provider.path )
         except boto.exception.EC2ResponseError, e:
             err = "Establishing connection with cloud failed: " + str( e )
@@ -853,12 +853,12 @@ class EucalyptusCloudProvider( object ):
         s_key = uci.credentials.secret_key
         # Get connection
         try:
-            euca_region = RegionInfo( None, uci.credentials.provider.region_name, uci.credentials.provider.region_endpoint )
+            region = RegionInfo( None, uci.credentials.provider.region_name, uci.credentials.provider.region_endpoint )
             conn = EC2Connection( aws_access_key_id=a_key, 
                                   aws_secret_access_key=s_key, 
                                   is_secure=uci.credentials.provider.is_secure, 
                                   port=uci.credentials.provider.port, 
-                                  region=euca_region, 
+                                  region=region, 
                                   path=uci.credentials.provider.path )
         except boto.exception.EC2ResponseError, e:
             err = "Establishing connection with cloud failed: " + str( e )
