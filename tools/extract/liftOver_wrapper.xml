@@ -42,7 +42,10 @@ Make sure that the genome build of the input dataset is specified (click the pen
 
 .. class:: warningmark
 
-This tool will only work on interval datasets with chromosome in column 1, start co-ordinate in column 2 and end co-ordinate in column 3. If this is not the case with any line of the input dataset, the tool will return empty output datasets.
+This tool will only work on interval datasets with chromosome in column 1,
+start co-ordinate in column 2 and end co-ordinate in column 3. BED comments
+and track and browser lines will be ignored, but if other non-interval lines
+are present the tool will return empty output datasets.
 
 -----
 
