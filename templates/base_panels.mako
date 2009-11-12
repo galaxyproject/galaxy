@@ -155,11 +155,15 @@
         <td class="${cls}" style="${style}"><a target="${target}" href="${href}">${display}</a></td>
     </%def>
     
-    ${tab( "analysis", "Analyze Data", h.url_for( controller='root', action='index' ))}
-    
-    ${tab( "workflow", "Workflow", h.url_for( controller='workflow', action='index' ))}
-    
-    ${tab( "libraries", "Data Libraries", h.url_for( controller='library', action='index' ))}
+    %if app.config.cloud_controller_instance:
+		${tab( "cloud", "Cloud", h.url_for( controller='cloud', action='index' ))}
+    %else:
+    	${tab( "analysis", "Analyze Data", h.url_for( controller='root', action='index' ))}
+	    
+	    ${tab( "workflow", "Workflow", h.url_for( controller='workflow', action='index' ))}
+	    
+	    ${tab( "libraries", "Data Libraries", h.url_for( controller='library', action='index' ))}
+	%endif
     
     %if trans.user and trans.request_types():
         <td class="tab">

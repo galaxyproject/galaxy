@@ -390,6 +390,117 @@ GalaxySessionToHistoryAssociation.table = Table( "galaxy_session_to_history", me
     Column( "session_id", Integer, ForeignKey( "galaxy_session.id" ), index=True ),
     Column( "history_id", Integer, ForeignKey( "history.id" ), index=True ) )
 
+# *************************** Start cloud tables***********************************
+CloudImage.table = Table( "cloud_image", metadata, 
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "provider_type", TEXT ),
+    Column( "image_id", TEXT, nullable=False ),
+    Column( "manifest", TEXT ),
+    Column( "state", TEXT ),
+    Column( "architecture", TEXT ),
+    Column( "deleted", Boolean, default=False ) )
+
+""" UserConfiguredInstance (UCI) table """
+UCI.table = Table( "cloud_uci", metadata, 
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True, nullable=False ),
+    Column( "credentials_id", Integer, ForeignKey( "cloud_user_credentials.id" ), index=True ),
+    Column( "key_pair_name", TEXT ),
+    Column( "key_pair_material", TEXT ),
+    Column( "name", TEXT ),
+    Column( "state", TEXT ),
+    Column( "error", TEXT ),
+    Column( "total_size", Integer ),
+    Column( "launch_time", DateTime ),
+    Column( "deleted", Boolean, default=False ) )
+
+CloudInstance.table = Table( "cloud_instance", metadata, 
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "launch_time", DateTime ),
+    Column( "stop_time", DateTime ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True, nullable=False ),
+    Column( "uci_id", Integer, ForeignKey( "cloud_uci.id" ), index=True ),
+    Column( "type", TEXT ),
+    Column( "reservation_id", TEXT ),
+    Column( "instance_id", TEXT ),
+    Column( "mi_id", TEXT, ForeignKey( "cloud_image.image_id" ), index=True ),
+    Column( "state", TEXT ),
+    Column( "error", TEXT ),
+    Column( "public_dns", TEXT ),
+    Column( "private_dns", TEXT ),
+    Column( "security_group", TEXT ),
+    Column( "availability_zone", TEXT ) )
+
+CloudStore.table = Table( "cloud_store", metadata, 
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "attach_time", DateTime ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True, nullable=False ),
+    Column( "uci_id", Integer, ForeignKey( "cloud_uci.id" ), index=True, nullable=False ),
+    Column( "volume_id", TEXT ),
+    Column( "size", Integer, nullable=False ),
+    Column( "availability_zone", TEXT ),
+    Column( "i_id", TEXT, ForeignKey( "cloud_instance.instance_id" ) ),
+    Column( "status", TEXT ),
+    Column( "device", TEXT ),
+    Column( "space_consumed", Integer ),
+    Column( "error", TEXT ),
+    Column( "deleted", Boolean, default=False ) )
+
+CloudSnapshot.table = Table( "cloud_snapshot", metadata, 
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True, nullable=False ),
+    Column( "uci_id", Integer, ForeignKey( "cloud_uci.id" ), index=True ),
+    Column( "store_id", Integer, ForeignKey( "cloud_store.id" ), index=True, nullable=False ),
+    Column( "snapshot_id", TEXT ),
+    Column( "status", TEXT ),
+    Column( "description", TEXT ),
+    Column( "error", TEXT ),
+    Column( "deleted", Boolean, default=False ) )
+
+CloudUserCredentials.table = Table( "cloud_user_credentials", metadata, 
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True, nullable=False ),
+    Column( "provider_id", Integer, ForeignKey( "cloud_provider.id" ), index=True, nullable=False ),
+    Column( "name", TEXT ),
+    Column( "access_key", TEXT ),
+    Column( "secret_key", TEXT ),
+    Column( "deleted", Boolean, default=False ) )
+
+CloudProvider.table = Table( "cloud_provider", metadata, 
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True, nullable=False ),
+    Column( "type", TEXT, nullable=False ),
+    Column( "name", TEXT ),
+    Column( "region_connection", TEXT ),
+    Column( "region_name", TEXT ),
+    Column( "region_endpoint", TEXT ),
+    Column( "is_secure", Boolean ),
+    Column( "host", TEXT ),
+    Column( "port", Integer ),
+    Column( "proxy", TEXT ),
+    Column( "proxy_port", TEXT ),
+    Column( "proxy_user", TEXT ),
+    Column( "proxy_pass", TEXT ),
+    Column( "debug", Integer ),
+    Column( "https_connection_factory", TEXT ),
+    Column( "path", TEXT ),
+    Column( "deleted", Boolean, default=False ) )
+# *************************** End cloud tables***********************************
+
 StoredWorkflow.table = Table( "stored_workflow", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
@@ -1003,6 +1114,42 @@ assign_mapper( context, WorkflowStepConnection, WorkflowStepConnection.table,
                                           primaryjoin=( WorkflowStepConnection.table.c.input_step_id == WorkflowStep.table.c.id ) ),
                      output_step=relation( WorkflowStep, backref="output_connections", cascade="all",
                                            primaryjoin=( WorkflowStepConnection.table.c.output_step_id == WorkflowStep.table.c.id ) ) ) )
+
+# vvvvvvvvvvvvvvvv Start cloud table mappings vvvvvvvvvvvvvvvv
+assign_mapper( context, CloudImage, CloudImage.table )
+
+assign_mapper( context, UCI, UCI.table,
+    properties=dict( user=relation( User ),
+                     credentials=relation( CloudUserCredentials ),
+                     instance=relation( CloudInstance, backref='uci' ),
+                     store=relation( CloudStore, backref='uci', cascade='all, delete-orphan' ),
+                     snapshot=relation( CloudSnapshot, backref='uci' )
+                    ) )
+
+assign_mapper( context, CloudInstance, CloudInstance.table,
+    properties=dict( user=relation( User ), 
+                     image=relation( CloudImage )
+                    ) )
+
+assign_mapper( context, CloudStore, CloudStore.table,
+    properties=dict( user=relation( User ),
+                     i=relation( CloudInstance ),
+                     snapshot=relation( CloudSnapshot, backref="store" )
+                    ) )
+
+assign_mapper( context, CloudSnapshot, CloudSnapshot.table,
+    properties=dict( user=relation( User )
+                    ) )
+
+assign_mapper( context, CloudProvider, CloudProvider.table,
+    properties=dict( user=relation( User )
+                    ) )
+
+assign_mapper( context, CloudUserCredentials, CloudUserCredentials.table,
+    properties=dict( user=relation( User),
+                     provider=relation( CloudProvider )
+                    ) )
+# ^^^^^^^^^^^^^^^ End cloud table mappings ^^^^^^^^^^^^^^^^^^
 
 assign_mapper( context, StoredWorkflow, StoredWorkflow.table,
     properties=dict( user=relation( User ),
