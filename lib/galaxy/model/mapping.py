@@ -379,13 +379,7 @@ GalaxySessionToHistoryAssociation.table = Table( "galaxy_session_to_history", me
     Column( "session_id", Integer, ForeignKey( "galaxy_session.id" ), index=True ),
     Column( "history_id", Integer, ForeignKey( "history.id" ), index=True ) )
 
-
-
-
-
-# ***************************************************************************
-# *************************** Cloud tables***********************************
-# ***************************************************************************
+# *************************** Start cloud tables***********************************
 CloudImage.table = Table( "cloud_image", metadata, 
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
@@ -446,6 +440,7 @@ CloudStore.table = Table( "cloud_store", metadata,
     Column( "status", TEXT ),
     Column( "device", TEXT ),
     Column( "space_consumed", Integer ),
+    Column( "error", TEXT ),
     Column( "deleted", Boolean, default=False ) )
 
 CloudSnapshot.table = Table( "cloud_snapshot", metadata, 
@@ -493,7 +488,7 @@ CloudProvider.table = Table( "cloud_provider", metadata,
     Column( "https_connection_factory", TEXT ),
     Column( "path", TEXT ),
     Column( "deleted", Boolean, default=False ) )
-# ***************************************************************************
+# *************************** End cloud tables***********************************
 
 StoredWorkflow.table = Table( "stored_workflow", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -999,9 +994,8 @@ assign_mapper( context, WorkflowStepConnection, WorkflowStepConnection.table,
                                           primaryjoin=( WorkflowStepConnection.table.c.input_step_id == WorkflowStep.table.c.id ) ),
                      output_step=relation( WorkflowStep, backref="output_connections", cascade="all",
                                            primaryjoin=( WorkflowStepConnection.table.c.output_step_id == WorkflowStep.table.c.id ) ) ) )
-# ************************************************************
+
 # vvvvvvvvvvvvvvvv Start cloud table mappings vvvvvvvvvvvvvvvv
-# ************************************************************
 assign_mapper( context, CloudImage, CloudImage.table )
 
 assign_mapper( context, UCI, UCI.table,

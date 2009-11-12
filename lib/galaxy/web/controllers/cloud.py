@@ -34,6 +34,7 @@ log = logging.getLogger( __name__ )
 uci_states = Bunch(
     NEW_UCI = "newUCI",
     NEW = "new",
+    CREATING = "creating",
     DELETING_UCI = "deletingUCI",
     DELETING = "deleting",
     SUBMITTED_UCI = "submittedUCI",
@@ -61,6 +62,7 @@ instance_states = Bunch(
 store_states = Bunch(
     IN_USE = "in-use",
     CREATING = "creating",
+    DELETED = 'deleted',
     ERROR = "error"
 )
 
@@ -111,11 +113,13 @@ class CloudController( BaseController ):
             .all()
             
         prevInstances = trans.sa_session.query( model.UCI ) \
-            .filter_by( user=user ) \
+            .filter_by( user=user, deleted=False ) \
             .filter( or_( model.UCI.c.state==uci_states.AVAILABLE,  
                           model.UCI.c.state==uci_states.NEW, 
                           model.UCI.c.state==uci_states.NEW_UCI, 
+                          model.UCI.c.state==uci_states.CREATING, 
                           model.UCI.c.state==uci_states.ERROR,  
+                          model.UCI.c.state==uci_states.DELETED,
                           model.UCI.c.state==uci_states.DELETING,
                           model.UCI.c.state==uci_states.DELETING_UCI,
                           model.UCI.c.state==uci_states.SNAPSHOT,

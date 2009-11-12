@@ -23,6 +23,7 @@ log = logging.getLogger( __name__ )
 uci_states = Bunch(
     NEW_UCI = "newUCI",
     NEW = "new",
+    CREATING = "creating",
     DELETING_UCI = "deletingUCI",
     DELETING = "deleting",
     SUBMITTED_UCI = "submittedUCI",
@@ -47,9 +48,19 @@ instance_states = Bunch(
     ERROR = "error"
 )
 
-store_states = Bunch(
+store_status = Bunch(
     IN_USE = "in-use",
     CREATING = "creating",
+    DELETED = 'deleted',
+    ERROR = "error"
+)
+
+snapshot_status = Bunch(
+    SUBMITTED = 'submitted',
+    PENDING = 'pending',
+    COMPLETED = 'completed',
+    DELETE = 'delete',
+    DELETED= 'deleted',
     ERROR = "error"
 )
 
@@ -105,10 +116,10 @@ class EucalyptusCloudProvider( object ):
         try:
             euca_region = RegionInfo( None, provider.region_name, provider.region_endpoint )
         except Exception, e:
-            log.error( "Selecting region with cloud provider failed: %2" % str(e) )
-            uci_wrapper.set_error( "Selecting region with cloud provider failed: " + str(e), True )
-            return None
-        
+            err = "Selecting region with cloud provider failed: " + str( e )
+            log.error( err )
+            uci_wrapper.set_error( err, True )
+            return None        
         try:
             conn = EC2Connection( aws_access_key_id=uci_wrapper.get_access_key(), 
                                   aws_secret_access_key=uci_wrapper.get_secret_key(), 
@@ -117,8 +128,9 @@ class EucalyptusCloudProvider( object ):
                                   region=euca_region, 
                                   path=provider.path )
         except boto.exception.EC2ResponseError, e:
-            log.error( "Establishing connection with cloud failed: %s" % str(e) )
-            uci_wrapper.set_error( "Establishing connection with cloud failed: " + str(e), True )
+            err = "Establishing connection with cloud failed: " + str( e )
+            log.error( err )
+            uci_wrapper.set_error( err, True )
             return None
         
         return conn
@@ -142,27 +154,30 @@ class EucalyptusCloudProvider( object ):
                         kp = self.create_key_pair( conn, kp_name )
                         uci_wrapper.set_key_pair( kp.name, kp.material )
                     except boto.exception.EC2ResponseError, e:
-                        log.error( "EC2 response error when deleting key pair: '%s'" % e )
-                        uci_wrapper.set_error( "Cloud provider response error while deleting key pair: " + str( e ), True )
+                        err = "EC2 response error while deleting key pair: " + str( e )
+                        log.error( err )
+                        uci_wrapper.set_error( err, True )
             else:
                 try:
                     kp = self.create_key_pair( conn, kp_name )
                     uci_wrapper.set_key_pair( kp.name, kp.material )
                 except boto.exception.EC2ResponseError, e:
-                    log.error( "EC2 response error when creating key pair: '%s'" % e )
-                    uci_wrapper.set_error( "Cloud provider response error while creating key pair: " + str( e ), True )
+                    err = "EC2 response error while creating key pair: " + str( e )
+                    log.error( err )
+                    uci_wrapper.set_error( err, True )
                 except Exception, ex:
-                    log.error( "Exception when creating key pair: '%s'" % e )
-                    uci_wrapper.set_error( "Error while creating key pair: " + str( e ), True )
-                
+                    err = "Exception while creating key pair: " + str( ex )
+                    log.error( err )
+                    uci_wrapper.set_error( err, True )
         except boto.exception.EC2ResponseError, e: # No keypair under this name exists so create it
             if e.code == 'InvalidKeyPair.NotFound': 
                 log.info( "No keypair found, creating keypair '%s'" % kp_name )
                 kp = self.create_key_pair( conn, kp_name )
                 uci_wrapper.set_key_pair( kp.name, kp.material )
             else:
-                log.error( "EC2 response error while retrieving key pair: '%s'" % e )
-                uci_wrapper.set_error( "Cloud provider response error while retrieving key pair: " + str( e ), True )
+                err = "EC2 response error while retrieving key pair: " + str( e )
+                log.error( err )
+                uci_wrapper.set_error( err, True )
                         
         if kp != None:
             return kp.name
@@ -189,8 +204,9 @@ class EucalyptusCloudProvider( object ):
         if mi:
             return mi.image_id
         else:
-            log.error( "Machine image could not be retrieved for UCI '%s'." % uci_wrapper.get_name() )
-            uci_wrapper.set_error( "Machine image could not be retrieved. Contact site administrator to ensure needed machine image is registered.", True )
+            err = "Machine image could not be retrieved"
+            log.error( "%s for UCI '%s'." % (err, uci_wrapper.get_name() ) )
+            uci_wrapper.set_error( err+". Contact site administrator to ensure needed machine image is registered.", True )
             return None
             
     def shutdown( self ):
@@ -220,12 +236,37 @@ class EucalyptusCloudProvider( object ):
             log.info( "Availability zone for UCI (i.e., storage volume) was not selected, using default zone: %s" % self.zone )
             uci_wrapper.set_store_availability_zone( self.zone )
         
+        log.debug( "Creating volume; using command: conn.create_volume( %s, '%s', snapshot=None )" % ( uci_wrapper.get_store_size( 0 ), uci_wrapper.get_uci_availability_zone() ))
         vol = conn.create_volume( uci_wrapper.get_store_size( 0 ), uci_wrapper.get_uci_availability_zone(), snapshot=None )
         uci_wrapper.set_store_volume_id( 0, vol.id ) 
         
-        # EPC does not allow creation of storage volumes (it deletes one as soon as it is created, so manually set uci_state here)
-        uci_wrapper.change_state( uci_state=uci_states.AVAILABLE )
-        uci_wrapper.set_store_status( vol.id, vol.status )
+        # Retrieve created volume again to get updated status
+        try:
+            vl = conn.get_all_volumes( [vol.id] )
+        except boto.exception.EC2ResponseError, e: 
+            err = "EC2 response error while retrieving (i.e., updating status) of just created storage volume '" + vol.id + "': " + str( e )
+            log.error( err )
+            uci_wrapper.set_store_status( vol.id, uci_states.ERROR )
+            uci_wrapper.set_error( err, True )
+            return
+        except Exception, ex:
+            err = "Error while retrieving (i.e., updating status) of just created storage volume '" + vol.id + "': " + str( ex )
+            log.error( err )
+            uci_wrapper.set_error( err, True )
+            return
+        
+        if len( vl ) > 0:
+            # EPC does not allow creation of storage volumes (it deletes one as soon as it is created, so manually set uci_state here)
+            if vl[0].status == store_status.DELETED:
+                uci_wrapper.change_state( uci_state=uci_states.AVAILABLE )
+            else:
+                uci_wrapper.change_state( uci_state=vl[0].status )
+            uci_wrapper.set_store_status( vol.id, vl[0].status )
+        else:
+            err = "Volume '" + vol.id +"' not found by EC2 after being created."
+            log.error( err )
+            uci_wrapper.set_store_status( vol.id, uci_states.ERROR )
+            uci_wrapper.set_error( err, True )
 
     def deleteUCI( self, uci_wrapper ):
         """ 
@@ -242,24 +283,29 @@ class EucalyptusCloudProvider( object ):
         failedList = []
         for v in vl:
             log.debug( "Deleting volume with id='%s'" % v.volume_id )
-            if conn.delete_volume( v.volume_id ):
-                deletedList.append( v.volume_id )
-                v.deleted = True
-                v.flush()
-                count += 1
-            else:
-                failedList.append( v.volume_id )
-            
+            try:
+                if conn.delete_volume( v.volume_id ):
+                    deletedList.append( v.volume_id )
+                    v.deleted = True
+                    v.flush()
+                    count += 1
+                else:
+                    failedList.append( v.volume_id )
+            except boto.exception.EC2ResponseError, e:
+                err = "EC2 response error while deleting storage volume '" + v.volume_id + "': " + str( e )
+                log.error( err )
+                uci_wrapper.set_store_error( err, store_id = v.volume_id )
+                uci_wrapper.set_error( err, True )
+                
         # Delete UCI if all of associated 
         if count == len( vl ):
-            uci_wrapper.delete()
+            uci_wrapper.set_deleted()
         else:
-            log.error( "Deleting following volume(s) failed: %s. However, these volumes were successfully deleted: %s. \
-                        Manual intervention and processing needed." % ( str( failedList ), str( deletedList ) ) )
-            uci_wrapper.change_state( uci_state=uci_states.ERROR )
-            uci_wrapper.set_error( "Deleting following volume(s) failed: "+str(failedList)+". However, these volumes were \
-                        successfully deleted: "+str(deletedList)+". Manual intervention and processing needed." )
-    
+            err = "Deleting following volume(s) failed: "+failedList+". However, these volumes were successfully deleted: "+deletedList+". \
+                        MANUAL intervention and processing needed."
+            log.error( err )
+            uci_wrapper.set_error( err, True )
+            
     def snapshotUCI( self, uci_wrapper ):
         """
         Creates snapshot of all storage volumes associated with this UCI. 
@@ -276,17 +322,17 @@ class EucalyptusCloudProvider( object ):
                     uci_wrapper.set_snapshot_id( snapshot.id, snap_id )
                     sh = conn.get_all_snapshots( snap_id ) # get updated status
                     uci_wrapper.set_snapshot_status( status=sh[0].status, snap_id=snap_id )
-                except boto.exception.EC2ResponseError, ex:
+                except boto.exception.EC2ResponseError, e:
                     err = "Cloud provider response error while creating snapshot: " + str( e )
                     log.error( err )
                     uci_wrapper.set_snapshot_error( error=err, snap_index=snapshot.id, set_status=True )
-                    uci_wrapper.set_error( error=err, True )
+                    uci_wrapper.set_error( err, True )
                     return
                 except Exception, ex:
                     err = "Error while creating snapshot: " + str( ex )
                     log.error( err )
                     uci_wrapper.set_snapshot_error( error=err, snap_index=snapshot.id, set_status=True )
-                    uci_wrapper.set_error( error=err, True )
+                    uci_wrapper.set_error( err, True )
                     return
                     
             uci_wrapper.change_state( uci_state=uci_states.AVAILABLE )
@@ -323,18 +369,22 @@ class EucalyptusCloudProvider( object ):
             conn = self.get_connection( uci_wrapper )
             self.check_key_pair( uci_wrapper, conn )
             if uci_wrapper.get_key_pair_name() == None:
-                log.error( "Key pair for UCI '%s' is NULL." % uci_wrapper.get_name() )
-                uci_wrapper.set_error( "Key pair not found. Try resetting the state and starting the instance again.", True )
+                err = "Key pair not found"
+                log.error( "%s for UCI '%s'." % ( err, uci_wrapper.get_name() ) )
+                uci_wrapper.set_error( err + ". Try resetting the state and starting the instance again.", True )
                 return
             
             i_indexes = uci_wrapper.get_instances_indexes( state=instance_states.SUBMITTED ) # Get indexes of i_indexes associated with this UCI that are in 'submitted' state
+            log.debug( "Starting instances with IDs: '%s' associated with UCI '%s' " % ( i_indexes, uci_wrapper.get_name(),  ) )
             if len( i_indexes ) > 0:
                 for i_index in i_indexes:
+                    # Get machine image for current instance
                     mi_id = self.get_mi_id( uci_wrapper, i_index )
                     log.debug( "mi_id: %s, uci_wrapper.get_key_pair_name(): %s" % ( mi_id, uci_wrapper.get_key_pair_name() ) )
                     uci_wrapper.set_mi( i_index, mi_id )
                                
-                    if uci_wrapper.get_state() != uci_states.ERROR and uci_wrapper.get_key_pair_name() != None:
+                    if uci_wrapper.get_state() != uci_states.ERROR:
+                        # Start an instance
                         log.debug( "Starting UCI instance '%s'" % uci_wrapper.get_name() )
                         log.debug( "Using following command: conn.run_instances( image_id='%s', key_name='%s', instance_type='%s' )" 
                                    % ( mi_id, uci_wrapper.get_key_pair_name(), uci_wrapper.get_type( i_index ) ) )
@@ -344,11 +394,13 @@ class EucalyptusCloudProvider( object ):
                                                               key_name=uci_wrapper.get_key_pair_name(),
                                                               instance_type=uci_wrapper.get_type( i_index ) )
                         except boto.exception.EC2ResponseError, e:
-                            log.error( "EC2 response error when starting UCI '%s': '%s'" % ( uci_wrapper.get_name(), str( e ) ) )
-                            uci_wrapper.set_error( "Cloud provider response error when starting: " + str( e ), True )
+                            err = "EC2 response error when starting UCI '"+ uci_wrapper.get_name() +"': " + str( e )
+                            log.error( err )
+                            uci_wrapper.set_error( err, True )
                         except Exception, ex:
-                            log.error( "Error when starting UCI '%s': '%s'" % ( uci_wrapper.get_name(), str( ex ) ) )
-                            uci_wrapper.set_error( "Cloud provider error when starting: " + str( ex ), True )
+                            err = "Error when starting UCI '" + uci_wrapper.get_name() + "': " + str( ex )
+                            log.error( err )
+                            uci_wrapper.set_error( err, True )
                         # Record newly available instance data into local Galaxy database
                         if reservation:
                             uci_wrapper.set_launch_time( self.format_time( reservation.instances[0].launch_time ), i_index=i_index )
@@ -363,13 +415,16 @@ class EucalyptusCloudProvider( object ):
                                 uci_wrapper.change_state( s, i_id, s )
                                 log.debug( "Instance of UCI '%s' started, current state: '%s'" % ( uci_wrapper.get_name(), uci_wrapper.get_state() ) )
                             except boto.exception.EC2ResponseError, e:
-                                log.error( "EC2 response error when retrieving instance information for UCI '%s': '%s'" % ( uci_wrapper.get_name(), str(e) ) )
-                                uci_wrapper.set_error( "Cloud provider response error when retrieving instance information: " + str(e), True )
+                                err = "EC2 response error when retrieving instance information for UCI '" + uci_wrapper.get_name() + "': " + str( e )
+                                log.error( err )
+                                uci_wrapper.set_error( err, True )
                     else:
                         log.error( "UCI '%s' is in 'error' state, starting instance was aborted." % uci_wrapper.get_name() )
             else:
-                log.error( "No instances were found for UCI '%s'" % uci_wrapper.get_name() )
-                uci_wrapper.set_error( "EC2 response error when retrieving instance information: " + str(e), True )
+                err = "No instances in state '"+ instance_states.SUBMITTED +"' found for UCI '" + uci_wrapper.get_name() + \
+                      "'. Nothing to start."
+                log.error( err )
+                uci_wrapper.set_error( err, True )
         else:
             log.error( "UCI '%s' is in 'error' state, starting instance was aborted." % uci_wrapper.get_name() )
         
@@ -387,14 +442,20 @@ class EucalyptusCloudProvider( object ):
         # Initiate shutdown of all instances under given UCI
         cnt = 0
         stopped = []
-        notStopped = []
+        not_stopped = []
         for r in rl:
             for inst in r.instances:
                 log.debug( "Sending stop signal to instance '%s' associated with reservation '%s' (UCI: %s)." % ( inst, r, uci_wrapper.get_name() ) )
-                inst.stop()
-                uci_wrapper.set_stop_time( datetime.utcnow(), i_id=inst.id )
-                uci_wrapper.change_state( instance_id=inst.id, i_state=inst.update() )
-                stopped.append( inst )
+                try:
+                    inst.stop()
+                    uci_wrapper.set_stop_time( datetime.utcnow(), i_id=inst.id )
+                    uci_wrapper.change_state( instance_id=inst.id, i_state=inst.update() )
+                    stopped.append( inst )
+                except boto.exception.EC2ResponseError, e:
+                    not_stopped.append( inst )
+                    err = "EC2 response error when stopping instance '" + inst.instance_id + "': " + str( e )
+                    log.error( err )
+                    uci_wrapper.set_error( err, True )
                 
         uci_wrapper.reset_uci_launch_time()
         log.debug( "Termination was initiated for all instances of UCI '%s'." % uci_wrapper.get_name() )
@@ -460,8 +521,8 @@ class EucalyptusCloudProvider( object ):
                 self.updateInstance( inst )
         
         # Update storage volume(s)
-        stores = model.CloudStore.filter( or_( model.CloudStore.c.status==store_states.IN_USE, 
-                                               model.CloudStore.c.status==store_states.CREATING,
+        stores = model.CloudStore.filter( or_( model.CloudStore.c.status==store_status.IN_USE, 
+                                               model.CloudStore.c.status==store_status.CREATING,
                                                model.CloudStore.c.status==None ) ).all()
         for store in stores:
             if self.type == store.uci.credentials.provider.type: # and store.volume_id != None:
@@ -473,7 +534,7 @@ class EucalyptusCloudProvider( object ):
 #                store.uci.error = "There exists an entry in local database for a storage volume without an ID. Storage volume might have been created " \
 #                            "with cloud provider though. Manual check is recommended. After understanding what happened, local database entry for given " \
 #                            "storage volume should be updated."
-#                store.status = store_states.ERROR
+#                store.status = store_status.ERROR
 #                store.uci.state = uci_states.ERROR
 #                store.uci.flush()
 #                store.flush()
@@ -516,19 +577,21 @@ class EucalyptusCloudProvider( object ):
         try:
             rl= conn.get_all_instances( [inst.instance_id] )
         except boto.exception.EC2ResponseError, e:
-            log.error( "Retrieving instance(s) from cloud for UCI '%s' failed: " % ( uci.name, str(e) ) )
-            uci.error( "Retrieving instance(s) from cloud failed: " + str(e) )
-            uci.state( uci_states.ERROR )
+            err = "Retrieving instance(s) from cloud failed for UCI '"+ uci.name +"' during general status update: " + str( e )
+            log.error( err )
+            uci.error = err
+            uci.state = uci_states.ERROR
             return None
 
         # Because EPC deletes references to reservations after a short while after instances have terminated, getting an empty list as a response to a query
         # typically means the instance has successfully shut down but the check was not performed in short enough amount of time. Until alternative solution
         # is found, below code sets state of given UCI to 'error' to indicate to the user something out of ordinary happened.
         if len( rl ) == 0:
-            log.info( "Instance ID '%s' was not found by the cloud provider. Instance might have crashed or otherwise been terminated." % inst.instance_id )
-            inst.error = "Instance ID was not found by the cloud provider. Instance might have crashed or otherwise been terminated. State set to 'terminated'."
-            uci.error = "Instance ID '"+inst.instance_id+"' was not found by the cloud provider. Instance might have crashed or otherwise been terminated."+ \
+            err = "Instance ID '"+inst.instance_id+"' was not found by the cloud provider. Instance might have crashed or otherwise been terminated."+ \
                 "Manual check is recommended."
+            log.error( err )
+            inst.error = err
+            uci.error = err
             inst.state = instance_states.TERMINATED
             uci.state = uci_states.ERROR
             uci.launch_time = None
@@ -559,9 +622,10 @@ class EucalyptusCloudProvider( object ):
                         inst.private_dns = cInst.private_dns_name
                     inst.flush()
                 except boto.exception.EC2ResponseError, e:
-                    log.error( "Updating status of instance(s) from cloud for UCI '%s' failed: " % ( uci.name, str(e) ) )
-                    uci.error( "Updating volume status from cloud failed: " + str(e) )
-                    uci.state( uci_states.ERROR )
+                    err = "Updating instance status from cloud failed for UCI '"+ uci.name + "' during general status update: " + str( e )
+                    log.error( err )
+                    uci.error = err
+                    uci.state = uci_states.ERROR
                     return None
 
     def updateStore( self, store ):
@@ -574,9 +638,10 @@ class EucalyptusCloudProvider( object ):
         try:
             vl = conn.get_all_volumes( [store.volume_id] )
         except boto.exception.EC2ResponseError, e:
-            log.error( "Retrieving volume(s) from cloud for UCI '%s' failed: " % ( uci.name, str(e) ) )
-            uci.error( "Retrieving volume(s) from cloud failed: " + str(e) )
-            uci.state( uci_states.ERROR )
+            err = "Retrieving volume(s) from cloud failed for UCI '"+ uci.name + "' during general status update: " + str( e )
+            log.error( err )
+            uci.error = err
+            uci.state = uci_states.ERROR
             uci.flush()
             return None
         
@@ -588,6 +653,16 @@ class EucalyptusCloudProvider( object ):
                     #  UCI state remained as 'new', try to remedy this by updating UCI state here 
                     if ( store.status == None ) and ( store.volume_id != None ):
                         uci.state = vl[0].status
+                        uci.flush()
+                    # If UCI was marked in state 'CREATING', update its status to reflect new status
+                    elif ( uci.state == uci_states.CREATING ):
+                        # Because Eucalyptus Public Cloud (EPC) deletes volumes immediately after they are created, artificially
+                        # set status of given UCI to 'available' based on storage volume's availability zone (i.e., it's residing
+                        # in EPC as opposed to some other Eucalyptus based cloud that allows creation of storage volumes.
+                        if store.availability_zone == 'epc':
+                            uci.state = uci_states.AVAILABLE
+                        else:
+                            uci.state = vl[0].status
                         uci.flush()
                         
                     store.status = vl[0].status
@@ -602,11 +677,21 @@ class EucalyptusCloudProvider( object ):
                     store.device = vl[0].device
                     store.flush()
             except boto.exception.EC2ResponseError, e:
-                log.error( "Updating status of volume(s) from cloud for UCI '%s' failed: " % ( uci.name, str(e) ) )
-                uci.error( "Updating volume status from cloud failed: " + str(e) )
+                err = "Updating status of volume(s) from cloud failed for UCI '"+ uci.name + "' during general status update: " + str( e )
+                log.error( err )
+                uci.error = err
                 uci.state = uci_states.ERROR
                 uci.flush()
                 return None
+        else:
+            err = "No storage volumes returned by cloud provider on general update"
+            log.error( "%s for UCI '%s'" % ( err, uci.name ) )
+            store.status = store_status.ERROR
+            store.error = err
+            uci.error = err
+            uci.state = uci_states.ERROR
+            uci.flush()
+            store.flush()
     
     def updateSnapshot( self, snapshot ):
         # Get credentials associated wit this store
@@ -623,7 +708,7 @@ class EucalyptusCloudProvider( object ):
                 snapshot.status = snap[0].status
                 snapshot.flush()
             else:
-                err = "No snapshots returned by cloud provider"
+                err = "No snapshots returned by cloud provider on general update"
                 log.error( "%s for UCI '%s'" % ( err, uci.name ) )
                 snapshot.status = snapshot_status.ERROR
                 snapshot.error = err
@@ -734,30 +819,25 @@ class EucalyptusCloudProvider( object ):
                     except: # something failed, so skip
                         pass
             else:
-                inst.error = "Starting a machine instance associated with UCI '" + str(inst.uci.name) + "' seems to have failed. " \
-                             "Because it appears that cloud instance might have gotten started, manual check is recommended."
+                err = "Starting a machine instance (DB id: '"+str(inst.id)+"') associated with this UCI '" + str(inst.uci.name) + \
+                      "' seems to have failed. Because it appears that cloud instance might have gotten started, manual check is recommended."
+                inst.error = err
                 inst.state = instance_states.ERROR
-                inst.uci.error = "Starting a machine instance (DB id: '"+str(inst.id)+"') associated with this UCI seems to have failed. " \
-                                 "Because it appears that cloud instance might have gotten started, manual check is recommended."
+                inst.uci.error = err
                 inst.uci.state = uci_states.ERROR
-                log.error( "Starting a machine instance (DB id: '%s') associated with UCI '%s' seems to have failed. " \
-                           "Because it appears that cloud instance might have gotten started, manual check is recommended." 
-                           % ( inst.id, inst.uci.name ) )
+                log.error( err )
                 inst.flush()
-                inst.uci.flush()             
+                inst.uci.flush()          
                 
         else: #Instance most likely never got processed, so set error message suggesting user to try starting instance again.
-            inst.error = "Starting a machine instance associated with UCI '" + str(inst.uci.name) + "' seems to have failed. " \
-                         "Because it appears that cloud instance never got started, it should be safe to reset state and try " \
-                         "starting the instance again."
+            err = "Starting a machine instance (DB id: '"+str(inst.id)+"') associated with this UCI '" + str(inst.uci.name) + \
+                  "' seems to have failed. Because it appears that cloud instance never got started, it should be safe to reset state and try " \
+                  "starting the instance again."
+            inst.error = err
             inst.state = instance_states.ERROR
-            inst.uci.error = "Starting a machine instance (DB id: '"+str(inst.id)+"') associated with this UCI seems to have failed. " \
-                             "Because it appears that cloud instance never got started, it should be safe to reset state and try " \
-                             "starting the instance again."
+            inst.uci.error = err
             inst.uci.state = uci_states.ERROR
-            log.error( "Starting a machine instance (DB id: '%s') associated with UCI '%s' seems to have failed. " \
-                       "Because it appears that cloud instance never got started, it should be safe to reset state and try " \
-                       "starting the instance again." % ( inst.id, inst.uci.name ) )
+            log.error( err )
             inst.flush()
             inst.uci.flush()
 #            uw = UCIwrapper( inst.uci )
@@ -781,9 +861,10 @@ class EucalyptusCloudProvider( object ):
                                   region=euca_region, 
                                   path=uci.credentials.provider.path )
         except boto.exception.EC2ResponseError, e:
-            log.error( "Establishing connection with cloud failed: %s" % str(e) )
-            uci.error( "Establishing connection with cloud failed: " + str(e) )
-            uci.state( uci_states.ERROR )
+            err = "Establishing connection with cloud failed: " + str( e )
+            log.error( err )
+            uci.error = err
+            uci.state = uci_states.ERROR
             uci.flush()
             return None
 

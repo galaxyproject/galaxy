@@ -78,6 +78,7 @@ CloudStore_table = Table( "cloud_store", metadata,
     Column( "status", TEXT ),
     Column( "device", TEXT ),
     Column( "space_consumed", Integer ),
+    Column( "error", TEXT ),
     Column( "deleted", Boolean, default=False ) )
 
 CloudSnapshot_table = Table( "cloud_snapshot", metadata, 
@@ -131,21 +132,21 @@ def upgrade():
     # Load existing tables
     metadata.reflect()
     
-#    CloudImage_table.create()
-#    UCI_table.create()
-#    CloudUserCredentials_table.create()
-#    CloudStore_table.create()
+    CloudImage_table.create()
+    UCI_table.create()
+    CloudUserCredentials_table.create()
+    CloudStore_table.create()
     CloudSnapshot_table.create()
-#    CloudInstance_table.create()
-#    CloudProvider_table.create()
+    CloudInstance_table.create()
+    CloudProvider_table.create()
     
 def downgrade():
     metadata.reflect()
     
-#    CloudImage_table.drop() 
-#    CloudInstance_table.drop()
-#    CloudStore_table.drop()
+    CloudImage_table.drop() 
+    CloudInstance_table.drop()
+    CloudStore_table.drop()
     CloudSnapshot_table.drop()
-#    CloudUserCredentials_table.drop() 
-#    UCI_table.drop()
-#    CloudProvider_table.drop()
+    CloudUserCredentials_table.drop() 
+    UCI_table.drop()
+    CloudProvider_table.drop()

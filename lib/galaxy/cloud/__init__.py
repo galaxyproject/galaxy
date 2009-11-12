@@ -21,6 +21,7 @@ log = logging.getLogger( __name__ )
 uci_states = Bunch(
     NEW_UCI = "newUCI",
     NEW = "new",
+    CREATING = "creating",
     DELETING_UCI = "deletingUCI",
     DELETING = "deleting",
     DELETED = "deleted",
@@ -317,6 +318,17 @@ class UCIwrapper( object ):
         uci.store[store_id].device = device
         uci.store[store_id].flush()
     
+    def set_store_error( self, error, store_index=None, store_id=None ):
+        if store_index != None:
+            store = model.CloudStore.get( store_index )
+        elif store_id != None:
+            store = model.CloudStore.filter_by( volume_id = store_id ).first()
+        else:
+            return None
+        
+        store.error = error
+        store.flush()
+    
     def set_store_status( self, vol_id, status ):
         vol = model.CloudStore.filter( model.CloudStore.c.volume_id == vol_id ).first()
         vol.status = status
@@ -403,6 +415,13 @@ class UCIwrapper( object ):
                 i.error = error
                 i.state = instance_states.ERROR
                 i.flush()
+        uci.flush()
+    
+    def set_deleted( self ):
+        uci = model.UCI.get( self.uci_id )
+        uci.refresh()
+        uci.state = uci_states.DELETED # for bookkeeping reasons, mark as deleted but don't actually delete.
+        uci.deleted = True
         uci.flush()
 
     # --------- Getter methods -----------------
@@ -562,13 +581,6 @@ class UCIwrapper( object ):
         uci = model.UCI.get( self.uci_id )
         uci.refresh()
         return uci.launch_time
-    
-    def delete( self ):
-        uci = model.UCI.get( self.uci_id )
-        uci.refresh()
-        uci.state = uci_states.DELETED # for bookkeeping reasons, mark as deleted but don't actually delete.
-        uci.deleted = True
-        uci.flush()
     
 class CloudProvider( object ):
     def __init__( self, app ):
