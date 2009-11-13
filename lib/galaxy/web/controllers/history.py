@@ -262,7 +262,7 @@ class HistoryController( BaseController ):
                 n_deleted += 1
         status = SUCCESS
         if n_deleted:
-            message_parts.append( "Deleted %d histories.  " % n_deleted )
+            message_parts.append( "Deleted %d %s.  " % ( n_deleted, iff( n_deleted != 1, "histories", "history" ) ) )
         if deleted_current:
             message_parts.append( "Your active history was deleted, a new empty history is now active.  " )
             status = INFO
@@ -290,7 +290,7 @@ class HistoryController( BaseController ):
         status = SUCCESS
         message_parts = []
         if n_undeleted:
-            message_parts.append( "Undeleted %d histories." % n_undeleted )
+            message_parts.append( "Undeleted %d %s.  " % ( n_undeleted, iff( n_undeleted != 1, "histories", "history" ) ) )
         if n_already_purged:
             message_parts.append( "%d histories have already been purged and cannot be undeleted." % n_already_purged )
             status = WARNING

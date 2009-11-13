@@ -10,6 +10,7 @@ from twill.other_packages._mechanize_dist import ClientForm
 pkg_resources.require( "elementtree" )
 from elementtree import ElementTree
 from galaxy.web import security
+from galaxy.web.framework.helpers import iff
 
 buffer = StringIO.StringIO()
 
@@ -180,7 +181,7 @@ class TwillTestCase( unittest.TestCase ):
         num_deleted = len( id.split( ',' ) )
         self.home()
         self.visit_page( "history/list?operation=delete&id=%s" % ( id ) )
-        check_str = 'Deleted %d histories' % num_deleted
+        check_str = 'Deleted %d %s' % ( num_deleted, iff( num_deleted != 1, "histories","history") )
         self.check_page_for_string( check_str )
         self.home()
     def delete_current_history( self, check_str='' ):
