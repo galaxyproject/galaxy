@@ -2,6 +2,7 @@
 Datatype classes for tracks/track views within galaxy.
 """
 
+import data
 import tabular, binascii, logging
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes import metadata
@@ -23,7 +24,7 @@ class GeneTrack( tabular.Tabular ):
         super( GeneTrack, self ).__init__( **kwargs )
         self.add_display_app( 'genetrack', 'View in', '', 'genetrack_link' )
     def get_display_links( self, dataset, type, app, base_url, target_frame='galaxy_main', **kwd ):
-        return data.Binary.get_display_links( self, dataset, type, app, base_url, target_frame=target_frame, **kwd )
+        return data.Data.get_display_links( self, dataset, type, app, base_url, target_frame=target_frame, **kwd )
     def genetrack_link( self, hda, type, app, base_url ):
         ret_val = []
         if hda.has_data:
