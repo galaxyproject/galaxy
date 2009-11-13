@@ -347,8 +347,9 @@ ${self.grid_table()}
                     </td>
                 </tr>    
             %endif
+            ## Grid operations.
+            %if grid.operations:
                 <tr>
-                    ## Grid operations.
                     <td></td>
                     <td colspan="100">
                         For <span class="grid-selected-count"></span> selected ${items_plural}:
@@ -359,6 +360,7 @@ ${self.grid_table()}
                         %endfor
                     </td>
                 </tr>
+            %endif
             </tfoot>
         </table>
     </form>

@@ -1,6 +1,7 @@
 from galaxy.web.base.controller import *
 from galaxy.web.framework.helpers import time_ago, grids
 from galaxy.util.sanitize_html import sanitize_html
+from galaxy.util.odict import odict
 
 import re
 
@@ -69,21 +70,66 @@ class PageAllPublishedGrid( grids.Grid ):
     ]
     def apply_default_filter( self, trans, query, **kwargs ):
         return query.filter_by( deleted=False, published=True )
-
-
-class NameColumn( grids.TextColumn ):
-    def get_value(self, trans, grid, history):
-        return history.get_display_name()
         
 class HistorySelectionGrid( grids.Grid ):
+    # Custom columns.
+    class NameColumn( grids.TextColumn ):
+        def get_value(self, trans, grid, history):
+            return history.get_display_name()
+            
+    class DeletedColumn( grids.GridColumn ):
+       def get_accepted_filters( self ):
+           """ Returns a list of accepted filters for this column. """
+           accepted_filter_labels_and_vals = { "active" : "False", "deleted" : "True", "all": "All" }
+           accepted_filters = []
+           for label, val in accepted_filter_labels_and_vals.items():
+               args = { self.key: val }
+               accepted_filters.append( grids.GridColumnFilter( label, args) )
+           return accepted_filters
+           
+    class SharingColumn( grids.GridColumn ):
+        def filter( self, db_session, query, column_filter ):
+            """ Modify query to filter histories by sharing status. """
+            if column_filter == "All":
+                pass
+            elif column_filter:
+                if column_filter == "private":
+                    query = query.filter( model.History.users_shared_with == None )
+                    query = query.filter( model.History.importable == False )
+                elif column_filter == "shared":
+                    query = query.filter( model.History.users_shared_with != None )
+                elif column_filter == "importable":
+                    query = query.filter( model.History.importable == True )
+            return query
+        def get_accepted_filters( self ):
+            """ Returns a list of accepted filters for this column. """
+            accepted_filter_labels_and_vals = odict()
+            accepted_filter_labels_and_vals["private"] = "private"
+            accepted_filter_labels_and_vals["shared"] = "shared"
+            accepted_filter_labels_and_vals["importable"] = "importable"
+            accepted_filter_labels_and_vals["all"] = "All"
+            accepted_filters = []
+            for label, val in accepted_filter_labels_and_vals.items():
+                args = { self.key: val }
+                accepted_filters.append( grids.GridColumnFilter( label, args) )
+            return accepted_filters
+    
     # Grid definition.
     title = "Saved Histories"
+    template = "grid_base_async.mako"
+    async_template = "grid_body_async.mako"
     model_class = model.History
+    default_filter = { "deleted" : "False" , "shared" : "All" }
     default_sort_key = "-update_time"
+    use_paging = True
+    num_rows_per_page = 5
     columns = [
         NameColumn( "Name", key="name", model_class=model.History, filterable="advanced" ),
         grids.TagsColumn( "Tags", "tags", model.History, model.HistoryTagAssociation, filterable="advanced"),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
+        # Columns that are valid for filtering but are not visible.
+        DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" ),
+        SharingColumn( "Shared", key="shared", visible=False, filterable="advanced" ),
     ]
     columns.append( 
         grids.MulticolFilterColumn(  
@@ -91,6 +137,8 @@ class HistorySelectionGrid( grids.Grid ):
         cols_to_filter=[ columns[0], columns[1] ], 
         key="free-text-search", visible=False, filterable="standard" )
                 )
+    def apply_default_filter( self, trans, query, **kwargs ):
+        return query.filter_by( user=trans.user, purged=False )
 
 class PageController( BaseController ):
     
@@ -268,4 +316,4 @@ class PageController( BaseController ):
     @web.require_login("select a history from saved histories")
     def list_histories_for_selection( self, trans, **kwargs ):
         # Render the list view
-        return self._history_selection_grid( trans, status=status, message=message, **kwargs )
+        return self._history_selection_grid( trans, **kwargs )

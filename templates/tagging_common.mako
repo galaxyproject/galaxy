@@ -23,19 +23,6 @@
                 else: ## isInstance( tag_name, unicode ):
                     tag_names_and_values[tag_name] = tag_value
         %>
-        //    
-        // Returns the number of keys (elements) in an array/dictionary.
-        //
-        var array_length = function(an_array)
-        {
-            if (an_array.length)
-                return an_array.length;
-    
-            var count = 0;
-            for (element in an_array)   
-                count++;
-            return count;
-        };
     
         //
         // Default function get text to display on the toggle link.

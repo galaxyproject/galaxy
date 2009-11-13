@@ -1,6 +1,7 @@
 from galaxy.model import *
 from galaxy.model.orm import *
 
+from galaxy.web.framework.helpers import iff
 from galaxy.tags.tag_handler import TagHandler
 from galaxy.web import url_for
 from galaxy.util.json import from_json_string, to_json_string
@@ -16,7 +17,9 @@ class Grid( object ):
     title = ""
     exposed = True
     model_class = None
+    # To use grid's async features, set template="grid_base_async.mako"
     template = "grid_base.mako"
+    async_template = "grid_body_async.mako"
     global_actions = []
     columns = []
     operations = []
@@ -213,7 +216,7 @@ class Grid( object ):
             return url_for( **new_kwargs )
         
         
-        return trans.fill_template( self.template,
+        return trans.fill_template( iff( 'async' not in kwargs, self.template, self.async_template),
                                     grid=self,
                                     query=query,
                                     cur_page_num = page_num,

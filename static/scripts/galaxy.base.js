@@ -19,6 +19,12 @@ jQuery(document).ready( function() {
     jQuery( "a[confirm]" ).click( function() {
         return confirm( jQuery(this).attr( "confirm"  ) )
     });
+    // Make popup menus.
+    make_popup_menus();
+});
+
+function make_popup_menus() 
+{
     jQuery( "div[popupmenu]" ).each( function() {
         var options = {};
         $(this).find( "a" ).each( function() {
@@ -40,7 +46,7 @@ jQuery(document).ready( function() {
         $(this).remove();
         b.show();
     });
-});
+}
 
 function ensure_popup_helper() {
     // And the helper below the popup menus
@@ -102,4 +108,16 @@ function attach_popupmenu( button_element, wrapper ) {
         return false;
     };
     $( button_element ).click( click );
+};
+
+// Returns the number of keys (elements) in an array/dictionary.
+var array_length = function(an_array)
+{
+    if (an_array.length)
+        return an_array.length;
+
+    var count = 0;
+    for (element in an_array)   
+        count++;
+    return count;
 };
