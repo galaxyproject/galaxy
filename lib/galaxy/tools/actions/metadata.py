@@ -41,6 +41,7 @@ class SetMetadataToolAction( ToolAction ):
                                                                       output_fnames = None,
                                                                       config_root = None,
                                                                       datatypes_config = None,
+                                                                      job_metadata = None,
                                                                       kwds = { 'overwrite' : True } )
         incoming[ '__SET_EXTERNAL_METADATA_COMMAND_LINE__' ] = cmd_line
         for name, value in tool.params_to_strings( incoming, trans.app ).iteritems():
