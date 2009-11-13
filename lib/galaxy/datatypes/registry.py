@@ -3,7 +3,7 @@ Provides mapping between extensions and datatypes, mime-types, etc.
 """
 import os, tempfile
 import logging
-import data, tabular, interval, images, sequence, qualityscore, genetics, xml, coverage, tracks, chrominfo
+import data, tabular, interval, images, sequence, qualityscore, genetics, xml, coverage, tracks, chrominfo, binary
 import galaxy.util
 from galaxy.util.odict import odict
 
@@ -109,11 +109,11 @@ class Registry( object ):
         #default values
         if len(self.datatypes_by_extension) < 1:
             self.datatypes_by_extension = { 
-                'ab1'         : images.Ab1(),
+                'ab1'         : binary.Ab1(),
                 'axt'         : sequence.Axt(),
-                'bam'         : images.Bam(),
+                'bam'         : binary.Bam(),
                 'bed'         : interval.Bed(), 
-                'binseq.zip'  : images.Binseq(),
+                'binseq.zip'  : binary.Binseq(),
                 'blastxml'    : xml.BlastXml(),
                 'coverage'    : coverage.LastzCoverage(),
                 'customtrack' : interval.CustomTrack(),
@@ -132,12 +132,12 @@ class Registry( object ):
                 'qualsolexa'  : qualityscore.QualityScoreSolexa(),
                 'qual454'     : qualityscore.QualityScore454(),
                 'sam'         : tabular.Sam(), 
-                'scf'         : images.Scf(),
-                'sff'         : data.Sff(),
+                'scf'         : binary.Scf(),
+                'sff'         : binary.Sff(),
                 'tabular'     : tabular.Tabular(),
                 'taxonomy'    : tabular.Taxonomy(),
                 'txt'         : data.Text(),
-                'txtseq.zip'  : images.Txtseq(),
+                'txtseq.zip'  : data.Txtseq(),
                 'wig'         : interval.Wiggle()
             }
             self.mimetypes_by_extension = { 
@@ -174,7 +174,7 @@ class Registry( object ):
         # because some formats are much more flexibly defined than others.
         if len(self.sniff_order) < 1:
             self.sniff_order = [
-                data.Sff(),
+                binary.Sff(),
                 xml.BlastXml(),
                 sequence.Maf(),
                 sequence.Lav(),

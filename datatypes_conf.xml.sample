@@ -1,15 +1,15 @@
 <?xml version="1.0"?>
 <datatypes>
   <registration converters_path="lib/galaxy/datatypes/converters">
-    <datatype extension="ab1" type="galaxy.datatypes.images:Ab1" mimetype="application/octet-stream" display_in_upload="true"/>
+    <datatype extension="ab1" type="galaxy.datatypes.binary:Ab1" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="axt" type="galaxy.datatypes.sequence:Axt" display_in_upload="true"/>
-    <datatype extension="bam" type="galaxy.datatypes.images:Bam" mimetype="application/octet-stream"/>
+    <datatype extension="bam" type="galaxy.datatypes.binary:Bam" mimetype="application/octet-stream"/>
     <datatype extension="bed" type="galaxy.datatypes.interval:Bed" display_in_upload="true">
       <converter file="bed_to_gff_converter.xml" target_datatype="gff"/>
       <converter file="interval_to_coverage.xml" target_datatype="coverage"/>
       <converter file="bed_to_interval_index_converter.xml" target_datatype="interval_index"/>
     </datatype>
-    <datatype extension="binseq.zip" type="galaxy.datatypes.images:Binseq" mimetype="application/zip" display_in_upload="true"/>
+    <datatype extension="binseq.zip" type="galaxy.datatypes.binary:Binseq" mimetype="application/zip" display_in_upload="true"/>
     <datatype extension="len" type="galaxy.datatypes.chrominfo:ChromInfo" display_in_upload="true">
       <!-- no converters yet -->
     </datatype>
@@ -49,12 +49,13 @@
     <datatype extension="qualsolid" type="galaxy.datatypes.qualityscore:QualityScoreSOLiD" display_in_upload="true"/>
     <datatype extension="qual454" type="galaxy.datatypes.qualityscore:QualityScore454" display_in_upload="true"/>
     <datatype extension="sam" type="galaxy.datatypes.tabular:Sam" display_in_upload="true"/>
-    <datatype extension="scf" type="galaxy.datatypes.images:Scf" mimetype="application/octet-stream" display_in_upload="true"/>
+    <datatype extension="scf" type="galaxy.datatypes.binary:Scf" mimetype="application/octet-stream" display_in_upload="true"/>
+    <datatype extension="sff" type="galaxy.datatypes.binary:Sff" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="taxonomy" type="galaxy.datatypes.tabular:Taxonomy" display_in_upload="true"/>
     <datatype extension="tabular" type="galaxy.datatypes.tabular:Tabular" display_in_upload="true"/>
     <datatype extension="txt" type="galaxy.datatypes.data:Text" display_in_upload="true"/>
     <datatype extension="blastxml" type="galaxy.datatypes.xml:BlastXml" display_in_upload="true"/>
-    <datatype extension="txtseq.zip" type="galaxy.datatypes.images:Txtseq" mimetype="application/zip" display_in_upload="true"/>
+    <datatype extension="txtseq.zip" type="galaxy.datatypes.data:Txtseq" mimetype="application/zip" display_in_upload="true"/>
     <datatype extension="wig" type="galaxy.datatypes.interval:Wiggle" display_in_upload="true">
       <converter file="wiggle_to_array_tree_converter.xml" target_datatype="array_tree"/>
     </datatype>
@@ -190,6 +191,7 @@
       defined format first, followed by next-most rigidly defined, 
       and so on.
     -->
+    <sniffer type="galaxy.datatypes.binary:Sff"/>
     <sniffer type="galaxy.datatypes.xml:BlastXml"/>
     <sniffer type="galaxy.datatypes.sequence:Maf"/>
     <sniffer type="galaxy.datatypes.sequence:Lav"/>

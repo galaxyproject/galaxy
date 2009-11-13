@@ -2,11 +2,7 @@
 Datatype classes for tracks/track views within galaxy.
 """
 
-import data
-import logging
-import re
-import binascii
-from cgi import escape
+import tabular, binascii, logging
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes import metadata
 import galaxy.model
@@ -17,7 +13,7 @@ from galaxy.util.hash_util import *
 
 log = logging.getLogger(__name__)
 
-class GeneTrack( data.Binary ):
+class GeneTrack( tabular.Tabular ):
     file_ext = "genetrack"
     
     MetadataElement( name="genetrack", default="data.genetrack", desc="HDF index", readonly=True, visible=True, no_value=0 )
