@@ -276,7 +276,7 @@ def purge_datasets( app, cutoff_time, remove_from_disk, info_only = False, force
                                                 app.model.Dataset.table.c.update_time < cutoff_time ) )
     for dataset in datasets:
         file_size = dataset.file_size
-        _purge_dataset( dataset, remove_from_disk, info_only = info_only )
+        _purge_dataset( app, dataset, remove_from_disk, info_only = info_only )
         dataset_count += 1
         try:
             disk_space += file_size
@@ -349,7 +349,7 @@ def _delete_dataset( dataset, app, remove_from_disk, info_only=False, is_deletab
         app.sa_session.add( dataset )
         app.sa_session.flush()
 
-def _purge_dataset( dataset, remove_from_disk, info_only = False ):
+def _purge_dataset( app, dataset, remove_from_disk, info_only = False ):
     if dataset.deleted:
         try:
             if dataset.purgable and _dataset_is_deletable( dataset ):
