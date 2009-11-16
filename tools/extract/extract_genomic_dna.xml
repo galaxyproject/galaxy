@@ -1,4 +1,4 @@
-<tool id="Extract genomic DNA 1" name="Extract Genomic DNA" version="2.2.0">
+<tool id="Extract genomic DNA 1" name="Extract Genomic DNA" version="2.2.1">
   <description>using coordinates from assembled/unassembled genomes</description>
   <command interpreter="python">extract_genomic_dna.py $input $out_file1 -1 ${input.metadata.chromCol},${input.metadata.startCol},${input.metadata.endCol},${input.metadata.strandCol} -d $dbkey -o $out_format -g ${GALAXY_DATA_INDEX_DIR}</command>
   <inputs>
@@ -12,7 +12,7 @@
 	</param>
   </inputs>
   <outputs>
-    <data format="fasta" name="out_file1">
+    <data format="fasta" name="out_file1" metadata_source="input">
       <change_format>
         <when input="out_format" value="interval" format="interval" />
       </change_format>
