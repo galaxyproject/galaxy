@@ -446,13 +446,11 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         self.sa_session.flush()
         # This method is not called from the Galaxy reports, so the cookie will always be galaxysession
         self.__update_session_cookie( name='galaxysession' )
-        
     def get_galaxy_session( self ):
         """
         Return the current galaxy session
         """
         return self.galaxy_session
-
     def get_history( self, create=False ):
         """
         Load the current history, creating a new one only if there is not 
@@ -497,7 +495,6 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         self.sa_session.add_all( ( self.galaxy_session, history ) )
         self.sa_session.flush()
         return history
-
     def get_user( self ):
         """Return the current user if logged in or None."""
         return self.galaxy_session.user
@@ -507,7 +504,6 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         self.sa_session.add( self.galaxy_session )
         self.sa_session.flush()
     user = property( get_user, set_user )
-
     def get_user_and_roles( self ):
         user = self.get_user()
         if user:
@@ -515,13 +511,9 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         else:
             roles = []
         return user, roles
-
     def user_is_admin( self ):
         admin_users = self.app.config.get( "admin_users", "" ).split( "," )
-        if self.user and admin_users and self.user.email in admin_users:
-            return True
-        return False
-
+        return self.user and admin_users and self.user.email in admin_users
     def get_toolbox(self):
         """Returns the application toolbox"""
         return self.app.toolbox

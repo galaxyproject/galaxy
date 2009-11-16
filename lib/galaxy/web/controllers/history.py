@@ -438,23 +438,20 @@ class HistoryController( BaseController ):
             Warning! If you import this history, you will lose your current
             history. Click <a href="%s">here</a> to confirm.
             """ % web.url_for( id=id, confirm=True ) )
-            
     @web.expose
     def view( self, trans, id=None ):
         """View a history. If a history is importable, then it is viewable by any user."""
-
         # Get history to view.
         if not id:
             return trans.show_error_message( "You must specify a history you want to view." )
         history_to_view = get_history( trans, id, False)
-
         # Integrity checks.
         if not history_to_view:
-            return trans.show_error_message( "The specified history does not exist.")
+            return trans.show_error_message( "The specified history does not exist." )
+        # Admin users can view any history
         # TODO: Use a new flag to determine if history is viewable?
-        if not history_to_view.importable:
-            error( "The owner of this history has not published this history." )
-
+        if not trans.user_is_admin and not history_to_view.importable:
+            error( "Either you are not allowed to view this history or the owner of this history has not published it." )
         # View history.
         query = trans.sa_session.query( model.HistoryDatasetAssociation ) \
                                 .filter( model.HistoryDatasetAssociation.history == history_to_view ) \
@@ -469,7 +466,6 @@ class HistoryController( BaseController ):
                                            datasets = query.all(),
                                            user_owns_history = user_owns_history,
                                            show_deleted = False )
-            
     @web.expose
     @web.require_login( "share histories with other users" )
     def share( self, trans, id=None, email="", **kwd ):

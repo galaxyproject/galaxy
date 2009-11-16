@@ -18,10 +18,10 @@
 
     <body>
         <h2>Dataset generation errors</h2>
-        <p><b>Dataset ${dataset.hid}: ${dataset.display_name()}</b></p>
+        <p><b>Dataset ${hda.hid}: ${hda.display_name()}</b></p>
 
-        %if dataset.creating_job_associations:
-            <% job = dataset.creating_job_associations[0].job %>
+        %if hda.creating_job_associations:
+            <% job = hda.creating_job_associations[0].job %>
             %if job.traceback:
                 The Galaxy framework encountered the following error while attempting to run the tool:
                 <pre>${job.traceback}</pre>
@@ -43,7 +43,12 @@
         %else:
             The tool did not create any additional job / error info.
         %endif
-      
+        <%
+            if trans.user:
+                user_email = trans.user.email
+            else:
+                user_email = ''
+        %>
         <h2>Report this error to the Galaxy Team</h2>
         <p>
             The Galaxy team regularly reviews errors that occur in the application. 
@@ -56,10 +61,10 @@
             <div class="toolFormTitle">Error Report</div>
             <div class="toolFormBody">
                 <form name="report_error" action="${h.url_for( action='report_error')}" method="post" >
-                    <input type="hidden" name="id" value="${dataset.id}" />
+                    <input type="hidden" name="id" value="${hda.id}" />
                     <div class="form-row">
                         <label>Your email</label>
-                        <input type="text" name="email" size="40" />
+                        <input type="text" name="email" size="40" value="${user_email}" />
                     </div>
                     <div class="form-row">
                         <label>Message</label>

@@ -603,6 +603,12 @@ class TestHistory( TwillTestCase ):
         except:
             pass
         self.check_history_for_string( 'You do not have permission to view this dataset' )
+        # Admin users can view all datasets ( using the history/view feature ), so make sure 2.bed is accessible to the admin
+        self.logout()
+        self.login( email=admin_user.email )
+        self.view_history( str( hda_2_bed.history_id ), check_str='<td>NM_005997_cds_0_0_chr1_147962193_r</td>' )
+        self.logout()
+        self.login( email=regular_user3.email )
         # Delete the clone so the next test will be valid
         self.delete_history( id=self.security.encode_id( history5_clone4.id ) )
     def test_065_sharing_private_history_by_choosing_to_not_share( self ):

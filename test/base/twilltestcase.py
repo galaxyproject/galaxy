@@ -430,6 +430,12 @@ class TwillTestCase( unittest.TestCase ):
         if check_str:
             self.check_page_for_string( check_str )
         self.home()
+    def view_history( self, history_id, check_str='' ):
+        """Displays a history for viewing"""
+        self.visit_url( '%s/history/view?id=%s' % ( self.url, self.security.encode_id( history_id ) ) )
+        if check_str:
+            self.check_page_for_string( check_str )
+        self.home()
     def edit_hda_attribute_info( self, hda_id, new_name='', new_info='', new_dbkey='', new_startcol='' ):
         """Edit history_dataset_association attribute information"""
         self.home()
