@@ -160,6 +160,11 @@ class Data( object ):
                 info = info.replace( '\r', '<br/>' )
             if info.find( '\n' ) >= 0:
                 info = info.replace( '\n', '<br/>' )
+                
+            # Convert to unicode to display non-ascii characters.
+            if type( info ) is not unicode:
+                info = unicode( info, 'utf-8')
+                
             return info
         except:
             return "info unavailable"
