@@ -139,10 +139,15 @@ class JobQueue( object ):
                 JobWrapper( job, None, self ).fail( 'This tool was disabled before the job completed.  Please contact your Galaxy administrator, or' )
             elif job.job_runner_name is None:
                 log.debug( "no runner: %s is still in queued state, adding to the jobs queue" %job.id )
-                self.queue.put( ( job.id, job.tool_id ) )
+                if self.track_jobs_in_database:
+                    job.state = model.Job.states.NEW
+                else:
+                    self.queue.put( ( job.id, job.tool_id ) )
             else:
                 job_wrapper = JobWrapper( job, self.app.toolbox.tools_by_id[ job.tool_id ], self )
                 self.dispatcher.recover( job, job_wrapper )
+        if self.sa_session.dirty:
+            self.sa_session.flush()
 
     def __monitor( self ):
         """
