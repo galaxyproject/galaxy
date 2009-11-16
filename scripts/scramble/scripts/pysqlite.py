@@ -33,10 +33,10 @@ for dir in [ "build", "dist", "sqlite" ]:
 # tag
 me = sys.argv[0]
 sys.argv = [ me ]
+sys.argv.append( "build_static" )
 if tag is not None:
     sys.argv.append( "egg_info" )
     sys.argv.append( "--tag-build=%s" %tag )
-sys.argv.append( "build_static" )
 sys.argv.append( "bdist_egg" )
 
 # go
