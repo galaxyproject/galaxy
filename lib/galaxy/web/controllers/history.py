@@ -87,7 +87,7 @@ class HistoryListGrid( grids.Grid ):
     # Grid definition
     title = "Saved Histories"
     model_class = model.History
-    template='/history/grid.mako'
+    template='/grid_base.mako'
     default_sort_key = "-create_time"
     columns = [
         NameColumn( "Name", key="name", model_class=model.History,
@@ -110,14 +110,14 @@ class HistoryListGrid( grids.Grid ):
                 )
                 
     operations = [
-        grids.GridOperation( "Switch", allow_multiple=False, condition=( lambda item: not item.deleted ) ),
-        grids.GridOperation( "Share", condition=( lambda item: not item.deleted )  ),
-        grids.GridOperation( "Unshare", condition=( lambda item: not item.deleted )  ),
-        grids.GridOperation( "Rename", condition=( lambda item: not item.deleted )  ),
-        grids.GridOperation( "Delete", condition=( lambda item: not item.deleted ) ),
-        grids.GridOperation( "Undelete", condition=( lambda item: item.deleted ) ),
-        grids.GridOperation( "Enable import via link", condition=( lambda item: item.deleted ) ),
-        grids.GridOperation( "Disable import via link", condition=( lambda item: item.deleted ) )
+        grids.GridOperation( "Switch", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=True ),
+        grids.GridOperation( "Share", condition=( lambda item: not item.deleted ), async_compatible=False ),
+        grids.GridOperation( "Unshare", condition=( lambda item: not item.deleted ), async_compatible=False  ),
+        grids.GridOperation( "Rename", condition=( lambda item: not item.deleted ), async_compatible=False  ),
+        grids.GridOperation( "Delete", condition=( lambda item: not item.deleted ), async_compatible=True ),
+        grids.GridOperation( "Undelete", condition=( lambda item: item.deleted ), async_compatible=True ),
+        grids.GridOperation( "Enable import via link", condition=( lambda item: item.deleted ), async_compatible=True ),
+        grids.GridOperation( "Disable import via link", condition=( lambda item: item.deleted ), async_compatible=True )
     ]
     standard_filters = [
         grids.GridColumnFilter( "Active", args=dict( deleted=False ) ),

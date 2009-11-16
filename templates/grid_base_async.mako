@@ -33,6 +33,23 @@ ${self.render_grid_table()}
         $(document).ready(function() {
             // Initialize grid elements.
             init_grid_elements();
+            
+            // Operations that are not async (AJAX) compatible.
+            var no_async_ops = new Object();
+            %for operation in grid.operations:
+                %if not operation.async_compatible:
+                    no_async_ops['${operation.label}'] = "True";
+                %endif
+            %endfor
+            
+            // Initialize each operation button to do operation when clicked.
+            $('input[name=operation]:submit').each(function() {
+                $(this).click( function() {
+                   var this_value = $(this).attr("value");
+                   var no_async = ( no_async_ops[this_value] != undefined && no_async_ops[this_value] != null);
+                   do_operation(this_value, no_async); 
+                });
+            });
                         
             // Initialize autocomplete for text inputs in search UI.
             var t = $("#input-tags-filter");
@@ -227,13 +244,13 @@ ${self.render_grid_table()}
                         }   
                 }
 
-                update_grid(true);
+                update_grid();
             });
             
             var container = $('#' + name + "-filtering-criteria");
             container.append(t);
             
-            update_grid(true);
+            update_grid();
         }
         
         // Set sort condition for grid.
@@ -307,7 +324,7 @@ ${self.render_grid_table()}
                         
             // Update grid.
             url_args["f-" + name] = new_value;
-            update_grid(true);
+            update_grid();
         }
         
         var num_pages = ${num_pages};
@@ -354,11 +371,41 @@ ${self.render_grid_table()}
             {
                 url_args['page'] = parseInt(new_page);
             }
-            update_grid();
+            update_grid(true);
+        }
+        
+        // Perform a grid operation. TODO: this is not complete.
+        function do_operation(operation, no_async)
+        {
+            // For some reason, $('input[name=id]:checked').val() does not return all ids for checked boxes.
+            // The code below performs this function.
+            var item_ids = new Array()
+            $('input[name=id]:checked').each(function() {
+                item_ids[item_ids.length] = $(this).val();
+            });
+
+            // Update URL args.
+            url_args['operation'] = operation;
+            url_args['id'] = item_ids;
+            
+            // If operation cannot be performed asynchronously, redirect to location. Otherwise do operation.
+            if (no_async)
+            {
+                var arg_str = "";
+                var arg;
+                
+                for (arg in url_args)
+                    arg_str = arg_str + arg + "=" + url_args[arg] + "&";
+                
+                self.location = encodeURI( "${h.url_for()}?" + arg_str );
+            }
+            else
+                update_grid();
+            
         }
         
         // Update grid.
-        function update_grid()
+        function update_grid(maintain_page_links)
         {
             $.ajax({
                 url: "${h.url_for()}",
@@ -381,59 +428,45 @@ ${self.render_grid_table()}
                     var num_pages = parseInt( parsed_response_text[1] );
                     
                     // Rebuild page links.
-                    var page_link_container = $('#page-link-container');
-                    page_link_container.children().remove();
-                    if (num_pages > 1)
+                    if (!maintain_page_links)
                     {
-                        // Show page link row.
-                        $('#page-links-row').show();
-                        
-                        // First page is the current page.
-                        var t = $("<span>1</span>");
-                        t.addClass('page-link');
-                        t.addClass('inactive-link');
-                        t.attr('id', 'page-link-1');
-                        page_link_container.append(t);
-                
-                        // Subsequent pages are navigable.
-                        for (var i = 2; i <= num_pages; i++)
+                        var page_link_container = $('#page-link-container');
+                        page_link_container.children().remove();
+                        if (num_pages > 1)
                         {
-                            var span = $("<span></span>");
-                            span.addClass('page-link');
-                            span.attr('id', 'page-link-' + i);
-                            var t = $("<a href='#'>" + i + "</a>");
-                            var page_num = i
-                            t.click(function() {
-                                set_page(page_num);
-                            });
-                            span.append(t)
-                            page_link_container.append(span);
+                            // Show page link row.
+                            $('#page-links-row').show();
+                        
+                            // First page is the current page.
+                            var t = $("<span>1</span>");
+                            t.addClass('page-link');
+                            t.addClass('inactive-link');
+                            t.attr('id', 'page-link-1');
+                            page_link_container.append(t);
+                
+                            // Subsequent pages are navigable.
+                            for (var i = 2; i <= num_pages; i++)
+                            {
+                                var span = $("<span></span>");
+                                span.addClass('page-link');
+                                span.attr('id', 'page-link-' + i);
+                                var t = $("<a href='#'>" + i + "</a>");
+                                var page_num = i
+                                t.click(function() {
+                                    set_page(page_num);
+                                });
+                                span.append(t)
+                                page_link_container.append(span);
+                            }
                         }
-                    }
-                    else 
-                    {
-                        // Hide page link row.
-                        $('#page-links-row').hide('slow');
+                        else 
+                        {
+                            // Hide page link row.
+                            $('#page-links-row').hide('slow');
+                        }
                     }        
                 }
             });    
-        }
-        
-        // Perform a grid operation. TODO: this is not complete.
-        function do_operation()
-        {
-            // Get grid form.
-            var form = $('#grid-form');
-            var operation = $('input[name=operation]:submit').val();
-            var item_ids = $('input[name=id]:checked').val();
-            
-            // Update URL args.
-            url_args['operation'] = operation;
-            url_args['id'] = item_ids;
-            
-            //update_grid();
-            
-            //document.location = ${h.url_for()} + "?" 
         }
         
     </script>
@@ -491,7 +524,7 @@ ${self.render_grid_table()}
 
 ## Print grid.
 <%def name="render_grid_table()">
-    <form action="${url()}" method="post" onsubmit="do_operation();return false;">
+    <form action="${url()}" method="post" onsubmit="return false;">
         <table class="grid">
             <thead id="grid-table-header">
                 <tr>
