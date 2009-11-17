@@ -117,7 +117,7 @@ class LibraryCommon( BaseController ):
             uploaded_dataset.link_data_only = True
             uploaded_dataset.data.file_name = os.path.abspath( path )
             trans.sa_session.add( uploaded_dataset.data )
-            trans.sa_session.data.flush()
+            trans.sa_session.flush()
         return uploaded_dataset
     def get_server_dir_uploaded_datasets( self, trans, params, full_dir, import_dir_desc, library_bunch, err_redirect, msg ):
         files = []
