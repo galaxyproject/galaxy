@@ -18,11 +18,6 @@ threadpool_workers = 10
 # [filter:gzip]
 # use = egg:Paste#gzip
 
-# ---- Cloud Management --------------------------------------------------------
-
-# Uncomment following line to enable cloud management mode (only leaves the Cloud, Help and User tabs on)
-# cloud_controller_instance = True
-
 # ---- Galaxy Web Interface -------------------------------------------------
 [app:main]
 
@@ -196,6 +191,11 @@ use_interactive = True
 
 # Should default dataset access permissions be private for new users; default is False (datasets are public)
 new_user_dataset_access_role_default_private = False
+
+# ---- Cloud Management --------------------------------------------------------
+
+# Uncomment following line to enable cloud management mode (only leaves the Cloud, Help and User tabs on)
+# cloud_controller_instance = True
 
 # ---- Job Execution --------------------------------------------------------
 
