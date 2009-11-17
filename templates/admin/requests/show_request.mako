@@ -127,7 +127,7 @@
                 <div class="form-row">
                 <ul class="manage-table-actions">
                     <li>
-                        <a class="action-button"  href="${h.url_for( controller='requests_admin', action='edit', show=True, request_id=request.id)}">
+                        <a class="action-button"  href="${h.url_for( controller='requests_admin', action='list', operation='Edit', id=trans.security.encode_id(request.id))}">
                         <span>Edit request details</span></a>
                     </li>
                 </ul>

@@ -29,6 +29,7 @@ def get_latest_form(form_name):
                          .filter( galaxy.model.FormDefinitionCurrent.table.c.deleted==False ) \
                          .order_by( galaxy.model.FormDefinitionCurrent.table.c.create_time.desc() )
     for fdc in fdc_list:
+        sa_session.refresh( fdc )
         sa_session.refresh( fdc.latest_form )
         if form_name == fdc.latest_form.name:
             return fdc.latest_form
@@ -51,7 +52,7 @@ class TestFormsAndRequests( TwillTestCase ):
         # edit form & add few more fields
         new_name = "Request Form (Renamed)"
         new_desc = "This is Form One's Re-described"
-        self.edit_form( form_one.id, form_one.name, new_form_name=new_name, new_form_desc=new_desc )
+        self.edit_form( form_one.current.id, form_one.name, new_form_name=new_name, new_form_desc=new_desc )
         self.home()
         self.visit_page( 'forms/manage' )
         self.check_page_for_string( new_name )
@@ -73,13 +74,13 @@ class TestFormsAndRequests( TwillTestCase ):
                        type='TextField',
                        required='required')]
         form_one = get_latest_form(form_one_name)
-        self.form_add_field(form_one.id, form_one.name, form_one.desc, form_one.type, field_index=len(form_one.fields), fields=fields)
-        form_one_latest = get_latest_form(form_one_name)        
+        self.form_add_field(form_one.current.id, form_one.name, form_one.desc, form_one.type, field_index=len(form_one.fields), fields=fields)
+        form_one_latest = get_latest_form(form_one_name)
         assert len(form_one_latest.fields) == len(form_one.fields)+len(fields)
     def test_015_create_sample_form( self ):
         """Testing creating another form (for samples)"""
         global form_two_name
-        desc = "This is Form One's description"
+        desc = "This is Form Two's description"
         formtype = 'Sequencing Sample Form'
         self.create_form( name=form_two_name, desc=desc, formtype=formtype )
         self.home()
@@ -207,16 +208,12 @@ class TestFormsAndRequests( TwillTestCase ):
                           request_one.desc+' (Re-described)', library_one.id, folder_one.id, fields)
         sa_session.refresh( request_one )
         # check if the request is showing in the 'unsubmitted' filter
-        self.home()
-        self.visit_url( '%s/requests/list?show_filter=Unsubmitted' % self.url )
-        self.check_page_for_string( request_one.name )
+        self.check_request_grid(state='Unsubmitted', request_name=request_one.name)
         # submit the request
         self.submit_request( request_one.id, request_one.name )
         sa_session.refresh( request_one )
         # check if the request is showing in the 'submitted' filter
-        self.home()
-        self.visit_url( '%s/requests/list?show_filter=Submitted' % self.url )
-        self.check_page_for_string( request_one.name )
+        self.check_request_grid(state='Submitted', request_name=request_one.name)
         # check if the request's state is now set to 'submitted'
         assert request_one.state is not request_one.states.SUBMITTED, "The state of the request '%s' should be set to '%s'" \
             % ( request_one.name, request_one.states.SUBMITTED )
@@ -225,9 +222,7 @@ class TestFormsAndRequests( TwillTestCase ):
         # goto admin manage requests page
         self.logout()
         self.login( email='test@bx.psu.edu' )
-        self.home()
-        self.visit_page( 'requests_admin/list' )
-        self.check_page_for_string( request_one.name )
+        self.check_request_admin_grid(state='Submitted', request_name=request_one.name)
         self.visit_url( "%s/requests_admin/list?sort=-create_time&operation=show_request&id=%s" \
                         % ( self.url, self.security.encode_id( request_one.id ) ))
         self.check_page_for_string( 'Sequencing Request "%s"' % request_one.name )
@@ -240,9 +235,10 @@ class TestFormsAndRequests( TwillTestCase ):
             self.change_sample_state( sample.name, sample.id, request_type.states[2].id, request_type.states[2].name )
         self.home()
         sa_session.refresh( request_one )
+        self.logout()
+        self.login( email='test1@bx.psu.edu' )
         # check if the request's state is now set to 'complete'
-        self.visit_url('%s/requests_admin/list?show_filter=Complete' % self.url)
-        self.check_page_for_string( request_one.name )
+        self.check_request_grid(state='Complete', request_name=request_one.name)
         assert request_one.state is not request_one.states.COMPLETE, "The state of the request '%s' should be set to '%s'" \
             % ( request_one.name, request_one.states.COMPLETE )
     def test_040_admin_create_request_on_behalf_of_regular_user( self ):
@@ -262,9 +258,7 @@ class TestFormsAndRequests( TwillTestCase ):
                                                galaxy.model.Request.table.c.deleted==False ) ) \
                                 .first()        
         # check if the request is showing in the 'unsubmitted' filter
-        self.home()
-        self.visit_url( '%s/requests_admin/list?show_filter=Unsubmitted' % self.url )
-        self.check_page_for_string( request_two.name )
+        self.check_request_admin_grid(state='Unsubmitted', request_name=request_two.name)
         # check if the request's state is now set to 'unsubmitted'
         assert request_two.state is not request_two.states.UNSUBMITTED, "The state of the request '%s' should be set to '%s'" \
             % ( request_two.name, request_two.states.UNSUBMITTED )
@@ -277,17 +271,13 @@ class TestFormsAndRequests( TwillTestCase ):
         self.submit_request_as_admin( request_two.id, request_two.name )
         sa_session.refresh( request_two )
         # check if the request is showing in the 'submitted' filter
-        self.home()
-        self.visit_url( '%s/requests_admin/list?show_filter=Submitted' % self.url )
-        self.check_page_for_string( request_two.name )
+        self.check_request_admin_grid(state='Submitted', request_name=request_two.name)
         # check if the request's state is now set to 'submitted'
         assert request_two.state is not request_two.states.SUBMITTED, "The state of the request '%s' should be set to '%s'" \
             % ( request_two.name, request_two.states.SUBMITTED )
         # check if both the requests is showing in the 'All' filter
-        self.home()
-        self.visit_url( '%s/requests_admin/list?show_filter=All' % self.url )
-        self.check_page_for_string( request_one.name )
-        self.check_page_for_string( request_two.name )
+        self.check_request_admin_grid(state='All', request_name=request_one.name)
+        self.check_request_admin_grid(state='All', request_name=request_two.name)
     def test_045_reject_request( self ):
         '''Testing rejecting a request'''
         self.logout()
@@ -295,9 +285,7 @@ class TestFormsAndRequests( TwillTestCase ):
         self.reject_request( request_two.id, request_two.name )
         sa_session.refresh( request_two )
         # check if the request is showing in the 'unsubmitted' filter
-        self.home()
-        self.visit_url( '%s/requests_admin/list?show_filter=Unsubmitted' % self.url )
-        self.check_page_for_string( request_two.name )
+        self.check_request_admin_grid(state='Unsubmitted', request_name=request_two.name)
         # check if the request's state is now set to 'submitted'
         assert request_two.state is not request_two.states.UNSUBMITTED, "The state of the request '%s' should be set to '%s'" \
             % ( request_two.name, request_two.states.UNSUBMITTED )

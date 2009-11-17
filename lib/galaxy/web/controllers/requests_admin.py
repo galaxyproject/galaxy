@@ -15,63 +15,187 @@ log = logging.getLogger( __name__ )
 # ---- Request Grid ------------------------------------------------------------ 
 #
 
-class RequestsListGrid( grids.Grid ):
+class RequestsGrid( grids.Grid ):
+    # Custom column types
+    class NameColumn( grids.TextColumn ):
+        def get_value(self, trans, grid, request):
+            return request.name
+    class DescriptionColumn( grids.TextColumn ):
+        def get_value(self, trans, grid, request):
+            return request.desc
+    class SamplesColumn( grids.GridColumn ):
+        def get_value(self, trans, grid, request):
+            return str(len(request.samples))
+    class TypeColumn( grids.TextColumn ):
+        def get_value(self, trans, grid, request):
+            return request.type.name
+    class LastUpdateColumn( grids.TextColumn ):
+        def get_value(self, trans, grid, request):
+            return request.update_time
+    class StateColumn( grids.GridColumn ):
+        def filter( self, db_session, query, column_filter ):
+            """ Modify query to filter request by state. """
+            if column_filter == "All":
+                return query
+            if column_filter:
+                query = query.filter( model.Request.state == column_filter )
+            return query
+        def get_accepted_filters( self ):
+           """ Returns a list of accepted filters for this column. """
+           accepted_filter_labels_and_vals = [ model.Request.states.UNSUBMITTED,
+                                               model.Request.states.SUBMITTED,
+                                               model.Request.states.COMPLETE,
+                                               "All"]
+           accepted_filters = []
+           for val in accepted_filter_labels_and_vals:
+               label = val.lower()
+               args = { self.key: val }
+               accepted_filters.append( grids.GridColumnFilter( label, args) )
+           return accepted_filters
+    class UserColumn( grids.TextColumn ):
+        def get_value(self, trans, grid, request):
+            return request.user.email
+    class DeletedColumn( grids.GridColumn ):
+       def get_accepted_filters( self ):
+           """ Returns a list of accepted filters for this column. """
+           accepted_filter_labels_and_vals = { "active" : "False", "deleted" : "True", "all": "All" }
+           accepted_filters = []
+           for label, val in accepted_filter_labels_and_vals.items():
+               args = { self.key: val }
+               accepted_filters.append( grids.GridColumnFilter( label, args) )
+           return accepted_filters
+    # Grid definition
     title = "Sequencing Requests"
     template = "admin/requests/grid.mako"
     model_class = model.Request
     default_sort_key = "-create_time"
-    show_filter = model.Request.states.SUBMITTED
+    num_rows_per_page = 50
+    preserve_state = True
+    use_paging = True
+    default_filter = dict( deleted="False", state=model.Request.states.SUBMITTED)
     columns = [
-        grids.GridColumn( "Name", key="name",
-                          link=( lambda item: iff( item.deleted, None, dict( operation="show_request", id=item.id ) ) ),
-                          attach_popup=True ),
-        grids.GridColumn( "Description", key="desc"),
-        grids.GridColumn( "Sample(s)", method='number_of_samples',
-                          link=( lambda item: iff( item.deleted, None, dict( operation="show_request", id=item.id ) ) ), ),
-        grids.GridColumn( "Type", key="request_type_id", method='get_request_type'),
-        grids.GridColumn( "Last update", key="update_time", format=time_ago ),
-        grids.GridColumn( "State", key='state'),
-        grids.GridColumn( "User", key="user_id", method='get_user')
-        
+        NameColumn( "Name", 
+                    key="name", 
+                    model_class=model.Request,
+                    link=( lambda item: iff( item.deleted, None, dict( operation="show_request", id=item.id ) ) ),
+                    attach_popup=True, 
+                    filterable="advanced" ),
+        DescriptionColumn( "Description",
+                           key='desc',
+                           model_class=model.Request,
+                           filterable="advanced" ),
+        SamplesColumn( "Sample(s)", 
+                       link=( lambda item: iff( item.deleted, None, dict( operation="show_request", id=item.id ) ) ), ),
+        TypeColumn( "Type" ),
+        LastUpdateColumn( "Last update", 
+                          format=time_ago ),
+        StateColumn( "State", 
+                     key='state', 
+                     filterable="advanced"),
+        UserColumn( "User",
+                    key='user.email',
+                    model_class=model.Request,
+                    filterable="advanced" ),
+        DeletedColumn( "Deleted", 
+                       key="deleted", 
+                       visible=True, 
+                       filterable="advanced" )
     ]
+    columns.append( grids.MulticolFilterColumn( "Search", 
+                                                cols_to_filter=[ columns[0], columns[1], columns[6] ], 
+                                                key="free-text-search",
+                                                visible=False,
+                                                filterable="standard" ) )
     operations = [
         grids.GridOperation( "Submit", allow_multiple=False, condition=( lambda item: not item.deleted and item.unsubmitted() and item.samples )  ),
         grids.GridOperation( "Edit", allow_multiple=False, condition=( lambda item: not item.deleted )  ),
         grids.GridOperation( "Reject", allow_multiple=False, condition=( lambda item: not item.deleted and item.submitted() )  ),
-        grids.GridOperation( "Delete", allow_multiple=False, condition=( lambda item: not item.deleted and item.unsubmitted() )  ),
+        grids.GridOperation( "Delete", allow_multiple=True, condition=( lambda item: not item.deleted and item.unsubmitted() )  ),
         grids.GridOperation( "Undelete", condition=( lambda item: item.deleted ) ),    
     ]
-    standard_filters = [
-        grids.GridColumnFilter( model.Request.states.UNSUBMITTED, 
-                                args=dict( state=model.Request.states.UNSUBMITTED, deleted=False ) ),
-        grids.GridColumnFilter( model.Request.states.SUBMITTED, 
-                                args=dict( state=model.Request.states.SUBMITTED, deleted=False ) ),
-        grids.GridColumnFilter( model.Request.states.COMPLETE, args=dict( state=model.Request.states.COMPLETE, deleted=False ) ),
-        grids.GridColumnFilter( "Deleted", args=dict( deleted=True ) ),
-        grids.GridColumnFilter( "All", args=dict( deleted=False ) )
+    global_actions = [
+        grids.GridAction( "Create new request", dict( controller='requests_admin', 
+                                                      action='new', 
+                                                      select_request_type='True' ) )
     ]
-    def get_user(self, trans, request):
-        return trans.sa_session.query( trans.app.model.User ).get( request.user_id ).email
-    def get_current_item( self, trans ):
-        return None
-    def get_request_type(self, trans, request):
-        request_type = trans.sa_session.query( trans.app.model.RequestType ).get( request.request_type_id )
-        return request_type.name
-    def number_of_samples(self, trans, request):
-        return str(len(request.samples))
-    def apply_default_filter( self, trans, query, **kwargs ):
-        if self.default_filter:
-            return query.filter_by( **self.default_filter )
-        else:
-            return query
-    
 
+
+#
+# ---- Request Type Gridr ------------------------------------------------------ 
+#
+class RequestTypeGrid( grids.Grid ):
+    # Custom column types
+    class NameColumn( grids.TextColumn ):
+        def get_value(self, trans, grid, request_type):
+            return request_type.name
+    class DescriptionColumn( grids.TextColumn ):
+        def get_value(self, trans, grid, request_type):
+            return request_type.desc
+    class RequestFormColumn( grids.TextColumn ):
+        def get_value(self, trans, grid, request_type):
+            return request_type.request_form.name
+    class SampleFormColumn( grids.TextColumn ):
+        def get_value(self, trans, grid, request_type):
+            return request_type.sample_form.name
+    class DeletedColumn( grids.GridColumn ):
+       def get_accepted_filters( self ):
+           """ Returns a list of accepted filters for this column. """
+           accepted_filter_labels_and_vals = { "active" : "False", "deleted" : "True", "all": "All" }
+           accepted_filters = []
+           for label, val in accepted_filter_labels_and_vals.items():
+               args = { self.key: val }
+               accepted_filters.append( grids.GridColumnFilter( label, args) )
+           return accepted_filters
+    # Grid definition
+    title = "Requests Types"
+    template = "admin/requests/manage_request_types.mako"
+    model_class = model.RequestType
+    default_sort_key = "-create_time"
+    num_rows_per_page = 50
+    preserve_state = True
+    use_paging = True
+    default_filter = dict( deleted="False" )
+    columns = [
+        NameColumn( "Name", 
+                    key="name", 
+                    model_class=model.RequestType,
+                    link=( lambda item: iff( item.deleted, None, dict( operation="view", id=item.id ) ) ),
+                    attach_popup=True,
+                    filterable="advanced" ),
+        DescriptionColumn( "Description",
+                           key='desc',
+                           model_class=model.Request,
+                           filterable="advanced" ),
+        RequestFormColumn( "Request Form", 
+                           link=( lambda item: iff( item.deleted, None, dict( operation="view_form", id=item.request_form.id ) ) ), ),
+        SampleFormColumn( "Sample Form", 
+                           link=( lambda item: iff( item.deleted, None, dict( operation="view_form", id=item.sample_form.id ) ) ), ),
+        DeletedColumn( "Deleted", 
+                       key="deleted", 
+                       visible=False, 
+                       filterable="advanced" )
+    ]
+    columns.append( grids.MulticolFilterColumn( "Search", 
+                                                cols_to_filter=[ columns[0], columns[1] ], 
+                                                key="free-text-search",
+                                                visible=False,
+                                                filterable="standard" ) )
+    operations = [
+        #grids.GridOperation( "Update", allow_multiple=False, condition=( lambda item: not item.deleted  )  ),
+        grids.GridOperation( "Delete", allow_multiple=True, condition=( lambda item: not item.deleted  )  ),
+        grids.GridOperation( "Undelete", condition=( lambda item: item.deleted ) ),    
+    ]
+    global_actions = [
+        grids.GridAction( "Create new request type", dict( controller='requests_admin', 
+                                                           action='create_request_type' ) )
+    ]
 #
 # ---- Request Controller ------------------------------------------------------ 
 #
 
 class Requests( BaseController ):
-    request_grid = RequestsListGrid()
+    request_grid = RequestsGrid()
+    requesttype_grid = RequestTypeGrid()
     
     @web.expose
     @web.require_admin
@@ -80,67 +204,59 @@ class Requests( BaseController ):
     
     @web.expose
     @web.require_admin
-    def list( self, trans, **kwargs ):
+    def list( self, trans, **kwd ):
         '''
         List all request made by the current user
         '''
-        message = util.restore_text( kwargs.get( 'message', ''  ) )
-        status = kwargs.get( 'status', 'done' )
-        self.request_grid.default_filter = dict(state=trans.app.model.Request.states.SUBMITTED, 
-                                                deleted=False)
-        if 'operation' in kwargs:
-            operation = kwargs['operation'].lower()
+        if 'operation' in kwd:
+            operation = kwd['operation'].lower()
+            if not kwd.get( 'id', None ):
+                return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                                  action='list',
+                                                                  status='error',
+                                                                  message="Invalid request ID") )
             if operation == "show_request":
-                id = trans.security.decode_id(kwargs['id'])
-                return self.__show_request(trans, id, status, message)
+                return self.__show_request( trans, **kwd )
             elif operation == "submit":
-                id = trans.security.decode_id(kwargs['id'])
-                return self.__submit_request(trans, id)
-            elif operation == "edit":
-                id = trans.security.decode_id(kwargs['id'])
-                return self.__edit_request(trans, id)
+                return self.__submit_request( trans, **kwd )
             elif operation == "delete":
-                id = trans.security.decode_id(kwargs['id'])
-                return self.__delete_request(trans, id)
+                return self.__delete_request( trans, **kwd )
             elif operation == "undelete":
-                id = trans.security.decode_id(kwargs['id'])
-                return self.__undelete_request(trans, id)
+                return self.__undelete_request( trans, **kwd )
+            elif operation == "edit":
+                return self.__edit_request( trans, **kwd )
             elif operation == "reject":
-                id = trans.security.decode_id(kwargs['id'])
-                return self.__reject_request(trans, id)
-        if 'show_filter' in kwargs.keys():
-            if kwargs['show_filter'] == 'All':
-                self.request_grid.default_filter = {}
-            elif kwargs['show_filter'] == 'Deleted':
-                self.request_grid.default_filter = dict(deleted=True)
-            else:
-                self.request_grid.default_filter = dict(state=kwargs['show_filter'], deleted=False)   
-        self.request_grid.show_filter = kwargs.get('show_filter', trans.app.model.Request.states.SUBMITTED)
-        # Render the list view
-        return self.request_grid( trans, **kwargs )
-    def __show_request(self, trans, id, messagetype, msg):
+                return self.__reject_request( trans, **kwd )
+        # Render the grid view
+        return self.request_grid( trans, **kwd )
+    def __show_request(self, trans, **kwd):
+        params = util.Params( kwd )
+        msg = util.restore_text( params.get( 'msg', ''  ) )
+        messagetype = params.get( 'messagetype', 'done' )
+        add_sample = params.get('add_sample', False)
         try:
-            request = trans.sa_session.query( trans.app.model.Request ).get( id )
+            request = trans.sa_session.query( trans.app.model.Request ).get( trans.security.decode_id(kwd['id']) )
         except:
             return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                               action='list',
                                                               status='error',
-                                                              message="Invalid request ID",
-                                                              **kwd) )
+                                                              message="Invalid request ID") )
         current_samples = []
         for s in request.samples:
             current_samples.append([s.name, s.values.content])
+        if add_sample:
+            current_samples.append(['Sample_%i' % (len(current_samples)+1),['' for field in request.type.sample_form.fields]])
         return trans.fill_template( '/admin/requests/show_request.mako',
                                     request=request,
-                                    request_details=self.request_details(trans, id),
+                                    request_details=self.request_details(trans, request.id),
                                     current_samples = current_samples,
                                     sample_copy=self.__copy_sample(current_samples), 
                                     details='hide', edit_mode='False',
-                                    msg=msg, messagetype=messagetype)
+                                    msg=msg, messagetype=messagetype )
 
-    def __edit_request(self, trans, id, **kwd):
+    def __edit_request(self, trans, **kwd):
         try:
-            request = trans.sa_session.query( trans.app.model.Request ).get( id )
+            request = trans.sa_session.query( trans.app.model.Request ).get( trans.security.decode_id(kwd['id']) )
         except:
             msg = "Invalid request ID"
             log.warn( msg )
@@ -180,61 +296,61 @@ class Requests( BaseController ):
                                     msg=msg,
                                     messagetype=messagetype)
         return self.__show_request_form(trans)
-    def __delete_request(self, trans, id):
-        try:
-            request = trans.sa_session.query( trans.app.model.Request ).get( id )
-        except:
-            msg = "Invalid request ID"
-            log.warn( msg )
-            return trans.response.send_redirect( web.url_for( controller='requests_admin',
-                                                              action='list',
-                                                              status='error',
-                                                              message=msg,
-                                                              **kwd) )
-        # change request's submitted field
-        if not request.unsubmitted():
-            return trans.response.send_redirect( web.url_for( controller='requests_admin',
-                                                              action='list',
-                                                              status='error',
-                                                              message='This request cannot be deleted as it is already been submitted',
-                                                              **kwd) )
-        request.deleted = True
-        trans.sa_session.add( request )
-        trans.sa_session.flush()
-        kwd = {}
-        kwd['id'] = trans.security.encode_id(request.id)
+    def __delete_request(self, trans, **kwd):
+        id_list = util.listify( kwd['id'] )
+        delete_failed = []
+        for id in id_list:
+            try:
+                request = trans.sa_session.query( trans.app.model.Request ).get( trans.security.decode_id(id) )
+            except:
+                msg = "Invalid request ID"
+                log.warn( msg )
+                return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                                  action='list',
+                                                                  status='error',
+                                                                  message=msg,
+                                                                  **kwd) )
+            # a request cannot be deleted once its submitted
+            if not request.unsubmitted():
+                delete_failed.append(request.name)
+            else:
+                request.deleted = True
+                trans.sa_session.add( request )
+                trans.sa_session.flush()
+        if not len(delete_failed):
+            msg = '%i request(s) has been deleted.' % len(id_list)
+            status = 'done'
+        else:
+            msg = '%i request(s) has been deleted. %i request %s could not be deleted as they have been submitted.' % (len(id_list)-len(delete_failed), 
+                                                                                                               len(delete_failed), str(delete_failed))
+            status = 'warning'
         return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                           action='list',
-                                                          show_filter=trans.app.model.Request.states.UNSUBMITTED,
-                                                          status='done',
-                                                          message='The request <b>%s</b> has been deleted.' % request.name,
-                                                          **kwd) )
-    def __undelete_request(self, trans, id):
-        try:
-            request = trans.sa_session.query( trans.app.model.Request ).get( id )
-        except:
-            msg = "Invalid request ID"
-            log.warn( msg )
-            return trans.response.send_redirect( web.url_for( controller='requests_admin',
-                                                              action='list',
-                                                              status='error',
-                                                              message=msg,
-                                                              **kwd) )
-        # change request's submitted field
-        request.deleted = False
-        trans.sa_session.add( request )
-        trans.sa_session.flush()
-        kwd = {}
-        kwd['id'] = trans.security.encode_id(request.id)
+                                                          status=status,
+                                                          message=msg) )
+    def __undelete_request(self, trans, **kwd):
+        id_list = util.listify( kwd['id'] )
+        for id in id_list:
+            try:
+                request = trans.sa_session.query( trans.app.model.Request ).get( trans.security.decode_id(id) )
+            except:
+                msg = "Invalid request ID"
+                log.warn( msg )
+                return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                                  action='list',
+                                                                  status='error',
+                                                                  message=msg,
+                                                                  **kwd) )
+            request.deleted = False
+            trans.sa_session.add( request )
+            trans.sa_session.flush()
         return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                           action='list',
-                                                          show_filter=trans.app.model.Request.states.UNSUBMITTED,
                                                           status='done',
-                                                          message='The request <b>%s</b> has been undeleted.' % request.name,                                                          
-                                                          **kwd) )
-    def __submit_request(self, trans, id):
+                                                          message='%i request(s) has been undeleted.' % len(id_list) ) )
+    def __submit_request(self, trans, **kwd):
         try:
-            request = trans.sa_session.query( trans.app.model.Request ).get( id )
+            request = trans.sa_session.query( trans.app.model.Request ).get( trans.security.decode_id(kwd['id']) )
         except:
             msg = "Invalid request ID"
             log.warn( msg )
@@ -260,15 +376,32 @@ class Requests( BaseController ):
         request.state = request.states.SUBMITTED
         trans.sa_session.add( request )
         trans.sa_session.flush()
-        kwd = {}
-        kwd['id'] = trans.security.encode_id(request.id)
-        kwd['status'] = 'done'
-        kwd['message'] = 'The request <b>%s</b> has been submitted.' % request.name
         return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                           action='list',
-                                                          show_filter=trans.app.model.Request.states.SUBMITTED,
-                                                          **kwd) )
-
+                                                          id=trans.security.encode_id(request.id),
+                                                          status='done',
+                                                          message='The request <b>%s</b> has been submitted.' % request.name
+                                                          ) )
+    def __reject_request(self, trans, **kwd):
+        try:
+            request = trans.sa_session.query( trans.app.model.Request ).get( trans.security.decode_id(kwd['id']) )
+        except:
+            msg = "Invalid request ID"
+            log.warn( msg )
+            return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                              action='list',
+                                                              status='error',
+                                                              message=msg,
+                                                              **kwd) )
+        # change request's submitted field
+        request.state = request.states.UNSUBMITTED
+        trans.sa_session.add( request )
+        trans.sa_session.flush()
+        return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                          action='list',
+                                                          status='done',
+                                                          message='The request <b>%s</b> is now unsubmitted.' % request.name
+                                                          ) )
 #
 #---- Request Creation ----------------------------------------------------------
 #    
@@ -325,7 +458,6 @@ class Requests( BaseController ):
                 if params.get('create_request_button', False) == 'Save':
                     return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                                       action='list',
-                                                                      show_filter=trans.app.model.Request.states.UNSUBMITTED,
                                                                       message=msg ,
                                                                       status='done') )
                 elif params.get('create_request_samples_button', False) == 'Add samples':
@@ -664,29 +796,6 @@ class Requests( BaseController ):
                                                                       **new_kwd) )
         elif params.get('refresh', False) == 'true':
             return self.__edit_request(trans, request.id, **kwd)
-    def __reject_request(self, trans, id):
-        try:
-            request = trans.sa_session.query( trans.app.model.Request ).get( id )
-        except:
-            msg = "Invalid request ID"
-            log.warn( msg )
-            return trans.response.send_redirect( web.url_for( controller='requests_admin',
-                                                              action='list',
-                                                              status='error',
-                                                              message=msg,
-                                                              **kwd) )
-        # change request's submitted field
-        request.state = request.states.UNSUBMITTED
-        trans.sa_session.add( request )
-        trans.sa_session.flush()
-        kwd = {}
-        kwd['id'] = trans.security.encode_id(request.id)
-        kwd['status'] = 'done'
-        kwd['message'] = 'The request <b>%s</b> is now unsubmitted.' % request.name
-        return trans.response.send_redirect( web.url_for( controller='requests_admin',
-                                                          action='list',
-                                                          show_filter=trans.app.model.Request.states.UNSUBMITTED,
-                                                          **kwd) )
     def __update_samples(self, request, **kwd):
         '''
         This method retrieves all the user entered sample information and
@@ -1049,8 +1158,8 @@ class Requests( BaseController ):
                                                           action='list',
                                                           operation='show_request',
                                                           id=trans.security.encode_id(request.id),
-                                                          message='Bar codes have been saved for this request',
-                                                          status='done'))
+                                                          msg='Bar codes have been saved for this request',
+                                                          messagetype='done'))
     def __set_request_state( self, trans, request ):
         # check if all the samples of the current request are in the final state
         complete = True 
@@ -1138,50 +1247,72 @@ class Requests( BaseController ):
 ##
     @web.expose
     @web.require_admin
-    def manage_request_types( self, trans, **kwd ):       
-        params = util.Params( kwd )
-        msg = util.restore_text( params.get( 'msg', ''  ) )
-        messagetype = params.get( 'messagetype', 'done' )
-        show_filter = util.restore_text( params.get( 'show_filter', 'Active'  ) )
-        forms = get_all_forms(trans, all_versions=True)
-        request_types_list = trans.sa_session.query( trans.app.model.RequestType )
-        if show_filter == 'All':
-            request_types = request_types_list
-        elif show_filter == 'Deleted':
-            request_types = [rt for rt in request_types_list if rt.deleted]
-        else:
-            request_types = [rt for rt in request_types_list if not rt.deleted]
-        return trans.fill_template( '/admin/requests/manage_request_types.mako', 
-                                    request_types=request_types,
-                                    forms=forms,
-                                    show_filter=show_filter,
-                                    msg=msg,
-                                    messagetype=messagetype )
+    def manage_request_types( self, trans, **kwd ):
+        if 'operation' in kwd:
+            operation = kwd['operation'].lower()
+            if not kwd.get( 'id', None ):
+                return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                                  action='manage_request_types',
+                                                                  status='error',
+                                                                  message="Invalid requesttype ID") )
+            if operation == "view":
+                return self.__view_request_type( trans, **kwd )
+            elif operation == "view_form":
+                return self.__view_form( trans, **kwd )
+            elif operation == "delete":
+                return self.__delete_request_type( trans, **kwd )
+            elif operation == "undelete":
+                return self.__undelete_request_type( trans, **kwd )
+#            elif operation == "update":
+#                return self.__edit_request( trans, **kwd )
+        # Render the grid view
+        return self.requesttype_grid( trans, **kwd )
+    def __view_request_type(self, trans, **kwd):
+        try:
+            rt = trans.sa_session.query( trans.app.model.RequestType ).get( trans.security.decode_id(kwd['id']) )
+        except:
+            return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                              action='manage_request_types',
+                                                              status='error',
+                                                              message="Invalid requesttype ID") )
+        return trans.fill_template( '/admin/requests/view_request_type.mako', 
+                                    request_type=rt,
+                                    forms=get_all_forms( trans ),
+                                    states_list=rt.states )
+    def __view_form(self, trans, **kwd):
+        try:
+            fd = trans.sa_session.query( trans.app.model.FormDefinition ).get( trans.security.decode_id(kwd['id']) )
+        except:
+            return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                              action='manage_request_types',
+                                                              status='error',
+                                                              message="Invalid form ID") )
+        return trans.fill_template( '/admin/forms/show_form_read_only.mako',
+                                    form=fd )
+
     @web.expose
     @web.require_admin
-    def request_type( self, trans, **kwd ):
+    def create_request_type( self, trans, **kwd ):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )   
-        if params.get( 'create', False ):
+        if params.get( 'add_state_button', False ):
+            rt_info, rt_states = self.__create_request_type_form(trans, **kwd)
+            rt_states.append(("", ""))
             return trans.fill_template( '/admin/requests/create_request_type.mako', 
-                                        request_forms=get_all_forms( trans, 
-                                                                     filter=dict(deleted=False),
-                                                                     form_type=trans.app.model.FormDefinition.types.REQUEST ),
-                                        sample_forms=get_all_forms( trans, 
-                                                             filter=dict(deleted=False),
-                                                             form_type=trans.app.model.FormDefinition.types.SAMPLE ),
+                                        rt_info_widgets=rt_info,
+                                        rt_states_widgets=rt_states,
                                         msg=msg,
                                         messagetype=messagetype)
-        elif params.get( 'define_states_button', False ):
-            return trans.fill_template( '/admin/requests/add_states.mako',
-                                        request_type_name=util.restore_text( params.name ),
-                                        desc=util.restore_text( params.description ),
-                                        num_states=int(util.restore_text( params.num_states )),
-                                        request_form_id=int(util.restore_text( params.request_form_id )),
-                                        sample_form_id=int(util.restore_text( params.sample_form_id )),
+        elif params.get( 'remove_state_button', False ):
+            rt_info, rt_states = self.__create_request_type_form(trans, **kwd)
+            index = int(params.get( 'remove_state_button', '' ).split(" ")[2])
+            del rt_states[index-1]
+            return trans.fill_template( '/admin/requests/create_request_type.mako', 
+                                        rt_info_widgets=rt_info,
+                                        rt_states_widgets=rt_states,
                                         msg=msg,
-                                        messagetype=messagetype)            
+                                        messagetype=messagetype)
         elif params.get( 'save_request_type', False ):
             st, msg = self.__save_request_type(trans, **kwd)
             if not st:
@@ -1191,32 +1322,65 @@ class Requests( BaseController ):
                                             messagetype='error')
             return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                               action='manage_request_types',
-                                                              msg='Request type <b>%s</b> has been created' % st.name,
-                                                              messagetype='done') )
-        elif params.get('view', False):
-            rt = trans.sa_session.query( trans.app.model.RequestType ).get( int( util.restore_text( params.id ) ) )
-            return trans.fill_template( '/admin/requests/view_request_type.mako', 
-                                        request_type=rt,
-                                        forms=get_all_forms( trans ),
-                                        states_list=rt.states,
-                                        deleted=False,
-                                        show_deleted=False,
+                                                              message='Request type <b>%s</b> has been created' % st.name,
+                                                              status='done') )
+        else:
+            rt_info, rt_states = self.__create_request_type_form(trans, **kwd)
+            return trans.fill_template( '/admin/requests/create_request_type.mako',
+                                        rt_info_widgets=rt_info,
+                                        rt_states_widgets=rt_states,
                                         msg=msg,
-                                        messagetype=messagetype )
+                                        messagetype=messagetype)
+    def __create_request_type_form(self, trans, **kwd):
+        request_forms=get_all_forms( trans, 
+                                     filter=dict(deleted=False),
+                                     form_type=trans.app.model.FormDefinition.types.REQUEST )
+        sample_forms=get_all_forms( trans, 
+                                    filter=dict(deleted=False),
+                                    form_type=trans.app.model.FormDefinition.types.SAMPLE )
+        if not len(request_forms) or not len(sample_forms):
+            return [],[]
+        params = util.Params( kwd )
+        rt_info = []
+        rt_info.append(dict(label='Name', 
+                            widget=TextField('name', 40, util.restore_text( params.get( 'name', ''  ) ) ) ))
+        rt_info.append(dict(label='Description', 
+                            widget=TextField('desc', 40, util.restore_text( params.get( 'desc', ''  ) ) ) ))
+
+        rf_selectbox = SelectField('request_form_id')
+        for fd in request_forms:
+            if str(fd.id) == params.get( 'request_form_id', ''  ):
+                rf_selectbox.add_option(fd.name, fd.id, selected=True)
+            else:
+                rf_selectbox.add_option(fd.name, fd.id)
+        rt_info.append(dict(label='Request form', 
+                            widget=rf_selectbox ))
+
+        sf_selectbox = SelectField('sample_form_id')
+        for fd in sample_forms:
+            if str(fd.id) == params.get( 'sample_form_id', ''  ):
+                sf_selectbox.add_option(fd.name, fd.id, selected=True)
+            else:
+                sf_selectbox.add_option(fd.name, fd.id)
+        rt_info.append(dict(label='Sample form', 
+                            widget=sf_selectbox ))
+        # possible sample states
+        rt_states = []
+        i=0
+        while True:
+            if kwd.has_key( 'state_name_%i' % i ):
+                rt_states.append((params.get( 'state_name_%i' % i, ''  ), 
+                                  params.get( 'state_desc_%i' % i, ''  )))
+                i=i+1
+            else:
+                break
+        return rt_info, rt_states
+    
     def __save_request_type(self, trans, **kwd):
         params = util.Params( kwd )
-        num_states = int( util.restore_text( params.get( 'num_states', 0 ) ))
-        proceed = True
-        for i in range( num_states ):
-            if not util.restore_text( params.get( 'state_name_%i' % i, None ) ):
-                proceed = False
-                break
-        if not proceed:
-            msg = "All the state name(s) must be completed."
-            return None, msg
         rt = trans.app.model.RequestType() 
-        rt.name = util.restore_text( params.name ) 
-        rt.desc = util.restore_text( params.description ) or ""
+        rt.name = util.restore_text( params.get( 'name', ''  ) ) 
+        rt.desc = util.restore_text( params.get( 'desc', '' ) )
         rt.request_form = trans.sa_session.query( trans.app.model.FormDefinition ).get( int( params.request_form_id ) )
         rt.sample_form = trans.sa_session.query( trans.app.model.FormDefinition ).get( int( params.sample_form_id ) )
         trans.sa_session.add( rt )
@@ -1226,37 +1390,50 @@ class Requests( BaseController ):
         for ss in ss_list:
             trans.sa_session.delete( ss )
             trans.sa_session.flush()
-        for i in range( num_states ):
-            name = util.restore_text( params.get( 'state_name_%i' % i, None ))
-            desc = util.restore_text( params.get( 'state_desc_%i' % i, None ))
-            ss = trans.app.model.SampleState(name, desc, rt) 
-            trans.sa_session.add( ss )
-            trans.sa_session.flush()
-        msg = "The new request type named '%s' with %s state(s) has been created" % (rt.name, num_states)
+        i=0
+        while True:
+            if kwd.has_key( 'state_name_%i' % i ):
+                name = util.restore_text( params.get( 'state_name_%i' % i, None ))
+                desc = util.restore_text( params.get( 'state_desc_%i' % i, None ))
+                ss = trans.app.model.SampleState(name, desc, rt) 
+                trans.sa_session.add( ss )
+                trans.sa_session.flush()
+                i = i + 1
+            else:
+                break
+        msg = "The new request type named '%s' with %s state(s) has been created" % (rt.name, i)
         return rt, msg
-    @web.expose
-    @web.require_admin
-    def delete_request_type( self, trans, **kwd ):
-        params = util.Params( kwd )
-        msg = util.restore_text( params.get( 'msg', ''  ) )
-        messagetype = params.get( 'messagetype', 'done' )
-        rt = trans.sa_session.query( trans.app.model.RequestType ).get( int( util.restore_text( params.request_type_id ) ) )
-        rt.deleted = True
-        trans.sa_session.flush()
+    def __delete_request_type( self, trans, **kwd ):
+        id_list = util.listify( kwd['id'] )
+        for id in id_list:
+            try:
+                rt = trans.sa_session.query( trans.app.model.RequestType ).get( trans.security.decode_id(id) )
+            except:
+                return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                                  action='manage_request_types',
+                                                                  msg='Invalid request type ID',
+                                                                  messagetype='error') )
+            rt.deleted = True
+            trans.sa_session.add( rt )
+            trans.sa_session.flush()
         return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                           action='manage_request_types',
-                                                          msg='Request type <b>%s</b> has been deleted' % rt.name,
+                                                          msg='%i request type(s) has been deleted' % len(id_list),
                                                           messagetype='done') )
-    @web.expose
-    @web.require_admin
-    def undelete_request_type( self, trans, **kwd ):
-        params = util.Params( kwd )
-        msg = util.restore_text( params.get( 'msg', ''  ) )
-        messagetype = params.get( 'messagetype', 'done' )
-        rt = trans.sa_session.query( trans.app.model.RequestType ).get( int( util.restore_text( params.request_type_id ) ) )
-        rt.deleted = False
-        trans.sa_session.flush()
+    def __undelete_request_type( self, trans, **kwd ):
+        id_list = util.listify( kwd['id'] )
+        for id in id_list:
+            try:
+                rt = trans.sa_session.query( trans.app.model.RequestType ).get( trans.security.decode_id(id) )
+            except:
+                return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                                  action='manage_request_types',
+                                                                  msg='Invalid request type ID',
+                                                                  messagetype='error') )
+            rt.deleted = False
+            trans.sa_session.add( rt )
+            trans.sa_session.flush()
         return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                           action='manage_request_types',
-                                                          msg='Request type <b>%s</b> has been undeleted' % rt.name,
+                                                          msg='%i request type(s) has been undeleted' % len(id_list),
                                                           messagetype='done') )

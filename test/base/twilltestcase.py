@@ -1169,24 +1169,24 @@ class TwillTestCase( unittest.TestCase ):
             self.check_page_for_string( desc )
             self.check_page_for_string( formtype )
         self.home()
-    def edit_form( self, form_id, form_name, new_form_name="Form One's Name (Renamed)", new_form_desc="This is Form One's description (Re-described)"):
+    def edit_form( self, form_current_id, form_name, new_form_name="Form One's Name (Renamed)", new_form_desc="This is Form One's description (Re-described)"):
         """
         Edit form details; name & description
         """
         self.home()
-        self.visit_url( "%s/forms/edit?form_id=%i&show_form=True" % (self.url, form_id) )
+        self.visit_url( "%s/forms/manage?sort=create_time&f-name=All&f-desc=All&f-deleted=False&operation=Edit&id=%s" % ( self.url, self.security.encode_id(form_current_id) ) )
         self.check_page_for_string( 'Edit form definition "%s"' % form_name )
         tc.fv( "1", "name", new_form_name ) 
         tc.fv( "1", "description", new_form_desc ) 
         tc.submit( "save_changes_button" )
         self.check_page_for_string( "The form '%s' has been updated with the changes." % new_form_name )
         self.home()
-    def form_add_field( self, form_id, form_name, form_desc, form_type, field_index, fields):
+    def form_add_field( self, form_current_id, form_name, form_desc, form_type, field_index, fields):
         """
         Add a new fields to the form definition
         """
         self.home()
-        self.visit_url( "%s/forms/edit?form_id=%i&show_form=True" % (self.url, form_id) )
+        self.visit_url( "%s/forms/manage?sort=create_time&f-name=All&f-desc=All&f-deleted=False&operation=Edit&id=%s" % ( self.url, self.security.encode_id(form_current_id) ) )
         self.check_page_for_string( 'Edit form definition "%s"' % form_name)
         for i, field in enumerate(fields):
             index = i+field_index
@@ -1198,8 +1198,8 @@ class TwillTestCase( unittest.TestCase ):
             if field['type'] == 'SelectField':
                 options = ''
                 for option_index, option in enumerate(field['selectlist']):
-                    url_str = "%s/forms/edit?description=%s&form_id=%i&form_type_selectbox=%s&addoption_%i=Add&name=%s&field_name_%i=%s&field_helptext_%i=%s&field_type_%i=%s" % \
-                              (self.url, form_desc.replace(" ", "+"), form_id, form_type.replace(" ", "+"), 
+                    url_str = "%s/forms/manage?operation=Edit&description=%s&id=%s&form_type_selectbox=%s&addoption_%i=Add&name=%s&field_name_%i=%s&field_helptext_%i=%s&field_type_%i=%s" % \
+                              (self.url, form_desc.replace(" ", "+"), self.security.encode_id(form_current_id), form_type.replace(" ", "+"), 
                                index, form_name.replace(" ", "+"), index, field['name'].replace(" ", "+"), 
                                index, field['desc'].replace(" ", "+"), index, field['type'])
                     self.visit_url( url_str + options )
@@ -1214,7 +1214,7 @@ class TwillTestCase( unittest.TestCase ):
         Remove a field from the form definition
         """
         self.home()
-        self.visit_url( "%s/forms/edit?form_id=%i&show_form=True" % (self.url, form_id) )
+        self.visit_url( "%s/forms/manage?operation=Edit&form_id=%i&show_form=True" % (self.url, form_id) )
         self.check_page_for_string( 'Edit form definition "%s"' % form_name)
         tc.submit( "remove_button" )
         tc.submit( "save_changes_button" )
@@ -1222,18 +1222,26 @@ class TwillTestCase( unittest.TestCase ):
         self.check_page_for_string( check_str )
         self.home()
     # Requests stuff
+    def check_request_grid(self, state, request_name, deleted=False):
+        self.home()
+        self.visit_url('%s/requests/list?sort=create_time&f-state=%s&f-deleted=%s' \
+                       % (self.url, state, str(deleted)))
+        self.check_page_for_string( request_name )
+    def check_request_admin_grid(self, state, request_name, deleted=False):
+        self.home()
+        self.visit_url('%s/requests_admin/list?sort=create_time&f-state=%s&f-deleted=%s' \
+                       % (self.url, state, str(deleted)))
+        self.check_page_for_string( request_name )
     def create_request_type( self, name, desc, request_form_id, sample_form_id, states ):
         self.home()
-        self.visit_url( "%s/requests_admin/request_type?create=True" % self.url )
+        self.visit_url( "%s/requests_admin/create_request_type" % self.url )
         self.check_page_for_string( 'Create a new request type' )
         tc.fv( "1", "name", name )
-        tc.fv( "1", "description", desc )
+        tc.fv( "1", "desc", desc )
         tc.fv( "1", "request_form_id", request_form_id )
         tc.fv( "1", "sample_form_id", sample_form_id )
-        tc.fv( "1", "num_states", str( len( states ) ) )
-        tc.submit( "define_states_button" )
-        self.check_page_for_string( "Create %i states for the '%s' request type" % ( len(states), name ))
         for index, state in enumerate(states):
+            tc.submit( "add_state_button" )
             tc.fv("1", "state_name_%i" % index, state[0])
             tc.fv("1", "state_desc_%i" % index, state[1])
         tc.submit( "save_request_type" )
@@ -1255,7 +1263,7 @@ class TwillTestCase( unittest.TestCase ):
         self.check_page_for_string( desc )
     def edit_request( self, request_id, name, new_name, new_desc, new_library_id, new_folder_id, new_fields):
         self.home()
-        self.visit_url( "%s/requests/edit?request_id=%i&show=True" % (self.url, request_id) )
+        self.visit_url( "%s/requests/list?operation=Edit&id=%s" % (self.url, self.security.encode_id(request_id) ) )
         self.check_page_for_string( 'Edit request "%s"' % name )
         tc.fv( "1", "name", new_name )
         tc.fv( "1", "desc", new_desc )
