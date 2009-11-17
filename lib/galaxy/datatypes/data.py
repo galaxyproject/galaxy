@@ -1,4 +1,4 @@
-import logging, os, sys, time, tempfile, binascii
+import logging, os, sys, time, tempfile
 from galaxy import util
 from galaxy.util.odict import odict
 from galaxy.util.bunch import Bunch
@@ -40,20 +40,18 @@ class Data( object ):
     
     """
     __metaclass__ = DataMeta
-    
-    """Add metadata elements"""
+    # Add metadata elements
     MetadataElement( name="dbkey", desc="Database/Build", default="?", param=metadata.DBKeyParameter, multiple=False, no_value="?" )
-    
-    """Stores the set of display applications, and viewing methods, supported by this datatype """
+    # Stores the set of display applications, and viewing methods, supported by this datatype
     supported_display_apps = {}
-    
-    """If False, the peek is regenerated whenever a dataset of this type is copied"""
+    # If False, the peek is regenerated whenever a dataset of this type is copied
     copy_safe_peek = True
-    
-    is_binary = True #The dataset contains binary data --> do not space_to_tab or convert newlines, etc. Allow binary file uploads of this type when True.
-    
-    allow_datatype_change = True #Allow user to change between this datatype and others. If False, this datatype cannot be changed from or into.
-    
+    # The dataset contains binary data --> do not space_to_tab or convert newlines, etc.
+    # Allow binary file uploads of this type when True.
+    is_binary = True
+    # Allow user to change between this datatype and others. If False, this datatype
+    # cannot be changed from or into.
+    allow_datatype_change = True
     #Composite datatypes
     composite_type = None
     composite_files = odict()
@@ -162,6 +160,11 @@ class Data( object ):
                 info = info.replace( '\r', '<br/>' )
             if info.find( '\n' ) >= 0:
                 info = info.replace( '\n', '<br/>' )
+                
+            # Convert to unicode to display non-ascii characters.
+            if type( info ) is not unicode:
+                info = unicode( info, 'utf-8')
+                
             return info
         except:
             return "info unavailable"
@@ -270,8 +273,6 @@ class Data( object ):
     def add_composite_file( self, name, **kwds ):
         #self.composite_files = self.composite_files.copy()
         self.composite_files[ name ] = self.__new_composite_file( name, **kwds )
-        
-    
     def __substitute_composite_key( self, key, composite_file, dataset = None ):
         if composite_file.substitute_name_with_metadata:
             if dataset:
@@ -303,7 +304,6 @@ class Data( object ):
         return files
     def generate_auto_primary_file( self, dataset = None ):
         raise Exception( "generate_auto_primary_file is not implemented for this datatype." )
-    
     @property
     def has_resolution(self):
         return False
@@ -364,23 +364,37 @@ class Text( Data ):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
-class Binary( Data ):
-    """Binary data"""
+class Txtseq( Data ):
+    """Class describing a zip archive of text sequence files"""
+    file_ext = "txtseq.zip"
     def set_peek( self, dataset ):
-        """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = 'binary data'
-            dataset.blurb = 'data'
+            zip_file = zipfile.ZipFile( dataset.file_name, "r" )
+            num_files = len( zip_file.namelist() )
+            dataset.peek  = "Archive of %s text sequence files" % ( str( num_files ) )
+            dataset.blurb = data.nice_size( dataset.get_size() )
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except:
+            return "Text sequence file archive (%s)" % ( data.nice_size( dataset.get_size() ) )
+    def get_mime(self):
+        """Returns the mime type of the datatype"""
+        return 'application/zip'
+
+class Newick( Text ):
+    pass
+
+# ------------- Utility methods --------------
 
 def get_test_fname( fname ):
     """Returns test data filename"""
     path, name = os.path.split(__file__)
     full_path = os.path.join( path, 'test', fname )
     return full_path
-
 def nice_size(size):
     """
     Returns a readably formatted string with the size
@@ -406,7 +420,6 @@ def nice_size(size):
             out  = "%.1f %s" % (size, word)
             return out
     return '??? bytes'
-
 def get_file_peek( file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5 ):
     """
     Returns the first LINE_COUNT lines wrapped to WIDTH
@@ -443,7 +456,6 @@ def get_file_peek( file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5 ):
     else:
         text = unicode( '\n'.join( lines ), 'utf-8' )
     return text
-
 def get_line_count(file_name):
     """Returns the number of lines in a file that are neither null nor comments"""
     count = 0
@@ -452,38 +464,3 @@ def get_line_count(file_name):
         if line and line[0] != '#':
             count += 1
     return count
-
-class Newick( Text ):
-    pass
-
-class Sff( Binary ):
-    """ Standard Flowgram Format (SFF) """
-    file_ext = "sff"
-    def __init__( self, **kwd ):
-        Binary.__init__(self, **kwd)
-    def init_meta( self, dataset, copy_from=None ):
-        Binary.init_meta( self, dataset, copy_from=copy_from )
-    def sniff( self, filename ):
-        '''
-        The first 4 bytes of any sff file is '.sff'
-        
-        >>> fname = get_test_fname( '1.sff' )
-        >>> Sff().sniff( fname )
-        True
-        '''
-        header = open( filename ).read(4)
-        if binascii.b2a_hex( header ) == binascii.hexlify( '.sff' ):
-            return True
-        return False
-    def set_peek( self, dataset ):
-        if not dataset.dataset.purged:
-            dataset.peek  = "Binary sff file" 
-            dataset.blurb = nice_size( dataset.get_size() )
-        else:
-            dataset.peek = 'file does not exist'
-            dataset.blurb = 'file purged from disk'
-    def display_peek(self, dataset):
-        try:
-            return dataset.peek
-        except:
-            return "sff file (%s)" % ( nice_size( dataset.get_size() ) )

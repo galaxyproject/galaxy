@@ -6,63 +6,59 @@
     ${render_msg( msg, messagetype )}
 %endif
 
+<%def name="render_state( element_count, state_name, state_desc )">
+    <div class="repeat-group-item">
+        <div class="form-row">
+            <label>${1+element_count}. State name:</label>
+            <input type="text" name="state_name_${element_count}" value="${state_name}" size="40"/>
+            <input type="submit" name="remove_state_button" value="Remove state ${1+element_count}"/>
+            </div>
+            <div class="form-row">
+            <label>Description:</label>
+            <input type="text" name="state_desc_${element_count}" value="${state_desc}" size="40"/>
+            <div class="toolParamHelp" style="clear: both;">
+                optional
+            </div>
+            
+        </div>
+        <div style="clear: both"></div>
+   </div>
+</%def>
+
 <div class="toolForm">
     <div class="toolFormTitle">Create a new request type</div>
-    %if not request_forms or not sample_forms:
+    %if not rt_info_widgets:
         Create a request & sample form definition first to create a new request type.
     %else:
-        <div class="toolFormBody">
-            <form name="create_request_type" action="${h.url_for( controller='requests_admin', action='request_type')}" method="post" >
+        <form name="create_request_type" action="${h.url_for( controller='requests_admin', action='create_request_type')}" method="post" >
+            %for rt_info in rt_info_widgets:
                 <div class="form-row">
-                    <label>Name:</label>
+                    <label>${rt_info['label']}</label>
                     <div style="float: left; width: 250px; margin-right: 10px;">
-                        <input type="text" name="name" value="New Request Type" size="40"/>
+                        ${rt_info['widget'].get_html()}
                     </div>
                     <div style="clear: both"></div>
                 </div>
-                <div class="form-row">
-                    <label>Description:</label>
-                    <div style="float: left; width: 250px; margin-right: 10px;">
-                        <input type="text" name="description" value="" size="40"/>
-                    </div>
-                    <div style="clear: both"></div>
+            %endfor
+            <div class="toolFormTitle">Possible sample states</div>
+            %if len(rt_states_widgets):
+                %for index, info in enumerate(rt_states_widgets):
+                    ${render_state( index, info[0], info[1] )}
+                %endfor
+            %endif
+            <div class="form-row">
+                <input type="submit" name="add_state_button" value="Add state"/>
+            </div>
+            <div class="form-row">
+                <div style="float: left; width: 250px; margin-right: 10px;">
+                    <input type="hidden" name="new" value="submitted" size="40"/>
                 </div>
-                <div class="form-row">
-                    <label>
-                        Request Form definition:
-                    </label>
-                    <select name="request_form_id">
-                        %for form in request_forms:
-                            <option value="${form.id}">${form.name}</option>
-                        %endfor
-                    </select>
-                </div>
-                <div class="form-row">
-                    <label>
-                        Sample Form definition:
-                    </label>
-                    <select name="sample_form_id">
-                        %for form in sample_forms:
-                            <option value="${form.id}">${form.name}</option>
-                        %endfor
-                    </select>
-                </div>
-                <div class="form-row">
-                    <label>Number of sample states:</label>
-                    <div style="float: left; width: 250px; margin-right: 10px;">
-                        <input type="text" size="3" name="num_states" value="1"/> 
-                    </div>
-                </div>           
-                <div class="form-row">
-                    <div style="float: left; width: 250px; margin-right: 10px;">
-                        <input type="hidden" name="new" value="submitted" size="40"/>
-                    </div>
-                  <div style="clear: both"></div>
-                </div>
-                <div class="form-row">
-                <input type="submit" name="define_states_button" value="Define states"/>
-                </div>
-            </form>
-        </div>
+              <div style="clear: both"></div>
+            </div>
+            <div class="form-row">
+            <input type="submit" name="save_request_type" value="Save"/>
+            </div>
+        </form>
+
     %endif
 </div>

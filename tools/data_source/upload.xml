@@ -181,6 +181,12 @@ A binary sequence file in 'scf' format with a '.scf' file extension.  You must m
 
 -----
 
+**Sff**
+
+A binary file in 'Standard Flowgram Format' with a '.sff' file extension.
+
+-----
+
 **Tabular (tab delimited)**
 
 Any data in tab delimited format (tabular)

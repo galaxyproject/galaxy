@@ -139,10 +139,15 @@ class JobQueue( object ):
                 JobWrapper( job, None, self ).fail( 'This tool was disabled before the job completed.  Please contact your Galaxy administrator, or' )
             elif job.job_runner_name is None:
                 log.debug( "no runner: %s is still in queued state, adding to the jobs queue" %job.id )
-                self.queue.put( ( job.id, job.tool_id ) )
+                if self.track_jobs_in_database:
+                    job.state = model.Job.states.NEW
+                else:
+                    self.queue.put( ( job.id, job.tool_id ) )
             else:
                 job_wrapper = JobWrapper( job, self.app.toolbox.tools_by_id[ job.tool_id ], self )
                 self.dispatcher.recover( job, job_wrapper )
+        if self.sa_session.dirty:
+            self.sa_session.flush()
 
     def __monitor( self ):
         """
@@ -526,6 +531,7 @@ class JobWrapper( object ):
                     # If the tool was expected to set the extension, attempt to retrieve it
                     if dataset.ext == 'auto':
                         dataset.extension = context.get( 'ext', 'data' )
+                        dataset.init_meta( copy_from=dataset )
                     #if a dataset was copied, it won't appear in our dictionary:
                     #either use the metadata from originating output dataset, or call set_meta on the copies
                     #it would be quicker to just copy the metadata from the originating output dataset, 
@@ -715,14 +721,15 @@ class JobWrapper( object ):
         for outfile in [ str( o ) for o in output_paths ]:
             sizes.append( ( outfile, os.stat( outfile ).st_size ) )
         return sizes
-    def setup_external_metadata( self, exec_dir = None, tmp_dir = None, dataset_files_path = None, config_root = None, datatypes_config = None, **kwds ):
+    def setup_external_metadata( self, exec_dir = None, tmp_dir = None, dataset_files_path = None, config_root = None, datatypes_config = None, set_extension = True, **kwds ):
         # extension could still be 'auto' if this is the upload tool.
         job = self.sa_session.query( model.Job ).get( self.job_id )
-        for output_dataset_assoc in job.output_datasets:
-            if output_dataset_assoc.dataset.ext == 'auto':
-                context = self.get_dataset_finish_context( dict(), output_dataset_assoc.dataset.dataset )
-                output_dataset_assoc.dataset.extension = context.get( 'ext', 'data' )
-        self.sa_session.flush()
+        if set_extension:
+            for output_dataset_assoc in job.output_datasets:
+                if output_dataset_assoc.dataset.ext == 'auto':
+                    context = self.get_dataset_finish_context( dict(), output_dataset_assoc.dataset.dataset )
+                    output_dataset_assoc.dataset.extension = context.get( 'ext', 'data' )
+            self.sa_session.flush()
         if tmp_dir is None:
             #this dir should should relative to the exec_dir
             tmp_dir = self.app.config.new_file_path
@@ -739,6 +746,7 @@ class JobWrapper( object ):
                                                                       dataset_files_path = dataset_files_path,
                                                                       config_root = config_root,
                                                                       datatypes_config = datatypes_config,
+                                                                      job_metadata = os.path.join( self.working_directory, TOOL_PROVIDED_JOB_METADATA_FILE ),
                                                                       **kwds )
 
 class DefaultJobDispatcher( object ):

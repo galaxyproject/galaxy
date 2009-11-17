@@ -20,25 +20,38 @@ GALAXY TOOL ERROR REPORT
 This error report was sent from the Galaxy instance hosted on the server
 "${host}"
 -----------------------------------------------------------------------------
-This is in reference to output dataset ${dataset_id}.
+This is in reference to dataset id ${dataset_id} from history id ${history_id}
+-----------------------------------------------------------------------------
+You should be able to view the history containing the related history item
+
+${hid}: ${history_item_name} 
+
+by logging in as a Galaxy admin user to the Galaxy instance referenced above
+and pointing your browser to the following link.
+
+${history_view_link}
 -----------------------------------------------------------------------------
 The user '${email}' provided the following information:
+
 ${message}
 -----------------------------------------------------------------------------
 job id: ${job_id}
-tool id: ${tool_id}
+tool id: ${job_tool_id}
+-----------------------------------------------------------------------------
+job command line:
+${job_command_line}
 -----------------------------------------------------------------------------
 job stderr:
-${stderr}
+${job_stderr}
 -----------------------------------------------------------------------------
 job stdout:
-${stdout}
+${job_stdout}
 -----------------------------------------------------------------------------
 job info:
-${info}
+${job_info}
 -----------------------------------------------------------------------------
 job traceback:
-${traceback}
+${job_traceback}
 -----------------------------------------------------------------------------
 (This is an automated message).
 """
@@ -103,41 +116,45 @@ class DatasetInterface( BaseController ):
 
     @web.expose
     def errors( self, trans, id ):
-        dataset = trans.sa_session.query( model.HistoryDatasetAssociation ).get( id )
-        return trans.fill_template( "dataset/errors.mako", dataset=dataset )
-    
+        hda = trans.sa_session.query( model.HistoryDatasetAssociation ).get( id )
+        return trans.fill_template( "dataset/errors.mako", hda=hda )
     @web.expose
     def stderr( self, trans, id ):
         dataset = trans.sa_session.query( model.HistoryDatasetAssociation ).get( id )
         job = dataset.creating_job_associations[0].job
         trans.response.set_content_type( 'text/plain' )
         return job.stderr
-
     @web.expose
     def report_error( self, trans, id, email='', message="" ):
         smtp_server = trans.app.config.smtp_server
         if smtp_server is None:
-            return trans.show_error_message( "Sorry, mail is not configured for this galaxy instance" )
+            return trans.show_error_message( "Mail is not configured for this galaxy instance" )
         to_address = trans.app.config.error_email_to
         if to_address is None:
-            return trans.show_error_message( "Sorry, error reporting has been disabled for this galaxy instance" )
+            return trans.show_error_message( "Error reporting has been disabled for this galaxy instance" )
         # Get the dataset and associated job
-        dataset = trans.sa_session.query( model.HistoryDatasetAssociation ).get( id )
-        job = dataset.creating_job_associations[0].job
+        hda = trans.sa_session.query( model.HistoryDatasetAssociation ).get( id )
+        job = hda.creating_job_associations[0].job
         # Get the name of the server hosting the Galaxy instance from which this report originated
         host = trans.request.host
+        history_view_link = "%s/history/view?id=%s" % ( str( host ), trans.security.encode_id( hda.history_id ) )
         # Build the email message
         msg = MIMEText( string.Template( error_report_template )
             .safe_substitute( host=host,
-                              dataset_id=dataset.id,
-                              email=email, 
-                              message=message,
+                              dataset_id=hda.dataset_id,
+                              history_id=hda.history_id,
+                              hid=hda.hid,
+                              history_item_name=hda.get_display_name(),
+                              history_view_link=history_view_link,
                               job_id=job.id,
-                              tool_id=job.tool_id,
-                              stderr=job.stderr,
-                              stdout=job.stdout,
-                              traceback=job.traceback,
-                              info=job.info ) )
+                              job_tool_id=job.tool_id,
+                              job_command_line=job.command_line,
+                              job_stderr=job.stderr,
+                              job_stdout=job.stdout,
+                              job_info=job.info,
+                              job_traceback=job.traceback,
+                              email=email, 
+                              message=message ) )
         frm = to_address
         # Check email a bit
         email = email.strip()

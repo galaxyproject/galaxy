@@ -9,6 +9,7 @@ from galaxy import eggs
 # need to import model before sniff to resolve a circular import dependency
 import galaxy.model
 from galaxy.datatypes import sniff
+from galaxy.datatypes.binary import sniffable_binary_formats, unsniffable_binary_formats
 from galaxy import util
 from galaxy.util.json import *
 
@@ -200,25 +201,29 @@ def add_file( dataset, json_file, output_path ):
                 ext = dataset.file_type
         if not data_type:
             if check_binary( dataset.path ):
-                if dataset.is_binary is not None:
-                    data_type = 'binary'
-                    ext = dataset.file_type
-                else:
-                    parts = dataset.name.split( "." )
-                    if len( parts ) > 1:
-                        ext = parts[1].strip().lower()
-                        if not( ext == 'ab1' or ext == 'scf' ):
-                            file_err( 'The uploaded file contains inappropriate content', dataset, json_file )
+                data_type = 'binary'
+                binary_ok = False
+                parts = dataset.name.split( "." )
+                if len( parts ) > 1:
+                    ext = parts[1].strip().lower()
+                    if ext in unsniffable_binary_formats and dataset.file_type == ext:
+                        binary_ok = True
+                    elif ext in unsniffable_binary_formats and dataset.file_type != ext:
+                        err_msg = "You must manually set the 'File Format' to '%s' when uploading %s files." % ( ext.capitalize(), ext )
+                        file_err( err_msg, dataset, json_file )
+                        return
+                    if not binary_ok and ext in sniffable_binary_formats:
+                        # Sniff the file to confirm it's data type
+                        tmp_ext = sniff.guess_ext( dataset.path )
+                        if tmp_ext == ext:
+                            binary_ok = True
+                        else:
+                            err_msg = "The content of the file does not match its type (%s)." % ext.capitalize()
+                            file_err( err_msg, dataset, json_file )
                             return
-                        if ext == 'ab1' and dataset.file_type != 'ab1':
-                            file_err( "You must manually set the 'File Format' to 'Ab1' when uploading ab1 files.", dataset, json_file )
-                            return
-                        elif ext == 'scf' and dataset.file_type != 'scf':
-                            file_err( "You must manually set the 'File Format' to 'Scf' when uploading scf files.", dataset, json_file )
-                            return
-                    else:
-                        ext = 'binary'
-                    data_type = 'binary'
+                    if not binary_ok:
+                        file_err( 'The uploaded file contains inappropriate content', dataset, json_file )
+                        return
         if not data_type:
             # We must have a text file
             if check_html( dataset.path ):
@@ -233,10 +238,6 @@ def add_file( dataset, json_file, output_path ):
                 ext = sniff.guess_ext( dataset.path )
             else:
                 ext = dataset.file_type
-            data_type = ext
-        elif data_type == 'binary' and ext == 'auto':
-            # currently we are only sniffing sff binary files
-            ext = sniff.guess_ext( dataset.path )
             data_type = ext
     # Save job info for the framework
     if ext == 'auto' and dataset.ext:

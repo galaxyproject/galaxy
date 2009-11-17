@@ -181,9 +181,7 @@ class User( BaseController ):
             refresh_frames = [ 'masthead', 'history' ]
         if not trans.app.config.allow_user_creation and not trans.user_is_admin():
             return trans.show_error_message( 'User registration is disabled.  Please contact your Galaxy administrator for an account.' )
-        #
         # Create the user, save all the user info and login to Galaxy
-        # 
         if params.get('create_user_button', None) == "Submit":
             # check email and password validity
             error = self.__validate(trans, params, email, password, confirm)

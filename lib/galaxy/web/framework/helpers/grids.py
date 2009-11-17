@@ -1,6 +1,7 @@
 from galaxy.model import *
 from galaxy.model.orm import *
 
+from galaxy.web.framework.helpers import iff
 from galaxy.tags.tag_handler import TagHandler
 from galaxy.web import url_for
 from galaxy.util.json import from_json_string, to_json_string
@@ -16,7 +17,9 @@ class Grid( object ):
     title = ""
     exposed = True
     model_class = None
+    # To use grid's async features, set template="grid_base_async.mako"
     template = "grid_base.mako"
+    async_template = "grid_body_async.mako"
     global_actions = []
     columns = []
     operations = []
@@ -213,7 +216,7 @@ class Grid( object ):
             return url_for( **new_kwargs )
         
         
-        return trans.fill_template( self.template,
+        return trans.fill_template( iff( 'async' not in kwargs, self.template, self.async_template),
                                     grid=self,
                                     query=query,
                                     cur_page_num = page_num,
@@ -390,7 +393,7 @@ class MulticolFilterColumn( TextColumn ):
         return query.filter( complete_filter )
 
 class GridOperation( object ):
-    def __init__( self, label, key=None, condition=None, allow_multiple=True, allow_popup=True, target=None, url_args=None ):
+    def __init__( self, label, key=None, condition=None, allow_multiple=True, allow_popup=True, target=None, url_args=None, async_compatible=False ):
         self.label = label
         self.key = key
         self.allow_multiple = allow_multiple
@@ -398,6 +401,7 @@ class GridOperation( object ):
         self.condition = condition
         self.target = target
         self.url_args = url_args
+        self.async_compatible = async_compatible
     def get_url_args( self, item ):
         if self.url_args:
             temp = dict( self.url_args )

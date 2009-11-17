@@ -87,7 +87,7 @@ class HistoryListGrid( grids.Grid ):
     # Grid definition
     title = "Saved Histories"
     model_class = model.History
-    template='/history/grid.mako'
+    template='/grid_base.mako'
     default_sort_key = "-create_time"
     columns = [
         NameColumn( "Name", key="name", model_class=model.History,
@@ -110,14 +110,14 @@ class HistoryListGrid( grids.Grid ):
                 )
                 
     operations = [
-        grids.GridOperation( "Switch", allow_multiple=False, condition=( lambda item: not item.deleted ) ),
-        grids.GridOperation( "Share", condition=( lambda item: not item.deleted )  ),
-        grids.GridOperation( "Unshare", condition=( lambda item: not item.deleted )  ),
-        grids.GridOperation( "Rename", condition=( lambda item: not item.deleted )  ),
-        grids.GridOperation( "Delete", condition=( lambda item: not item.deleted ) ),
-        grids.GridOperation( "Undelete", condition=( lambda item: item.deleted ) ),
-        grids.GridOperation( "Enable import via link", condition=( lambda item: item.deleted ) ),
-        grids.GridOperation( "Disable import via link", condition=( lambda item: item.deleted ) )
+        grids.GridOperation( "Switch", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=True ),
+        grids.GridOperation( "Share", condition=( lambda item: not item.deleted ), async_compatible=False ),
+        grids.GridOperation( "Unshare", condition=( lambda item: not item.deleted ), async_compatible=False  ),
+        grids.GridOperation( "Rename", condition=( lambda item: not item.deleted ), async_compatible=False  ),
+        grids.GridOperation( "Delete", condition=( lambda item: not item.deleted ), async_compatible=True ),
+        grids.GridOperation( "Undelete", condition=( lambda item: item.deleted ), async_compatible=True ),
+        grids.GridOperation( "Enable import via link", condition=( lambda item: item.deleted ), async_compatible=True ),
+        grids.GridOperation( "Disable import via link", condition=( lambda item: item.deleted ), async_compatible=True )
     ]
     standard_filters = [
         grids.GridColumnFilter( "Active", args=dict( deleted=False ) ),
@@ -262,7 +262,7 @@ class HistoryController( BaseController ):
                 n_deleted += 1
         status = SUCCESS
         if n_deleted:
-            message_parts.append( "Deleted %d histories.  " % n_deleted )
+            message_parts.append( "Deleted %d %s.  " % ( n_deleted, iff( n_deleted != 1, "histories", "history" ) ) )
         if deleted_current:
             message_parts.append( "Your active history was deleted, a new empty history is now active.  " )
             status = INFO
@@ -290,7 +290,7 @@ class HistoryController( BaseController ):
         status = SUCCESS
         message_parts = []
         if n_undeleted:
-            message_parts.append( "Undeleted %d histories." % n_undeleted )
+            message_parts.append( "Undeleted %d %s.  " % ( n_undeleted, iff( n_undeleted != 1, "histories", "history" ) ) )
         if n_already_purged:
             message_parts.append( "%d histories have already been purged and cannot be undeleted." % n_already_purged )
             status = WARNING
@@ -438,23 +438,20 @@ class HistoryController( BaseController ):
             Warning! If you import this history, you will lose your current
             history. Click <a href="%s">here</a> to confirm.
             """ % web.url_for( id=id, confirm=True ) )
-            
     @web.expose
     def view( self, trans, id=None ):
         """View a history. If a history is importable, then it is viewable by any user."""
-
         # Get history to view.
         if not id:
             return trans.show_error_message( "You must specify a history you want to view." )
         history_to_view = get_history( trans, id, False)
-
         # Integrity checks.
         if not history_to_view:
-            return trans.show_error_message( "The specified history does not exist.")
+            return trans.show_error_message( "The specified history does not exist." )
+        # Admin users can view any history
         # TODO: Use a new flag to determine if history is viewable?
-        if not history_to_view.importable:
-            error( "The owner of this history has not published this history." )
-
+        if not trans.user_is_admin and not history_to_view.importable:
+            error( "Either you are not allowed to view this history or the owner of this history has not published it." )
         # View history.
         query = trans.sa_session.query( model.HistoryDatasetAssociation ) \
                                 .filter( model.HistoryDatasetAssociation.history == history_to_view ) \
@@ -469,7 +466,6 @@ class HistoryController( BaseController ):
                                            datasets = query.all(),
                                            user_owns_history = user_owns_history,
                                            show_deleted = False )
-            
     @web.expose
     @web.require_login( "share histories with other users" )
     def share( self, trans, id=None, email="", **kwd ):

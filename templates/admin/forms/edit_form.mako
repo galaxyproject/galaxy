@@ -85,7 +85,7 @@ $( function() {
 
 <div class="toolForm">
     <div class="toolFormTitle">Edit form definition "${form.name}"</div>
-    <form id="edit_form" name="edit_form" action="${h.url_for( controller='forms', action='edit', form_id=form.id  )}" method="post" >
+    <form id="edit_form" name="edit_form" action="${h.url_for( controller='forms', action='manage', operation="Edit", id=trans.security.encode_id(form.current.id)  )}" method="post" >
         %for label, input in form_details:
             <div class="form-row">
                 <label>${label}</label>

@@ -221,11 +221,17 @@ function checkUncheckAll( name, check )
     %if tool.help:
         <div class="toolHelp">
             <div class="toolHelpBody">
-                 %if tool.has_multiple_pages:
-                    ${tool.help_by_page[tool_state.page]}
-                 %else:
-                    ${tool.help}
-                %endif
+                <%
+                    if tool.has_multiple_pages:
+                        tool_help = tool.help_by_page[tool_state.page]
+                    else:
+                        tool_help = tool.help
+                    
+                    # Convert to unicode to display non-ascii characters.
+                    if type( tool_help ) is not unicode:
+                        tool_help = unicode( tool_help, 'utf-8')
+                %>
+                ${tool_help}
             </div>        
         </div>
     %endif
