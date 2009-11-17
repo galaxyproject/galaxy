@@ -90,8 +90,9 @@ function trim19(str){
 				
 				// Update 'state' and 'time alive' fields
 				$(elem + "-state").text( data[i].state );
-				if ( ( prev_old_state.match('newUCI') && new_state=='new' ) || \
+				if ( ( prev_old_state.match('newUCI') && new_state=='new' ) || ( prev_old_state.match('newUCI') && new_state=='available' ) || \
 					 ( prev_old_state.match('newUCI') && new_state=='creating' )  || ( prev_old_state.match('new') && new_state=='creating' ) || \
+					 ( prev_old_state.match('new') && new_state=='available' ) || \
 					 ( prev_old_state.match('deletingUCI') && new_state=='deleted' ) || ( prev_old_state.match('deleting') && new_state=='deleted' ) || \
 					 ( prev_old_state.match('available') && new_state=='error' ) || ( prev_old_state.match('deleting') && new_state=='error' ) ) {
 					 // TODO: on state change from available->error and deleting->error page should be refreshed but that causes problems with

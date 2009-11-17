@@ -60,6 +60,7 @@ class CloudManager( object ):
     """
     def __init__( self, app ):
         self.app = app
+        self.sa_session = app.model.context
         if self.app.config.get_bool( "enable_cloud_execution", True ):
             # The dispatcher manager for underlying cloud instances - implements and contacts individual cloud providers
             self.provider = CloudProvider( app )
@@ -99,6 +100,7 @@ class CloudMonitor( object ):
         # Keep track of the pid that started the cloud manager, only it
         # has valid threads
         self.parent_pid = os.getpid()
+        self.sa_session = app.model.context
        
         # Contains requests that are waiting (only use from monitor thread)
         self.waiting = []
@@ -122,7 +124,6 @@ class CloudMonitor( object ):
         cnt = 0 # Run global update only periodically so keep counter variable
         while self.running:
             try:
-#                log.debug( "Calling monitor_step" )
                 self.__monitor_step()
                 if cnt%30 == 0: # Run global update every 30 iterations (1 minute)
                     self.provider.update()
@@ -144,27 +145,23 @@ class CloudMonitor( object ):
         it is marked as having errors and removed from the queue. Otherwise,
         the job is dispatched.
         """
-        # Get an orm (object relational mapping) session
-        session = mapping.Session()
+        model = self.app.model
         new_requests = []
            
-        for r in session.query( model.UCI ) \
-                .filter( or_( model.UCI.c.state==uci_states.NEW_UCI,  
-                              model.UCI.c.state==uci_states.SUBMITTED_UCI,
-                              model.UCI.c.state==uci_states.SHUTTING_DOWN_UCI, 
-                              model.UCI.c.state==uci_states.DELETING_UCI,
-                              model.UCI.c.state==uci_states.SNAPSHOT_UCI ) ) \
+        for r in self.sa_session.query( model.UCI ) \
+                .filter( or_( model.UCI.table.c.state==uci_states.NEW_UCI,  
+                              model.UCI.table.c.state==uci_states.SUBMITTED_UCI,
+                              model.UCI.table.c.state==uci_states.SHUTTING_DOWN_UCI, 
+                              model.UCI.table.c.state==uci_states.DELETING_UCI,
+                              model.UCI.table.c.state==uci_states.SNAPSHOT_UCI ) ) \
                 .all():
-            uci_wrapper = UCIwrapper( r )
+            uci_wrapper = UCIwrapper( r, self.app )
             new_requests.append( uci_wrapper )
 
         for uci_wrapper in new_requests:
-            session.clear()
+            self.sa_session.expunge_all()
             self.put( uci_wrapper )
-        
-        # Done with the session
-        mapping.Session.remove()
-                 
+                
     def put( self, uci_wrapper ):
         """Add a request to the queue."""
         self.provider.put( uci_wrapper )
@@ -186,8 +183,10 @@ class UCIwrapper( object ):
     """
     Wraps 'model.UCI' with convenience methods for state management
     """
-    def __init__( self, uci ):
+    def __init__( self, uci, app ):
         self.uci_id = uci.id
+        self.app = app
+        self.sa_session = self.app.model.context
         
     # --------- Setter methods -----------------
     
@@ -199,56 +198,61 @@ class UCIwrapper( object ):
         """
 #        log.debug( "Changing state - new uci_state: %s, instance_id: %s, i_state: %s" % ( uci_state, instance_id, i_state ) )
         if uci_state is not None:
-            uci = model.UCI.get( self.uci_id )
-            uci.refresh()
+            uci = self.sa_session.query( model.UCI ).get( self.uci_id )
+            self.sa_session.refresh( uci )
             uci.state = uci_state
-            uci.flush()
+            self.sa_session.flush()
         if ( instance_id is not None ) and ( i_state is not None ):
-            instance = model.CloudInstance.filter_by( uci_id=self.uci_id, instance_id=instance_id).first()
+            instance = self.sa_session.query( model.CloudInstance ).filter_by( uci_id=self.uci_id, instance_id=instance_id).first()
             instance.state = i_state
-            instance.flush()
+            self.sa_session.add( instance )
+            self.sa_session.flush()
         
     def set_mi( self, i_index, mi_id ):
         """
         Sets Machine Image (MI), e.g., 'ami-66fa190f', for UCI's instance with given index as it
         is stored in local Galaxy database. 
         """
-        mi = model.CloudImage.filter( model.CloudImage.c.image_id==mi_id ).first()
-        instance = model.CloudInstance.get( i_index )
+        mi = self.sa_session.query( model.CloudImage ).filter( model.CloudImage.table.c.image_id==mi_id ).first()
+        instance = self.sa_session.query( model.CloudInstance ).get( i_index )
         instance.image = mi
-        instance.flush()
+        self.sa_session.add( instance )
+        self.sa_session.flush()
         
     def set_key_pair( self, key_name, key_material=None ):
         """
         Sets key pair value for current UCI.
         """
-        uci = model.UCI.get( self.uci_id )
-        uci.refresh()
+        uci = self.sa_session.query( model.UCI ).get( self.uci_id )
+        self.sa_session.refresh( uci )
         uci.key_pair_name = key_name
         if key_material is not None:
             uci.key_pair_material = key_material
-        uci.flush()
+        self.sa_session.flush()
     
-    def set_launch_time( self, launch_time, i_index=None, i_id=None ):
+    def set_instance_launch_time( self, launch_time, i_index=None, i_id=None ):
         """
         Stores launch time in local database for instance with specified index - i_index (as it is stored in local
         Galaxy database) or with specified instance ID - i_id (as obtained from the cloud provider AND stored
         in local Galaxy Database). Either 'i_index' or 'i_id' needs to be provided.
         """
         if i_index != None:
-            instance = model.CloudInstance.get( i_index )
-            instance.launch_time = launch_time
-            instance.flush()
+            instance = self.sa_session.query( model.CloudInstance ).get( i_index )
         elif i_id != None:
-            instance = model.CloudInstance.filter_by( uci_id=self.uci_id, instance_id=i_id).first()
-            instance.launch_time = launch_time
-            instance.flush()
+            instance = self.sa_session.query( model.CloudInstance ).filter_by( uci_id=self.uci_id, instance_id=i_id).first()
+        else:
+            return None
+        
+        instance.launch_time = launch_time
+        self.sa_session.add( instance )
+        self.sa_session.flush()
     
     def set_uci_launch_time( self, launch_time ):
-        uci = model.UCI.get( self.uci_id )
-        uci.refresh()
+        uci = self.sa_session.query( model.UCI ).get( self.uci_id )
+        self.sa_session.refresh( uci )
         uci.launch_time = launch_time
-        uci.flush()
+        self.sa_session.add( uci )
+        self.sa_session.flush()
     
     def set_stop_time( self, stop_time, i_index=None, i_id=None ):
         """
@@ -257,20 +261,16 @@ class UCIwrapper( object ):
         in local Galaxy Database). Either 'i_index' or 'i_id' needs to be provided.
         """
         if i_index != None:
-            instance = model.CloudInstance.get( i_index )
-            instance.stop_time = stop_time
-            instance.flush()
+            instance = self.sa_session.query( model.CloudInstance ).get( i_index )
         elif i_id != None:
-            instance = model.CloudInstance.filter_by( uci_id=self.uci_id, instance_id=i_id).first()
-            instance.stop_time = stop_time
-            instance.flush()
-    
-    def reset_uci_launch_time( self ):
-        uci = model.UCI.get( self.uci_id )
-        uci.refresh()
-        uci.launch_time = None
-        uci.flush()
+            instance = self.sa_session.query( model.CloudInstance ).filter_by( uci_id=self.uci_id, instance_id=i_id).first()
+        else:
+            return None
         
+        instance.stop_time = stop_time
+        self.sa_session.add( instance )
+        self.sa_session.flush()
+    
     def set_security_group_name( self, security_group_name, i_index=None, i_id=None ):
         """
         Stores security group name in local database for instance with specified index - i_index (as it is stored in local
@@ -278,123 +278,50 @@ class UCIwrapper( object ):
         in local Galaxy Database). Either 'i_index' or 'i_id' needs to be provided.
         """
         if i_index != None:
-            instance = model.CloudInstance.get( i_index )
-            instance.security_group = security_group_name
-            instance.flush()
+            instance = self.sa_session.query( model.CloudInstance ).get( i_index )
         elif i_id != None:
-            instance = model.CloudInstance.filter_by( uci_id=self.uci_id, instance_id=i_id).first()
-            instance.security_group = security_group_name
-            instance.flush()
+            instance = self.sa_session.query( model.CloudInstance ).filter_by( uci_id=self.uci_id, instance_id=i_id).first()
+        else:
+            return None
+        
+        instance.security_group = security_group_name
+        self.sa_session.add( instance )
+        self.sa_session.flush()
     
     def set_reservation_id( self, i_index, reservation_id ):
-        instance = model.CloudInstance.get( i_index )
+        instance = self.sa_session.query( model.CloudInstance ).get( i_index )
         instance.reservation_id = reservation_id
-        instance.flush()
+        self.sa_session.add( instance )
+        self.sa_session.flush()
         
     def set_instance_id( self, i_index, instance_id ):
         """
         i_index refers to UCI's instance ID as stored in local database
         instance_id refers to real-world, cloud resource ID (e.g., 'i-78hd823a') 
         """
-        instance = model.CloudInstance.get( i_index )
+        instance = self.sa_session.query( model.CloudInstance ).get( i_index )
         instance.instance_id = instance_id
-        instance.flush()
+        self.sa_session.add( instance )
+        self.sa_session.flush()
     
-    def set_public_dns( self, instance_id, public_dns ):
-        uci = model.UCI.get( self.uci_id )
-        uci.refresh()
-        uci.instance[instance_id].public_dns = public_dns
-        uci.instance[instance_id].flush()
+#    def set_public_dns( self, instance_id, public_dns ):
+#        uci = self.sa_session.query( model.UCI ).get( self.uci_id )
+#        self.sa_session.refresh( uci )
+#        uci.instance[instance_id].public_dns = public_dns
+#        uci.instance[instance_id].flush()
+#    
+#    def set_private_dns( self, instance_id, private_dns ):
+#        uci = self.sa_session.query( model.UCI ).get( self.uci_id )
+#        self.sa_session.refresh( uci )
+#        uci.instance[instance_id].private_dns = private_dns
+#        uci.instance[instance_id].flush()
     
-    def set_private_dns( self, instance_id, private_dns ):
-        uci = model.UCI.get( self.uci_id )
-        uci.refresh()
-        uci.instance[instance_id].private_dns = private_dns
-        uci.instance[instance_id].flush()
-    
-    def set_store_device( self, store_id, device ):
-        uci = model.UCI.get( self.uci_id )
-        uci.refresh()
-        uci.store[store_id].device = device
-        uci.store[store_id].flush()
-    
-    def set_store_error( self, error, store_index=None, store_id=None ):
-        if store_index != None:
-            store = model.CloudStore.get( store_index )
-        elif store_id != None:
-            store = model.CloudStore.filter_by( volume_id = store_id ).first()
-        else:
-            return None
-        
-        store.error = error
-        store.flush()
-    
-    def set_store_status( self, vol_id, status ):
-        vol = model.CloudStore.filter( model.CloudStore.c.volume_id == vol_id ).first()
-        vol.status = status
-        vol.flush()
-        
-    def set_snapshot_id( self, snap_index, id ):
-        snap = model.CloudSnapshot.get( snap_index )
-        snap.snapshot_id = id
-        snap.flush()
-
-    def set_snapshot_status( self, status, snap_index=None, snap_id=None ):
-        if snap_index != None:
-            snap = model.CloudSnapshot.get( snap_index )
-        elif snap_id != None:
-            snap = model.CloudSnapshot.filter_by( snapshot_id = snap_id).first()
-        else:
-            return
-        snap.status = status
-        snap.flush()
-    
-    def set_snapshot_error( self, error, snap_index=None, snap_id=None, set_status=False ):
-        if snap_index != None:
-            snap = model.CloudSnapshot.get( snap_index )
-        elif snap_id != None:
-            snap = model.CloudSnapshot.filter_by( snapshot_id = snap_id).first()
-        else:
-            return
-        snap.error = error
-        
-        if set_status:
-            snap.status = snapshot_status.ERROR
-            
-        snap.flush()
-
-    def set_store_availability_zone( self, availability_zone, vol_id=None ):
-        """
-        Sets availability zone of storage volumes for either ALL volumes associated with current
-        UCI or for the volume whose volume ID (e.g., 'vol-39F80512') is provided as argument.
-        """
-        if vol_id is not None:
-            vol = model.CloudStore.filter( model.CloudStore.c.volume_id == vol_id ).all()
-        else:
-            vol = model.CloudStore.filter( model.CloudStore.c.uci_id == self.uci_id ).all()
-        
-        for v in vol:
-            v.availability_zone = availability_zone
-            v.flush()
-        
-    def set_store_volume_id( self, store_id, volume_id ):
-        """
-        Given store ID associated with this UCI, set volume ID as it is registered 
-        on the cloud provider (e.g., vol-39890501)
-        """
-        uci = model.UCI.get( self.uci_id )
-        uci.refresh()
-        uci.store[store_id].volume_id = volume_id
-        uci.store[store_id].flush()
-        
-    def set_store_instance( self, vol_id, instance_id ):
-        """
-        Stores instance ID that given store volume is attached to. Store volume ID should
-        be given in following format: 'vol-78943248'
-        """
-        vol = model.CloudStore.filter( model.CloudStore.c.volume_id == vol_id ).first()
-        vol.i_id = instance_id
-        vol.flush()
+    def reset_uci_launch_time( self ):
+        uci = self.sa_session.query( model.UCI ).get( self.uci_id )
+        self.sa_session.refresh( uci )
+        uci.launch_time = None
+        self.sa_session.add( uci )
+        self.sa_session.flush()
         
     def set_error( self, error, set_state=False ):
         """
@@ -402,45 +329,148 @@ class UCIwrapper( object ):
         this UCI whose state is 'None' or 'SUBMITTED'. If set_state is set to 'true', 
         method also sets state of give UCI and corresponding instances to 'error'
         """
-        uci = model.UCI.get( self.uci_id )
-        uci.refresh()
+        uci = self.sa_session.query( model.UCI ).get( self.uci_id )
+        self.sa_session.refresh( uci )
         uci.error = error
         if set_state:
             uci.state = uci_states.ERROR
-            instances = model.CloudInstance \
+            # Process all instances associated with this UCI
+            instances = self.sa_session.query( model.CloudInstance ) \
                 .filter_by( uci=uci ) \
-                .filter( or_( model.CloudInstance.c.state==None, model.CloudInstance.c.state==instance_states.SUBMITTED ) ) \
+                .filter( or_( model.CloudInstance.table.c.state==None, model.CloudInstance.table.c.state==instance_states.SUBMITTED ) ) \
                 .all()
             for i in instances:
                 i.error = error
                 i.state = instance_states.ERROR
-                i.flush()
-        uci.flush()
-    
+                self.sa_session.add( i )
+                self.sa_session.flush()
+                
+        self.sa_session.add( uci )
+        self.sa_session.flush()
+        
     def set_deleted( self ):
-        uci = model.UCI.get( self.uci_id )
-        uci.refresh()
+        uci = self.sa_session.query( model.UCI ).get( self.uci_id )
+        self.sa_session.refresh( uci )
         uci.state = uci_states.DELETED # for bookkeeping reasons, mark as deleted but don't actually delete.
         uci.deleted = True
-        uci.flush()
+        self.sa_session.add( uci )
+        self.sa_session.flush()
+
+    def set_store_device( self, store_id, device ):
+        uci = self.sa_session.query( model.UCI ).get( self.uci_id )
+        self.sa_session.refresh( uci )
+        uci.store[store_id].device = device
+        uci.store[store_id].flush()
+    
+    def set_store_error( self, error, store_index=None, store_id=None ):
+        if store_index != None:
+            store = self.sa_session.query( model.CloudStore ).get( store_index )
+        elif store_id != None:
+            store = self.sa_session.query( model.CloudStore ).filter_by( volume_id = store_id ).first()
+        else:
+            return None
+        
+        store.error = error
+        self.sa_session.add( store )
+        self.sa_session.flush()
+    
+    def set_store_status( self, vol_id, status ):
+        vol = self.sa_session.query( model.CloudStore ).filter( model.CloudStore.table.c.volume_id == vol_id ).first()
+        vol.status = status
+        self.sa_session.add( vol )
+        self.sa_session.flush()
+
+    def set_store_availability_zone( self, availability_zone, vol_id=None ):
+        """
+        Sets availability zone of storage volumes for either ALL volumes associated with current
+        UCI or for the volume whose volume ID (e.g., 'vol-39F80512') is provided as argument.
+        """
+        if vol_id is not None:
+            vol = self.sa_session.query( model.CloudStore ).filter( model.CloudStore.table.c.volume_id == vol_id ).all()
+        else:
+            vol = self.sa_session.query( model.CloudStore ).filter( model.CloudStore.table.c.uci_id == self.uci_id ).all()
+        
+        for v in vol:
+            v.availability_zone = availability_zone
+            self.sa_session.add( v )
+            self.sa_session.flush()
+        
+    def set_store_volume_id( self, store_index, volume_id ):
+        """
+        Given store index associated with this UCI in local database, set volume ID as it is registered 
+        on the cloud provider (e.g., vol-39890501)
+        """
+        uci = self.sa_session.query( model.UCI ).get( self.uci_id )
+        self.sa_session.refresh( uci )
+        uci.store[store_index].volume_id = volume_id
+        #uci.store[store_index].flush()
+        self.sa_session.add( uci )
+        self.sa_session.flush()
+        
+    def set_store_instance( self, vol_id, instance_id ):
+        """
+        Stores instance ID that given store volume is attached to. Store volume ID should
+        be given in following format: 'vol-78943248'
+        """
+        vol = self.sa_session.query( model.CloudStore ).filter( model.CloudStore.table.c.volume_id == vol_id ).first()
+        vol.i_id = instance_id
+        self.sa_session.add( vol )
+        self.sa_session.flush()
+                
+    def set_snapshot_id( self, snap_index, id ):
+        snap = model.CloudSnapshot.get( snap_index )
+        
+        snap.snapshot_id = id
+        self.sa_session.add( snap )
+        self.sa_session.flush()
+
+    def set_snapshot_status( self, status, snap_index=None, snap_id=None ):
+        if snap_index != None:
+            snap = self.sa_session.query( model.CloudSnapshot ).get( snap_index )
+        elif snap_id != None:
+            snap = self.sa_session.query( model.CloudSnapshot ).filter_by( snapshot_id = snap_id).first()
+        else:
+            return
+        snap.status = status
+        self.sa_session.add( snap )
+        self.sa_session.flush()
+    
+    def set_snapshot_error( self, error, snap_index=None, snap_id=None, set_status=False ):
+        if snap_index != None:
+            snap = self.sa_session.query( model.CloudSnapshot ).get( snap_index )
+        elif snap_id != None:
+            snap = self.sa_session.query( model.CloudSnapshot ).filter_by( snapshot_id = snap_id).first()
+        else:
+            return
+        snap.error = error
+        if set_status:
+            snap.status = snapshot_status.ERROR
+            
+        self.sa_session.add( snap )
+        self.sa_session.flush()
 
     # --------- Getter methods -----------------
     
     def get_provider_type( self ):
         """ Returns type of cloud provider associated with given UCI. """ 
-        uci = model.UCI.get( self.uci_id )
-        uci.refresh()
-#        cred_id = uci.credentials_id
-#        cred = model.CloudUserCredentials.get( cred_id )
+        uci = self.sa_session.query( model.UCI ).get( self.uci_id )
+        self.sa_session.refresh( uci )
         return uci.credentials.provider.type
     
-    def get_type( self, i_index ):
-        instance = model.CloudInstance.get( i_index )
+    def get_provider( self ):
+        """ Returns database object of cloud provider associated with credentials of given UCI. """
+        uci = self.sa_session.query( model.UCI ).get( self.uci_id )
+        self.sa_session.refresh( uci )
+        return uci.credentials.provider
+    
+    def get_instance_type( self, i_index ):
+        instance = self.sa_session.query( model.CloudInstance ).get( i_index )
+        self.sa_session.refresh( instance )
         return instance.type 
         
-    def get_state( self ):
-        uci = model.UCI.get( self.uci_id )
-        uci.refresh()
+    def get_uci_state( self ):
+        uci = self.sa_session.query( model.UCI ).get( self.uci_id )
+        self.sa_session.refresh( uci )
         return uci.state
     
     def get_instances_indexes( self, state=None ):
@@ -448,9 +478,12 @@ class UCIwrapper( object ):
         Returns indexes of instances associated with given UCI as they are stored in local Galaxy database and 
         whose state corresponds to passed argument. Returned values enable indexing instances from local Galaxy database.  
         """
-        uci = model.UCI.get( self.uci_id )
-        uci.refresh()
-        instances = model.CloudInstance.filter_by( uci=uci ).filter( model.CloudInstance.c.state==state ).all()
+        uci = self.sa_session.query( model.UCI ).get( self.uci_id )
+        self.sa_session.refresh( uci )
+        instances = self.sa_session.query( model.CloudInstance ) \
+                .filter_by( uci=uci ) \
+                .filter( model.CloudInstance.table.c.state==state ) \
+                .all()
         il = []
         for i in instances:
             il.append( i.id )
@@ -458,40 +491,46 @@ class UCIwrapper( object ):
         return il
     
     def get_instance_state( self, instance_id ):
-        uci = model.UCI.get( self.uci_id )
-        uci.refresh()
+        uci = self.sa_session.query( model.UCI ).get( self.uci_id )
+        self.sa_session.refresh( uci )
         return uci.instance[instance_id].state
     
     def get_instances_ids( self ):
         """ 
-        Returns list IDs of all instances' associated with this UCI that are not in 'terminated' state
-        (e.g., ['i-402906D2', 'i-q0290dsD2'] ).
+        Returns list IDs of all instances' associated with this UCI that are not in 'terminated' or
+        'error' but the state is defined (i.e., state is not None)
+        (e.g., return value: ['i-402906D2', 'i-q0290dsD2'] ).
         """
-        il = model.CloudInstance.filter_by( uci_id=self.uci_id ).filter( model.CloudInstance.c.state != 'terminated' ).all()
+        il = self.sa_session.query( model.CloudInstance ) \
+                .filter_by( uci_id=self.uci_id ) \
+                .filter( or_( model.CloudInstance.table.c.state != 'terminated', 
+                               model.CloudInstance.table.c.state != 'error',
+                               model.CloudInstance.table.c.state != None ) ) \
+                .all()
         instanceList = []
         for i in il:
             instanceList.append( i.instance_id )
         return instanceList
         
     def get_name( self ):
-        uci = model.UCI.get( self.uci_id )
-        uci.refresh()
+        uci = self.sa_session.query( model.UCI ).get( self.uci_id )
+        self.sa_session.refresh( uci )
         return uci.name
     
     def get_key_pair_name( self ):
         """
         Returns keypair name associated with given UCI.
         """
-        uci = model.UCI.get( self.uci_id )
-        uci.refresh()
+        uci = self.sa_session.query( model.UCI ).get( self.uci_id )
+        self.sa_session.refresh( uci )
         return uci.key_pair_name
     
     def get_key_pair_material( self ):
         """
         Returns keypair material (i.e., private key) associated with given UCI.
         """
-        uci = model.UCI.get( self.uci_id )
-        uci.refresh()
+        uci = self.sa_session.query( model.UCI ).get( self.uci_id )
+        self.sa_session.refresh( uci )
         return uci.key_pair_material
         
     def get_security_group_name( self, i_index=None, i_id=None ):
@@ -501,35 +540,35 @@ class UCIwrapper( object ):
         with given instance.
         """
         if i_index != None:
-            instance = model.CloudInstance.get( i_index )
+            instance = self.sa_session.query( model.CloudInstance ).get( i_index )
             return instance.security_group
         elif i_id != None:
-            instance = model.CloudInstance.filter_by( uci_id=self.uci_id, instance_id=i_id).first()
+            instance = self.sa_session.query( model.CloudInstance ).filter_by( uci_id=self.uci_id, instance_id=i_id).first()
             return instance.security_group
     
     def get_access_key( self ):
-        uci = model.UCI.get( self.uci_id )
-        uci.refresh()
+        uci = self.sa_session.query( model.UCI ).get( self.uci_id )
+        self.sa_session.refresh( uci )
         return uci.credentials.access_key
     
     def get_secret_key( self ):
-        uci = model.UCI.get( self.uci_id )
-        uci.refresh()
+        uci = self.sa_session.query( model.UCI ).get( self.uci_id )
+        self.sa_session.refresh( uci )
         return uci.credentials.secret_key
     
     def get_mi_id( self, instance_id=0 ):
-        uci = model.UCI.get( self.uci_id )
-        uci.refresh()
+        uci = self.sa_session.query( model.UCI ).get( self.uci_id )
+        self.sa_session.refresh( uci )
         return uci.instance[instance_id].mi_id
     
     def get_public_dns( self, instance_id=0 ):
-        uci = model.UCI.get( self.uci_id )
-        uci.refresh()
+        uci = self.sa_session.query( model.UCI ).get( self.uci_id )
+        self.sa_session.refresh( uci )
         return uci.instance[instance_id].public_dns
     
     def get_private_dns( self, instance_id=0 ):
-        uci = model.UCI.get( self.uci_id )
-        uci.refresh()
+        uci = self.sa_session.query( model.UCI ).get( self.uci_id )
+        self.sa_session.refresh( uci )
         return uci.instance[instance_id].private_dns
     
     def get_uci_availability_zone( self ):
@@ -539,13 +578,13 @@ class UCIwrapper( object ):
         availability zone, availability of a UCI is determined by availability zone of 
         any one storage volume. 
         """
-        uci = model.UCI.get( self.uci_id )
-        uci.refresh()
+        uci = self.sa_session.query( model.UCI ).get( self.uci_id )
+        self.sa_session.refresh( uci )
         return uci.store[0].availability_zone
     
     def get_store_size( self, store_id=0 ):
-        uci = model.UCI.get( self.uci_id )
-        uci.refresh()
+        uci = self.sa_session.query( model.UCI ).get( self.uci_id )
+        self.sa_session.refresh( uci )
         return uci.store[store_id].size
     
     def get_store_volume_id( self, store_id=0 ):
@@ -553,33 +592,27 @@ class UCIwrapper( object ):
         Given store ID associated with this UCI, get volume ID as it is registered 
         on the cloud provider (e.g., 'vol-39890501')
         """
-        uci = model.UCI.get( self.uci_id )
-        uci.refresh()
+        uci = self.sa_session.query( model.UCI ).get( self.uci_id )
+        self.sa_session.refresh( uci )
         return uci.store[store_id].volume_id
     
     def get_all_stores( self ):
         """ Returns all storage volumes' database objects associated with this UCI. """
-        return model.CloudStore.filter( model.CloudStore.c.uci_id == self.uci_id ).all()
+        return self.sa_session.query( model.CloudStore ).filter( model.CloudStore.table.c.uci_id == self.uci_id ).all()
     
     def get_snapshots( self, status=None ):
         """ Returns database objects for all snapshots associated with this UCI and in given status."""
-        return model.CloudSnapshot.filter_by( uci_id=self.uci_id, status=status ).all()
+        return self.sa_session.query( model.CloudSnapshot ).filter_by( uci_id=self.uci_id, status=status ).all()
         
     def get_uci( self ):
         """ Returns database object for given UCI. """
-        uci = model.UCI.get( self.uci_id )
-        uci.refresh()
+        uci = self.sa_session.query( model.UCI ).get( self.uci_id )
+        self.sa_session.refresh( uci )
         return uci
     
-    def get_provider( self ):
-        """ Returns database object of cloud provider associated with credentials of given UCI. """
-        uci = model.UCI.get( self.uci_id )
-        uci.refresh()
-        return uci.credentials.provider
-    
     def uci_launch_time_set( self ):
-        uci = model.UCI.get( self.uci_id )
-        uci.refresh()
+        uci = self.sa_session.query( model.UCI ).get( self.uci_id )
+        self.sa_session.refresh( uci )
         return uci.launch_time
     
 class CloudProvider( object ):

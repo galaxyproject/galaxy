@@ -91,48 +91,48 @@ class CloudController( BaseController ):
         
         cloudCredentials = trans.sa_session.query( model.CloudUserCredentials ) \
             .filter_by( user=user ) \
-            .filter( model.CloudUserCredentials.c.deleted != True ) \
-            .order_by( model.CloudUserCredentials.c.name ) \
+            .filter( model.CloudUserCredentials.table.c.deleted != True ) \
+            .order_by( model.CloudUserCredentials.table.c.name ) \
             .all()
             
         cloudProviders = trans.sa_session.query( model.CloudProvider ) \
             .filter_by( user=user ) \
-            .filter( model.CloudProvider.c.deleted != True ) \
-            .order_by( model.CloudProvider.c.name ) \
+            .filter( model.CloudProvider.table.c.deleted != True ) \
+            .order_by( model.CloudProvider.table.c.name ) \
             .all()
         
         liveInstances = trans.sa_session.query( model.UCI ) \
             .filter_by( user=user ) \
-            .filter( or_( model.UCI.c.state==uci_states.RUNNING,  
-                          model.UCI.c.state==uci_states.PENDING, 
-                          model.UCI.c.state==uci_states.SUBMITTED, 
-                          model.UCI.c.state==uci_states.SUBMITTED_UCI,
-                          model.UCI.c.state==uci_states.SHUTTING_DOWN,
-                          model.UCI.c.state==uci_states.SHUTTING_DOWN_UCI ) ) \
-            .order_by( desc( model.UCI.c.update_time ) ) \
+            .filter( or_( model.UCI.table.c.state==uci_states.RUNNING,  
+                          model.UCI.table.c.state==uci_states.PENDING, 
+                          model.UCI.table.c.state==uci_states.SUBMITTED, 
+                          model.UCI.table.c.state==uci_states.SUBMITTED_UCI,
+                          model.UCI.table.c.state==uci_states.SHUTTING_DOWN,
+                          model.UCI.table.c.state==uci_states.SHUTTING_DOWN_UCI ) ) \
+            .order_by( desc( model.UCI.table.c.update_time ) ) \
             .all()
             
         prevInstances = trans.sa_session.query( model.UCI ) \
             .filter_by( user=user, deleted=False ) \
-            .filter( or_( model.UCI.c.state==uci_states.AVAILABLE,  
-                          model.UCI.c.state==uci_states.NEW, 
-                          model.UCI.c.state==uci_states.NEW_UCI, 
-                          model.UCI.c.state==uci_states.CREATING, 
-                          model.UCI.c.state==uci_states.ERROR,  
-                          model.UCI.c.state==uci_states.DELETED,
-                          model.UCI.c.state==uci_states.DELETING,
-                          model.UCI.c.state==uci_states.DELETING_UCI,
-                          model.UCI.c.state==uci_states.SNAPSHOT,
-                          model.UCI.c.state==uci_states.SNAPSHOT_UCI ) ) \
-            .order_by( desc( model.UCI.c.update_time ) ) \
+            .filter( or_( model.UCI.table.c.state==uci_states.AVAILABLE,  
+                          model.UCI.table.c.state==uci_states.NEW, 
+                          model.UCI.table.c.state==uci_states.NEW_UCI, 
+                          model.UCI.table.c.state==uci_states.CREATING, 
+                          model.UCI.table.c.state==uci_states.ERROR,  
+                          model.UCI.table.c.state==uci_states.DELETED,
+                          model.UCI.table.c.state==uci_states.DELETING,
+                          model.UCI.table.c.state==uci_states.DELETING_UCI,
+                          model.UCI.table.c.state==uci_states.SNAPSHOT,
+                          model.UCI.table.c.state==uci_states.SNAPSHOT_UCI ) ) \
+            .order_by( desc( model.UCI.table.c.update_time ) ) \
             .all()
         
         # Check after update there are instances in pending state; if so, display message
         pendingInstances = trans.sa_session.query( model.UCI ) \
             .filter_by( user=user ) \
-            .filter( or_( model.UCI.c.state==uci_states.PENDING, 
-                          model.UCI.c.state==uci_states.SUBMITTED, 
-                          model.UCI.c.state==uci_states.SUBMITTED_UCI ) ) \
+            .filter( or_( model.UCI.table.c.state==uci_states.PENDING, 
+                          model.UCI.table.c.state==uci_states.SUBMITTED, 
+                          model.UCI.table.c.state==uci_states.SUBMITTED_UCI ) ) \
             .all()
         if pendingInstances:
             trans.set_message( "Galaxy instance started. NOTE: Please wait about 5 minutes for the instance to " 
@@ -173,7 +173,7 @@ class CloudController( BaseController ):
                 
             # Create new user configured instance
             try:
-                if trans.app.model.UCI \
+                if trans.sa_session.query( model.UCI ) \
                     .filter_by (user=user, deleted=False, name=instanceName ) \
                     .first():
                     error['inst_error'] = "An instance with that name already exist."
@@ -191,8 +191,8 @@ class CloudController( BaseController ):
                     # Capture user configured instance information
                     uci = model.UCI()
                     uci.name = instanceName
-                    uci.credentials = trans.app.model.CloudUserCredentials.filter(
-                        trans.app.model.CloudUserCredentials.table.c.name==credName ).first()
+                    uci.credentials = trans.sa_session.query( model.CloudUserCredentials ) \
+                        .filter( model.CloudUserCredentials.table.c.name==credName ).first()
                     uci.user= user
                     uci.total_size = volSize # This is OK now because new instance is being created and only one storage volume can be created at UCI creation time 
                     uci.state = uci_states.NEW_UCI
@@ -204,8 +204,8 @@ class CloudController( BaseController ):
                     storage.availability_zone = zone 
                     # Persist
                     session = trans.sa_session
-                    session.save_or_update( uci )
-                    session.save_or_update( storage )
+                    session.add( uci )
+                    session.add( storage )
                     session.flush()
                     # Log and display the management page
                     trans.log_event( "User configured new cloud instance: '%s'" % instanceName )
@@ -278,8 +278,8 @@ class CloudController( BaseController ):
             uci.state = uci_states.SUBMITTED_UCI
             # Persist
             session = trans.sa_session
-            session.save_or_update( instance )
-            session.save_or_update( uci )
+            session.add( instance )
+            session.add( uci )
             session.flush()
             # Log  
             trans.log_event ("User initiated starting of UCI '%s'." % uci.name )
@@ -309,7 +309,7 @@ class CloudController( BaseController ):
            ( uci.state != uci_states.AVAILABLE ):
             uci.state = uci_states.SHUTTING_DOWN_UCI
             session = trans.sa_session
-            session.save_or_update( uci )
+            session.add( uci )
             session.flush()
             trans.log_event( "User stopped cloud instance '%s' (id: %s)" % ( uci.name, uci.id ) )
             trans.set_message( "Stopping of Galaxy instance '%s' initiated." % uci.name )
@@ -378,7 +378,7 @@ class CloudController( BaseController ):
         
         prevInstances = trans.sa_session.query( model.CloudInstance ) \
             .filter_by( user=user, state=instance_states.TERMINATED, uci_id=id ) \
-            .order_by( desc( model.CloudInstance.c.update_time ) ) \
+            .order_by( desc( model.CloudInstance.table.c.update_time ) ) \
             .all()
         
         return trans.fill_template( "cloud/view_usage.mako", prevInstances = prevInstances ) 
@@ -396,7 +396,7 @@ class CloudController( BaseController ):
             name = uci.name
             uci.state = uci_states.DELETING_UCI
             session = trans.sa_session
-            session.save_or_update( uci )
+            session.add( uci )
             session.flush()
             trans.log_event( "User marked cloud instance '%s' for deletion." % name )
             trans.set_message( "Galaxy instance '%s' marked for deletion." % name )
@@ -431,8 +431,8 @@ class CloudController( BaseController ):
                 uci.state = uci_states.SNAPSHOT_UCI
                 # Persist
                 session = trans.sa_session
-                session.save_or_update( snapshot )
-                session.save_or_update( uci )
+                session.add( snapshot )
+                session.add( uci )
                 session.flush()
         elif len( stores ) == 0:
             error( "No storage volumes found that are associated with this instance." )
@@ -455,7 +455,7 @@ class CloudController( BaseController ):
         
         snaps = trans.sa_session.query( model.CloudSnapshot ) \
             .filter_by( user=user, uci_id=id, deleted=False ) \
-            .order_by( desc( model.CloudSnapshot.c.update_time ) ) \
+            .order_by( desc( model.CloudSnapshot.table.c.update_time ) ) \
             .all()
         
         return trans.fill_template( "cloud/view_snapshots.mako", 
@@ -474,7 +474,8 @@ class CloudController( BaseController ):
         
         if snap.status == snapshot_status.COMPLETED:
             snap.status = snapshot_status.DELETE
-            snap.flush()
+            trans.sa_session.add( snap )
+            trans.sa_session.flush()
             trans.set_message( "Snapshot '%s' is marked for deletion. Once the deletion is complete, it will no longer be visible in this list. " 
                 "Please note that this process may take up to a minute." % snap.snapshot_id ) 
         else:
@@ -485,7 +486,7 @@ class CloudController( BaseController ):
         uci_id = trans.security.decode_id( uci_id )
         snaps = trans.sa_session.query( model.CloudSnapshot ) \
             .filter_by( user=user, uci_id=uci_id, deleted=False ) \
-            .order_by( desc( model.CloudSnapshot.c.update_time ) ) \
+            .order_by( desc( model.CloudSnapshot.table.c.update_time ) ) \
             .all()
         
         return trans.fill_template( "cloud/view_snapshots.mako", 
@@ -514,9 +515,9 @@ class CloudController( BaseController ):
                 error['provider_error'] = "You must select cloud provider type for this machine image."
             elif image_id=='' or len( image_id ) > 255:
                 error['id_error'] = "Image ID must be between 1 and 255 characters long."
-            elif trans.app.model.CloudUserCredentials \
+            elif trans.sa_session.query( model.CloudUserCredentials ) \
                     .filter_by( deleted=False ) \
-                    .filter( trans.app.model.CloudImage.table.c.image_id == image_id ) \
+                    .filter( model.CloudImage.table.c.image_id == image_id ) \
                     .first():
                 error['id_error'] = "Image with ID '" + image_id + "' is already registered. \
                     Please choose another ID."
@@ -531,7 +532,7 @@ class CloudController( BaseController ):
                 image.architecture = architecture
                 # Persist
                 session = trans.sa_session
-                session.save_or_update( image )
+                session.add( image )
                 session.flush()
                 # Log and display the management page
                 trans.log_event( "New cloud image added: '%s'" % image.image_id )
@@ -557,7 +558,7 @@ class CloudController( BaseController ):
     @web.expose
     @web.require_login( "use Galaxy cloud" )
     def list_machine_images( self, trans ):
-        images = trans.sa_session.query( model.CloudImage ).filter( trans.app.model.CloudImage.table.c.deleted != True ).all()
+        images = trans.sa_session.query( model.CloudImage ).filter( model.CloudImage.table.c.deleted != True ).all()
         return trans.fill_template( '/cloud/list_images.mako', images=images )
     
     @web.expose
@@ -568,7 +569,8 @@ class CloudController( BaseController ):
 
         image = trans.sa_session.query( model.CloudImage ).get( id )
         image.deleted = True
-        image.flush()
+        trans.sa_session.add( image )
+        trans.sa_session.flush()
         return self.list_machine_images( trans )
     
     @web.expose
@@ -588,9 +590,9 @@ class CloudController( BaseController ):
             image = trans.sa_session.query( model.CloudImage ).get( id )
             if image_id=='' or len( image_id ) > 255:
                 error['id_error'] = "Image ID must be between 1 and 255 characters in length."
-            elif trans.app.model.CloudImage \
+            elif trans.sa_session.query( model.CloudImage ) \
                 .filter_by( deleted=False ) \
-                .filter( and_( trans.app.model.CloudImage.table.c.id != image.id, trans.app.model.CloudImage.table.c.image_id==image_id ) ) \
+                .filter( and_( model.CloudImage.table.c.id != image.id, model.CloudImage.table.c.image_id==image_id ) ) \
                 .first():
                 error['id_error'] = "Image with ID '" + image_id + "' already exist. Please choose an alternative name."
             elif architecture=='' or len( architecture ) > 255:
@@ -606,7 +608,7 @@ class CloudController( BaseController ):
                 image.architecture = architecture
                 # Persist
                 session = trans.sa_session
-                session.save_or_update( image )
+                session.add( image )
                 session.flush()
                 # Log and display the management page
                 trans.set_message( "Machine image '%s' edited." % image.image_id )
@@ -626,9 +628,9 @@ class CloudController( BaseController ):
         if credName or providerName or accessKey or secretKey:
             if credName=='' or len( credName ) > 255:
                 error['cred_error'] = "Credentials name must be between 1 and 255 characters in length."
-            elif trans.app.model.CloudUserCredentials \
+            elif trans.sa_session.query( model.CloudUserCredentials ) \
                     .filter_by( user=user, deleted=False ) \
-                    .filter( trans.app.model.CloudUserCredentials.table.c.name == credName ) \
+                    .filter( model.CloudUserCredentials.table.c.name == credName ) \
                     .first():
                 error['cred_error'] = "Credentials with that name already exist."
             elif providerName=='':
@@ -648,7 +650,7 @@ class CloudController( BaseController ):
                 credentials.provider = provider
                 # Persist
                 session = trans.sa_session
-                session.save_or_update( credentials )
+                session.add( credentials )
                 session.flush()
                 # Log and display the management page
                 trans.log_event( "User added new credentials" )
@@ -680,9 +682,9 @@ class CloudController( BaseController ):
             credentials = get_stored_credentials( trans, id )
             if credName=='' or len( credName ) > 255:
                 error['cred_error'] = "Credentials name must be between 1 and 255 characters in length."
-            elif trans.app.model.CloudUserCredentials \
+            elif trans.sa_session.query( model.CloudUserCredentials ) \
                 .filter_by( user=user ) \
-                .filter( and_( trans.app.model.CloudUserCredentials.table.c.id != credentials.id, trans.app.model.CloudUserCredentials.table.c.name==credName ) ) \
+                .filter( and_( model.CloudUserCredentials.table.c.id != credentials.id, model.CloudUserCredentials.table.c.name==credName ) ) \
                 .first():
                 error['cred_error'] = "Credentials with name '" + credName + "' already exist. Please choose an alternative name."
             elif accessKey=='' or len( accessKey ) > 255:
@@ -702,7 +704,7 @@ class CloudController( BaseController ):
                 credentials.secret_key = secretKey
                 # Persist
                 session = trans.sa_session
-                session.save_or_update( credentials )
+                session.add( credentials )
                 session.flush()
                 # Log and display the management page
                 trans.set_message( "Credential '%s' edited." % credentials.name )
@@ -745,7 +747,8 @@ class CloudController( BaseController ):
         if UCI == None:
             # Delete and save
             stored.deleted = True
-            stored.flush()
+            trans.sa_session.add( stored )
+            trans.sa_session.flush()
             # Display the management page
             trans.set_message( "Credentials '%s' deleted." % stored.name )
             return self.list( trans )
@@ -769,9 +772,9 @@ class CloudController( BaseController ):
             except ValueError:
                 error['is_secure_error'] = "Field 'is secure' can only take on an integer value '0' or '1'"
         
-            if trans.app.model.CloudProvider \
+            if trans.sa_session.query( model.CloudProvider ) \
                 .filter_by (user=user, name=name) \
-                .filter( model.CloudProvider.c.deleted != True ) \
+                .filter( model.CloudProvider.table.c.deleted != True ) \
                 .first():
                 error['name_error'] = "A provider with that name already exist."
             elif name=='' or len( name ) > 255:
@@ -843,7 +846,7 @@ class CloudController( BaseController ):
                 provider.path = path
                 # Persist
                 session = trans.sa_session
-                session.save_or_update( provider )
+                session.add( provider )
                 session.flush()
                 # Log and display the management page
                 trans.log_event( "User configured new cloud provider: '%s'" % name )
@@ -909,9 +912,9 @@ class CloudController( BaseController ):
         
             if name=='' or len( name ) > 255:
                 error['name_error'] = "Cloud provider name must be between 1 and 255 characters in length."
-            elif trans.app.model.CloudProvider \
+            elif trans.sa_session.query( model.CloudProvider ) \
                 .filter_by( user=user ) \
-                .filter( and_( trans.app.model.CloudProvider.table.c.id != provider.id, trans.app.model.CloudProvider.table.c.name == name ) ) \
+                .filter( and_( model.CloudProvider.table.c.id != provider.id, model.CloudProvider.table.c.name == name ) ) \
                 .first():
                 error['name_error'] = "Cloud provider with name '" + name + "' already exist. Please choose an alternative name."
             elif not ( is_secure == 0 or is_secure == 1):
@@ -985,7 +988,7 @@ class CloudController( BaseController ):
                     provider.path = None
                 # Persist
                 session = trans.sa_session
-                session.save_or_update( provider )
+                session.add( provider )
                 session.flush()
                 # Log and display the management page
                 trans.log_event( "User edited cloud provider: '%s'" % name )
@@ -1003,14 +1006,15 @@ class CloudController( BaseController ):
         provider = get_provider_by_id( trans, id )
         creds = trans.sa_session.query( model.CloudUserCredentials ) \
             .filter_by( user=user, provider_id=provider.id ) \
-            .filter( model.CloudUserCredentials.c.deleted != True ) \
+            .filter( model.CloudUserCredentials.table.c.deleted != True ) \
             .all()
             
         if len( creds ) == 0:
             # Delete and save
             #sess = trans.sa_session
             provider.deleted = True
-            provider.flush()
+            trans.sa_session.add( provider )
+            trans.sa_session.flush()
             # Display the management page
             trans.set_message( "Cloud provider '%s' deleted." % provider.name )
             return self.list( trans )
@@ -1024,7 +1028,7 @@ class CloudController( BaseController ):
     @web.json
     def json_update( self, trans ):
         user = trans.get_user()
-        UCIs = trans.sa_session.query( model.UCI ).filter_by( user=user ).filter( model.UCI.c.deleted != True ).all()
+        UCIs = trans.sa_session.query( model.UCI ).filter_by( user=user ).filter( model.UCI.table.c.deleted != True ).all()
         insd = {} # instance name-state dict
         for uci in UCIs:
             dict = {}
@@ -1062,7 +1066,7 @@ class CloudController( BaseController ):
 
 def get_provider( trans, name ):
     user = trans.get_user()
-    return trans.app.model.CloudProvider \
+    return trans.sa_session.query( model.CloudProvider ) \
                 .filter_by (user=user, name=name) \
                 .first()
                 
@@ -1126,19 +1130,6 @@ def get_uci( trans, id, check_ownership=True ):
     # Looks good
     return live
 
-def get_mi( trans, uci, size='m1.small' ):
-    """
-    Get appropriate machine image (mi) based on instance size.
-    TODO: Dummy method - need to implement logic
-        For valid sizes, see http://aws.amazon.com/ec2/instance-types/
-    """
-    if uci.credentials.provider.type == 'ec2':
-        return trans.app.model.CloudImage.filter(
-            trans.app.model.CloudImage.table.c.id==2).first()
-    else:
-        return trans.app.model.CloudImage.filter(
-            trans.app.model.CloudImage.table.c.id==1).first()
-
 def get_stores( trans, uci ):
     """
     Get stores objects that are connected to uci object
@@ -1146,7 +1137,7 @@ def get_stores( trans, uci ):
     user = trans.get_user()
     stores = trans.sa_session.query( model.CloudStore ) \
             .filter_by( user=user, uci_id=uci.id ) \
-            .filter( model.CloudStore.c.status != store_status.ERROR ) \
+            .filter( model.CloudStore.table.c.status != store_status.ERROR ) \
             .all()
             
     return stores
@@ -1173,7 +1164,7 @@ def get_connection( trans, creds ):
 #    creds = trans.sa_session.query( model.CloudUserCredentials ) \
 #        .filter_by( user=user, name=credName ) \
 #        .first()
-        #.filter( model.CloudUserCredentials.c.deleted != True ) \ MOVE TO LINE ABOVE ONCE DELETE COLUMS ARE IMPLEMENTED
+        #.filter( model.CloudUserCredentials.table.c.deleted != True ) \ MOVE TO LINE ABOVE ONCE DELETE COLUMS ARE IMPLEMENTED
         
     if creds:
         a_key = creds.access_key

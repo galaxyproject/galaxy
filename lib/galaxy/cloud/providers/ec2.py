@@ -74,6 +74,7 @@ class EC2CloudProvider( object ):
         self.zone = "us-east-1a"
         self.security_group = "galaxyWeb"
         self.queue = Queue()
+        self.sa_session = app.model.context
         
         self.threads = []
         nworkers = 5
@@ -84,13 +85,26 @@ class EC2CloudProvider( object ):
             self.threads.append( worker )
         log.debug( "%d EC2 cloud workers ready", nworkers )
         
+    def shutdown( self ):
+        """Attempts to gracefully shut down the monitor thread"""
+        log.info( "sending stop signal to worker threads in EC2 cloud manager" )
+        for i in range( len( self.threads ) ):
+            self.queue.put( self.STOP_SIGNAL )
+        log.info( "EC2 cloud manager stopped" )
+    
+    def put( self, uci_wrapper ):
+        # Get rid of UCI from state description
+        state = uci_wrapper.get_uci_state()
+        uci_wrapper.change_state( state.split('U')[0] ) # remove 'UCI' from end of state description (i.e., mark as accepted and ready for processing)
+        self.queue.put( uci_wrapper )
+        
     def run_next( self ):
         """Run the next job, waiting until one is available if necessary"""
         cnt = 0
         while 1:
             
             uci_wrapper = self.queue.get()
-            uci_state = uci_wrapper.get_state()
+            uci_state = uci_wrapper.get_uci_state()
             if uci_state is self.STOP_SIGNAL:
                 return
             try:
@@ -194,13 +208,13 @@ class EC2CloudProvider( object ):
         """
         Get appropriate machine image (mi) based on instance size.
         """
-        i_type = uci_wrapper.get_type( i_index )
+        i_type = uci_wrapper.get_instance_type( i_index )
         if i_type=='m1.small' or i_type=='c1.medium':
             arch = 'i386'
         else:
             arch = 'x86_64' 
         
-        mi = model.CloudImage.filter_by( deleted=False, provider_type=self.type, architecture=arch ).first()
+        mi = self.sa_session.query( model.CloudImage ).filter_by( deleted=False, provider_type=self.type, architecture=arch ).first()
         if mi:
             return mi.image_id
         else:
@@ -209,19 +223,6 @@ class EC2CloudProvider( object ):
             uci_wrapper.set_error( err+". Contact site administrator to ensure needed machine image is registered.", True )
             return None
             
-    def shutdown( self ):
-        """Attempts to gracefully shut down the monitor thread"""
-        log.info( "sending stop signal to worker threads in EC2 cloud manager" )
-        for i in range( len( self.threads ) ):
-            self.queue.put( self.STOP_SIGNAL )
-        log.info( "EC2 cloud manager stopped" )
-    
-    def put( self, uci_wrapper ):
-        # Get rid of UCI from state description
-        state = uci_wrapper.get_state()
-        uci_wrapper.change_state( state.split('U')[0] ) # remove 'UCI' from end of state description (i.e., mark as accepted and ready for processing)
-        self.queue.put( uci_wrapper )
-        
     def createUCI( self, uci_wrapper ):
         """ 
         Creates User Configured Instance (UCI). Essentially, creates storage volume on cloud provider
@@ -294,7 +295,8 @@ class EC2CloudProvider( object ):
                 if conn.delete_volume( v.volume_id ):
                     deletedList.append( v.volume_id )
                     v.deleted = True
-                    v.flush()
+                    self.sa_session.add( v )
+                    self.sa_session.flush()
                     count += 1
                 else:
                     failedList.append( v.volume_id )
@@ -308,8 +310,8 @@ class EC2CloudProvider( object ):
         if count == len( vl ):
             uci_wrapper.set_deleted()
         else:
-            err = "Deleting following volume(s) failed: "+failedList+". However, these volumes were successfully deleted: "+deletedList+". \
-                        MANUAL intervention and processing needed."
+            err = "Deleting following volume(s) failed: " + str( failedList ) + ". However, these volumes were successfully deleted: " \
+                  + str( deletedList ) + ". MANUAL intervention and processing needed."
             log.error( err )
             uci_wrapper.set_error( err, True )
             
@@ -317,7 +319,7 @@ class EC2CloudProvider( object ):
         """
         Creates snapshot of all storage volumes associated with this UCI. 
         """
-        if uci_wrapper.get_state() != uci_states.ERROR:
+        if uci_wrapper.get_uci_state() != uci_states.ERROR:
             conn = self.get_connection( uci_wrapper )
             
             snapshots = uci_wrapper.get_snapshots( status = snapshot_status.SUBMITTED )
@@ -361,7 +363,7 @@ class EC2CloudProvider( object ):
         """
         Starts instance(s) of given UCI on the cloud.  
         """ 
-        if uci_wrapper.get_state() != uci_states.ERROR:
+        if uci_wrapper.get_uci_state() != uci_states.ERROR:
              conn = self.get_connection( uci_wrapper )
              self.check_key_pair( uci_wrapper, conn )
              if uci_wrapper.get_key_pair_name() == None:
@@ -379,70 +381,73 @@ class EC2CloudProvider( object ):
                     log.debug( "mi_id: %s, uci_wrapper.get_key_pair_name(): %s" % ( mi_id, uci_wrapper.get_key_pair_name() ) )
                     uci_wrapper.set_mi( i_index, mi_id )
                     
-                    # Check if galaxy security group exists (and create it if it does not)
-                    log.debug( "Setting up '%s' security group." % self.security_group )
-                    try:
-                        conn.get_all_security_groups( [self.security_group] ) # security groups
-                    except boto.exception.EC2ResponseError, e:
-                        if e.code == 'InvalidGroup.NotFound': 
-                            log.info( "No security group found, creating security group '%s'" % self.security_group )
-                            try:
-                                gSecurityGroup = conn.create_security_group(self.security_group, 'Security group for Galaxy.')
-                                gSecurityGroup.authorize( 'tcp', 80, 80, '0.0.0.0/0' ) # Open HTTP port
-                                gSecurityGroup.authorize( 'tcp', 22, 22, '0.0.0.0/0' ) # Open SSH port
-                            except boto.exception.EC2ResponseError, ee:
-                                err = "EC2 response error while creating security group: " + str( ee )
-                                log.error( err )
-                                uci_wrapper.set_error( err, True )
-                        else:
-                            err = "EC2 response error while retrieving security group: " + str( e )
-                            log.error( err )
-                            uci_wrapper.set_error( err, True )
-                
-                    
-                    if uci_wrapper.get_state() != uci_states.ERROR:
-                        # Start an instance
-                        log.debug( "Starting instance for UCI '%s'" % uci_wrapper.get_name() )
-                        #TODO: Once multiple volumes can be attached to a single instance, update 'userdata' composition            
-                        userdata = uci_wrapper.get_store_volume_id()+"|"+uci_wrapper.get_access_key()+"|"+uci_wrapper.get_secret_key() 
-                        log.debug( "Using following command: conn.run_instances( image_id='%s', key_name='%s', security_groups=['%s'], user_data=[OMITTED], instance_type='%s', placement='%s' )" 
-                                   % ( mi_id, uci_wrapper.get_key_pair_name(), self.security_group, uci_wrapper.get_type( i_index ), uci_wrapper.get_uci_availability_zone() ) )
-                        reservation = None
+                    if mi_id != None:
+                        # Check if galaxy security group exists (and create it if it does not)
+                        log.debug( "Setting up '%s' security group." % self.security_group )
                         try:
-                            reservation = conn.run_instances( image_id=mi_id, 
-                                                              key_name=uci_wrapper.get_key_pair_name(), 
-                                                              security_groups=[self.security_group], 
-                                                              user_data=userdata,
-                                                              instance_type=uci_wrapper.get_type( i_index ),  
-                                                              placement=uci_wrapper.get_uci_availability_zone() )
+                            conn.get_all_security_groups( [self.security_group] ) # security groups
                         except boto.exception.EC2ResponseError, e:
-                            err = "EC2 response error when starting UCI '"+ uci_wrapper.get_name() +"': " + str( e )
-                            log.error( err )
-                            uci_wrapper.set_error( err, True )
-                        except Exception, ex:
-                            err = "Error when starting UCI '" + uci_wrapper.get_name() + "': " + str( ex )
-                            log.error( err )
-                            uci_wrapper.set_error( err, True )
-                        # Record newly available instance data into local Galaxy database
-                        if reservation:
-                            uci_wrapper.set_launch_time( self.format_time( reservation.instances[0].launch_time ), i_index=i_index )
-                            if not uci_wrapper.uci_launch_time_set():
-                                uci_wrapper.set_uci_launch_time( self.format_time( reservation.instances[0].launch_time ) )
-                            try:
-                                uci_wrapper.set_reservation_id( i_index, str( reservation ).split(":")[1] )
-                                # TODO: if more than a single instance will be started through single reservation, change this reference to element [0]
-                                i_id = str( reservation.instances[0]).split(":")[1] 
-                                uci_wrapper.set_instance_id( i_index, i_id )
-                                s = reservation.instances[0].state 
-                                uci_wrapper.change_state( s, i_id, s )
-                                uci_wrapper.set_security_group_name( self.security_group, i_id=i_id )
-                                log.debug( "Instance of UCI '%s' started, current state: '%s'" % ( uci_wrapper.get_name(), uci_wrapper.get_state() ) )
-                            except boto.exception.EC2ResponseError, e:
-                                err = "EC2 response error when retrieving instance information for UCI '" + uci_wrapper.get_name() + "': " + str( e )
+                            if e.code == 'InvalidGroup.NotFound': 
+                                log.info( "No security group found, creating security group '%s'" % self.security_group )
+                                try:
+                                    gSecurityGroup = conn.create_security_group(self.security_group, 'Security group for Galaxy.')
+                                    gSecurityGroup.authorize( 'tcp', 80, 80, '0.0.0.0/0' ) # Open HTTP port
+                                    gSecurityGroup.authorize( 'tcp', 22, 22, '0.0.0.0/0' ) # Open SSH port
+                                except boto.exception.EC2ResponseError, ee:
+                                    err = "EC2 response error while creating security group: " + str( ee )
+                                    log.error( err )
+                                    uci_wrapper.set_error( err, True )
+                            else:
+                                err = "EC2 response error while retrieving security group: " + str( e )
                                 log.error( err )
                                 uci_wrapper.set_error( err, True )
-                    else:
-                        log.error( "UCI '%s' is in 'error' state, starting instance was aborted." % uci_wrapper.get_name() )
+                    
+                        
+                        if uci_wrapper.get_uci_state() != uci_states.ERROR:
+                            # Start an instance
+                            log.debug( "Starting instance for UCI '%s'" % uci_wrapper.get_name() )
+                            #TODO: Once multiple volumes can be attached to a single instance, update 'userdata' composition            
+                            userdata = uci_wrapper.get_store_volume_id()+"|"+uci_wrapper.get_access_key()+"|"+uci_wrapper.get_secret_key() 
+                            log.debug( "Using following command: conn.run_instances( image_id='%s', key_name='%s', security_groups=['%s'], user_data=[OMITTED], instance_type='%s', placement='%s' )" 
+                                       % ( mi_id, uci_wrapper.get_key_pair_name(), self.security_group, uci_wrapper.get_instance_type( i_index ), uci_wrapper.get_uci_availability_zone() ) )
+                            reservation = None
+                            try:
+                                reservation = conn.run_instances( image_id=mi_id, 
+                                                                  key_name=uci_wrapper.get_key_pair_name(), 
+                                                                  security_groups=[self.security_group], 
+                                                                  user_data=userdata,
+                                                                  instance_type=uci_wrapper.get_instance_type( i_index ),  
+                                                                  placement=uci_wrapper.get_uci_availability_zone() )
+                            except boto.exception.EC2ResponseError, e:
+                                err = "EC2 response error when starting UCI '"+ uci_wrapper.get_name() +"': " + str( e )
+                                log.error( err )
+                                uci_wrapper.set_error( err, True )
+                            except Exception, ex:
+                                err = "Error when starting UCI '" + uci_wrapper.get_name() + "': " + str( ex )
+                                log.error( err )
+                                uci_wrapper.set_error( err, True )
+                            # Record newly available instance data into local Galaxy database
+                            if reservation:
+                                l_time = datetime.utcnow()
+    #                            uci_wrapper.set_instance_launch_time( self.format_time( reservation.instances[0].launch_time ), i_index=i_index )
+                                uci_wrapper.set_instance_launch_time( l_time, i_index=i_index )
+                                if not uci_wrapper.uci_launch_time_set():
+                                    uci_wrapper.set_uci_launch_time( l_time )
+                                try:
+                                    uci_wrapper.set_reservation_id( i_index, str( reservation ).split(":")[1] )
+                                    # TODO: if more than a single instance will be started through single reservation, change this reference to element [0]
+                                    i_id = str( reservation.instances[0]).split(":")[1] 
+                                    uci_wrapper.set_instance_id( i_index, i_id )
+                                    s = reservation.instances[0].state 
+                                    uci_wrapper.change_state( s, i_id, s )
+                                    uci_wrapper.set_security_group_name( self.security_group, i_id=i_id )
+                                    log.debug( "Instance of UCI '%s' started, current state: '%s'" % ( uci_wrapper.get_name(), uci_wrapper.get_uci_state() ) )
+                                except boto.exception.EC2ResponseError, e:
+                                    err = "EC2 response error when retrieving instance information for UCI '" + uci_wrapper.get_name() + "': " + str( e )
+                                    log.error( err )
+                                    uci_wrapper.set_error( err, True )
+                        else:
+                            log.error( "UCI '%s' is in 'error' state, starting instance was aborted." % uci_wrapper.get_name() )
              else:
                 err = "No instances in state '"+ instance_states.SUBMITTED +"' found for UCI '" + uci_wrapper.get_name() + \
                       "'. Nothing to start."
@@ -459,8 +464,13 @@ class EC2CloudProvider( object ):
         
         # Get all instances associated with given UCI
         il = uci_wrapper.get_instances_ids() # instance list
+        # Process list of instances and remove any references to empty instance id's
+        for i in il:
+            if i is None:
+                l.remove( i )
+        log.debug( 'List of instances being terminated: %s' % il )
         rl = conn.get_all_instances( il ) # Reservation list associated with given instances
-                        
+        
         # Initiate shutdown of all instances under given UCI
         cnt = 0
         stopped = []
@@ -536,18 +546,22 @@ class EC2CloudProvider( object ):
         """
         log.debug( "Running general status update for EC2 UCIs..." )
         # Update instances
-        instances = model.CloudInstance.filter( or_( model.CloudInstance.c.state==instance_states.RUNNING, 
-                                                     model.CloudInstance.c.state==instance_states.PENDING,  
-                                                     model.CloudInstance.c.state==instance_states.SHUTTING_DOWN ) ).all()
+        instances = self.sa_session.query( model.CloudInstance ) \
+            .filter( or_( model.CloudInstance.table.c.state==instance_states.RUNNING, 
+                          model.CloudInstance.table.c.state==instance_states.PENDING,  
+                          model.CloudInstance.table.c.state==instance_states.SHUTTING_DOWN ) ) \
+            .all()
         for inst in instances:
             if self.type == inst.uci.credentials.provider.type:
                 log.debug( "[%s] Running general status update on instance '%s'" % ( inst.uci.credentials.provider.type, inst.instance_id ) )
                 self.updateInstance( inst )
             
         # Update storage volume(s)
-        stores = model.CloudStore.filter( or_( model.CloudStore.c.status==store_status.IN_USE, 
-                                               model.CloudStore.c.status==store_status.CREATING,
-                                               model.CloudStore.c.status==None ) ).all()
+        stores = self.sa_session.query( model.CloudStore ) \
+            .filter( or_( model.CloudStore.table.c.status==store_status.IN_USE, 
+                          model.CloudStore.table.c.status==store_status.CREATING,
+                          model.CloudStore.table.c.status==None ) ) \
+            .all()
         for store in stores:
             if self.type == store.uci.credentials.provider.type: # and store.volume_id != None:
                 log.debug( "[%s] Running general status update on store with local database ID: '%s'" % ( store.uci.credentials.provider.type, store.id ) )
@@ -564,7 +578,9 @@ class EC2CloudProvider( object ):
 #                store.flush()
         
         # Update pending snapshots or delete ones marked for deletion
-        snapshots = model.CloudSnapshot.filter_by( status=snapshot_status.PENDING, status=snapshot_status.DELETE ).all()
+        snapshots = self.sa_session.query( model.CloudSnapshot ) \
+            .filter_by( status=snapshot_status.PENDING, status=snapshot_status.DELETE ) \
+            .all()
         for snapshot in snapshots:
             if self.type == snapshot.uci.credentials.provider.type and snapshot.status == snapshot_status.PENDING:
                 log.debug( "[%s] Running general status update on snapshot '%s'" % ( snapshot.uci.credentials.provider.type, snapshot.snapshot_id ) )
@@ -574,11 +590,12 @@ class EC2CloudProvider( object ):
                 self.delete_snapshot( snapshot )
              
         # Attempt at updating any zombie UCIs (i.e., instances that have been in SUBMITTED state for longer than expected - see below for exact time)
-        zombies = model.UCI.filter_by( state=uci_states.SUBMITTED ).all()
+        zombies = self.sa_session.query( model.UCI ).filter_by( state=uci_states.SUBMITTED ).all()
         for zombie in zombies:
-            z_instances = model.CloudInstance.filter_by( uci_id=zombie.id) \
-                .filter( or_( model.CloudInstance.c.state != instance_states.TERMINATED,
-                              model.CloudInstance.c.state == None ) ) \
+            z_instances = self.sa_session.query( model.CloudInstance ) \
+                .filter_by( uci_id=zombie.id ) \
+                .filter( or_( model.CloudInstance.table.c.state != instance_states.TERMINATED,
+                              model.CloudInstance.table.c.state == None ) ) \
                 .all()
             for z_inst in z_instances:
                 if self.type == z_inst.uci.credentials.provider.type:
@@ -592,8 +609,8 @@ class EC2CloudProvider( object ):
         
         # Get credentials associated wit this instance
         uci_id = inst.uci_id
-        uci = model.UCI.get( uci_id )
-        uci.refresh()
+        uci = self.sa_session.query( model.UCI ).get( uci_id )
+        self.sa_session.refresh( uci )
         conn = self.get_connection_from_uci( uci )
         
         # Get reservations handle for given instance
@@ -604,6 +621,8 @@ class EC2CloudProvider( object ):
             log.error( err )
             uci.error = err
             uci.state = uci_states.ERROR
+            self.sa_session.add( uci )
+            self.sa_session.flush()
             return None
 
         # Because references to reservations are deleted shortly after instances have been terminated, getting an empty list as a response to a query
@@ -618,8 +637,9 @@ class EC2CloudProvider( object ):
             inst.state = instance_states.TERMINATED
             uci.state = uci_states.ERROR
             uci.launch_time = None
-            inst.flush()
-            uci.flush()
+            self.sa_session.add( inst )
+            self.sa_session.add( uci )
+            self.sa_session.flush()
         # Update instance status in local DB with info from cloud provider
         for r in rl:
             for i, cInst in enumerate( r.instances ):
@@ -628,45 +648,54 @@ class EC2CloudProvider( object ):
                     log.debug( "Checking state of cloud instance '%s' associated with UCI '%s' and reservation '%s'. State='%s'" % ( cInst, uci.name, r, s ) )
                     if  s != inst.state:
                         inst.state = s
-                        inst.flush()
+                        self.sa_session.add( inst )
+                        self.sa_session.flush()
                          # After instance has shut down, ensure UCI is marked as 'available'
                         if s == instance_states.TERMINATED and uci.state != uci_states.ERROR:
                             uci.state = uci_states.AVAILABLE
                             uci.launch_time = None
-                            uci.flush()
+                            self.sa_session.add( uci )
+                            self.sa_session.flush()
                     # Making sure state of UCI is updated. Once multiple instances become associated with single UCI, this will need to be changed.
                     if s != uci.state and s != instance_states.TERMINATED: 
                         uci.state = s                    
-                        uci.flush() 
+                        self.sa_session.add( uci )
+                        self.sa_session.flush()
                     if cInst.public_dns_name != inst.public_dns:
                         inst.public_dns = cInst.public_dns_name
-                        inst.flush()
+                        self.sa_session.add( inst )
+                        self.sa_session.flush()
                     if cInst.private_dns_name != inst.private_dns:
                         inst.private_dns = cInst.private_dns_name
-                        inst.flush()
+                        self.sa_session.add( inst )
+                        self.sa_session.flush()
                 except boto.exception.EC2ResponseError, e:
                     err = "Updating instance status from cloud failed for UCI '"+ uci.name + "' during general status update: " + str( e )
                     log.error( err )
                     uci.error = err
                     uci.state = uci_states.ERROR
+                    self.sa_session.add( uci )
+                    self.sa_session.flush()
                     return None
                 
     def updateStore( self, store ):
         # Get credentials associated wit this store
         uci_id = store.uci_id
-        uci = model.UCI.get( uci_id )
-        uci.refresh()
+        uci = self.sa_session.query( model.UCI ).get( uci_id )
+        self.sa_session.refresh( uci )
         conn = self.get_connection_from_uci( uci )
         
         # Get reservations handle for given store 
         try:
+            log.debug( "Updating storage volume command: vl = conn.get_all_volumes( [%s] )" % store.volume_id )
             vl = conn.get_all_volumes( [store.volume_id] )
         except boto.exception.EC2ResponseError, e:
             err = "Retrieving volume(s) from cloud failed for UCI '"+ uci.name + "' during general status update: " + str( e )
             log.error( err )
             uci.error = err
             uci.state = uci_states.ERROR
-            uci.flush()
+            self.sa_session.add( uci )
+            self.sa_session.flush()
             return None
         
         # Update store status in local DB with info from cloud provider
@@ -677,29 +706,36 @@ class EC2CloudProvider( object ):
                     #  UCI state remained as 'new', try to remedy this by updating UCI state here 
                     if ( store.status == None ) and ( store.volume_id != None ):
                         uci.state = vl[0].status
-                        uci.flush()
+                        self.sa_session.add( uci )
+                        self.sa_session.flush()
                     # If UCI was marked in state 'CREATING', update its status to reflect new status
                     elif ( uci.state == uci_states.CREATING ):
                         uci.state = vl[0].status
-                        uci.flush()
+                        self.sa_session.add( uci )
+                        self.sa_session.flush()
                             
                     store.status = vl[0].status
-                    store.flush()
+                    self.sa_session.add( store )
+                    self.sa_session.flush()
                 if store.i_id != vl[0].instance_id:
                     store.i_id = vl[0].instance_id
-                    store.flush()
+                    self.sa_session.add( store )
+                    self.sa_session.flush()
                 if store.attach_time != vl[0].attach_time:
                     store.attach_time = vl[0].attach_time
-                    store.flush()
+                    self.sa_session.add( store )
+                    self.sa_session.flush()
                 if store.device != vl[0].device:
                     store.device = vl[0].device
-                    store.flush()
+                    self.sa_session.add( store )
+                    self.sa_session.flush()
             except boto.exception.EC2ResponseError, e:
                 err = "Updating status of volume(s) from cloud failed for UCI '"+ uci.name + "' during general status update: " + str( e )
                 log.error( err )
                 uci.error = err
                 uci.state = uci_states.ERROR
-                uci.flush()
+                self.sa_session.add( uci )
+                self.sa_session.flush()
                 return None
         else:
             err = "No storage volumes returned by cloud provider on general update"
@@ -708,14 +744,15 @@ class EC2CloudProvider( object ):
             store.error = err
             uci.error = err
             uci.state = uci_states.ERROR
-            uci.flush()
-            store.flush()
+            self.sa_session.add( uci )
+            self.sa_session.add( store )
+            self.sa_session.flush()
    
     def updateSnapshot( self, snapshot ):
         # Get credentials associated wit this store
         uci_id = snapshot.uci_id
-        uci = model.UCI.get( uci_id )
-        uci.refresh()
+        uci = self.sa_session.query( model.UCI ).get( uci_id )
+        self.sa_session.refresh( uci )
         conn = self.get_connection_from_uci( uci )
         
         try:
@@ -724,7 +761,8 @@ class EC2CloudProvider( object ):
             if len( snap ) > 0:
                 log.debug( "Snapshot '%s' status: %s" % ( snapshot.snapshot_id, snap[0].status ) )
                 snapshot.status = snap[0].status
-                snapshot.flush()
+                self.sa_session.add( snapshot )
+                self.sa_session.flush()
             else:
                 err = "No snapshots returned by EC2 on general update"
                 log.error( "%s for UCI '%s'" % ( err, uci.name ) )
@@ -732,8 +770,9 @@ class EC2CloudProvider( object ):
                 snapshot.error = err
                 uci.error = err
                 uci.state = uci_states.ERROR
-                uci.flush()
-                snapshot.flush()
+                self.sa_session.add( uci )
+                self.sa_session.add( snapshot )
+                self.sa_session.flush()
         except boto.exception.EC2ResponseError, e:
             err = "EC2 response error while updating snapshot status: " + str( e )
             log.error( err )
@@ -741,8 +780,9 @@ class EC2CloudProvider( object ):
             snapshot.error = err
             uci.error = err
             uci.state = uci_states.ERROR
-            uci.flush()
-            snapshot.flush()
+            self.sa_session.add( uci )
+            self.sa_session.add( snapshot )
+            self.sa_session.flush()
         except Exception, ex:
             err = "Error while updating snapshot status: " + str( ex )
             log.error( err )
@@ -750,15 +790,16 @@ class EC2CloudProvider( object ):
             snapshot.error = err
             uci.error = err
             uci.state = uci_states.ERROR
-            uci.flush()
-            snapshot.flush()
+            self.sa_session.add( uci )
+            self.sa_session.add( snapshot )
+            self.sa_session.flush()
         
     def delete_snapshot( self, snapshot ):
         if snapshot.status == snapshot_status.DELETE:
             # Get credentials associated wit this store
             uci_id = snapshot.uci_id
-            uci = model.UCI.get( uci_id )
-            uci.refresh()
+            uci = self.sa_session.query( model.UCI ).get( uci_id )
+            self.sa_session.refresh( uci )
             conn = self.get_connection_from_uci( uci )
             
             try:
@@ -767,7 +808,8 @@ class EC2CloudProvider( object ):
                 if snap == True:
                     snapshot.deleted = True
                     snapshot.status = snapshot_status.DELETED
-                    snapshot.flush()
+                    self.sa_session.add( snapshot )
+                    self.sa_session.flush()
                 return snap
             except boto.exception.EC2ResponseError, e:
                 err = "EC2 response error while deleting snapshot: " + str( e )
@@ -776,8 +818,9 @@ class EC2CloudProvider( object ):
                 snapshot.error = err
                 uci.error = err
                 uci.state = uci_states.ERROR
-                uci.flush()
-                snapshot.flush()
+                self.sa_session.add( uci )
+                self.sa_session.add( snapshot )
+                self.sa_session.flush()
             except Exception, ex:
                 err = "Error while deleting snapshot: " + str( ex )
                 log.error( err )
@@ -785,14 +828,16 @@ class EC2CloudProvider( object ):
                 snapshot.error = err
                 uci.error = err
                 uci.state = uci_states.ERROR
-                uci.flush()
-                snapshot.flush()
+                self.sa_session.add( uci )
+                self.sa_session.add( snapshot )
+                self.sa_session.flush()
         else:
             err = "Cannot delete snapshot '"+snapshot.snapshot_id+"' because its status is '"+snapshot.status+"'. Only snapshots with '" + \
                         snapshot_status.COMPLETED+"' status can be deleted."
             log.error( err )
             snapshot.error = err
-            snapshot.flush()
+            self.sa_session.add( snapshot )
+            self.sa_session.flush()
             
     def processZombie( self, inst ):
         """
@@ -800,6 +845,10 @@ class EC2CloudProvider( object ):
         accordingly or if something else failed and instance was never started. Currently, no automatic 
         repairs are being attempted; instead, appropriate error messages are set.
         """
+        uci_id = inst.uci_id
+        uci = self.sa_session.query( model.UCI ).get( uci_id )
+        self.sa_session.refresh( uci )
+        
         # Check if any instance-specific information was written to local DB; if 'yes', set instance and UCI's error message 
         # suggesting manual check.
         if inst.launch_time != None or inst.reservation_id != None or inst.instance_id != None:
@@ -820,9 +869,10 @@ class EC2CloudProvider( object ):
                 try:
                     state = rl[0].instances[0].update()
                     inst.state = state
-                    inst.uci.state = state
-                    inst.flush()
-                    inst.uci.flush()
+                    uci.state = state
+                    self.sa_session.add( inst )
+                    self.sa_session.add( uci )
+                    self.sa_session.flush()
                 except: # something failed, so skip
                     pass
                 
@@ -830,10 +880,12 @@ class EC2CloudProvider( object ):
                     try:
                         launch_time = self.format_time( rl[0].instances[0].launch_time )
                         inst.launch_time = launch_time
-                        inst.flush()
+                        self.sa_session.add( inst )
+                        self.sa_session.flush() 
                         if inst.uci.launch_time == None:
-                            inst.uci.launch_time = launch_time
-                            inst.uci.flush()
+                            uci.launch_time = launch_time
+                            self.sa_session.add( uci )
+                            self.sa_session.flush()
                     except: # something failed, so skip
                         pass
             else:
@@ -844,8 +896,9 @@ class EC2CloudProvider( object ):
                 inst.uci.error = err
                 inst.uci.state = uci_states.ERROR
                 log.error( err )
-                inst.flush()
-                inst.uci.flush()          
+                self.sa_session.add( inst )
+                self.sa_session.add( uci )
+                self.sa_session.flush()         
                 
         else: #Instance most likely never got processed, so set error message suggesting user to try starting instance again.
             err = "Starting a machine instance (DB id: '"+str(inst.id)+"') associated with this UCI '" + str(inst.uci.name) + \
@@ -853,11 +906,12 @@ class EC2CloudProvider( object ):
                   "starting the instance again."
             inst.error = err
             inst.state = instance_states.ERROR
-            inst.uci.error = err
-            inst.uci.state = uci_states.ERROR
+            uci.error = err
+            uci.state = uci_states.ERROR
             log.error( err )
-            inst.flush()
-            inst.uci.flush()
+            self.sa_session.add( inst )
+            self.sa_session.add( uci )
+            self.sa_session.flush()
 #            uw = UCIwrapper( inst.uci )
 #            log.debug( "Try automatically re-submitting UCI '%s'." % uw.get_name() )
 
@@ -882,7 +936,8 @@ class EC2CloudProvider( object ):
             log.error( err )
             uci.error = err
             uci.state = uci_states.ERROR
-            uci.flush()
+            self.sa_session.add( uci )
+            self.sa_session.flush()
             return None
 
         return conn
@@ -895,7 +950,7 @@ class EC2CloudProvider( object ):
 #        conn = self.get_connection( uci )
 #        
 #        # Update status of storage volumes
-#        vl = model.CloudStore.filter( model.CloudInstance.c.uci_id == uci.id ).all()
+#        vl = model.CloudStore.filter( model.CloudInstance.table.c.uci_id == uci.id ).all()
 #        vols = []
 #        for v in vl:
 #            vols.append( v.volume_id )
@@ -911,7 +966,7 @@ class EC2CloudProvider( object ):
 #            pass
 #        
 #        # Update status of instances
-#        il = model.CloudInstance.filter_by( uci_id=uci.id ).filter( model.CloudInstance.c.state != 'terminated' ).all()
+#        il = model.CloudInstance.filter_by( uci_id=uci.id ).filter( model.CloudInstance.table.c.state != 'terminated' ).all()
 #        instanceList = []
 #        for i in il:
 #            instanceList.append( i.instance_id )
