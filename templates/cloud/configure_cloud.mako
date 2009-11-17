@@ -36,10 +36,11 @@ function trim19(str){
 				old_state = $(elem + "-state").text();
 				prev_old_state = trim19( $(elem + "-state-p").text() );
 				new_state = data[i].state;
+				error_msg = data[i].error;
 				//console.log( "old_state[%d] = %s", i, old_state );
 				//console.log( "prev_old_state[%d] = %s", i, prev_old_state );
 				//console.log( "new_state[%d] = %s", i, new_state );
-				//console.log( trim19(prev_old_state) );
+				//console.log( "error_msg[%d] = %s", i, error_msg );
 				if ( ( old_state=='pending' && new_state=='running' ) ||  ( old_state=='shutting-down' && new_state=='available' ) || \
 					 ( old_state=='running' && new_state=='available' ) || ( old_state=='running' && new_state=='error' ) || \
 					 ( old_state=='pending' && new_state=='available' ) || ( old_state=='submitted' && new_state=='available' ) || \
@@ -47,20 +48,10 @@ function trim19(str){
 					var url = "${h.url_for( controller='cloud', action='list')}";
 					location.replace( url );
 				}
-				else if ( ( old_state=='running' && new_state=='error' ) || ( old_state=='pending' && new_state=='error' ) || \
-					( old_state=='submitted' && new_state=='error' ) || ( old_state=='submittedUCI' && new_state=='error' ) || \
-					( old_state=='shutting-down' && new_state=='error' ) || ( prev_old_state.match('newUCI') && new_state=='error' ) || \
-					( prev_old_state.match('new') && new_state=='error' ) || ( prev_old_state.match('deletingUCI') && new_state=='error' ) ) {
-					// TODO: Following clause causes constant page refresh for an exception thrown as a result of instance not starting correctly - need alternative method!
-					//( prev_old_state.match('available') && new_state=='error' ) || ( prev_old_state.match('deleting') && new_state=='error' ) \
-					
+				else if ( ( ( old_state != 'error' && old_state != '' ) && new_state == 'error' ) || ( !prev_old_state.match('error') && new_state == 'error' ) ) { 
 					var url = "${h.url_for( controller='cloud', action='list')}";
 					location.replace( url );
 				} 
-				
-				if ( prev_old_state.match('deletingUCI') || prev_old_state.match('deleting') ) {
-					setTimeout("update_state()", 3000);
-				}
 				
 				if ( new_state=='shutting-down' || new_state=='shutting-downUCI' ) {
 					$(elem + "-link").text( "" );
@@ -90,15 +81,10 @@ function trim19(str){
 				
 				// Update 'state' and 'time alive' fields
 				$(elem + "-state").text( data[i].state );
-				if ( ( prev_old_state.match('newUCI') && new_state=='new' ) || ( prev_old_state.match('newUCI') && new_state=='available' ) || \
-					 ( prev_old_state.match('newUCI') && new_state=='creating' )  || ( prev_old_state.match('new') && new_state=='creating' ) || \
-					 ( prev_old_state.match('new') && new_state=='available' ) || \
-					 ( prev_old_state.match('deletingUCI') && new_state=='deleted' ) || ( prev_old_state.match('deleting') && new_state=='deleted' ) || \
-					 ( prev_old_state.match('available') && new_state=='error' ) || ( prev_old_state.match('deleting') && new_state=='error' ) ) {
-					 // TODO: on state change from available->error and deleting->error page should be refreshed but that causes problems with
-					 // constant refreshings depending on what error message is so at least do it here...  
+				if ( new_state != 'error' ) { // Because 'error' state is handled as a JS link, don't include it in update
 					$(elem + "-state-p").text( data[i].state );
 				}
+				
 				if (data[i].launch_time) {
 					$(elem + "-launch_time").text( data[i].launch_time.substring(0, 16 ) + " UTC (" + data[i].time_ago + ")" );
 				}

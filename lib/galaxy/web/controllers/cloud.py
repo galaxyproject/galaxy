@@ -515,7 +515,7 @@ class CloudController( BaseController ):
                 error['provider_error'] = "You must select cloud provider type for this machine image."
             elif image_id=='' or len( image_id ) > 255:
                 error['id_error'] = "Image ID must be between 1 and 255 characters long."
-            elif trans.sa_session.query( model.CloudUserCredentials ) \
+            elif trans.sa_session.query( model.CloudImage ) \
                     .filter_by( deleted=False ) \
                     .filter( model.CloudImage.table.c.image_id == image_id ) \
                     .first():
@@ -558,7 +558,7 @@ class CloudController( BaseController ):
     @web.expose
     @web.require_login( "use Galaxy cloud" )
     def list_machine_images( self, trans ):
-        images = trans.sa_session.query( model.CloudImage ).filter( model.CloudImage.table.c.deleted != True ).all()
+        images = trans.sa_session.query( model.CloudImage ).filter_by( deleted=False ).all()
         return trans.fill_template( '/cloud/list_images.mako', images=images )
     
     @web.expose
@@ -1028,15 +1028,19 @@ class CloudController( BaseController ):
     @web.json
     def json_update( self, trans ):
         user = trans.get_user()
-        UCIs = trans.sa_session.query( model.UCI ).filter_by( user=user ).filter( model.UCI.table.c.deleted != True ).all()
+        UCIs = trans.sa_session.query( model.UCI ).filter_by( user=user, deleted=False ).all()
         insd = {} # instance name-state dict
         for uci in UCIs:
             dict = {}
             dict['id'] = uci.id
             dict['state'] = uci.state
+            if uci.error != None:
+                dict['error'] = str( uci.error )
+            else:
+                dict['error'] = None
             if uci.launch_time != None:
-                dict['launch_time'] = str(uci.launch_time)
-                dict['time_ago'] = str(date.distance_of_time_in_words(uci.launch_time, date.datetime.utcnow() ) )
+                dict['launch_time'] = str( uci.launch_time )
+                dict['time_ago'] = str( date.distance_of_time_in_words( uci.launch_time, date.datetime.utcnow() ) )
             else:
                 dict['launch_time'] = None
                 dict['time_ago'] = None

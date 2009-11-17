@@ -110,16 +110,16 @@ class EucalyptusCloudProvider( object ):
                 return
             try:
                 if uci_state==uci_states.NEW:
-                    self.createUCI( uci_wrapper )
+                    self.create_uci( uci_wrapper )
                 elif uci_state==uci_states.DELETING:
-                    self.deleteUCI( uci_wrapper )
+                    self.delete_uci( uci_wrapper )
                 elif uci_state==uci_states.SUBMITTED:
-                    self.startUCI( uci_wrapper )
-                    #self.dummyStartUCI( uci_wrapper )
+                    self.start_uci( uci_wrapper )
+                    #self.dummy_start_uci( uci_wrapper )
                 elif uci_state==uci_states.SHUTTING_DOWN:
-                    self.stopUCI( uci_wrapper )
+                    self.stop_uci( uci_wrapper )
                 elif uci_state==uci_states.SNAPSHOT:
-                    self.snapshotUCI( uci_wrapper )
+                    self.snapshot_uci( uci_wrapper )
             except:
                 log.exception( "Uncaught exception executing cloud request." )
             cnt += 1
@@ -230,7 +230,7 @@ class EucalyptusCloudProvider( object ):
             uci_wrapper.set_error( err+". Contact site administrator to ensure needed machine image is registered.", True )
             return None
             
-    def createUCI( self, uci_wrapper ):
+    def create_uci( self, uci_wrapper ):
         """ 
         Create User Configured Instance (UCI) - i.e., create storage volume on cloud provider
         and register relevant information in local Galaxy database.
@@ -276,7 +276,7 @@ class EucalyptusCloudProvider( object ):
             uci_wrapper.set_store_status( vol.id, uci_states.ERROR )
             uci_wrapper.set_error( err, True )
 
-    def deleteUCI( self, uci_wrapper ):
+    def delete_uci( self, uci_wrapper ):
         """ 
         Delete UCI - i.e., delete all storage volumes associated with this UCI. 
         NOTE that this implies deletion of any and all data associated
@@ -318,7 +318,7 @@ class EucalyptusCloudProvider( object ):
             log.error( err )
             uci_wrapper.set_error( err, True )
             
-    def snapshotUCI( self, uci_wrapper ):
+    def snapshot_uci( self, uci_wrapper ):
         """
         Initiate creation of a snapshot by cloud provider for all storage volumes 
         associated with this UCI. 
@@ -361,10 +361,10 @@ class EucalyptusCloudProvider( object ):
 #                        Feel free to resent state of this instance and use it normally.", True )
             
             
-    def addStorageToUCI( self, uci_wrapper ):
+    def add_storage_to_uci( self, uci_wrapper ):
         """ Adds more storage to specified UCI """
     
-    def dummyStartUCI( self, uci_wrapper ):
+    def dummy_start_uci( self, uci_wrapper ):
         
         uci = uci_wrapper.get_uci()
         log.debug( "Would be starting instance '%s'" % uci.name )
@@ -374,7 +374,7 @@ class EucalyptusCloudProvider( object ):
         time.sleep(10)
         log.debug( "Woke up! (%s)" % uci.name )
         
-    def startUCI( self, uci_wrapper ):
+    def start_uci( self, uci_wrapper ):
         """
         Start instance(s) of given UCI on the cloud.  
         """ 
@@ -443,7 +443,7 @@ class EucalyptusCloudProvider( object ):
         else:
             log.error( "UCI '%s' is in 'error' state, starting instance was aborted." % uci_wrapper.get_name() )
         
-    def stopUCI( self, uci_wrapper):
+    def stop_uci( self, uci_wrapper):
         """ 
         Stop all cloud instances associated with given UCI. 
         """
@@ -454,7 +454,7 @@ class EucalyptusCloudProvider( object ):
         # Process list of instances and remove any references to empty instance id's
         for i in il:
             if i is None:
-                l.remove( i )
+                il.remove( i )
         log.debug( 'List of instances being terminated: %s' % il )
         rl = conn.get_all_instances( il ) # Reservation list associated with given instances
                         
@@ -543,7 +543,7 @@ class EucalyptusCloudProvider( object ):
         for inst in instances:
             if self.type == inst.uci.credentials.provider.type:
                 log.debug( "[%s] Running general status update on instance '%s'" % ( inst.uci.credentials.provider.type, inst.instance_id ) )
-                self.updateInstance( inst )
+                self.update_instance( inst )
         
         # Update storage volume(s)
         stores = self.sa_session.query( model.CloudStore ) \
@@ -554,11 +554,11 @@ class EucalyptusCloudProvider( object ):
         for store in stores:
             if self.type == store.uci.credentials.provider.type: # and store.volume_id != None:
                 log.debug( "[%s] Running general status update on store with local database ID: '%s'" % ( store.uci.credentials.provider.type, store.id ) )
-                self.updateStore( store )
+                self.update_store( store )
         
         # Update pending snapshots or delete ones marked for deletion
         snapshots = self.sa_session.query( model.CloudSnapshot ) \
-            .filter_by( status=snapshot_status.PENDING, status=snapshot_status.DELETE ) \
+            .filter( or_( model.CloudSnapshot.table.c.status == snapshot_status.PENDING, model.CloudSnapshot.table.c.status == snapshot_status.DELETE ) ) \
             .all()
         for snapshot in snapshots:
             if self.type == snapshot.uci.credentials.provider.type and snapshot.status == snapshot_status.PENDING:
@@ -583,9 +583,9 @@ class EucalyptusCloudProvider( object ):
 #                    log.debug( "z_inst.id: %s, time delta is %s sec" % ( z_inst.id, td.seconds ) )
                     if td.seconds > 180: # if instance has been in SUBMITTED state for more than 3 minutes
                         log.debug( "[%s](td=%s) Running zombie repair update on instance with DB id '%s'" % ( z_inst.uci.credentials.provider.type, td.seconds, z_inst.id ) )
-                        self.processZombie( z_inst )
+                        self.process_zombie( z_inst )
                 
-    def updateInstance( self, inst ):
+    def update_instance( self, inst ):
         """
         Update information in local database for given instance as it is obtained from cloud provider.
         Along with updating information about given instance, information about the UCI controlling
@@ -662,7 +662,7 @@ class EucalyptusCloudProvider( object ):
                     self.sa_session.flush()
                     return None
                 
-    def updateStore( self, store ):
+    def update_store( self, store ):
         """
         Update information in local database for given storage volume as it is obtained from cloud provider.
         Along with updating information about given storage volume, information about the UCI controlling
@@ -756,7 +756,7 @@ class EucalyptusCloudProvider( object ):
             self.sa_session.add( store )
             self.sa_session.flush()
    
-    def updateSnapshot( self, snapshot ):
+    def update_snapshot( self, snapshot ):
         """
         Update information in local database for given snapshot as it is obtained from cloud provider.
         Along with updating information about given snapshot, information about the UCI controlling
@@ -855,7 +855,7 @@ class EucalyptusCloudProvider( object ):
             self.sa_session.add( snapshot )
             self.sa_session.flush()
             
-    def processZombie( self, inst ):
+    def process_zombie( self, inst ):
         """
         Attempt at discovering if starting a cloud instance was successful but local database was not updated
         accordingly or if something else failed and instance was never started. Currently, no automatic 
