@@ -114,11 +114,11 @@ class Configuration( object ):
             self.tool_runners = []
         self.datatypes_config = kwargs.get( 'datatypes_config_file', 'datatypes_conf.xml' )
         # Cloud configuration options
-        self.cloud_controller_instance = string_as_bool( kwargs.get( 'cloud_controller_instance', False ) )
+        self.cloud_controller_instance = string_as_bool( kwargs.get( 'cloud_controller_instance', 'False' ) )
         if self.cloud_controller_instance == True:
-            self.enable_cloud_execution = string_as_bool( kwargs.get( 'enable_cloud_execution', True ) )
+            self.enable_cloud_execution = string_as_bool( kwargs.get( 'enable_cloud_execution', 'True' ) )
         else:
-            self.enable_cloud_execution = string_as_bool( kwargs.get( 'enable_cloud_execution', False ) )
+            self.enable_cloud_execution = string_as_bool( kwargs.get( 'enable_cloud_execution', 'False' ) )
     def get( self, key, default ):
         return self.config_dict.get( key, default )
     def get_bool( self, key, default ):

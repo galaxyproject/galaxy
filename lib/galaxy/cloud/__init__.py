@@ -61,7 +61,7 @@ class CloudManager( object ):
     def __init__( self, app ):
         self.app = app
         self.sa_session = app.model.context
-        if self.app.config.get_bool( "enable_cloud_execution", True ):
+        if self.app.config.enable_cloud_execution == True:
             # The dispatcher manager for underlying cloud instances - implements and contacts individual cloud providers
             self.provider = CloudProvider( app )
             # Monitor for updating status of cloud instances
