@@ -43,7 +43,7 @@ WYMeditor.STRINGS['en'] = {
     Source_Code:      'Source code',
     
     // Galaxy replacements.
-    History:            'History',
-    Dataset:            'Dataset',
+    Galaxy_History_Link:     'Insert Link to History',
+    Galaxy_Dataset_Link:     'Insert Link to Dataset',
 };
 

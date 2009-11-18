@@ -246,6 +246,19 @@ var updater_callback = function ( tracked_datasets ) {
         }
     });
 };
+
+    //TODO: this function is a duplicate of array_length defined in galaxy.base.js ; not sure why it needs to be redefined here (due to streaming?).
+    // Returns the number of keys (elements) in an array/dictionary.
+    var array_length = function(an_array)
+    {
+        if (an_array.length)
+            return an_array.length;
+
+        var count = 0;
+        for (element in an_array)   
+            count++;
+        return count;
+    };
  
     //
     // Function provides text for tagging toggle link.

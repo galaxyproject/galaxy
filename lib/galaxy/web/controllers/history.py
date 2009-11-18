@@ -369,7 +369,30 @@ class HistoryController( BaseController ):
         history.name = new_name
         trans.sa_session.add( history )
         trans.sa_session.flush()
+    
+    @web.expose
+    @web.require_login( "get history name" )
+    def get_name_async( self, trans, id=None ):
+        """ Returns the name for a given history. """
+        history = get_history( trans, id, False )
         
+        # To get name: user must own history, history must be importable.
+        if history.user == trans.get_user() or history.importable or trans.get_user() in history.users_shared_with:
+            return history.name
+        return
+        
+    @web.expose
+    @web.require_login( "set history's importable flag" )
+    def set_importable_async( self, trans, id=None, importable=False ):
+        """ Set history's importable attribute. """
+        history = get_history( trans, id, True )
+                
+        if history:
+            history.importable = importable
+            trans.sa_session.flush()
+    
+        return
+                    
     @web.expose
     def name_autocomplete_data( self, trans, q=None, limit=None, timestamp=None ):
         """Return autocomplete data for history names"""

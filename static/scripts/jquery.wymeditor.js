@@ -295,67 +295,6 @@ jQuery.extend(WYMeditor, {
 
 });
 
-/*
-    Galaxy code that integrates into the WYM Editor.
- */
-var Galaxy =
-{
-    /*
-        Galaxy constants for WYM Editor:
-            TOOLS           - A string replaced by the galaxy toolbar's HTML.
-            TOOLS_ITEMS     - A string replaced by the galaxy toolbar items.
-            INSERT_HISTORY  - Command: open the insert history dialog.
-            INSERT_DATASET  - Command: open the insert dataset dialog.
-            DIALOG_HISTORY  - A dialog to insert a history.
-            DIALOG_DATASET  - A dialog to insert a dataset.
-     */
-    TOOLS           : "{Galaxy_Tools}",
-    TOOLS_ITEMS     : "{Galaxy_Tools_Items}",
-    INSERT_HISTORY  : "InsertHistory",
-    INSERT_DATASET  : "InsertDataset",
-    DIALOG_HISTORY  : "DialogHistory",
-    DIALOG_DATASET  : "DialogDataset",
-
-    // Tool items overview.
-    toolsItems: [
-        {'name': "InsertHistory", 'title': 'History', 'css': 'galaxy_tools_insert_history_link'},
-        {'name': "InsertDataset", 'title': 'Dataset', 'css': 'galaxy_dataset'}
-    ],
-
-    // Tools HTML.
-    toolsHtml: "<div class='wym_tools wym_section'>"
-              + "<h2>" + this.TOOLS + "</h2>"
-              + "<ul>"
-              + this.TOOLS_ITEMS
-              + "</ul>"
-              + "</div>",
-
-    // Insert history dialog.
-    dialogHistoryHtml:  "<body class='wym_dialog wym_dialog_history'"
-               + " onload='WYMeditor.INIT_DIALOG(" + WYMeditor.INDEX + ")'"
-               + ">"
-               + "<form>"
-               + "<fieldset>"
-               + "<input type='hidden' class='wym_dialog_type' value='"
-               + this.DIALOG_HISTORY
-               + "' />"
-               + "<legend>{Link}</legend>"
-               + "<div class='row'>"
-               + "<label>{Title}</label>"
-               + "<input type='text' class='wym_title' value='' size='40' />"
-               + "</div>"
-               + "<div class='row row-indent'>"
-               + "<input class='wym_submit' type='button'"
-               + " value='{Add}' />"
-               + "<input class='wym_cancel' type='button'"
-               + "value='{Cancel}' />"
-               + "</div>"
-               + "</fieldset>"
-               + "</form>"
-               + "</body>",
-};
-
-
 /********** JQUERY **********/
 
 /**
@@ -414,7 +353,6 @@ jQuery.fn.wymeditor = function(options) {
               + "<div class='wym_area_right'>"
               + WYMeditor.CONTAINERS
               + WYMeditor.CLASSES
-              + Galaxy.TOOLS
               + "</div>"
               + "<div class='wym_area_main'>"
               + WYMeditor.HTML
@@ -445,8 +383,6 @@ jQuery.fn.wymeditor = function(options) {
               + "<h2>{Tools}</h2>"
               + "<ul>"
               + WYMeditor.TOOLS_ITEMS
-              // Add Galaxy Tools.
-              //+ Galaxy.TOOLS_ITEMS
               + "</ul>"
               + "</div>",
               
@@ -821,7 +757,6 @@ WYMeditor.editor.prototype.init = function() {
       
       boxHtml = h.replaceAll(boxHtml, WYMeditor.LOGO, this._options.logoHtml);
       boxHtml = h.replaceAll(boxHtml, WYMeditor.TOOLS, this._options.toolsHtml);
-      boxHtml = h.replaceAll(boxHtml, Galaxy.TOOLS, Galaxy.toolsHtml);
       boxHtml = h.replaceAll(boxHtml, WYMeditor.CONTAINERS,this._options.containersHtml);
       boxHtml = h.replaceAll(boxHtml, WYMeditor.CLASSES, this._options.classesHtml);
       boxHtml = h.replaceAll(boxHtml, WYMeditor.HTML, this._options.htmlHtml);
@@ -846,24 +781,6 @@ WYMeditor.editor.prototype.init = function() {
 
       boxHtml = h.replaceAll(boxHtml, WYMeditor.TOOLS_ITEMS, sTools);
       
-      // Construct Galaxy tools list.
-      var galaxyTools = eval(Galaxy.toolsItems);
-      sTools = "";
-      for(var i = 0; i < galaxyTools.length; i++) {
-          var galaxyTool = galaxyTools[i];
-          if(galaxyTool.name && galaxyTool.title) {
-            var sTool = this._options.toolsItemHtml;
-            var sTool = h.replaceAll(sTool, WYMeditor.TOOL_NAME, galaxyTool.name);
-            sTool = h.replaceAll(sTool, WYMeditor.TOOL_TITLE, this._options.stringDelimiterLeft
-              + galaxyTool.title
-              + this._options.stringDelimiterRight);
-            sTool = h.replaceAll(sTool, WYMeditor.TOOL_CLASS, galaxyTool.css);
-            sTools += sTool;
-            }
-        }
-
-      //boxHtml = h.replaceAll(boxHtml, Galaxy.TOOLS_ITEMS, sTools);
-
       //construct classes list
       var aClasses = eval(this._options.classesItems);
       var sClasses = "";
@@ -1027,10 +944,6 @@ WYMeditor.editor.prototype.exec = function(cmd) {
     
     case WYMeditor.PREVIEW:
       this.dialog(WYMeditor.PREVIEW, this._options.dialogFeaturesPreview);
-    break;
-    
-    case Galaxy.INSERT_HISTORY:
-        this.dialog(Galaxy.DIALOG_HISTORY);
     break;
     
     default:
@@ -1263,10 +1176,6 @@ WYMeditor.editor.prototype.dialog = function( dialogType, dialogFeatures, bodyHt
       case(WYMeditor.PREVIEW):
         sBodyHtml = this._options.dialogPreviewHtml;
       break;
-      case(Galaxy.DIALOG_HISTORY):
-        sBodyHtml = Galaxy.dialogHistoryHtml;
-      break;
-
       default:
         sBodyHtml = bodyHtml;
     }

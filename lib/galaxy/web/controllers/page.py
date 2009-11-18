@@ -116,13 +116,13 @@ class HistorySelectionGrid( grids.Grid ):
     
     # Grid definition.
     title = "Saved Histories"
-    template = "grid_base_async.mako"
+    template = "/page/select_histories_grid.mako"
     async_template = "grid_body_async.mako"
     model_class = model.History
     default_filter = { "deleted" : "False" , "shared" : "All" }
     default_sort_key = "-update_time"
     use_paging = True
-    num_rows_per_page = 5
+    num_rows_per_page = 10
     columns = [
         NameColumn( "Name", key="name", model_class=model.History, filterable="advanced" ),
         grids.TagsColumn( "Tags", "tags", model.History, model.HistoryTagAssociation, filterable="advanced"),

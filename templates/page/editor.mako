@@ -39,6 +39,13 @@
     <script type='text/javascript' src="${h.url_for('/static/scripts/jquery.autocomplete.js')}"> </script>
     
     <script type="text/javascript">
+            
+    // Useful Galaxy stuff.
+    var Galaxy = 
+    {
+        DIALOG_HISTORY_LINK : "history_link",
+    };
+
     ## Completely replace WYM's dialog handling
     WYMeditor.editor.prototype.dialog = function( dialogType, dialogFeatures, bodyHtml ) {
           
@@ -187,45 +194,73 @@
         }
         
         // HISTORY DIALOG
-        if ( dialogType == Galaxy.DIALOG_HISTORY ) {
-            show_modal(
-                "Insert History",
-                "<div class='row'>"
-                    + "<label>History Name</label><br>"
-                    + "<input id='history_name_input' type='text' class='wym_galaxy_history_name' value='' size='40' />"
-                    + "</div>"
-                    + "<div class='row'>"
-                    + "<label>Select History</label><br>"
-                    + "<input type='text' class='wym_galaxy_history_selected' value='' size='40' />"
-                    + "</div>"
-                    ,
-                    {
-                    "Insert": function() {
-                         var sUrl = jQuery(wym._options.hrefSelector).val();
-                            if(sUrl.length > 0) {
-
-                              wym._exec(WYMeditor.CREATE_LINK, sStamp);
-
-                              jQuery("a[href=" + sStamp + "]", wym._doc.body)
-                                  .attr(WYMeditor.HREF, sUrl)
-                                  .attr(WYMeditor.TITLE, jQuery(wym._options.titleSelector).val());
-                        hide_modal();
-                        
-                        // TODO: remove autocomplete.
-                    },
-                    "Cancel": function() {
-                        hide_modal();
-                        
-                        // TODO: remove autocomplete.
-                    }
+        if ( dialogType == Galaxy.DIALOG_HISTORY_LINK ) {
+            $.ajax(
+            {
+                url: "${h.url_for( action='list_histories_for_selection' )}",
+                data: {},
+                error: function() { alert( "Grid refresh failed" ) },
+                success: function(table_html) 
+                {
+                    show_modal(
+                        "Insert Link to History",
+                        table_html +
+                        "<div><input id='make-importable' type='checkbox' checked/>" +
+                        "Publish the selected histories so that they can viewed by everyone.</div>"
+                        ,
+                        {
+                            "Insert": function() 
+                            {
+                                // Make histories public/importable?
+                                var make_importable = false;
+                                if ( $('#make-importable:checked').val() !== null )
+                                    make_importable = true;
+                                
+                                // Insert links to history for each checked item.
+                                var item_ids = new Array();
+                                $('input[name=id]:checked').each(function() {
+                                    var item_id = $(this).val();
+                                    
+                                    // Make history importable?
+                                    if (make_importable)
+                                        $.ajax({
+                                          type: "POST",
+                                          url: '${h.url_for( controller='history', action='set_importable_async' )}',
+                                          data: { id: item_id, importable: 'True' },
+                                          error: function() { alert('Make history importable failed; id=' + item_id) }
+                                        });
+                            
+                                    // Insert link.
+                                    wym._exec(WYMeditor.CREATE_LINK, sStamp);
+                                    if ( $("a[href=" + sStamp + "]", wym._doc.body).length != 0)
+                                    {
+                                        // Link created from selected text; add href and title.
+                                        $("a[href=" + sStamp + "]", wym._doc.body)
+                                             .attr(WYMeditor.HREF, '${h.url_for( controller='history', action='view' )}' + '?id=' + item_id)
+                                             .attr(WYMeditor.TITLE, "History" + item_id);
+                                    }
+                                    else
+                                    {
+                                        // User selected no text; create link from scratch and use default text.
+                                        
+                                        // Get history name.
+                                        $.get( '${h.url_for( controller='history', action='get_name_async' )}?id=' + item_id, function( history_name ) {
+                                            var href = '${h.url_for( controller='history', action='view' )}?id=' + item_id;
+                                            wym.insert("<a href='" + href + "'>History '" + history_name + "'</a>");
+                                        });
+                                    }
+                                });
+                                
+                                hide_modal();
+                            },
+                            "Cancel": function() 
+                            {
+                                hide_modal();
+                            }
+                        }
+                    );
                 }
-            );
-
-            // Set up autocomplete for name input.
-            var t = $("#history_name_input");
-            var autocomplete_options = 
-                { selectFirst: false, autoFill: false, highlight: false, mustMatch: false };
-            t.autocomplete("${h.url_for( controller='history', action='name_autocomplete_data' )}", autocomplete_options);
+            });
         }
     };
     </script>
@@ -272,6 +307,7 @@
                     {'name': 'Unlink', 'title': 'Unlink', 'css': 'wym_tools_unlink'},
                     {'name': 'InsertImage', 'title': 'Image', 'css': 'wym_tools_image'},
                     {'name': 'InsertTable', 'title': 'Table', 'css': 'wym_tools_table'},
+                    {'name': 'Insert Galaxy History Link', 'title' : 'Galaxy_History_Link', 'css' : 'galaxy_tools_insert_history_link'}
                 ]
             });
             ## Get the editor object
@@ -319,6 +355,11 @@
                 } else {
                     window.document.location = "${next_url}";
                 }
+            });
+            
+            // Initialize 'Insert history link' button.
+            $('.galaxy_tools_insert_history_link').children().click( function() {
+                editor.dialog(Galaxy.DIALOG_HISTORY_LINK); 
             });
         });
     </script>

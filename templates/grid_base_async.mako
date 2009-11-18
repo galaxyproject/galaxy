@@ -407,7 +407,11 @@ ${self.render_grid_table()}
         // Update grid.
         function update_grid(maintain_page_links)
         {
+            // If there's an operation in the args, do POST; otherwise, do GET.
+            var operation = url_args['operation'];
+            var method = (operation != null && operation != undefined ? "POST" : "GET" );
             $.ajax({
+                type: method,
                 url: "${h.url_for()}",
                 data: url_args,
                 error: function() { alert( "Grid refresh failed" ) },
@@ -504,9 +508,11 @@ ${self.render_grid_table()}
 <%namespace file="./grid_common_async.mako" import="*" />
 
 ## Print grid header.
-<%def name="render_grid_header()">
+<%def name="render_grid_header(include_title)">
     <div class="grid-header">
-        <h2>${grid.title}</h2>
+        %if include_title:
+            <h2>${grid.title}</h2>
+        %endif
     
         %if grid.global_actions:
             <ul class="manage-table-actions">
