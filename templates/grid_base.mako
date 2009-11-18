@@ -62,6 +62,21 @@ ${self.grid_table()}
 
                 t2.autocomplete("${h.url_for( controller='history', action='name_autocomplete_data' )}", autocomplete_options);
             }
+            
+            // Initialize submit image elements.
+            $('.submit-image').each( function() 
+            {
+                // On mousedown, add class to simulate click.
+                $(this).mousedown( function() {
+                   $(this).addClass('gray-background'); 
+                });
+                
+                // On mouseup, add class to simulate click.
+                $(this).mouseup( function() {
+                   $(this).removeClass('gray-background'); 
+                });
+                
+            });
         });
         ## Can this be moved into base.mako?
         %if refresh_frames:
@@ -167,6 +182,26 @@ ${self.grid_table()}
             border-style: solid;
             text-align: center;
             display: inline-block;
+        }
+        .submit-image {
+            vertical-align: text-bottom;
+            margin: 0;
+            padding: 0;
+        }
+        .no-padding-or-margin {
+            margin: 0;
+            padding: 0;
+        }
+        .gray-background {
+            background-color: #DDDDDD;
+        }
+        .text-filter-val {
+            border: solid 1px #AAAAAA;
+            padding: 1px 3px 1px 3px;
+            margin-right: 5px;
+            -moz-border-radius: .5em;
+            -webkit-border-radius: .5em;
+            font-style: italic;
         }
     </style>
 </%def>

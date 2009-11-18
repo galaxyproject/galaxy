@@ -32,10 +32,11 @@
                     <% column_filter = cur_filter_dict[column.key] %>
                     %if isinstance( column_filter, basestring ):
                         %if column_filter != "All":
-                            <span style="font-style: italic">${cur_filter_dict[column.key]}</span>
-                            <% filter_all = GridColumnFilter( "", { column.key : "All" } ) %>
-                            <a href="${url( filter_all.get_url_args() )}"><img src="${h.url_for('/static/images/delete_tag_icon_gray.png')}"/></a>                                
-                            |
+                            <span class='text-filter-val'>
+                                ${cur_filter_dict[column.key]}
+                                <% filter_all = GridColumnFilter( "", { column.key : "All" } ) %>
+                                <a href="${url( filter_all.get_url_args() )}"><img src="${h.url_for('/static/images/delete_tag_icon_gray.png')}"/></a>                                
+                            </span>
                         %endif
                     %elif isinstance( column_filter, list ):
                         %for i, filter in enumerate( column_filter ):
@@ -53,7 +54,9 @@
                                 
                     %endif
                 %endif
-                <span><input id="input-${column.key}-filter" name="f-${column.key}" type="text" value="" size="15"/></span>
+                <span>
+                <input class="no-padding-or-margin" id="input-${column.key}-filter" name="f-${column.key}" type="text" value="" size="15"/>
+                <input class='submit-image' type='image' src='${h.url_for('/static/images/mag_glass.png')}' alt='Filter'/></span>
             </form>
         %else:
             %for i, filter in enumerate( column.get_accepted_filters() ):
