@@ -27,19 +27,21 @@ class IntervalIndexDataProvider( object ):
                 payload['strand'] = feature[5]
             except IndexError:
                 pass
-            try:
-                block_sizes = [ int(n) for n in feature[10].split(',') if n != '']
-                block_starts = [ int(n) for n in feature[11].split(',') if n != '' ]
-                blocks = zip(block_sizes, block_starts)
-                payload['blocks'] = [ (start + block[1], start + block[1] + block[0]) for block in blocks]
-            except IndexError:
-                pass
+            
+            if 'include_blocks' in kwargs:
+                try:
+                    block_sizes = [ int(n) for n in feature[10].split(',') if n != '']
+                    block_starts = [ int(n) for n in feature[11].split(',') if n != '' ]
+                    blocks = zip(block_sizes, block_starts)
+                    payload['blocks'] = [ (start + block[1], start + block[1] + block[0]) for block in blocks]
+                except IndexError:
+                    pass
     
-            try:
-                payload['thick_start'] = int(feature[6])
-                payload['thick_end'] = int(feature[7])
-            except IndexError:
-                pass
+                try:
+                    payload['thick_start'] = int(feature[6])
+                    payload['thick_end'] = int(feature[7])
+                except IndexError:
+                    pass
 
             results.append(payload)
             uid += 1

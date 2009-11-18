@@ -31,15 +31,15 @@ threadpool_workers = 10
 paste.app_factory = galaxy.web.buildapp:app_factory
 
 # By default, Galaxy uses a SQLite database found here
-#database_file = database/universe.sqlite
+database_file = database/universe.sqlite
 
 # You may use a SQLAlchemy connection string to specify an external database
 # instead.  PostgreSQL and MySQL are supported.
-database_connection = postgres:///galaxy
-database_engine_option_echo = true
-database_engine_option_echo_pool = true
-database_engine_option_pool_size = 10
-database_engine_option_max_overflow = 20
+#database_connection = postgres:///galaxy
+#database_engine_option_echo = true
+#database_engine_option_echo_pool = true
+#database_engine_option_pool_size = 10
+#database_engine_option_max_overflow = 20
 
 # If using MySQL, see:
 # http://rapd.wordpress.com/2008/03/02/sqlalchemy-sqlerror-operationalerror-2006-mysql-server-has-gone-away/
