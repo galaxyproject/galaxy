@@ -132,21 +132,25 @@ def upgrade():
     # Load existing tables
     metadata.reflect()
     
+    CloudProvider_table.create()
+    CloudUserCredentials_table.create()
+
     CloudImage_table.create()
     UCI_table.create()
-    CloudUserCredentials_table.create()
+
     CloudStore_table.create()
     CloudSnapshot_table.create()
     CloudInstance_table.create()
-    CloudProvider_table.create()
     
 def downgrade():
     metadata.reflect()
     
-    CloudImage_table.drop() 
     CloudInstance_table.drop()
-    CloudStore_table.drop()
     CloudSnapshot_table.drop()
-    CloudUserCredentials_table.drop() 
+    CloudStore_table.drop()
+
     UCI_table.drop()
+    CloudImage_table.drop() 
+
+    CloudUserCredentials_table.drop() 
     CloudProvider_table.drop()
