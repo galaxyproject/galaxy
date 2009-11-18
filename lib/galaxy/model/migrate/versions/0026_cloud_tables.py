@@ -138,9 +138,9 @@ def upgrade():
     CloudImage_table.create()
     UCI_table.create()
 
+    CloudInstance_table.create()
     CloudStore_table.create()
     CloudSnapshot_table.create()
-    CloudInstance_table.create()
     
 def downgrade():
     metadata.reflect()
