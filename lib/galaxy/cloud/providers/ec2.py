@@ -49,6 +49,7 @@ instance_states = Bunch(
 )
 
 store_status = Bunch(
+    WAITING = "waiting",
     IN_USE = "in-use",
     CREATING = "creating",
     DELETED = 'deleted',
@@ -441,6 +442,8 @@ class EC2CloudProvider( object ):
                                     s = reservation.instances[0].state 
                                     uci_wrapper.change_state( s, i_id, s )
                                     uci_wrapper.set_security_group_name( self.security_group, i_id=i_id )
+                                    vol_id = uci_wrapper.get_store_volume_id( store_id=0 ) # TODO: Once more that one vol/UCI is allowed, update this!
+                                    uci_wrapper.set_store_status( vol_id, store_status.WAITING )
                                     log.debug( "Instance of UCI '%s' started, current state: '%s'" % ( uci_wrapper.get_name(), uci_wrapper.get_uci_state() ) )
                                 except boto.exception.EC2ResponseError, e:
                                     err = "EC2 response error when retrieving instance information for UCI '" + uci_wrapper.get_name() + "': " + str( e )
@@ -560,6 +563,7 @@ class EC2CloudProvider( object ):
         stores = self.sa_session.query( model.CloudStore ) \
             .filter( or_( model.CloudStore.table.c.status==store_status.IN_USE, 
                           model.CloudStore.table.c.status==store_status.CREATING,
+                          model.CloudStore.table.c.status==store_status.WAITING,
                           model.CloudStore.table.c.status==None ) ) \
             .all()
         for store in stores:
@@ -717,8 +721,8 @@ class EC2CloudProvider( object ):
                     store.status = vl[0].status
                     self.sa_session.add( store )
                     self.sa_session.flush()
-                if store.i_id != vl[0].instance_id:
-                    store.i_id = vl[0].instance_id
+                if store.inst.instance_id != vl[0].instance_id:
+                    store.inst.instance_id = vl[0].instance_id
                     self.sa_session.add( store )
                     self.sa_session.flush()
                 if store.attach_time != vl[0].attach_time:

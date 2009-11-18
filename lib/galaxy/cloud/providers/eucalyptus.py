@@ -49,6 +49,7 @@ instance_states = Bunch(
 )
 
 store_status = Bunch(
+    WAITING = "waiting",
     IN_USE = "in-use",
     CREATING = "creating",
     DELETED = 'deleted',
@@ -428,6 +429,8 @@ class EucalyptusCloudProvider( object ):
                                 uci_wrapper.set_instance_id( i_index, i_id )
                                 s = reservation.instances[0].state
                                 uci_wrapper.change_state( s, i_id, s )
+                                vol_id = uci_wrapper.get_store_volume_id( store_id=0 ) # TODO: Once more that one vol/UCI is allowed, update this!
+                                uci_wrapper.set_store_status( vol_id, store_status.WAITING )
                                 log.debug( "Instance of UCI '%s' started, current state: '%s'" % ( uci_wrapper.get_name(), uci_wrapper.get_uci_state() ) )
                             except boto.exception.EC2ResponseError, e:
                                 err = "EC2 response error when retrieving instance information for UCI '" + uci_wrapper.get_name() + "': " + str( e )
@@ -497,7 +500,7 @@ class EucalyptusCloudProvider( object ):
 ##                log.debug ( 'Error detaching volume; still going to try and stop instance %s.' % dbInstances.instance_id )
 #            store.attach_time = None
 #            store.device = None
-#            store.i_id = None
+#            store.inst.instance_id = None
 #            store.status = volStat
 #            log.debug ( '***** volume status: %s' % volStat )
 #        
@@ -549,6 +552,7 @@ class EucalyptusCloudProvider( object ):
         stores = self.sa_session.query( model.CloudStore ) \
             .filter( or_( model.CloudStore.table.c.status==store_status.IN_USE, 
                           model.CloudStore.table.c.status==store_status.CREATING,
+                          model.CloudStore.table.c.status==store_status.WAITING,
                           model.CloudStore.table.c.status==None ) ) \
             .all()
         for store in stores:
@@ -691,7 +695,7 @@ class EucalyptusCloudProvider( object ):
             # Update store status in local DB with info from cloud provider
             if len(vl) > 0:
                 try:
-                    if store.status != vl[0].status:
+                    if store.status != vl[0].status and store.availability_zone != 'epc':
                         # In case something failed during creation of UCI but actual storage volume was created and yet 
                         #  UCI state remained as 'new', try to remedy this by updating UCI state here 
                         if ( store.status == None ) and ( store.volume_id != None ):
@@ -714,8 +718,8 @@ class EucalyptusCloudProvider( object ):
                         store.status = vl[0].status
                         self.sa_session.add( store )
                         self.sa_session.flush()
-                    if store.i_id != vl[0].instance_id:
-                        store.i_id = vl[0].instance_id
+                    if store.inst.instance_id != vl[0].instance_id:
+                        store.inst.instance_id = vl[0].instance_id
                         self.sa_session.add( store )
                         self.sa_session.flush()
                     if store.attach_time != vl[0].attach_time:
@@ -981,7 +985,7 @@ class EucalyptusCloudProvider( object ):
 #        try:
 #            volumes = conn.get_all_volumes( vols )
 #            for i, v in enumerate( volumes ):
-#                uci.store[i].i_id = v.instance_id
+#                uci.store[i].inst.instance_id = v.instance_id
 #                uci.store[i].status = v.status
 #                uci.store[i].device = v.device
 #                uci.store[i].flush()

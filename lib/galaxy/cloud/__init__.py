@@ -45,6 +45,14 @@ instance_states = Bunch(
     ERROR = "error"
 )
 
+store_status = Bunch(
+    WAITING = "waiting",
+    IN_USE = "in-use",
+    CREATING = "creating",
+    DELETED = 'deleted',
+    ERROR = "error"
+)
+
 snapshot_status = Bunch(
     SUBMITTED = 'submitted',
     PENDING = 'pending',
@@ -413,7 +421,7 @@ class UCIwrapper( object ):
         be given in following format: 'vol-78943248'
         """
         vol = self.sa_session.query( model.CloudStore ).filter( model.CloudStore.table.c.volume_id == vol_id ).first()
-        vol.i_id = instance_id
+        vol.inst.instance_id = instance_id
         self.sa_session.add( vol )
         self.sa_session.flush()
                 
@@ -559,7 +567,7 @@ class UCIwrapper( object ):
     def get_mi_id( self, instance_id=0 ):
         uci = self.sa_session.query( model.UCI ).get( self.uci_id )
         self.sa_session.refresh( uci )
-        return uci.instance[instance_id].mi_id
+        return uci.instance[instance_id].image.image_id
     
     def get_public_dns( self, instance_id=0 ):
         uci = self.sa_session.query( model.UCI ).get( self.uci_id )

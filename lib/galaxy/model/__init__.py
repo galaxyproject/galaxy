@@ -1077,7 +1077,6 @@ class CloudStore( object ):
     def __init__( self ):
         self.id = None
         self.volume_id = None
-        self.i_id = None
         self.user = None
         self.size = None
         self.availability_zone = None

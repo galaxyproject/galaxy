@@ -67,7 +67,7 @@
 	   %endif
 	   <tr>
 	   		<td> AMI: </td>
-	   		<td> ${liveInstance.mi_id} </td>
+	   		<td> ${liveInstance.image.image_id} </td>
 	   </tr>
 	   <tr>
 	   		<td> State:</td>
@@ -81,6 +81,7 @@
 	   		<td> Storage size:</td>
 			<td> ${liveInstance.uci.total_size} </td>
 	   </tr>
+	   %if liveInstance.public_dns != None and liveInstance.public_dns != '':
 	   <tr>
 	   		<td> Public DNS:</td>
 			<%
@@ -88,7 +89,8 @@
 			%>
 			<td> <a href="${lnk}" target="_blank">${liveInstance.public_dns}</a></td>
 	   </tr>
-	   %if liveInstance.private_dns != None:
+	   %endif
+	   %if liveInstance.private_dns != None and liveInstance.private_dns != '':
 	   <tr>
 	   		<td> Private DNS:</td>
 			<td> ${liveInstance.private_dns}</td>
