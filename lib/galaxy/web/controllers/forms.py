@@ -8,8 +8,70 @@ from galaxy.tools.parameters.basic import parameter_types
 from elementtree.ElementTree import XML, Element
 from galaxy.util.odict import odict
 import copy
+from galaxy.web.framework.helpers import time_ago, iff, grids
 
 log = logging.getLogger( __name__ )
+
+class FormsGrid( grids.Grid ):
+    # Custom column types
+    class NameColumn( grids.TextColumn ):
+        def get_value(self, trans, grid, form):
+            return form.latest_form.name
+    class DescriptionColumn( grids.TextColumn ):
+        def get_value(self, trans, grid, form):
+            return form.latest_form.desc
+    class TypeColumn( grids.TextColumn ):
+        def get_value(self, trans, grid, form):
+            return form.latest_form.type
+    class DeletedColumn( grids.GridColumn ):
+       def get_accepted_filters( self ):
+           """ Returns a list of accepted filters for this column. """
+           accepted_filter_labels_and_vals = { "active" : "False", "deleted" : "True", "all": "All" }
+           accepted_filters = []
+           for label, val in accepted_filter_labels_and_vals.items():
+               args = { self.key: val }
+               accepted_filters.append( grids.GridColumnFilter( label, args) )
+           return accepted_filters
+    # Grid definition
+    title = "Forms"
+    template = "admin/forms/grid.mako"
+    model_class = model.FormDefinitionCurrent
+    default_sort_key = "-create_time"
+    num_rows_per_page = 50
+    preserve_state = True
+    use_paging = True
+    default_filter = dict( deleted="False" )
+    columns = [
+        NameColumn( "Name", 
+                    key="name", 
+                    model_class=model.FormDefinition,
+                    link=( lambda item: iff( item.deleted, None, dict( operation="view", id=item.id ) ) ),
+                    attach_popup=True, 
+                    filterable="advanced" ),
+        DescriptionColumn( "Description",
+                           key='desc',
+                           model_class=model.FormDefinition,
+                           filterable="advanced" ),
+        TypeColumn( "Type" ),
+        DeletedColumn( "Deleted", 
+                       key="deleted", 
+                       visible=False, 
+                       filterable="advanced" )
+    ]
+    columns.append( grids.MulticolFilterColumn( "Search", 
+                                                cols_to_filter=[ columns[0], columns[1] ], 
+                                                key="free-text-search",
+                                                visible=False,
+                                                filterable="standard" ) )
+    operations = [
+        grids.GridOperation( "Edit", allow_multiple=False, condition=( lambda item: not item.deleted )  ),
+        grids.GridOperation( "Delete", allow_multiple=True, condition=( lambda item: not item.deleted )  ),
+        grids.GridOperation( "Undelete", condition=( lambda item: item.deleted ) ),    
+    ]
+    global_actions = [
+        grids.GridAction( "Create new form", dict( controller='forms', 
+                                                      action='new' ) )
+    ]
 
 class Forms( BaseController ):
     # Empty form field
@@ -20,38 +82,38 @@ class Forms( BaseController ):
                     'type': BaseField.form_field_types()[0],
                     'selectlist': [],
                     'layout': 'none' }
+    forms_grid = FormsGrid()
+
     @web.expose
     @web.require_admin
-    def index( self, trans, **kwd ):
-        params = util.Params( kwd )
-        msg = util.restore_text( params.get( 'msg', ''  ) )
-        messagetype = params.get( 'messagetype', 'done' )
-        return trans.fill_template( "/sample/index.mako",
-                                    default_action=params.get( 'default_action', None ),
-                                    msg=msg,
-                                    messagetype=messagetype )
-    @web.expose
-    @web.require_admin
-    def manage( self, trans, **kwd ):       
-        params = util.Params( kwd )
-        msg = util.restore_text( params.get( 'msg', ''  ) )
-        messagetype = params.get( 'messagetype', 'done' )
-        show_filter = params.get( 'show_filter', 'Active' )
-        return self._show_forms_list(trans, msg, messagetype, show_filter)
-    def _show_forms_list(self, trans, msg, messagetype, show_filter='Active'):
-        all_forms = trans.sa_session.query( trans.app.model.FormDefinitionCurrent )
-        if show_filter == 'All':
-            forms_list = all_forms
-        elif show_filter == 'Deleted':
-            forms_list = [form for form in all_forms if form.deleted]
-        else:
-            forms_list = [form for form in all_forms if not form.deleted]
-        return trans.fill_template( '/admin/forms/manage_forms.mako', 
-                                    fdc_list=forms_list,
-                                    all_forms=all_forms,
-                                    show_filter=show_filter,
-                                    msg=msg,
-                                    messagetype=messagetype )
+    def manage( self, trans, **kwd ):
+        if 'operation' in kwd:
+            operation = kwd['operation'].lower()
+            if not kwd.get( 'id', None ):
+                return trans.response.send_redirect( web.url_for( controller='forms',
+                                                                  action='manage',
+                                                                  status='error',
+                                                                  message="Invalid form ID") )
+            if operation == "view":
+                return self.__view( trans, **kwd )
+            elif operation == "delete":
+                return self.__delete( trans, **kwd )
+            elif operation == "undelete":
+                return self.__undelete( trans, **kwd )
+            elif operation == "edit":
+                return self.__edit( trans, **kwd )
+        return self.forms_grid( trans, **kwd )
+    def __view(self, trans, **kwd):
+        try:
+            fdc = trans.sa_session.query( trans.app.model.FormDefinitionCurrent )\
+                                  .get( trans.security.decode_id(kwd['id']) )
+        except:
+            return trans.response.send_redirect( web.url_for( controller='forms',
+                                                              action='manage',
+                                                              msg='Invalid form',
+                                                              messagetype='error' ) )
+        return trans.fill_template( '/admin/forms/show_form_read_only.mako',
+                                    form=fdc.latest_form )
     def __form_types_widget(self, trans, selected='none'):
         form_type_selectbox = SelectField( 'form_type_selectbox', 
                                            refresh_on_change=True, 
@@ -86,13 +148,14 @@ class Forms( BaseController ):
             self.__get_saved_form( fd )
             if self.__imported_from_file:
                 return trans.response.send_redirect( web.url_for( controller='forms',
-                                                                  action='edit',
-                                                                  show_form=True,
-                                                                  form_id=fd.id) )                  
+                                                                  action='manage',
+                                                                  operation='edit',
+                                                                  id=trans.security.encode_id(fd.current.id)) )                  
             else:
                 return trans.response.send_redirect( web.url_for( controller='forms',
-                                                                  action='edit',
-                                                                  form_id=fd.id,
+                                                                  action='manage',
+                                                                  operation='edit',
+                                                                  id=trans.security.encode_id(fd.current.id),
                                                                   add_field_button='Add field',
                                                                   name=fd.name,
                                                                   description=fd.desc,
@@ -105,35 +168,43 @@ class Forms( BaseController ):
                                     inputs=inputs,
                                     msg=msg,
                                     messagetype=messagetype )     
-    @web.expose
-    @web.require_admin
-    def delete( self, trans, **kwd ):
-        params = util.Params( kwd )
-        msg = util.restore_text( params.get( 'msg', ''  ) )
-        messagetype = params.get( 'messagetype', 'done' )
-        fd = trans.sa_session.query( trans.app.model.FormDefinition ).get( int( util.restore_text( params.form_id ) ) )
-        fd.form_definition_current.deleted = True
-        trans.sa_session.add( fd.form_definition_current )
-        trans.sa_session.flush()
-        return self._show_forms_list(trans, 
-                                     msg='The form definition named %s is deleted.' % fd.name, 
-                                     messagetype='done')
-    @web.expose
-    @web.require_admin
-    def undelete( self, trans, **kwd ):
-        params = util.Params( kwd )
-        msg = util.restore_text( params.get( 'msg', ''  ) )
-        messagetype = params.get( 'messagetype', 'done' )
-        fd = trans.sa_session.query( trans.app.model.FormDefinition ).get( int( util.restore_text( params.form_id ) ) )
-        fd.form_definition_current.deleted = False
-        trans.sa_session.add( fd.form_definition_current )
-        trans.sa_session.flush()
-        return self._show_forms_list(trans, 
-                                     msg='The form definition named %s is undeleted.' % fd.name, 
-                                     messagetype='done')
-    @web.expose
-    @web.require_admin
-    def edit( self, trans, **kwd ):
+    def __delete( self, trans, **kwd ):
+        id_list = util.listify( kwd['id'] )
+        delete_failed = []
+        for id in id_list:
+            try:
+                fdc = trans.sa_session.query( trans.app.model.FormDefinitionCurrent ).get( trans.security.decode_id(id) )
+            except:
+                return trans.response.send_redirect( web.url_for( controller='forms',
+                                                                  action='manage',
+                                                                  message='Invalid form',
+                                                                  status='error' ) )
+            fdc.deleted = True
+            trans.sa_session.add( fdc )
+            trans.sa_session.flush()
+        return trans.response.send_redirect( web.url_for( controller='forms',
+                                                          action='manage',
+                                                          message='%i form(s) is deleted.' % len(id_list), 
+                                                          status='done') )
+    def __undelete( self, trans, **kwd ):
+        id_list = util.listify( kwd['id'] )
+        delete_failed = []
+        for id in id_list:
+            try:
+                fdc = trans.sa_session.query( trans.app.model.FormDefinitionCurrent ).get( trans.security.decode_id(id) )
+            except:
+                return trans.response.send_redirect( web.url_for( controller='forms',
+                                                                  action='manage',
+                                                                  message='Invalid form',
+                                                                  status='error' ) )
+            fdc.deleted = False
+            trans.sa_session.add( fdc )
+            trans.sa_session.flush()
+        return trans.response.send_redirect( web.url_for( controller='forms',
+                                                          action='manage',
+                                                          message='%i form(s) is undeleted.' % len(id_list), 
+                                                          status='done') )
+    def __edit( self, trans, **kwd ):
         '''
         This callback method is for handling all the editing functions like
         renaming fields, adding/deleting fields, changing fields attributes.
@@ -142,17 +213,28 @@ class Forms( BaseController ):
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
         try:
-            fd = trans.sa_session.query( trans.app.model.FormDefinition ).get( int( params.get( 'form_id', None ) ) )
+            fdc = trans.sa_session.query( trans.app.model.FormDefinitionCurrent ).get( trans.security.decode_id(kwd['id']) )
         except:
             return trans.response.send_redirect( web.url_for( controller='forms',
                                                               action='manage',
-                                                              msg='Invalid form',
-                                                              messagetype='error' ) )
+                                                              message='Invalid form',
+                                                              status='error' ) )
+        fd = fdc.latest_form
         #
-        # Show the form for editing
+        # Save changes
         #
-        if params.get( 'show_form', False ):
+        if params.get( 'save_changes_button', False ):
+            fd_new, msg = self.__save_form( trans, fdc_id=fd.form_definition_current.id, **kwd )
+            # if validation error encountered while saving the form, show the 
+            # unsaved form, with the error message
+            if not fd_new:
+                current_form = self.__get_form( trans, **kwd )
+                return self.__show( trans=trans, form=fd, current_form=current_form, 
+                                    msg=msg, messagetype='error', **kwd )
+            # everything went fine. form saved successfully. Show the saved form
+            fd = fd_new
             current_form = self.__get_saved_form( fd )
+            msg = "The form '%s' has been updated with the changes." % fd.name
             return self.__show( trans=trans, form=fd, current_form=current_form, 
                                 msg=msg, messagetype=messagetype, **kwd )
         #
@@ -193,31 +275,6 @@ class Forms( BaseController ):
             return self.__show( trans=trans, form=fd, current_form=current_form, 
                                 msg=msg, messagetype=messagetype, **kwd )
         #
-        # Save changes
-        #
-        elif params.get( 'save_changes_button', False ):
-            fd_new, msg = self.__save_form( trans, fdc_id=fd.form_definition_current.id, **kwd )
-            # if validation error encountered while saving the form, show the 
-            # unsaved form, with the error message
-            if not fd_new:
-                current_form = self.__get_form( trans, **kwd )
-                return self.__show( trans=trans, form=fd, current_form=current_form, 
-                                    msg=msg, messagetype='error', **kwd )
-            # everything went fine. form saved successfully. Show the saved form
-            fd = fd_new
-            current_form = self.__get_saved_form( fd )
-            msg = "The form '%s' has been updated with the changes." % fd.name
-            return self.__show( trans=trans, form=fd, current_form=current_form, 
-                                msg=msg, messagetype=messagetype, **kwd )
-        #
-        # Show form read-only
-        #
-        elif params.get( 'read_only', False ):           
-            return trans.fill_template( '/admin/forms/show_form_read_only.mako',
-                                        form=fd,
-                                        msg=msg,
-                                        messagetype=messagetype )
-        #
         # Add SelectField option
         #
         elif 'Add' in kwd.values():
@@ -232,6 +289,13 @@ class Forms( BaseController ):
         #
         elif params.get( 'refresh', False ):
             current_form = self.__get_form( trans, **kwd )
+            return self.__show( trans=trans, form=fd, current_form=current_form, 
+                                msg=msg, messagetype=messagetype, **kwd )
+        #
+        # Show the form for editing
+        #
+        else:
+            current_form = self.__get_saved_form( fd )
             return self.__show( trans=trans, form=fd, current_form=current_form, 
                                 msg=msg, messagetype=messagetype, **kwd )
             

@@ -14,6 +14,7 @@ def get_latest_form(form_name):
                          .filter( galaxy.model.FormDefinitionCurrent.table.c.deleted==False ) \
                          .order_by( galaxy.model.FormDefinitionCurrent.table.c.create_time.desc() )
     for fdc in fdc_list:
+        sa_session.refresh( fdc )
         sa_session.refresh( fdc.latest_form )
         if form_name == fdc.latest_form.name:
             return fdc.latest_form
@@ -49,7 +50,7 @@ class TestUserInfo( TwillTestCase ):
                        type='CheckboxField',
                        required='optional')]
         form_one = get_latest_form(form_one_name)
-        self.form_add_field(form_one.id, form_one.name, form_one.desc, form_one.type, field_index=len(form_one.fields), fields=fields)
+        self.form_add_field(form_one.current.id, form_one.name, form_one.desc, form_one.type, field_index=len(form_one.fields), fields=fields)
         form_one_latest = get_latest_form(form_one_name)        
         assert len(form_one_latest.fields) == len(form_one.fields)+len(fields)
         # create the second form
@@ -75,7 +76,7 @@ class TestUserInfo( TwillTestCase ):
                        type='CheckboxField',
                        required='optional')]
         form_two = get_latest_form(form_two_name)
-        self.form_add_field(form_two.id, form_two.name, form_two.desc, form_two.type, field_index=len(form_one.fields), fields=fields)
+        self.form_add_field(form_two.current.id, form_two.name, form_two.desc, form_two.type, field_index=len(form_one.fields), fields=fields)
         form_two_latest = get_latest_form(form_two_name)        
         assert len(form_two_latest.fields) == len(form_two.fields)+len(fields)
     def test_005_user_reqistration_multiple_user_info_forms( self ):
@@ -103,7 +104,7 @@ class TestUserInfo( TwillTestCase ):
         sa_session.add( form_two_latest.current )
         sa_session.flush()
         self.home()
-        self.visit_page('forms/manage?show_filter=Deleted')
+        self.visit_page('forms/manage?sort=create_time&f-deleted=True')
         self.check_page_for_string(form_two_latest.name)
         self.logout()
         # user a new user with 'Student' user info form
@@ -157,7 +158,7 @@ class TestUserInfo( TwillTestCase ):
         sa_session.add( form_one_latest.current )
         sa_session.flush()
         self.home()
-        self.visit_page('forms/manage?show_filter=Deleted')
+        self.visit_page('forms/manage?sort=create_time&f-deleted=True')
         self.check_page_for_string(form_one_latest.name)
         self.logout()
         
