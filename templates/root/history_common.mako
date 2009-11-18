@@ -43,7 +43,7 @@
 	        %endif
 	    </div>
 	    <span class="state-icon"></span>
-	    <span class="historyItemTitle"><b>${hid}: ${data.display_name().decode('utf-8')}</b></span>
+	    <span class="historyItemTitle"><b>${hid}: ${data.display_name()}</b></span>
 	</div>
         
         ## Body for history items, extra info and actions, data "peek"

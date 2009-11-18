@@ -146,7 +146,10 @@ class Data( object ):
     def display_name(self, dataset):
         """Returns formatted html of dataset name"""
         try:
-            return escape(dataset.name)
+            if type ( dataset.name ) is unicode:
+                return escape( dataset.name )
+            else:
+                return escape( unicode( dataset.name, 'utf-8 ') )
         except:
             return "name unavailable"
     def display_info(self, dataset):
