@@ -120,6 +120,9 @@ class Grid( object ):
                         column_filter = from_json_string_recurse( column_filter )
                         if len( column_filter ) == 1:
                             column_filter = column_filter[0]
+                    # If filter criterion is empty, do nothing.
+                    if column_filter == '':
+                        continue
                     # Update query.
                     query = column.filter( trans.sa_session, query, column_filter )
                     # Upate current filter dict.
