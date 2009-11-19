@@ -18,11 +18,10 @@ class IntervalIndexDataProvider( object ):
         index = Indexes( self.converted_dataset.file_name )
         results = []
         
-        uid = 0
         for start, end, offset in index.find(chrom, start, end):
             source.seek(offset)
             feature = source.readline().split()
-            payload = { 'uid': uid, 'start': start, 'end': end, 'name': feature[3] }
+            payload = { 'uid': offset, 'start': start, 'end': end, 'name': feature[3] }
             try:
                 payload['strand'] = feature[5]
             except IndexError:
@@ -44,6 +43,5 @@ class IntervalIndexDataProvider( object ):
                     pass
 
             results.append(payload)
-            uid += 1
         
         return results
