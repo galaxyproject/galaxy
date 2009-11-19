@@ -94,7 +94,7 @@ class EucalyptusCloudProvider( object ):
     
     def put( self, uci_wrapper ):
         """
-        Adds uci_wrapper object to the end of the request queue to be handled by 
+        Add uci_wrapper object to the end of the request queue to be handled by 
         this cloud provider.
         """
         state = uci_wrapper.get_uci_state()
@@ -536,7 +536,7 @@ class EucalyptusCloudProvider( object ):
         
         Reason behind this method is to sync state of local DB and real-world resources
         """
-        log.debug( "Running general status update for EPC UCIs..." )
+        log.debug( "Running general status update for %s UCIs..." % self.type )
         # Update instances
         instances = self.sa_session.query( model.CloudInstance ) \
             .filter( or_( model.CloudInstance.table.c.state==instance_states.RUNNING, 
@@ -695,7 +695,8 @@ class EucalyptusCloudProvider( object ):
             # Update store status in local DB with info from cloud provider
             if len(vl) > 0:
                 try:
-                    if store.status != vl[0].status and store.availability_zone != 'epc':
+                    log.debug( "Storage volume '%s' current status: '%s'" % (store.volume_id, vl[0].status ) )
+                    if store.status != vl[0].status:
                         # In case something failed during creation of UCI but actual storage volume was created and yet 
                         #  UCI state remained as 'new', try to remedy this by updating UCI state here 
                         if ( store.status == None ) and ( store.volume_id != None ):
@@ -718,10 +719,11 @@ class EucalyptusCloudProvider( object ):
                         store.status = vl[0].status
                         self.sa_session.add( store )
                         self.sa_session.flush()
-                    if store.inst.instance_id != vl[0].instance_id:
-                        store.inst.instance_id = vl[0].instance_id
-                        self.sa_session.add( store )
-                        self.sa_session.flush()
+                    if store.inst != None:
+                        if store.inst.instance_id != vl[0].instance_id:
+                            store.inst.instance_id = vl[0].instance_id
+                            self.sa_session.add( store )
+                            self.sa_session.flush()
                     if store.attach_time != vl[0].attach_time:
                         store.attach_time = vl[0].attach_time
                         self.sa_session.add( store )
@@ -937,7 +939,7 @@ class EucalyptusCloudProvider( object ):
 
     def get_connection_from_uci( self, uci ):
         """
-        Establishes and returns connection to cloud provider. Information needed to do so is obtained
+        Establish and return connection to cloud provider. Information needed to do so is obtained
         directly from uci database object.
         """
         log.debug( 'Establishing %s cloud connection' % self.type )
@@ -946,13 +948,13 @@ class EucalyptusCloudProvider( object ):
         # Get connection
         try:
             region = RegionInfo( None, uci.credentials.provider.region_name, uci.credentials.provider.region_endpoint )
-            log.debug( "[%s] Using following command to connect to cloud provider: "  
-                                "conn = EC2Connection( aws_access_key_id=%s, " 
-                                                      "aws_secret_access_key=%s, " 
-                                                      "port=%s, "
-                                                      "is_secure=%s, " 
-                                                      "region=region, "
-                                                      "path=%s )" % ( self.type, a_key, s_key, uci.credentials.provider.is_secure, uci.credentials.provider.port, uci.credentials.provider.path ) ) 
+#            log.debug( "[%s] Using following command to connect to cloud provider: "  
+#                                "conn = EC2Connection( aws_access_key_id=%s, " 
+#                                                      "aws_secret_access_key=%s, " 
+#                                                      "port=%s, "
+#                                                      "is_secure=%s, " 
+#                                                      "region=region, "
+#                                                      "path=%s )" % ( self.type, a_key, s_key, uci.credentials.provider.is_secure, uci.credentials.provider.port, uci.credentials.provider.path ) ) 
             conn = EC2Connection( aws_access_key_id=a_key, 
                                   aws_secret_access_key=s_key, 
                                   is_secure=uci.credentials.provider.is_secure,

@@ -94,13 +94,16 @@ class EC2CloudProvider( object ):
         log.info( "EC2 cloud manager stopped" )
     
     def put( self, uci_wrapper ):
-        # Get rid of UCI from state description
+        """
+        Add uci_wrapper object to the end of the request queue to be handled by 
+        this cloud provider.
+        """
         state = uci_wrapper.get_uci_state()
         uci_wrapper.change_state( state.split('U')[0] ) # remove 'UCI' from end of state description (i.e., mark as accepted and ready for processing)
         self.queue.put( uci_wrapper )
         
     def run_next( self ):
-        """Run the next job, waiting until one is available if necessary"""
+        """Process next request, waiting until one is available if necessary."""
         cnt = 0
         while 1:
             
@@ -125,7 +128,7 @@ class EC2CloudProvider( object ):
             
     def get_connection( self, uci_wrapper ):
         """
-        Establishes EC2 cloud connection using user's credentials associated with given UCI
+        Establishes cloud connection using user's credentials associated with given UCI
         """
         log.debug( 'Establishing %s cloud connection.' % self.type )
         provider = uci_wrapper.get_provider()
@@ -152,7 +155,10 @@ class EC2CloudProvider( object ):
         
     def check_key_pair( self, uci_wrapper, conn ):
         """
-        Generate key pair using user's credentials
+        Check if a key pair associated with this UCI exists on cloud provider.
+        If yes, return key pair name; otherwise, generate a key pair with the cloud
+        provider and, again, return key pair name.
+        Key pair name for given UCI is generated from UCI's name and suffix '_kp' 
         """
         kp = None
         kp_name = uci_wrapper.get_name().replace(' ','_') + "_kp"
@@ -200,6 +206,7 @@ class EC2CloudProvider( object ):
             return None
     
     def create_key_pair( self, conn, kp_name ):
+        """ Initiate creation of key pair under kp_name by current cloud provider. """
         try:
             return conn.create_key_pair( kp_name )
         except boto.exception.EC2ResponseError, e: 
@@ -226,8 +233,8 @@ class EC2CloudProvider( object ):
             
     def create_uci( self, uci_wrapper ):
         """ 
-        Creates User Configured Instance (UCI). Essentially, creates storage volume on cloud provider
-        and registers relevant information in Galaxy database.
+        Create User Configured Instance (UCI) - i.e., create storage volume on cloud provider
+        and register relevant information in local Galaxy database.
         """
         conn = self.get_connection( uci_wrapper )
         if uci_wrapper.get_uci_availability_zone()=='':
@@ -279,8 +286,11 @@ class EC2CloudProvider( object ):
 
     def delete_uci( self, uci_wrapper ):
         """ 
-        Deletes UCI. NOTE that this implies deletion of any and all data associated
+        Delete UCI - i.e., delete all storage volumes associated with this UCI. 
+        NOTE that this implies deletion of any and all data associated
         with this UCI from the cloud. All data will be deleted.
+        Information in local Galaxy database is marked as deleted but not actually removed
+        from the database. 
         """
         conn = self.get_connection( uci_wrapper )
         vl = [] # volume list
@@ -318,7 +328,8 @@ class EC2CloudProvider( object ):
             
     def snapshot_uci( self, uci_wrapper ):
         """
-        Creates snapshot of all storage volumes associated with this UCI. 
+        Initiate creation of a snapshot by cloud provider for all storage volumes 
+        associated with this UCI. 
         """
         if uci_wrapper.get_uci_state() != uci_states.ERROR:
             conn = self.get_connection( uci_wrapper )
@@ -362,7 +373,7 @@ class EC2CloudProvider( object ):
         
     def start_uci( self, uci_wrapper ):
         """
-        Starts instance(s) of given UCI on the cloud.  
+        Start instance(s) of given UCI on the cloud.  
         """ 
         if uci_wrapper.get_uci_state() != uci_states.ERROR:
              conn = self.get_connection( uci_wrapper )
@@ -461,7 +472,7 @@ class EC2CloudProvider( object ):
                     
     def stop_uci( self, uci_wrapper):
         """ 
-        Stops all of cloud instances associated with given UCI. 
+        Stop all of cloud instances associated with given UCI. 
         """
         conn = self.get_connection( uci_wrapper )
         
@@ -543,11 +554,15 @@ class EC2CloudProvider( object ):
 
     def update( self ):
         """ 
-        Runs a global status update on all instances that are in 'running', 'pending', or 'shutting-down' state.
-        Also, runs update on all storage volumes that are in 'in-use', 'creating', or 'None' state.
+        Run status update on all instances that are in 'running', 'pending', or 'shutting-down' state.
+        Run status update on all storage volumes whose status is 'in-use', 'creating', or 'None'.
+        Run status update on all snapshots whose status is 'pending' or 'delete'  
+        Run status update on any zombie UCIs, i.e., UCI's that is in 'submitted' state for an 
+        extended period of time.
+        
         Reason behind this method is to sync state of local DB and real-world resources
         """
-        log.debug( "Running general status update for EC2 UCIs..." )
+        log.debug( "Running general status update for %s UCIs..." % self.type )
         # Update instances
         instances = self.sa_session.query( model.CloudInstance ) \
             .filter( or_( model.CloudInstance.table.c.state==instance_states.RUNNING, 
@@ -610,7 +625,11 @@ class EC2CloudProvider( object ):
                         self.process_zombie( z_inst )
         
     def update_instance( self, inst ):
-        
+        """
+        Update information in local database for given instance as it is obtained from cloud provider.
+        Along with updating information about given instance, information about the UCI controlling
+        this instance is also updated.
+        """
         # Get credentials associated wit this instance
         uci_id = inst.uci_id
         uci = self.sa_session.query( model.UCI ).get( uci_id )
@@ -683,6 +702,11 @@ class EC2CloudProvider( object ):
                     return None
                 
     def update_store( self, store ):
+        """
+        Update information in local database for given storage volume as it is obtained from cloud provider.
+        Along with updating information about given storage volume, information about the UCI controlling
+        this storage volume is also updated.
+        """
         # Get credentials associated wit this store
         uci_id = store.uci_id
         uci = self.sa_session.query( model.UCI ).get( uci_id )
@@ -705,6 +729,7 @@ class EC2CloudProvider( object ):
         # Update store status in local DB with info from cloud provider
         if len(vl) > 0:
             try:
+                log.debug( "Storage volume '%s' current status: '%s'" % (store.volume_id, vl[0].status ) )
                 if store.status != vl[0].status:
                     # In case something failed during creation of UCI but actual storage volume was created and yet 
                     #  UCI state remained as 'new', try to remedy this by updating UCI state here 
@@ -721,18 +746,19 @@ class EC2CloudProvider( object ):
                     store.status = vl[0].status
                     self.sa_session.add( store )
                     self.sa_session.flush()
-                if store.inst.instance_id != vl[0].instance_id:
-                    store.inst.instance_id = vl[0].instance_id
-                    self.sa_session.add( store )
-                    self.sa_session.flush()
-                if store.attach_time != vl[0].attach_time:
-                    store.attach_time = vl[0].attach_time
-                    self.sa_session.add( store )
-                    self.sa_session.flush()
-                if store.device != vl[0].device:
-                    store.device = vl[0].device
-                    self.sa_session.add( store )
-                    self.sa_session.flush()
+                    if store.inst != None:
+                        if store.inst.instance_id != vl[0].instance_id:
+                            store.inst.instance_id = vl[0].instance_id
+                            self.sa_session.add( store )
+                            self.sa_session.flush()
+                    if store.attach_time != vl[0].attach_time:
+                        store.attach_time = vl[0].attach_time
+                        self.sa_session.add( store )
+                        self.sa_session.flush()
+                    if store.device != vl[0].device:
+                        store.device = vl[0].device
+                        self.sa_session.add( store )
+                        self.sa_session.flush()
             except boto.exception.EC2ResponseError, e:
                 err = "Updating status of volume(s) from cloud failed for UCI '"+ uci.name + "' during general status update: " + str( e )
                 log.error( err )
@@ -753,6 +779,11 @@ class EC2CloudProvider( object ):
             self.sa_session.flush()
    
     def update_snapshot( self, snapshot ):
+        """
+        Update information in local database for given snapshot as it is obtained from cloud provider.
+        Along with updating information about given snapshot, information about the UCI controlling
+        this snapshot is also updated.
+        """
         # Get credentials associated wit this store
         uci_id = snapshot.uci_id
         uci = self.sa_session.query( model.UCI ).get( uci_id )
@@ -799,6 +830,9 @@ class EC2CloudProvider( object ):
             self.sa_session.flush()
         
     def delete_snapshot( self, snapshot ):
+        """
+        Initiate deletion of given snapshot from cloud provider.
+        """
         if snapshot.status == snapshot_status.DELETE:
             # Get credentials associated wit this store
             uci_id = snapshot.uci_id
@@ -845,7 +879,7 @@ class EC2CloudProvider( object ):
             
     def process_zombie( self, inst ):
         """
-        Attempt at discovering if starting an instance was successful but local database was not updated
+        Attempt at discovering if starting a cloud instance was successful but local database was not updated
         accordingly or if something else failed and instance was never started. Currently, no automatic 
         repairs are being attempted; instead, appropriate error messages are set.
         """
@@ -921,7 +955,7 @@ class EC2CloudProvider( object ):
 
     def get_connection_from_uci( self, uci ):
         """
-        Establishes and returns connection to cloud provider. Information needed to do so is obtained
+        Establish and return connection to cloud provider. Information needed to do so is obtained
         directly from uci database object.
         """
         log.debug( 'Establishing %s cloud connection' % self.type )

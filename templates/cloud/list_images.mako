@@ -78,6 +78,8 @@
 			</tr>
 		%endfor
 	</table>
+	
+	<p /></p><a href="${h.url_for( controller='cloud', action='add_new_image' )}" target="galaxy_main">Add another machine image</a>
 %else:
 	<h3>There are no registered machine images.</h3><br />
 	<a href="${h.url_for( controller='cloud', action='add_new_image' )}" target="galaxy_main">Add machine image now?</a>
