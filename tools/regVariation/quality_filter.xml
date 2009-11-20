@@ -60,7 +60,7 @@
     </conditional>
   </inputs>
   <outputs>
-    <data format="maf" name="out_file1" metadata_source="input"/>
+    <data format="maf" name="out_file1"/>
   </outputs>
   <requirements>
     <requirement type="python-module">numpy</requirement>
