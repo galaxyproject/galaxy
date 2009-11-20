@@ -16,20 +16,20 @@
   </outputs> 
   <tests>
     <test>
-        <param name="input1" value="poisson2test1.txt"/>
+        <param name="input1" value="poisson2test1.tabular" ftype="tabular"/>
         <param name="input2" value="2" />
         <param name="input3" value="3" />
         <param name="input4" value="0.44" />
         <param name="input5" value="0" />
-        <output name="output1" file="poisson2test1.out" />    
+        <output name="output1" file="poisson2test1_out.tabular" />    
     </test>
     <test>
-        <param name="input1" value="poisson2test2.txt"/>
+        <param name="input1" value="poisson2test2.tabular" ftype="tabular"/>
         <param name="input2" value="2" />
         <param name="input3" value="3" />
         <param name="input4" value="0.44" />
         <param name="input5" value="0" />
-        <output name="output1" file="poisson2test2.out" />    
+        <output name="output1" file="poisson2test2_out.tabular" />    
     </test>    
   </tests>
   <help>

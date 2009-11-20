@@ -12,8 +12,8 @@
   </requirements>
   <tests>
     <test>
-      <param name="input" value="taxonomyGI.dat" ftype="taxonomy"/>
-      <output name="out_file1" file="t2t_report.dat"/>
+      <param name="input" value="taxonomyGI.taxonomy" ftype="taxonomy"/>
+      <output name="out_file1" file="t2t_report.tabular"/>
     </test>
   </tests>
 

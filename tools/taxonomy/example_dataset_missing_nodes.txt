@@ -1,6 +1,0 @@
-Species_1 1 root superkingdom1 kingdom1 subkingdom1 superphylum1 phylum1 subphylum1 superclass1 class1 subclass1 superorder1 order1 suborder1 superfamily1 family1 subfamily1 tribe1 subtribe1 genus1 subgenus1 species1 subspecies1
-Species_2 2 root superkingdom1 kingdom1 subkingdom1 superphylum1 phylum1 subphylum1 superclass1 class1 subclass1 superorder1 order1 suborder1 superfamily1 family1 subfamily1 tribe1 subtribe1 genus2 n species2 subspecies2
-Species_3 3 root superkingdom1 kingdom1 subkingdom1 superphylum1 n subphylum3 superclass3 class3 subclass3 superorder3 order3 suborder3 superfamily3 family3 subfamily3 tribe3 subtribe3 genus3 subgenus3 species3 subspecies3
-Species_4 4 root superkingdom1 kingdom1 subkingdom1 superphylum1 phylum4 subphylum4 superclass4 class4 subclass4 superorder4 order4 suborder4 superfamily4 family4 subfamily4 tribe4 subtribe4 genus4 subgenus4 species4 subspecies4
-Species_5 5 root superkingdom1 kingdom1 subkingdom1 superphylum1 n subphylum3 superclass3 class3 subclass3 superorder3 order3 suborder3 superfamily3 family3 subfamily3 tribe3 subtribe3 genus3 subgenus3 species5 subspecies5
-

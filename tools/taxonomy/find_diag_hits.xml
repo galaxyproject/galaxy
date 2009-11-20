@@ -37,11 +37,11 @@
     </outputs>
       <tests>
     <test>
-      <param name="input1" value="taxonomyGI.dat" ftype="taxonomy"/>
+      <param name="input1" value="taxonomyGI.taxonomy" ftype="taxonomy"/>
       <param name="id_col" value="1" />
       <param name="rank_list" value="order,genus" />
       <param name="out_format" value="counts" />
-      <output name="out_file1" file="find_diag_hits.dat" ftype="tabular"/>
+      <output name="out_file1" file="find_diag_hits.tabular" />
     </test> 
   </tests>
 

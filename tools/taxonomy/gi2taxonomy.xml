@@ -14,10 +14,10 @@
   </requirements>
   <tests>
     <test>
-      <param name="input" value="taxonomy2gi-input.txt"/>
+      <param name="input" ftype="tabular" value="taxonomy2gi-input.tabular"/>
       <param name="giField" value="1"/>
       <param name="idField" value="2"/>
-      <output name="out_file1" file="taxonomy2gi-output.txt"/>
+      <output name="out_file1" file="taxonomy2gi-output.tabular"/>
     </test>
   </tests>
 
