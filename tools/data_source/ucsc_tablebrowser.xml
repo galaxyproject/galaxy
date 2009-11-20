@@ -19,7 +19,7 @@
         <request_param galaxy_name="URL" remote_name="URL" missing="" />
         <request_param galaxy_name="dbkey" remote_name="db" missing="?" />
         <request_param galaxy_name="organism" remote_name="org" missing="unknown species" />
-	    <request_param galaxy_name="table" remote_name="hgta_track" missing="unknown table" />
+	    <request_param galaxy_name="table" remote_name="hgta_table" missing="unknown table" />
 	    <request_param galaxy_name="description" remote_name="hgta_regionType" missing="no description" />
 	    <request_param galaxy_name="data_type" remote_name="hgta_outputType" missing="tabular" >
             <data_type_translation>
