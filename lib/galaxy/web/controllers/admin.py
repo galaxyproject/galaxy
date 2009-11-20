@@ -91,14 +91,14 @@ class UserListGrid( grids.Grid ):
         grids.GridAction( "Create new user", dict( controller='admin', action='users', operation='create' ) )
     ]
     operations = [
-        grids.GridOperation( "Manage Roles & Groups", condition=( lambda item: not item.deleted ), allow_multiple=False )
+        grids.GridOperation( "Manage Roles & Groups", condition=( lambda item: not item.deleted ), allow_multiple=False ),
+        grids.GridOperation( "Reset Password", condition=( lambda item: not item.deleted ), allow_multiple=True, allow_popup=False )
     ]
     #TODO: enhance to account for trans.app.config.allow_user_deletion here so that we can eliminate these operations if 
     # the setting is False
-    operations.append( grids.GridOperation( "Reset Password", condition=( lambda item: not item.deleted ), allow_multiple=True, allow_popup=False ) )
-    operations.append( grids.GridOperation( "Delete", condition=( lambda item: not item.deleted ), allow_multiple=True ) )
-    operations.append( grids.GridOperation( "Undelete", condition=( lambda item: item.deleted and not item.purged ), allow_multiple=True ) )
-    operations.append( grids.GridOperation( "Purge", condition=( lambda item: item.deleted and not item.purged ), allow_multiple=True ) )
+    #operations.append( grids.GridOperation( "Delete", condition=( lambda item: not item.deleted ), allow_multiple=True ) )
+    #operations.append( grids.GridOperation( "Undelete", condition=( lambda item: item.deleted and not item.purged ), allow_multiple=True ) )
+    #operations.append( grids.GridOperation( "Purge", condition=( lambda item: item.deleted and not item.purged ), allow_multiple=True ) )
     standard_filters = [
         grids.GridColumnFilter( "Active", args=dict( deleted=False ) ),
         grids.GridColumnFilter( "Deleted", args=dict( deleted=True, purged=False ) ),
