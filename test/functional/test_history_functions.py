@@ -737,7 +737,7 @@ class TestHistory( TwillTestCase ):
                                 deleted_history_ids=deleted_history_ids )
         sa_session.refresh( history6 )
         if len( history6.datasets ) != 2:
-            raise AssertionError, "Copying hda1 to the current history failed"
+            raise AssertionError, "Copying hda1 to the current history failed, history 6 has %d datasets, but should have 2" % len( history6.datasets )
         # Test copying 1 hda to another history
         self.new_history( name=urllib.quote( 'copy history items - 2' ) )
         history7 = sa_session.query( galaxy.model.History ) \

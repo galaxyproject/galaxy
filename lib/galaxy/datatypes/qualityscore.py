@@ -14,23 +14,6 @@ class QualityScoreSOLiD ( data.Text ):
     until we know more about quality score formats
     """
     file_ext = "qualsolid"
-    
-    def set_peek( self, dataset, line_count=None ):
-        if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek( dataset.file_name )
-            if line_count is None:
-                dataset.blurb = data.nice_size( dataset.get_size() )
-            else:
-                dataset.blurb = "%s lines, SOLiD Quality score file" % util.commaify( str( line_count ) )
-        else:
-            dataset.peek = 'file does not exist'
-            dataset.blurb = 'file purged from disk'
-    
-    def display_peek(self, dataset):
-        try:
-            return dataset.peek
-        except:
-            return "SOLiD Quality score file (%s)" % ( data.nice_size( dataset.get_size() ) )
 
     def sniff( self, filename ):
         """
@@ -70,6 +53,7 @@ class QualityScoreSOLiD ( data.Text ):
                             return True
                     else:
                         break #we found a non-empty line, but it's not a header
+            fh.close()
         except:
             pass
         return False
@@ -79,23 +63,6 @@ class QualityScore454 ( data.Text ):
     until we know more about quality score formats
     """
     file_ext = "qual454"
-    
-    def set_peek( self, dataset, line_count=None ):
-        if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek( dataset.file_name )
-            if line_count is None:
-                dataset.blurb = data.nice_size( dataset.get_size() )
-            else:
-                dataset.blurb = "%s lines, 454 Quality score file" % util.commaify( str( line_count ) )
-        else:
-            dataset.peek = 'file does not exist'
-            dataset.blurb = 'file purged from disk'
-    
-    def display_peek(self, dataset):
-        try:
-            return dataset.peek
-        except:
-            return "454 Quality score file (%s)" % ( data.nice_size( dataset.get_size() ) )
 
     def sniff( self, filename ):
         """
@@ -125,6 +92,7 @@ class QualityScore454 ( data.Text ):
                         return True
                     else:
                         break #we found a non-empty line, but it's not a header
+            fh.close()
         except:
             pass
         return False
@@ -134,22 +102,4 @@ class QualityScoreSolexa ( data.Text ):
     until we know more about quality score formats
     """
     file_ext = "qualsolexa"
-    
-    def set_peek( self, dataset, line_count=None ):
-        if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek( dataset.file_name )
-            if line_count is None:
-                dataset.blurb = data.nice_size( dataset.get_size() )
-            else:
-                dataset.blurb = "%s lines, Solexa Quality score file" % util.commaify( str( line_count ) )
-        else:
-            dataset.peek = 'file does not exist'
-            dataset.blurb = 'file purged from disk'
-    
-    def display_peek(self, dataset):
-        try:
-            return dataset.peek
-        except:
-            return "Solexa Quality score file (%s)" % ( data.nice_size( dataset.get_size() ) )
-
     

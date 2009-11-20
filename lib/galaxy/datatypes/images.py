@@ -15,7 +15,7 @@ log = logging.getLogger(__name__)
 
 class Image( data.Data ):
     """Class describing an image"""
-    def set_peek( self, dataset ):
+    def set_peek( self, dataset, is_multi_byte=False ):
         if not dataset.dataset.purged:
             dataset.peek = 'Image in %s format' % dataset.extension
             dataset.blurb = data.nice_size( dataset.get_size() )
@@ -51,7 +51,7 @@ class Gmaj( data.Data ):
     """Class describing a GMAJ Applet"""
     file_ext = "gmaj.zip"
     copy_safe_peek = False
-    def set_peek( self, dataset ):
+    def set_peek( self, dataset, is_multi_byte=False ):
         if not dataset.dataset.purged:
             if hasattr( dataset, 'history_id' ):
                 params = {
@@ -102,7 +102,7 @@ class Gmaj( data.Data ):
 class Html( data.Text ):
     """Class describing an html file"""
     file_ext = "html"
-    def set_peek( self, dataset ):
+    def set_peek( self, dataset, is_multi_byte=False ):
         if not dataset.dataset.purged:
             dataset.peek = "HTML file"
             dataset.blurb = data.nice_size( dataset.get_size() )
@@ -136,7 +136,7 @@ class Laj( data.Text ):
     """Class describing a LAJ Applet"""
     file_ext = "laj"
     copy_safe_peek = False
-    def set_peek( self, dataset ):
+    def set_peek( self, dataset, is_multi_byte=False ):
         if not dataset.dataset.purged:
             if hasattr( dataset, 'history_id' ):
                 params = {

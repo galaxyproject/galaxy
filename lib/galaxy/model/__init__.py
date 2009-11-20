@@ -537,17 +537,13 @@ class DatasetInstance( object ):
     def is_multi_byte( self ):
         """Data consists of multi-byte characters"""
         return self.dataset.is_multi_byte()
-    def set_peek( self ):
-        return self.datatype.set_peek( self )
-    def set_multi_byte_peek( self ):
-        return self.datatype.set_multi_byte_peek( self )
+    def set_peek( self, is_multi_byte=False ):
+        return self.datatype.set_peek( self, is_multi_byte=is_multi_byte )
     def init_meta( self, copy_from=None ):
         return self.datatype.init_meta( self, copy_from=copy_from )
     def set_meta( self, **kwd ):
         self.clear_associated_files( metadata_safe = True )
         return self.datatype.set_meta( self, **kwd )
-    def set_readonly_meta( self, **kwd ):
-        return self.datatype.set_readonly_meta( self, **kwd )
     def missing_meta( self, **kwd ):
         return self.datatype.missing_meta( self, **kwd )
     def as_display_type( self, type, **kwd ):

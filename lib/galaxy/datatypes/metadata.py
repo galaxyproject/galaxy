@@ -89,7 +89,10 @@ class MetadataCollection( object ):
         return bool( self.parent._metadata.get( name, False ) )
     def get_html_by_name( self, name, **kwd ):
         if name in self.spec:
-            return self.spec[name].param.get_html( value=getattr( self, name ), context=self, **kwd )
+            rval = self.spec[name].param.get_html( value=getattr( self, name ), context=self, **kwd )
+            if rval is None:
+                return self.spec[name].no_value
+            return rval
     def make_dict_copy( self, to_copy ):
         """Makes a deep copy of input iterable to_copy according to self.spec"""
         rval = {}

@@ -10,10 +10,10 @@ log = logging.getLogger(__name__)
 class BlastXml( data.Text ):
     """NCBI Blast XML Output data"""
     file_ext = "blastxml"
-    def set_peek( self, dataset ):
+    def set_peek( self, dataset, is_multi_byte=False ):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek( dataset.file_name )
+            dataset.peek = data.get_file_peek( dataset.file_name, is_multi_byte=is_multi_byte )
             dataset.blurb = 'NCBI Blast XML data'
         else:
             dataset.peek = 'file does not exist'

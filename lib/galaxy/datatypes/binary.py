@@ -18,7 +18,7 @@ unsniffable_binary_formats = [ 'ab1', 'scf' ]
 
 class Binary( data.Data ):
     """Binary data"""
-    def set_peek( self, dataset ):
+    def set_peek( self, dataset, is_multi_byte=False ):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = 'binary data'
@@ -30,7 +30,7 @@ class Binary( data.Data ):
 class Ab1( Binary ):
     """Class describing an ab1 binary sequence file"""
     file_ext = "ab1"
-    def set_peek( self, dataset ):
+    def set_peek( self, dataset, is_multi_byte=False ):
         if not dataset.dataset.purged:
             export_url = "/history_add_to?" + urlencode( {'history_id':dataset.history_id,'ext':'ab1','name':'ab1 sequence','info':'Sequence file','dbkey':dataset.dbkey} )
             dataset.peek  = "Binary ab1 sequence file"
@@ -71,7 +71,7 @@ class Bam( Binary ):
         if os.path.exists( tmpf1bai ):
             os.remove( tmpf1bai )
         dataset.metadata.bam_index = index_file
-    def set_peek( self, dataset ):
+    def set_peek( self, dataset, is_multi_byte=False ):
         if not dataset.dataset.purged:
             export_url = "/history_add_to?" + urlencode( {'history_id':dataset.history_id,'ext':'bam','name':'bam alignments','info':'Alignments file','dbkey':dataset.dbkey} )
             dataset.peek  = "Binary bam alignments file" 
@@ -91,7 +91,7 @@ class Bam( Binary ):
 class Binseq( Binary ):
     """Class describing a zip archive of binary sequence files"""
     file_ext = "binseq.zip"
-    def set_peek( self, dataset ):
+    def set_peek( self, dataset, is_multi_byte=False ):
         if not dataset.dataset.purged:
             zip_file = zipfile.ZipFile( dataset.file_name, "r" )
             num_files = len( zip_file.namelist() )
@@ -112,7 +112,7 @@ class Binseq( Binary ):
 class Scf( Binary ):
     """Class describing an scf binary sequence file"""
     file_ext = "scf"
-    def set_peek( self, dataset ):
+    def set_peek( self, dataset, is_multi_byte=False ):
         if not dataset.dataset.purged:
             export_url = "/history_add_to?" + urlencode({'history_id':dataset.history_id,'ext':'scf','name':'scf sequence','info':'Sequence file','dbkey':dataset.dbkey})
             dataset.peek  = "Binary scf sequence file" 
@@ -139,9 +139,9 @@ class Sff( Binary ):
             if binascii.b2a_hex( header ) == binascii.hexlify( '.sff' ):
                 return True
             return False
-        except Exception, e:
+        except:
             return False
-    def set_peek( self, dataset ):
+    def set_peek( self, dataset, is_multi_byte=False ):
         if not dataset.dataset.purged:
             export_url = "/history_add_to?" + urlencode( {'history_id':dataset.history_id,'ext':'sff','name':'sff file','info':'sff file','dbkey':dataset.dbkey} )
             dataset.peek  = "Binary sff file" 

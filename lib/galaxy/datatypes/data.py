@@ -95,9 +95,6 @@ class Data( object ):
     def set_meta( self, dataset, overwrite = True, **kwd ):
         """Unimplemented method, allows guessing of metadata from contents of file"""
         return True
-    def set_readonly_meta( self, dataset ):
-        """Unimplemented method, resets the readonly metadata values"""
-        return True
     def missing_meta( self, dataset, check = [], skip = [] ):
         """
         Checks for empty metadata values, Returns True if non-optional metadata is missing
@@ -114,7 +111,7 @@ class Data( object ):
             if not value:
                 return True
         return False
-    def set_peek( self, dataset ):
+    def set_peek( self, dataset, is_multi_byte=False ):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = ''
@@ -312,6 +309,11 @@ class Data( object ):
         return False
 
 class Text( Data ):
+    file_ext = 'txt'
+
+    """Add metadata elements"""
+    MetadataElement( name="data_lines", default=0, desc="Number of data lines", readonly=True, optional=True, visible=False, no_value=0 )
+
     def write_from_stream(self, dataset, stream):
         """Writes data from a stream"""
         # write it twice for now 
@@ -322,7 +324,6 @@ class Text( Data ):
                 break
             os.write(fd, chunk)
         os.close(fd)
-
         # rewrite the file with unix newlines
         fp = open(dataset.file_name, 'wt')
         for line in file(temp_name, "U"):
@@ -344,23 +345,29 @@ class Text( Data ):
     def get_mime(self):
         """Returns the mime type of the datatype"""
         return 'text/plain'
-    def set_peek( self, dataset, line_count=None ):
+    def set_meta( self, dataset, **kwd ):
+        """
+        Set the number of lines of data in dataset,
+        skipping all blank lines and comments.
+        """
+        data_lines = 0
+        for line in file( dataset.file_name ):
+            line = line.strip()
+            if line and not line.startswith( '#' ):
+                data_lines += 1
+        dataset.metadata.data_lines = data_lines
+    def set_peek( self, dataset, line_count=None, is_multi_byte=False ):
         if not dataset.dataset.purged:
             # The file must exist on disk for the get_file_peek() method
-            dataset.peek = get_file_peek( dataset.file_name )
+            dataset.peek = get_file_peek( dataset.file_name, is_multi_byte=is_multi_byte )
             if line_count is None:
-                dataset.blurb = "%s lines" % util.commaify( str( get_line_count( dataset.file_name ) ) )
-            else:
-                dataset.blurb = "%s lines" % util.commaify( str( line_count ) )
-        else:
-            dataset.peek = 'file does not exist'
-            dataset.blurb = 'file purged from disk'
-    def set_multi_byte_peek( self, dataset, line_count=None ):
-        if not dataset.dataset.purged:
-            # The file must exist on disk for the get_file_peek() method
-            dataset.peek = get_file_peek( dataset.file_name, is_multi_byte=True )
-            if line_count is None:
-                dataset.blurb = "%s lines" % util.commaify( str( get_line_count( dataset.file_name ) ) )
+                # See if line_count is stored in the metadata
+                if dataset.metadata.data_lines:
+                    dataset.blurb = "%s lines" % util.commaify( str( dataset.metadata.data_lines ) )
+                else:
+                    # Number of lines is not known ( this should not happen ), and auto-detect is
+                    # needed to set metadata
+                    dataset.blurb = "? lines"
             else:
                 dataset.blurb = "%s lines" % util.commaify( str( line_count ) )
         else:
@@ -370,7 +377,7 @@ class Text( Data ):
 class Txtseq( Data ):
     """Class describing a zip archive of text sequence files"""
     file_ext = "txtseq.zip"
-    def set_peek( self, dataset ):
+    def set_peek( self, dataset, is_multi_byte=False ):
         if not dataset.dataset.purged:
             zip_file = zipfile.ZipFile( dataset.file_name, "r" )
             num_files = len( zip_file.namelist() )
@@ -459,11 +466,3 @@ def get_file_peek( file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5 ):
     else:
         text = unicode( '\n'.join( lines ), 'utf-8' )
     return text
-def get_line_count(file_name):
-    """Returns the number of lines in a file that are neither null nor comments"""
-    count = 0
-    for line in file(file_name):
-        line = line.strip()
-        if line and line[0] != '#':
-            count += 1
-    return count

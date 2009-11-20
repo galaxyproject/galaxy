@@ -58,12 +58,18 @@ class Interval( Tabular ):
     def init_meta( self, dataset, copy_from=None ):
         Tabular.init_meta( self, dataset, copy_from=copy_from )
     
-    def set_peek( self, dataset, line_count=None ):
+    def set_peek( self, dataset, line_count=None, is_multi_byte=False ):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek( dataset.file_name )
+            dataset.peek = data.get_file_peek( dataset.file_name, is_multi_byte=is_multi_byte )
             if line_count is None:
-                dataset.blurb = "%s regions" % util.commaify( str( data.get_line_count( dataset.file_name ) ) )
+                # See if line_count is stored in the metadata
+                if dataset.metadata.data_lines:
+                    dataset.blurb = "%s regions" % util.commaify( str( dataset.metadata.data_lines ) )
+                else:
+                    # Number of lines is not known ( this should not happen ), and auto-detect is
+                    # needed to set metadata
+                    dataset.blurb = "? regions"
             else:
                 dataset.blurb = "%s regions" % util.commaify( str( line_count ) )
         else:
@@ -884,9 +890,6 @@ class CustomTrack ( Tabular ):
         """Initialize interval datatype, by adding UCSC display app"""
         Tabular.__init__(self, **kwd)
         self.add_display_app ( 'ucsc', 'display at UCSC', 'as_ucsc_display_file', 'ucsc_links' )
-    def set_readonly_meta( self, dataset, skip=1, **kwd ):
-        """Resets the values of readonly metadata elements."""
-        Tabular.set_readonly_meta( self, dataset, skip = skip, **kwd )
     def set_meta( self, dataset, overwrite = True, **kwd ):
         Tabular.set_meta( self, dataset, overwrite = overwrite, skip = 1 )
     def display_peek( self, dataset ):

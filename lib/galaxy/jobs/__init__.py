@@ -549,12 +549,12 @@ class JobWrapper( object ):
                     try:
                         assert context.get( 'line_count', None ) is not None
                         if ( not dataset.datatype.composite_type and dataset.dataset.is_multi_byte() ) or self.tool.is_multi_byte:
-                            dataset.set_multi_byte_peek( line_count=context['line_count'] )
+                            dataset.set_peek( line_count=context['line_count'], is_multi_byte=True )
                         else:
                             dataset.set_peek( line_count=context['line_count'] )
                     except:
                         if ( not dataset.datatype.composite_type and dataset.dataset.is_multi_byte() ) or self.tool.is_multi_byte:
-                            dataset.set_multi_byte_peek()
+                            dataset.set_peek( is_multi_byte=True )
                         else:
                             dataset.set_peek()
                     try:

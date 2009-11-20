@@ -17,11 +17,40 @@ log = logging.getLogger(__name__)
 
 class Sequence( data.Text ):
     """Class describing a sequence"""
-    def set_readonly_meta( self, dataset ):
-        """Resets the values of readonly metadata elements."""
-        pass
 
-class Alignment( Sequence ):
+    """Add metadata elements"""
+    MetadataElement( name="sequences", default=0, desc="Number of sequences", readonly=True, visible=False, optional=True, no_value=0 )
+
+    def set_meta( self, dataset, **kwd ):
+        """
+        Set the number of sequences and the number of data lines in dataset.
+        """
+        data_lines = 0
+        sequences = 0
+        for line in file( dataset.file_name ):
+            line = line.strip()
+            if line and line.startswith( '#' ):
+                # We don't count comment lines for sequence data types
+                continue
+            if line and line.startswith( '>' ):
+                sequences += 1
+                data_lines +=1
+            else:
+                data_lines += 1
+        dataset.metadata.data_lines = data_lines
+        dataset.metadata.sequences = sequences
+    def set_peek( self, dataset, is_multi_byte=False ):
+        if not dataset.dataset.purged:
+            dataset.peek = data.get_file_peek( dataset.file_name, is_multi_byte=is_multi_byte )
+            if dataset.metadata.sequences:
+                dataset.blurb = "%s sequences" % util.commaify( str( dataset.metadata.sequences ) )
+            else:
+                dataset.blurb = data.nice_size( dataset.get_size() )
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+class Alignment( data.Text ):
     """Class describing an alignment"""
 
     """Add metadata elements"""
@@ -29,15 +58,8 @@ class Alignment( Sequence ):
 
 class Fasta( Sequence ):
     """Class representing a FASTA sequence"""
-    file_ext = "fasta"
 
-    def set_peek( self, dataset ):
-        if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek( dataset.file_name )
-            dataset.blurb = data.nice_size( dataset.get_size() )
-        else:
-            dataset.peek = 'file does not exist'
-            dataset.blurb = 'file purged from disk'
+    file_ext = "fasta"
 
     def sniff( self, filename ):
         """
@@ -82,6 +104,7 @@ class Fasta( Sequence ):
                         return True
                     else:
                         break #we found a non-empty line, but its not a fasta header
+            fh.close()
         except:
             pass
         return False
@@ -89,14 +112,6 @@ class Fasta( Sequence ):
 class csFasta( Sequence ):
     """ Class representing the SOLID Color-Space sequence ( csfasta ) """
     file_ext = "csfasta"
-    
-    def set_peek( self, dataset ):
-        if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek( dataset.file_name )
-            dataset.blurb = data.nice_size( dataset.get_size() )
-        else:
-            dataset.peek = 'file does not exist'
-            dataset.blurb = 'file purged from disk'
 
     def sniff( self, filename ):
         """
@@ -130,6 +145,7 @@ class csFasta( Sequence ):
                         return True
                     else:
                         break #we found a non-empty line, but it's not a header
+            fh.close()
         except:
             pass
         return False
@@ -137,15 +153,26 @@ class csFasta( Sequence ):
 class Fastq ( Sequence ):
     """Class representing a generic FASTQ sequence"""
     file_ext = "fastq"
-    
-    def set_peek( self, dataset ):
-        if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek( dataset.file_name )
-            dataset.blurb = data.nice_size( dataset.get_size() )
-        else:
-            dataset.peek = 'file does not exist'
-            dataset.blurb = 'file purged from disk'
-    
+
+    def set_meta( self, dataset, **kwd ):
+        """
+        Set the number of sequences and the number of data lines
+        in dataset.
+        """
+        data_lines = 0
+        sequences = 0
+        for line in file( dataset.file_name ):
+            line = line.strip()
+            if line and line.startswith( '#' ):
+                # We don't count comment lines for sequence data types
+                continue
+            if line and line.startswith( '@' ):
+                sequences += 1
+                data_lines +=1
+            else:
+                data_lines += 1
+        dataset.metadata.data_lines = data_lines
+        dataset.metadata.sequences = sequences
     def sniff ( self, filename ):
         """
         Determines whether the file is in generic fastq format
@@ -178,13 +205,13 @@ class FastqSanger( Fastq ):
     """Class representing a FASTQ sequence ( the Sanger variant )"""
     file_ext = "fastqsanger"
 
-
 try:
     from galaxy import eggs
     import pkg_resources; pkg_resources.require( "bx-python" )
     import bx.align.maf
 except:
     pass
+
 #trying to import maf_utilities here throws an ImportError due to a circular import between jobs and tools:
 #from galaxy.tools.util.maf_utilities import build_maf_index_species_chromosomes
 #Traceback (most recent call last):
@@ -223,12 +250,15 @@ def COPIED_build_maf_index_species_chromosomes( filename, index_species = None )
     species = []
     species_chromosomes = {}
     indexes = bx.interval_index_file.Indexes()
+    blocks = 0
     try:
         maf_reader = bx.align.maf.Reader( open( filename ) )
         while True:
             pos = maf_reader.file.tell()
             block = maf_reader.next()
-            if block is None: break
+            if block is None:
+                break
+            blocks += 1
             for c in block.components:
                 spec = c.src
                 chrom = None
@@ -255,29 +285,30 @@ def COPIED_build_maf_index_species_chromosomes( filename, index_species = None )
     except Exception, e:
         #most likely a bad MAF
         log.debug( 'Building MAF index on %s failed: %s' % ( filename, e ) )
-        return ( None, [], {} )
-    return ( indexes, species, species_chromosomes )
+        return ( None, [], {}, 0 )
+    return ( indexes, species, species_chromosomes, blocks )
 
 class Maf( Alignment ):
     """Class describing a Maf alignment"""
     file_ext = "maf"
     
     #Readonly and optional, users can't unset it, but if it is not set, we are generally ok; if required use a metadata validator in the tool definition
+    MetadataElement( name="blocks", default=0, desc="Number of blocks", readonly=True, optional=True, visible=False, no_value=0 )
     MetadataElement( name="species_chromosomes", desc="Species Chromosomes", param=metadata.FileParameter, readonly=True, no_value=None, visible=False, optional=True )
     MetadataElement( name="maf_index", desc="MAF Index File", param=metadata.FileParameter, readonly=True, no_value=None, visible=False, optional=True )
 
     def init_meta( self, dataset, copy_from=None ):
         Alignment.init_meta( self, dataset, copy_from=copy_from )
-    
     def set_meta( self, dataset, overwrite = True, **kwd ):
         """
         Parses and sets species, chromosomes, index from MAF file.
         """
         #these metadata values are not accessable by users, always overwrite
-        indexes, species, species_chromosomes = COPIED_build_maf_index_species_chromosomes( dataset.file_name )
-        if indexes is None: return #this is not a MAF file
-        
+        indexes, species, species_chromosomes, blocks = COPIED_build_maf_index_species_chromosomes( dataset.file_name )
+        if indexes is None:
+            return #this is not a MAF file
         dataset.metadata.species = species
+        dataset.metadata.blocks = blocks
         #only overwrite the contents if our newly determined chromosomes don't match stored
         chrom_file = dataset.metadata.species_chromosomes
         compare_chroms = {}
@@ -303,17 +334,27 @@ class Maf( Alignment ):
             open( chrom_file.file_name, 'wb' ).write( tmp_file.read() )
             dataset.metadata.species_chromosomes = chrom_file
             tmp_file.close()
-        
         index_file = dataset.metadata.maf_index
         if not index_file:
             index_file = dataset.metadata.spec['maf_index'].param.new_file( dataset = dataset )
         indexes.write( open( index_file.file_name, 'w' ) )
         dataset.metadata.maf_index = index_file
-    
+    def set_peek( self, dataset, is_multi_byte=False ):
+        if not dataset.dataset.purged:
+            # The file must exist on disk for the get_file_peek() method
+            dataset.peek = data.get_file_peek( dataset.file_name, is_multi_byte=is_multi_byte )
+            if dataset.metadata.blocks:
+                dataset.blurb = "%s blocks" % util.commaify( str( dataset.metadata.blocks ) )
+            else:
+                # Number of blocks is not known ( this should not happen ), and auto-detect is
+                # needed to set metadata
+                dataset.blurb = "? blocks"
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
     def display_peek( self, dataset ):
         """Returns formated html of peek"""
         return self.make_html_table( dataset )
-
     def make_html_table( self, dataset, skipchars=[] ):
         """Create HTML table, used for displaying peek"""
         out = ['<table cellspacing="0" cellpadding="3">']
@@ -336,7 +377,6 @@ class Maf( Alignment ):
         except Exception, exc:
             out = "Can't create peek %s" % exc
         return out
-
     def sniff( self, filename ):
         """
         Determines wether the file is in maf format
@@ -368,8 +408,13 @@ class Maf( Alignment ):
         except:
             return False
 
-class Axt( Sequence ):
+class Axt( data.Text ):
     """Class describing an axt alignment"""
+    
+    # gvk- 11/19/09 - This is really an alignment, but we no longer have tools that use this data type, and it is
+    # here simply for backward compatibility ( although it is still in the datatypes registry ).  Subclassing
+    # from data.Text eliminates managing metadata elements inherited from the Alignemnt class.
+
     file_ext = "axt"
 
     def sniff( self, filename ):
@@ -377,10 +422,16 @@ class Axt( Sequence ):
         Determines whether the file is in axt format
         
         axt alignment files are produced from Blastz, an alignment tool available from Webb Miller's lab 
-        at Penn State University.  Each alignment block in an axt file contains three lines: a summary 
-        line and 2 sequence lines. Blocks are separated from one another by blank lines.
+        at Penn State University.
         
-        The summary line contains chromosomal position and size information about the alignment. It consists of 9 required fields:
+        Each alignment block in an axt file contains three lines: a summary line and 2 sequence lines.
+        Blocks are separated from one another by blank lines.
+        
+        The summary line contains chromosomal position and size information about the alignment. It
+        consists of 9 required fields.
+        
+        The sequence lines contain the sequence of the primary assembly (line 2) and aligning assembly
+        (line 3) with inserts.  Repeats are indicated by lower-case letters.
     
         For complete details see http://genome.ucsc.edu/goldenPath/help/axt.html
         
@@ -409,9 +460,14 @@ class Axt( Sequence ):
                 else:
                     return True
 
-class Lav( Sequence ):
+class Lav( data.Text ):
     """Class describing a LAV alignment"""
+
     file_ext = "lav"
+
+    # gvk- 11/19/09 - This is really an alignment, but we no longer have tools that use this data type, and it is
+    # here simply for backward compatibility ( although it is still in the datatypes registry ).  Subclassing
+    # from data.Text eliminates managing metadata elements inherited from the Alignemnt class.
 
     def sniff( self, filename ):
         """
