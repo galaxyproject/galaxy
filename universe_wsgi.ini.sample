@@ -261,12 +261,6 @@ job_queue_cleanup_interval = 30
 
 biomart = local:///
 encode_db1 = local:///
-encode_import_all_latest_datasets1 = local:///
-encode_import_chromatin_and_chromosomes1 = local:///
-encode_import_gencode1 = local:///
-encode_import_genes_and_transcripts1 = local:///
-encode_import_multi-species_sequence_analysis1 = local:///
-encode_import_transcription_regulation1 = local:///
 hbvar = local:///
 microbial_import1 = local:///
 ucsc_table_direct1 = local:///
