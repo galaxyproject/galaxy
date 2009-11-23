@@ -26,6 +26,7 @@ if 'LOG_TEMPFILES' in os.environ:
     _log_tempfile = TempFile()
     import tempfile
 
+pkg_resources.require( "Paste" )
 pkg_resources.require( "PasteScript" )
 
 from paste.script import command
