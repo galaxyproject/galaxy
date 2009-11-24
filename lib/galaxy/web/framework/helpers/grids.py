@@ -17,9 +17,11 @@ class Grid( object ):
     title = ""
     exposed = True
     model_class = None
-    # To use grid's async features, set template="grid_base_async.mako"
     template = "grid_base.mako"
-    async_template = "grid_body_async.mako"
+    async_template = "grid_base_async.mako"
+    
+    use_async = False
+    
     global_actions = []
     columns = []
     operations = []
@@ -174,6 +176,7 @@ class Grid( object ):
             if page_num == 0:
                 # Show all rows in page.
                 total_num_rows = query.count()
+                page_num = 1
                 num_pages = 1
             else:
                 # Show a limited number of rows. Before modifying query, get the total number of rows that query 
@@ -218,8 +221,8 @@ class Grid( object ):
                     new_kwargs[ 'id' ] = trans.security.encode_id( id )
             return url_for( **new_kwargs )
         
-        
-        return trans.fill_template( iff( 'async' not in kwargs, self.template, self.async_template),
+        async_request = ( ( self.use_async ) and ( 'async' in kwargs ) and ( kwargs['async'] in [ 'True', 'true'] ) )
+        return trans.fill_template( iff( async_request, self.async_template, self.template),
                                     grid=self,
                                     query=query,
                                     cur_page_num = page_num,
@@ -233,7 +236,10 @@ class Grid( object ):
                                     ids = kwargs.get( 'id', [] ),
                                     url = url,
                                     message_type = status,
-                                    message = message )
+                                    message = message,
+                                    # Pass back kwargs so that grid template can set and use args without grid explicitly having to pass them.
+                                    kwargs=kwargs
+                                     )
     def get_ids( self, **kwargs ):
         id = []
         if 'id' in kwargs:

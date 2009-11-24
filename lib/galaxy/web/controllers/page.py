@@ -116,11 +116,11 @@ class HistorySelectionGrid( grids.Grid ):
     
     # Grid definition.
     title = "Saved Histories"
-    template = "/page/select_histories_grid.mako"
-    async_template = "grid_body_async.mako"
+    template = "/page/select_histories_grid.mako" 
     model_class = model.History
     default_filter = { "deleted" : "False" , "shared" : "All" }
     default_sort_key = "-update_time"
+    use_async = True
     use_paging = True
     num_rows_per_page = 10
     columns = [
@@ -152,15 +152,15 @@ class PageController( BaseController ):
         # Handle operation
         if 'operation' in kwargs and 'id' in kwargs:
             session = trans.sa_session
-            operation = kwargs['operation']
+            operation = kwargs['operation'].lower()
             ids = util.listify( kwargs['id'] )
             for id in ids:
                 item = session.query( model.Page ).get( trans.security.decode_id( id ) )
-                if operation == "Delete":
+                if operation == "delete":
                     item.deleted = True
-                elif operation == "Publish":
+                elif operation == "publish":
                     item.published = True
-                elif operation == "Unpublish":
+                elif operation == "unpublish":
                     item.published = False
             session.flush()
         # Build grid

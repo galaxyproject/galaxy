@@ -87,11 +87,11 @@ class HistoryListGrid( grids.Grid ):
     # Grid definition
     title = "Saved Histories"
     model_class = model.History
-    template='/grid_base.mako'
+    template='/history/grid.mako'
     default_sort_key = "-create_time"
     columns = [
         NameColumn( "Name", key="name", model_class=model.History,
-                          link=( lambda history: iff( history.deleted, None, dict( operation="switch", id=history.id ) ) ),
+                          link=( lambda history: iff( history.deleted, None, dict( operation="Switch", id=history.id ) ) ),
                           attach_popup=True, filterable="advanced" ),
         DatasetsByStateColumn( "Datasets (by state)", ncells=4 ),
         grids.TagsColumn( "Tags", "tags", model.History, model.HistoryTagAssociation, filterable="advanced"),
@@ -110,7 +110,7 @@ class HistoryListGrid( grids.Grid ):
                 )
                 
     operations = [
-        grids.GridOperation( "Switch", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=True ),
+        grids.GridOperation( "Switch", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False ),
         grids.GridOperation( "Share", condition=( lambda item: not item.deleted ), async_compatible=False ),
         grids.GridOperation( "Unshare", condition=( lambda item: not item.deleted ), async_compatible=False  ),
         grids.GridOperation( "Rename", condition=( lambda item: not item.deleted ), async_compatible=False  ),
@@ -127,6 +127,7 @@ class HistoryListGrid( grids.Grid ):
     default_filter = dict( name="All", deleted="False", tags="All", shared="All" )
     num_rows_per_page = 50
     preserve_state = False
+    use_async = True
     use_paging = True
     def get_current_item( self, trans ):
         return trans.get_history()
