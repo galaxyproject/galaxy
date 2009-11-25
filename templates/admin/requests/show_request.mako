@@ -5,11 +5,16 @@
     ${render_msg( msg, messagetype )}
 %endif
 
+%if request.rejected():
+    ${render_msg( "Reason for rejection: "+request.last_comment(), "warning" )}
+%endif
+
 <div class="grid-header">
     <h2>Sequencing Request "${request.name}"</h2>
 </div>
 
 <ul class="manage-table-actions">
+
     %if request.unsubmitted() and request.samples:
         <li>
             <a class="action-button" confirm="More samples cannot be added to this request once it is submitted. Click OK to submit." href="${h.url_for( controller='requests_admin', action='list', operation='Submit', id=trans.security.encode_id(request.id) )}">
@@ -28,6 +33,10 @@
             <span>Bar codes</span></a>
         </li>
     %endif
+    <li>
+        <a class="action-button" href="${h.url_for( controller='requests_admin', action='list', operation='events', id=trans.security.encode_id(request.id) )}">
+        <span>History</span></a>
+    </li>
 
 </ul>
 
@@ -82,7 +91,7 @@
     %if grid_index == 0:
         <td>${sample.bar_code}</td>
         <td>
-            %if sample.request.unsubmitted():
+            %if sample.request.new():
                 Unsubmitted
             %else:
                 <a href="${h.url_for( controller='requests_admin', action='show_events', sample_id=sample.id)}">${sample.current_state().name}</a>
@@ -117,6 +126,8 @@
                                 %else:
                                     <i>None</i>
                                 %endif
+                            %elif rd['label'] == 'State':
+                                <a href="${h.url_for( controller='requests_admin', action='list', operation='events', id=trans.security.encode_id(request.id) )}">${rd['value']}</a>
                             %else:
                                 ${rd['value']}     
                             %endif

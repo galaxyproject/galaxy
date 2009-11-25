@@ -860,7 +860,11 @@ ${self.render_grid_table()}
                                 if operation.target:
                                     target = "target='" + operation.target + "'"
                                 %>
-                                <a class="action-button" ${target} href="${ url( **operation.get_url_args( item ) ) }">${operation.label}</a>  
+                                %if operation.confirm:
+                                    <a class="action-button" ${target} confirm="${operation.confirm}" href="${ url( **operation.get_url_args( item ) ) }">${operation.label}</a>
+                                %else:
+                                    <a class="action-button" ${target} href="${ url( **operation.get_url_args( item ) ) }">${operation.label}</a>
+                                %endif  
                             %endif
                         %endfor
                     </div>

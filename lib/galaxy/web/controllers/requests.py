@@ -28,27 +28,57 @@ class RequestsGrid( grids.Grid ):
             return request.type.name
     class LastUpdateColumn( grids.TextColumn ):
         def get_value(self, trans, grid, request):
-            return request.update_time
+            delta = datetime.utcnow() - request.update_time
+            if delta > timedelta( minutes=60 ):
+                last_update = '%s hours' % int( delta.seconds / 60 / 60 )
+            else:
+                last_update = '%s minutes' % int( delta.seconds / 60 )
+            return last_update
     class StateColumn( grids.GridColumn ):
+        def __init__( self, col_name, key, model_class, event_class, filterable, link ):
+            grids.GridColumn.__init__(self, col_name, key=key, model_class=model_class, filterable=filterable, link=link)
+            self.event_class = event_class
+        def get_value(self, trans, grid, request):
+            if request.state() == request.states.REJECTED:
+                return '<div class="count-box state-color-error">%s</div>' % request.state()
+            elif request.state() == request.states.NEW:
+                return '<div class="count-box state-color-queued">%s</div>' % request.state()
+            elif request.state() == request.states.SUBMITTED:
+                return '<div class="count-box state-color-running">%s</div>' % request.state()
+            elif request.state() == request.states.COMPLETE:
+                return '<div class="count-box state-color-ok">%s</div>' % request.state()
+            return request.state()
         def filter( self, db_session, query, column_filter ):
             """ Modify query to filter request by state. """
             if column_filter == "All":
                 return query
             if column_filter:
-                query = query.filter( model.Request.state == column_filter )
-            return query
+                # select r.id, r.name, re.id, re.state 
+                # from request as r, request_event as re
+                # where re.request_id=r.id and re.state='Complete' and re.create_time in
+                #                        (select MAX( create_time)
+                #                         from request_event
+                #                         group by request_id)
+                q = query.join(self.event_class.table)\
+                         .filter( self.model_class.table.c.id==self.event_class.table.c.request_id )\
+                         .filter( self.event_class.table.c.state==column_filter )\
+                         .filter( self.event_class.table.c.id.in_(select(columns=[func.max(self.event_class.table.c.id)],
+                                                                                  from_obj=self.event_class.table,
+                                                                                  group_by=self.event_class.table.c.request_id)))
+            return q
         def get_accepted_filters( self ):
-           """ Returns a list of accepted filters for this column. """
-           accepted_filter_labels_and_vals = [ model.Request.states.UNSUBMITTED,
-                                               model.Request.states.SUBMITTED,
-                                               model.Request.states.COMPLETE,
-                                               "All"]
-           accepted_filters = []
-           for val in accepted_filter_labels_and_vals:
-               label = val.lower()
-               args = { self.key: val }
-               accepted_filters.append( grids.GridColumnFilter( label, args) )
-           return accepted_filters
+            """ Returns a list of accepted filters for this column. """
+            accepted_filter_labels_and_vals = [ model.Request.states.NEW,
+                                                model.Request.states.REJECTED,
+                                                model.Request.states.SUBMITTED,
+                                                model.Request.states.COMPLETE,
+                                                "All"]
+            accepted_filters = []
+            for val in accepted_filter_labels_and_vals:
+                label = val.lower()
+                args = { self.key: val }
+                accepted_filters.append( grids.GridColumnFilter( label, args) )
+            return accepted_filters
     class DeletedColumn( grids.GridColumn ):
        def get_accepted_filters( self ):
            """ Returns a list of accepted filters for this column. """
@@ -66,7 +96,7 @@ class RequestsGrid( grids.Grid ):
     num_rows_per_page = 50
     preserve_state = True
     use_paging = True
-    default_filter = dict( deleted="False", state=model.Request.states.UNSUBMITTED)
+    default_filter = dict( deleted="False", state=model.Request.states.NEW)
     columns = [
         NameColumn( "Name", 
                     key="name", 
@@ -83,23 +113,27 @@ class RequestsGrid( grids.Grid ):
         TypeColumn( "Type" ),
         LastUpdateColumn( "Last update", 
                           format=time_ago ),
-        StateColumn( "State", 
-                     key='state', 
-                     filterable="advanced"),
         DeletedColumn( "Deleted", 
                        key="deleted", 
-                       visible=True, 
-                       filterable="advanced" )
+                       visible=False, 
+                       filterable="advanced" ),
+        StateColumn( "State", 
+                     model_class=model.Request,
+                     event_class=model.RequestEvent,
+                     key='state',
+                     filterable="advanced",
+                     link=( lambda item: iff( item.deleted, None, dict( operation="events", id=item.id ) ) ) )
     ]
     columns.append( grids.MulticolFilterColumn( "Search", 
-                                                cols_to_filter=[ columns[0], columns[1] ], 
+                                                cols_to_filter=[ columns[0], columns[1], columns[6] ], 
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
     operations = [
-        grids.GridOperation( "Submit", allow_multiple=False, condition=( lambda item: not item.deleted and item.unsubmitted() and item.samples )  ),
+        grids.GridOperation( "Submit", allow_multiple=False, condition=( lambda item: not item.deleted and item.unsubmitted() and item.samples ),
+                             confirm="More samples cannot be added to this request once it is submitted. Click OK to submit."  ),
         grids.GridOperation( "Edit", allow_multiple=False, condition=( lambda item: not item.deleted and item.unsubmitted() )  ),
-        grids.GridOperation( "Delete", allow_multiple=True, condition=( lambda item: not item.deleted and item.unsubmitted() )  ),
+        grids.GridOperation( "Delete", allow_multiple=True, condition=( lambda item: not item.deleted and item.new() )  ),
         grids.GridOperation( "Undelete", allow_multiple=True, condition=( lambda item: item.deleted )  )
 
     ]
@@ -145,9 +179,23 @@ class Requests( BaseController ):
                 return self.__undelete_request( trans, **kwd )
             elif operation == "edit":
                 return self.__edit_request( trans, **kwd )
+            elif operation == "events":
+                return self.__request_events( trans, **kwd )
+        # if there are one or more requests that has been rejected by the admin
+        # recently, then show a msg as a reminder to the user
+        rlist = trans.sa_session.query( trans.app.model.Request ) \
+                                .filter( trans.app.model.Request.table.c.deleted==False ) \
+                                .filter( trans.app.model.Request.table.c.user_id==trans.user.id )
+        rejected = 0
+        for r in rlist:
+            if r.rejected():
+                rejected = rejected + 1
+        if rejected:
+            kwd['status'] = 'warning'
+            kwd['message'] = "%d requests (highlighted in red) were rejected, click on the request name for details." \
+                             % rejected 
         # Render the list view
         return self.request_grid( trans, **kwd )
-    
     def __show_request(self, trans, **kwd):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
@@ -172,6 +220,28 @@ class Requests( BaseController ):
                                     sample_copy=self.__copy_sample(current_samples), 
                                     details='hide', edit_mode='False',
                                     msg=msg, messagetype=messagetype )
+    def __request_events(self, trans, **kwd):
+        try:
+            request = trans.sa_session.query( trans.app.model.Request ).get( trans.security.decode_id(kwd['id']) )
+        except:
+            msg = "Invalid request ID"
+            log.warn( msg )
+            return trans.response.send_redirect( web.url_for( controller='requests',
+                                                              action='list',
+                                                              status='error',
+                                                              message=msg,
+                                                              **kwd) )
+        events_list = []
+        all_events = request.events
+        for event in all_events:         
+            delta = datetime.utcnow() - event.update_time
+            if delta > timedelta( minutes=60 ):
+                last_update = '%s hours' % int( delta.seconds / 60 / 60 )
+            else:
+                last_update = '%s minutes' % int( delta.seconds / 60 )
+            events_list.append((event.state, last_update, event.comment))
+        return trans.fill_template( '/requests/events.mako', 
+                                    events_list=events_list, request=request)
     def request_details(self, trans, id):
         '''
         Shows the request details
@@ -187,7 +257,7 @@ class Requests( BaseController ):
                                     value=request.type.name, 
                                     helptext=''))
         request_details.append(dict(label='State', 
-                                    value=request.state, 
+                                    value=request.state(), 
                                     helptext=''))
         request_details.append(dict(label='Date created', 
                                     value=request.create_time, 
@@ -366,9 +436,9 @@ class Requests( BaseController ):
                         trans.sa_session.add( sample )
                         trans.sa_session.flush()
             return trans.response.send_redirect( web.url_for( controller='requests',
-                                                          action='list',
-                                                          operation='show_request',
-                                                          id=trans.security.encode_id(request.id)) )
+                                                              action='list',
+                                                              operation='show_request',
+                                                              id=trans.security.encode_id(request.id)) )
         elif params.get('edit_samples_button', False) == 'Edit samples':
             edit_mode = 'True'
             return trans.fill_template( '/requests/show_request.mako',
@@ -700,9 +770,14 @@ class Requests( BaseController ):
         if not request:
             request = trans.app.model.Request(name, desc, request_type, 
                                               trans.user, form_values,
-                                              library=library, folder=folder, 
-                                              state=trans.app.model.Request.states.UNSUBMITTED)
+                                              library=library, folder=folder)
             trans.sa_session.add( request )
+            trans.sa_session.flush()
+            trans.sa_session.refresh( request )
+            # create an event with state 'New' for this new request
+            comments = "Request created."
+            event = trans.app.model.RequestEvent(request, request.states.NEW, comments)
+            trans.sa_session.add( event )
             trans.sa_session.flush()
         else:
             request.name = name
@@ -712,7 +787,6 @@ class Requests( BaseController ):
             request.values = form_values
             request.library = library
             request.folder = folder
-            request.state = trans.app.model.Request.states.UNSUBMITTED
             trans.sa_session.add( request )
             trans.sa_session.flush()
         return request
@@ -731,7 +805,7 @@ class Requests( BaseController ):
                                                               message="Invalid request ID",
                                                               **kwd) )
         if params.get('show', False) == 'True':
-            return self.__edit_request(trans, **kwd)
+            return self.__edit_request(trans, id=trans.security.encode_id(request.id), **kwd)
         elif params.get('save_changes_request_button', False) == 'Save changes' \
              or params.get('edit_samples_button', False) == 'Edit samples':
                 request_type = trans.sa_session.query( trans.app.model.RequestType ).get( int( params.select_request_type ) )
@@ -760,7 +834,7 @@ class Requests( BaseController ):
                                                                       messagetype='done',
                                                                       **new_kwd) )
         elif params.get('refresh', False) == 'true':
-            return self.__edit_request(trans, **kwd)
+            return self.__edit_request(trans, id=trans.security.encode_id(request.id), **kwd)
             
     def __edit_request(self, trans, **kwd):
         try:
@@ -819,7 +893,7 @@ class Requests( BaseController ):
                                                                   message=msg,
                                                                   **kwd) )
             # a request cannot be deleted once its submitted
-            if not request.unsubmitted():
+            if not request.new():
                 delete_failed.append(request.name)
             else:
                 request.deleted = True
@@ -870,21 +944,22 @@ class Requests( BaseController ):
         msg = self.__validate(trans, request)
         if msg:
             return trans.response.send_redirect( web.url_for( controller='requests',
-                                                              action='edit',
+                                                              action='list',
+                                                              operation='edit',
                                                               messagetype = 'error',
                                                               msg=msg,
-                                                              request_id=request.id,
-                                                              show='True') )
+                                                              id=trans.security.encode_id(request.id) ))
+        # change the request state to 'Submitted'
+        comments = "Request moved to 'Submitted' state."
+        event = trans.app.model.RequestEvent(request, request.states.SUBMITTED, comments)
+        trans.sa_session.add( event )
+        trans.sa_session.flush()
         # get the new state
         new_state = request.type.states[0]
         for s in request.samples:
             event = trans.app.model.SampleEvent(s, new_state, 'Samples submitted to the system')
             trans.sa_session.add( event )
             trans.sa_session.flush()
-        # change request's submitted field
-        request.state = request.states.SUBMITTED
-        trans.sa_session.add( request )
-        trans.sa_session.flush()
         return trans.response.send_redirect( web.url_for( controller='requests',
                                                           action='list',
                                                           id=trans.security.encode_id(request.id),

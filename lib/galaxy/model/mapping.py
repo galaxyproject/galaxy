@@ -618,8 +618,15 @@ Request.table = Table('request', metadata,
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "library_id", Integer, ForeignKey( "library.id" ), index=True ),
     Column( "folder_id", Integer, ForeignKey( "library_folder.id" ), index=True ),
-    Column( "state", TrimmedString( 255 ),  index=True ),
     Column( "deleted", Boolean, index=True, default=False ) )
+
+RequestEvent.table = Table('request_event', metadata,
+    Column( "id", Integer, primary_key=True),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "request_id", Integer, ForeignKey( "request.id" ), index=True ), 
+    Column( "state", TrimmedString( 255 ),  index=True ),
+    Column( "comment", TEXT ) )
 
 Sample.table = Table('sample', metadata,
     Column( "id", Integer, primary_key=True ),
@@ -768,8 +775,13 @@ assign_mapper( context, Request, Request.table,
                                 folder=relation( LibraryFolder,
                                                  primaryjoin=( Request.table.c.folder_id == LibraryFolder.table.c.id ) ),                 
                                 library=relation( Library,
-                                                  primaryjoin=( Request.table.c.library_id == Library.table.c.id ) )
+                                                  primaryjoin=( Request.table.c.library_id == Library.table.c.id ) ),
+                                events=relation( RequestEvent, backref="request",
+                                                 order_by=desc(RequestEvent.table.c.update_time) )
                               ) )
+
+assign_mapper( context, RequestEvent, RequestEvent.table,
+               properties=None )
 
 assign_mapper( context, RequestType, RequestType.table,               
                properties=dict( states=relation( SampleState, 

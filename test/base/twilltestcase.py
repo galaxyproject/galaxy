@@ -1298,10 +1298,15 @@ class TwillTestCase( unittest.TestCase ):
         self.home()
         self.visit_url( "%s/requests_admin/list?operation=Submit&id=%s" % ( self.url, self.security.encode_id( request_id ) ))
         self.check_page_for_string( 'The request <b>%s</b> has been submitted.' % request_name )
-    def reject_request( self, request_id, request_name ):
+    def reject_request( self, request_id, request_name, comment ):
         self.home()
         self.visit_url( "%s/requests_admin/list?operation=Reject&id=%s" % ( self.url, self.security.encode_id( request_id ) ))
-        self.check_page_for_string( 'The request <b>%s</b> is now unsubmitted.' % request_name )
+        self.check_page_for_string( 'Reject Sequencing Request "%s"' % request_name )
+        tc.fv( "1", "comment", comment )
+        tc.submit( "reject_button" )
+        self.check_page_for_string( 'Request <b>%s</b> has been rejected.' % request_name )
+        self.visit_url( "%s/requests/list?sort=-create_time&operation=show_request&id=%s" % ( self.url, self.security.encode_id( request_id ) ))
+        self.check_page_for_string( comment )
     def add_bar_codes( self, request_id, request_name, bar_codes ):
         self.home()
         self.visit_url( "%s/requests_admin/bar_codes?request_id=%i" % (self.url, request_id) )

@@ -194,9 +194,9 @@ class TestFormsAndRequests( TwillTestCase ):
                                 .filter( and_( galaxy.model.Request.table.c.name==request_name,
                                                galaxy.model.Request.table.c.deleted==False ) ) \
                                 .first()        
-        # check if the request's state is now set to 'unsubmitted'
-        assert request_one.state is not request_one.states.UNSUBMITTED, "The state of the request '%s' should be set to '%s'" \
-            % ( request_one.name, request_one.states.UNSUBMITTED )
+        # check if the request's state is now set to 'new'
+        assert request_one.state is not request_one.states.NEW, "The state of the request '%s' should be set to '%s'" \
+            % ( request_one.name, request_one.states.NEW )
         # sample fields
         samples = [ ( 'Sample One', [ 'S1 Field 0 Value' ] ),
                     ( 'Sample Two', [ 'S2 Field 0 Value' ] ) ]
@@ -207,8 +207,8 @@ class TestFormsAndRequests( TwillTestCase ):
         self.edit_request(request_one.id, request_one.name, request_one.name+' (Renamed)', 
                           request_one.desc+' (Re-described)', library_one.id, folder_one.id, fields)
         sa_session.refresh( request_one )
-        # check if the request is showing in the 'unsubmitted' filter
-        self.check_request_grid(state='Unsubmitted', request_name=request_one.name)
+        # check if the request is showing in the 'new' filter
+        self.check_request_grid(state='New', request_name=request_one.name)
         # submit the request
         self.submit_request( request_one.id, request_one.name )
         sa_session.refresh( request_one )
@@ -257,11 +257,11 @@ class TestFormsAndRequests( TwillTestCase ):
                                 .filter( and_( galaxy.model.Request.table.c.name==request_name,
                                                galaxy.model.Request.table.c.deleted==False ) ) \
                                 .first()        
-        # check if the request is showing in the 'unsubmitted' filter
-        self.check_request_admin_grid(state='Unsubmitted', request_name=request_two.name)
-        # check if the request's state is now set to 'unsubmitted'
-        assert request_two.state is not request_two.states.UNSUBMITTED, "The state of the request '%s' should be set to '%s'" \
-            % ( request_two.name, request_two.states.UNSUBMITTED )
+        # check if the request is showing in the 'new' filter
+        self.check_request_admin_grid(state='New', request_name=request_two.name)
+        # check if the request's state is now set to 'new'
+        assert request_two.state is not request_two.states.NEW, "The state of the request '%s' should be set to '%s'" \
+            % ( request_two.name, request_two.states.NEW )
         # sample fields
         samples = [ ( 'Sample One', [ 'S1 Field 0 Value' ] ),
                     ( 'Sample Two', [ 'S2 Field 0 Value' ] ) ]
@@ -282,10 +282,10 @@ class TestFormsAndRequests( TwillTestCase ):
         '''Testing rejecting a request'''
         self.logout()
         self.login( email='test@bx.psu.edu' )
-        self.reject_request( request_two.id, request_two.name )
+        self.reject_request( request_two.id, request_two.name, "Rejection test comment" )
         sa_session.refresh( request_two )
-        # check if the request is showing in the 'unsubmitted' filter
-        self.check_request_admin_grid(state='Unsubmitted', request_name=request_two.name)
+        # check if the request is showing in the 'rejected' filter
+        self.check_request_admin_grid(state='Rejected', request_name=request_two.name)
         # check if the request's state is now set to 'submitted'
-        assert request_two.state is not request_two.states.UNSUBMITTED, "The state of the request '%s' should be set to '%s'" \
-            % ( request_two.name, request_two.states.UNSUBMITTED )
+        assert request_two.state is not request_two.states.REJECTED, "The state of the request '%s' should be set to '%s'" \
+            % ( request_two.name, request_two.states.REJECTED )

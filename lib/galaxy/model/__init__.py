@@ -1260,11 +1260,12 @@ class FormValues( object ):
         self.content = content
         
 class Request( object ):
-    states = Bunch( UNSUBMITTED = 'Unsubmitted',
+    states = Bunch( NEW = 'New',
                     SUBMITTED = 'Submitted',
+                    REJECTED = 'Rejected',
                     COMPLETE = 'Complete')
     def __init__(self, name=None, desc=None, request_type=None, user=None, 
-                 form_values=None, library=None, folder=None, state=False):
+                 form_values=None, library=None, folder=None):
         self.name = name
         self.desc = desc
         self.type = request_type
@@ -1272,19 +1273,39 @@ class Request( object ):
         self.user = user
         self.library = library
         self.folder = folder
-        self.state = state
         self.samples_list = []
+    def state(self):
+        if self.events:
+            return self.events[0].state
+        return None
+    def last_comment(self):
+        if self.events:
+            if self.events[0].comment:
+                return self.events[0].comment
+            else:
+                return ''
+        return 'No comment'
     def has_sample(self, sample_name):
         for s in self.samples:
             if s.name == sample_name:
                 return s
         return False
-    def submitted(self):
-        return self.state == self.states.SUBMITTED
     def unsubmitted(self):
-        return self.state == self.states.UNSUBMITTED
+        return self.state() in [ self.states.REJECTED, self.states.NEW ]
+    def rejected(self):
+        return self.state() == self.states.REJECTED
+    def submitted(self):
+        return self.state() == self.states.SUBMITTED
+    def new(self):
+        return self.state() == self.states.NEW
     def complete(self):
-        return self.state == self.states.COMPLETE
+        return self.state() == self.states.COMPLETE
+    
+class RequestEvent( object ):
+    def __init__(self, request=None, request_state=None, comment=''):
+        self.request = request
+        self.state = request_state
+        self.comment = comment
         
 class RequestType( object ):
     def __init__(self, name=None, desc=None, request_form=None, sample_form=None):

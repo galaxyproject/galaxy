@@ -402,7 +402,7 @@ class MulticolFilterColumn( TextColumn ):
         return query.filter( complete_filter )
 
 class GridOperation( object ):
-    def __init__( self, label, key=None, condition=None, allow_multiple=True, allow_popup=True, target=None, url_args=None, async_compatible=False ):
+    def __init__( self, label, key=None, condition=None, allow_multiple=True, allow_popup=True, target=None, url_args=None, async_compatible=False, confirm=None ):
         self.label = label
         self.key = key
         self.allow_multiple = allow_multiple
@@ -411,6 +411,8 @@ class GridOperation( object ):
         self.target = target
         self.url_args = url_args
         self.async_compatible = async_compatible
+        # if 'confirm' is set, then ask before completing the operation
+        self.confirm = confirm
     def get_url_args( self, item ):
         if self.url_args:
             temp = dict( self.url_args )

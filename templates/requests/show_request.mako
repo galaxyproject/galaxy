@@ -6,6 +6,9 @@
     ${render_msg( msg, messagetype )}
 %endif
 
+%if request.rejected():
+    ${render_msg( "Reason for rejection: "+request.last_comment(), "warning" )}
+%endif
 
 <div class="grid-header">
     <h2>Sequencing Request "${request.name}"</h2>
@@ -18,6 +21,10 @@
             <span>Submit request</span></a>
         </li>
     %endif
+    <li>
+        <a class="action-button" href="${h.url_for( controller='requests', action='list', operation='events', id=trans.security.encode_id(request.id) )}">
+        <span>History</span></a>
+    </li>
     <li>
         <a class="action-button"  href="${h.url_for( controller='requests', action='list')}">
         <span>Browse requests</span></a>
@@ -73,7 +80,7 @@
     </td>
     %if grid_index == 0:
         <td>
-            %if sample.request.unsubmitted():
+            %if sample.request.new():
                 Unsubmitted
             %else:    
                 <a href="${h.url_for( controller='requests', action='show_events', sample_id=sample.id)}">${sample.current_state().name}</a>
@@ -105,9 +112,11 @@
                             %if rd['label'] == 'Data library':
                                 %if rd['value']:
                                     <a href="${h.url_for( controller='library', action='browse_library', obj_id=request.library.id )}">${rd['value']}</a>
-                                %else:
-                                    <i>None</i>
-                                %endif
+                            %elif rd['label'] == 'State':
+                                <a href="${h.url_for( controller='requests', action='list', operation='events', id=trans.security.encode_id(request.id) )}">${rd['value']}</a>                                  
+                            %else:
+                                <i>None</i>
+                            %endif
                             %else:
                                 ${rd['value']}     
                             %endif
