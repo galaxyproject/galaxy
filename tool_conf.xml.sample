@@ -187,7 +187,7 @@
         <tool file="solid_tools/solid_qual_boxplot.xml" />
   </section>
   <section name="NGS: Mapping" id="solexa_tools">
-   <!-- <tool file="sr_mapping/lastz_wrapper.xml" /> -->
+   <tool file="sr_mapping/lastz_wrapper.xml" />
    <tool file="sr_mapping/bowtie_wrapper.xml" />
    <tool file="sr_mapping/bwa_wrapper.xml" />
    <tool file="metag_tools/megablast_wrapper.xml" />

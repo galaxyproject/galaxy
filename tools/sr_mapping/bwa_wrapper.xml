@@ -169,7 +169,7 @@
     <test>
       <param name="solidSolexa" value="solid" />
       <param name="refGenomeSource" value="history" />
-      <param name="ownFile" value="phiX.fa" />
+      <param name="ownFile" value="phiX.fasta" />
       <param name="sPaired" value="single" />
       <param name="input1" value="bwa_wrapper_in0.fastq" ftype="fastqsanger" />
       <param name="source_select" value="pre_set" />
