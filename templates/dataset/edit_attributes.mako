@@ -59,7 +59,7 @@
                 </div>
                 <div style="clear: both"></div>
             </div>
-			${render_tagging_element(data, "dataset-tag-area", use_toggle_link="false", in_form="true", input_size="30")}
+			${render_tagging_element(data, "dataset-tag-area", "edit_attributes.mako", use_toggle_link="false", in_form="true", input_size="30")}
             %endif
             %for name, spec in data.metadata.spec.items():
                 %if spec.visible:

@@ -200,6 +200,13 @@ class Grid( object ):
                 trans.get_user().preferences[pref_name] = unicode( to_json_string( sort_key ) )
             trans.sa_session.flush()
             
+        # Log grid view.
+        context = unicode( self.__class__.__name__ )
+        params = cur_filter_dict.copy()
+        params['sort'] = sort_key
+        params['async'] = ( 'async' in kwargs )
+        trans.log_action( unicode( "grid.view"), context, params )
+            
         # Render grid.
         def url( *args, **kwargs ):
             # Only include sort/filter arguments if not linking to another
@@ -340,17 +347,19 @@ class TextColumn( GridColumn ):
 
 # Generic column that supports tagging.        
 class TagsColumn( TextColumn ):
-    def __init__( self, col_name, key, model_class, model_tag_association_class, filterable ):
+    def __init__( self, col_name, key, model_class, model_tag_association_class, filterable, grid_name=None ):
         GridColumn.__init__(self, col_name, key=key, model_class=model_class, filterable=filterable)
         self.model_tag_association_class = model_tag_association_class
         # Tags cannot be sorted.
         self.sortable = False
+        # Column-specific attributes.
         self.tag_elt_id_gen = 0
+        self.grid_name = grid_name
     def get_value( self, trans, grid, item ):
         self.tag_elt_id_gen += 1
         elt_id="tagging-elt" + str( self.tag_elt_id_gen )
         div_elt = "<div id=%s></div>" % elt_id
-        return div_elt + trans.fill_template( "/tagging_common.mako", trans=trans, tagged_item=item, 
+        return div_elt + trans.fill_template( "/tagging_common.mako", trans=trans, tagged_item=item, elt_context=self.grid_name,
                                                 elt_id = elt_id, in_form="true", input_size="20", tag_click_fn="add_tag_to_grid_filter" )
     def filter( self, db_session, query, column_filter ):
         """ Modify query to filter model_class by tag. Multiple filters are ANDed. """

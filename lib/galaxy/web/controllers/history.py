@@ -94,7 +94,7 @@ class HistoryListGrid( grids.Grid ):
                           link=( lambda history: iff( history.deleted, None, dict( operation="Switch", id=history.id ) ) ),
                           attach_popup=True, filterable="advanced" ),
         DatasetsByStateColumn( "Datasets (by state)", ncells=4 ),
-        grids.TagsColumn( "Tags", "tags", model.History, model.HistoryTagAssociation, filterable="advanced"),
+        grids.TagsColumn( "Tags", "tags", model.History, model.HistoryTagAssociation, filterable="advanced", grid_name="HistoryListGrid" ),
         StatusColumn( "Status", attach_popup=False ),
         grids.GridColumn( "Created", key="create_time", format=time_ago ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),

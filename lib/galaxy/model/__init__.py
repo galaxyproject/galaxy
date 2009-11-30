@@ -1441,6 +1441,16 @@ class UserPreference ( object ):
     def __init__( self, name=None, value=None ):
         self.name = name
         self.value = value
+        
+class UserAction( object ):
+    def __init__( self, id=None, create_time=None, user_id=None, session_id=None, action=None, params=None, context=None):
+        self.id = id
+        self.create_time = create_time
+        self.user_id = user_id
+        self.session_id = session_id
+        self.action = action
+        self.params = params
+        self.context = context
 
 ## ---- Utility methods -------------------------------------------------------
 
