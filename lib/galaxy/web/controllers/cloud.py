@@ -41,6 +41,8 @@ uci_states = Bunch(
     SUBMITTED = "submitted",
     SHUTTING_DOWN_UCI = "shutting-downUCI",
     SHUTTING_DOWN = "shutting-down",
+    ADD_STORAGE_UCI = "add-storageUCI",
+    ADD_STORAGE = "add-storage",
     AVAILABLE = "available",
     RUNNING = "running",
     PENDING = "pending",
@@ -54,13 +56,16 @@ instance_states = Bunch(
     TERMINATED = "terminated",
     SUBMITTED = "submitted",
     RUNNING = "running",
+    ADDING = "adding-storage",
     PENDING = "pending",
     SHUTTING_DOWN = "shutting-down",
     ERROR = "error"
 )
 
 store_status = Bunch(
+    WAITING = "waiting",
     IN_USE = "in-use",
+    ADDING = "adding",
     CREATING = "creating",
     DELETED = 'deleted',
     ERROR = "error"
@@ -108,7 +113,9 @@ class CloudController( BaseController ):
                           model.UCI.table.c.state==uci_states.SUBMITTED, 
                           model.UCI.table.c.state==uci_states.SUBMITTED_UCI,
                           model.UCI.table.c.state==uci_states.SHUTTING_DOWN,
-                          model.UCI.table.c.state==uci_states.SHUTTING_DOWN_UCI ) ) \
+                          model.UCI.table.c.state==uci_states.SHUTTING_DOWN_UCI,
+                          model.UCI.table.c.state==uci_states.ADD_STORAGE,
+                          model.UCI.table.c.state==uci_states.ADD_STORAGE_UCI ) ) \
             .order_by( desc( model.UCI.table.c.update_time ) ) \
             .all()
             
@@ -201,7 +208,8 @@ class CloudController( BaseController ):
                     storage.user = user
                     storage.uci = uci
                     storage.size = volSize
-                    storage.availability_zone = zone 
+                    storage.availability_zone = zone
+                    storage.status = store_status.ADDING
                     # Persist
                     session = trans.sa_session
                     session.add( uci )
@@ -306,6 +314,8 @@ class CloudController( BaseController ):
            ( uci.state != uci_states.ERROR ) and \
            ( uci.state != uci_states.SHUTTING_DOWN_UCI ) and \
            ( uci.state != uci_states.SHUTTING_DOWN ) and \
+           ( uci.state != uci_states.ADD_STORAGE_UCI ) and \
+           ( uci.state != uci_states.ADD_STORAGE ) and \
            ( uci.state != uci_states.AVAILABLE ):
             uci.state = uci_states.SHUTTING_DOWN_UCI
             session = trans.sa_session
@@ -496,13 +506,53 @@ class CloudController( BaseController ):
         
     @web.expose
     @web.require_login( "add instance storage" )
-    def add_storage( self, trans, id ):
-        instance = get_uci( trans, id )
+    def add_storage( self, trans, id, vol_size=None ):
+        error = None
+        uci = get_uci( trans, id )
+        stores = get_stores_in_status( trans, uci, store_status.IN_USE ) 
         
-        
-        error( "Adding storage to instance '%s' is not supported yet." % instance.name )
+        # Start adding of storage making sure given UCI is running and that at least one
+        # storage volume is attached to it (this is needed to by cloud controller to know
+        # as which device to attach the new storage volume) 
+        if uci.state == uci_states.RUNNING and len( stores ) > 0:
+            if vol_size is not None: 
+                try:
+                    vol_size = int( vol_size )
+                except ValueError:
+                    error  = "Volume size must be integer value between 1 and 1000."
+                
+                if not error:
+                    user = trans.get_user()
                     
-        return self.list( trans )
+                    storage = model.CloudStore()
+                    storage.user = user
+                    storage.uci = uci
+                    storage.size = vol_size
+                    storage.status = store_status.ADDING
+                    
+                    # Set state of instance - NOTE that this code will only work (with code in cloud controller) 
+                    # for scenario where a UCI is associated with *1* compute instance!!!
+                    instances = get_instances( trans, uci )
+                    instances.state = instance_states.ADDING
+
+                    uci.state = uci_states.ADD_STORAGE_UCI
+                    # Persist
+                    session = trans.sa_session
+                    session.add( instances )
+                    session.add( storage )
+                    session.add( uci )
+                    session.flush()
+                    # Log and display the management page
+                    trans.log_event( "User added storage volume to UCI: '%s'" % uci.name )
+                    trans.set_message( "Adding of storage to instance '%s' initiated." % uci.name )
+                    return self.list( trans )
+        else:
+            error( "Storage can only be added to instances that are in state 'RUNNING' with existing " \
+                   "storage volume(s) already attached." )
+        
+        return trans.show_form( 
+            web.FormBuilder( url_for( id=trans.security.encode_id(uci.id) ), "Add storage to an instance", submit_text="Add" )
+            .add_text( "vol_size", "Storage size (1-1000 GB)", value='', error=error ) )
     
     # ----- Image methods -----
     @web.expose
@@ -1034,6 +1084,7 @@ class CloudController( BaseController ):
             dict = {}
             dict['id'] = uci.id
             dict['state'] = uci.state
+            dict['total_size'] = uci.total_size
             if uci.error != None:
                 dict['error'] = str( uci.error )
             else:
@@ -1136,19 +1187,30 @@ def get_uci( trans, id, check_ownership=True ):
 
 def get_stores( trans, uci ):
     """
-    Get stores objects that are connected to uci object
+    Get stores objects that are associated with given uci and are not in 'error' status 
     """
     user = trans.get_user()
     stores = trans.sa_session.query( model.CloudStore ) \
-            .filter_by( user=user, uci_id=uci.id ) \
+            .filter_by( user=user, uci_id=uci.id, deleted=False ) \
             .filter( model.CloudStore.table.c.status != store_status.ERROR ) \
+            .all()
+            
+    return stores
+
+def get_stores_in_status( trans, uci, status ):
+    """
+    Get stores objects that are associated with given uci and are not have given status
+    """
+    user = trans.get_user()
+    stores = trans.sa_session.query( model.CloudStore ) \
+            .filter_by( user=user, uci_id=uci.id, status=status ) \
             .all()
             
     return stores
 
 def get_instances( trans, uci ):
     """
-    Get objects of instances that are pending or running and are connected to uci object
+    Get objects of instances that are pending or running and are connected to the given uci object
     """
     user = trans.get_user()
     instances = trans.sa_session.query( model.CloudInstance ) \
@@ -1156,6 +1218,17 @@ def get_instances( trans, uci ):
             .filter( or_(model.CloudInstance.table.c.state==instance_states.RUNNING, model.CloudInstance.table.c.state==instance_states.PENDING ) ) \
             .first()
             #.all() #TODO: return all but need to edit calling method(s) to handle list
+            
+    return instances
+
+def get_instances_in_state( trans, uci, state ):
+    """
+    Get objects of instances that are in specified state and are connected to the given uci object
+    """
+    user = trans.get_user()
+    instances = trans.sa_session.query( model.CloudInstance ) \
+            .filter_by( user=user, uci_id=uci.id, state=state ) \
+            .all()
             
     return instances
 

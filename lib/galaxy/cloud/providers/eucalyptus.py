@@ -30,6 +30,8 @@ uci_states = Bunch(
     SUBMITTED = "submitted",
     SHUTTING_DOWN_UCI = "shutting-downUCI",
     SHUTTING_DOWN = "shutting-down",
+    ADD_STORAGE_UCI = "add-storageUCI",
+    ADD_STORAGE = "add-storage",
     AVAILABLE = "available",
     RUNNING = "running",
     PENDING = "pending",
@@ -43,6 +45,7 @@ instance_states = Bunch(
     TERMINATED = "terminated",
     SUBMITTED = "submitted",
     RUNNING = "running",
+    ADDING = "adding-storage",
     PENDING = "pending",
     SHUTTING_DOWN = "shutting-down",
     ERROR = "error"
@@ -51,6 +54,7 @@ instance_states = Bunch(
 store_status = Bunch(
     WAITING = "waiting",
     IN_USE = "in-use",
+    ADDING = "adding",
     CREATING = "creating",
     DELETED = 'deleted',
     ERROR = "error"
@@ -121,6 +125,8 @@ class EucalyptusCloudProvider( object ):
                     self.stop_uci( uci_wrapper )
                 elif uci_state==uci_states.SNAPSHOT:
                     self.snapshot_uci( uci_wrapper )
+                elif uci_state==uci_states.ADD_STORAGE:
+                    self.add_storage_to_uci( uci_wrapper )
             except:
                 log.exception( "Uncaught exception executing cloud request." )
             cnt += 1
@@ -245,9 +251,16 @@ class EucalyptusCloudProvider( object ):
             log.info( "Availability zone for UCI (i.e., storage volume) was not selected, using default zone: %s" % self.zone )
             uci_wrapper.set_store_availability_zone( self.zone )
         
-        log.debug( "Creating volume; using command: conn.create_volume( %s, '%s', snapshot=None )" % ( uci_wrapper.get_store_size( 0 ), uci_wrapper.get_uci_availability_zone() ))
-        vol = conn.create_volume( uci_wrapper.get_store_size( 0 ), uci_wrapper.get_uci_availability_zone(), snapshot=None )
-        uci_wrapper.set_store_volume_id( 0, vol.id ) 
+#        log.debug( "Creating volume; using command: conn.create_volume( %s, '%s', snapshot=None )" % ( uci_wrapper.get_store_size( 0 ), uci_wrapper.get_uci_availability_zone() ))
+#        vol = conn.create_volume( uci_wrapper.get_store_size( 0 ), uci_wrapper.get_uci_availability_zone(), snapshot=None )
+#        uci_wrapper.set_store_volume_id( 0, vol.id ) 
+        store = uci_wrapper.get_all_stores_in_status( store_status.ADDING )[0] # Because at UCI creation time only 1 storage volume can be created, reference it directly
+        
+        log.info( "Creating storage volume in zone '%s' of size '%s'..." % ( uci_wrapper.get_uci_availability_zone(), store.size ) )
+        # Because only 1 storage volume may be created at UCI config time, index of this storage volume in local Galaxy DB w.r.t
+        # current UCI is 0, so reference it in following methods
+        vol = conn.create_volume( store.size, uci_wrapper.get_uci_availability_zone(), snapshot=None )
+        uci_wrapper.set_store_volume_id( store.id, vol.id )
         
         # Retrieve created volume again to get updated status
         try:
@@ -364,6 +377,7 @@ class EucalyptusCloudProvider( object ):
             
     def add_storage_to_uci( self, uci_wrapper ):
         """ Adds more storage to specified UCI """
+        uci_wrapper.set_error( "Adding storage to eucalyptus-based clouds is not yet supported.", True )
     
     def dummy_start_uci( self, uci_wrapper ):
         

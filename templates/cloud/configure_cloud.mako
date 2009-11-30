@@ -79,7 +79,8 @@ function trim19(str){
 					});
 				}
 				
-				// Update 'state' and 'time alive' fields
+				// Update 'size', 'state' and 'time alive' fields
+				$(elem + "-size").text( data[i].total_size );
 				$(elem + "-state").text( data[i].state );
 				if ( new_state != 'error' ) { // Because 'error' state is handled as a JS link, don't include it in update
 					$(elem + "-state-p").text( data[i].state );
@@ -219,7 +220,7 @@ function trim19(str){
 		                	${liveInstance.name} (${liveInstance.credentials.name})
 		                    <a id="li-${i}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
 		                </td>
-						<td>${str(liveInstance.total_size)}</td>
+						<td id="${ liveInstance.id }-size">${str(liveInstance.total_size)}</td>
 		                <td id="${ liveInstance.id }-state">${str(liveInstance.state)}</td>
 		                <td id="${ liveInstance.id }-launch_time">
 		                	##${str(liveInstance.launch_time)[:16]} 
@@ -251,7 +252,8 @@ function trim19(str){
 		                    <a class="action-button" confirm="Are you sure you want to stop instance '${liveInstance.name}'?" href="${h.url_for( action='stop', id=trans.security.encode_id(liveInstance.id) )}">Stop</a>
 		                    <a class="action-button" href="${h.url_for( action='rename_uci', id=trans.security.encode_id(liveInstance.id) )}">Rename</a>
 		                    <a class="action-button" href="${h.url_for( action='view_uci_details', id=trans.security.encode_id(liveInstance.id) )}">View details</a>
-		                    <a class="action-button" href="${h.url_for( action='uci_usage_report', id=trans.security.encode_id(liveInstance.id) )}">Usage report</a>
+		                    <a class="action-button" href="${h.url_for( action='add_storage', id=trans.security.encode_id(liveInstance.id) )}">Add storage</a>
+							<a class="action-button" href="${h.url_for( action='uci_usage_report', id=trans.security.encode_id(liveInstance.id) )}">Usage report</a>
 		                    </div>
 		                </td>
 		            </tr>    
@@ -315,14 +317,13 @@ function trim19(str){
 						</td>
 						<td>
 		                    <div popupmenu="pi-${i}-popup">
-		                    <a class="action-button" href="${h.url_for( action='start', id=trans.security.encode_id(prevInstance.id), type='m1.small' )}"> Start m1.small</a>
+		                    <a class="action-button" href="${h.url_for( action='uci_usage_report', id=trans.security.encode_id(prevInstance.id) )}">Usage report</a>
+		                    <a class="action-button" href="${h.url_for( action='rename_uci', id=trans.security.encode_id(prevInstance.id) )}">Rename</a>
+							<a class="action-button" href="${h.url_for( action='start', id=trans.security.encode_id(prevInstance.id), type='m1.small' )}"> Start m1.small</a>
 		                    <a class="action-button" href="${h.url_for( action='start', id=trans.security.encode_id(prevInstance.id), type='c1.medium' )}"> Start c1.medium</a>
-							<a class="action-button" href="${h.url_for( action='rename_uci', id=trans.security.encode_id(prevInstance.id) )}">Rename</a>
-							<a class="action-button" href="${h.url_for( action='uci_usage_report', id=trans.security.encode_id(prevInstance.id) )}">Usage report</a>
-		                    <a class="action-button" href="${h.url_for( action='create_snapshot', id=trans.security.encode_id(prevInstance.id) )}">Create snapshot</a>
+							<a class="action-button" href="${h.url_for( action='create_snapshot', id=trans.security.encode_id(prevInstance.id) )}">Create snapshot</a>
 							<a class="action-button" href="${h.url_for( action='view_snapshots', id=trans.security.encode_id(prevInstance.id) )}">View snapshots</a>
-		                    <a class="action-button" href="${h.url_for( action='add_storage', id=trans.security.encode_id(prevInstance.id) )}" target="_parent">Add storage</a>
-							<a class="action-button" confirm="Are you sure you want to delete instance '${prevInstance.name}'? This will delete all of your data assocaiated with this instance!" href="${h.url_for( action='delete_uci', id=trans.security.encode_id(prevInstance.id) )}">Delete</a>
+		                    <a class="action-button" confirm="Are you sure you want to delete instance '${prevInstance.name}'? This will delete all of your data assocaiated with this instance!" href="${h.url_for( action='delete_uci', id=trans.security.encode_id(prevInstance.id) )}">Delete</a>
 		                    </div>
 		                </td>
 		            </tr>    
