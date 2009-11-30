@@ -50,17 +50,36 @@ def __main__():
             except:
                 continue
     for filenames in sys.argv[1:]:
-        filename_in, filename_kwds, filename_out, filename_results_code, dataset_filename_override = filenames.split( ',' )
+        fields = filenames.split( ',' )
+        filename_in = fields.pop( 0 )
+        filename_kwds = fields.pop( 0 )
+        filename_out = fields.pop( 0 )
+        filename_results_code = fields.pop( 0 )
+        dataset_filename_override = fields.pop( 0 )
+        #Need to be careful with the way that these parameters are populated from the filename splitting, 
+        #because if a job is running when the server is updated, any existing external metadata command-lines 
+        #will not have info about the newly added override_metadata file
+        if fields:
+            override_metadata = fields.pop( 0 )
+        else:
+            override_metadata = None
         try:
             dataset = cPickle.load( open( filename_in ) ) #load DatasetInstance
             if dataset_filename_override:
                 dataset.dataset.external_filename = dataset_filename_override
             if ext_override.get( dataset.dataset.id, None ):
                 dataset.extension = ext_override[ dataset.dataset.id ]
+            #Metadata FileParameter types may not be writable on a cluster node, and are therefore temporarily substituted with MetadataTempFiles
+            if override_metadata:
+                override_metadata = simplejson.load( open( override_metadata ) )
+                for metadata_name, metadata_file_override in override_metadata:
+                    if galaxy.datatypes.metadata.MetadataTempFile.is_JSONified_value( metadata_file_override ):
+                        metadata_file_override = galaxy.datatypes.metadata.MetadataTempFile.from_JSON( metadata_file_override )
+                    setattr( dataset.metadata, metadata_name, metadata_file_override )
             kwds = stringify_dictionary_keys( simplejson.load( open( filename_kwds ) ) )#load kwds; need to ensure our keywords are not unicode
             dataset.datatype.set_meta( dataset, **kwds )
             dataset.metadata.to_JSON_dict( filename_out ) # write out results of set_meta
-            simplejson.dump( ( True, 'Metadata has been set successfully' ), open( filename_results_code, 'wb+' ) ) #setting metadata has suceeded
+            simplejson.dump( ( True, 'Metadata has been set successfully' ), open( filename_results_code, 'wb+' ) ) #setting metadata has succeeded
         except Exception, e:
             simplejson.dump( ( False, str( e ) ), open( filename_results_code, 'wb+' ) ) #setting metadata has failed somehow
     clear_mappers()

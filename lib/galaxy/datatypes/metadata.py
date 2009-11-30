@@ -429,7 +429,9 @@ class FileParameter( MetadataParameter ):
         if MetadataTempFile.is_JSONified_value( value ):
             value = MetadataTempFile.from_JSON( value )
         if isinstance( value, MetadataTempFile ):
-            mf = self.new_file( dataset = parent, **value.kwds )
+            mf = parent.metadata.get( self.spec.name, None)
+            if mf is None:
+                mf = self.new_file( dataset = parent, **value.kwds )
             shutil.move( value.file_name, mf.file_name )
             value = mf.id
         return value
@@ -521,7 +523,7 @@ class JobExternalOutputMetadataWrapper( object ):
                         if dataset_path.false_path and dataset_path.real_path == metadata_files.dataset.file_name:
                             return dataset_path.false_path
                 return ""
-            return "%s,%s,%s,%s,%s" % ( metadata_files.filename_in, metadata_files.filename_kwds, metadata_files.filename_out, metadata_files.filename_results_code, __get_filename_override() )
+            return "%s,%s,%s,%s,%s,%s" % ( metadata_files.filename_in, metadata_files.filename_kwds, metadata_files.filename_out, metadata_files.filename_results_code, __get_filename_override(), metadata_files.filename_override_metadata )
         if not isinstance( datasets, list ):
             datasets = [ datasets ]
         if exec_dir is None:
@@ -558,11 +560,22 @@ class JobExternalOutputMetadataWrapper( object ):
                 open( metadata_files.filename_out, 'wb+' ) # create the file on disk, so it cannot be reused by tempfile (unlikely, but possible)
                 #file to store a 'return code' indicating the results of the set_meta() call
                 #results code is like (True/False - if setting metadata was successful/failed , exception or string of reason of success/failure )
-                metadata_files.filename_results_code = relpath( tempfile.NamedTemporaryFile( dir = tmp_dir, prefix = "metadata_out_%s_" % key ).name )
+                metadata_files.filename_results_code = relpath( tempfile.NamedTemporaryFile( dir = tmp_dir, prefix = "metadata_results_%s_" % key ).name )
                 simplejson.dump( ( False, 'External set_meta() not called' ), open( metadata_files.filename_results_code, 'wb+' ) ) # create the file on disk, so it cannot be reused by tempfile (unlikely, but possible)
                 #file to store kwds passed to set_meta()
                 metadata_files.filename_kwds = relpath( tempfile.NamedTemporaryFile( dir = tmp_dir, prefix = "metadata_kwds_%s_" % key ).name )
                 simplejson.dump( kwds, open( metadata_files.filename_kwds, 'wb+' ), ensure_ascii=True )
+                #existing metadata file parameters need to be overridden with cluster-writable file locations
+                metadata_files.filename_override_metadata = relpath( tempfile.NamedTemporaryFile( dir = tmp_dir, prefix = "metadata_override_%s_" % key ).name )
+                open( metadata_files.filename_override_metadata, 'wb+' ) # create the file on disk, so it cannot be reused by tempfile (unlikely, but possible)
+                override_metadata = []
+                for meta_key, spec_value in dataset.metadata.spec.iteritems():
+                    if isinstance( spec_value.param, FileParameter ) and dataset.metadata.get( meta_key, None ) is not None:
+                        metadata_temp = MetadataTempFile()
+                        shutil.copy( dataset.metadata.get( meta_key, None ).file_name, metadata_temp.file_name )
+                        override_metadata.append( ( meta_key, metadata_temp.to_JSON() ) )
+                simplejson.dump( override_metadata, open( metadata_files.filename_override_metadata, 'wb+' ) )
+                #add to session and flush
                 sa_session.add( metadata_files )
                 sa_session.flush()
             metadata_files_list.append( metadata_files )
@@ -585,7 +598,7 @@ class JobExternalOutputMetadataWrapper( object ):
             #can occur if the job was stopped before completion, but a MetadataTempFile is used in the set_meta
             MetadataTempFile.cleanup_from_JSON_dict_filename( metadata_files.filename_out )
             dataset_key = self.get_dataset_metadata_key( metadata_files.dataset )
-            for key, fname in [ ( 'filename_in', metadata_files.filename_in ), ( 'filename_out', metadata_files.filename_out ), ( 'filename_results_code', metadata_files.filename_results_code ), ( 'filename_kwds', metadata_files.filename_kwds ) ]:
+            for key, fname in [ ( 'filename_in', metadata_files.filename_in ), ( 'filename_out', metadata_files.filename_out ), ( 'filename_results_code', metadata_files.filename_results_code ), ( 'filename_kwds', metadata_files.filename_kwds ), ( 'filename_override_metadata', metadata_files.filename_override_metadata ) ]:
                 try:
                     os.remove( fname )
                 except Exception, e:

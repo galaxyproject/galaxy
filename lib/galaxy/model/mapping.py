@@ -358,6 +358,7 @@ JobExternalOutputMetadata.table = Table( "job_external_output_metadata", metadat
     Column( "filename_out", String( 255 ) ),
     Column( "filename_results_code", String( 255 ) ),
     Column( "filename_kwds", String( 255 ) ),
+    Column( "filename_override_metadata", String( 255 ) ),
     Column( "job_runner_external_pid", String( 255 ) ) )
     
 Event.table = Table( "event", metadata, 
