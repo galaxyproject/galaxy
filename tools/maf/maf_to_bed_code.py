@@ -46,6 +46,7 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr
                 newdata.state = newdata.states.ERROR
             newdata.dbkey = dbkey
             newdata.init_meta()
+            newdata.set_meta()
             newdata.set_peek()
             app.model.context.flush()
             output_data_list.append(newdata)

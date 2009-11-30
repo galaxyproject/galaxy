@@ -15,8 +15,7 @@ def __main__():
     input_filename = sys.argv[1]
     output_filename = sys.argv[2]
     #where to store files that become additional output
-    database_tmp_dir =  './database/tmp' #os.path.join(os.path.split(os.path.split(os.path.realpath(output_filename))[0])[0],'tmp') #database/tmp
-    
+    database_tmp_dir = sys.argv[5]
     
     species = sys.argv[3].split(',')
     partial = sys.argv[4]
