@@ -121,7 +121,7 @@ def proximal_region_finder(readers, region, comments=True):
                         map(outfields.append, result_down[-1].other) #The last element of result_down will be the closest element to the given interval
                         yield outfields
                 
-                if either:
+                if either and (result_up or result_down):
                     if result_up and result_down:
                         if abs(start - int(result_up[res_ind].end)) <= abs(end - int(result_down[-1].start)):
                             map(outfields.append, result_up[res_ind].other)
@@ -131,8 +131,7 @@ def proximal_region_finder(readers, region, comments=True):
                         map(outfields.append, result_up[res_ind].other)
                     elif result_down:
                         map(outfields.append, result_down[-1].other) #The last element of result_down will be the closest element to the given interval
-                    yield outfields
-                    
+                    yield outfields              
                         
 def main():
     options, args = doc_optparse.parse( __doc__ )
