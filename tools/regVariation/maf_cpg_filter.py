@@ -39,7 +39,7 @@ def main():
     reader = bx.align.maf.Reader( open(inp_file, 'r') )
     writer = bx.align.maf.Writer( open(out_file,'w') )
     
-    mask_chr_dict = {0:'#', 1:'$', 2:'^', 3:'*', 4:'?'}
+    mask_chr_dict = {0:'#', 1:'$', 2:'^', 3:'*', 4:'?', 5:'N'}
     mask = mask_chr_dict[mask]
     
     if sitetype == "CpG":

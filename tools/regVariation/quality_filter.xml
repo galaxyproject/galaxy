@@ -37,6 +37,7 @@
       <option value="2">^</option>
       <option value="3">*</option>
       <option value="4">?</option>
+      <option value="5">N</option>
     </param>
 	<conditional name="mask_region">
       <param name="region" type="select" label="Mask region">

@@ -100,7 +100,7 @@ def main():
         stop_err( "No mask species selected, try again by selecting at least one species to mask." )
 
     mask_chr_count = 0
-    mask_chr_dict = {0:'#', 1:'$', 2:'^', 3:'*', 4:'?'}
+    mask_chr_dict = {0:'#', 1:'$', 2:'^', 3:'*', 4:'?', 5:'N'}
     mask_reg_dict = {0:'Current pos', 1:'Current+Downstream', 2:'Current+Upstream', 3:'Current+Both sides'}
 
     #ensure dbkey is present in the twobit loc file

@@ -21,6 +21,7 @@
           	<option value="2">^</option>
           	<option value="3">*</option>
           	<option value="4">?</option>
+          	<option value="5">N</option>
         </param>
         <conditional name="masksite">
             <param name="type" size="5" type="select" label="Sites to be masked">
