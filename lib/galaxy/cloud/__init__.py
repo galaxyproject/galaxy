@@ -29,6 +29,8 @@ uci_states = Bunch(
     SUBMITTED = "submitted",
     SHUTTING_DOWN_UCI = "shutting-downUCI",
     SHUTTING_DOWN = "shutting-down",
+    ADD_STORAGE_UCI = "add-storageUCI",
+    ADD_STORAGE = "add-storage",
     AVAILABLE = "available",
     RUNNING = "running",
     PENDING = "pending",
@@ -40,6 +42,7 @@ instance_states = Bunch(
     TERMINATED = "terminated",
     SUBMITTED = "submitted",
     RUNNING = "running",
+    ADDING = "adding-storage",
     PENDING = "pending",
     SHUTTING_DOWN = "shutting-down",
     ERROR = "error"
@@ -48,6 +51,7 @@ instance_states = Bunch(
 store_status = Bunch(
     WAITING = "waiting",
     IN_USE = "in-use",
+    ADDING = "adding",
     CREATING = "creating",
     DELETED = 'deleted',
     ERROR = "error"
@@ -161,7 +165,8 @@ class CloudMonitor( object ):
                               model.UCI.table.c.state==uci_states.SUBMITTED_UCI,
                               model.UCI.table.c.state==uci_states.SHUTTING_DOWN_UCI, 
                               model.UCI.table.c.state==uci_states.DELETING_UCI,
-                              model.UCI.table.c.state==uci_states.SNAPSHOT_UCI ) ) \
+                              model.UCI.table.c.state==uci_states.SNAPSHOT_UCI,
+                              model.UCI.table.c.state==uci_states.ADD_STORAGE_UCI ) ) \
                 .all():
             uci_wrapper = UCIwrapper( r, self.app )
             new_requests.append( uci_wrapper )
@@ -195,6 +200,12 @@ class UCIwrapper( object ):
         self.uci_id = uci.id
         self.app = app
         self.sa_session = self.app.model.context
+        base_directory = os.path.join( self.app.config.job_working_directory, "cloud" )
+        self.working_directory = os.path.join( base_directory, str( self.uci_id ) )
+#        log.debug( "Cloud controller working directory for UCI DB ID '%s': '%s'" % ( self.uci_id, self.working_directory ) )
+        if not os.path.exists( base_directory ):
+            os.mkdir( base_directory )
+        
         
     # --------- Setter methods -----------------
     
@@ -364,11 +375,18 @@ class UCIwrapper( object ):
         self.sa_session.add( uci )
         self.sa_session.flush()
 
-    def set_store_device( self, store_id, device ):
+#    def set_store_device( self, store_id, device ):
+#        uci = self.sa_session.query( model.UCI ).get( self.uci_id )
+#        self.sa_session.refresh( uci )
+#        uci.store[store_id].device = device
+#        uci.store[store_id].flush()
+    
+    def set_uci_total_size( self, total_size ):
         uci = self.sa_session.query( model.UCI ).get( self.uci_id )
         self.sa_session.refresh( uci )
-        uci.store[store_id].device = device
-        uci.store[store_id].flush()
+        uci.total_size = total_size
+        self.sa_session.add( uci )
+        self.sa_session.flush()
     
     def set_store_error( self, error, store_index=None, store_id=None ):
         if store_index != None:
@@ -405,15 +423,24 @@ class UCIwrapper( object ):
         
     def set_store_volume_id( self, store_index, volume_id ):
         """
-        Given store index associated with this UCI in local database, set volume ID as it is registered 
+        Given store index as it is stored in local database, set volume ID as it is registered 
         on the cloud provider (e.g., vol-39890501)
         """
-        uci = self.sa_session.query( model.UCI ).get( self.uci_id )
-        self.sa_session.refresh( uci )
-        uci.store[store_index].volume_id = volume_id
-        #uci.store[store_index].flush()
-        self.sa_session.add( uci )
-        self.sa_session.flush()
+        
+        if store_index != None:
+            store = self.sa_session.query( model.CloudStore ).get( store_index )
+            store.volume_id = volume_id
+            self.sa_session.add( store )
+            self.sa_session.flush()
+        else:
+            return None
+            
+#        uci = self.sa_session.query( model.UCI ).get( self.uci_id )
+#        self.sa_session.refresh( uci )
+#        uci.store[store_index].volume_id = volume_id
+#        #uci.store[store_index].flush()
+#        self.sa_session.add( uci )
+#        self.sa_session.flush()
         
     def set_store_instance( self, vol_id, instance_id ):
         """
@@ -421,7 +448,29 @@ class UCIwrapper( object ):
         be given in following format: 'vol-78943248'
         """
         vol = self.sa_session.query( model.CloudStore ).filter( model.CloudStore.table.c.volume_id == vol_id ).first()
-        vol.inst.instance_id = instance_id
+        inst = self.sa_session.query( model.CloudInstance ).filter_by( instance_id=instance_id ).first()
+        vol.inst = inst
+        self.sa_session.add( vol )
+        self.sa_session.flush()
+        
+    def set_store_device( self, vol_id, device ):
+        """
+        Stores instance ID that given store volume is attached to. Store volume ID should
+        be given in following format: 'vol-78943248'
+        """
+        vol = self.sa_session.query( model.CloudStore ).filter( model.CloudStore.table.c.volume_id == vol_id ).first()
+        vol.device = str( device )
+        self.sa_session.add( vol )
+        self.sa_session.flush()
+        
+    def set_store_deleted( self, vol_id, status=None ):
+        """
+        Set storage volume as deleted in local database. Optionally, set the volume status too.
+        """
+        vol = self.sa_session.query( model.CloudStore ).filter( model.CloudStore.table.c.volume_id == vol_id ).first()
+        vol.deleted = True
+        if status != None:
+            vol.status = status
         self.sa_session.add( vol )
         self.sa_session.flush()
                 
@@ -502,6 +551,12 @@ class UCIwrapper( object ):
         uci = self.sa_session.query( model.UCI ).get( self.uci_id )
         self.sa_session.refresh( uci )
         return uci.instance[instance_id].state
+    
+    def get_instaces_in_state( self, state ):
+        """ Get database objects of all instances associated with this UCI in given state. """ 
+        return self.sa_session.query( model.CloudInstance ) \
+                .filter_by( uci_id=self.uci_id, state = state ) \
+                .all()
     
     def get_instances_ids( self ):
         """ 
@@ -590,6 +645,11 @@ class UCIwrapper( object ):
         self.sa_session.refresh( uci )
         return uci.store[0].availability_zone
     
+    def get_uci_total_size( self ):
+        uci = self.sa_session.query( model.UCI ).get( self.uci_id )
+        self.sa_session.refresh( uci )
+        return uci.total_size
+    
     def get_store_size( self, store_id=0 ):
         uci = self.sa_session.query( model.UCI ).get( self.uci_id )
         self.sa_session.refresh( uci )
@@ -604,9 +664,18 @@ class UCIwrapper( object ):
         self.sa_session.refresh( uci )
         return uci.store[store_id].volume_id
     
+    def get_all_stores_in_status( self, status ):
+        """
+        Return database objects of all stores associated with this UCI that have their 
+        status set to value passed as parameter.
+        """
+        return self.sa_session.query( model.CloudStore ).filter_by( deleted=False, uci_id=self.uci_id, status=status ).all()
+    
     def get_all_stores( self ):
-        """ Returns all storage volumes' database objects associated with this UCI. """
-        return self.sa_session.query( model.CloudStore ).filter( model.CloudStore.table.c.uci_id == self.uci_id ).all()
+        """ Returns all storage volumes' database objects associated with this UCI that have not been marked as 'deleted'. """
+        return self.sa_session.query( model.CloudStore ) \
+            .filter_by( deleted=False, uci_id=self.uci_id ) \
+            .all()
     
     def get_snapshots( self, status=None ):
         """ Returns database objects for all snapshots associated with this UCI and in given status."""
@@ -617,6 +686,9 @@ class UCIwrapper( object ):
         uci = self.sa_session.query( model.UCI ).get( self.uci_id )
         self.sa_session.refresh( uci )
         return uci
+    
+    def get_uci_working_directory( self ):
+        return self.working_directory
     
     def uci_launch_time_set( self ):
         uci = self.sa_session.query( model.UCI ).get( self.uci_id )

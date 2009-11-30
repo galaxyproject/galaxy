@@ -1,4 +1,4 @@
-import subprocess, threading, os, errno, time, datetime
+import subprocess, threading, os, errno, time, datetime, stat
 from Queue import Queue, Empty
 from datetime import datetime
 
@@ -30,6 +30,8 @@ uci_states = Bunch(
     SUBMITTED = "submitted",
     SHUTTING_DOWN_UCI = "shutting-downUCI",
     SHUTTING_DOWN = "shutting-down",
+    ADD_STORAGE_UCI = "add-storageUCI",
+    ADD_STORAGE = "add-storage",
     AVAILABLE = "available",
     RUNNING = "running",
     PENDING = "pending",
@@ -43,6 +45,7 @@ instance_states = Bunch(
     TERMINATED = "terminated",
     SUBMITTED = "submitted",
     RUNNING = "running",
+    ADDING = "adding-storage",
     PENDING = "pending",
     SHUTTING_DOWN = "shutting-down",
     ERROR = "error"
@@ -51,6 +54,7 @@ instance_states = Bunch(
 store_status = Bunch(
     WAITING = "waiting",
     IN_USE = "in-use",
+    ADDING = "adding",
     CREATING = "creating",
     DELETED = 'deleted',
     ERROR = "error"
@@ -122,6 +126,9 @@ class EC2CloudProvider( object ):
                     self.stop_uci( uci_wrapper )
                 elif uci_state==uci_states.SNAPSHOT:
                     self.snapshot_uci( uci_wrapper )
+                elif uci_state==uci_states.ADD_STORAGE:
+                    self.add_storage_to_uci( uci_wrapper )
+                    #self.dummy_start_uci( uci_wrapper )
             except:
                 log.exception( "Uncaught exception executing cloud request." )
             cnt += 1
@@ -241,25 +248,14 @@ class EC2CloudProvider( object ):
             log.info( "Availability zone for UCI (i.e., storage volume) was not selected, using default zone: %s" % self.zone )
             uci_wrapper.set_store_availability_zone( self.zone )
         
-        log.info( "Creating volume in zone '%s'..." % uci_wrapper.get_uci_availability_zone() )
+        store = uci_wrapper.get_all_stores_in_status( store_status.ADDING )[0] # Because at UCI creation time only 1 storage volume can be created, reference it directly
+        
+        log.info( "Creating storage volume in zone '%s' of size '%s'..." % ( uci_wrapper.get_uci_availability_zone(), store.size ) )
         # Because only 1 storage volume may be created at UCI config time, index of this storage volume in local Galaxy DB w.r.t
         # current UCI is 0, so reference it in following methods
-        vol = conn.create_volume( uci_wrapper.get_store_size( 0 ), uci_wrapper.get_uci_availability_zone(), snapshot=None )
-        uci_wrapper.set_store_volume_id( 0, vol.id )
-        
-        # Wait for a while to ensure volume was created
-#        vol_status = vol.status
-#        for i in range( 30 ):
-#            if vol_status is not "available":
-#                log.debug( 'Updating volume status; current status: %s' % vol_status )
-#                vol_status = vol.status
-#                time.sleep(3)
-#            if i is 29:
-#                log.debug( "Error while creating volume '%s'; stuck in state '%s'; deleting volume." % ( vol.id, vol_status ) )
-#                conn.delete_volume( vol.id )
-#                uci_wrapper.change_state( uci_state='error' )
-#                return
-        
+        vol = conn.create_volume( store.size, uci_wrapper.get_uci_availability_zone(), snapshot=None )
+        uci_wrapper.set_store_volume_id( store.id, vol.id )
+                
         # Retrieve created volume again to get updated status
         try:
             vl = conn.get_all_volumes( [vol.id] )
@@ -306,6 +302,7 @@ class EC2CloudProvider( object ):
                 if conn.delete_volume( v.volume_id ):
                     deletedList.append( v.volume_id )
                     v.deleted = True
+                    v.status = store_status.DELETED
                     self.sa_session.add( v )
                     self.sa_session.flush()
                     count += 1
@@ -358,15 +355,180 @@ class EC2CloudProvider( object ):
                     
             uci_wrapper.change_state( uci_state=uci_states.AVAILABLE )
                 
-    def add_storage_to_uci( self, name ):
-        """ Adds more storage to specified UCI 
-        TODO"""
-    
+    def add_storage_to_uci( self, uci_wrapper ):
+        """ 
+        Add an additional storage volume to specified UCI by creating the storage volume 
+        on cloud provider, attaching it to currently running instance and adding it to 
+        'galaxyData' zpool on remote instance.
+        """
+        conn = self.get_connection( uci_wrapper )
+        
+        stores = uci_wrapper.get_all_stores_in_status( store_status.ADDING )
+        for store in stores:
+            vol_size = store.size
+            availability_zone = uci_wrapper.get_uci_availability_zone()
+            log.info( "Adding storage volume to UCI '%s' in zone '%s' of size '%s'..." % ( uci_wrapper.get_name(), availability_zone, vol_size ) )
+            
+            try:
+                vol = conn.create_volume( vol_size, availability_zone, snapshot=None )
+                uci_wrapper.set_store_volume_id( store.id, vol.id )
+                uci_wrapper.set_store_availability_zone( availability_zone, vol.id )
+                log.debug( "New storage volume created: '%s'" % vol.id )
+            except boto.exception.EC2ResponseError, e: 
+                err = "EC2 response error while creating storage volume: " + str( e )
+                log.error( err )
+                uci_wrapper.set_store_error( err, store_id=vol.id )
+                uci_wrapper.set_error( err, True )
+                return
+            except Exception, ex:
+                err = "Error while creating storage volume: " + str( ex )
+                log.error( err )
+                uci_wrapper.set_error( err, True )
+                return
+            
+            # Retrieve created volume again to get updated status
+            try:
+                vl = conn.get_all_volumes( [vol.id] )
+            except boto.exception.EC2ResponseError, e: 
+                err = "EC2 response error while retrieving (i.e., updating status) of just created storage volume '" + vol.id + "': " + str( e )
+                log.error( err )
+                uci_wrapper.set_store_error( err, store_id=vol.id )
+                uci_wrapper.set_error( err, True )
+                return
+            except Exception, ex:
+                err = "Error while retrieving (i.e., updating status) of just created storage volume '" + vol.id + "': " + str( ex )
+                log.error( err )
+                uci_wrapper.set_error( err, True )
+                return
+            
+            # Wait for a while to ensure volume was created
+            if len( vl ) > 0:
+                vol_status = vl[0].status # Bc. only single vol is queried, reference it as 0th list element
+                for i in range( 30 ):
+                    if vol_status != "available":
+                        log.debug( "(%s) Updating volume status; current status: '%s'" % (i, vol_status ) )
+                        uci_wrapper.change_state( uci_state=vol_status )
+                        time.sleep(5)
+                        vol_status = vl[0].status
+                    if vol_status == "available":
+                        log.debug( "(%s) New volume status '%s', continuing with file system adjustment." % (i, vol_status ) )
+                        uci_wrapper.set_store_status( vl[0].id, vol_status )
+                        break 
+                    if i is 29:
+                        err = "Error while creating volume '"+vl[0].id+"'; stuck in state '"+vol_status+"'; deleting volume."
+                        conn.delete_volume( vl[0].id )
+                        log.error( err )
+                        uci_wrapper.set_error( err, True )
+                        uci_wrapper.set_store_error( err, store_id=vol.id )
+                        conn.delete_volume( vl[0].id )
+                        uci_wrapper.set_store_deleted( vl[0].id )
+                        return
+            else:
+                err = "Volume '" + vol.id +"' not found by EC2 after being created."
+                log.error( err )
+                uci_wrapper.set_store_error( err, store_id=vol.id )
+                uci_wrapper.set_error( err, True )
+                return
+            
+            # Get private key for given instance
+            pk = uci_wrapper.get_key_pair_material()
+            if pk == None: #If pk does not exist, create it
+                self.check_key_pair( uci_wrapper, conn )
+                pk = uci_wrapper.get_key_pair_material()
+            
+            # Get working directory for this UCI and store pk into a file
+            wd = uci_wrapper.get_uci_working_directory()
+            if not os.path.exists( wd ):
+                os.mkdir( wd )
+            pk_file_path = os.path.join( wd, "pk" )
+            
+            if pk != None:
+                # Save private key to a file
+                pk_file = open( pk_file_path, "w" )
+                pk_file.write( pk )
+                pk_file.close()
+            else:
+                err = "ERROR: Private key not available for this UCI."
+                log.error( err )
+                uci_wrapper.set_store_error( err, store_id=vol.id )
+                uci_wrapper.set_error( err, True )
+                return
+            
+            if os.path.exists( pk_file_path ):
+                # Change permissions of the file - this is required by later used ssh
+                os.chmod( pk_file_path, stat.S_IRUSR | stat.S_IWUSR )
+            
+            # Get # of storage volumes associated with this UCI to know as which device to connect new volume to the instance
+            device_num = len( uci_wrapper.get_all_stores_in_status( store_status.IN_USE ) ) + 5 # First device num is 5, so all subsequent ones should follow
+            
+            # Get instance that the new storage volume is to be attached to. Although a list is returned, 
+            # only 1 instance can be in 'adding-storage' state (because, for now, only 1 instance is assoc. with
+            # each UCI) and volume can be attached to only to it 
+            il = uci_wrapper.get_instaces_in_state( instance_states.ADDING )
+            if len( il ) > 0:
+                # Attach new volume to the instance
+                log.debug( "Attaching new storage volume '%s' to UCI '%s' as device '%s'" % 
+                           ( vol.id, uci_wrapper.get_name(), device_num ) )
+                try:
+                    vol_status = conn.attach_volume( vol.id, il[0].instance_id, device_num )
+                except boto.exception.EC2ResponseError, e: 
+                    err = "Attaching just created storage volume '" + vol.id + "'to instance '" + \
+                          il[0].instance_id + "' as device '" + str( device_num ) + "' failed: " + str( e )
+                    log.error( err )
+                    uci_wrapper.set_store_error( err, store_id=vol.id )
+                    uci_wrapper.set_error( err, True )
+                    return    
+                # For a while, keep checking attachment status of the new volume
+                for i in range(30):
+                    log.debug( "Checking attachment status of new volume '%s': '%s'" % ( vol.id, vol_status ) )
+                    if vol_status == 'attached':
+                        uci_wrapper.set_store_status( vol.id, vol_status )
+                        uci_wrapper.set_store_device( vol.id, device_num )
+                        break
+                    if i == 29:
+                        err = "Storage volume '" + vol.id + "' failed to attach to instance '" + il[0].instance_id + \
+                              "'. Manual check needed." 
+                        log.error( err )
+                        uci_wrapper.set_store_error( err, store_id=vol.id )
+                        uci_wrapper.set_error( err, False )
+                        return
+                
+                    time.sleep(4)
+                    vol_list = conn.get_all_volumes( [vol.id] )
+                    for v in vol_list:
+                        vol_status = v.attachment_state()
+
+                # Once storage volume is attached, add it to the zpool by issuing system level command
+                cmd = 'ssh -o StrictHostKeyChecking=no -i '+ pk_file_path +' root@'+il[0].public_dns+' "zpool add galaxyData c7d' + str( device_num )+'"'
+                log.debug( "Adding new storage volume to zpool cmd: %s" % cmd )
+                stdout = os.system( cmd )
+                if stdout != 0:
+                    err = "Adding newly created storage volume to zpool on instance '" + il[0].instance_id + \
+                          "' failed. Error code: " + str( stdout )
+                    log.error( err )
+                    uci_wrapper.set_store_error( err, store_id=vol.id )
+                    uci_wrapper.set_error( err, False )
+                    return
+            else:
+                err = "No instance(s) found in 'adding-storage' state. New disk not added to UCI's zpool."
+                log.error( err )
+                uci_wrapper.set_store_error( err, store_id=vol.id )
+                uci_wrapper.set_error( err, True )
+                return
+            
+            # Update UCI's total storage size
+            uci_wrapper.set_uci_total_size( uci_wrapper.get_uci_total_size() + vol.size )
+            # Reset UCI's and instance's state 
+            uci_wrapper.change_state( uci_state=uci_states.RUNNING, instance_id=il[0].instance_id, i_state=instance_states.RUNNING )
+            log.debug( "Successfully added storage volume '%s' to UCI '%s'." % ( vol.id, uci_wrapper.get_name() ) )
+            
     def dummy_start_uci( self, uci_wrapper ):
         
         uci = uci_wrapper.get_uci()
-        log.debug( "Would be starting instance '%s'" % uci.name )
-        uci_wrapper.change_state( uci_state.PENDING )
+        log.debug( "Dummy start UCI '%s'" % uci.name )
+
+        
+#        uci_wrapper.change_state( uci_state.PENDING )
 #        log.debug( "Sleeping a bit... (%s)" % uci.name )
 #        time.sleep(20)
 #        log.debug( "Woke up! (%s)" % uci.name )
@@ -418,10 +580,25 @@ class EC2CloudProvider( object ):
                         if uci_wrapper.get_uci_state() != uci_states.ERROR:
                             # Start an instance
                             log.debug( "Starting instance for UCI '%s'" % uci_wrapper.get_name() )
-                            #TODO: Once multiple volumes can be attached to a single instance, update 'userdata' composition            
-                            userdata = uci_wrapper.get_store_volume_id()+"|"+uci_wrapper.get_access_key()+"|"+uci_wrapper.get_secret_key() 
+                            #TODO: Once multiple volumes can be attached to a single instance, update 'userdata' composition
+                            # Compose user data; for storage volumes, separate multiple volumes with a colon (:) ensuring that
+                            # the last volume in the list is not followed by a colon.
+                            stores = uci_wrapper.get_all_stores()
+                            volume_ids = ""
+                            if len( stores ) > 0:
+                                for i, store in enumerate( stores ):
+                                    volume_ids += store.volume_id
+                                    if i < len( stores )-1:
+                                        volume_ids += ":" 
+                            else:
+                                err = "No storage volumes found that are associated with UCI '%s'" + uci_wrapper.get_name()
+                                log.error( err )
+                                uci_wrapper.set_error( err, True )
+                                return
+                            userdata = volume_ids+"|"+uci_wrapper.get_access_key()+"|"+uci_wrapper.get_secret_key()
                             log.debug( "Using following command: conn.run_instances( image_id='%s', key_name='%s', security_groups=['%s'], user_data=[OMITTED], instance_type='%s', placement='%s' )" 
                                        % ( mi_id, uci_wrapper.get_key_pair_name(), self.security_group, uci_wrapper.get_instance_type( i_index ), uci_wrapper.get_uci_availability_zone() ) )
+                            # Start an instance
                             reservation = None
                             try:
                                 reservation = conn.run_instances( image_id=mi_id, 
@@ -454,7 +631,10 @@ class EC2CloudProvider( object ):
                                     uci_wrapper.change_state( s, i_id, s )
                                     uci_wrapper.set_security_group_name( self.security_group, i_id=i_id )
                                     vol_id = uci_wrapper.get_store_volume_id( store_id=0 ) # TODO: Once more that one vol/UCI is allowed, update this!
-                                    uci_wrapper.set_store_status( vol_id, store_status.WAITING )
+                                    # Following line is pointless bc. general update updates status of volume to 'available'
+                                    # before it actually connects to starting instance... This has been dealt w/ in general update method
+                                    #uci_wrapper.set_store_status( vol_id, store_status.WAITING )  
+                                    uci_wrapper.set_store_instance( vol_id, i_id )
                                     log.debug( "Instance of UCI '%s' started, current state: '%s'" % ( uci_wrapper.get_name(), uci_wrapper.get_uci_state() ) )
                                 except boto.exception.EC2ResponseError, e:
                                     err = "EC2 response error when retrieving instance information for UCI '" + uci_wrapper.get_name() + "': " + str( e )
@@ -571,19 +751,30 @@ class EC2CloudProvider( object ):
             .all()
         for inst in instances:
             if self.type == inst.uci.credentials.provider.type:
-                log.debug( "[%s] Running general status update on instance '%s'" % ( inst.uci.credentials.provider.type, inst.instance_id ) )
+                log.debug( "[%s] Running general status update on instance '%s'" 
+                           % ( inst.uci.credentials.provider.type, inst.instance_id ) )
                 self.update_instance( inst )
+                # Update storage volume(s) associated with current instance
+                stores = self.sa_session.query( model.CloudStore ) \
+                    .filter_by( uci_id=inst.uci_id, deleted=False ) \
+                    .all()
+                for store in stores:
+                    if self.type == store.uci.credentials.provider.type: # and store.volume_id != None:
+                        log.debug( "[%s] Running general status update on store with local database ID: '%s'" 
+                                   % ( store.uci.credentials.provider.type, store.id ) )
+                        self.update_store( store )
             
         # Update storage volume(s)
         stores = self.sa_session.query( model.CloudStore ) \
-            .filter( or_( model.CloudStore.table.c.status==store_status.IN_USE, 
-                          model.CloudStore.table.c.status==store_status.CREATING,
-                          model.CloudStore.table.c.status==store_status.WAITING,
+            .filter( or_( model.CloudStore.table.c.status==store_status.CREATING,
+#                          model.CloudStore.table.c.status==store_status.IN_USE, 
+#                          model.CloudStore.table.c.status==store_status.WAITING,
                           model.CloudStore.table.c.status==None ) ) \
             .all()
         for store in stores:
             if self.type == store.uci.credentials.provider.type: # and store.volume_id != None:
-                log.debug( "[%s] Running general status update on store with local database ID: '%s'" % ( store.uci.credentials.provider.type, store.id ) )
+                log.debug( "[%s] Running general status update on store with local database ID: '%s'" 
+                           % ( store.uci.credentials.provider.type, store.id ) )
                 self.update_store( store )
 #            else:
 #                log.error( "[%s] There exists an entry for UCI (%s) storage volume without an ID. Storage volume might have been created with "
@@ -668,7 +859,8 @@ class EC2CloudProvider( object ):
             for i, cInst in enumerate( r.instances ):
                 try:
                     s = cInst.update()
-                    log.debug( "Checking state of cloud instance '%s' associated with UCI '%s' and reservation '%s'. State='%s'" % ( cInst, uci.name, r, s ) )
+                    log.debug( "Checking state of cloud instance '%s' associated with UCI '%s' " \
+                               "and reservation '%s'. State='%s'" % ( cInst, uci.name, r, s ) )
                     if  s != inst.state:
                         inst.state = s
                         self.sa_session.add( inst )
@@ -693,7 +885,8 @@ class EC2CloudProvider( object ):
                         self.sa_session.add( inst )
                         self.sa_session.flush()
                 except boto.exception.EC2ResponseError, e:
-                    err = "Updating instance status from cloud failed for UCI '"+ uci.name + "' during general status update: " + str( e )
+                    err = "Updating instance status from cloud failed for UCI '"+ uci.name + \
+                          "' during general status update: " + str( e )
                     log.error( err )
                     uci.error = err
                     uci.state = uci_states.ERROR
@@ -715,7 +908,7 @@ class EC2CloudProvider( object ):
         
         # Get reservations handle for given store 
         try:
-            log.debug( "Updating storage volume command: vl = conn.get_all_volumes( [%s] )" % store.volume_id )
+            log.debug( "Retrieving reference to storage volume '%s' during update..." % store.volume_id )
             vl = conn.get_all_volumes( [store.volume_id] )
         except boto.exception.EC2ResponseError, e:
             err = "Retrieving volume(s) from cloud failed for UCI '"+ uci.name + "' during general status update: " + str( e )
@@ -729,7 +922,7 @@ class EC2CloudProvider( object ):
         # Update store status in local DB with info from cloud provider
         if len(vl) > 0:
             try:
-                log.debug( "Storage volume '%s' current status: '%s'" % (store.volume_id, vl[0].status ) )
+                log.debug( "General status update for storage volume '%s'; current status: '%s'" % (store.volume_id, vl[0].status ) )
                 if store.status != vl[0].status:
                     # In case something failed during creation of UCI but actual storage volume was created and yet 
                     #  UCI state remained as 'new', try to remedy this by updating UCI state here 
@@ -746,21 +939,26 @@ class EC2CloudProvider( object ):
                     store.status = vl[0].status
                     self.sa_session.add( store )
                     self.sa_session.flush()
-                    if store.inst != None:
-                        if store.inst.instance_id != vl[0].instance_id:
-                            store.inst.instance_id = vl[0].instance_id
-                            self.sa_session.add( store )
-                            self.sa_session.flush()
-                    if store.attach_time != vl[0].attach_time:
-                        store.attach_time = vl[0].attach_time
-                        self.sa_session.add( store )
-                        self.sa_session.flush()
-                    if store.device != vl[0].device:
-                        store.device = vl[0].device
-                        self.sa_session.add( store )
-                        self.sa_session.flush()
+                 # Boto does not seem to be reporting these values although fields exist so comment them out...
+#                log.debug( "vl[0].instance_id: '%s'" % vl[0].instance_id )
+#                if store.inst != None:
+#                    if store.inst.instance_id != vl[0].instance_id:
+#                        store.inst.instance_id = vl[0].instance_id
+#                        self.sa_session.add( store )
+#                        self.sa_session.flush()
+#                log.debug( "vl[0].attach_time: '%s'" % vl[0].attach_time )
+#                if store.attach_time != vl[0].attach_time:
+#                    store.attach_time = vl[0].attach_time
+#                    self.sa_session.add( store )
+#                    self.sa_session.flush()
+##                log.debug( "vl[0].device: '%s'" % vl[0].device )
+#                if store.device != vl[0].device:
+#                    store.device = vl[0].device
+#                    self.sa_session.add( store )
+#                    self.sa_session.flush()
             except boto.exception.EC2ResponseError, e:
-                err = "Updating status of volume(s) from cloud failed for UCI '"+ uci.name + "' during general status update: " + str( e )
+                err = "Updating status of volume(s) from cloud failed for UCI '"+ uci.name + \
+                      "' during general status update: " + str( e )
                 log.error( err )
                 uci.error = err
                 uci.state = uci_states.ERROR
@@ -768,7 +966,7 @@ class EC2CloudProvider( object ):
                 self.sa_session.flush()
                 return None
         else:
-            err = "No storage volumes returned by cloud provider on general update"
+            err = "No storage volumes returned by cloud provider on general update for volume with id: " + store.volume_id
             log.error( "%s for UCI '%s'" % ( err, uci.name ) )
             store.status = store_status.ERROR
             store.error = err
