@@ -73,9 +73,10 @@ def upgrade():
         "%s AS create_time," + \
         "%s AS update_time," + \
         "request.id AS request_id," + \
-        "request.state AS state " + \
+        "request.state AS state," + \
+        "'%s' AS comment " + \
         "FROM request;" 
-    cmd = cmd % ( nextval('request_event'), localtimestamp(), localtimestamp() )
+    cmd = cmd % ( nextval('request_event'), localtimestamp(), localtimestamp(), 'Imported from request table')
     db_session.execute( cmd )
     
     # Delete the state column
