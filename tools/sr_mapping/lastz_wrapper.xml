@@ -6,16 +6,18 @@
 #else:
 --ref_name="None" 
 #end if
---ref_source=$source.ref_source --source_select=$params.source_select --out_format=$out_format.value --input1=$source.input1 --input2=$input2 
+--ref_source=$source.ref_source --source_select=$params.source_select --out_format=$out_format.value --input2=$input2 
 #if $source.ref_source=="history":
+--input1=$source.input1
 --ref_sequences=$input1.metadata.sequences 
 #else:
+--input1=$source.input1_2bit
 --ref_sequences="None" 
 #end if
 #if $params.source_select=="pre_set":
---pre_set_options=${params.pre_set_options} --strand="None" --seed="None" --transition="None" --O="None" --E="None" --X="None" --Y="None" --K="None" --L="None" --entropy="None" 
+--pre_set_options=${params.pre_set_options} --strand="None" --seed="None" --gfextend="None" --chain="None" --transition="None" --O="None" --E="None" --X="None" --Y="None" --K="None" --L="None" --entropy="None" 
 #else:
---pre_set_options="None" --strand=$params.strand --seed=$params.seed --transition=$params.transition --O=$params.O --E=$params.E --X=$params.X --Y=$params.Y --K=$params.K --L=$params.L --entropy=$params.entropy 
+--pre_set_options="None" --strand=$params.strand --seed=$params.seed --gfextend=$params.gfextend --chain=$params.chain --transition=$params.transition --O=$params.O --E=$params.E --X=$params.X --Y=$params.Y --K=$params.K --L=$params.L --entropy=$params.entropy 
 #end if
 --identity_min=$min_ident --identity_max=$max_ident --coverage=$min_cvrg --format=$out_format --output=$output1 --num_threads=$num_threads --lastzSeqsFileDir=${GALAXY_DATA_INDEX_DIR}
     </command>
@@ -27,7 +29,7 @@
                 <option value="history">in your history</option>
             </param>
             <when value="cached">
-                <param name="input1" type="select" label="Using reference genome" help="If your genome of interest is not listed, contact the Galaxy team">
+                <param name="input1_2bit" type="select" label="Using reference genome" help="If your genome of interest is not listed, contact the Galaxy team">
                     <options from_file="lastz_seqs.loc">
                         <column name="value" index="1" />
                         <column name="name" index="0" />
@@ -39,7 +41,7 @@
             </when>
         </conditional>
         <param name="out_format" type="select" label="Output format">
-            <option value="sam">SAM</option>
+            <option value="sam-">SAM</option>
             <option value="diffs">Polymorphisms</option>
             <option value="tabular">Tabular</option>
         </param>
@@ -61,29 +63,28 @@
             </when>
             <when value="full">
                 <param name="strand" type="select" label="Which strand to search?">
-                    <option value="--strand=both">Both</option>
-                    <option value="--strand=plus">Search forward strand only (the one in the reference)</option>
-                    <option value="--strand=minus">Search the reverse complement strand only (opposite of the reference)</option>
+                    <option value="strand=both">Both</option>
+                    <option value="strand=plus">Search forward strand only (the one in the reference)</option>
+                    <option value="strand=minus">Search the reverse complement strand only (opposite of the reference)</option>
                 </param>
                 <param name="seed" type="select" label="Select seeding settings" help="allows you set word size and number of mismatches">
-                    <option value="--seed=12of19">Seed hits require a 19 bp word with matches in 12 specific positions</option>
-                    <option value="--seed=14of22">Seed hits require a 22 bp word with matches in 14 specific positions</option>
+                    <option value="seed=12of19">Seed hits require a 19 bp word with matches in 12 specific positions</option>
+                    <option value="seed=14of22">Seed hits require a 22 bp word with matches in 14 specific positions</option>
                 </param>
                 <param name="transition" type="select" label="Select transition settings" help="affects the number of allowed transition substitutions">
-                    <option value="--transition">Allow one transition in each seed hit</option>
-                    <option value="--transition2">Allow two transitions in a seed hit </option>
-                    <option value="--notransition">Don't allow any transitions in seed hits</option>
+                    <option value="transition">Allow one transition in each seed hit</option>
+                    <option value="transition2">Allow two transitions in a seed hit </option>
+                    <option value="notransition">Don't allow any transitions in seed hits</option>
                 </param>
-                <param name="gfextend" type="boolean" truevalue="--gfextend" falsevalue="--nogfextend" label="Perform gap-free extension of seed hits to HSPs (high scoring segment pairs)?" />
-                <param name="chain" type="boolean" truevalue="--chain" falsevalue="--nochain" label="Perform chaining of HSPs?" />
-                <param name="gapped" type="boolean" truevalue="--gapped" falsevalue="--nogapped" label="Perform gapped alignment (instead of gap-free)?" />
+                <param name="gfextend" type="boolean" truevalue="gfextend" falsevalue="nogfextend" label="Perform gap-free extension of seed hits to HSPs (high scoring segment pairs)?" />
+                <param name="chain" type="boolean" truevalue="chain" falsevalue="nochain" label="Perform chaining of HSPs?" />
                 <param name="O" type="integer" size="5" value="400" label="Gap opening penalty"/>
                 <param name="E" type="integer" size="5" value="30" label="Gap extension penalty"/>
                 <param name="X" type="integer" size="5" value="910" label="X-drop threshold"/>
                 <param name="Y" type="integer" size="5" value="9370" label="Y-drop threshold"/>
                 <param name="K" type="integer" size="5" value="3000" label="Set the threshold for HSPs (ungapped extensions scoring lower are discarded)"/>
                 <param name="L" type="integer" size="5" value="3000" label="Set the threshold for gapped alignments (gapped extensions scoring lower are discarded)"/>
-                <param name="entropy" type="boolean" truevalue="--entropy" falsevalue="--noentropy" label="Involve entropy when filtering HSPs?" />
+                <param name="entropy" type="boolean" truevalue="entropy" falsevalue="noentropy" label="Involve entropy when filtering HSPs?" />
             </when>   
         </conditional>
         <conditional name="seq_name">
@@ -119,7 +120,7 @@
             <param name="input2" value="b1.fasta" ftype="fasta" />
             <param name="ref_source" value="history" />
             <param name="input1" value="phiX.fasta" ftype="fasta"  />
-            <param name="out_format" value="sam" />
+            <param name="out_format" value="sam-" />
             <param name="source_select" value="pre_set" />
             <param name="pre_set_options" value="yasra95short" />
             <param name="how_to_name" value="No" />
@@ -129,7 +130,6 @@
             <param name="num_threads" value="4" />
             <output name="output1" file="lastz_wrapper_out1.sam" />
         </test>
-        <!--
         <test>
             <param name="input2" value="b1.fasta" ftype="fasta" />
             <param name="ref_source" value="cached" />
@@ -141,7 +141,6 @@
             <param name="transition" value="transition" />      
             <param name="gfextend" value="true" />
             <param name="chain" value="true" />
-            <param name="gapped" value="gapped" />
             <param name="O" value="400" />
             <param name="E" value="30" />
             <param name="X" value="910" />
@@ -157,7 +156,6 @@
             <param name="num_threads" value="4" />
             <output name="output1" file="lastz_wrapper_out2.tabular" />
         </test>
-        -->
         <test>
             <param name="input2" value="b1.fasta" ftype="fasta" />
             <param name="ref_source" value="history" />
@@ -171,7 +169,7 @@
             <param name="min_cvrg" value="0" />
             <param name="num_threads" value="4" />
             <output name="output1" file="lastz_wrapper_out3.tabular" />
-        </test> 
+        </test>
     </tests>
     <help>
     	
