@@ -1,7 +1,7 @@
 #! /usr/bin/python
 
 """
-Creates a pileup file from a bam file and a reference.
+Condenses pileup format into ranges of bases.
 
 usage: %prog [options]
    -i, --input=i: Input pileup file
@@ -18,6 +18,7 @@ usage: %prog [options]
 from galaxy import eggs
 import pkg_resources; pkg_resources.require( "bx-python" )
 from bx.cookbook import doc_optparse
+import sys
 
 def stop_err( msg ):
     sys.stderr.write( msg )
@@ -56,7 +57,18 @@ def __main__():
     bases = []
     while inLine.strip() != '':
         lineParts = inLine.split('\t')
-        seq, loc, base, cov = lineParts[seqIndex], int(lineParts[locIndex]), lineParts[baseIndex], int(lineParts[covIndex])
+        try:
+            seq, loc, base, cov = lineParts[seqIndex], int(lineParts[locIndex]), lineParts[baseIndex], int(lineParts[covIndex])
+        except IndexError, ei:
+            if options.format == 'ten':
+                stop_err( 'It appears that you have selected 10 columns while your file has 6. Make sure that the number of columns you specify matches the number in your file.\n' + str( ei ) )
+            else:
+                stop_err( 'There appears to be something wrong with your column index values.\n' + str( ei ) )
+        except ValueError, ev:
+            if options.format == 'six':
+                stop_err( 'It appears that you have selected 6 columns while your file has 10. Make sure that the number of columns you specify matches the number in your file.\n' + str( ev ) )
+            else:
+                stop_err( 'There appears to be something wrong with your column index values.\n' + str( ev ) )
 #        strout += str(startLoc) + '\n'
 #        strout += str(bases) + '\n'
 #        strout += '%s\t%s\t%s\t%s\n' % (seq, loc, base, cov)
