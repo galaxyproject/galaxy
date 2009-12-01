@@ -58,6 +58,7 @@
         <datatype extension="txtseq.zip" type="galaxy.datatypes.data:Txtseq" mimetype="application/zip" display_in_upload="true"/>
         <datatype extension="wig" type="galaxy.datatypes.interval:Wiggle" display_in_upload="true">
             <converter file="wiggle_to_array_tree_converter.xml" target_datatype="array_tree"/>
+            <converter file="wiggle_to_simple_converter.xml" target_datatype="interval"/>
         </datatype>
         <datatype extension="array_tree" type="galaxy.datatypes.data:Data" />
         <datatype extension="interval_index" type="galaxy.datatypes.data:Data" />

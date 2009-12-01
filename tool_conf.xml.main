@@ -47,6 +47,7 @@
     <tool file="maf/maf_to_fasta.xml" />
     <tool file="fasta_tools/tabular_to_fasta.xml" />
     <tool file="fastx_toolkit/fastq_to_fasta.xml" />
+    <tool file="filters/wiggle_to_simple.xml" />
   </section>
   <section name="FASTA manipulation" id="fasta_manipulation">
     <tool file="fasta_tools/fasta_compute_length.xml" />
