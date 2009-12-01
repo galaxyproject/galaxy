@@ -144,6 +144,9 @@ log_memory_usage = False
 # Log events
 log_events = True
 
+# Log user actions
+log_actions = True
+
 # Configuration for debugging middleware
 debug = True
 use_lint = False

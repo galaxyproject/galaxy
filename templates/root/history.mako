@@ -325,7 +325,7 @@ var updater_callback = function ( tracked_datasets ) {
 
 %if trans.get_user() is not None:
     <div id='history-tag-area' class="tag-element"></div>
-    ${render_tagging_element(history, "history-tag-area", get_toggle_link_text_fn='get_toggle_link_text')}
+    ${render_tagging_element( tagged_item=history, elt_id="history-tag-area", elt_context="history.mako", get_toggle_link_text_fn='get_toggle_link_text' )}
 %endif
 
 %if not datasets:

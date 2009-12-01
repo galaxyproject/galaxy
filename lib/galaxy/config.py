@@ -79,6 +79,7 @@ class Configuration( object ):
         self.use_heartbeat = string_as_bool( kwargs.get( 'use_heartbeat', 'False' ) )
         self.use_memdump = string_as_bool( kwargs.get( 'use_memdump', 'False' ) )
         self.log_memory_usage = string_as_bool( kwargs.get( 'log_memory_usage', 'False' ) )
+        self.log_actions = string_as_bool( kwargs.get( 'log_actions', 'False' ) )
         self.log_events = string_as_bool( kwargs.get( 'log_events', 'False' ) )
         self.ucsc_display_sites = kwargs.get( 'ucsc_display_sites', "main,test,archaea,ucla" ).lower().split(",")
         self.gbrowse_display_sites = kwargs.get( 'gbrowse_display_sites', "main,test,tair" ).lower().split(",")

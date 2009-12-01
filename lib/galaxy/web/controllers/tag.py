@@ -28,27 +28,37 @@ class TagsController ( BaseController ):
         
     @web.expose
     @web.require_login( "Add tag to an item." )
-    def add_tag_async( self, trans, id=None, item_class=None, new_tag=None ):
+    def add_tag_async( self, trans, id=None, item_class=None, new_tag=None, context=None ):
         """ Add tag to an item. """
-        item = self._get_item(trans, item_class, trans.security.decode_id(id))
         
-        self._do_security_check(trans, item)
+        # Check that user owns item.
+        item = self._get_item(trans, item_class, trans.security.decode_id( id ) )
+        self._do_security_check( trans, item )
         
+        # Apply tag.
         self.tag_handler.apply_item_tags( trans.sa_session, item, new_tag.encode('utf-8') )
         trans.sa_session.flush()
         
+        # Log.
+        params = dict( item_id=item.id, item_class=item_class, tag=new_tag)
+        trans.log_action( unicode( "tag"), context, params )
+        
     @web.expose
     @web.require_login( "Remove tag from an item." )
-    def remove_tag_async( self, trans, id=None, item_class=None, tag_name=None ):
+    def remove_tag_async( self, trans, id=None, item_class=None, tag_name=None, context=None ):
         """ Remove tag from an item. """
-        item = self._get_item(trans, item_class, trans.security.decode_id(id))
         
+        # Check that user owns item.
+        item = self._get_item(trans, item_class, trans.security.decode_id(id))
         self._do_security_check(trans, item)
         
+        # Remove tag.
         self.tag_handler.remove_item_tag( trans, item, tag_name.encode('utf-8') )
-        #print tag_name
-        #print unicode(tag_name)
         trans.sa_session.flush()
+        
+        # Log.
+        params = dict( item_id=item.id, item_class=item_class, tag=tag_name)
+        trans.log_action( unicode( "untag"), context, params )
         
     # Retag an item. All previous tags are deleted and new tags are applied.
     @web.expose

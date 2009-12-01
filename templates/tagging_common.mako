@@ -1,10 +1,10 @@
 ## Render a tagging element if there is a tagged_item.
 %if tagged_item is not None and elt_id is not None:
-    ${render_tagging_element(tagged_item, elt_id=elt_id, in_form=in_form, input_size=input_size, tag_click_fn=tag_click_fn)}
+    ${render_tagging_element(tagged_item=tagged_item, elt_id=elt_id, elt_context=elt_context, in_form=in_form, input_size=input_size, tag_click_fn=tag_click_fn)}
 %endif
 
 ## Render the tags 'tags' as an autocomplete element.
-<%def name="render_tagging_element(tagged_item, elt_id, use_toggle_link='true', in_form='false', input_size='15', tag_click_fn='default_tag_click_fn', get_toggle_link_text_fn='default_get_toggle_link_text_fn', editable='true')">
+<%def name="render_tagging_element(tagged_item, elt_id, elt_context, use_toggle_link='true', in_form='false', input_size='15', tag_click_fn='default_tag_click_fn', get_toggle_link_text_fn='default_get_toggle_link_text_fn', editable='true')">
     <script type="text/javascript">
         //
         // Set up autocomplete tagger.
@@ -75,8 +75,8 @@
             tag_click_fn: ${tag_click_fn},
             <% tagged_item_id = trans.security.encode_id(tagged_item.id) %>
             ajax_autocomplete_tag_url: "${h.url_for( controller='tag', action='tag_autocomplete_data', id=tagged_item_id, item_class=tagged_item.__class__.__name__ )}",
-            ajax_add_tag_url: "${h.url_for( controller='tag', action='add_tag_async', id=tagged_item_id, item_class=tagged_item.__class__.__name__ )}",
-            ajax_delete_tag_url: "${h.url_for( controller='tag', action='remove_tag_async', id=tagged_item_id, item_class=tagged_item.__class__.__name__ )}",
+            ajax_add_tag_url: "${h.url_for( controller='tag', action='add_tag_async', id=tagged_item_id, item_class=tagged_item.__class__.__name__, context=elt_context )}",
+            ajax_delete_tag_url: "${h.url_for( controller='tag', action='remove_tag_async', id=tagged_item_id, item_class=tagged_item.__class__.__name__, context=elt_context )}",
             delete_tag_img: "${h.url_for('/static/images/delete_tag_icon_gray.png')}",
             delete_tag_img_rollover: "${h.url_for('/static/images/delete_tag_icon_white.png')}",
             add_tag_img: "${h.url_for('/static/images/add_icon.png')}",

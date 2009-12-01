@@ -327,7 +327,7 @@
 
             %if trans.get_user() is not None:
                 <div id='history-tag-area' class="tag-element"></div>
-                ${render_tagging_element(history, "history-tag-area", use_toggle_link='false', get_toggle_link_text_fn='get_toggle_link_text', editable=user_owns_history)}
+                ${render_tagging_element(history, "history-tag-area", "history/view.mako", use_toggle_link='false', get_toggle_link_text_fn='get_toggle_link_text', editable=user_owns_history)}
             %endif
 
             %if not datasets:

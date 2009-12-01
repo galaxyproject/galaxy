@@ -743,6 +743,15 @@ UserPreference.table = Table( "user_preference", metadata,
     Column( "name", Unicode( 255 ), index=True),
     Column( "value", Unicode( 1024 ) ) )
     
+UserAction.table = Table( "user_action", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+    Column( "session_id", Integer, ForeignKey( "galaxy_session.id" ), index=True ),
+    Column( "action", Unicode( 255 ) ),
+    Column( "context", Unicode( 512 ) ),
+    Column( "params", Unicode( 1024 ) ) )
+
 # With the tables defined we can define the mappers and setup the 
 # relationships between the model objects.
 
@@ -1237,6 +1246,10 @@ assign_mapper( context, PageTagAssociation, PageTagAssociation.table,
 assign_mapper( context, UserPreference, UserPreference.table, 
     properties = {}
               )
+              
+assign_mapper( context, UserAction, UserAction.table, 
+  properties = dict( user=relation( User.mapper ) )
+            )
 
 def db_next_hid( self ):
     """

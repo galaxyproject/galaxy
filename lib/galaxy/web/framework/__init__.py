@@ -10,6 +10,7 @@ from Cheetah.Template import Template
 import base
 import pickle
 from galaxy import util
+from galaxy.util.json import to_json_string
 
 pkg_resources.require( "simplejson" )
 import simplejson
@@ -170,6 +171,22 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         to allow migration toward a more SQLAlchemy 0.4 style of use.
         """
         return self.app.model.context.current
+    def log_action( self, action, context, params):
+        """
+        Application-level logging of user actions.
+        """
+        if self.app.config.log_actions:
+            action = self.app.model.UserAction(action=action, context=context, params=unicode( to_json_string( params ) ) )
+            try:
+                action.user = self.user
+            except:
+                action.user = None
+            try:
+                action.session_id = self.galaxy_session.id   
+            except:
+                action.session_id = None
+            self.sa_session.add( action )
+            self.sa_session.flush()
     def log_event( self, message, tool_id=None, **kwargs ):
         """
         Application level logging. Still needs fleshing out (log levels and such)
