@@ -601,6 +601,7 @@ ${self.render_grid_table()}
            // If there's an operation in the args, do POST; otherwise, do GET.
            var operation = url_args['operation'];
            var method = (operation != null && operation != undefined ? "POST" : "GET" );
+           $('.loading-elt-overlay').show(); // Show overlay to indicate loading and prevent user actions.
            $.ajax({
                type: method,
                url: "${h.url_for()}",
@@ -660,6 +661,9 @@ ${self.render_grid_table()}
                        }
                    }
                    
+                   // Hide loading overlay.
+                   $('.loading-elt-overlay').hide();
+                   
                    // Show message if there is one.
                    var message = $.trim( parsed_response_text[2] );
                    if (message != "")
@@ -711,6 +715,15 @@ ${self.render_grid_table()}
        .gray-background {
            background-color: #DDDDDD;
        }
+       .loading-elt-overlay {
+           background-color : white;
+           opacity : 0.5;
+           width : 100%;
+           height : 85%;
+           z-index : 14000;
+           position : absolute;
+           display: none;
+       }
     </style>
 </%def>
 
@@ -750,7 +763,8 @@ ${self.render_grid_table()}
 ## Render grid.
 <%def name="render_grid_table()">
     <form action="${url()}" method="post" onsubmit="return false;">
-        <table class="grid">
+        <div class='loading-elt-overlay'></div>
+        <table id='grid-table' class="grid">
             <thead id="grid-table-header">
                 <tr>
                     <th></th>
