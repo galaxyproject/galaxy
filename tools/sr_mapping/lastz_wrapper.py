@@ -5,7 +5,7 @@ Runs Lastz
 Written for Lastz v. 1.01.86.
 
 usage: lastz_wrapper.py [options]
-    --ref_name: The reference name to append to all output matches
+    --ref_name: The reference name to change all output matches to
     --ref_source: Whether the reference is cached or from the history
     --source_select: Whether to used pre-set or cached reference file
     --input1: The name of the reference file if using history or reference base name if using cached
@@ -39,9 +39,10 @@ from galaxy import eggs
 import pkg_resources
 pkg_resources.require( 'bx-python' )
 from bx.seq.twobit import *
+from bx.seq.fasta import FastaReader
 
 def stop_err( msg ):
-    sys.stderr.write( "%s\n" % msg )
+    sys.stderr.write( "%s" % msg )
     sys.exit()
 
 class LastzJobRunner( object ):
@@ -59,6 +60,8 @@ class LastzJobRunner( object ):
             worker = threading.Thread( target=self.run_next )
             worker.start()
             self.threads.append( worker )
+        for worker in self.threads:
+            worker.join()
     def run_next( self ):
         """Run the next command, waiting until one is available if necessary"""
         while not self.queue.empty():
@@ -67,14 +70,14 @@ class LastzJobRunner( object ):
     def run_job( self, command ):
         try:
             proc = subprocess.Popen( args=command, shell=True )
-            sts = os.waitpid( proc.pid, 0 )
+            proc.wait()
         except Exception, e:
             stop_err( "Error executing command (%s) - %s" % ( str( command ), str( e ) ) )
 
 def __main__():
     #Parse Command Line
     parser = optparse.OptionParser()
-    parser.add_option( '', '--ref_name', dest='ref_name', help='The reference name to append to all output matches' )
+    parser.add_option( '', '--ref_name', dest='ref_name', help='The reference name to change all output matches to' )
     parser.add_option( '', '--ref_source', dest='ref_source', help='Whether the reference is cached or from the history' )
     parser.add_option( '', '--ref_sequences', dest='ref_sequences', help='Number of sequences in the reference dataset' )
     parser.add_option( '', '--source_select', dest='source_select', help='Whether to used pre-set or cached reference file' )
@@ -102,9 +105,15 @@ def __main__():
     parser.add_option( '', '--lastzSeqsFileDir', dest='lastzSeqsFileDir', help='Directory of local lastz_seqs.loc file' )
     ( options, args ) = parser.parse_args()
 
+    # If the reference sequences are from the history, temporary input files will be created
+    # ( 1 for each sequence ), and we'll keep track of them for later removal from disk ( by closing them )
+    tmp_in_file_names = []
+    # Each thread will create a temporary file to which it writes the output from lastz
+    tmp_out_file_names = []
+    # Execution of lastz based on job splitting
     commands = []
     if options.ref_name != 'None':
-        ref_name = '%s::' % options.ref_name
+        ref_name = '[nickname=%s]' % options.ref_name
     else:
         ref_name = ''
     # Prepare for commonly-used preset options
@@ -112,7 +121,7 @@ def __main__():
         set_options = '--%s' % options.pre_set_options
     # Prepare for user-specified options
     else:
-        set_options = '--%s --%s --gapped --%s --%s --%s O=%s E=%s X=%s Y=%s K=%s L=%s --%s' % \
+        set_options = '--%s --%s --gapped --%s --seed=%s --%s O=%s E=%s X=%s Y=%s K=%s L=%s --%s' % \
                     ( options.gfextend, options.chain, options.strand, options.seed, 
                       options.transition, options.O, options.E, options.X, 
                       options.Y, options.K, options.L, options.entropy )
@@ -125,35 +134,86 @@ def __main__():
         # Change output format to general if it's tabular and add field names for tabular output
         format = 'general'
         tabular_fields = ':score,name1,strand1,size1,start1,zstart1,end1,length1,text1,name2,strand2,size2,start2,zstart2,end2,start2+,zstart2+,end2+,length2,text2,diff,cigar,identity,coverage,gaprate,diagonal,shingle'
+    elif options.format == 'sam':
+        # We currently ALWAYS suppress SAM headers.
+        format = 'sam-'
+        tabular_fields = ''
     else:
         format = options.format
         tabular_fields = ''
     if options.ref_source == 'history':
-        # Reference is a fasta dataset from the history, so split job across number of
-        # sequences in the dataset
-#        try:
-#            error_msg = "The reference dataset is missing metadata, click the pencil icon in the history item and 'auto-detect' the metadata attributes."
-#            ref_sequences = int( options.ref_sequences )
-#            if ref_sequences < 1:
-#                stop_err( error_msg )
-#        except:
-#            stop_err( error_msg )
-        # Currently set up to work only for a fasta file with a single sequence
-        for seq in range(1):
-#        for seq in range( ref_sequences ):
-            command = 'lastz %s%s %s %s --ambiguousn --nolaj --identity=%s..%s --coverage=%s --format=%s%s >> %s' % \
-                ( ref_name, options.input1, input2, set_options, options.identity_min, 
-                  options.identity_max, options.coverage, format, tabular_fields, options.output )
+        # Reference is a fasta dataset from the history, so split job across number of sequences in the dataset
+        try:
+            # Ensure there is at least 1 sequence in the dataset ( this may not be necessary ).
+            error_msg = "The reference dataset is missing metadata, click the pencil icon in the history item and 'auto-detect' the metadata attributes."
+            ref_sequences = int( options.ref_sequences )
+            if ref_sequences < 1:
+                stop_err( error_msg )
+        except:
+            stop_err( error_msg )
+        seqs = 0
+        fasta_reader = FastaReader( open( options.input1 ) )
+        while True:
+            # Read the next sequence from the reference dataset
+            seq = fasta_reader.next()
+            if not seq:
+                break
+            seqs += 1
+            # Create a temporary file to contain the current sequence as input to lastz
+            tmp_in = tempfile.NamedTemporaryFile( prefix=seq.name, suffix='.fasta' )
+            tmp_in_name = tmp_in.name
+            tmp_in.close()
+            tmp_in = file(tmp_in_name,'w+b')
+            # Keep track of our list of temporary input files so we can remove them later by closing them
+            tmp_in_file_names.append( tmp_in_name )
+            # Write the current sequence to the temporary input file
+            tmp_in.write( '>%s\n%s\n' % ( seq.name, seq.text ) )
+            tmp_in.close()
+            # Create a 2nd temporary file to contain the output from lastz execution on the current sequence
+            tmp_out = tempfile.NamedTemporaryFile( prefix='%s_out' % seq.name )
+            tmp_out_name = tmp_out.name
+            tmp_out.close()
+            # Keep track of our list of temporary output files so we can merge them into our output dataset
+            tmp_out_file_names.append( tmp_out_name )
+            # Generate the command line for calling lastz on the current sequence
+            command = 'lastz %s%s %s %s --ambiguousn --nolaj --identity=%s..%s --coverage=%s --format=%s%s > %s' % \
+                ( tmp_in_name, ref_name, input2, set_options, options.identity_min, 
+                  options.identity_max, options.coverage, format, tabular_fields, tmp_out_name )
+            # Append the command line to our list of commands for sending to the LastzJobRunner queue
             commands.append( command )
-            print command
+        # Make sure the value of sequences in the metadata is the
+        # same as the number of sequences read from the dataset ( this may not be necessary ).
+        if ref_sequences != seqs:
+            stop_error( "The value of metadata.sequences (%d) differs from the number of sequences read from the reference ( %d)." % ( ref_sequences, seqs ) )
     else:
         # Reference is a locally cached 2bit file, split job across number of chroms in 2bit file
         tbf = TwoBitFile( open( options.input1, 'r' ) )
         for chrom in tbf.keys():
-            command = 'lastz %s%s/%s %s %s --ambiguousn --nolaj --identity=%s..%s --coverage=%s --format=%s%s >> %s' % \
-                ( ref_name, options.input1, chrom, input2, set_options, options.identity_min, 
-                  options.identity_max, options.coverage, format, tabular_fields, options.output )
+            # Create a temporary file to contain the output from lastz execution on the current chrom
+            tmp_out = tempfile.NamedTemporaryFile( prefix='%s_out' % chrom )
+            tmp_out_name = tmp_out.name
+            tmp_out.close()
+            # Keep track of our list of temporary output files so we can merge them into our output dataset
+            tmp_out_file_names.append( tmp_out_name )
+            command = 'lastz %s/%s%s %s %s --ambiguousn --nolaj --identity=%s..%s --coverage=%s --format=%s%s >> %s' % \
+                ( options.input1, chrom, ref_name, input2, set_options, options.identity_min, 
+                  options.identity_max, options.coverage, format, tabular_fields, tmp_out_name )
             commands.append( command )
     job_runner = LastzJobRunner( int( options.num_threads ), commands )
+    # Merge all of the output from lastz ( currently in temporary files ) into our output dataset
+    command = 'cat %s >> %s' % ( ' '.join( tmp_out_file_names ), options.output )
+    proc = subprocess.Popen( args=command, shell=True )
+    proc.wait()
+    # Remove all temporary files from disk by closing them
+    for name in tmp_in_file_names:
+        try:
+            os.remove( name )
+        except:
+            pass
+    for name in tmp_out_file_names:
+        try:
+            os.remove( name )
+        except:
+            pass
 
 if __name__=="__main__": __main__()

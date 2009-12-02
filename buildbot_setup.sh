@@ -9,6 +9,7 @@ LINKS="
 /depot/data2/galaxy/bowtie_indices.loc
 /depot/data2/galaxy/encode_datasets.loc
 /home/universe/linux-i686/HYPHY
+/depot/data2/galaxy/lastz_seqs.loc
 /depot/data2/galaxy/liftOver.loc
 /depot/data2/galaxy/maf_index.loc
 /depot/data2/galaxy/maf_pairwise.loc
