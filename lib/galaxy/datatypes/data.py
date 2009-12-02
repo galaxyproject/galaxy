@@ -4,6 +4,7 @@ from galaxy.util.odict import odict
 from galaxy.util.bunch import Bunch
 from cgi import escape
 import metadata
+import zipfile
 from metadata import MetadataElement #import directly to maintain ease of use in Datatype class definitions
 
 log = logging.getLogger(__name__)
