@@ -121,7 +121,7 @@ def __main__():
         set_options = '--%s' % options.pre_set_options
     # Prepare for user-specified options
     else:
-        set_options = '--%s --%s --gapped --%s --seed=%s --%s O=%s E=%s X=%s Y=%s K=%s L=%s --%s' % \
+        set_options = '--%s --%s --gapped --strand=%s --seed=%s --%s O=%s E=%s X=%s Y=%s K=%s L=%s --%s' % \
                     ( options.gfextend, options.chain, options.strand, options.seed, 
                       options.transition, options.O, options.E, options.X, 
                       options.Y, options.K, options.L, options.entropy )
