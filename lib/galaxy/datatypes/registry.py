@@ -174,6 +174,7 @@ class Registry( object ):
         # because some formats are much more flexibly defined than others.
         if len(self.sniff_order) < 1:
             self.sniff_order = [
+                binary.Bam(),
                 binary.Sff(),
                 xml.BlastXml(),
                 sequence.Maf(),

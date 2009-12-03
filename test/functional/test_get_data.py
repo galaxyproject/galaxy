@@ -520,7 +520,23 @@ class UploadData( TwillTestCase ):
         self.check_history_for_string( '1.axt format: <span class="axt">axt</span>, database: \? Info: uploaded file' )
         self.check_metadata_for_string( 'value="1.axt" value="\?" Change data type selected value="axt" selected="yes"' )
         self.delete_history( id=self.security.encode_id( history.id ) )
-    def test_0150_url_paste( self ):
+    def test_0150_upload_file( self ):
+        """Test uploading 1.bam, NOT setting the file format"""
+        self.check_history_for_string( 'Your history is empty' )
+        history = sa_session.query( galaxy.model.History ) \
+                            .filter( and_( galaxy.model.History.table.c.deleted==False,
+                                           galaxy.model.History.table.c.user_id==admin_user.id ) ) \
+                            .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
+                            .first()
+        self.upload_file( '1.bam' )
+        hda = sa_session.query( galaxy.model.HistoryDatasetAssociation ) \
+                        .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ) \
+                        .first()
+        assert hda is not None, "Problem retrieving hda from database"
+        self.verify_dataset_correctness( '1.bam', hid=str( hda.hid ) )
+        self.check_history_for_string( '<span class="bam">bam</span>' )
+        self.delete_history( id=self.security.encode_id( history.id ) )
+    def test_0155_url_paste( self ):
         """Test url paste behavior"""
         # Logged in as admin_user
         # Deleting the current history should have created a new history
