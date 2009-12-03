@@ -387,12 +387,14 @@ class HistoryController( BaseController ):
     def set_importable_async( self, trans, id=None, importable=False ):
         """ Set history's importable attribute. """
         history = get_history( trans, id, True )
-                
-        if history:
+            
+        # Only set if importable value would change; this prevents a change in the update_time unless attribute really changed.
+        importable = importable in ['True', 'true', 't'];
+        if history and history.importable != importable:
             history.importable = importable
             trans.sa_session.flush()
     
-        return
+        return result
                     
     @web.expose
     def name_autocomplete_data( self, trans, q=None, limit=None, timestamp=None ):

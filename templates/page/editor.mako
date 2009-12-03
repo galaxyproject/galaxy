@@ -232,23 +232,29 @@
                             
                                     // Insert link.
                                     wym._exec(WYMeditor.CREATE_LINK, sStamp);
-                                    if ( $("a[href=" + sStamp + "]", wym._doc.body).length != 0)
-                                    {
-                                        // Link created from selected text; add href and title.
-                                        $("a[href=" + sStamp + "]", wym._doc.body)
-                                             .attr(WYMeditor.HREF, '${h.url_for( controller='history', action='view' )}' + '?id=' + item_id)
-                                             .attr(WYMeditor.TITLE, "History" + item_id);
-                                    }
-                                    else
+                                    var link_text = $("a[href=" + sStamp + "]", wym._doc.body).text();
+                                    if (
+                                        link_text == "" // Firefox.
+                                        ||
+                                        link_text == sStamp // Safari
+                                        )
                                     {
                                         // User selected no text; create link from scratch and use default text.
                                         
                                         // Get history name.
                                         $.get( '${h.url_for( controller='history', action='get_name_async' )}?id=' + item_id, function( history_name ) {
                                             var href = '${h.url_for( controller='history', action='view' )}?id=' + item_id;
-                                            wym.insert("<a href='" + href + "'>History '" + history_name + "'</a>");
+                                            wym.insert("<a href='" + href + "'>History '" + history_name + "'</a>nbsp;");
                                         });
                                     }
+                                    else
+                                    {
+                                        // Link created from selected text; add href and title.
+                                        $("a[href=" + sStamp + "]", wym._doc.body)
+                                             .attr(WYMeditor.HREF, '${h.url_for( controller='history', action='view' )}' + '?id=' + item_id)
+                                             .attr(WYMeditor.TITLE, "History" + item_id);
+                                    }
+                                    
                                 });
                                 
                                 hide_modal();
