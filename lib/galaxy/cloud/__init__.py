@@ -397,6 +397,7 @@ class UCIwrapper( object ):
             return None
         
         store.error = error
+        store.status = store_status.ERROR
         self.sa_session.add( store )
         self.sa_session.flush()
     

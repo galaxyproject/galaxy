@@ -321,6 +321,11 @@ function trim19(str){
 		                    <a class="action-button" href="${h.url_for( action='rename_uci', id=trans.security.encode_id(prevInstance.id) )}">Rename</a>
 							<a class="action-button" href="${h.url_for( action='start', id=trans.security.encode_id(prevInstance.id), type='m1.small' )}"> Start m1.small</a>
 		                    <a class="action-button" href="${h.url_for( action='start', id=trans.security.encode_id(prevInstance.id), type='c1.medium' )}"> Start c1.medium</a>
+							<a class="action-button" href="${h.url_for( action='start', id=trans.security.encode_id(prevInstance.id), type='m1.large' )}"> Start m1.large</a>
+							<a class="action-button" href="${h.url_for( action='start', id=trans.security.encode_id(prevInstance.id), type='m1.xlarge' )}"> Start m1.xlarge</a>
+							<a class="action-button" href="${h.url_for( action='start', id=trans.security.encode_id(prevInstance.id), type='c1.xlarge' )}"> Start c1.xlarge</a>
+							<a class="action-button" href="${h.url_for( action='start', id=trans.security.encode_id(prevInstance.id), type='m2.2xlarge' )}"> Start m2.2xlarge</a>
+							<a class="action-button" href="${h.url_for( action='start', id=trans.security.encode_id(prevInstance.id), type='m2.4xlarge' )}"> Start m2.4xlarge</a>
 							<a class="action-button" href="${h.url_for( action='create_snapshot', id=trans.security.encode_id(prevInstance.id) )}">Create snapshot</a>
 							<a class="action-button" href="${h.url_for( action='view_snapshots', id=trans.security.encode_id(prevInstance.id) )}">View snapshots</a>
 		                    <a class="action-button" confirm="Are you sure you want to delete instance '${prevInstance.name}'? This will delete all of your data assocaiated with this instance!" href="${h.url_for( action='delete_uci', id=trans.security.encode_id(prevInstance.id) )}">Delete</a>

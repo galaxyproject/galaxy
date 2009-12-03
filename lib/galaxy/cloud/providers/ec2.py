@@ -318,10 +318,11 @@ class EC2CloudProvider( object ):
         if count == len( vl ):
             uci_wrapper.set_deleted()
         else:
-            err = "Deleting following volume(s) failed: " + str( failedList ) + ". However, these volumes were successfully deleted: " \
-                  + str( deletedList ) + ". MANUAL intervention and processing needed."
-            log.error( err )
-            uci_wrapper.set_error( err, True )
+            if uci_wrapper.get_uci_state != uci_states.ERROR:
+                err = "Deleting following volume(s) failed: " + str( failedList ) + ". However, these volumes were successfully deleted: " \
+                      + str( deletedList ) + ". MANUAL intervention and processing needed."
+                log.error( err )
+                uci_wrapper.set_error( err, True )
             
     def snapshot_uci( self, uci_wrapper ):
         """
