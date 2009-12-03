@@ -542,7 +542,7 @@ class Requests( BaseController ):
                                                                       action='new',
                                                                       **kwd) )
                 request = self.__save_request(trans, None, **kwd)
-                msg = 'The new request named %s has been created' % request.name
+                msg = 'The new request named <b>%s</b> has been created' % request.name
                 if params.get('create_request_button', False) == 'Save':
                     return trans.response.send_redirect( web.url_for( controller='requests',
                                                                       action='list',

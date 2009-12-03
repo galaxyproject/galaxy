@@ -149,7 +149,7 @@ class RequestsGrid( grids.Grid ):
                              confirm="More samples cannot be added to this request once it is submitted. Click OK to submit."  ),
         grids.GridOperation( "Edit", allow_multiple=False, condition=( lambda item: not item.deleted )  ),
         grids.GridOperation( "Reject", allow_multiple=False, condition=( lambda item: not item.deleted and item.submitted() )  ),
-        grids.GridOperation( "Delete", allow_multiple=True, condition=( lambda item: not item.deleted and item.new() )  ),
+        grids.GridOperation( "Delete", allow_multiple=True, condition=( lambda item: not item.deleted )  ),
         grids.GridOperation( "Undelete", condition=( lambda item: item.deleted ) ),    
     ]
     global_actions = [
@@ -387,7 +387,6 @@ class Requests( BaseController ):
         return self.__show_request_form(trans)
     def __delete_request(self, trans, **kwd):
         id_list = util.listify( kwd['id'] )
-        delete_failed = []
         for id in id_list:
             try:
                 request = trans.sa_session.query( trans.app.model.Request ).get( trans.security.decode_id(id) )
@@ -399,20 +398,11 @@ class Requests( BaseController ):
                                                                   status='error',
                                                                   message=msg,
                                                                   **kwd) )
-            # a request cannot be deleted once its submitted
-            if not request.new():
-                delete_failed.append(request.name)
-            else:
-                request.deleted = True
-                trans.sa_session.add( request )
-                trans.sa_session.flush()
-        if not len(delete_failed):
-            msg = '%i request(s) has been deleted.' % len(id_list)
-            status = 'done'
-        else:
-            msg = '%i request(s) has been deleted. %i request %s could not be deleted as they have been submitted.' % (len(id_list)-len(delete_failed), 
-                                                                                                               len(delete_failed), str(delete_failed))
-            status = 'warning'
+            request.deleted = True
+            trans.sa_session.add( request )
+            trans.sa_session.flush()
+        msg = '%i request(s) has been deleted.' % len(id_list)
+        status = 'done'
         return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                           action='list',
                                                           status=status,
