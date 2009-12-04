@@ -30,8 +30,6 @@ import logging
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger( 'GalaxyAMQP' )
 
-
-galaxy_config_file = 'universe_wsgi.ini'
 global dbconnstr
 
 def get_value(dom, tag_name):
@@ -60,8 +58,11 @@ def recv_callback(msg):
     galaxy.change_state(sample_id, state)
 
 def main():
+    if len(sys.argv) < 2:
+        print 'Usage: python amqp_consumer.py <Galaxy config file>'
+        return
     config = ConfigParser.ConfigParser()
-    config.read(galaxy_config_file)
+    config.read(sys.argv[1])
     global dbconnstr
     dbconnstr = config.get("app:main", "database_connection")
     amqp_config = {}
