@@ -125,10 +125,13 @@
         <requirement type="binary">lastz</requirement>
     </requirements>
     <tests>
-        <test> <!-- Lastz command: lastz phiX.2bit/PHIX174[nickname=Ref] test-data/b1.fasta +nogfextend +nochain +gapped +strand=both +seed=12of19 +transition O=400 E=30 X=910 Y=9370 K=3000 L=3000 +noentropy +ambiguousn +nolaj +identity=0..100 +coverage=0 +format=sam- > lastz_wrapper_out2.sam 
-        			You need to point to phiX.2bit somewhere on your system. b1.fasta is located in galaxy's test-data 
-        			You will have to replace all the pluses before the commands with 2 dashes, 
-        			as double-dash can't appear in an XML comment -->
+        <test>
+            <!--
+            Lastz command:
+            lastz phiX.2bit/PHIX174[nickname=Ref] test-data/b1.fasta +nogfextend +nochain +gapped +strand=both +seed=12of19 +transition O=400 E=30 X=910 Y=9370 K=3000 L=3000 +noentropy +ambiguousn +nolaj +identity=0..100 +coverage=0 +format=sam- > lastz_wrapper_out2.sam 
+            You need to point to phiX.2bit somewhere on your system. b1.fasta is located in galaxy's test-data.  You will have to replace all the pluses before the
+            commands with 2 dashes, as double-dash can't appear in an XML comment.
+            -->
             <param name="input2" value="b1.fasta" ftype="fasta" />
             <param name="ref_source" value="cached" />
             <param name="input1_2bit" value="phiX" />
@@ -156,10 +159,13 @@
             <param name="num_threads" value="4" />
             <output name="output1" file="lastz_wrapper_out2.sam" />
         </test>
-        <test> <!-- Lastz command: lastz test-data/phiX.fasta test-data/b1.fasta[fullnames] +yasra95short +ambiguousn +nolaj +identity=0..100 +coverage=0 +format=diffs > lastz_wrapper_out3.tabular 
-        			phiX.fasta and b1.fasta are located in galaxy's test-data 
-        			You will have to replace all the pluses before the commands with 2 dashes, 
-        			as double-dash can't appear in an XML comment -->
+        <test>
+            <!--
+            Lastz command:
+            lastz test-data/phiX.fasta test-data/b1.fasta[fullnames] +yasra95short +ambiguousn +nolaj +identity=0..100 +coverage=0 +format=diffs > lastz_wrapper_out3.tabular 
+        	phiX.fasta and b1.fasta are located in galaxy's test-data.  You will have to replace all the pluses before the commands with 2 dashes, 
+            as double-dash can't appear in an XML comment.
+            -->
             <param name="input2" value="b1.fasta" ftype="fasta" />
             <param name="ref_source" value="history" />
             <param name="input1" value="phiX.fasta" ftype="fasta" />
@@ -173,14 +179,7 @@
             <param name="num_threads" value="4" />
             <output name="output1" file="lastz_wrapper_out3.tabular" />
         </test>
-        <test> <!-- Lastz command: first you will need to split the file phiX_split.fasta into two files, 
-        			phiX1.fasta and phiX2.fasta, each with 1 sequence (phiX1 and phiX2, respectively). Then:
-        			lastz phiX1.fasta test-data/b1.fasta *yasra95short *ambiguousn *nolaj *identity=0..100 *coverage=0 *format=general:score,name1,strand1,size1,start1,zstart1,end1,length1,text1,name2,strand2,size2,start2,zstart2,end2,start2+,zstart2+,end2+,length2,text2,diff,cigar,identity,coverage,gaprate,diagonal,shingle > lastz_wrapper_out4.tabular 
-        			lastz phiX2.fasta test-data/b1.fasta *yasra95short *ambiguousn *nolaj *identity=0..100 *coverage=0 *format=general:score,name1,strand1,size1,start1,zstart1,end1,length1,text1,name2,strand2,size2,start2,zstart2,end2,start2+,zstart2+,end2+,length2,text2,diff,cigar,identity,coverage,gaprate,diagonal,shingle >> lastz_wrapper_out4.tabular 
-        			You need to point to phiX1.fasta and phiX2.fasta somewhere on your system. 
-        			phiX_split.fasta and b1.fasta are located in galaxy's test-data 
-        			You will have to replace all the asterisks before the commands with 2 dashes, 
-        			as double-dash can't appear in an XML comment -->
+        <test>
             <param name="input2" value="b1.fasta" ftype="fasta" />
             <param name="ref_source" value="history" />
             <param name="input1" value="phiX_split.fasta" ftype="fasta"  />
