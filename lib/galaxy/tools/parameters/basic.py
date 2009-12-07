@@ -30,7 +30,6 @@ class ToolParameter( object ):
         self.type = param.get("type")
         self.label = util.xml_text(param, "label")
         self.help = util.xml_text(param, "help")
-        self.unsanitize = param.get( "unsanitize", None ) ### This doesn't looked to be used anywhere... REMOVE ME?
         self.sanitizer = param.find( "sanitizer" )
         if self.sanitizer is not None:
             self.sanitizer = ToolParameterSanitizer.from_element( self.sanitizer )

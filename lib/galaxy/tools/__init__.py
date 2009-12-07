@@ -300,7 +300,6 @@ class Tool:
         self.tool_type = root.get( "tool_type", None )
         #Force history to fully refresh after job execution for this tool. Useful i.e. when an indeterminate number of outputs are created by a tool.
         self.force_history_refresh = util.string_as_bool( root.get( 'force_history_refresh', 'False' ) )
-        self.param_trans_dict = {} #make this a property of all Tools, so don't need to check if tool is datasource, just if it is populated
         #load input translator, used by datasource tools to change names/values of incoming parameters
         self.input_translator = root.find( "request_param_translation" )
         if self.input_translator:
