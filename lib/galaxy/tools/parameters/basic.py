@@ -7,6 +7,8 @@ from elementtree.ElementTree import XML, Element
 from galaxy import config, datatypes, util
 from galaxy.web import form_builder
 from galaxy.util.bunch import Bunch
+from galaxy.util import string_as_bool, sanitize_param
+from sanitize import ToolParameterSanitizer
 import validation, dynamic_options
 # For BaseURLToolParameter
 from galaxy.web import url_for
@@ -28,7 +30,9 @@ class ToolParameter( object ):
         self.type = param.get("type")
         self.label = util.xml_text(param, "label")
         self.help = util.xml_text(param, "help")
-        self.unsanitize = param.get( "unsanitize", None )
+        self.sanitizer = param.find( "sanitizer" )
+        if self.sanitizer is not None:
+            self.sanitizer = ToolParameterSanitizer.from_element( self.sanitizer )
         self.html = "no html set"
         self.repeat = param.get("repeat", None)
         self.condition = param.get( "condition", None )
@@ -122,7 +126,13 @@ class ToolParameter( object ):
         return value
         
     def to_param_dict_string( self, value, other_values={} ):
-        return str( value )
+        value = str( value )
+        if self.tool is None or self.tool.options.sanitize:
+            if self.sanitizer:
+                value = self.sanitizer.sanitize_param( value )
+            else:
+                value = sanitize_param( value )
+        return value
         
     def validate( self, value, history=None ):
         for validator in self.validators:
@@ -154,7 +164,7 @@ class TextToolParameter( ToolParameter ):
         self.name = elem.get( 'name' )
         self.size = elem.get( 'size' )
         self.value = elem.get( 'value' )
-        self.area = str_bool( elem.get( 'area', False ) )
+        self.area = string_as_bool( elem.get( 'area', False ) )
     def get_html_field( self, trans=None, value=None, other_values={} ):
         if self.area:
             return form_builder.TextArea( self.name, self.size, value or self.value )
@@ -262,7 +272,7 @@ class BooleanToolParameter( ToolParameter ):
         self.truevalue = elem.get( 'truevalue', 'true' )
         self.falsevalue = elem.get( 'falsevalue', 'false' )
         self.name = elem.get( 'name' )
-        self.checked = str_bool( elem.get( 'checked' ) )
+        self.checked = string_as_bool( elem.get( 'checked' ) )
     def get_html_field( self, trans=None, value=None, other_values={} ):
         checked = self.checked
         if value: 
@@ -299,7 +309,7 @@ class FileToolParameter( ToolParameter ):
         """
         ToolParameter.__init__( self, tool, elem )
         self.name = elem.get( 'name' )
-        self.ajax = str_bool( elem.get( 'ajax-upload' ) )
+        self.ajax = string_as_bool( elem.get( 'ajax-upload' ) )
     def get_html_field( self, trans=None, value=None, other_values={}  ):
         return form_builder.FileField( self.name, ajax = self.ajax, value = value )
     def from_html( self, value, trans=None, other_values={} ):
@@ -474,7 +484,7 @@ class SelectToolParameter( ToolParameter ):
     """
     def __init__( self, tool, elem, context=None ):
         ToolParameter.__init__( self, tool, elem )
-        self.multiple = str_bool( elem.get( 'multiple', False ) )
+        self.multiple = string_as_bool( elem.get( 'multiple', False ) )
         self.display = elem.get( 'display', None )
         self.separator = elem.get( 'separator', ',' )
         self.legal_values = set()
@@ -492,7 +502,7 @@ class SelectToolParameter( ToolParameter ):
             for index, option in enumerate( elem.findall( "option" ) ):
                 value = option.get( "value" )
                 self.legal_values.add( value )
-                selected = str_bool( option.get( "selected", False ) )
+                selected = string_as_bool( option.get( "selected", False ) )
                 self.static_options.append( ( option.text, value, selected ) )
         self.is_dynamic = ( ( self.dynamic_options is not None ) or ( self.options is not None ) )
     def get_options( self, trans, other_values ):
@@ -571,11 +581,19 @@ class SelectToolParameter( ToolParameter ):
         if value is None:
             return "None"
         if isinstance( value, list ):
-            if not(self.repeat):
+            if not( self.repeat ):
                 assert self.multiple, "Multiple values provided but parameter is not expecting multiple values"
-            return self.separator.join( map( str, value ) )
+            value = map( str, value )
         else:
-            return str(value)
+            value = str( value )
+        if self.tool is None or self.tool.options.sanitize:
+            if self.sanitizer:
+                value = self.sanitizer.sanitize_param( value )
+            else:
+                value = sanitize_param( value )
+        if isinstance( value, list ):
+            value = self.separator.join( value )
+        return value
     def value_to_basic( self, value, app ):
         if isinstance( value, UnvalidatedValue ):
             return { "__class__": "UnvalidatedValue", "value": value.value }
@@ -741,9 +759,9 @@ class ColumnListParameter( SelectToolParameter ):
     def __init__( self, tool, elem ):
         SelectToolParameter.__init__( self, tool, elem )
         self.tool = tool
-        self.numerical = str_bool( elem.get( "numerical", False ))
-        self.force_select = str_bool( elem.get( "force_select", True ))
-        self.accept_default = str_bool( elem.get( "accept_default", False ))
+        self.numerical = string_as_bool( elem.get( "numerical", False ))
+        self.force_select = string_as_bool( elem.get( "force_select", True ))
+        self.accept_default = string_as_bool( elem.get( "accept_default", False ))
         self.data_ref = elem.get( "data_ref", None )
         self.is_dynamic = True
     def get_column_list( self, trans, other_values ):
@@ -894,11 +912,11 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
     def __init__( self, tool, elem, context=None ):
         def recurse_option_elems( cur_options, option_elems ):
             for option_elem in option_elems:
-                selected = str_bool( option_elem.get( 'selected', False ) )
+                selected = string_as_bool( option_elem.get( 'selected', False ) )
                 cur_options.append( { 'name':option_elem.get( 'name' ), 'value': option_elem.get( 'value'), 'options':[], 'selected':selected  } )
                 recurse_option_elems( cur_options[-1]['options'], option_elem.findall( 'option' ) )
         ToolParameter.__init__( self, tool, elem )
-        self.multiple = str_bool( elem.get( 'multiple', False ) )
+        self.multiple = string_as_bool( elem.get( 'multiple', False ) )
         self.display = elem.get( 'display', None )
         self.hierarchy = elem.get( 'hierarchy', 'exact' ) #exact or recurse
         self.separator = elem.get( 'separator', ',' )
@@ -1019,7 +1037,13 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
         if len( rval ) > 1:
             if not( self.repeat ):
                 assert self.multiple, "Multiple values provided but parameter is not expecting multiple values"
-        return self.separator.join( rval )
+        rval = self.separator.join( rval )
+        if self.tool is None or self.tool.options.sanitize:
+            if self.sanitizer:
+                rval = self.sanitizer.sanitize_param( rval )
+            else:
+                rval = sanitize_param( rval )
+        return rval
     
     def get_initial_value( self, trans, context ):
         def recurse_options( initial_values, options ):
@@ -1094,7 +1118,7 @@ class DataToolParameter( ToolParameter ):
     def __init__( self, tool, elem ):
         ToolParameter.__init__( self, tool, elem )
         # Add metadata validator
-        if not str_bool( elem.get( 'no_validation', False ) ):
+        if not string_as_bool( elem.get( 'no_validation', False ) ):
             self.validators.append( validation.MetadataValidator() )
         # Build tuple of classes for supported data formats
         formats = []
@@ -1108,9 +1132,9 @@ class DataToolParameter( ToolParameter ):
             else:
                 formats.append( tool.app.datatypes_registry.get_datatype_by_extension( extension.lower() ).__class__ )
         self.formats = tuple( formats )
-        self.multiple = str_bool( elem.get( 'multiple', False ) )
+        self.multiple = string_as_bool( elem.get( 'multiple', False ) )
         # Optional DataToolParameters are used in tools like GMAJ and LAJ
-        self.optional = str_bool( elem.get( 'optional', False ) )
+        self.optional = string_as_bool( elem.get( 'optional', False ) )
         # TODO: Enhance dynamic options for DataToolParameters. Currently,
         #       only the special case key='build' of type='data_meta' is
         #       a valid filter
@@ -1366,13 +1390,4 @@ class RuntimeValue( object ):
     runtime.
     """
     pass
-    
 
-def str_bool(in_str):
-    """
-    returns true/false of a string, since bool(str), always returns true if string is not empty
-    default action is to return false
-    """
-    if str(in_str).lower() == 'true' or str(in_str).lower() == 'yes':
-        return True
-    return False

@@ -7,7 +7,7 @@ from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes import metadata
 from galaxy.datatypes.sniff import *
 from urllib import urlencode, quote_plus
-import zipfile
+import zipfile, gzip
 import os, subprocess, tempfile
 
 log = logging.getLogger(__name__)
@@ -54,32 +54,35 @@ class Bam( Binary ):
 
     def init_meta( self, dataset, copy_from=None ):
         Binary.init_meta( self, dataset, copy_from=copy_from )
-        """
-        GVK 12/2/09: just noticed this - not good and doesn't work, so commenting out for now.
-        def set_meta( self, dataset, overwrite = True, **kwd ):
-            # Sets index for BAM file.
-            index_file = dataset.metadata.bam_index
-            if not index_file:
-                index_file = dataset.metadata.spec['bam_index'].param.new_file( dataset = dataset )
+    def set_meta( self, dataset, overwrite = True, **kwd ):
+        """ Sets index for BAM file. """
+        # These metadata values are not accessible by users, always overwrite
+        index_file = dataset.metadata.bam_index
+        if not index_file:
+            index_file = dataset.metadata.spec['bam_index'].param.new_file( dataset = dataset )
+        try:
+            # Using a symlink from ~/database/files/dataset_XX.dat, create a temporary file
+            # to store the indexex generated from samtools, something like ~/tmp/dataset_XX.dat.bai
             tmp_dir = tempfile.gettempdir()
-            tmpf1 = tempfile.NamedTemporaryFile( dir=tmp_dir )
-            tmpf1bai = '%s.bai' % tmpf1.name
-            try:
-                os.system( 'cd %s' % tmp_dir )
-                os.system( 'cp %s %s' % ( dataset.file_name, tmpf1.name ) )
-                os.system( 'samtools index %s' % tmpf1.name )
-                os.system( 'cp %s %s' % ( tmpf1bai, index_file.file_name ) )
-            except Exception, ex:
-                sys.stderr.write( 'There was a problem creating the index for the BAM file\n%s\n' + str( ex ) )
-            tmpf1.close()
-            if os.path.exists( tmpf1bai ):
-                os.remove( tmpf1bai )
-            dataset.metadata.bam_index = index_file
-        """
+            tmp_file_path = os.path.join( tmp_dir, os.path.basename( dataset.file_name ) )
+            # Here tmp_file_path looks something like /tmp/dataset_XX.dat
+            os.symlink( dataset.file_name, tmp_file_path )
+            command = 'samtools index %s' % tmp_file_path
+            proc = subprocess.Popen( args=command, shell=True )
+            proc.wait()
+        except:
+            err_msg = 'Error creating index file (%s) for BAM file (%s)' % ( str( tmp_file_path ), str( dataset.file_name ) )
+            log.exception( err_msg )
+            sys.stderr.write( err_msg )
+        # Move the temporary index file ~/tmp/dataset_XX.dat.bai to be ~/database/files/_metadata_files/dataset_XX.dat
+        shutil.move( '%s.bai' % ( tmp_file_path ), index_file.file_name )
+        os.unlink( tmp_file_path )
+        dataset.metadata.bam_index = index_file
     def sniff( self, filename ):
+        # BAM is compressed in the BGZF format, and must not be uncompressed in Galaxy.
         # The first 4 bytes of any bam file is 'BAM\1', and the file is binary. 
         try:
-            header = open( filename ).read(4)
+            header = gzip.open( filename ).read(4)
             if binascii.b2a_hex( header ) == binascii.hexlify( 'BAM\1' ):
                 return True
             return False

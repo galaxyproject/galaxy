@@ -12,6 +12,7 @@ def stop_err( msg ):
     sys.exit()
 
 def check_gzip( filename ):
+    # TODO: This needs to check for BAM files since they are compressed and must remain so ( see upload.py )
     temp = open( filename, "U" )
     magic_check = temp.read( 2 )
     temp.close()
@@ -66,6 +67,7 @@ def __main__():
         out.write( chunk )
     out.close()
     if check_gzip( filename ):
+        # TODO: This needs to check for BAM files since they are compressed and must remain so ( see upload.py )
         fd, uncompressed = tempfile.mkstemp()
         gzipped_file = gzip.GzipFile( filename )
         while 1:

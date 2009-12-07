@@ -32,7 +32,7 @@ class ASync( BaseController ):
             return trans.response.send_redirect( "/index" )
 
         history = trans.get_history( create=True )
-        params  = util.Params(kwd, safe=False) 
+        params  = util.Params(kwd, sanitize=False) 
         STATUS = params.STATUS
         URL = params.URL
         data_id = params.data_id

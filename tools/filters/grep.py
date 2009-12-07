@@ -13,9 +13,11 @@
 # -v	        true or false (output NON-matching lines)
 
 import sys
+import os
 import re
 import string
 import commands
+from tempfile import NamedTemporaryFile
 
 # This function is exceedingly useful, perhaps package for reuse?
 def getopts(argv):
@@ -72,17 +74,15 @@ def main():
                  '[' :'__ob__',
                  ']' :'__cb__',
 		 '{' :'__oc__',
-                 '}' :'__cc__',
-
+                 '}' :'__cc__'
                  }
-
+    
+    #with new sanitizing we only need to replace for single quote, but this needs to remain for backwards compatibility
     for key, value in mapped_chars.items():
         pattern = pattern.replace(value, key)
-
-    pattern = pattern.replace('\'', '')
-
-    fileRegEx = re.compile("^[A-Za-z0-9./\-_]+$")
-    invertRegEx = re.compile("(true)|(false)")
+    
+    fileRegEx = re.compile("^[A-Za-z0-9./\-_]+$") #why?
+    invertRegEx = re.compile("(true)|(false)") #why?
 
     if not fileRegEx.match(outputfile):
 	print "Illegal output filename."
@@ -94,16 +94,29 @@ def main():
 	print "Illegal invert option."
 	return -7
 
-    # grep
+    # invert grep search?
     if invert == "true":
-	invertflag = " -v"
+        invertflag = " -v"
+        print "Not matching pattern: %s" % pattern
     else:
-	invertflag = ""
-
-    commandline = "grep -E"+invertflag+" '"+pattern+"' "+inputfile+" > "+outputfile
-
+        invertflag = ""
+        print "Matching pattern: %s" % pattern
+    
+    #Create temp file holding pattern
+    #By using a file to hold the pattern, we don't have worry about sanitizing grep commandline and can include single quotes in pattern
+    pattern_file_name = NamedTemporaryFile().name
+    open( pattern_file_name, 'w' ).write( pattern )
+    
+    #generate grep command
+    commandline = "grep -E %s -f %s %s > %s" % ( invertflag, pattern_file_name, inputfile, outputfile )
+    
+    #run grep
     errorcode, stdout = commands.getstatusoutput(commandline)
     
+    #remove temp pattern file
+    os.unlink( pattern_file_name )
+    
+    #return error code
     return errorcode
 
 if __name__ == "__main__":

@@ -1,32 +1,29 @@
 <tool id="sam_to_bam" name="SAM-to-BAM" version="1.0.0">
   <description>converts SAM format to BAM format</description>
   <command interpreter="python">
-    sam_to_bam.py 
-        --input1=$source.input1
-        --dbkey=${input1.metadata.dbkey} 
-        #if $source.indexSource == "history":
-         --ref_file=$ref_file
-        #else
-         --ref_file="None"
-        #end if
-        --output1=$output1
-        --index_dir=${GALAXY_DATA_INDEX_DIR}
+sam_to_bam.py --input1=$source.input1 --dbkey=${input1.metadata.dbkey} 
+#if $source.index_source == "history":
+--ref_file=$source.ref_file
+#else
+--ref_file="None"
+#end if
+--output1=$output1 --index_dir=${GALAXY_DATA_INDEX_DIR}
   </command>
   <inputs>
     <conditional name="source">
-      <param name="indexSource" type="select" label="Choose the source for the reference list">
-        <option value="built_in">Built-in</option>
+      <param name="index_source" type="select" label="Choose the source for the reference list">
+        <option value="cached">Locally cached</option>
         <option value="history">History</option>
       </param>
-      <when value="built_in">
+      <when value="cached">
         <param name="input1" type="data" format="sam" label="SAM File to Convert">
            <validator type="unspecified_build" />
            <validator type="dataset_metadata_in_file" filename="sam_fa_indices.loc" metadata_name="dbkey" metadata_column="1" message="Sequences are not currently available for the specified build." line_startswith="index" />
         </param>
       </when>
       <when value="history">
-        <param name="input1" type="data" format="sam" label="SAM File to Convert" />
-        <param name="ref_file" type="data" format="fasta" label="Choose the reference file" />
+        <param name="input1" type="data" format="sam" label="Convert SAM file" />
+        <param name="ref_file" type="data" format="fasta" label="Using reference file" />
       </when>
     </conditional>
   </inputs>
@@ -34,19 +31,16 @@
     <data name="output1" format="bam"/>
   </outputs>
   <tests>
+    <!--
+    # IMPORTANT NOTE: for some reason the samtools view command gzips the resulting bam file without warning,
+    # and the docs do not currently state that this occurs ( very bad ).
+    -->
     <test>
-      <param name="indexSource" value="history" /> 
-      <param name="input1" value="sam_to_bam_in1.sam" ftype="sam" />
-      <param name="ref_file" value="chrM.fa" ftype="fasta" />
+      <param name="index_source" value="history" /> 
+      <param name="input1" value="3.sam" ftype="sam" />
+      <param name="ref_file" value="chr_m.fasta" ftype="fasta" />
       <output name="output1" file="sam_to_bam_out1.bam" />
     </test>
-<!--  chrM is not a built-in dbkey (in the builds.txt list) so can't be tested
-    <test>
-      <param name="indexSource" value="built_in" />
-      <param name="input1" value="sam_to_bam_in2.sam" ftype="sam" dbkey="chrM" />
-      <output name="output1" file="sam_to_bam_out2.bam" />
-    </test>
--->
   </tests>
   <help>
 

@@ -192,12 +192,15 @@ def build_maf_index_species_chromosomes( filename, index_species = None ):
     species = []
     species_chromosomes = {}
     indexes = bx.interval_index_file.Indexes()
+    blocks = 0
     try:
         maf_reader = bx.align.maf.Reader( open( filename ) )
         while True:
             pos = maf_reader.file.tell()
             block = maf_reader.next()
-            if block is None: break
+            if block is None:
+                break
+            blocks += 1
             for c in block.components:
                 spec = c.src
                 chrom = None
@@ -225,11 +228,11 @@ def build_maf_index_species_chromosomes( filename, index_species = None ):
         #most likely a bad MAF
         log.debug( 'Building MAF index on %s failed: %s' % ( filename, e ) )
         return ( None, [], {} )
-    return ( indexes, species, species_chromosomes )
+    return ( indexes, species, species_chromosomes, blocks )
 
 #builds and returns ( index, index_filename ) for specified maf_file
 def build_maf_index( maf_file, species = None ):
-    indexes, found_species, species_chromosomes = build_maf_index_species_chromosomes( maf_file, species )
+    indexes, found_species, species_chromosomes, blocks = build_maf_index_species_chromosomes( maf_file, species )
     if indexes is not None:
         fd, index_filename = tempfile.mkstemp()
         out = os.fdopen( fd, 'w' )

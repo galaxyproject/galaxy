@@ -4,7 +4,7 @@
     the initial response.  If value of 'URL_method' is 'post', any additional params coming back in the
     initial response ( in addition to 'URL' ) will be encoded and appended to URL and a post will be performed.
 -->
-<tool name="UCSC Test" id="ucsc_table_direct_test1" tool_type="data_source" URL_method="post">
+<tool name="UCSC Test" id="ucsc_table_direct_test1" tool_type="data_source">
 	<description>table browser</description>
 	<command interpreter="python">data_source.py $output $__app__.config.output_size_limit</command>
 	<inputs action="http://genome-test.cse.ucsc.edu/cgi-bin/hgTables" check_values="false" method="get">
@@ -16,20 +16,21 @@
 		<param name="hgta_outputType" type="hidden" value="bed" />
 	</inputs>
     <request_param_translation>
+        <request_param galaxy_name="URL_method" remote_name="URL_method" missing="post" />
         <request_param galaxy_name="URL" remote_name="URL" missing="" />
         <request_param galaxy_name="dbkey" remote_name="db" missing="?" />
         <request_param galaxy_name="organism" remote_name="org" missing="unknown species" />
-        <request_param galaxy_name="table" remote_name="hgta_track" missing="" />
-        <request_param galaxy_name="description" remote_name="hgta_regionType" missing="" />
+        <request_param galaxy_name="table" remote_name="hgta_table" missing="unknown table" />
+        <request_param galaxy_name="description" remote_name="hgta_regionType" missing="no description" />
         <request_param galaxy_name="data_type" remote_name="hgta_outputType" missing="tabular" >
-            <data_type_translation>
-                <format galaxy_format="tabular" remote_format="primaryTable" />
-                <format galaxy_format="tabular" remote_format="selectedFields" />
-                <format galaxy_format="wig" remote_format="wigdata" />
-                <format galaxy_format="interval" remote_format="tab" />
-                <format galaxy_format="html" remote_format="hyperlinks" />
-                <format galaxy_format="fasta" remote_format="sequence" />
-            </data_type_translation>
+            <value_translation>
+                <value galaxy_value="tabular" remote_value="primaryTable" />
+                <value galaxy_value="tabular" remote_value="selectedFields" />
+                <value galaxy_value="wig" remote_value="wigData" />
+                <value galaxy_value="interval" remote_value="tab" />
+                <value galaxy_value="html" remote_value="hyperlinks" />
+                <value galaxy_value="fasta" remote_value="sequence" />
+            </value_translation>
         </request_param>
     </request_param_translation>
 	<uihints minwidth="800"/>

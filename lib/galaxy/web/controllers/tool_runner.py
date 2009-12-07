@@ -43,7 +43,10 @@ class ToolRunner( BaseController ):
             log.error( "index called with tool id '%s' but no such tool exists", tool_id )
             trans.log_event( "Tool id '%s' does not exist" % tool_id )
             return "Tool '%s' does not exist, kwd=%s " % (tool_id, kwd)
-        params = util.Params( kwd, sanitize=tool.options.sanitize, tool=tool )
+        params = util.Params( kwd, sanitize = False ) #Sanitize parameters when substituting into command line via input wrappers
+        #do param translation here, used by datasource tools
+        if tool.input_translator:
+            tool.input_translator.translate( params )
         history = trans.get_history()
         template, vars = tool.handle_input( trans, params.__dict__ )
         if len(params) > 0:
@@ -73,7 +76,7 @@ class ToolRunner( BaseController ):
         # Get the associated job, if any. If this hda was copied from another,
         # we need to find the job that created the origial hda
         job_hda = data
-        while job_hda.copied_from_history_dataset_association:
+        while job_hda.copied_from_history_dataset_association:#should this check library datasets as well?
             job_hda = job_hda.copied_from_history_dataset_association
         if not job_hda.creating_job_associations:
             error( "Could not find the job for this dataset" )
@@ -153,7 +156,7 @@ class ToolRunner( BaseController ):
         tool = self.get_toolbox().tools_by_id.get( tool_id, None )
         if not tool:
             return False # bad tool_id
-        nonfile_params = util.Params( kwd, sanitize=tool.options.sanitize, tool=tool )
+        nonfile_params = util.Params( kwd, sanitize=False )
         if kwd.get( 'tool_state', None ) not in ( None, 'None' ):
             encoded_state = util.string_to_object( kwd["tool_state"] )
             tool_state = DefaultToolState()

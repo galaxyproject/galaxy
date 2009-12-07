@@ -4,7 +4,7 @@
 # WARNING: Changes in this tool (particularly as related to parsing) may need
 # to be reflected in galaxy.web.controllers.tool_runner and galaxy.tools
 
-import urllib, sys, os, gzip, tempfile, shutil, re, gzip, zipfile, codecs
+import urllib, sys, os, gzip, tempfile, shutil, re, gzip, zipfile, codecs, binascii
 from galaxy import eggs
 # need to import model before sniff to resolve a circular import dependency
 import galaxy.model
@@ -18,7 +18,6 @@ assert sys.version_info[:2] >= ( 2, 4 )
 def stop_err( msg, ret=1 ):
     sys.stderr.write( msg )
     sys.exit( ret )
-
 def file_err( msg, dataset, json_file ):
     json_file.write( to_json_string( dict( type = 'dataset',
                                            ext = 'data',
@@ -28,7 +27,6 @@ def file_err( msg, dataset, json_file ):
         os.remove( dataset.path )
     except:
         pass
-
 def safe_dict(d):
     """
     Recursively clone json structure with UTF-8 dictionary keys
@@ -40,7 +38,6 @@ def safe_dict(d):
         return [safe_dict(x) for x in d]
     else:
         return d
-
 def check_html( temp_name, chunk=None ):
     if chunk is None:
         temp = open(temp_name, "U")
@@ -64,7 +61,6 @@ def check_html( temp_name, chunk=None ):
     if chunk is None:
         temp.close()
     return False
-
 def check_binary( temp_name, chunk=None ):
     if chunk is None:
         temp = open( temp_name, "U" )
@@ -85,21 +81,42 @@ def check_binary( temp_name, chunk=None ):
     if chunk is None:
         temp.close()
     return False
-
 def check_gzip( temp_name ):
+    # This is sort of hacky.  BAM is compressed in the BGZF format, and must 
+    # not be uncompressed in upon upload ( it will be detected as gzipped ).
+    # The tuple we're returning from here contains boolean values for
+    # ( is_compressed, is_valid, is_bam ).
     temp = open( temp_name, "U" )
     magic_check = temp.read( 2 )
     temp.close()
     if magic_check != util.gzip_magic:
-        return ( False, False )
+        return ( False, False, False )
     CHUNK_SIZE = 2**15 # 32Kb
     gzipped_file = gzip.GzipFile( temp_name )
     chunk = gzipped_file.read( CHUNK_SIZE )
     gzipped_file.close()
-    if check_html( temp_name, chunk=chunk ) or check_binary( temp_name, chunk=chunk ):
-        return( True, False )
-    return ( True, True )
-
+    if check_html( temp_name, chunk=chunk ):
+        return ( True, False, False )
+    if check_binary( temp_name, chunk=chunk ):
+        # We do support some binary data types, so check if the compressed binary file is valid
+        # We currently only check for [ 'sff', 'bam' ]
+        # TODO: this should be fixed to more easily support future-supported binary data types.
+        # This is currently just copied from the sniff methods.
+        # The first 4 bytes of any bam file is 'BAM\1', and the file is binary. 
+        try:
+            header = gzip.open( temp_name ).read(4)
+            if binascii.b2a_hex( header ) == binascii.hexlify( 'BAM\1' ):
+                return ( True, True, True )
+        except:
+            pass
+        try:
+            header = gzip.open( temp_name ).read(4)
+            if binascii.b2a_hex( header ) == binascii.hexlify( '.sff' ):
+                return ( True, True, False )
+        except:
+            pass
+        return ( True, False, False )
+    return ( True, True, False )
 def check_zip( temp_name ):
     if not zipfile.is_zipfile( temp_name ):
         return ( False, False, None )
@@ -116,14 +133,12 @@ def check_zip( temp_name ):
         if ext != test_ext:
             return ( True, False, test_ext )
     return ( True, True, test_ext )
-
 def parse_outputs( args ):
     rval = {}
     for arg in args:
         id, files_path, path = arg.split( ':', 2 )
         rval[int( id )] = ( path, files_path )
     return rval
-
 def add_file( dataset, json_file, output_path ):
     data_type = None
     line_count = None
@@ -153,15 +168,19 @@ def add_file( dataset, json_file, output_path ):
         ext = sniff.guess_ext( dataset.path, is_multi_byte=True )
     else:
         # See if we have a gzipped file, which, if it passes our restrictions, we'll uncompress
-        is_gzipped, is_valid = check_gzip( dataset.path )
+        is_gzipped, is_valid, is_bam = check_gzip( dataset.path )
         if is_gzipped and not is_valid:
             file_err( 'The uploaded file contains inappropriate content', dataset, json_file )
             return
-        elif is_gzipped and is_valid:
-            # We need to uncompress the temp_name file
+        elif is_gzipped and is_valid and is_bam:
+            ext = 'bam'
+            data_type = 'bam'
+        elif is_gzipped and is_valid and not is_bam:
+            # We need to uncompress the temp_name file, but BAM files must remain compressed
+            # in order for samtools to function on them
             CHUNK_SIZE = 2**20 # 1Mb   
-            fd, uncompressed = tempfile.mkstemp( prefix='data_id_%s_upload_gunzip_' % dataset.dataset_id, dir=os.path.dirname( dataset.path ) )
-            gzipped_file = gzip.GzipFile( dataset.path )
+            fd, uncompressed = tempfile.mkstemp( prefix='data_id_%s_upload_gunzip_' % dataset.dataset_id, dir=os.path.dirname( dataset.path ), text=False )
+            gzipped_file = gzip.GzipFile( dataset.path, 'rb' )
             while 1:
                 try:
                     chunk = gzipped_file.read( CHUNK_SIZE )
@@ -229,7 +248,7 @@ def add_file( dataset, json_file, output_path ):
             if check_html( dataset.path ):
                 file_err( 'The uploaded file contains inappropriate content', dataset, json_file )
                 return
-        if data_type != 'binary' and data_type != 'zip':
+        if data_type != 'bam' and data_type != 'binary' and data_type != 'zip':
             if dataset.space_to_tab:
                 line_count = sniff.convert_newlines_sep2tabs( dataset.path )
             else:

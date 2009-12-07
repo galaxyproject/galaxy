@@ -338,7 +338,7 @@
     </test>
     <test>
       <param name="genomeSource" value="history" />
-      <param name="ownFile" value="chrM.fa" />
+      <param name="ownFile" value="chr_m.fasta" />
       <param name="index_settings" value="index_pre_set" />
       <param name="sPaired" value="paired" />
       <param name="input1" ftype="fastqsanger" value="bowtie_in2.fastq" />
@@ -349,7 +349,7 @@
     </test>
     <test>
       <param name="genomeSource" value="history" />
-      <param name="ownFile" value="chrM.fa" />
+      <param name="ownFile" value="chr_m.fasta" />
       <param name="index_settings" value="index_full" />
       <param name="auto_b" value="set" />
       <param name="packed" value="unpacked" />

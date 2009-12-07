@@ -270,7 +270,7 @@ class RootController( BaseController ):
         if trans.app.security_agent.can_access_dataset( roles, data.dataset ):
             if data.state == trans.model.Dataset.states.UPLOAD:
                 return trans.show_error_message( "Please wait until this dataset finishes uploading before attempting to edit its metadata." )
-            params = util.Params( kwd, safe=False )
+            params = util.Params( kwd, sanitize=False )
             if params.change:
                 # The user clicked the Save button on the 'Change data type' form
                 if data.datatype.allow_datatype_change and trans.app.datatypes_registry.get_datatype_by_extension( params.datatype ).allow_datatype_change:
