@@ -2,7 +2,7 @@
 
 """
 Runs Lastz
-Written for Lastz v. 1.01.86.
+Written for Lastz v. 1.01.88.
 
 usage: lastz_wrapper.py [options]
     --ref_name: The reference name to change all output matches to
@@ -132,7 +132,7 @@ def __main__():
         input2 = options.input2
     if options.format == 'tabular':
         # Change output format to general if it's tabular and add field names for tabular output
-        format = 'general'
+        format = 'general-'
         tabular_fields = ':score,name1,strand1,size1,start1,zstart1,end1,length1,text1,name2,strand2,size2,start2,zstart2,end2,start2+,zstart2+,end2+,length2,text2,diff,cigar,identity,coverage,gaprate,diagonal,shingle'
     elif options.format == 'sam':
         # We currently ALWAYS suppress SAM headers.
