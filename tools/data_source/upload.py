@@ -9,7 +9,7 @@ from galaxy import eggs
 # need to import model before sniff to resolve a circular import dependency
 import galaxy.model
 from galaxy.datatypes import sniff
-from galaxy.datatypes.binary import sniffable_binary_formats, unsniffable_binary_formats
+from galaxy.datatypes.binary import *
 from galaxy import util
 from galaxy.util.json import *
 
@@ -61,62 +61,54 @@ def check_html( temp_name, chunk=None ):
     if chunk is None:
         temp.close()
     return False
-def check_binary( temp_name, chunk=None ):
-    if chunk is None:
-        temp = open( temp_name, "U" )
-    else:
-        temp = chunk
-    lineno = 0
-    for line in temp:
-        lineno += 1
-        line = line.strip()
-        if line:
-            for char in line:
-                if ord( char ) > 128:
-                    if chunk is None:
-                        temp.close()
-                    return True
-        if lineno > 10:
-            break
-    if chunk is None:
-        temp.close()
-    return False
-def check_gzip( temp_name ):
-    # This is sort of hacky.  BAM is compressed in the BGZF format, and must 
-    # not be uncompressed in upon upload ( it will be detected as gzipped ).
-    # The tuple we're returning from here contains boolean values for
-    # ( is_compressed, is_valid, is_bam ).
+def check_binary( temp_name ):
+    is_binary = False
     temp = open( temp_name, "U" )
-    magic_check = temp.read( 2 )
+    chars_read = 0
+    for chars in temp:
+        for char in chars:
+            chars_read += 1
+            if ord( char ) > 128:
+                is_binary = True
+                break
+            if chars_read > 100:
+                break
+        if chars_read > 100:
+            break
     temp.close()
-    if magic_check != util.gzip_magic:
-        return ( False, False, False )
+    return is_binary
+def check_bam( temp_name ):
+    return Bam().sniff( temp_name )
+def check_sff( temp_name ):
+    return Sff().sniff( temp_name )
+def check_gzip( temp_name ):
+    # This method returns a tuple of booleans representing ( is_gzipped, is_valid )
+    # Make sure we have a gzipped file
+    try:
+        temp = open( temp_name, "U" )
+        magic_check = temp.read( 2 )
+        temp.close()
+        if magic_check != util.gzip_magic:
+            return ( False, False )
+    except:
+        return ( False, False )
+    # We support some binary data types, so check if the compressed binary file is valid
+    # If the file is Bam, it should already have been detected as such, so we'll just check
+    # for sff format.
+    try:
+        header = gzip.open( temp_name ).read(4)
+        if binascii.b2a_hex( header ) == binascii.hexlify( '.sff' ):
+            return ( True, True )
+    except:
+        return( False, False )
     CHUNK_SIZE = 2**15 # 32Kb
-    gzipped_file = gzip.GzipFile( temp_name )
+    gzipped_file = gzip.GzipFile( temp_name, mode='rb' )
     chunk = gzipped_file.read( CHUNK_SIZE )
     gzipped_file.close()
+    # See if we have a compressed HTML file
     if check_html( temp_name, chunk=chunk ):
-        return ( True, False, False )
-    if check_binary( temp_name, chunk=chunk ):
-        # We do support some binary data types, so check if the compressed binary file is valid
-        # We currently only check for [ 'sff', 'bam' ]
-        # TODO: this should be fixed to more easily support future-supported binary data types.
-        # This is currently just copied from the sniff methods.
-        # The first 4 bytes of any bam file is 'BAM\1', and the file is binary. 
-        try:
-            header = gzip.open( temp_name ).read(4)
-            if binascii.b2a_hex( header ) == binascii.hexlify( 'BAM\1' ):
-                return ( True, True, True )
-        except:
-            pass
-        try:
-            header = gzip.open( temp_name ).read(4)
-            if binascii.b2a_hex( header ) == binascii.hexlify( '.sff' ):
-                return ( True, True, False )
-        except:
-            pass
-        return ( True, False, False )
-    return ( True, True, False )
+        return ( True, False )
+    return ( True, True )
 def check_zip( temp_name ):
     if not zipfile.is_zipfile( temp_name ):
         return ( False, False, None )
@@ -126,7 +118,7 @@ def check_zip( temp_name ):
     # 2. All file extensions within an archive must be the same
     name = zip_file.namelist()[0]
     test_ext = name.split( "." )[1].strip().lower()
-    if not ( test_ext == 'scf' or test_ext == 'ab1' or test_ext == 'txt' ):
+    if not ( test_ext in unsniffable_binary_formats or test_ext == 'txt' ):
         return ( True, False, test_ext )
     for name in zip_file.namelist():
         ext = name.split( "." )[1].strip().lower()
@@ -163,21 +155,25 @@ def add_file( dataset, json_file, output_path ):
             dataset.is_multi_byte = util.is_multi_byte( codecs.open( dataset.path, 'r', 'utf-8' ).read( 100 ) )
         except UnicodeDecodeError, e:
             dataset.is_multi_byte = False
+    # Is dataset content multi-byte?
     if dataset.is_multi_byte:
         data_type = 'multi-byte char'
         ext = sniff.guess_ext( dataset.path, is_multi_byte=True )
+    # Is dataset content supported sniffable binary?
+    elif check_bam( dataset.path ):
+        ext = 'bam'
+        data_type = 'bam'
+    elif check_sff( dataset.path ):
+        ext = 'sff'
+        data_type = 'sff'
     else:
         # See if we have a gzipped file, which, if it passes our restrictions, we'll uncompress
-        is_gzipped, is_valid, is_bam = check_gzip( dataset.path )
+        is_gzipped, is_valid = check_gzip( dataset.path )
         if is_gzipped and not is_valid:
             file_err( 'The uploaded file contains inappropriate content', dataset, json_file )
             return
-        elif is_gzipped and is_valid and is_bam:
-            ext = 'bam'
-            data_type = 'bam'
-        elif is_gzipped and is_valid and not is_bam:
-            # We need to uncompress the temp_name file, but BAM files must remain compressed
-            # in order for samtools to function on them
+        elif is_gzipped and is_valid:
+            # We need to uncompress the temp_name file, but BAM files must remain compressed in the BGZF format
             CHUNK_SIZE = 2**20 # 1Mb   
             fd, uncompressed = tempfile.mkstemp( prefix='data_id_%s_upload_gunzip_' % dataset.dataset_id, dir=os.path.dirname( dataset.path ), text=False )
             gzipped_file = gzip.GzipFile( dataset.path, 'rb' )
@@ -207,7 +203,7 @@ def add_file( dataset, json_file, output_path ):
             elif is_zipped and is_valid:
                 # Currently, we force specific tools to handle this case.  We also require the user
                 # to manually set the incoming file_type
-                if ( test_ext == 'ab1' or test_ext == 'scf' ) and dataset.file_type != 'binseq.zip':
+                if ( test_ext in unsniffable_binary_formats ) and dataset.file_type != 'binseq.zip':
                     file_err( "Invalid 'File Format' for archive consisting of binary files - use 'Binseq.zip'", dataset, json_file )
                     return
                 elif test_ext == 'txt' and dataset.file_type != 'txtseq.zip':
@@ -220,35 +216,25 @@ def add_file( dataset, json_file, output_path ):
                 ext = dataset.file_type
         if not data_type:
             if check_binary( dataset.path ):
+                # We have a binary dataset, but it is not Bam or Sff
                 data_type = 'binary'
-                binary_ok = False
+                #binary_ok = False
                 parts = dataset.name.split( "." )
                 if len( parts ) > 1:
                     ext = parts[1].strip().lower()
-                    if ext in unsniffable_binary_formats and dataset.file_type == ext:
-                        binary_ok = True
+                    if ext not in unsniffable_binary_formats:
+                        file_err( 'The uploaded file contains inappropriate content', dataset, json_file )
+                        return
                     elif ext in unsniffable_binary_formats and dataset.file_type != ext:
                         err_msg = "You must manually set the 'File Format' to '%s' when uploading %s files." % ( ext.capitalize(), ext )
                         file_err( err_msg, dataset, json_file )
-                        return
-                    if not binary_ok and ext in sniffable_binary_formats:
-                        # Sniff the file to confirm it's data type
-                        tmp_ext = sniff.guess_ext( dataset.path )
-                        if tmp_ext == ext:
-                            binary_ok = True
-                        else:
-                            err_msg = "The content of the file does not match its type (%s)." % ext.capitalize()
-                            file_err( err_msg, dataset, json_file )
-                            return
-                    if not binary_ok:
-                        file_err( 'The uploaded file contains inappropriate content', dataset, json_file )
                         return
         if not data_type:
             # We must have a text file
             if check_html( dataset.path ):
                 file_err( 'The uploaded file contains inappropriate content', dataset, json_file )
                 return
-        if data_type != 'bam' and data_type != 'binary' and data_type != 'zip':
+        if data_type != 'binary' and data_type != 'zip':
             if dataset.space_to_tab:
                 line_count = sniff.convert_newlines_sep2tabs( dataset.path )
             else:

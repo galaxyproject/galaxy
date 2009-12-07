@@ -31,10 +31,6 @@ sam_to_bam.py --input1=$source.input1 --dbkey=${input1.metadata.dbkey}
     <data name="output1" format="bam"/>
   </outputs>
   <tests>
-    <!--
-    # IMPORTANT NOTE: for some reason the samtools view command gzips the resulting bam file without warning,
-    # and the docs do not currently state that this occurs ( very bad ).
-    -->
     <test>
       <param name="index_source" value="history" /> 
       <param name="input1" value="3.sam" ftype="sam" />

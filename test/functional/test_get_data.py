@@ -521,7 +521,7 @@ class UploadData( TwillTestCase ):
         self.check_metadata_for_string( 'value="1.axt" value="\?" Change data type selected value="axt" selected="yes"' )
         self.delete_history( id=self.security.encode_id( history.id ) )
     def test_0150_upload_file( self ):
-        """Test uploading 1.bam, NOT setting the file format"""
+        """Test uploading 1.bam, which is a sorted Bam file creaed by the Galaxy sam_to_bam tool, NOT setting the file format"""
         self.check_history_for_string( 'Your history is empty' )
         history = sa_session.query( galaxy.model.History ) \
                             .filter( and_( galaxy.model.History.table.c.deleted==False,
@@ -535,8 +535,30 @@ class UploadData( TwillTestCase ):
         assert hda is not None, "Problem retrieving hda from database"
         self.verify_dataset_correctness( '1.bam', hid=str( hda.hid ) )
         self.check_history_for_string( '<span class="bam">bam</span>' )
+        # Make sure the Bam index was created
+        assert hda.metadata.bam_index is not None, "Bam index was not correctly created for 1.bam"
         self.delete_history( id=self.security.encode_id( history.id ) )
-    def test_0155_url_paste( self ):
+    def test_0155_upload_file( self ):
+        """Test uploading 3.bam, which is an unsorted Bam file, NOT setting the file format"""
+        self.check_history_for_string( 'Your history is empty' )
+        history = sa_session.query( galaxy.model.History ) \
+                            .filter( and_( galaxy.model.History.table.c.deleted==False,
+                                           galaxy.model.History.table.c.user_id==admin_user.id ) ) \
+                            .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
+                            .first()
+        self.upload_file( '3.bam' )
+        hda = sa_session.query( galaxy.model.HistoryDatasetAssociation ) \
+                        .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ) \
+                        .first()
+        assert hda is not None, "Problem retrieving hda from database"
+        # Since 3.bam is not sorted, we cannot verify dataset correctness since the uploaded
+        # dataset will be sorted.  However, the check below to see if the index was created is
+        # sufficient.
+        self.check_history_for_string( '<span class="bam">bam</span>' )
+        # Make sure the Bam index was created
+        assert hda.metadata.bam_index is not None, "Bam index was not correctly created for 3.bam"
+        self.delete_history( id=self.security.encode_id( history.id ) )
+    def test_0160_url_paste( self ):
         """Test url paste behavior"""
         # Logged in as admin_user
         # Deleting the current history should have created a new history

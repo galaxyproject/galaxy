@@ -79,35 +79,18 @@ def __main__():
         tmp_aligns_file = tempfile.NamedTemporaryFile()
         tmp_aligns_file_name = tmp_aligns_file.name
         tmp_aligns_file.close()
-        # IMPORTANT NOTE: for some reason the samtools view command gzips the resulting bam file without warning,
-        # and the docs do not currently state that this occurs ( very bad ).
         command = "samtools view -bt %s -o %s %s 2>/dev/null" % ( fai_index_file_path, tmp_aligns_file_name, options.input1 ) 
         proc = subprocess.Popen( args=command, shell=True )
         proc.wait()
+        shutil.move( tmp_aligns_file_name, options.output1 )
     except Exception, e:
         stop_err( 'Error extracting alignments from (%s), %s' % ( options.input1, str( e ) ) )
-    try:
-        # Sort alignments by leftmost coordinates. File <out.prefix>.bam will be created. This command
-        # may also create temporary files <out.prefix>.%d.bam when the whole alignment cannot be fitted
-        # into memory ( controlled by option -m ).
-        tmp_sorted_aligns_file = tempfile.NamedTemporaryFile()
-        tmp_sorted_aligns_file_name = tmp_sorted_aligns_file.name
-        tmp_sorted_aligns_file.close()
-        command = "samtools sort %s %s 2>/dev/null" % ( tmp_aligns_file_name, tmp_sorted_aligns_file_name )
-        proc = subprocess.Popen( args=command, shell=True )
-        proc.wait()
-    except Exception, e:
-        stop_err( 'Error sorting alignments from (%s), %s' % ( tmp_aligns_file_name, str( e ) ) )
-    # Move tmp_aligns_file_name to our output dataset location
-    sorted_bam_file = '%s.bam' % tmp_sorted_aligns_file_name
-    shutil.move( sorted_bam_file, options.output1 )
+    # NOTE: samtools requires the Bam file to be sorted, but this occurs in Bam().set_meta() to ensure that uploaded Bam files are sorted as well.
     if options.ref_file != "None":
         # Remove the symlink from /tmp/dataset_13.dat to ~/database/files/000/dataset_13.dat
         os.unlink( fai_index_file_path )
         # Remove the index file
         index_file_name = '%s.fai' % fai_index_file_path
         os.unlink( index_file_name )
-    # Remove the tmp_aligns_file_name
-    os.unlink( tmp_aligns_file_name )
 
 if __name__=="__main__": __main__()
