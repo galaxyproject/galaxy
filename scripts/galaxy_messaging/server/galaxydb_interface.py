@@ -33,6 +33,7 @@ class GalaxyDbInterface(object):
         self.event_table = Table('sample_event', self.metadata, autoload=True )
         self.sample_table = Table('sample', self.metadata, autoload=True )
         self.request_table = Table('request', self.metadata, autoload=True )
+        self.request_event_table = Table('request_event', self.metadata, autoload=True )
         self.state_table = Table('sample_state', self.metadata, autoload=True  )
 
     def get_sample_id(self, field_name='bar_code', value=None):
@@ -118,12 +119,13 @@ class GalaxyDbInterface(object):
                 break
         if request_complete:
             request_state = 'Complete'
-        else:
-            request_state = 'Submitted'
-        log.debug('Updating request_id %i state to "%s"' % (self.request_id, request_state))
-        i = self.request_table.update(whereclause=self.request_table.c.id==self.request_id,
-                                      values={self.request_table.c.state: request_state})
-        i.execute()
+            log.debug('Updating request_id %i state to "%s"' % (self.request_id, request_state))
+            i = self.request_event_table.insert()
+            i.execute(update_time=datetime.utcnow(), 
+                      create_time=datetime.utcnow(),
+                      request_id=self.request_id, 
+                      state=request_state, 
+                      comment='All samples of this request have finished processing.')
 
 
 
