@@ -2,13 +2,22 @@
 
 cd `dirname $0`
 
+: ${HOSTTYPE:=`uname -m`}
+
+# link to HYPHY is arch-dependent
+case "$OSTYPE" in
+    linux-gnu)
+        kernel=`uname -r | cut -f1,2 -d.`
+        HYPHY="/galaxy/software/linux$kernel-$HOSTTYPE/hyphy"
+        ;;
+esac
+
 LINKS="
 /depot/data2/galaxy/alignseq.loc
 /depot/data2/galaxy/binned_scores.loc
 /depot/data2/galaxy/blastdb.loc
 /depot/data2/galaxy/bowtie_indices.loc
 /depot/data2/galaxy/encode_datasets.loc
-/home/universe/linux-i686/HYPHY
 /depot/data2/galaxy/lastz_seqs.loc
 /depot/data2/galaxy/liftOver.loc
 /depot/data2/galaxy/maf_index.loc
@@ -43,6 +52,11 @@ for link in $LINKS; do
     echo "Linking $link"
     ln -sf $link tool-data
 done
+
+if [ -d "$HYPHY" ]; then
+    echo "Linking $HYPHY"
+    ln -sf $HYPHY tool-data/HYPHY
+fi
 
 for sample in $SAMPLES; do
     file=`echo $sample | sed -e 's/\.sample$//'`
