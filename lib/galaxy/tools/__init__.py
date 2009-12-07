@@ -17,6 +17,7 @@ from elementtree import ElementTree
 from parameters import *
 from parameters.grouping import *
 from parameters.validation import LateValidationError
+from parameters.input_translation import ToolInputTranslator
 from galaxy.util.expressions import ExpressionContext
 from galaxy.tools.test import ToolTestBuilder
 from galaxy.tools.actions import DefaultToolAction
@@ -299,48 +300,11 @@ class Tool:
         self.tool_type = root.get( "tool_type", None )
         #Force history to fully refresh after job execution for this tool. Useful i.e. when an indeterminate number of outputs are created by a tool.
         self.force_history_refresh = util.string_as_bool( root.get( 'force_history_refresh', 'False' ) )
-        # data_source tool
-        if self.tool_type == "data_source":
-            self.URL_method = root.get( "URL_method", "get" ) # get is the default
-            self.param_trans_dict = {}
-            req_param_trans = root.find( "request_param_translation" )
-            if req_param_trans is not None:
-                for req_param in req_param_trans.findall( "request_param" ):
-                    # req_param tags must look like <request_param galaxy_name="dbkey" remote_name="GENOME" missing="" />
-                    trans_list = []
-                    remote_name = req_param.get( "remote_name" )
-                    trans_list.append( req_param.get( "galaxy_name" ) )
-                    trans_list.append( req_param.get( "missing" ) )
-                    if req_param.get( "galaxy_name" ) == "data_type":
-                        # The req_param tag for data_type is special in that it can contain another tag set like
-                        # <data_type_translation>
-                        #    <format galaxy_format="tabular" remote_format="selectedFields" />
-                        # </data_type_translation>
-                        format_trans = req_param.find( "data_type_translation" )
-                        if format_trans is not None:
-                            format_trans_dict = {}
-                            for format in format_trans.findall( "format" ):
-                                remote_format = format.get( "remote_format" )
-                                galaxy_format = format.get( "galaxy_format" )                        
-                                format_trans_dict[ remote_format ] = galaxy_format
-                            trans_list.append( format_trans_dict )
-                    elif req_param.get( "galaxy_name" ) == "URL":
-                        # Some remote data sources ( e.g., Gbrowse ) send parameters back to
-                        # Galaxy in the initial response that must be added to URL prior to
-                        # Galaxy sending the secondary request to the URL.  The tag set looks
-                        # asomething like:
-                        # <add_to_url>
-                        #    <param_from_source name="d" missing="" />
-                        # </add_to_url>
-                        add_to_url = req_param.find( "add_to_url" )
-                        if add_to_url is not None:
-                            add_to_url_dict = {}
-                            for param_from_source in add_to_url.findall( "param_from_source" ):
-                                name = param_from_source.get( "name" )
-                                value = param_from_source.get( "missing" ) # only used if the source doesn't send the param name                     
-                                add_to_url_dict[ name ] = value
-                            trans_list.append( add_to_url_dict )
-                    self.param_trans_dict[ remote_name ] = trans_list
+        self.param_trans_dict = {} #make this a property of all Tools, so don't need to check if tool is datasource, just if it is populated
+        #load input translator, used by datasource tools to change names/values of incoming parameters
+        self.input_translator = root.find( "request_param_translation" )
+        if self.input_translator:
+            self.input_translator = ToolInputTranslator.from_element( self.input_translator )
         # Command line (template). Optional for tools that do not invoke a local program  
         command = root.find("command")
         if command is not None and command.text is not None:

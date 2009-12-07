@@ -174,70 +174,16 @@ class Params:
     [('status', 'on'), ('symbols', 'alpha'), ('symbols', '__lt____gt__'), ('symbols', 'XrmXX!')]
     """
     
-    # HACK: Need top prevent sanitizing certain parameter types. The 
-    #       better solution I think is to more responsibility for 
-    #       sanitizing into the tool parameters themselves so that
-    #       different parameters can be sanitized in different ways.
+    # is NEVER_SANITIZE required now that sanitizing for tool parameters can be controlled on a per parameter basis and occurs via InputValueWrappers?
     NEVER_SANITIZE = ['file_data', 'url_paste', 'URL', 'filesystem_paths']
     
-    def __init__( self, params, safe=True, sanitize=True, tool=None ):
-        if safe:
+    def __init__( self, params, sanitize=True ):
+        if sanitize:
             for key, value in params.items():
-                # Check to see if we should translate certain parameter names.  For example,
-                # in data_source tools, the external data source application may send back 
-                # parameter names like GENOME which is translated to dbkey in Galaxy.
-                # param_trans_dict looks like { "GENOME" : [ "dbkey" "?" ] }
-                new_key = key
-                new_value = value
-                if tool and tool.tool_type == 'data_source':
-                    if key in tool.param_trans_dict:
-                        new_key = tool.param_trans_dict[ key ][0]
-                        if new_key == 'data_type':
-                            try:
-                                # The Galaxy "data_type entry is special in that it can include the ability
-                                # to translate the format to a Galaxy supported format.  In the dict, this entry
-                                # looks something like:  
-                                # {'hgta_outputType': ['data_type', 'bed', {'selectedFields': 'tabular'}] }
-                                format_trans_dict = tool.param_trans_dict[ key ][2]
-                                if value in format_trans_dict:
-                                    new_value = format_trans_dict[ value ]
-                            except:
-                                pass
-                        elif new_key == 'URL':
-                            # As above, the URL can include a set of params from the remote data source
-                            # that must be appended to the URL prior to the post.  In this case, the
-                            # dict entry would look something like:
-                            # ['URL', '', {'q': '', 's': '', 'd': '', 'dbkey': '', 't': ''}]
-                            try:
-                                add_to_url_dict = tool.param_trans_dict[ key ][2]
-                                if new_value.count( '?' ) == 0:
-                                    sep = '?'
-                                else:
-                                    sep = '&'
-                                for param_name, missing_value in add_to_url_dict.items():
-                                    param_value = params.get( param_name, None )
-                                    if not param_value and missing_value:
-                                        param_value = missing_value
-                                    if param_value:
-                                        new_value += '%s%s=%s' % ( sep, param_name, param_value )
-                                        sep = '&'
-                            except:
-                                pass
-                        if not value and not new_value:
-                            new_value = tool.param_trans_dict[ key ][1]
-                if sanitize and not ( key in self.NEVER_SANITIZE or True in [ key.endswith( "|%s" % nonsanitize_parameter ) for nonsanitize_parameter in self.NEVER_SANITIZE ] ): #sanitize check both ungrouped and grouped parameters by name
-                    self.__dict__[ new_key ] = sanitize_param( new_value )
+                if key not in self.NEVER_SANITIZE and True not in [ key.endswith( "|%s" % nonsanitize_parameter ) for nonsanitize_parameter in self.NEVER_SANITIZE ]: #sanitize check both ungrouped and grouped parameters by name. Anything relying on NEVER_SANITIZE should be changed to not require this and NEVER_SANITIZE should be removed. 
+                    self.__dict__[ key ] = sanitize_param( value )
                 else:
-                    self.__dict__[ new_key ] = new_value
-            if tool and tool.tool_type == 'data_source':
-                # Add the tool's URL_method to params
-                self.__dict__[ 'URL_method' ] = tool.URL_method
-                for key, value in tool.param_trans_dict.items():
-                    # Make sure that all translated values used in Galaxy are added to the params
-                    galaxy_name = tool.param_trans_dict[ key ][0]
-                    if galaxy_name not in self.__dict__:
-                        # This will set the galaxy_name to the "missing" value
-                        self.__dict__[ galaxy_name ] = tool.param_trans_dict[ key ][1]
+                    self.__dict__[ key ] = value
         else:
             self.__dict__.update(params)
 

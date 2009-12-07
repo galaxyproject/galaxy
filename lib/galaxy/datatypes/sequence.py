@@ -309,35 +309,21 @@ class Maf( Alignment ):
             return #this is not a MAF file
         dataset.metadata.species = species
         dataset.metadata.blocks = blocks
-        #only overwrite the contents if our newly determined chromosomes don't match stored
+        
+        #write species chromosomes to a file
         chrom_file = dataset.metadata.species_chromosomes
-        compare_chroms = {}
-        if chrom_file:
-            try:
-                for line in open( chrom_file.file_name ):
-                    fields = line.split( "\t" )
-                    if fields:
-                        spec = fields.pop( 0 )
-                        if spec:
-                            compare_chroms[spec] = fields
-            except:
-                pass
-        #write out species chromosomes again only if values are different
-        if not species_chromosomes or compare_chroms != species_chromosomes:
-            tmp_file = tempfile.TemporaryFile( 'w+b' )
-            for spec, chroms in species_chromosomes.items():
-                tmp_file.write( "%s\t%s\n" % ( spec, "\t".join( chroms ) ) )
-            
-            if not chrom_file:
-                chrom_file = dataset.metadata.spec['species_chromosomes'].param.new_file( dataset = dataset )
-            tmp_file.seek( 0 )
-            open( chrom_file.file_name, 'wb' ).write( tmp_file.read() )
-            dataset.metadata.species_chromosomes = chrom_file
-            tmp_file.close()
+        if not chrom_file:
+            chrom_file = dataset.metadata.spec['species_chromosomes'].param.new_file( dataset = dataset )
+        chrom_out = open( chrom_file.file_name, 'wb' )
+        for spec, chroms in species_chromosomes.items():
+            chrom_out.write( "%s\t%s\n" % ( spec, "\t".join( chroms ) ) )
+        chrom_out.close()
+        dataset.metadata.species_chromosomes = chrom_file
+        
         index_file = dataset.metadata.maf_index
         if not index_file:
             index_file = dataset.metadata.spec['maf_index'].param.new_file( dataset = dataset )
-        indexes.write( open( index_file.file_name, 'w' ) )
+        indexes.write( open( index_file.file_name, 'wb' ) )
         dataset.metadata.maf_index = index_file
     def set_peek( self, dataset, is_multi_byte=False ):
         if not dataset.dataset.purged:

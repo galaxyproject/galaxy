@@ -1,12 +1,20 @@
-<tool id="EMBOSS: fuzznuc37" name="fuzznuc" version="5.0.0">
+<tool id="EMBOSS: fuzznuc37" name="fuzznuc" version="5.0.1">
   <description>Nucleic acid pattern search</description>
-  <command>fuzznuc -sequence $input1 -outfile $out_file1 -pattern "$pattern" -pmismatch $mismatch -complement $complement -rformat2 $out_format1 -auto</command>
+  <command>fuzznuc -sequence $input1 -outfile $out_file1 -pattern '$pattern' -pmismatch $mismatch -complement $complement -rformat2 $out_format1 -auto</command>
   <inputs>
     <param format="fasta" name="input1" type="data">
       <label>Sequences</label>
     </param>
     <param name="pattern" size="5" type="text" value="">
       <label>Search pattern</label>
+      <sanitizer>
+        <valid initial="string.printable">
+         <remove value="&apos;"/>
+        </valid>
+        <mapping initial="none">
+          <add source="&apos;" target=""/>
+        </mapping>
+      </sanitizer>
     </param>
     <param name="mismatch" size="5" type="text" value="0">
       <label>Number of mismatches</label>

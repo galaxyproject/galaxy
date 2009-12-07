@@ -7,7 +7,7 @@
     TODO: Hack to get biomart to work - the 'add_to_URL' param can be eliminated when the Biomart team encodes URL prior to sending, meanwhile
     everything including and beyond the first '&' is truncated from URL.  They said they'll let us know when this is fixed at their end.
 -->
-<tool name="BioMart" id="biomart_test" tool_type="data_source" URL_method="get" version="1.0.1">
+<tool name="BioMart" id="biomart_test" tool_type="data_source" version="1.0.1">
 	<description>Test server</description>
 	<command interpreter="python">data_source.py $output $__app__.config.output_size_limit</command>
 	<inputs action="http://test.biomart.org/biomart/martview" check_values="false" method="get" target="_top">
@@ -16,16 +16,17 @@
 	</inputs>
     <request_param_translation>
         <request_param galaxy_name="URL" remote_name="URL" missing="">
-            <add_to_url>
-                <param_from_source name="_export" missing="1" />
-                <param_from_source name="GALAXY_URL" missing="0" />
-            </add_to_url>
+            <append_param separator="&amp;" first_separator="?" join="=">
+                <value name="_export" missing="1" />
+                <value name="GALAXY_URL" missing="0" />
+            </append_param>
         </request_param>
         <request_param galaxy_name="data_type" remote_name="exportView_outputformat" missing="tabular" >
-            <data_type_translation>
-                <format galaxy_format="tabular" remote_format="TSV" />
-            </data_type_translation>
+            <value_translation>
+                <value galaxy_value="tabular" remote_value="TSV" />
+            </value_translation>
         </request_param>
+        <request_param galaxy_name="URL_method" remote_name="URL_method" missing="get" />
         <request_param galaxy_name="dbkey" remote_name="dbkey" missing="?" />
         <request_param galaxy_name="organism" remote_name="organism" missing="" />
         <request_param galaxy_name="table" remote_name="table" missing="" />
