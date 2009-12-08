@@ -764,6 +764,14 @@ class ColumnListParameter( SelectToolParameter ):
         self.accept_default = string_as_bool( elem.get( "accept_default", False ))
         self.data_ref = elem.get( "data_ref", None )
         self.is_dynamic = True
+    def from_html( self, value, trans=None, context={} ):
+        """
+        Label convention prepends column number with a 'c', but tool uses the integer. This
+        removes the 'c' when entered into a workflow.
+        """
+        if value.startswith("c"):
+            value = value[1:]
+        return super( ColumnListParameter, self ).from_html( value, trans, context )
     def get_column_list( self, trans, other_values ):
         """
         Generate a select list containing the columns of the associated 
