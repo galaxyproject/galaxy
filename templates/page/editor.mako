@@ -21,31 +21,37 @@
 </%def>
 
 <%def name="javascripts()">
-    
     ${parent.javascripts()}
-    
-    <script type='text/javascript' src="${h.url_for('/static/scripts/jquery.js')}"> </script>
-    <script type='text/javascript' src="${h.url_for('/static/scripts/jquery.event.drag.js')}"> </script>
-    <script type='text/javascript' src="${h.url_for('/static/scripts/jquery.event.drop.js')}"> </script>
-    <script type='text/javascript' src="${h.url_for('/static/scripts/jquery.event.hover.js')}"> </script>
-    <script type='text/javascript' src="${h.url_for('/static/scripts/jquery.form.js')}"> </script>
-    <script type='text/javascript' src="${h.url_for('/static/scripts/jquery.jstore-all.js')}"> </script>
-    <script type='text/javascript' src="${h.url_for('/static/scripts/json2.js')}"> </script>
-
-    <script type='text/javascript' src="${h.url_for('/static/scripts/galaxy.base.js')}"> </script>
-    
-    <script type='text/javascript' src="${h.url_for('/static/scripts/jquery.wymeditor.js')}"> </script>
-    
-    <script type='text/javascript' src="${h.url_for('/static/scripts/jquery.autocomplete.js')}"> </script>
-    
+    ${h.js( "jquery", "jquery.event.drag", "jquery.event.drop", "jquery.event.hover", "jquery.form", "jquery.jstore-all", "json2", 
+            "galaxy.base", "jquery.wymeditor", "jquery.autocomplete", "autocomplete_tagging")}    
     <script type="text/javascript">
             
     // Useful Galaxy stuff.
     var Galaxy = 
     {
         DIALOG_HISTORY_LINK : "history_link",
+        DIALOG_HISTORY_ANNOTATE : "history_annotate",
     };
-
+    
+    // Initialize Galaxy elements.
+    function init_galaxy_elts(wym) 
+    {
+        // Set up events to make annotation easy.
+        $('.annotation', wym._doc.body).each( function() 
+        {
+             $(this).click( function() {
+                 // Works in Safari, not in Firefox.
+                 var range = wym._doc.createRange();
+                 range.selectNodeContents( this );
+                 var selection = window.getSelection();
+                 selection.removeAllRanges();
+                 selection.addRange(range);
+                 var t = "";
+             });
+        });
+        
+    };
+    
     ## Completely replace WYM's dialog handling
     WYMeditor.editor.prototype.dialog = function( dialogType, dialogFeatures, bodyHtml ) {
           
@@ -193,7 +199,7 @@
             );
         }
         
-        // HISTORY DIALOG
+        // INSERT HISTORY LINK DIALOG
         if ( dialogType == Galaxy.DIALOG_HISTORY_LINK ) {
             $.ajax(
             {
@@ -244,7 +250,7 @@
                                         // Get history name.
                                         $.get( '${h.url_for( controller='history', action='get_name_async' )}?id=' + item_id, function( history_name ) {
                                             var href = '${h.url_for( controller='history', action='view' )}?id=' + item_id;
-                                            wym.insert("<a href='" + href + "'>History '" + history_name + "'</a>nbsp;");
+                                            wym.insert("<a href='" + href + "'>History '" + history_name + "'</a>");
                                         });
                                     }
                                     else
@@ -255,6 +261,54 @@
                                              .attr(WYMeditor.TITLE, "History" + item_id);
                                     }
                                     
+                                });
+                                
+                                hide_modal();
+                            },
+                            "Cancel": function() 
+                            {
+                                hide_modal();
+                            }
+                        }
+                    );
+                }
+            });
+        }
+        // ANNOTATE HISTORY DIALOG
+        if ( dialogType == Galaxy.DIALOG_ANNOTATE_HISTORY ) {
+            $.ajax(
+            {
+                url: "${h.url_for( action='list_histories_for_selection' )}",
+                data: {},
+                error: function() { alert( "Grid refresh failed" ) },
+                success: function(table_html) 
+                {
+                    show_modal(
+                        "Insert Link to History",
+                        table_html,
+                        {
+                            "Annotate": function() 
+                            {
+                                // Insert links to history for each checked item.
+                                var item_ids = new Array();
+                                $('input[name=id]:checked').each(function() {
+                                    var item_id = $(this).val();
+                                    
+                                    // Get annotation table for history.
+                                    $.ajax(
+                                    {
+                                        url: "${h.url_for( action='get_history_annotation_table' )}",
+                                        data: { id : item_id },
+                                        error: function() { alert( "Grid refresh failed" ) },
+                                        success: function(result) 
+                                        {
+                                            // Insert into document.
+                                            wym.insert(result);
+                                            
+                                            init_galaxy_elts(wym);
+
+                                        }
+                                    });                                    
                                 });
                                 
                                 hide_modal();
@@ -313,7 +367,8 @@
                     {'name': 'Unlink', 'title': 'Unlink', 'css': 'wym_tools_unlink'},
                     {'name': 'InsertImage', 'title': 'Image', 'css': 'wym_tools_image'},
                     {'name': 'InsertTable', 'title': 'Table', 'css': 'wym_tools_table'},
-                    {'name': 'Insert Galaxy History Link', 'title' : 'Galaxy_History_Link', 'css' : 'galaxy_tools_insert_history_link'}
+                    {'name': 'Insert Galaxy History Link', 'title' : 'Galaxy_History_Link', 'css' : 'galaxy_tools_insert_history_link'},
+                    {'name': 'Annonate Galaxy History', 'title' : 'Annotate_Galaxy_History', 'css' : 'galaxy_tools_annotate_history'},
                 ]
             });
             ## Get the editor object
@@ -367,13 +422,19 @@
             $('.galaxy_tools_insert_history_link').children().click( function() {
                 editor.dialog(Galaxy.DIALOG_HISTORY_LINK); 
             });
+            // Initialize 'Annotate history' button.
+            $('.galaxy_tools_annotate_history').children().click( function() {
+                editor.dialog(Galaxy.ANNOTATE_HISTORY); 
+            });
+            // Initialize galaxy elements.
+            //init_galaxy_elts(editor);
         });
     </script>
 </%def>
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}
-    ${h.css( "autocomplete_tagging" )}
+    ${h.css( "base", "history", "autocomplete_tagging" )}
 </%def>
 
 <%def name="center_panel()">
@@ -384,7 +445,7 @@
             <a id="close-button" class="panel-header-button">Close</a>
         </div>
         <div class="unified-panel-header-inner">
-            Page editor
+            Page Editor <span style="font-weight: normal">| Title : ${page.title}</span>
         </div>
     </div>
 

@@ -2,7 +2,7 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js( "jquery", "json2", "jquery.jstore-all", "jquery.autocomplete", "autocomplete_tagging" )}
+    ${h.js( "galaxy.base", "jquery", "json2", "jquery.jstore-all", "jquery.autocomplete", "autocomplete_tagging" )}
 </%def>
 
 <%def name="stylesheets()">
@@ -320,14 +320,11 @@
                 <p></p>
             %endif
 
-            <div id="history-tag-area" style="margin-bottom: 1em">
-            </div>
-
             <%namespace file="../tagging_common.mako" import="render_tagging_element" />
 
             %if trans.get_user() is not None:
                 <div id='history-tag-area' class="tag-element"></div>
-                ${render_tagging_element(history, "history-tag-area", "history/view.mako", use_toggle_link='false', get_toggle_link_text_fn='get_toggle_link_text', editable=user_owns_history)}
+                ${render_tagging_element(tagged_item=history, elt_context="history/view.mako", use_toggle_link=False, get_toggle_link_text_fn='get_toggle_link_text', editable=user_owns_history)}
             %endif
 
             %if not datasets:

@@ -178,8 +178,9 @@ class TagsController ( BaseController ):
         
         # Create and return autocomplete data.
         ac_data = "#Header|Your Values for '%s'\n" % (tag_name)
+        tag_uname = self._get_usernames_for_tag(trans.sa_session, trans.get_user(), tag, item_class, item_tag_assoc_class)[0]
         for row in result_set:
-            ac_data += tag.name + ":" + row[0] + "|" + row[0] + "\n"
+            ac_data += tag_uname + ":" + row[0] + "|" + row[0] + "\n"
         return ac_data
     
     def _get_usernames_for_tag(self, db_session, user, tag, item_class, item_tag_assoc_class):

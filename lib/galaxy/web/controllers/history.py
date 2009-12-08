@@ -44,7 +44,7 @@ class HistoryListGrid( grids.Grid ):
             return ""
         def get_link( self, trans, grid, item ):
             if item.users_shared_with or item.importable:
-                return dict( operation="sharing" )
+                return dict( operation="sharing", id=item.id )
             return None
                 
     class DeletedColumn( grids.GridColumn ):
@@ -205,7 +205,7 @@ class HistoryController( BaseController ):
             # Load the histories and ensure they all belong to the current user
             histories = []
             for history_id in history_ids:      
-                history = get_history( trans, history_id )
+                history = self.get_history( trans, history_id )
                 if history:
                     # Ensure history is owned by current user
                     if history.user_id != None and trans.user:
@@ -237,7 +237,7 @@ class HistoryController( BaseController ):
                             history.importable = True
                 elif operation == "disable import via link":
                     if history_ids:
-                        histories = [ get_history( trans, history_id ) for history_id in history_ids ]
+                        histories = [ self.get_history( trans, history_id ) for history_id in history_ids ]
                         for history in histories:
                             if history.importable:
                                 history.importable = False
@@ -332,7 +332,7 @@ class HistoryController( BaseController ):
                 if not ids:
                     message = "Select a history to unshare"
                     return self.shared_list_grid( trans, status='error', message=message, **kwargs )
-                histories = [ get_history( trans, history_id ) for history_id in ids ]
+                histories = [ self.get_history( trans, history_id ) for history_id in ids ]
                 for history in histories:
                     # Current user is the user with which the histories were shared
                     association = trans.sa_session.query( trans.app.model.HistoryUserShareAssociation ).filter_by( user=trans.user, history=history ).one()
@@ -375,7 +375,7 @@ class HistoryController( BaseController ):
     @web.require_login( "get history name" )
     def get_name_async( self, trans, id=None ):
         """ Returns the name for a given history. """
-        history = get_history( trans, id, False )
+        history = self.get_history( trans, id, False )
         
         # To get name: user must own history, history must be importable.
         if history.user == trans.get_user() or history.importable or trans.get_user() in history.users_shared_with:
@@ -386,15 +386,15 @@ class HistoryController( BaseController ):
     @web.require_login( "set history's importable flag" )
     def set_importable_async( self, trans, id=None, importable=False ):
         """ Set history's importable attribute. """
-        history = get_history( trans, id, True )
+        history = self.get_history( trans, id, True )
             
         # Only set if importable value would change; this prevents a change in the update_time unless attribute really changed.
-        importable = importable in ['True', 'true', 't'];
+        importable = importable in ['True', 'true', 't', 'T'];
         if history and history.importable != importable:
             history.importable = importable
             trans.sa_session.flush()
     
-        return result
+        return
                     
     @web.expose
     def name_autocomplete_data( self, trans, q=None, limit=None, timestamp=None ):
@@ -416,7 +416,7 @@ class HistoryController( BaseController ):
         user_history = trans.get_history()
         if not id:
             return trans.show_error_message( "You must specify a history you want to import." )
-        import_history = get_history( trans, id, check_ownership=False )
+        import_history = self.get_history( trans, id, check_ownership=False )
         if not import_history:
             return trans.show_error_message( "The specified history does not exist.")
         if not import_history.importable:
@@ -470,7 +470,7 @@ class HistoryController( BaseController ):
         # Get history to view.
         if not id:
             return trans.show_error_message( "You must specify a history you want to view." )
-        history_to_view = get_history( trans, id, False)
+        history_to_view = self.get_history( trans, id, False)
         # Integrity checks.
         if not history_to_view:
             return trans.show_error_message( "The specified history does not exist." )
@@ -512,7 +512,7 @@ class HistoryController( BaseController ):
             send_to_err = err_msg
             histories = []
             for history_id in id:
-                histories.append( get_history( trans, history_id ) )
+                histories.append( self.get_history( trans, history_id ) )
             return trans.fill_template( "/history/share.mako",
                                         histories=histories,
                                         email=email,
@@ -618,7 +618,7 @@ class HistoryController( BaseController ):
         send_to_err = ""
         histories = []
         for history_id in id:
-            histories.append( get_history( trans, history_id ) )
+            histories.append( self.get_history( trans, history_id ) )
         send_to_users = []
         for email_address in util.listify( email ):
             email_address = email_address.strip()
@@ -776,7 +776,7 @@ class HistoryController( BaseController ):
         if id:
             ids = util.listify( id )
             if ids:
-                histories = [ get_history( trans, history_id ) for history_id in ids ]
+                histories = [ self.get_history( trans, history_id ) for history_id in ids ]
         for history in histories:
             trans.sa_session.add( history )
             if params.get( 'enable_import_via_link', False ):
@@ -831,7 +831,7 @@ class HistoryController( BaseController ):
         histories = []
         cur_names = []
         for history_id in id:
-            history = get_history( trans, history_id )
+            history = self.get_history( trans, history_id )
             if history and history.user_id == user.id:
                 histories.append( history )
                 cur_names.append( history.get_display_name() )
@@ -872,7 +872,7 @@ class HistoryController( BaseController ):
             ids = util.listify( id )
             histories = []
             for history_id in ids:
-                history = get_history( trans, history_id, check_ownership=False )
+                history = self.get_history( trans, history_id, check_ownership=False )
                 histories.append( history )
         user = trans.get_user()
         for history in histories:
@@ -897,21 +897,3 @@ class HistoryController( BaseController ):
         else:
             msg = '%d cloned histories are now included in your previously stored histories.' % len( histories )
         return trans.show_ok_message( msg )
-
-## ---- Utility methods -------------------------------------------------------
-        
-def get_history( trans, id, check_ownership=True ):
-    """Get a History from the database by id, verifying ownership."""
-    # Load history from database
-    id = trans.security.decode_id( id )
-    history = trans.sa_session.query( model.History ).get( id )
-    if not history:
-        err+msg( "History not found" )
-    if check_ownership:
-        # Verify ownership
-        user = trans.get_user()
-        if not user:
-            error( "Must be logged in to manage histories" )
-        if history.user != user:
-            error( "History is not owned by current user" )
-    return history

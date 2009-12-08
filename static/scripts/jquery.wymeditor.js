@@ -370,8 +370,9 @@ jQuery.fn.wymeditor = function(options) {
     iframeHtml:"<div class='wym_iframe wym_section'>"
               + "<iframe "
               + "src='"
-              + WYMeditor.IFRAME_BASE_PATH
-              + "wymiframe.html' "
+              + "/page/get_editor_iframe' "
+              //+ WYMeditor.IFRAME_BASE_PATH
+              //+ "wymiframe.html' "
               + "onload='this.contentWindow.parent.WYMeditor.INSTANCES["
               + WYMeditor.INDEX + "].initIframe(this)'"
               + "></iframe>"

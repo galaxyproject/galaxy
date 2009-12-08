@@ -77,6 +77,7 @@ $(function() {
         <% updateable = [data for data in reversed( datasets ) if data.visible and data.state not in [ "deleted", "empty", "error", "ok" ]] %>
         ${ ",".join( map(lambda data: "\"%s\" : \"%s\"" % (data.id, data.state), updateable) ) }
     });
+    
     // Navigate to a dataset.
     %if hda_id:
         self.location = "#${hda_id}";
@@ -317,15 +318,16 @@ var updater_callback = function ( tracked_datasets ) {
     <p></p>
 %endif
 
-<div id="history-tag-area" style="margin-bottom: 1em">
-</div>
-
 <%namespace file="../tagging_common.mako" import="render_tagging_element" />
 <%namespace file="history_common.mako" import="render_dataset" />
 
 %if trans.get_user() is not None:
-    <div id='history-tag-area' class="tag-element"></div>
-    ${render_tagging_element( tagged_item=history, elt_id="history-tag-area", elt_context="history.mako", get_toggle_link_text_fn='get_toggle_link_text' )}
+    <style>
+        .tag-element {
+            margin-bottom: 0.5em;
+        }
+    </style>
+    ${render_tagging_element( tagged_item=history, elt_context='history.mako', get_toggle_link_text_fn='get_toggle_link_text' )}
 %endif
 
 %if not datasets:

@@ -315,5 +315,36 @@ class PageController( BaseController ):
     @web.expose
     @web.require_login("select a history from saved histories")
     def list_histories_for_selection( self, trans, **kwargs ):
+        """ Returns HTML that enables a user to select one or more histories. """
         # Render the list view
         return self._history_selection_grid( trans, **kwargs )
+        
+    @web.expose
+    @web.require_login("get annotation table for history")
+    def get_history_annotation_table( self, trans, id ):
+        """ Returns HTML for an annotation table for a history. """
+        
+        # TODO: users should be able to annotate a history if they own it, it is importable, or it is shared with them. This only
+        # returns a history if a user owns it.
+        history = self.get_history( trans, id, True )
+        
+        if history:
+            # TODO: Query taken from root/history; it should be moved either into history or trans object
+            # so that it can reused.
+            query = trans.sa_session.query( model.HistoryDatasetAssociation ) \
+                .filter( model.HistoryDatasetAssociation.history == history ) \
+                .options( eagerload( "children" ) ) \
+                .join( "dataset" ).filter( model.Dataset.purged == False ) \
+                .options( eagerload_all( "dataset.actions" ) ) \
+                .order_by( model.HistoryDatasetAssociation.hid )
+            # For now, do not show deleted datasets.
+            show_deleted = False
+            if not show_deleted:
+                query = query.filter( model.HistoryDatasetAssociation.deleted == False )
+            return trans.fill_template( "page/history_annotation_table.mako", history=history, datasets=query.all(), show_deleted=False )
+            
+    @web.expose
+    def get_editor_iframe( self, trans ):
+        """ Returns the document for the page editor's iframe. """
+        return trans.fill_template( "page/wymiframe.mako" )
+        

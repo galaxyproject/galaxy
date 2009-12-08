@@ -14,7 +14,7 @@
 %else:
     %for history in histories:
         <div class="toolForm">
-            <div class="toolFormTitle">History '${history.name}' shared with</div>
+            <div class="toolFormTitle">History '${history.get_display_name()}' shared with</div>
             <div class="toolFormBody">
                 <div class="form-row">
                     <div style="float: right;">

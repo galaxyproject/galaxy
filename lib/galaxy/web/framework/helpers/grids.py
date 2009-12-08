@@ -360,7 +360,7 @@ class TagsColumn( TextColumn ):
         elt_id="tagging-elt" + str( self.tag_elt_id_gen )
         div_elt = "<div id=%s></div>" % elt_id
         return div_elt + trans.fill_template( "/tagging_common.mako", trans=trans, tagged_item=item, elt_context=self.grid_name,
-                                                elt_id = elt_id, in_form="true", input_size="20", tag_click_fn="add_tag_to_grid_filter" )
+                                                elt_id = elt_id, in_form=True, input_size="20", tag_click_fn="add_tag_to_grid_filter" )
     def filter( self, db_session, query, column_filter ):
         """ Modify query to filter model_class by tag. Multiple filters are ANDed. """
         if column_filter == "All":
