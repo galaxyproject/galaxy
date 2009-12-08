@@ -374,12 +374,8 @@ class Dataset( object ):
             if not os.path.exists( filename ):
                 dir = os.path.join( self.file_path, *directory_hash_id( self.id ) )
                 # Create directory if it does not exist
-                try:
+                if not os.path.exists( dir ):
                     os.makedirs( dir )
-                except OSError, e:
-                    # File Exists is okay, otherwise reraise
-                    if e.errno != errno.EEXIST:
-                        raise
                 # Return filename inside hashed directory
                 return os.path.abspath( os.path.join( dir, "dataset_%d.dat" % self.id ) )
         else:
