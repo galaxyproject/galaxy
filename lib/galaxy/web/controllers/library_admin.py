@@ -493,7 +493,6 @@ class LibraryAdmin( BaseController ):
                 if name not in [ 'name', 'info', 'dbkey' ]:
                     if spec.get( 'default' ):
                         setattr( ldda.metadata, name, spec.unwrap( spec.get( 'default' ) ) )
-            ldda.datatype.before_setting_metadata( ldda )
             ldda.datatype.set_meta( ldda )
             ldda.datatype.after_setting_metadata( ldda )
             trans.sa_session.flush()
@@ -517,7 +516,6 @@ class LibraryAdmin( BaseController ):
                                         widgets=widgets,
                                         msg=msg,
                                         messagetype=messagetype )
-        ldda.datatype.before_setting_metadata( ldda )
         if "dbkey" in ldda.datatype.metadata_spec and not ldda.metadata.dbkey:
             # Copy dbkey into metadata, for backwards compatability
             # This looks like it does nothing, but getting the dbkey

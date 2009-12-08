@@ -321,7 +321,6 @@ class RootController( BaseController ):
                     trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute( trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming = { 'input1':data } )
                 else:
                     msg = 'Attributes updated'
-                    data.datatype.before_setting_metadata( data )
                     data.set_meta()
                     data.datatype.after_setting_metadata( data )
                 trans.sa_session.flush()
@@ -346,7 +345,6 @@ class RootController( BaseController ):
                     trans.sa_session.refresh( data.dataset )
                 else:
                     return trans.show_error_message( "You are not authorized to change this dataset's permissions" )
-            data.datatype.before_setting_metadata( data )
             if "dbkey" in data.datatype.metadata_spec and not data.metadata.dbkey:
                 # Copy dbkey into metadata, for backwards compatability
                 # This looks like it does nothing, but getting the dbkey
@@ -521,7 +519,6 @@ class RootController( BaseController ):
             data_file.close()
             data.state = data.states.OK
             data.set_size()
-            data.datatype.before_setting_metadata( data )
             data.init_meta()
             data.set_meta()
             trans.sa_session.flush()

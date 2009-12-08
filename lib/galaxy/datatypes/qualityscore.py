@@ -15,9 +15,6 @@ class QualityScoreSOLiD ( data.Text ):
     """
     file_ext = "qualsolid"
 
-    def before_setting_metadata( self, dataset ):
-        """This function is called on the dataset before metadata is edited."""
-        pass
     def sniff( self, filename ):
         """
         >>> fname = get_test_fname( 'sequence.fasta' )
@@ -67,9 +64,6 @@ class QualityScore454 ( data.Text ):
     """
     file_ext = "qual454"
 
-    def before_setting_metadata( self, dataset ):
-        """This function is called on the dataset before metadata is edited."""
-        pass
     def sniff( self, filename ):
         """
         >>> fname = get_test_fname( 'sequence.fasta' )
@@ -108,9 +102,4 @@ class QualityScoreSolexa ( data.Text ):
     until we know more about quality score formats
     """
     file_ext = "qualsolexa"
-
-    def before_setting_metadata( self, dataset ):
-        """This function is called on the dataset before metadata is edited."""
-        pass
-
-    
+   

@@ -46,7 +46,6 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool=None, stdout=No
     fp.close()
     #Set meta data, format file to be valid interval type
     if isinstance(data.datatype, datatypes.interval.Interval):
-        data.datatype.before_setting_metadata( data )
         data.set_meta(first_line_is_header=True)
         #check for missing meta data, if all there, comment first line and process file
         if not data.missing_meta():

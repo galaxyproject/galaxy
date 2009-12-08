@@ -23,9 +23,6 @@ class Tabular( data.Text ):
     MetadataElement( name="columns", default=0, desc="Number of columns", readonly=True, visible=False, no_value=0 )
     MetadataElement( name="column_types", default=[], desc="Column types", param=metadata.ColumnTypesParameter, readonly=True, visible=False, no_value=[] )
 
-    def before_setting_metadata( self, dataset ):
-        """This function is called on the dataset before metadata is edited."""
-        pass
     def init_meta( self, dataset, copy_from=None ):
         data.Text.init_meta( self, dataset, copy_from=copy_from )
     def set_meta( self, dataset, overwrite = True, skip = None, **kwd ):
@@ -227,9 +224,6 @@ class Taxonomy( Tabular ):
                              'Superorder', 'Order', 'Suborder', 'Superfamily', 'Family', 'Subfamily',
                              'Tribe', 'Subtribe', 'Genus', 'Subgenus', 'Species', 'Subspecies'
                              ]
-    def before_setting_metadata( self, dataset ):
-        """This function is called on the dataset before metadata is edited."""
-        pass
     def make_html_table( self, dataset, skipchars=[] ):
         """Create HTML table, used for displaying peek"""
         out = ['<table cellspacing="0" cellpadding="3">']
@@ -259,9 +253,6 @@ class Sam( Tabular ):
         self.column_names = ['QNAME', 'FLAG', 'RNAME', 'POS', 'MAPQ', 'CIGAR',
                              'MRNM', 'MPOS', 'ISIZE', 'SEQ', 'QUAL', 'OPT'
                              ]
-    def before_setting_metadata( self, dataset ):
-        """This function is called on the dataset before metadata is edited."""
-        pass
     def make_html_table( self, dataset, skipchars=[] ):
         """Create HTML table, used for displaying peek"""
         out = ['<table cellspacing="0" cellpadding="3">']

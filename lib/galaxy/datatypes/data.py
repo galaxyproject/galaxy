@@ -84,6 +84,9 @@ class Data( object ):
         except OSError, e:
             log.exception('%s reading a file that does not exist %s' % (self.__class__.__name__, dataset.file_name))
             return ''
+    def groom_dataset_content( self, file_name ):
+        """This function is called on an output dataset file after the content is initially generated."""
+        pass
     def init_meta( self, dataset, copy_from=None ):
         # Metadata should be left mostly uninitialized.  Dataset will
         # handle returning default values when metadata is not set.
@@ -256,9 +259,6 @@ class Data( object ):
         if return_output:
             return converted_dataset
         return "The file conversion of %s on data %s has been added to the Queue." % (converter.name, original_dataset.hid)
-    def before_setting_metadata( self, dataset ):
-        """This function is called on the dataset before metadata is set."""
-        pass
     def after_setting_metadata( self, dataset ):
         """This function is called on the dataset after metadata is set."""
         dataset.clear_associated_files( metadata_safe = True )
@@ -346,9 +346,6 @@ class Text( Data ):
     def get_mime(self):
         """Returns the mime type of the datatype"""
         return 'text/plain'
-    def before_setting_metadata( self, dataset ):
-        """This function is called on the dataset before metadata is set."""
-        pass
     def set_meta( self, dataset, **kwd ):
         """
         Set the number of lines of data in dataset,

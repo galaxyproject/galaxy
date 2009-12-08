@@ -537,7 +537,6 @@ class JobWrapper( object ):
                     #it would be quicker to just copy the metadata from the originating output dataset, 
                     #but somewhat trickier (need to recurse up the copied_from tree), for now we'll call set_meta()
                     if not self.external_output_metadata.external_metadata_set_successfully( dataset, self.sa_session ):
-                        dataset.datatype.before_setting_metadata( dataset )
                         # Only set metadata values if they are missing...
                         dataset.set_meta( overwrite = False )
                     else:

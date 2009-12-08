@@ -28,10 +28,7 @@ class LastzCoverage( Tabular ):
     MetadataElement( name="forwardCol", default=3, desc="Forward or aggregate read column", param=metadata.ColumnParameter )
     MetadataElement( name="reverseCol", desc="Optional reverse read column", param=metadata.ColumnParameter, optional=True, no_value=0 )
     MetadataElement( name="columns", default=3, desc="Number of columns", readonly=True, visible=False )
-    
-    def before_setting_metadata( self, dataset ):
-        """This function is called on the dataset before metadata is edited."""
-        pass
+
     def get_track_window(self, dataset, data, start, end):
         """
         Assumes we have a numpy file.

@@ -11,9 +11,6 @@ class BlastXml( data.Text ):
     """NCBI Blast XML Output data"""
     file_ext = "blastxml"
 
-    def before_setting_metadata( self, dataset ):
-        """This function is called on the dataset before metadata is edited."""
-        pass
     def set_peek( self, dataset, is_multi_byte=False ):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:

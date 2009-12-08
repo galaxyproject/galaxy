@@ -10,6 +10,7 @@ from galaxy import eggs
 import galaxy.model
 from galaxy.datatypes import sniff
 from galaxy.datatypes.binary import *
+from galaxy.datatypes.registry import Registry
 from galaxy import util
 from galaxy.util.json import *
 
@@ -264,6 +265,9 @@ def add_file( dataset, json_file, output_path ):
                  name = dataset.name,
                  line_count = line_count )
     json_file.write( to_json_string( info ) + "\n" )
+    # Groom the dataset content if necessary
+    datatype = Registry().get_datatype_by_extension( ext )
+    datatype.groom_dataset_content( output_path )
 
 def add_composite_file( dataset, json_file, output_path, files_path ):
         if dataset.composite_files:
