@@ -23,6 +23,9 @@ class GeneTrack( tabular.Tabular ):
     def __init__(self, **kwargs):
         super( GeneTrack, self ).__init__( **kwargs )
         self.add_display_app( 'genetrack', 'View in', '', 'genetrack_link' )
+    def before_setting_metadata( self, dataset ):
+        """This function is called on the dataset before metadata is edited."""
+        pass
     def get_display_links( self, dataset, type, app, base_url, target_frame='galaxy_main', **kwd ):
         return data.Data.get_display_links( self, dataset, type, app, base_url, target_frame=target_frame, **kwd )
     def genetrack_link( self, hda, type, app, base_url ):

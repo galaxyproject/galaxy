@@ -47,6 +47,9 @@ class GenomeGraphs(Interval):
         self.add_display_app ( 'ucsc', 'display at UCSC', 'as_ucsc_display_file', 'ucsc_links' )
     def as_ucsc_display_file( self, dataset, **kwd ):
         return open( dataset.file_name )
+    def before_setting_metadata( self, dataset ):
+        """This function is called on the dataset before metadata is edited."""
+        pass
     def set_meta( self, dataset, overwrite = True, **kwd ):
         i = 0
         for i, line in enumerate( file ( dataset.file_name ) ):
@@ -202,6 +205,9 @@ class rgTabList(Tabular):
         """Initialize featurelistt datatype"""
         Tabular.__init__( self, **kwd )
         self.column_names = []
+    def before_setting_metadata( self, dataset ):
+        """This function is called on the dataset before metadata is edited."""
+        pass
     def make_html_table( self, dataset, skipchars=[] ):
         """Create HTML table, used for displaying peek"""
         out = ['<table cellspacing="0" cellpadding="3">']
@@ -240,6 +246,9 @@ class rgSampleList(rgTabList):
         self.column_names[0] = 'FID'
         self.column_names[1] = 'IID'
         # this is what Plink wants as at 2009
+    def before_setting_metadata( self, dataset ):
+        """This function is called on the dataset before metadata is edited."""
+        pass
     def sniff(self,filename):
         """
         """
@@ -264,6 +273,9 @@ class rgFeatureList( rgTabList ):
         rgTabList.__init__( self, **kwd )
         for i,s in enumerate(['#FeatureId', 'Chr', 'Genpos', 'Mappos']):
             self.column_names[i] = s
+    def before_setting_metadata( self, dataset ):
+        """This function is called on the dataset before metadata is edited."""
+        pass
 
 class Rgenetics(Html):      
     """
@@ -317,6 +329,9 @@ class Rgenetics(Html):
         f.write("\n".join( rval ))
         f.write('\n')
         f.close()
+    def before_setting_metadata( self, dataset ):
+        """This function is called on the dataset before metadata is edited."""
+        pass
     def set_meta( self, dataset, **kwd ):
         """
         for lped/pbed eg
@@ -358,6 +373,9 @@ class SNPMatrix(Rgenetics):
     """
     file_ext="snpmatrix"
 
+    def before_setting_metadata( self, dataset ):
+        """This function is called on the dataset before metadata is edited."""
+        pass
     def set_peek( self, dataset, is_multi_byte=False ):
         if not dataset.dataset.purged:
             dataset.peek  = "Binary RGenetics file"
@@ -387,6 +405,9 @@ class Lped(Rgenetics):
         Rgenetics.__init__(self, **kwd)
         self.add_composite_file( '%s.ped', description = 'Pedigree File', substitute_name_with_metadata = 'base_name', is_binary = True )
         self.add_composite_file( '%s.map', description = 'Map File', substitute_name_with_metadata = 'base_name', is_binary = True )
+    def before_setting_metadata( self, dataset ):
+        """This function is called on the dataset before metadata is edited."""
+        pass
 
 class Pphe(Rgenetics):
     """
@@ -397,12 +418,19 @@ class Pphe(Rgenetics):
     def __init__( self, **kwd ):
         Rgenetics.__init__(self, **kwd)
         self.add_composite_file( '%s.pphe', description = 'Plink Phenotype File', substitute_name_with_metadata = 'base_name' )
+    def before_setting_metadata( self, dataset ):
+        """This function is called on the dataset before metadata is edited."""
+        pass
 
 class Lmap(Rgenetics):
     """
     fake class to distinguish different species of Rgenetics data collections
     """
     file_ext="lmap"
+
+    def before_setting_metadata( self, dataset ):
+        """This function is called on the dataset before metadata is edited."""
+        pass
 
 class Fphe(Rgenetics):
     """
@@ -413,6 +441,9 @@ class Fphe(Rgenetics):
     def __init__( self, **kwd ):
         Rgenetics.__init__(self, **kwd)
         self.add_composite_file( '%s.fphe', description = 'FBAT Phenotype File', substitute_name_with_metadata = 'base_name' )
+    def before_setting_metadata( self, dataset ):
+        """This function is called on the dataset before metadata is edited."""
+        pass
 
 class Phe(Rgenetics):
     """
@@ -423,6 +454,9 @@ class Phe(Rgenetics):
     def __init__( self, **kwd ):
         Rgenetics.__init__(self, **kwd)
         self.add_composite_file( '%s.phe', description = 'Phenotype File', substitute_name_with_metadata = 'base_name' )
+    def before_setting_metadata( self, dataset ):
+        """This function is called on the dataset before metadata is edited."""
+        pass
 
 class Fped(Rgenetics):
     """
@@ -433,6 +467,9 @@ class Fped(Rgenetics):
     def __init__( self, **kwd ):
         Rgenetics.__init__(self, **kwd)
         self.add_composite_file( '%s.fped', description = 'FBAT format pedfile', substitute_name_with_metadata = 'base_name' )
+    def before_setting_metadata( self, dataset ):
+        """This function is called on the dataset before metadata is edited."""
+        pass
 
 class Pbed(Rgenetics):
     """
@@ -445,6 +482,9 @@ class Pbed(Rgenetics):
         self.add_composite_file( '%s.bim', substitute_name_with_metadata = 'base_name', is_binary = True )
         self.add_composite_file( '%s.bed', substitute_name_with_metadata = 'base_name', is_binary = True )
         self.add_composite_file( '%s.fam', substitute_name_with_metadata = 'base_name', is_binary = True )
+    def before_setting_metadata( self, dataset ):
+        """This function is called on the dataset before metadata is edited."""
+        pass
 
 class Eigenstratgeno(Rgenetics):
     """
@@ -457,6 +497,9 @@ class Eigenstratgeno(Rgenetics):
         self.add_composite_file( '%s.eigenstratgeno', substitute_name_with_metadata = 'base_name', is_binary = True )
         self.add_composite_file( '%s.ind', substitute_name_with_metadata = 'base_name', is_binary = True )
         self.add_composite_file( '%s.map', substitute_name_with_metadata = 'base_name', is_binary = True )
+    def before_setting_metadata( self, dataset ):
+        """This function is called on the dataset before metadata is edited."""
+        pass
 
 class Eigenstratpca(Rgenetics):
     """
@@ -467,18 +510,27 @@ class Eigenstratpca(Rgenetics):
     def __init__( self, **kwd ):
         Rgenetics.__init__(self, **kwd)
         self.add_composite_file( '%s.eigenstratpca', description = 'Eigenstrat PCA file', substitute_name_with_metadata = 'base_name' )
+    def before_setting_metadata( self, dataset ):
+        """This function is called on the dataset before metadata is edited."""
+        pass
 
 class Snptest(Rgenetics):
     """
     fake class to distinguish different species of Rgenetics data collections
     """
     file_ext="snptest"
+    def before_setting_metadata( self, dataset ):
+        """This function is called on the dataset before metadata is edited."""
+        pass
 
 class Pheno(Tabular):
     """
     base class for pheno files
     """
     file_ext = 'pheno'
+    def before_setting_metadata( self, dataset ):
+        """This function is called on the dataset before metadata is edited."""
+        pass
 
 class RexpBase( Html ):
     """
@@ -646,6 +698,9 @@ class RexpBase( Html ):
         f.write("\n".join( rval ))
         f.write('\n')
         f.close()
+    def before_setting_metadata( self, dataset ):
+        """This function is called on the dataset before metadata is edited."""
+        pass
     def init_meta( self, dataset, copy_from=None ):
         """Add metadata elements"""
         if copy_from:
@@ -734,7 +789,10 @@ class Affybatch( RexpBase ):
         RexpBase.__init__(self, **kwd)
         self.add_composite_file( '%s.affybatch', description = 'AffyBatch R object saved to file', 
         substitute_name_with_metadata = 'base_name', is_binary=True )
-    
+    def before_setting_metadata( self, dataset ):
+        """This function is called on the dataset before metadata is edited."""
+        pass
+
 class Eset( RexpBase ):
     """derived class for BioC data structures in Galaxy """
     file_ext = "eset"
@@ -743,6 +801,9 @@ class Eset( RexpBase ):
         RexpBase.__init__(self, **kwd)
         self.add_composite_file( '%s.eset', description = 'ESet R object saved to file', 
         substitute_name_with_metadata = 'base_name', is_binary = True )
+    def before_setting_metadata( self, dataset ):
+        """This function is called on the dataset before metadata is edited."""
+        pass
 
 class MAlist( RexpBase ):
     """derived class for BioC data structures in Galaxy """
@@ -752,6 +813,9 @@ class MAlist( RexpBase ):
         RexpBase.__init__(self, **kwd)
         self.add_composite_file( '%s.malist', description = 'MAlist R object saved to file', 
         substitute_name_with_metadata = 'base_name', is_binary = True )
+    def before_setting_metadata( self, dataset ):
+        """This function is called on the dataset before metadata is edited."""
+        pass
 
 if __name__ == '__main__':
     import doctest, sys

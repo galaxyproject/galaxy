@@ -45,6 +45,7 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr
                 newdata.info = "The requested file is missing from the system."
                 newdata.state = newdata.states.ERROR
             newdata.dbkey = dbkey
+            newdata.datatype.before_setting_metadata( newdata )
             newdata.init_meta()
             newdata.set_meta()
             newdata.set_peek()

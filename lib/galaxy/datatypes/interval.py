@@ -75,7 +75,9 @@ class Interval( Tabular ):
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
-    
+    def before_setting_metadata( self, dataset ):
+        """This function is called on the dataset before metadata is edited."""
+        pass
     def set_meta( self, dataset, overwrite = True, first_line_is_header = False, **kwd ):
         Tabular.set_meta( self, dataset, overwrite = overwrite, skip = 0 )
         
@@ -340,7 +342,10 @@ class Bed( Interval ):
     MetadataElement( name="strandCol", desc="Strand column (click box & select)", param=metadata.ColumnParameter, optional=True, no_value=0 )
     MetadataElement( name="columns", default=3, desc="Number of columns", readonly=True, visible=False )
     ###do we need to repeat these? they are the same as should be inherited from interval type
-    
+
+    def before_setting_metadata( self, dataset ):
+        """This function is called on the dataset before metadata is edited."""
+        pass
     def set_meta( self, dataset, overwrite = True, **kwd ):
         """Sets the metadata information for datasets previously determined to be in bed format."""
         i = 0
@@ -499,6 +504,9 @@ class Gff( Tabular ):
         """Initialize datatype, by adding GBrowse display app"""
         Tabular.__init__(self, **kwd)
         self.add_display_app ( 'c_elegans', 'display in Wormbase', 'as_gbrowse_display_file', 'gbrowse_links' )
+    def before_setting_metadata( self, dataset ):
+        """This function is called on the dataset before metadata is edited."""
+        pass
     def set_meta( self, dataset, overwrite = True, **kwd ):
         i = 0
         for i, line in enumerate( file ( dataset.file_name ) ):
@@ -636,6 +644,9 @@ class Gff3( Gff ):
     def __init__(self, **kwd):
         """Initialize datatype, by adding GBrowse display app"""
         Gff.__init__(self, **kwd)
+    def before_setting_metadata( self, dataset ):
+        """This function is called on the dataset before metadata is edited."""
+        pass
     def set_meta( self, dataset, overwrite = True, **kwd ):
         i = 0
         for i, line in enumerate( file ( dataset.file_name ) ):
@@ -799,6 +810,9 @@ class Wiggle( Tabular ):
         return ret_val
     def make_html_table( self, dataset ):
         return Tabular.make_html_table( self, dataset, skipchars=['track', '#'] )
+    def before_setting_metadata( self, dataset ):
+        """This function is called on the dataset before metadata is edited."""
+        pass
     def set_meta( self, dataset, overwrite = True, **kwd ):
         i = 0
         for i, line in enumerate( file ( dataset.file_name ) ):
@@ -890,6 +904,9 @@ class CustomTrack ( Tabular ):
         """Initialize interval datatype, by adding UCSC display app"""
         Tabular.__init__(self, **kwd)
         self.add_display_app ( 'ucsc', 'display at UCSC', 'as_ucsc_display_file', 'ucsc_links' )
+    def before_setting_metadata( self, dataset ):
+        """This function is called on the dataset before metadata is edited."""
+        pass
     def set_meta( self, dataset, overwrite = True, **kwd ):
         Tabular.set_meta( self, dataset, overwrite = overwrite, skip = 1 )
     def display_peek( self, dataset ):

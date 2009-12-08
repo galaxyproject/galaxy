@@ -11,4 +11,7 @@ class ChromInfo( Tabular ):
     file_ext = "len"
     MetadataElement( name="chrom", default=1, desc="Chrom column", param=metadata.ColumnParameter )
     MetadataElement( name="length", default=2, desc="Length column", param=metadata.ColumnParameter )
-    
+
+    def before_setting_metadata( self, dataset ):
+        """This function is called on the dataset before metadata is edited."""
+        pass

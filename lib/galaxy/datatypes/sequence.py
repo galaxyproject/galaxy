@@ -21,6 +21,9 @@ class Sequence( data.Text ):
     """Add metadata elements"""
     MetadataElement( name="sequences", default=0, desc="Number of sequences", readonly=True, visible=False, optional=True, no_value=0 )
 
+    def before_setting_metadata( self, dataset ):
+        """This function is called on the dataset before metadata is edited."""
+        pass
     def set_meta( self, dataset, **kwd ):
         """
         Set the number of sequences and the number of data lines in dataset.
@@ -56,11 +59,17 @@ class Alignment( data.Text ):
     """Add metadata elements"""
     MetadataElement( name="species", desc="Species", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None )
 
+    def before_setting_metadata( self, dataset ):
+        """This function is called on the dataset before metadata is edited."""
+        pass
+
 class Fasta( Sequence ):
     """Class representing a FASTA sequence"""
-
     file_ext = "fasta"
 
+    def before_setting_metadata( self, dataset ):
+        """This function is called on the dataset before metadata is edited."""
+        pass
     def sniff( self, filename ):
         """
         Determines whether the file is in fasta format
@@ -113,6 +122,9 @@ class csFasta( Sequence ):
     """ Class representing the SOLID Color-Space sequence ( csfasta ) """
     file_ext = "csfasta"
 
+    def before_setting_metadata( self, dataset ):
+        """This function is called on the dataset before metadata is edited."""
+        pass
     def sniff( self, filename ):
         """
         Color-space sequence: 
@@ -154,6 +166,9 @@ class Fastq ( Sequence ):
     """Class representing a generic FASTQ sequence"""
     file_ext = "fastq"
 
+    def before_setting_metadata( self, dataset ):
+        """This function is called on the dataset before metadata is edited."""
+        pass
     def set_meta( self, dataset, **kwd ):
         """
         Set the number of sequences and the number of data lines
@@ -204,6 +219,10 @@ class Fastq ( Sequence ):
 class FastqSanger( Fastq ):
     """Class representing a FASTQ sequence ( the Sanger variant )"""
     file_ext = "fastqsanger"
+
+    def before_setting_metadata( self, dataset ):
+        """This function is called on the dataset before metadata is edited."""
+        pass
 
 try:
     from galaxy import eggs
@@ -297,6 +316,9 @@ class Maf( Alignment ):
     MetadataElement( name="species_chromosomes", desc="Species Chromosomes", param=metadata.FileParameter, readonly=True, no_value=None, visible=False, optional=True )
     MetadataElement( name="maf_index", desc="MAF Index File", param=metadata.FileParameter, readonly=True, no_value=None, visible=False, optional=True )
 
+    def before_setting_metadata( self, dataset ):
+        """This function is called on the dataset before metadata is edited."""
+        pass
     def init_meta( self, dataset, copy_from=None ):
         Alignment.init_meta( self, dataset, copy_from=copy_from )
     def set_meta( self, dataset, overwrite = True, **kwd ):
@@ -403,6 +425,9 @@ class Axt( data.Text ):
 
     file_ext = "axt"
 
+    def before_setting_metadata( self, dataset ):
+        """This function is called on the dataset before metadata is edited."""
+        pass
     def sniff( self, filename ):
         """
         Determines whether the file is in axt format
@@ -455,6 +480,9 @@ class Lav( data.Text ):
     # here simply for backward compatibility ( although it is still in the datatypes registry ).  Subclassing
     # from data.Text eliminates managing metadata elements inherited from the Alignemnt class.
 
+    def before_setting_metadata( self, dataset ):
+        """This function is called on the dataset before metadata is edited."""
+        pass
     def sniff( self, filename ):
         """
         Determines whether the file is in lav format

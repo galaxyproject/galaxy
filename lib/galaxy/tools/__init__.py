@@ -1418,6 +1418,7 @@ class Tool:
                 if data.extension != data_type:
                     data = app.datatypes_registry.change_datatype( data, data_type )
             elif not isinstance( data.datatype, datatypes.interval.Bed ) and isinstance( data.datatype, datatypes.interval.Interval ):
+                data.datatype.before_setting_metadata( data )
                 data.set_meta()
                 if data.missing_meta(): 
                     data = app.datatypes_registry.change_datatype( data, 'tabular' )
@@ -1472,6 +1473,7 @@ class Tool:
                 self.sa_session.flush()
                 child_dataset.set_size()
                 child_dataset.name = "Secondary Dataset (%s)" % ( designation )
+                child_dataset.datatype.before_setting_metadata( child_dataset )
                 child_dataset.init_meta()
                 child_dataset.set_meta()
                 child_dataset.set_peek()
@@ -1531,6 +1533,7 @@ class Tool:
                 primary_data.set_size()
                 primary_data.name = outdata.name
                 primary_data.info = outdata.info
+                primary_dataset.datatype.before_setting_metadata( primary_dataset )
                 primary_data.init_meta( copy_from=outdata )
                 primary_data.dbkey = dbkey
                 primary_data.set_meta()
@@ -1567,7 +1570,7 @@ class SetMetadataTool( Tool ):
                 dataset.metadata.from_JSON_dict( external_metadata.get_output_filenames_by_dataset( dataset, app.model.context ).filename_out )    
             # If setting external metadata has failed, how can we inform the user?
             # For now, we'll leave the default metadata and set the state back to its original.
-            dataset.datatype.after_edit( dataset )
+            dataset.datatype.after_setting_metadata( dataset )
             dataset.state = param_dict.get( '__ORIGINAL_DATASET_STATE__' )
             self.sa_session.add( dataset )
             self.sa_session.flush()

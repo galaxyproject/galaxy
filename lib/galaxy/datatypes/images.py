@@ -15,6 +15,9 @@ log = logging.getLogger(__name__)
 
 class Image( data.Data ):
     """Class describing an image"""
+    def before_setting_metadata( self, dataset ):
+        """This function is called on the dataset before metadata is edited."""
+        pass
     def set_peek( self, dataset, is_multi_byte=False ):
         if not dataset.dataset.purged:
             dataset.peek = 'Image in %s format' % dataset.extension
@@ -51,6 +54,9 @@ class Gmaj( data.Data ):
     """Class describing a GMAJ Applet"""
     file_ext = "gmaj.zip"
     copy_safe_peek = False
+    def before_setting_metadata( self, dataset ):
+        """This function is called on the dataset before metadata is edited."""
+        pass
     def set_peek( self, dataset, is_multi_byte=False ):
         if not dataset.dataset.purged:
             if hasattr( dataset, 'history_id' ):
@@ -102,6 +108,9 @@ class Gmaj( data.Data ):
 class Html( data.Text ):
     """Class describing an html file"""
     file_ext = "html"
+    def before_setting_metadata( self, dataset ):
+        """This function is called on the dataset before metadata is edited."""
+        pass
     def set_peek( self, dataset, is_multi_byte=False ):
         if not dataset.dataset.purged:
             dataset.peek = "HTML file"
@@ -136,6 +145,9 @@ class Laj( data.Text ):
     """Class describing a LAJ Applet"""
     file_ext = "laj"
     copy_safe_peek = False
+    def before_setting_metadata( self, dataset ):
+        """This function is called on the dataset before metadata is edited."""
+        pass
     def set_peek( self, dataset, is_multi_byte=False ):
         if not dataset.dataset.purged:
             if hasattr( dataset, 'history_id' ):

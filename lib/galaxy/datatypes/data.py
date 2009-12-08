@@ -256,11 +256,11 @@ class Data( object ):
         if return_output:
             return converted_dataset
         return "The file conversion of %s on data %s has been added to the Queue." % (converter.name, original_dataset.hid)
-    def before_edit( self, dataset ):
-        """This function is called on the dataset before metadata is edited."""
+    def before_setting_metadata( self, dataset ):
+        """This function is called on the dataset before metadata is set."""
         pass
-    def after_edit( self, dataset ):
-        """This function is called on the dataset after metadata is edited."""
+    def after_setting_metadata( self, dataset ):
+        """This function is called on the dataset after metadata is set."""
         dataset.clear_associated_files( metadata_safe = True )
     def __new_composite_file( self, name, optional = False, mimetype = None, description = None, substitute_name_with_metadata = None, is_binary = False, space_to_tab = True, **kwds ):
         kwds[ 'name' ] = name
@@ -346,6 +346,9 @@ class Text( Data ):
     def get_mime(self):
         """Returns the mime type of the datatype"""
         return 'text/plain'
+    def before_setting_metadata( self, dataset ):
+        """This function is called on the dataset before metadata is set."""
+        pass
     def set_meta( self, dataset, **kwd ):
         """
         Set the number of lines of data in dataset,
