@@ -769,7 +769,15 @@ class ColumnListParameter( SelectToolParameter ):
         Label convention prepends column number with a 'c', but tool uses the integer. This
         removes the 'c' when entered into a workflow.
         """
-        if value.startswith("c"):
+        if type( value ) == list:
+            # We have a multi-select list
+            new_value = []
+            for item in value:
+                if item.startswith( "c" ):
+                    item = item[1:]
+                new_value.append( item )
+            value = new_value
+        elif value and value.startswith( "c" ):
             value = value[1:]
         return super( ColumnListParameter, self ).from_html( value, trans, context )
     def get_column_list( self, trans, other_values ):
