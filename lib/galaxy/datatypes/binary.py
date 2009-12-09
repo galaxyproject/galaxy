@@ -58,26 +58,32 @@ class Bam( Binary ):
         on an output dataset after the content is initially generated.
         """
         # Use samtools to sort the Bam file
-        tmp_dir = tempfile.gettempdir()
-        # Create a symlink from the temporary directory to the dataset file so that samtools can mess with it.
-        tmp_dataset_file_name = os.path.join( tmp_dir, os.path.basename( file_name ) )
-        # Here tmp_dataset_file_name looks something like /tmp/dataset_XX.dat
-        os.symlink( file_name, tmp_dataset_file_name )
-        # Sort alignments by leftmost coordinates. File <out.prefix>.bam will be created.
-        # TODO: This command may also create temporary files <out.prefix>.%d.bam when the
-        # whole alignment cannot be fitted into memory ( controlled by option -m ).  We're
-        # not handling this case here.
-        tmp_sorted_dataset_file = tempfile.NamedTemporaryFile( prefix=tmp_dataset_file_name )
-        tmp_sorted_dataset_file_name = tmp_sorted_dataset_file.name
-        tmp_sorted_dataset_file.close()
-        command = "samtools sort %s %s 2>/dev/null" % ( tmp_dataset_file_name, tmp_sorted_dataset_file_name )
-        proc = subprocess.Popen( args=command, shell=True )
+        ##$ samtools sort
+        ##Usage: samtools sort [-on] [-m <maxMem>] <in.bam> <out.prefix>
+        ## Sort alignments by leftmost coordinates. File <out.prefix>.bam will be created.
+        ## This command may also create temporary files <out.prefix>.%d.bam when the
+        ## whole alignment cannot be fitted into memory ( controlled by option -m ).
+        
+        #do this in a unique temp directory, because of possible <out.prefix>.%d.bam temp files
+        tmp_dir = tempfile.mkdtemp()
+        tmp_sorted_dataset_file_name_prefix = os.path.join( tmp_dir, 'sorted' )
+        stderr_name = tempfile.NamedTemporaryFile( dir = tmp_dir, prefix = "bam_sort_stderr" ).name
+        samtools_created_sorted_file_name = "%s.bam" % tmp_sorted_dataset_file_name_prefix #samtools accepts a prefix, not a filename, it always adds .bam to the prefix
+        command = "samtools sort %s %s" % ( file_name, tmp_sorted_dataset_file_name_prefix )
+        proc = subprocess.Popen( args=command, shell=True, cwd=tmp_dir, stderr=open( stderr_name, 'wb' ) )
         proc.wait()
-        tmp_sorted_bam_file_name = '%s.bam' % tmp_sorted_dataset_file_name
-        # Move tmp_sorted_bam_file_name to our output dataset location
-        shutil.move( tmp_sorted_bam_file_name, file_name )
-        # Remove all remaining temporary files
-        os.unlink( tmp_dataset_file_name )
+        
+        #Did sort succeed?
+        stderr = open( stderr_name ).read().strip()
+        if stderr:
+            raise Exception, "Error Grooming BAM file contents: %s" % stderr
+        
+        # Move samtools_created_sorted_file_name to our output dataset location
+        shutil.move( samtools_created_sorted_file_name, file_name )
+        
+        # Remove temp file and empty temporary directory
+        os.unlink( stderr_name )
+        os.rmdir( tmp_dir )
     def init_meta( self, dataset, copy_from=None ):
         Binary.init_meta( self, dataset, copy_from=copy_from )
     def set_meta( self, dataset, overwrite = True, **kwd ):
@@ -86,30 +92,23 @@ class Bam( Binary ):
         index_file = dataset.metadata.bam_index
         if not index_file:
             index_file = dataset.metadata.spec['bam_index'].param.new_file( dataset = dataset )
-        tmp_dir = tempfile.gettempdir()
-        # Create a symlink from the temporary directory to the dataset file so that samtools can mess with it.
-        tmp_dataset_file_name = os.path.join( tmp_dir, os.path.basename( dataset.file_name ) )
-        # Here tmp_dataset_file_name looks something like /tmp/dataset_XX.dat
-        os.symlink( dataset.file_name, tmp_dataset_file_name )
-        errors = False
-        try:
-            # Create the Bam index
-            command = 'samtools index %s' % tmp_dataset_file_name
-            proc = subprocess.Popen( args=command, shell=True )
-            proc.wait()
-        except Exception, e:
-            errors = True
-            err_msg = 'Error creating index for BAM file (%s)' % str( tmp_dataset_file_name )
-            log.exception( err_msg )
-            sys.stderr.write( err_msg + str( e ) )
-        if not errors:
-            # Move the temporary index file ~/tmp/dataset_XX.dat.bai to our metadata file
-            # storage location ~/database/files/_metadata_files/dataset_XX.dat
-            shutil.move( '%s.bai' % ( tmp_dataset_file_name ), index_file.file_name )
-            # Remove all remaining temporary files
-            os.unlink( tmp_dataset_file_name )
-            # Set the metadata
-            dataset.metadata.bam_index = index_file
+        
+        # Create the Bam index
+        ##$ samtools index
+        ##Usage: samtools index <in.bam> [<out.index>]
+        stderr_name = tempfile.NamedTemporaryFile( prefix = "bam_index_stderr" ).name
+        command = 'samtools index %s %s' % ( dataset.file_name, index_file.file_name )
+        proc = subprocess.Popen( args=command, shell=True, stderr=open( stderr_name, 'wb' ) )
+        
+        #Did index succeed?
+        stderr = open( stderr_name ).read().strip()
+        if stderr:
+            raise Exception, "Error Setting BAM Metadata: %s" % stderr
+        
+        dataset.metadata.bam_index = index_file
+        
+        # Remove temp file
+        os.unlink( stderr_name )
     def sniff( self, filename ):
         # BAM is compressed in the BGZF format, and must not be uncompressed in Galaxy.
         # The first 4 bytes of any bam file is 'BAM\1', and the file is binary. 
