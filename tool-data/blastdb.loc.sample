@@ -1,14 +1,18 @@
 #This is a sample file distributed with Galaxy that is used by some
-#short read tools.  The blastdb.loc file has this format (white space 
-#characters are TAB characters):
+#short read tools.  The blastdb.loc file has this format:
 #
-#<database>	<path to base name> 
+#<database> <build_date>	<path to base name> 
+#
+#where a single space separates the first two and a tab the last two.
+#It is important that the actual database name does not have a space in it,
+#and that the first tab that appears in the line is right before the path.
+#The <build_date> can look any way you want.
 #
 #So, for example, if your database is nt and the path to your base name 
 #is /depot/data2/galaxy/blastdb/nt/nt.chunk, then the blastdb.loc entry 
 #would look like this:
 #
-#nt      /depot/data2/galaxy/blastdb/nt/nt.chunk
+#nt 02 Dec 2009      /depot/data2/galaxy/blastdb/nt/nt.chunk
 #
 #and your /depot/data2/galaxy/blastdb/nt directory would contain all of 
 #your "base names" (e.g.):
@@ -16,11 +20,12 @@
 #-rw-r--r--  1 wychung galaxy  23437408 2008-04-09 11:26 nt.chunk.00.nhr
 #-rw-r--r--  1 wychung galaxy   3689920 2008-04-09 11:26 nt.chunk.00.nin
 #-rw-r--r--  1 wychung galaxy 251215198 2008-04-09 11:26 nt.chunk.00.nsq
+#...etc...
 #
 #Your blastdb.loc file should include an entry per line for each "base name" 
 #you have stored.  For example:
 #
-#nt	/depot/data2/galaxy/blastdb/nt/nt.chunk
-#wgs	/depot/data2/galaxy/blastdb/wgs/wgs.chunk
-#test	/depot/data2/galaxy/blastdb/test/test.fa
+#nt 02 Dec 2009	/depot/data2/galaxy/blastdb/nt/nt.chunk
+#wgs 30 Nov 2009	/depot/data2/galaxy/blastdb/wgs/wgs.chunk
+#test 20 Sep 2008	/depot/data2/galaxy/blastdb/test/test
 #...etc...

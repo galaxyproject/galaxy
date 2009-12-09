@@ -30,7 +30,7 @@ def __main__():
     #Parse Command Line
     options, args = doc_optparse.parse( __doc__ )
     
-    db_build = options.db_build
+    db_build = options.db_build.split( ' ' )[0]
     query_filename = options.input.strip()
     output_filename = options.output.strip()
     mega_word_size = options.word_size        # -W
@@ -43,33 +43,33 @@ def __main__():
 
     # megablast parameters
     try:
-        int(mega_word_size)    
+        int( mega_word_size )    
     except:
-        stop_err('Invalid value for word size')
+        stop_err( 'Invalid value for word size' )
     try:
         float(mega_iden_cutoff)
     except:
-        stop_err('Invalid value for identity cut-off')
+        stop_err( 'Invalid value for identity cut-off' )
     try:
         float(mega_evalue_cutoff)
     except:
-        stop_err('Invalid value for Expectation value')
+        stop_err( 'Invalid value for Expectation value' )
 
     # prepare the database
     db = {}
     for i, line in enumerate( file( DB_LOC ) ):
         line = line.rstrip( '\r\n' )
-        if not line or line.startswith('#'):
+        if not line or line.startswith( '#' ):
             continue
-        fields = line.split()
-        if len(fields) == 2:
-            db[(fields[0])] = fields[1]
+        fields = line.split( '\t' )
+        if len( fields ) == 2:
+            db[ fields[0].split( ' ' )[0] ] = fields[1]
 
-    if not db.has_key(db_build):
-        stop_err('Cannot locate the target database. Please check your location file.')
+    if not db.has_key( db_build ):
+        stop_err( 'Cannot locate the target database. Please check your location file.' )
     
     # arguments for megablast    
-    chunk = db[(db_build)]
+    chunk = db[ ( db_build ) ]
     megablast_command = "megablast -d %s -i %s -o %s -m 8 -a 8 -W %s -p %s -e %s -F %s > /dev/null 2>&1 " \
         % ( chunk, query_filename, mega_temp_output, mega_word_size, mega_iden_cutoff, mega_evalue_cutoff, mega_filter ) 
     
@@ -80,16 +80,16 @@ def __main__():
     except Exception, e:
         stop_err( str( e ) )
 
-    output = open(output_filename,'w')
+    output = open( output_filename, 'w' )
     invalid_lines = 0
     for i, line in enumerate( file( mega_temp_output ) ):
         line = line.rstrip( '\r\n' )
         fields = line.split()
         try:
             # get gi and length of that gi seq
-            gi, gi_len = fields[1].split('_')
+            gi, gi_len = fields[1].split( '_' )
             # convert the last column (causing problem in filter tool) to float
-            fields[-1] = float(fields[-1])
+            fields[-1] = float( fields[-1] )
             
             new_line = "%s\t%s\t%s\t%s\t%0.1f" % ( fields[0], gi, gi_len, '\t'.join( fields[2:-1] ), fields[-1] )
         except:

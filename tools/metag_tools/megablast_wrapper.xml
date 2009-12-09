@@ -1,5 +1,5 @@
-<tool id="megablast_wrapper" name="Megablast" version="1.0.0">
-	<description> compare short reads against nt and wgs databases</description>
+<tool id="megablast_wrapper" name="Megablast" version="1.0.5">
+	<description> compare short reads against htgs, nt, and wgs databases</description>
 	<command interpreter="python">
 	  megablast_wrapper.py 
 	   --db_build=$source_select
@@ -39,6 +39,7 @@
 	<tests>
 		<test>
 			<param name="input_query" value="megablast_wrapper_test1.fa" ftype="fasta"/>
+			<!-- source_select needs to match the entry in the blastdb.loc file, which includes the last update date if appropriate --> 
 			<param name="source_select" value="phiX" />
 			<param name="word_size" value="28" />
 			<param name="iden_cutoff" value="99.0" />
