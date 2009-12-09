@@ -52,6 +52,10 @@ $.fn.extend({
 	},
 	unautocomplete: function() {
 		return this.trigger("unautocomplete");
+	},
+	// JG: add method to show all data in cache.
+    showAllInCache: function() {
+	    return this.trigger("showAllInCache");
 	}
 });
 
@@ -216,7 +220,11 @@ $.Autocompleter = function(input, options) {
 		select.unbind();
 		$input.unbind();
 		$(input.form).unbind(".autocomplete");
-	  });
+	})
+	// JG: Show all data in cache.
+	.bind("showAllInCache", function() {
+	    receiveData('', cache.load(''));
+	});
 	
 	
 	function selectCurrent() {
@@ -431,6 +439,9 @@ $.Autocompleter.defaults = {
 	multiple: false,
 	multipleSeparator: ", ",
 	highlight: function(value, term) {
+	    // JG: short-circuit highlighting if term is empty string.
+	    if (term == "")
+	        return value;
 		return value.replace(new RegExp("(?![^&;]+;)(?!<[^<>]*)(" + term.replace(/([\^\$\(\)\[\]\{\}\*\.\+\?\|\\])/gi, "\\$1") + ")(?![^<>]*>)(?![^&;]+;)", "gi"), "<strong>$1</strong>");
 	},
     scroll: true,

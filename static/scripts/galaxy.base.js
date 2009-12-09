@@ -121,3 +121,85 @@ var array_length = function(an_array)
         count++;
     return count;
 };
+
+//
+// Replace dbkey select box with text input box & autocomplete.
+//
+var replace_dbkey_select = function() 
+{
+    var select_elt = $('select[name=dbkey]');
+    var start_value = select_elt.attr('value');
+    if (select_elt.length != 0)
+    {
+        //
+        // Set up text input + autocomplete element.
+        //
+        var text_input_elt = $("<input id='dbkey-input' type='text'></input>");
+        text_input_elt.attr('size', 40);
+        text_input_elt.attr('name', select_elt.attr('name'));
+        text_input_elt.click( function()
+        {
+                // Show all. Also provide note that load is happening since this can be slow.
+                var cur_value = $(this).attr('value');
+                $(this).attr('value', 'Loading...');
+                $(this).showAllInCache();
+                $(this).attr('value', cur_value);
+                $(this).select();
+        });
+
+        // Get options for dbkey for autocomplete.
+        var dbkey_options = new Array();
+        var dbkey_mapping = new Object();
+        select_elt.children('option').each( function() 
+        {
+            // Get text, value for option.
+            var text = $(this).text();    
+            var value = $(this).attr('value');
+    
+            // Ignore values that are '?'
+            if (value == '?')
+                return;
+    
+            // Set options and mapping.
+            dbkey_options.push( text );
+            dbkey_mapping[ text ] = value;
+    
+            // If this is the start value, set value of input element.
+            if ( value == start_value )
+                text_input_elt.attr('value', text);
+        });
+        if ( text_input_elt.attr('value') == '' ) 
+            text_input_elt.attr('value', 'Click to Search or Select Build');
+
+        // Do autocomplete.
+        var autocomplete_options = { selectFirst: false, autoFill: false, mustMatch: false, matchContains: true, max: 1000, minChars : 0, hideForLessThanMinChars : false };
+        text_input_elt.autocomplete(dbkey_options, autocomplete_options);
+        
+        // Replace select with text input.
+        select_elt.replaceWith(text_input_elt);   
+        
+        //
+        // When form is submitted, change the text entered into the input to the corresponding value. If text doesn't correspond to value, remove it.
+        //
+        $('form').submit( function() 
+        {
+            var dbkey_text_input = $('#dbkey-input');
+            if (dbkey_text_input.length != 0)
+            {
+                // Try to convert text to value.
+                var cur_value = dbkey_text_input.attr('value');
+                var new_value = dbkey_mapping[cur_value];
+                if (new_value != null && new_value != undefined)
+                    dbkey_text_input.attr('value', new_value);
+                else
+                {
+                    // If there is a non-empty start value, use that; otherwise unknown.
+                    if (start_value != "")
+                        dbkey_text_input.attr('value', start_value);
+                    else
+                        dbkey_text_input.attr('value', '?');
+                }
+            }
+        });
+    }
+} // end replace_dbkey_select()

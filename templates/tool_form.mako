@@ -10,8 +10,8 @@ from galaxy.util.expressions import ExpressionContext
 <head>
 <title>Galaxy</title>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<link href="${h.url_for('/static/style/base.css')}" rel="stylesheet" type="text/css" />
-<script type='text/javascript' src="${h.url_for('/static/scripts/jquery.js')}"> </script>
+${h.css( "base", "autocomplete_tagging" )}
+${h.js( "jquery", "galaxy.base", "jquery.autocomplete" )}
 <script type="text/javascript">
 $( function() {
     $( "select[refresh_on_change='true']").change( function() {
@@ -49,6 +49,12 @@ $( function() {
             $( "#tool_form" ).submit();
         }
     });
+    
+    var cur_value = null;
+    var select_elt = $('select[name=dbkey]');
+    if (select_elt.length != 0)
+        cur_value = select_elt.attr('last_selected_value');
+    replace_dbkey_select(cur_value);
 });
 %if not add_frame.debug:
     if( window.name != "galaxy_main" ) {

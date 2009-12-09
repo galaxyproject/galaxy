@@ -10,7 +10,13 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js( "jquery.autocomplete", "autocomplete_tagging" )}
+    ${h.js( "galaxy.base", "jquery.autocomplete", "autocomplete_tagging" )}
+    <script type="text/javascript">
+        $(document).ready(function() 
+        {
+            replace_dbkey_select('${data.dbkey}');
+        });
+    </script>
 </%def>
 
 <%def name="datatype( dataset, datatypes )">
