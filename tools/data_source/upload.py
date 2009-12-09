@@ -118,7 +118,10 @@ def check_zip( temp_name ):
     # 1. Archives can only include .ab1, .scf or .txt files
     # 2. All file extensions within an archive must be the same
     name = zip_file.namelist()[0]
-    test_ext = name.split( "." )[1].strip().lower()
+    try:
+        test_ext = name.split( "." )[1].strip().lower()
+    except:
+        return ( True, False, None )
     if not ( test_ext in unsniffable_binary_formats or test_ext == 'txt' ):
         return ( True, False, test_ext )
     for name in zip_file.namelist():

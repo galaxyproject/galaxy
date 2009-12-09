@@ -99,7 +99,7 @@ class Bam( Binary ):
         stderr_name = tempfile.NamedTemporaryFile( prefix = "bam_index_stderr" ).name
         command = 'samtools index %s %s' % ( dataset.file_name, index_file.file_name )
         proc = subprocess.Popen( args=command, shell=True, stderr=open( stderr_name, 'wb' ) )
-        
+        proc.wait()
         #Did index succeed?
         stderr = open( stderr_name ).read().strip()
         if stderr:
