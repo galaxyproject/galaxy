@@ -18,8 +18,9 @@ def stop_err( msg ):
     sys.exit()
 
 def main():
-    partition_index = sys.argv[1]
-    partition_offset = "/home/universe/encode_feature_partitions/" #should parse perhaps from index filepath
+    GALAXY_DATA_INDEX_DIR = sys.argv[1]
+    partition_index = '%s/encode_feature_partitions/partition_list.txt' % GALAXY_DATA_INDEX_DIR
+    partition_offset = "%s/encode_feature_partitions/" % GALAXY_DATA_INDEX_DIR
     
     warnings = []
     

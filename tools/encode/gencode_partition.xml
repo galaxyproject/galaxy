@@ -1,6 +1,6 @@
 <tool id="gencode_partition1" name="Gencode Partition">
   <description>an interval file</description>
-  <command interpreter="python">split_by_partitions.py /home/universe/encode_feature_partitions/partition_list.txt $input1 $out_file1 ${input1.metadata.chromCol} ${input1.metadata.startCol} ${input1.metadata.endCol} ${input1.metadata.strandCol}</command>
+  <command interpreter="python">split_by_partitions.py ${GALAXY_DATA_INDEX_DIR} $input1 $out_file1 ${input1.metadata.chromCol} ${input1.metadata.startCol} ${input1.metadata.endCol} ${input1.metadata.strandCol}</command>
   <inputs>
     <param name="input1" type="data" format="interval" label="File to Partition"/>
   </inputs>
