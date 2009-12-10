@@ -11,6 +11,16 @@
         replace_id = 'None'
 %>
 
+<%def name="javascripts()">
+   ${parent.javascripts()}
+   ${h.js("jquery.autocomplete", "autocomplete_tagging" )}
+</%def>
+
+<%def name="stylesheets()">
+    ${parent.stylesheets()}
+    ${h.css( "autocomplete_tagging" )}
+</%def>
+
 <b>Create new data library datasets</b>
 %if replace_dataset in [ None, 'None' ]:
     ## Don't allow multiple datasets to be uploaded when replacing a dataset with a new version

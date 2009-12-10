@@ -3,6 +3,23 @@
 <%namespace file="/library/common.mako" import="render_template_info" />
 <% from galaxy import util %>
 
+<%def name="javascripts()">
+   ${parent.javascripts()}
+   ${h.js("jquery.autocomplete", "autocomplete_tagging" )}
+    ## Script to replace dbkey select with select+search.
+   <script type="text/javascript">
+       // Replace dbkey select with search+select.
+       jQuery(document).ready( function() {
+           replace_dbkey_select();
+       });
+   </script>
+</%def>
+
+<%def name="stylesheets()">
+    ${parent.stylesheets()}
+    ${h.css( "autocomplete_tagging" )}
+</%def>
+
 <% user, roles = trans.get_user_and_roles() %>
 
 %if ldda == ldda.library_dataset.library_dataset_dataset_association:

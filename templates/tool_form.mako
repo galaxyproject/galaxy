@@ -50,11 +50,8 @@ $( function() {
         }
     });
     
-    var cur_value = null;
-    var select_elt = $('select[name=dbkey]');
-    if (select_elt.length != 0)
-        cur_value = select_elt.attr('last_selected_value');
-    replace_dbkey_select(cur_value);
+    // Replace dbkey select with search+select.
+    replace_dbkey_select();
 });
 %if not add_frame.debug:
     if( window.name != "galaxy_main" ) {

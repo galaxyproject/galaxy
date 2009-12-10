@@ -223,6 +223,13 @@
                 </form>
             </div>
         </div>
+        ## Script to replace dbkey select with select+search.
+        <script type="text/javascript">
+            // Replace dbkey select with search+select.
+            jQuery(document).ready( function() {
+                replace_dbkey_select();
+            });
+        </script>
     %elif upload_option == 'import_from_history':
         <div class="toolForm">
             <div class="toolFormTitle">Active datasets in your current history (${history.name})</div>
