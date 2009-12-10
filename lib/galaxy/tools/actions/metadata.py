@@ -21,11 +21,13 @@ class SetMetadataToolAction( ToolAction ):
         job.session_id = trans.get_galaxy_session().id
         job.history_id = trans.history.id
         job.tool_id = tool.id
+        start_job_state = job.state #should be job.states.NEW
         try:
             # For backward compatibility, some tools may not have versions yet.
             job.tool_version = tool.version
         except:
             job.tool_version = "1.0.0"
+        job.state = job.states.WAITING #we need to set job state to something other than NEW, or else when tracking jobs in db it will be picked up before we have added input / output parameters
         trans.sa_session.add( job )
         trans.sa_session.flush() #ensure job.id is available
         
@@ -51,6 +53,7 @@ class SetMetadataToolAction( ToolAction ):
         #Need a special state here to show that metadata is being set and also allow the job to run
         #   i.e. if state was set to 'running' the set metadata job would never run, as it would wait for input (the dataset to set metadata on) to be in a ready state
         dataset.state = dataset.states.SETTING_METADATA
+        job.state = start_job_state #job inputs have been configured, restore initial job state
         trans.sa_session.flush()
         
         # Queue the job for execution

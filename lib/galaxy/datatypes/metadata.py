@@ -510,8 +510,8 @@ class JobExternalOutputMetadataWrapper( object ):
                              .first() #there should only be one or None
         return None
     def get_dataset_metadata_key( self, dataset ):
-         # Set meta can be called on library items and history items, 
-         # need to make different keys for them, since ids can overlap
+        # Set meta can be called on library items and history items, 
+        # need to make different keys for them, since ids can overlap
         return "%s_%d" % ( dataset.__class__.__name__, dataset.id )
     def setup_external_metadata( self, datasets, sa_session, exec_dir=None, tmp_dir=None, dataset_files_path=None, 
                                  output_fnames=None, config_root=None, datatypes_config=None, job_metadata=None, kwds={} ):
