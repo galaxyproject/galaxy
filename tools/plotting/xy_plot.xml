@@ -1,4 +1,4 @@
-<tool id="XY_Plot_1" name="Plotting tool">
+<tool id="XY_Plot_1" name="Plotting tool" version="1.0.1">
   <description>for multiple series and graph types</description>
   <command interpreter="bash">r_wrapper.sh $script_file</command>
 
