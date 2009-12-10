@@ -556,12 +556,12 @@ ${self.render_grid_table()}
                {
                    if (href_parms[index].indexOf('operation') != -1)
                    {
-                       // Found operation parm; get operation value.
+                       // Found operation parm; get operation value. 
                        operation = href_parms[index].split('=')[1];
                    }
                    else if (href_parms[index].indexOf('id') != -1)
                    {
-                       // Found operation parm; get operation value.
+                       // Found id parm; get id value.
                        id = href_parms[index].split('=')[1];
                    }
                }
@@ -868,7 +868,7 @@ ${self.render_grid_table()}
                 <td>
                     <div popupmenu="grid-${i}-popup">
                         %for operation in grid.operations:
-                            %if operation.allowed( item ):
+                            %if operation.allowed( item ) and operation.allow_popup:
                                 <%
                                 target = ""
                                 if operation.target:

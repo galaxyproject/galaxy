@@ -91,7 +91,7 @@ class UserListGrid( grids.Grid ):
         grids.GridAction( "Create new user", dict( controller='admin', action='users', operation='create' ) )
     ]
     operations = [
-        grids.GridOperation( "Manage Roles & Groups", condition=( lambda item: not item.deleted ), allow_multiple=False ),
+        grids.GridOperation( "Manage Roles and Groups", condition=( lambda item: not item.deleted ), allow_multiple=False ),
         grids.GridOperation( "Reset Password", condition=( lambda item: not item.deleted ), allow_multiple=True, allow_popup=False )
     ]
     #TODO: enhance to account for trans.app.config.allow_user_deletion here so that we can eliminate these operations if 
@@ -942,7 +942,7 @@ class Admin( BaseController ):
                 return self.create_new_user( trans, **kwargs )
             if operation == "information":
                 return self.user_info( trans, **kwargs )
-            if operation == "manage roles & groups":
+            if operation == "manage roles and groups":
                 return self.user( trans, **kwargs )
         # Render the list view
         return self.user_list_grid( trans, **kwargs )
