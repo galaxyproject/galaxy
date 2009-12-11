@@ -134,6 +134,8 @@ class ToolBox( object ):
             cls = type_elem.get( 'class' )
             mod = __import__( module, globals(), locals(), [cls])
             ToolClass = getattr( mod, cls )
+        elif root.get( 'tool_type', None ) is not None:
+            ToolClass = tool_types.get( root.get( 'tool_type' ) )
         else:
             ToolClass = Tool
         return ToolClass( config_file, root, self.app )
@@ -263,6 +265,7 @@ class Tool:
     """
     Represents a computational tool that can be executed through Galaxy. 
     """
+    tool_type = 'default'
     def __init__( self, config_file, root, app ):
         """
         Load a tool from the config named by `config_file`
@@ -296,8 +299,6 @@ class Tool:
             self.version = "1.0.0"
         # Support multi-byte tools
         self.is_multi_byte = util.string_as_bool( root.get( "is_multi_byte", False ) )
-        # Type of tool
-        self.tool_type = root.get( "tool_type", None )
         #Force history to fully refresh after job execution for this tool. Useful i.e. when an indeterminate number of outputs are created by a tool.
         self.force_history_refresh = util.string_as_bool( root.get( 'force_history_refresh', 'False' ) )
         #load input translator, used by datasource tools to change names/values of incoming parameters
@@ -696,7 +697,7 @@ class Tool:
         rval = dict()
         for key, param in self.inputs_by_page[page].iteritems():
             if not isinstance( param, ToolParameter ):
-               raise Exception( "'get_param_html_map' only supported for simple paramters" )
+                raise Exception( "'get_param_html_map' only supported for simple paramters" )
             rval[key] = param.get_html( trans, other_values=other_values )
         return rval
 
@@ -1236,8 +1237,8 @@ class Tool:
                 param_dict[ "_CHILD___%s___%s" % ( name, child.designation ) ] = DatasetFilenameWrapper( child )
         for out_name, output in self.outputs.iteritems():
             if out_name not in param_dict and output.filters:
-               #assume the reason we lack this output is because a filter failed to pass; for tool writing convienence, provide a NoneDataset
-               param_dict[ out_name ] = NoneDataset( datatypes_registry = self.app.datatypes_registry, ext = output.format )
+                #assume the reason we lack this output is because a filter failed to pass; for tool writing convienence, provide a NoneDataset
+                param_dict[ out_name ] = NoneDataset( datatypes_registry = self.app.datatypes_registry, ext = output.format )
         # We add access to app here, this allows access to app.config, etc
         param_dict['__app__'] = RawObjectWrapper( self.app )
         # More convienent access to app.config.new_file_path; we don't need to wrap a string
@@ -1345,9 +1346,9 @@ class Tool:
             redirect_url += "&%s=%s" % ( p_name, rup_dict[ p_name ] )
         # Add the current user email to redirect_url
         if data.history.user:
-             USERNAME = str( data.history.user.email )
+            USERNAME = str( data.history.user.email )
         else:
-             USERNAME = 'Anonymous'
+            USERNAME = 'Anonymous'
         redirect_url += "&USERNAME=%s" % USERNAME
         return redirect_url
 
@@ -1365,65 +1366,10 @@ class Tool:
             raise
 
     def exec_before_job( self, app, inp_data, out_data, param_dict={} ):
-        if self.tool_type == 'data_source':
-            dbkey = param_dict.get( 'dbkey' )
-            organism = param_dict.get( 'organism' )
-            table = param_dict.get( 'table' )
-            description = param_dict.get( 'description' )
-            info = param_dict.get( 'info' )
-            if description == 'range':
-                description = param_dict.get( 'position', '' )
-                if not description:
-                    description = 'unknown position'
-            gb_landmark_region = param_dict.get( 'q' )
-            data_type = param_dict.get( 'data_type' )
-            items = out_data.items()
-            for name, data in items:
-                if organism and table and description:
-                    # This is UCSC
-                    data.name  = '%s on %s: %s (%s)' % ( data.name, organism, table, description )
-                elif gb_landmark_region:
-                    # This is GBrowse
-                    data.name = '%s on %s' % ( data.name, gb_landmark_region )
-                data.info = info
-                data.dbkey = dbkey
-                if data_type not in app.datatypes_registry.datatypes_by_extension:
-                    # Setting data_type to tabular will force the data to be sniffed in exec_after_process()
-                    data_type = 'tabular'
-                data = app.datatypes_registry.change_datatype( data, data_type )
-                # Store external data source's request parameters temporarily in output file.
-                # In case the config setting for "outputs_to_working_directory" is True, we must write to
-                # the DatasetFilenameWrapper object in the param_dict since it's "false_path" attribute
-                # is the temporary path to the output dataset ( until the job is run ).  However,
-                # even if the "outputs_to_working_directory" setting is False, we can still open the file
-                # the same way for temporarily storing the request parameters.
-                out = open( str( param_dict.get( name ) ), 'w' )
-                for key, value in param_dict.items():
-                    print >> out, '%s\t%s' % ( key, value )
-                out.close()
-                out_data[ name ] = data
-            return out_data
+        pass
 
     def exec_after_process( self, app, inp_data, out_data, param_dict, job = None ):
-        if self.tool_type == 'data_source':
-            name, data = out_data.items()[0]
-            data.set_size()
-            if data.state == data.states.OK:
-                data.name = param_dict.get( 'name', data.name )
-                data.info = param_dict.get( 'info', data.name )
-                data.dbkey = param_dict.get( 'dbkey', data.dbkey )
-                data.extension = param_dict.get( 'data_type', data.extension )
-            if data.extension in [ 'txt', 'tabular' ]:
-                data_type = sniff.guess_ext( data.file_name, sniff_order=app.datatypes_registry.sniff_order )
-                if data.extension != data_type:
-                    data = app.datatypes_registry.change_datatype( data, data_type )
-            elif not isinstance( data.datatype, datatypes.interval.Bed ) and isinstance( data.datatype, datatypes.interval.Interval ):
-                data.set_meta()
-                if data.missing_meta(): 
-                    data = app.datatypes_registry.change_datatype( data, 'tabular' )
-            data.set_peek()
-            self.sa_session.add( data )
-            self.sa_session.flush()
+        pass
 
     def collect_associated_files( self, output, job_working_directory ):
         for name, hda in output.items():
@@ -1559,7 +1505,77 @@ class Tool:
                     self.sa_session.flush()
         return primary_datasets
 
+class DataSourceTool( Tool ):
+    tool_type = 'data_source'
+    def exec_before_job( self, app, inp_data, out_data, param_dict={} ):
+        #TODO: Allow for a generic way for all Tools to have output dataset properties be set to input parameter values
+        #as defined in a tool XML
+        dbkey = param_dict.get( 'dbkey' )
+        organism = param_dict.get( 'organism' )
+        table = param_dict.get( 'table' )
+        description = param_dict.get( 'description' )
+        info = param_dict.get( 'info' )
+        if description == 'range':
+            description = param_dict.get( 'position', '' )
+            if not description:
+                description = 'unknown position'
+        gb_landmark_region = param_dict.get( 'q' )
+        data_type = param_dict.get( 'data_type' )
+        items = out_data.items()
+        for name, data in items:
+            if organism and table and description:
+                # This is UCSC
+                data.name  = '%s on %s: %s (%s)' % ( data.name, organism, table, description )
+            elif gb_landmark_region:
+                # This is GBrowse
+                data.name = '%s on %s' % ( data.name, gb_landmark_region )
+            data.info = info
+            data.dbkey = dbkey
+            if data_type not in app.datatypes_registry.datatypes_by_extension:
+                # Setting data_type to tabular will force the data to be sniffed in exec_after_process()
+                data_type = 'tabular'
+            data.change_datatype( data_type )
+            # Store external data source's request parameters temporarily in output file.
+            # In case the config setting for "outputs_to_working_directory" is True, we must write to
+            # the DatasetFilenameWrapper object in the param_dict since it's "false_path" attribute
+            # is the temporary path to the output dataset ( until the job is run ).  However,
+            # even if the "outputs_to_working_directory" setting is False, we can still open the file
+            # the same way for temporarily storing the request parameters.
+            
+            ## TODO: Input parameters should be jsonified and written into a <configfile> and passed to data_source.py,
+            ## instead of writing tab separated key, value pairs to the output file
+            out = open( str( param_dict.get( name ) ), 'w' )
+            for key, value in param_dict.items():
+                print >> out, '%s\t%s' % ( key, value )
+            out.close()
+
+    def exec_after_process( self, app, inp_data, out_data, param_dict, job = None ):
+        log.debug('after proc called')
+        name, data = out_data.items()[0]
+        data.set_size()
+        #TODO: these should be already be set before the tool runs:
+        if data.state == data.states.OK:
+            data.name = param_dict.get( 'name', data.name )
+            data.info = param_dict.get( 'info', data.name )
+            data.dbkey = param_dict.get( 'dbkey', data.dbkey )
+            data.extension = param_dict.get( 'data_type', data.extension )
+        #TODO: these should be possible as part of data_source.py and external set_meta, see the upload tool:
+        if data.extension in [ 'txt', 'tabular' ]:
+            data_type = sniff.guess_ext( data.file_name, sniff_order=app.datatypes_registry.sniff_order )
+            if data.extension != data_type:
+                data.change_datatype( data_type )
+        elif not isinstance( data.datatype, datatypes.interval.Bed ) and isinstance( data.datatype, datatypes.interval.Interval ):
+            if data.missing_meta(): 
+                data.change_datatype( 'tabular' )
+        data.set_peek()
+        self.sa_session.add( data )
+        self.sa_session.flush()
+
+class DataDestinationTool( Tool ):
+    tool_type = 'data_destination'
+
 class SetMetadataTool( Tool ):
+    tool_type = 'set_metadata'
     def exec_after_process( self, app, inp_data, out_data, param_dict, job = None ):
         for name, dataset in inp_data.iteritems():
             external_metadata = galaxy.datatypes.metadata.JobExternalOutputMetadataWrapper( job )
@@ -1572,7 +1588,11 @@ class SetMetadataTool( Tool ):
             self.sa_session.add( dataset )
             self.sa_session.flush()
 
-        
+#load tool_type to ToolClass mappings
+tool_types = {}
+for tool_class in [ Tool, DataDestinationTool, SetMetadataTool, DataSourceTool ]:
+    tool_types[ tool_class.tool_type ] = tool_class
+
 # ---- Utility classes to be factored out -----------------------------------
         
 class BadValue( object ):

@@ -377,8 +377,7 @@ class JobWrapper( object ):
         param_dict = self.tool.build_param_dict( incoming, inp_data, out_data, self.get_output_fnames(), self.working_directory )
         # Certain tools require tasks to be completed prior to job execution
         # ( this used to be performed in the "exec_before_job" hook, but hooks are deprecated ).
-        if self.tool.tool_type is not None:
-            out_data = self.tool.exec_before_job( self.queue.app, inp_data, out_data, param_dict )
+        self.tool.exec_before_job( self.queue.app, inp_data, out_data, param_dict )
         # Run the before queue ("exec_before_job") hook
         self.tool.call_hook( 'exec_before_job', self.queue.app, inp_data=inp_data, 
                              out_data=out_data, tool=self.tool, param_dict=incoming)
@@ -600,8 +599,7 @@ class JobWrapper( object ):
         param_dict.update({'__collected_datasets__':collected_datasets})
         # Certain tools require tasks to be completed after job execution
         # ( this used to be performed in the "exec_after_process" hook, but hooks are deprecated ).
-        if self.tool.tool_type is not None:
-            self.tool.exec_after_process( self.queue.app, inp_data, out_data, param_dict, job = job )
+        self.tool.exec_after_process( self.queue.app, inp_data, out_data, param_dict, job = job )
         # Call 'exec_after_process' hook
         self.tool.call_hook( 'exec_after_process', self.queue.app, inp_data=inp_data, 
                              out_data=out_data, param_dict=param_dict, 
