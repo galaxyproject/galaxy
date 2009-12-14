@@ -854,11 +854,18 @@ ${self.render_grid_table()}
                                 # Attach popup menu?
                                 if column.attach_popup and cellnum == 0:
                                     id = 'grid-%d-popup' % i
+                                # Determine appropriate class
+                                cls = ""
+                                if column.attach_popup or href:
+                                    cls = "menubutton"
+                                if column.attach_popup and href:
+                                    cls = "menubutton split"
+                                    
                             %>
                             %if href:                    
-                                <td><div id="${id}" class="menubutton split" style="float: left;"><a class="label" href="${href}">${v}</a></td>
+                                <td><div id="${id}" class="${cls}" style="float: left;"><a class="label" href="${href}">${v}</a></td>
                             %else:
-                                <td><div id="${id}" class="menubutton">${v}</div></td>
+                                <td><div id="${id}" class="${cls}">${v}</div></td>
                             %endif
                         %endfor
                     %endif
