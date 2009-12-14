@@ -1,4 +1,4 @@
-<tool id="histogram_rpy" name="Histogram" version="1.0.1">
+<tool id="histogram_rpy" name="Histogram" version="1.0.2">
   <description>of a numeric column</description>
   <command interpreter="python">histogram.py $input $out_file1 $numerical_column "$title" "$xlab" $breaks $density</command>
   <inputs>
