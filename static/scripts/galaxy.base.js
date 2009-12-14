@@ -44,7 +44,7 @@ function make_popup_menus()
         var b = $( "#" + $(this).attr( 'popupmenu' ) );
         make_popupmenu( b, options );
         $(this).remove();
-        b.show();
+        b.addClass( "popup" ).show();
     });
 }
 

@@ -451,31 +451,17 @@ ul.manage-table-actions li {
     
     padding: 3px 0.5em;
     margin: -3px -0.5em;
-    padding-right: 1.5em;
-    
-    .label, .arrow {
-        position: relative;
-        display: block;
-    }
     
     .label {
+        position: relative;
+        display: block;
         border-right: none;
     }
-    
-    .arrow {
-        padding-left: 2px;
-        width: 1em;
-        position: absolute;
-        top: 0;
-        right: 5px;
-        height: 100%;
-    }
-    
-    .arrow > span {
-        display: inline-block;
-        padding-top: 3px;
-    }
-    
+}
+
+.menubutton.popup {
+    padding-right: 1.5em;
+    background: url(../images/dropdownarrow.png) no-repeat right 8px;
 }
 
 .menubutton:hover {
@@ -487,17 +473,12 @@ ul.manage-table-actions li {
 ## A split menu button, the main button has an action, the arrow causes the
 ## popup menu to appear
 
-.menubutton.split {
+.menubutton.popup.split {
     padding-right: 2em;
-    .arrow {
-        border-left: solid transparent 1px;
-    }
 }
 
-.menubutton.split:hover {
-    .arrow {
-        border-left: solid #aaaaaa 1px;
-    }
+.menubutton.popup.split:hover {
+    background: url(../images/ddarrowsplit.png) no-repeat right -38px;
 }
 
 ## Popup menu styles

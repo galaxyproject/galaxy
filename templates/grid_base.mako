@@ -210,7 +210,7 @@ ${self.render_grid_table()}
                var b = $( "#" + $(this).attr( 'popupmenu' ) );
                make_popupmenu( b, options );
                $(this).remove();
-               b.show();
+               b.addClass( "popup" ).show();
            });
        }
        
@@ -847,19 +847,18 @@ ${self.render_grid_table()}
                         %>
                         %for cellnum, v in enumerate( value ):
                             <%
+                                id = ""
                                 # Handle non-ascii chars.
                                 if isinstance(v, str):
                                     v = unicode(v, 'utf-8')
                                 # Attach popup menu?
                                 if column.attach_popup and cellnum == 0:
-                                    extra = '<a id="grid-%d-popup" class="arrow" style="display: none;"><span>&#9660;</span></a>' % i
-                                else:
-                                    extra = ""
+                                    id = 'grid-%d-popup' % i
                             %>
                             %if href:                    
-                                <td><div class="menubutton split" style="float: left;"><a class="label" href="${href}">${v}</a>${extra}</td>
+                                <td><div id="${id}" class="menubutton split" style="float: left;"><a class="label" href="${href}">${v}</a></td>
                             %else:
-                                <td >${v}${extra}</td>
+                                <td><div id="${id}" class="menubutton">${v}</div></td>
                             %endif
                         %endfor
                     %endif
