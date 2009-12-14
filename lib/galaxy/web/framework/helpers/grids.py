@@ -334,8 +334,7 @@ class TextColumn( GridColumn ):
         return query
     def get_filter( self, column_filter ):
         """ Returns a SQLAlchemy criterion derived from column_filter. """
-        # This is a pretty ugly way to get the key attribute of model_class. TODO: Can this be fixed?
-        model_class_key_field = eval( "self.model_class." + self.key )
+        model_class_key_field = getattr( self.model_class, self.key )
         
         if isinstance( column_filter, basestring ):
             return func.lower( model_class_key_field ).like( "%" + column_filter.lower() + "%" )
