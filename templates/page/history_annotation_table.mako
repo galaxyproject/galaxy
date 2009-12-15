@@ -15,7 +15,7 @@
                 </div>
             %endif
             %if trans.get_user() is not None:
-                Tags: ${render_tagging_element_html( tagged_item=history, editable=False, use_toggle_link=False )}
+                Tags: ${render_tagging_element_html( tags=history.tags, editable=False, use_toggle_link=False )}
             %endif
         </th>
     </tr>
