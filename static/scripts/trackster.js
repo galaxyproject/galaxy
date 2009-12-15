@@ -122,8 +122,8 @@ $.extend( View.prototype, {
         for ( var i = 0, len = this.tracks.length; i < len; i++ ) {
             this.tracks[i].draw();
         }
-        $("#bottom-spacer").remove();
-        $("#viewport").append('<div id="bottom-spacer" style="height: 200px;"></div>');
+        //$("#bottom-spacer").remove();
+        //$("#viewport").append('<div id="bottom-spacer" style="height: 200px;"></div>');
     },
     zoom_in: function ( point ) {
         if (this.max_high === 0 || this.high - this.low < 30) {
@@ -181,6 +181,7 @@ $.extend( TiledTrack.prototype, Track.prototype, {
 
         var w_scale = this.content_div.width() / range;
 
+        var max_height = 20;
         var tile_element;
         // Index of first tile that overlaps visible region
         var tile_index = Math.floor( low / resolution / DENSITY );
@@ -200,12 +201,15 @@ $.extend( TiledTrack.prototype, Track.prototype, {
                 });
                 // Our responsibility to move the element to the new parent
                 parent_element.append( cached );
+                max_height = Math.max( max_height, cached.height() );
             } else {
                 tile_element = this.draw_tile( resolution, tile_index, parent_element, w_scale );
                 if ( tile_element ) {
                     this.tile_cache.set(key, tile_element);
+                    max_height = Math.max( max_height, tile_element.height() );
                 }
             }
+            this.content_div.css( "height", max_height );
             tile_index += 1;
         }
     }

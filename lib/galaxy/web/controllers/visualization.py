@@ -5,7 +5,6 @@ from galaxy.util.sanitize_html import sanitize_html
 
 class VisualizationListGrid( grids.Grid ):
     # Grid definition
-    use_panels = True
     title = "Visualizations"
     model_class = model.Visualization
     default_sort_key = "-create_time"

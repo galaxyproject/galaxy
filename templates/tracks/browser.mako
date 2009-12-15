@@ -33,6 +33,7 @@ ${h.js( "jquery", "jquery.event.drag", "jquery.mousewheel", "trackster" )}
             } else {
                 view.zoom_out();
             }
+            e.preventDefault();
         });
         
         $(document).bind("dblclick", function( e ) {
@@ -53,20 +54,23 @@ ${h.js( "jquery", "jquery.event.drag", "jquery.mousewheel", "trackster" )}
 
         // To adjust the size of the viewport to fit the fixed-height footer
         $(window).resize( function( e ) {
-            $("#viewport").height( $(window).height() - 120 );
+            $("#content").height( $(window).height() - $("#nav-container").height() );
+            $("#viewport-container").height( $("#content").height() - $("#top-labeltrack").height() - $("#nav-labeltrack").height() );
             view.redraw();
         });
+        
+        $(window).resize();
 
         $("#viewport").bind( "dragstart", function( e ) {
             this.original_low = view.low;
             this.current_height = e.clientY;
             this.current_x = e.offsetX;
         }).bind( "drag", function( e ) {
+            var container = $(this).parent();
             var delta = e.offsetX - this.current_x;
-            var new_scroll = $(this).scrollTop() - (e.clientY - this.current_height);
-            
-            if ( new_scroll < $(this).get(0).scrollHeight - $(this).height() - 200) {
-                $(this).scrollTop(new_scroll);
+            var new_scroll = container.scrollTop() - (e.clientY - this.current_height);
+            if ( new_scroll < container.get(0).scrollHeight - container.height() ) {
+                container.scrollTop(new_scroll);
                 
             }
             this.current_height = e.clientY;
@@ -101,10 +105,13 @@ ${h.js( "jquery", "jquery.event.drag", "jquery.mousewheel", "trackster" )}
 
 <div id="content">
     <div id="top-labeltrack"></div>
-    <div id="viewport"></div>
+    <div id="viewport-container" style="overflow-x: hidden; overflow-y: auto;">
+        <div id="viewport"></div>
+    </div>
+    <div id="nav-labeltrack"></div>
 </div>
 <div id="nav-container">
-    <div id="nav-labeltrack"></div>
+    ## <div style="height: 5px; border-top: solid #ccc 1px"></div>
     <div id="nav">
         <div id="overview">
             <div id="overview-viewport">
@@ -116,9 +123,9 @@ ${h.js( "jquery", "jquery.event.drag", "jquery.mousewheel", "trackster" )}
                 <select id="chrom" name="chrom" style="width: 15em;">
                     <option value="">Loading</option>
                 </select>
-    	    <input id="low" size="12" />:<input id="high" size="12" />
+            <input id="low" size="12" />:<input id="high" size="12" />
                 ## <input type="hidden" name="dataset_ids" value="${dataset_ids}" />
-    	    <input type="hidden" name="id" value="${id}" />
+            <input type="hidden" name="id" value="${id}" />
                 <a href="#" onclick="javascript:view.zoom_in();view.redraw();">+</a>
                 <a href="#" onclick="javascript:view.zoom_out();view.redraw();">-</a>
             </form>

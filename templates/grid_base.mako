@@ -203,7 +203,15 @@ ${self.render_grid_table()}
                        target = $(this).attr( "target" );
                    options[ $(this).text() ] = function() {
                        if ( !confirmtext || confirm( confirmtext ) ) {
-                           do_operation_from_href(href);
+                            if ( href.indexOf( "operation" ) > -1 ) {
+                                do_operation_from_href(href);
+                            } else {
+                                var f = window;
+                                if ( target == "_parent" ) {
+                                    f = window.parent;
+                                }
+                                f.location = href;
+                            }
                        }
                    };
                });
