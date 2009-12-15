@@ -13,19 +13,10 @@ class TagsController ( BaseController ):
 
     def __init__(self, app):
         BaseController.__init__(self, app)
-        
-        # Keep a list of taggable classes.
-        self.taggable_classes = dict()
-        self.taggable_classes[History.__name__] = History
-        self.taggable_classes[HistoryDatasetAssociation.__name__] = HistoryDatasetAssociation
-        self.taggable_classes[Page.__name__] = Page
-        
+
         # Set up tag handler to recognize the following items: History, HistoryDatasetAssociation, Page, ...
         self.tag_handler = TagHandler()
-        self.tag_handler.add_tag_assoc_class(History, HistoryTagAssociation)
-        self.tag_handler.add_tag_assoc_class(HistoryDatasetAssociation, HistoryDatasetAssociationTagAssociation) 
-        self.tag_handler.add_tag_assoc_class(Page, PageTagAssociation)
-        
+
     @web.expose
     @web.require_login( "Add tag to an item." )
     def add_tag_async( self, trans, id=None, item_class=None, new_tag=None, context=None ):
@@ -91,6 +82,8 @@ class TagsController ( BaseController ):
             item_class = History
         elif item_class == 'HistoryDatasetAssociation':
             item_class = HistoryDatasetAssociation
+        elif item_class == 'Page':
+            item_class = Page
         
         q = q.encode('utf-8')
         if q.find(":") == -1:
@@ -207,16 +200,16 @@ class TagsController ( BaseController ):
     
     def _get_column_for_filtering_item_by_user_id(self, item_class): 
         """ Returns the column to use when filtering by user id. """
-        # TODO: make this generic by using a dict() to map from item class to a "user id" column
-        if item_class is History: 
-            return History.table.c.user_id
-        elif item_class is HistoryDatasetAssociation:
+        if item_class is HistoryDatasetAssociation:
             # Use the user_id associated with the HDA's history.
             return History.table.c.user_id
+        else:
+            # Generically, just use the user_id column of the tagged item's table.
+            return item_class.table.c.user_id
     
     def _get_item(self, trans, item_class_name, id):
         """ Get an item based on type and id. """
-        item_class = self.taggable_classes[item_class_name]
+        item_class = self.tag_handler.item_tag_assoc_info[item_class_name].item_class
         item = trans.sa_session.query(item_class).filter("id=" + str(id))[0]
         return item;
         
@@ -232,5 +225,8 @@ class TagsController ( BaseController ):
             else:
                 assert history.user == trans.user
         elif isinstance(item, HistoryDatasetAssociation):
+            # TODO.
+            pass
+        elif isinstance(item, Page):
             # TODO.
             pass

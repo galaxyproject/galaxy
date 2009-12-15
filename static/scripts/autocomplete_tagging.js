@@ -3,7 +3,22 @@
 * @author: Jeremy Goecks
 * @require: jquery.autocomplete plugin
 */
-jQuery.fn.autocomplete_tagging = function(elt_id, options) 
+//
+// Initialize "tag click functions" for tags.
+//
+function init_tag_click_function(tag_elt, click_func)
+{
+    $(tag_elt).find('.tag-name').each( function() {
+        $(this).click( function() {
+            var tag_str = $(this).text();
+            var tag_name_and_value = tag_str.split(":")
+            click_func(tag_name_and_value[0], tag_name_and_value[1]);
+            return true;            
+        });
+    });
+}
+
+jQuery.fn.autocomplete_tagging = function(options) 
 {
 
     //
@@ -61,21 +76,17 @@ jQuery.fn.autocomplete_tagging = function(elt_id, options)
     // Initalize object's elements.
     //
 
-    // Get elements for this object.
-    var this_obj = $('#' + elt_id);
-    var id_parts = $(this).attr('id').split("-");
-    var obj_id = id_parts[ id_parts.length-1 ];
-    var tag_area = this_obj.find('#tag-area-' + obj_id);
-    var toggle_link = this_obj.find('#toggle-link-' + obj_id);
-    var tag_input_field = this_obj.find('#tag-input');
+    // Get elements for this object. For this_obj, assume the last element with the id is the "this"; this is somewhat of a hack to address the problem 
+    // that there may be two tagging elements for a single item if there are both community and individual tags for an element.
+    var this_obj = $(this);
+    var tag_area = this_obj.find('.tag-area');
+    var toggle_link = this_obj.find('.toggle-link');
+    var tag_input_field = this_obj.find('.tag-input');
     var add_tag_button = this_obj.find('.add-tag-button');
 
     // Initialize toggle link.
     toggle_link.click( function() {
-        var id = $(this).attr('id').split('-')[2];
-
         // Take special actions depending on whether toggle is showing or hiding link.
-        var tag_area = $('#tag-area-' + id);
         var showing_tag_area = (tag_area.css("display") == "none");
         var after_toggle_fn;
         if (showing_tag_area)
@@ -210,7 +221,7 @@ jQuery.fn.autocomplete_tagging = function(elt_id, options)
     }
     var autocomplete_options = 
         { selectFirst: false, formatItem : format_item_func, autoFill: false, highlight: false };
-        tag_input_field.autocomplete(settings.ajax_autocomplete_tag_url, autocomplete_options);
+    tag_input_field.autocomplete(settings.ajax_autocomplete_tag_url, autocomplete_options);
 
 
     // Initialize delete tag images for current tags.
@@ -218,16 +229,9 @@ jQuery.fn.autocomplete_tagging = function(elt_id, options)
         init_delete_tag_image( $(this) );
     });
     
-    this_obj.find('.tag-name').each( function() {
-        $(this).click( function() {
-            var tag_str = $(this).text();
-            var tag_name_and_value = tag_str.split(":")
-            settings.tag_click_fn(tag_name_and_value[0], tag_name_and_value[1]);
-            return true;            
-        });
-    });
-    
 
+    // Initialize tag click function.
+    init_tag_click_function($(this), settings.tag_click_fn);
 
     // Initialize "add tag" button.
     add_tag_button.click( function()

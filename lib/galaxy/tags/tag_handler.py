@@ -1,5 +1,9 @@
 from galaxy.model import Tag
 import re
+from sqlalchemy.sql.expression import func, and_
+from sqlalchemy.sql import select
+from galaxy.model import History, HistoryTagAssociation, Dataset, DatasetTagAssociation, \
+    HistoryDatasetAssociation, HistoryDatasetAssociationTagAssociation, Page, PageTagAssociation
 
 class TagHandler( object ):
     
@@ -18,14 +22,56 @@ class TagHandler( object ):
     # Key-value separator.
     key_value_separators = "=:"
     
-    def __init__(self):
-        self.tag_assoc_classes = dict()
+    # Item-specific information needed to perform tagging.
+    class ItemTagAssocInfo( object ):
+        def __init__( self, item_class, tag_assoc_class, item_id_col ):
+            self.item_class = item_class
+            self.tag_assoc_class = tag_assoc_class
+            self.item_id_col = item_id_col
+            
+    # Initialize with known classes.
+    item_tag_assoc_info = {}
+    item_tag_assoc_info["History"] = ItemTagAssocInfo( History, HistoryTagAssociation, HistoryTagAssociation.table.c.history_id )
+    item_tag_assoc_info["HistoryDatasetAssociation"] = \
+        ItemTagAssocInfo( HistoryDatasetAssociation, HistoryDatasetAssociationTagAssociation, HistoryDatasetAssociationTagAssociation.table.c.history_dataset_association_id )
+    item_tag_assoc_info["Page"] = ItemTagAssocInfo( Page, PageTagAssociation, PageTagAssociation.table.c.page_id )
         
-    def add_tag_assoc_class(self, entity_class, tag_assoc_class):
-        self.tag_assoc_classes[entity_class] = tag_assoc_class
+    def get_tag_assoc_class(self, item_class):
+        """ Returns tag association class for item class. """
+        return self.item_tag_assoc_info[item_class.__name__].tag_assoc_class
         
-    def get_tag_assoc_class(self, entity_class):
-        return self.tag_assoc_classes[entity_class]
+    def get_id_col_in_item_tag_assoc_table( self, item_class):
+        """ Returns item id column in class' item-tag association table. """
+        return self.item_tag_assoc_info[item_class.__name__].item_id_col
+        
+    def get_community_tags(self, sa_session, item=None, limit=None):
+        """ Returns community tags for an item. """
+        
+        # Get item-tag association class.
+        item_class = item.__class__
+        item_tag_assoc_class = self.get_tag_assoc_class( item_class )
+        if not item_tag_assoc_class:
+            return []
+            
+        # Build select statement.    
+        cols_to_select = [ item_tag_assoc_class.table.c.tag_id, func.count('*') ] 
+        from_obj = item_tag_assoc_class.table.join(item_class.table).join(Tag.table)
+        where_clause = ( self.get_id_col_in_item_tag_assoc_table(item_class) == item.id )
+        order_by = [ func.count("*").desc() ]
+        group_by = item_tag_assoc_class.table.c.tag_id
+        
+        # Do query and get result set.
+        query = select(columns=cols_to_select, from_obj=from_obj,
+                       whereclause=where_clause, group_by=group_by, order_by=order_by, limit=limit)
+        result_set = sa_session.execute(query)
+        
+        # Return community tags.
+        community_tags = []
+        for row in result_set:
+            tag_id = row[0]
+            community_tags.append( self.get_tag_by_id( sa_session, tag_id ) )        
+        
+        return community_tags
         
     def remove_item_tag( self, trans, item, tag_name ):
         """Remove a tag from an item."""
@@ -45,7 +91,7 @@ class TagHandler( object ):
         """Delete tags from an item."""
         # Delete item-tag associations.
         for tag in item.tags:
-            trans.sa_ession.delete( tag )
+            trans.sa_session.delete( tag )
             
         # Delete tags from item.
         del item.tags[:]
@@ -89,7 +135,7 @@ class TagHandler( object ):
                     continue
                 
                 # Create tag association based on item class.
-                item_tag_assoc_class = self.tag_assoc_classes[item.__class__]
+                item_tag_assoc_class = self.get_tag_assoc_class( item.__class__ )
                 item_tag_assoc = item_tag_assoc_class()
                 
                 # Add tag to association.

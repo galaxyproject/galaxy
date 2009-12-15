@@ -146,29 +146,35 @@
     };
 
     //
-    // Function provides text for tagging toggle link.
+    // Handle click on community tag.
     //
-    var get_toggle_link_text = function(tags)
+    function community_tag_click(tag_name, tag_value) 
     {
-        var text = "";
-        var num_tags = array_length(tags);
-        if (num_tags != 0)
-          {
-            text = num_tags + (num_tags != 1 ? " Tags" : " Tag");
-          }
-        else
-          {
-            // No tags.
-            text = "Add tags to history";
-          }
-        return text;
-    };
+        alert("community tag click: " + tag_name);
+    }
     </script>
 </%def>
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}
     ${h.css( "base", "history", "autocomplete_tagging" )}
+    <style>
+        .page-body
+        {
+            padding: 10px;
+            float: left;
+            width: 65%;
+        }
+        .page-meta
+        {
+            float: right;
+            width: 27%;
+            padding: 0.5em;
+            margin: 0.25em;
+            vertical-align: text-top;
+            border: 2px solid #DDDDDD;
+        }
+    </style>
 </%def>
 
 <%def name="init()">
@@ -180,6 +186,7 @@
 %>
 </%def>
 
+<%namespace file="../tagging_common.mako" import="render_tagging_element, render_community_tagging_element" />
 
 <%def name="center_panel()">
 
@@ -191,9 +198,27 @@
 
     <div class="unified-panel-body">
         <div style="overflow: auto; height: 100%;">
-        <div class="page text-content" style="padding: 10px;">
-        ${page.latest_revision.content.decode( "utf-8" )}
-        </div>
+            <div class="page text-content page-body">
+                ${page.latest_revision.content.decode( "utf-8" )}
+            </div>
+            <div class="page-meta">
+                <div><strong>Tags</strong></div>
+                <p>
+                ## Community tags.
+                <div>
+                    Community:
+                    ${render_community_tagging_element( tagged_item=page, tag_click_fn='community_tag_click', use_toggle_link=False )}
+                    %if len ( page.tags ) == 0:
+                        none
+                    %endif
+                </div>
+                ## User tags.
+                <p>
+                <div>
+                    Yours:
+                    ${render_tagging_element( tagged_item=page, elt_context='display.mako', use_toggle_link=False )}
+                </div>
+            </div>
         </div>
     </div>
 
