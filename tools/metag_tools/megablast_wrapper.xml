@@ -2,7 +2,7 @@
 	<description> compare short reads against htgs, nt, and wgs databases</description>
 	<command interpreter="python">
 	  megablast_wrapper.py 
-	   --db_build=$source_select
+	   --db_build="$source_select"
 	   --input=$input_query
 	   --word_size=$word_size
 	   --identity_cutoff=$iden_cutoff

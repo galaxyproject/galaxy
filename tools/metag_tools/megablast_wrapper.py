@@ -30,7 +30,7 @@ def __main__():
     #Parse Command Line
     options, args = doc_optparse.parse( __doc__ )
     
-    db_build = options.db_build.split( ' ' )[0]
+    db_build = options.db_build
     query_filename = options.input.strip()
     output_filename = options.output.strip()
     mega_word_size = options.word_size        # -W
@@ -62,8 +62,7 @@ def __main__():
         if not line or line.startswith( '#' ):
             continue
         fields = line.split( '\t' )
-        if len( fields ) == 2:
-            db[ fields[0].split( ' ' )[0] ] = fields[1]
+        db[ fields[0] ] = fields[1]
 
     if not db.has_key( db_build ):
         stop_err( 'Cannot locate the target database. Please check your location file.' )
