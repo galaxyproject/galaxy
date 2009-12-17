@@ -949,7 +949,13 @@ ${self.render_grid_table()}
         </tr>    
     %endif
     ## Grid operations.
-    %if grid.operations:
+    <%
+        num_allow_multiple_ops = 0
+        for operation in grid.operations:
+            if operation.allow_multiple:
+                num_allow_multiple_ops += 1
+    %>
+    %if num_allow_multiple_ops:
         <tr>
             <td></td>
             <td colspan="100">

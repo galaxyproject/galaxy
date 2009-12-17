@@ -8,7 +8,7 @@
     </tr>
     <tr>
         ## Status messages and tags.
-        <th colspan='2'>
+        <td colspan='2'>
             %if history.deleted:
                 <div class="warningmessagesmall">
                     ${_('This is a deleted history.')}
@@ -17,17 +17,17 @@
             %if trans.get_user() is not None:
                 Tags: ${render_tagging_element_html( tags=history.tags, editable=False, use_toggle_link=False )}
             %endif
-        </th>
+        </td>
     </tr>
     <tr>
-        <th colspan="2">Description of History: 
+        <td colspan="2" class="annotation">Description of History: 
             <ol>
                 <li>What was the motivation for this history?
                 <li>What is the outcome of this history?
                 <li>What are unresolved questions from this history?
                 <li>What new questions arise from this history?
             </ol>
-        </th>
+        </td>
     </tr>
     
     ## Table body. For each dataset, there is an area to annotate the dataset.
@@ -44,7 +44,7 @@
         %for data in datasets:
             %if data.visible:
             <tr>
-                <td valign="top"><span class="annotation">Describe this step: why was it done? what data does it produce?</span></td>
+                <td valign="top"><span class="annotation">Describe this step: why was it done? what data did it produce?</span></td>
                 ##<td valign="top" class="annotation">Describe this step: why was it done? what data does it produce?</td>
                 <td>
                     <div class="historyItemContainer" id="historyItemContainer-${data.id}">
