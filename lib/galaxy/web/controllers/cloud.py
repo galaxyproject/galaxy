@@ -198,8 +198,9 @@ class CloudController( BaseController ):
                     # Capture user configured instance information
                     uci = model.UCI()
                     uci.name = instanceName
-                    uci.credentials = trans.sa_session.query( model.CloudUserCredentials ) \
+                    creds = trans.sa_session.query( model.CloudUserCredentials ) \
                         .filter( model.CloudUserCredentials.table.c.name==credName ).first()
+                    uci.credentials = creds
                     uci.user= user
                     uci.total_size = volSize # This is OK now because new instance is being created and only one storage volume can be created at UCI creation time 
                     uci.state = uci_states.NEW_UCI
@@ -208,6 +209,18 @@ class CloudController( BaseController ):
                     storage.user = user
                     storage.uci = uci
                     storage.size = volSize
+                    # If '(any)' zone was selected, just choose the first one that's available
+                    if zone == "(any)":
+                        zones = None
+                        conn = get_connection( trans, creds )
+                        if conn != None:
+                            try:
+                                zones = conn.get_all_zones()
+                                if len( zones ) > 0:
+                                    zone = str( zones[0] ).split(':')[1]
+                            except boto.exception.EC2ResponseError, e:
+                                log.error( "Retrieving zones for credentials '%s' failed: %s" % ( storedCred.name, e ) )
+                                providersToZones[storedCred.name] = [ "Retrieving zones failed: " + str( e ) ]
                     storage.availability_zone = zone
                     storage.status = store_status.ADDING
                     # Persist
@@ -235,9 +248,11 @@ class CloudController( BaseController ):
                     avail_zones = []
                     try:
                         zones = conn.get_all_zones()
-                        for z in zones:
-                            z = str( z ).split(':')[1]
-                            avail_zones.append( z )
+                        if len( zones ) > 0:
+                            avail_zones.append( "(any)" )
+                            for z in zones:
+                                z = str( z ).split(':')[1]
+                                avail_zones.append( z )
                             providersToZones[storedCred.name] = avail_zones
                     except boto.exception.EC2ResponseError, e:
                         log.error( "Retrieving zones for credentials '%s' failed: %s" % ( storedCred.name, e ) )

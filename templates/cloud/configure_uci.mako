@@ -97,7 +97,7 @@ $(function(){
                 cls += " form-row-error"
             %>
 			    <div class="${cls}">
-	            <label>Zone to create storage in:</label>
+	            <label>Create storage in zone:</label>
 	              <div class="form-row-input">
 	              	<select id="zones" name="zone" style="width:40em">
 	              	</select>
