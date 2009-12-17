@@ -16,9 +16,17 @@
 </div>
 %endif
 
+<h2>List of registered machine images:</h2>
+<ul class="manage-table-actions">
+    <li>
+        <a class="action-button" href="${h.url_for( controller='cloud', action='add_new_image' )}" target="galaxy_main">
+            <img src="${h.url_for('/static/images/silk/add.png')}" />
+            <span>Add machine image</span>
+        </a>
+    </li>
+</ul>
+	
 %if images:
-	<h2>List of registered machine images:</h2>
- 
 	<table class="mange-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
         <colgroup width="2%"></colgroup>
 		<colgroup width="10%"></colgroup>
@@ -78,15 +86,6 @@
 			</tr>
 		%endfor
 	</table>
-	
-	<p /></p><a href="${h.url_for( controller='cloud', action='add_new_image' )}" target="galaxy_main">Add another machine image</a>
 %else:
 	<h3>There are no registered machine images.</h3><br />
-	<a href="${h.url_for( controller='cloud', action='add_new_image' )}" target="galaxy_main">Add machine image now?</a>
-
 %endif
-
-
-
-
-

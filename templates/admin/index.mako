@@ -127,8 +127,7 @@
                 </div>
 				<div class="toolSectionBody">
                   <div class="toolSectionBg">
-				  	<div class="toolTitle"><a href="${h.url_for( controller='cloud', action='list_machine_images' )}" target="galaxy_main">List machine images</a></div>
-                    <div class="toolTitle"><a href="${h.url_for( controller='cloud', action='add_new_image' )}" target="galaxy_main">Add machine image</a></div>
+				  	<div class="toolTitle"><a href="${h.url_for( controller='cloud', action='list_machine_images' )}" target="galaxy_main">Manage machine images</a></div>
                   </div>
                 </div>
             </div>
