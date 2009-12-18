@@ -485,7 +485,23 @@ class Bed( Interval ):
             return True
         except: return False
 
-class Gff( Tabular ):
+class _RemoteCallMixin:
+    def _get_remote_call_url( self, redirect_url, site_name, dataset, type, app, base_url ):
+        """Retrieve the URL to call out to an external site and retrieve data.
+        This routes our external URL through a local galaxy instance which makes
+        the data available, followed by redirecting to the remote site with a
+        link back to the available information.
+        """
+        internal_url = "%s" % url_for( controller='dataset', dataset_id=dataset.id, action='display_at', filename='%s_%s' % ( type, site_name ) )
+        base_url = app.config.get( "display_at_callback", base_url )
+        if base_url.startswith( 'https://' ):
+            base_url = base_url.replace( 'https', 'http', 1 )
+        display_url = urllib.quote_plus( "%s%s/display_as?id=%i&display_app=%s&authz_method=display_at" % \
+                                         ( base_url, url_for( controller='root' ), dataset.id, type ) )
+        link = '%s?redirect_url=%s&display_url=%s' % ( internal_url, redirect_url, display_url )
+        return link
+
+class Gff( Tabular, _RemoteCallMixin ):
     """Tab delimited data in Gff format"""
     file_ext = "gff"
     column_names = [ 'Seqname', 'Source', 'Feature', 'Start', 'End', 'Score', 'Strand', 'Frame', 'Group' ]
@@ -494,10 +510,11 @@ class Gff( Tabular ):
     MetadataElement( name="columns", default=9, desc="Number of columns", readonly=True, visible=False )
     MetadataElement( name="column_types", default=['str','str','str','int','int','int','str','str','str'], param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False )
     
-    def __init__(self, **kwd):
+    def __init__( self, **kwd ):
         """Initialize datatype, by adding GBrowse display app"""
         Tabular.__init__(self, **kwd)
-        self.add_display_app ( 'c_elegans', 'display in Wormbase', 'as_gbrowse_display_file', 'gbrowse_links' )
+        self.add_display_app( 'ucsc', 'display at UCSC', 'as_ucsc_display_file', 'ucsc_links' )
+        self.add_display_app( 'c_elegans', 'display in Wormbase', 'as_gbrowse_display_file', 'gbrowse_links' )
     def set_meta( self, dataset, overwrite = True, **kwd ):
         i = 0
         for i, line in enumerate( file ( dataset.file_name ) ):
@@ -547,7 +564,13 @@ class Gff( Tabular ):
                         start = elems[2] # 6000000
                         stop = elems[3] # 6030000
                         break
-                    if not line.startswith( '#' ):
+                    # Allow UCSC style browser and track info in the GFF file
+                    if line.startswith("browser position"):
+                        pos_info = line.split()[-1]
+                        seqid, startend = pos_info.split(":")
+                        start, end = startend.split("-")
+                        break
+                    if not line.startswith(('#', 'track', 'browser')) :
                         elems = line.split( '\t' )
                         if not seqid:
                             # We can only set the viewport for a single chromosome
@@ -566,6 +589,20 @@ class Gff( Tabular ):
             return ( seqid, str( start ), str( stop ) )
         else:
             return ( '', '', '' )
+    def ucsc_links( self, dataset, type, app, base_url ):
+        ret_val = []
+        if dataset.has_data:
+            seqid, start, stop = self.get_estimated_display_viewport( dataset )
+            if seqid and start and stop:
+                for site_name, site_url in util.get_ucsc_by_build( dataset.dbkey ):
+                    if site_name in app.config.ucsc_display_sites:
+                        redirect_url = urllib.quote_plus(
+                                "%sdb=%s&position=%s:%s-%s&hgt.customText=%%s" %
+                                ( site_url, dataset.dbkey, seqid, start, stop ) )
+                        link = self._get_remote_call_url( redirect_url, site_name, dataset, type, app, base_url )
+                        ret_val.append( ( site_name, link ) )
+        return ret_val
+
     def gbrowse_links( self, dataset, type, app, base_url ):
         ret_val = []
         if dataset.has_data:
@@ -576,7 +613,9 @@ class Gff( Tabular ):
             if seqid and start and stop:
                 for site_name, site_url in util.get_gbrowse_sites_by_build( dataset.dbkey ):
                     if site_name in app.config.gbrowse_display_sites:
-                        link = "%s?start=%s&stop=%s&ref=%s&dbkey=%s" % ( site_url, start, stop, seqid, dataset.dbkey )
+                        redirect_url = urllib.quote_plus( "%s%s/?ref=%s&start=%s&stop=%s&eurl=%%s" % 
+                                ( site_url, dataset.dbkey, seqid, start, stop ) )
+                        link = self._get_remote_call_url( redirect_url, site_name, dataset, type, app, base_url )
                         ret_val.append( ( site_name, link ) )
         return ret_val
     def sniff( self, filename ):
@@ -728,7 +767,7 @@ class Gff3( Gff ):
         except:
             return False
 
-class Wiggle( Tabular ):
+class Wiggle( Tabular, _RemoteCallMixin ):
     """Tab delimited data in wiggle format"""
     file_ext = "wig"
 
@@ -752,20 +791,6 @@ class Wiggle( Tabular ):
             if i > num_check_lines:
                 break
         return value
-    def _get_remote_call_url( self, redirect_url, site_name, dataset, type, app, base_url ):
-        """Retrieve the URL to call out to an external site and retrieve data.
-        This routes our external URL through a local galaxy instance which makes
-        the data available, followed by redirecting to the remote site with a
-        link back to the available information.
-        """
-        internal_url = "%s" % url_for( controller='dataset', dataset_id=dataset.id, action='display_at', filename='%s_%s' % ( type, site_name ) )
-        base_url = app.config.get( "display_at_callback", base_url )
-        if base_url.startswith( 'https://' ):
-            base_url = base_url.replace( 'https', 'http', 1 )
-        display_url = urllib.quote_plus( "%s%s/display_as?id=%i&display_app=%s&authz_method=display_at" % \
-                                         ( base_url, url_for( controller='root' ), dataset.id, type ) )
-        link = '%s?redirect_url=%s&display_url=%s' % ( internal_url, redirect_url, display_url )
-        return link
     def _get_viewer_range( self, dataset ):
         """Retrieve the chromosome, start, end for an external viewer."""
         if dataset.has_data:
