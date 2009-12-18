@@ -18,6 +18,7 @@ LINKS="
 /depot/data2/galaxy/blastdb.loc
 /depot/data2/galaxy/bowtie_indices.loc
 /depot/data2/galaxy/encode_datasets.loc
+/galaxy/home/universe/encode_feature_partitions
 /depot/data2/galaxy/lastz_seqs.loc
 /depot/data2/galaxy/liftOver.loc
 /depot/data2/galaxy/maf_index.loc
