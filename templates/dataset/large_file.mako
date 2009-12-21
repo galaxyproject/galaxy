@@ -7,5 +7,5 @@
 </div>
 
 <pre>
-${ truncated_data }
+${ truncated_data | h }
 </pre>

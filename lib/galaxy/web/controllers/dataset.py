@@ -198,6 +198,7 @@ class DatasetInterface( BaseController ):
                 return trans.show_error_message( "Please wait until this dataset finishes uploading before attempting to view it." )
             
             if filename and filename != "index":
+                # For files in extra_files_path
                 file_path = os.path.join( data.extra_files_path, filename )
                 if os.path.exists( file_path ):
                     mime, encoding = mimetypes.guess_type( file_path )
@@ -205,7 +206,7 @@ class DatasetInterface( BaseController ):
                         try:
                             mime = trans.app.datatypes_registry.get_mimetype_by_extension( ".".split( file_path )[-1] )
                         except:
-                            mime = "txt"
+                            mime = "text/plain"
                 
                     trans.response.set_content_type( mime )
                     return open( file_path )
