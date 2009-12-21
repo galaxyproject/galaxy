@@ -98,7 +98,7 @@
                             $.ajax( {
                                 async:      false,
                                 type:       "POST",
-                                url:        "${h.url_for(controller='tool_runner', action='upload_async_create')}",
+                                url:        "${h.url_for(controller='/tool_runner', action='upload_async_create')}",
                                 data:       $(this).formSerialize(),
                                 dataType:   "json",
                                 success:    function( d, s ) { async_datasets = d.join() }
@@ -156,13 +156,13 @@
     </%def>
     
     %if app.config.cloud_controller_instance:
-		${tab( "cloud", "Cloud", h.url_for( controller='cloud', action='index' ))}
+		${tab( "cloud", "Cloud", h.url_for( controller='/cloud', action='index' ))}
     %else:
-    	${tab( "analysis", "Analyze Data", h.url_for( controller='root', action='index' ))}
+    	${tab( "analysis", "Analyze Data", h.url_for( controller='/root', action='index' ))}
 	    
-	    ${tab( "workflow", "Workflow", h.url_for( controller='workflow', action='index' ))}
+	    ${tab( "workflow", "Workflow", h.url_for( controller='/workflow', action='index' ))}
 	    
-	    ${tab( "libraries", "Data Libraries", h.url_for( controller='library', action='index' ))}
+	    ${tab( "libraries", "Data Libraries", h.url_for( controller='/library', action='index' ))}
 	%endif
     
     %if trans.user and trans.request_types():
@@ -170,7 +170,7 @@
             <a>Lab</a>
             <div class="submenu">
             <ul>            
-                <li><a href="${h.url_for( controller='requests', action='index' )}">Sequencing Requests</a></li>
+                <li><a href="${h.url_for( controller='/requests', action='index' )}">Sequencing Requests</a></li>
             </ul>
             </div>
         </td>
@@ -186,15 +186,15 @@
         Visualization
         <div class="submenu">
         <ul>
-            <li><a href="${h.url_for( controller='tracks', action='index' )}">Build track browser</a></li>
+            <li><a href="${h.url_for( controller='/tracks', action='index' )}">Build track browser</a></li>
             <li><hr style="color: inherit; background-color: gray"/></li>
-	    <li><a href="${h.url_for( controller='visualization', action='index' )}">Stored visualizations</a></li>
+	    <li><a href="${h.url_for( controller='/visualization', action='index' )}">Stored visualizations</a></li>
         </ul>
         </div>
     </td>
     %endif
 
-    ${tab( "admin", "Admin", h.url_for( controller='admin', action='index' ), extra_class="admin-only", visible=( trans.user and app.config.is_admin_user( trans.user ) ) )}
+    ${tab( "admin", "Admin", h.url_for( controller='/admin', action='index' ), extra_class="admin-only", visible=( trans.user and app.config.is_admin_user( trans.user ) ) )}
     
     <td class="tab">
         <a>Help</a>
@@ -222,9 +222,9 @@
         %>
         <div class="submenu">
         <ul class="loggedout-only" style="${style1}">
-            <li><a target="galaxy_main" href="${h.url_for( controller='user', action='login' )}">Login</a></li>
+            <li><a target="galaxy_main" href="${h.url_for( controller='/user', action='login' )}">Login</a></li>
             %if app.config.allow_user_creation:
-            <li><a target="galaxy_main" href="${h.url_for( controller='user', action='create' )}">Register</a></li>
+            <li><a target="galaxy_main" href="${h.url_for( controller='/user', action='create' )}">Register</a></li>
             %endif
         </ul>
         <ul class="loggedin-only" style="${style2}">
@@ -234,21 +234,21 @@
                 %endif
             %else:
                 <li>Logged in as <span id="user-email">${user_email}</span></li>
-                <li><a target="galaxy_main" href="${h.url_for( controller='user', action='index' )}">Preferences</a></li>
+                <li><a target="galaxy_main" href="${h.url_for( controller='/user', action='index' )}">Preferences</a></li>
                 <%
                     if app.config.require_login:
                         logout_target = ""
-                        logout_url = h.url_for( controller='root', action='index', m_c='user', m_a='logout' )
+                        logout_url = h.url_for( controller='/root', action='index', m_c='user', m_a='logout' )
                     else:
                         logout_target = "galaxy_main"
-                        logout_url = h.url_for( controller='user', action='logout' )
+                        logout_url = h.url_for( controller='/user', action='logout' )
                 %>
                 <li><a target="${logout_target}" href="${logout_url}">Logout</a></li>
                 <li><hr style="color: inherit; background-color: gray"/></li>
                 <li><a target="galaxy_main" href="${h.url_for( controller='/history', action='list' )}">Histories</a></li>
                 <li><a target="galaxy_main" href="${h.url_for( controller='/dataset', action='list' )}">Datasets</a></li>
                 %if app.config.get_bool( 'enable_pages', False ):
-                    <li><a href="${h.url_for( controller='page' )}">Pages</a></li>  
+                    <li><a href="${h.url_for( controller='/page' )}">Pages</a></li>  
                 %endif
             %endif
         </ul>

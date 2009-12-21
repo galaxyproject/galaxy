@@ -733,7 +733,7 @@ ${self.render_grid_table()}
            background-color : white;
            opacity : 0.5;
            width : 100%;
-           height : 85%;
+           height : 100%;
            z-index : 14000;
            position : absolute;
            display: none;
