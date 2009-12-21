@@ -245,8 +245,8 @@
                 %>
                 <li><a target="${logout_target}" href="${logout_url}">Logout</a></li>
                 <li><hr style="color: inherit; background-color: gray"/></li>
-                <li><a target="galaxy_main" href="${h.url_for( controller='history', action='list' )}">Histories</a></li>
-                <li><a target="galaxy_main" href="${h.url_for( controller='dataset', action='list' )}">Datasets</a></li>
+                <li><a target="galaxy_main" href="${h.url_for( controller='/history', action='list' )}">Histories</a></li>
+                <li><a target="galaxy_main" href="${h.url_for( controller='/dataset', action='list' )}">Datasets</a></li>
                 %if app.config.get_bool( 'enable_pages', False ):
                     <li><a href="${h.url_for( controller='page' )}">Pages</a></li>  
                 %endif

@@ -13,20 +13,6 @@ def format_bool( b ):
     else:
         return ""
 
-class PublicURLColumn( grids.TextColumn ):
-    def get_value( self, trans, grid, item ):
-        username = item.user.username or "???"
-        return username + "/" + item.slug
-    def get_link( self, trans, grid, item ):
-        if item.user.username:
-            return dict( action='display_by_username_and_slug', username=item.user.username, slug=item.slug )
-        else:
-            return None
-        
-class OwnerColumn( grids.TextColumn ):
-    def get_value( self, trans, grid, item ):
-        return item.user.username
-
 class PageListGrid( grids.Grid ):
     # Grid definition
     use_panels = True
@@ -58,18 +44,28 @@ class PageListGrid( grids.Grid ):
 class PageAllPublishedGrid( grids.Grid ):
     # Grid definition
     use_panels = True
-    title = "Published Pages From All Users"
+    use_async = True
+    title = "Published Pages"
     model_class = model.Page
-    default_sort_key = "-create_time"
+    default_sort_key = "-update_time"
+    default_filter = dict( title="All", username="All" )
     columns = [
-        grids.TextColumn( "Title", model_class=model.Page, key="title", filterable="standard" ),
-        PublicURLColumn( "Public URL" ),
-        OwnerColumn( "Published by", model_class=model.User, key="username" ), 
+        PublicURLColumn( "Title", key="title", model_class=model.Page, filterable="advanced"),
+        OwnerColumn( "Owner", key="username", model_class=model.User, filterable="advanced", sortable=False ), 
         grids.GridColumn( "Created", key="create_time", format=time_ago ),
-        grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
+        grids.GridColumn( "Last Updated", key="update_time", format=time_ago )
     ]
+    columns.append( 
+        grids.MulticolFilterColumn(  
+        "Search", 
+        cols_to_filter=[ columns[0], columns[1] ], 
+        key="free-text-search", visible=False, filterable="standard" )
+                )
+    def build_initial_query( self, session ):
+        # Join so that searching history.user makes sense.
+        return session.query( self.model_class ).join( model.User.table )
     def apply_default_filter( self, trans, query, **kwargs ):
-        return query.filter_by( deleted=False, published=True )
+        return query.filter( self.model_class.deleted==False ).filter( self.model_class.published==True )
         
 class HistorySelectionGrid( grids.Grid ):
     # Custom columns.
@@ -169,11 +165,13 @@ class PageController( BaseController ):
         return trans.fill_template( "page/index.mako", grid=grid )
              
     @web.expose
-    @web.require_login()  
     def list_published( self, trans, *args, **kwargs ):
         grid = self._all_published_list( trans, *args, **kwargs )
-        # Render grid wrapped in panels
-        return trans.fill_template( "page/index.mako", grid=grid )
+        if 'async' in kwargs:
+            return grid
+        else:
+            # Render grid wrapped in panels
+            return trans.fill_template( "page/index.mako", grid=grid )
 
              
     @web.expose

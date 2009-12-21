@@ -150,7 +150,14 @@
     //
     function community_tag_click(tag_name, tag_value) 
     {
-        alert("community tag click: " + tag_name);
+        // Do nothing until community tags implemented in published pages grid.
+        /*
+        var href = '${h.url_for( controller='/page', action='list_published')}';
+        href = href + "?f-tags=" + tag_name;
+        if (tag_value != null && tag_value != "")
+            href = href + ":" + tag_value;
+        self.location = href;
+        */
     }
     </script>
 </%def>
@@ -173,6 +180,7 @@
             margin: 0.25em;
             vertical-align: text-top;
             border: 2px solid #DDDDDD;
+            border-top: 4px solid #DDDDDD;
         }
     </style>
 </%def>
@@ -190,9 +198,17 @@
 
 <%def name="center_panel()">
 
+    ## Get URL to other pages owned by user that owns this page.
+    <%
+        ##TODO: is there a better way to create this URL? Can't use 'f-username' as a key b/c it's not a valid identifier.
+        href_to_user_pages = h.url_for( controller='/page', action='list_published', xxx=page.user.username)
+        href_to_user_pages = href_to_user_pages.replace( 'xxx', 'f-username')
+    %>
+
     <div class="unified-panel-header" unselectable="on">
         <div class="unified-panel-header-inner">
-            ${page.user.username} :: ${page.title}
+            <a href="${h.url_for ( controller='/page', action='list_published' )}">Published Pages</a> | 
+            <a href="${href_to_user_pages}">${page.user.username}</a> | ${page.title}
         </div>
     </div>
 
@@ -202,6 +218,13 @@
                 ${page.latest_revision.content.decode( "utf-8" )}
             </div>
             <div class="page-meta">
+                ## Pages.
+                <div><strong>Related Pages</strong></div>
+                <p>
+                    <a href="${h.url_for ( controller='/page', action='list_published' )}">All published pages</a><br>
+                    <a href="${href_to_user_pages}">Pages published by ${page.user.username}</a>
+            
+                ## Tags.
                 <div><strong>Tags</strong></div>
                 <p>
                 ## Community tags.
@@ -215,8 +238,8 @@
                 ## User tags.
                 <p>
                 <div>
-                    Yours:
-                    ${render_tagging_element( tagged_item=page, elt_context='display.mako', use_toggle_link=False )}
+                    ##Yours:
+                    ##${render_tagging_element( tagged_item=page, elt_context='display.mako', use_toggle_link=False )}
                 </div>
             </div>
         </div>

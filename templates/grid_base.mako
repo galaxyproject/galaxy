@@ -34,6 +34,12 @@ ${self.render_grid_table()}
        $(document).ready(function() {
            init_grid_elements();
            init_grid_controls();
+           
+           // Initalize filter elements.
+           $('input[type=text]').each( function() 
+           {
+               $(this).click( function() { $(this).attr('value', '') } );
+           });
        });
        ## Can this be moved into base.mako?
        %if refresh_frames:
@@ -69,11 +75,11 @@ ${self.render_grid_table()}
        // Code to handle grid operations: filtering, sorting, paging, and operations.
        //
        
-       // Operations that are not async (AJAX) compatible.
-       var no_async_ops = new Object();
+       // Operations that are async (AJAX) compatible.
+       var async_ops = new Object();
        %for operation in grid.operations:
-           %if not operation.async_compatible:
-               no_async_ops['${operation.label.lower()}'] = "True";
+           %if operation.async_compatible:
+               async_ops['${operation.label.lower()}'] = "True";
            %endif
        %endfor
        
@@ -536,7 +542,7 @@ ${self.render_grid_table()}
            url_args['id'] = item_ids;
            
            // If operation cannot be performed asynchronously, redirect to location. Otherwise do operation.
-           var no_async = ( no_async_ops[operation] != undefined && no_async_ops[operation] != null);
+           var no_async = ( async_ops[operation] == undefined || async_ops[operation] == null);
            if (no_async)
            {
                go_to_URL();

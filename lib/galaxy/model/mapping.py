@@ -78,7 +78,8 @@ History.table = Table( "history", metadata,
     Column( "deleted", Boolean, index=True, default=False ),
     Column( "purged", Boolean, index=True, default=False ),
     Column( "genome_build", TrimmedString( 40 ) ),
-    Column( "importable", Boolean, default=False ) )
+    Column( "importable", Boolean, default=False ),
+    Column( "slug", TEXT, index=True ) )
 
 HistoryUserShareAssociation.table = Table( "history_user_share_association", metadata,
     Column( "id", Integer, primary_key=True ),

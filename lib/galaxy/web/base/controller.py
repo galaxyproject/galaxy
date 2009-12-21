@@ -8,10 +8,26 @@ import os, time, logging
 from galaxy import config, tools, web, model, util
 from galaxy.web import error, form, url_for
 from galaxy.model.orm import *
+from galaxy.web.framework.helpers import grids
 
 from Cheetah.Template import Template
 
 log = logging.getLogger( __name__ )
+
+# Useful columns in many grids used by controllers.
+
+# Item's user/owner.
+class OwnerColumn( grids.TextColumn ):
+    def get_value( self, trans, grid, item ):
+        return item.user.username
+
+# Item's public URL based on username and slug.
+class PublicURLColumn( grids.TextColumn ):
+    def get_link( self, trans, grid, item ):
+        if item.user.username:
+            return dict( action='display_by_username_and_slug', username=item.user.username, slug=item.slug )
+        else:
+            return None
 
 class BaseController( object ):
     """

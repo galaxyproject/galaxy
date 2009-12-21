@@ -1,5 +1,6 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
+<%namespace file="/display_common.mako" import="get_history_link" />
 
 ##<h2>Import via link</h2>
 
@@ -34,7 +35,7 @@
                 %endif
                 %if history.importable:
                     <div class="form-row">
-                        <% url = h.url_for( controller='history', action='view', id=trans.security.encode_id(history.id), qualified=True ) %>
+                        <% url = get_history_link( history, True )%>
                         <a href="${url}" target="_blank">${url}</a>
                         <div class="toolParamHelp" style="clear: both;">
                             Send the above link to users as an easy way for them to view the history.

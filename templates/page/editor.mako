@@ -248,8 +248,21 @@
                                         // User selected no text; create link from scratch and use default text.
                                         
                                         // Get history name.
-                                        $.get( '${h.url_for( controller='history', action='get_name_async' )}?id=' + item_id, function( history_name ) {
-                                            var href = '${h.url_for( controller='history', action='view' )}?id=' + item_id;
+                                        $.get( '${h.url_for( controller='history', action='get_name_slug_username_async' )}?id=' + item_id,
+                                        function( history_info ) {
+                                            // Parse history info.
+                                            history_info = history_info.split(",");
+                                            var 
+                                                history_name = history_info[0], 
+                                                history_slug = history_info[1],
+                                                history_user_username = history_info[2];
+                                                
+                                            // Build href from history info.
+                                            var href;
+                                            if (history_slug != "" && history_user_username != "")
+                                                var href = "/u/" + history_user_username + "/h/" + history_slug;
+                                            else
+                                                var href = '${h.url_for( controller='/history', action='view' )}?id=' + item_id;
                                             wym.insert("<a href='" + href + "'>History '" + history_name + "'</a>");
                                         });
                                     }

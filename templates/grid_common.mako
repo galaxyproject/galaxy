@@ -1,4 +1,7 @@
-<%! from galaxy.web.framework.helpers.grids import TextColumn, GridColumnFilter %>
+<%! 
+    from galaxy.web.framework.helpers.grids import TextColumn, GridColumnFilter 
+    from galaxy.web.framework.helpers import iff
+%>
 
 ## Render a filter UI for a grid column. Filter is rendered as a table row.
 <%def name="render_grid_column_filter(column)">
@@ -8,7 +11,9 @@
             if column.filterable == "advanced":
                 column_label = column_label.lower()
         %>
-        <td align="left" style="padding-left: 10px">${column_label}:</td>
+        %if column.filterable == "advanced":
+            <td align="left" style="padding-left: 10px">${column_label}:</td>
+        %endif
         <td>
         %if isinstance(column, TextColumn):
             <form class="text-filter-form" column_key="${column.key}" action="${url( dict() )}" method="get" >
@@ -43,13 +48,14 @@
                             %if i > 0:
                                 ,
                             %endif
-                            <span style="font-style: italic">${filter}</span>
-                            <%
-                                new_filter = list( column_filter )
-                                del new_filter[ i ]
-                                new_column_filter = GridColumnFilter( "", { column.key : h.to_json_string( new_filter ) } )
-                            %>
-                            <a href="${url( new_column_filter.get_url_args() )}"><img src="${h.url_for('/static/images/delete_tag_icon_gray.png')}"/></a>                                
+                            <span class='text-filter-val'>${filter}
+                                <%
+                                    new_filter = list( column_filter )
+                                    del new_filter[ i ]
+                                    new_column_filter = GridColumnFilter( "", { column.key : h.to_json_string( new_filter ) } )
+                                %>
+                                <a href="${url( new_column_filter.get_url_args() )}"><img src="${h.url_for('/static/images/delete_tag_icon_gray.png')}"/></a>
+                            </span>
                         %endfor
                                 
                     %endif
@@ -57,7 +63,8 @@
                 </span>
                 ## Print input field for column.
                 <span>
-                    <input class="no-padding-or-margin" id="input-${column.key}-filter" name="f-${column.key}" type="text" value="" size="15"/>
+                    <% value = iff( column.filterable == "standard", column.label.lower(), "") %>
+                    <input class="no-padding-or-margin" id="input-${column.key}-filter" name="f-${column.key}" type="text" value="${value}" size="15"/>
                     <input class='submit-image' type='image' src='${h.url_for('/static/images/mag_glass.png')}' alt='Filter'/>
                 </span>
             </form>
@@ -131,7 +138,7 @@
         if 'advanced-search' in kwargs and kwargs['advanced-search'] in ['True', 'true']:
             advanced_search_display = "block"
             
-        for column in grid.columns:            
+        for column in grid.columns:
             if column.filterable == "advanced":
                 ## Show div if current filter has value that is different from the default filter.
                 if column.key in cur_filter_dict and column.key in default_filter_dict and \

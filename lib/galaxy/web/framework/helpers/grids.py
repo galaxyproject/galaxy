@@ -122,6 +122,9 @@ class Grid( object ):
                         column_filter = from_json_string_recurse( column_filter )
                         if len( column_filter ) == 1:
                             column_filter = column_filter[0]
+                    # Interpret ',' as a separator for multiple terms.
+                    if isinstance( column_filter, basestring ) and column_filter.find(',') != -1:
+                        column_filter = column_filter.split(',')
                     # If filter criterion is empty, do nothing.
                     if column_filter == '':
                         continue
@@ -273,8 +276,8 @@ class Grid( object ):
     
 class GridColumn( object ):
     def __init__( self, label, key=None, model_class=None, method=None, format=None, link=None, attach_popup=False, visible=True, ncells=1, 
-                    # Valid values for filterable are ['default', 'advanced', None]
-                    filterable=None ):
+                    # Valid values for filterable are ['standard', 'advanced', None]
+                    filterable=None, sortable=True ):
         self.label = label
         self.key = key
         self.model_class = model_class
@@ -287,7 +290,7 @@ class GridColumn( object ):
         self.filterable = filterable
         # Currently can only sort of columns that have a database
         # representation, not purely derived.
-        if self.key:
+        if self.key and sortable:
             self.sortable = True
         else:
             self.sortable = False
