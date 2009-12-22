@@ -270,7 +270,7 @@ class WorkflowController( BaseController ):
     def get_new_module_info( self, trans, type, **kwargs ):
         """
         Get the info for a new instance of a module initialized with default
-        paramters (any keyword arguments will be passed along to the module).
+        parameters (any keyword arguments will be passed along to the module).
         Result includes data inputs and outputs, html representation
         of the initial form, and the initial tool state (with default values).
         This is called asynchronously whenever a new node is added.
@@ -282,6 +282,7 @@ class WorkflowController( BaseController ):
             'name':  module.get_name(),
             'tool_id': module.get_tool_id(),
             'tool_state': module.get_state(),
+            'tooltip': module.get_tooltip(),
             'data_inputs': module.get_data_inputs(),
             'data_outputs': module.get_data_outputs(),
             'form_html': module.get_config_form()

@@ -45,6 +45,8 @@ class WorkflowModule( object ):
         return self.name
     def get_tool_id( self ):
         return None
+    def get_tooltip( self ):
+        return None
     
     ## ---- Configuration time -----------------------------------------------
     
@@ -201,7 +203,9 @@ class ToolModule( WorkflowModule ):
         return self.state.encode( self.tool, self.trans.app )
     def get_errors( self ):
         return self.errors
-
+    def get_tooltip( self ):
+        return self.tool.help
+        
     def get_data_inputs( self ):
         data_inputs = []
         def callback( input, value, prefixed_name, prefixed_label ):

@@ -271,6 +271,8 @@ $.extend( Node.prototype, {
         this.form_html = data.form_html;
         this.tool_state = data.tool_state;
         this.tool_errors = data.tool_errors;
+        this.tooltip = data.tooltip ? data.tooltip : ""
+        
         if ( this.tool_errors ) {
             f.addClass( "tool-node-error" );
         } else {
@@ -458,7 +460,7 @@ $.extend( Workflow.prototype, {
         if ( this.active_node != node ) {
             this.check_changes_in_active_form();
             this.clear_active_node();
-            parent.show_form_for_tool( node.form_html, node );
+            parent.show_form_for_tool( node.form_html + node.tooltip, node );
             node.make_active();
             this.active_node = node;
         }
@@ -467,7 +469,7 @@ $.extend( Workflow.prototype, {
         this.has_changes = true;
         if ( this.active_node == node ) {
             // Reactive with new form_html
-            parent.show_form_for_tool( node.form_html, node );
+            parent.show_form_for_tool( node.form_html + node.tooltip, node );
         }
     },
     layout : function () {
