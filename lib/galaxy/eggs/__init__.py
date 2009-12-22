@@ -520,7 +520,10 @@ def require( pkg ):
             location = None
         del working_set.by_key[dist.key]
         working_set.entry_keys[entry] = []
-        sys.path.remove(entry)
+        try:
+            sys.path.remove(entry)
+        except ValueError:
+            raise Exception( "Cannot remove entry: %s" % str(entry) )
         r = require( pkg )
         if location is not None and not location.endswith( '.egg' ):
             working_set.entries.append( location ) # re-add to the set if it's a dir.
