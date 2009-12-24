@@ -2,7 +2,10 @@
 <%namespace file="/message.mako" import="render_msg" />
 <%namespace file="/dataset/security_common.mako" import="render_permission_form" />>
 
-<% user, roles = trans.get_user_and_roles() %>
+<%
+    if cntrller == 'library':
+        user, roles = trans.get_user_and_roles()
+%>
 
 %if library_dataset == library_dataset.library_dataset_dataset_association.library_dataset:
     <b><i>This is the latest version of this library dataset</i></b>
@@ -13,7 +16,7 @@
 
 <ul class="manage-table-actions">
     <li>
-        <a class="action-button" href="${h.url_for( controller='library', action='browse_library', obj_id=library_id )}"><span>Browse this data library</span></a>
+        <a class="action-button" href="${h.url_for( controller='library_common', action='browse_library', cntrller=cntrller, id=library_id )}"><span>Browse this data library</span></a>
     </li>
 </ul>
 
@@ -27,5 +30,5 @@
                                 .filter( trans.app.model.Role.table.c.deleted==False ) \
                                 .order_by( trans.app.model.Role.table.c.name )
     %>
-    ${render_permission_form( library_dataset, library_dataset.name, h.url_for( controller='library', action='library_dataset', obj_id=library_dataset.id, library_id=library_id, permissions=True ), roles )}
+    ${render_permission_form( library_dataset, library_dataset.name, h.url_for( controller='library_common', action='library_dataset_permissions', id=trans.security.encode_id( library_dataset.id ), library_id=library_id ), roles )}
 %endif

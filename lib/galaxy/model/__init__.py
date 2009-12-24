@@ -746,6 +746,13 @@ class Library( object ):
                     return template.get_widgets( trans.user, contents=info.content )
             return template.get_widgets( trans.user )
         return []
+    def get_display_name( self ):
+        # Library name can be either a string or a unicode object. If string, 
+        # convert to unicode object assuming 'utf-8' format.
+        name = self.name
+        if isinstance( name, str ):
+            name = unicode( name, 'utf-8' )
+        return name
 
 class LibraryFolder( object ):
     def __init__( self, name=None, description=None, item_count=0, order_id=None ):
@@ -811,6 +818,13 @@ class LibraryFolder( object ):
     def active_datasets( self ):
          # This needs to be a list
         return [ ld.library_dataset_dataset_association.dataset for ld in self.datasets if not ld.library_dataset_dataset_association.deleted ]
+    def get_display_name( self ):
+        # Library folder name can be either a string or a unicode object. If string, 
+        # convert to unicode object assuming 'utf-8' format.
+        name = self.name
+        if isinstance( name, str ):
+            name = unicode( name, 'utf-8' )
+        return name
 
 class LibraryDataset( object ):
     # This class acts as a proxy to the currently selected LDDA

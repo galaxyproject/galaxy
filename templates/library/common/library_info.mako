@@ -1,13 +1,16 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
-<%namespace file="/library/common.mako" import="render_template_info" />
+<%namespace file="/library/common/common.mako" import="render_template_info" />
 
-<% user, roles = trans.get_user_and_roles() %>
+<%
+    if not trans.user_is_admin():
+        user, roles = trans.get_user_and_roles()
+%>
 
 <br/><br/>
 <ul class="manage-table-actions">
     <li>
-        <a class="action-button" href="${h.url_for( controller='library', action='browse_library', obj_id=library.id )}"><span>Browse this data library</span></a>
+        <a class="action-button" href="${h.url_for( controller='library_common', action='browse_library', cntrller=cntrller, id=trans.security.encode_id( library.id ) )}"><span>Browse this data library</span></a>
     </li>
 </ul>
 
@@ -15,11 +18,11 @@
     ${render_msg( msg, messagetype )}
 %endif
 
-%if trans.app.security_agent.can_modify_library_item( user, roles, library ):
+%if cntrller == 'library_admin' or trans.app.security_agent.can_modify_library_item( user, roles, library ):
     <div class="toolForm">
         <div class="toolFormTitle">Change library name and description</div>
         <div class="toolFormBody">
-            <form name="library" action="${h.url_for( controller='library', action='library', rename=True )}" method="post" >
+            <form name="library" action="${h.url_for( controller='library_common', action='library_info', id=trans.security.encode_id( library.id ), cntrller=cntrller )}" method="post" >
                 <div class="form-row">
                     <label>Name:</label>
                     <div style="float: left; width: 250px; margin-right: 10px;">
@@ -31,12 +34,6 @@
                     <label>Description:</label>
                     <div style="float: left; width: 250px; margin-right: 10px;">
                         <input type="text" name="description" value="${library.description}" size="40"/>
-                    </div>
-                    <div style="clear: both"></div>
-                </div>
-                <div class="form-row">
-                    <div style="float: left; width: 250px; margin-right: 10px;">
-                        <input type="hidden" name="obj_id" value="${library.id}"/>
                     </div>
                     <div style="clear: both"></div>
                 </div>
@@ -60,5 +57,5 @@
 %endif
 
 %if widgets:
-    ${render_template_info( library, library.id, 'library', widgets )}
+    ${render_template_info( cntrller, library, trans.security.encode_id( library.id ), 'library_info', widgets )}
 %endif

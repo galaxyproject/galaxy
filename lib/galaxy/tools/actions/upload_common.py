@@ -41,7 +41,7 @@ def handle_library_params( trans, params, folder_id, replace_dataset=None ):
     # See if we have any template field contents
     library_bunch.template_field_contents = []
     template_id = params.get( 'template_id', None )
-    library_bunch.folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( folder_id )
+    library_bunch.folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( trans.security.decode_id( folder_id ) )
     # We are inheriting the folder's info_association, so we did not
     # receive any inherited contents, but we may have redirected here
     # after the user entered template contents ( due to errors ).

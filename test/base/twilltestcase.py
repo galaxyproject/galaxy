@@ -1344,15 +1344,15 @@ class TwillTestCase( unittest.TestCase ):
     def create_library( self, name='Library One', description='This is Library One' ):
         """Create a new library"""
         self.home()
-        self.visit_url( "%s/library_admin/library?new=True" % self.url )
+        self.visit_url( "%s/library_admin/create_library" % self.url )
         self.check_page_for_string( 'Create a new data library' )
         tc.fv( "1", "1", name ) # form field 1 is the field named name...
         tc.fv( "1", "2", description ) # form field 1 is the field named name...
         tc.submit( "create_library_button" )
         self.home()
-    def set_library_permissions( self, library_id, library_name, role_ids_str, permissions_in, permissions_out ):
+    def library_permissions( self, library_id, library_name, role_ids_str, permissions_in, permissions_out, cntrller='library_admin' ):
         # role_ids_str must be a comma-separated string of role ids
-        url = "library_admin/library?obj_id=%s&permissions=True&update_roles_button=Save" % ( library_id )
+        url = "library_common/library_permissions?id=%s&cntrller=%slibrary_admin&update_roles_button=Save" % ( library_id, cntrller )
         for po in permissions_out:
             key = '%s_out' % po
             url ="%s&%s=%s" % ( url, key, role_ids_str )
@@ -1364,14 +1364,14 @@ class TwillTestCase( unittest.TestCase ):
         check_str = "Permissions updated for library '%s'" % library_name
         self.check_page_for_string( check_str )
         self.home()
-    def rename_library( self, library_id, old_name, name='Library One Renamed', description='This is Library One Re-described' ):
+    def rename_library( self, library_id, old_name, name='Library One Renamed', description='This is Library One Re-described', controller='library_admin' ):
         """Rename a library"""
         self.home()
-        self.visit_url( "%s/library_admin/library?obj_id=%s&information=True" % ( self.url, library_id ) )
+        self.visit_url( "%s/library_common/library_info?id=%s&cntrller=%s" % ( self.url, library_id, controller ) )
         self.check_page_for_string( 'Change library name and description' )
         # Since twill barfs on the form submisson, we ar forced to simulate it
-        url = "%s/library_admin/library?obj_id=%s&information=True&rename_library_button=Save&description=%s&name=%s" % \
-        ( self.url, library_id, description.replace( ' ', '+' ), name.replace( ' ', '+' ) )
+        url = "%s/library_common/library_info?id=%s&cntrller=%s&rename_library_button=Save&description=%s&name=%s" % \
+        ( self.url, library_id, controller, description.replace( ' ', '+' ), name.replace( ' ', '+' ) )
         self.home()
         self.visit_url( url )
         check_str = "Library '%s' has been renamed to '%s'" % ( old_name, name )
@@ -1387,38 +1387,20 @@ class TwillTestCase( unittest.TestCase ):
         tc.submit( 'add_info_template_button' )
         self.check_page_for_string = 'An information template based on the form "%s" has been added to this data library.' % form_name
         self.home()
-    def edit_library_info( self, library_id, library_name, ele_1_field_name, ele_1_contents, ele_2_field_name, ele_2_contents ):
+    def library_info( self, library_id, library_name, ele_1_field_name, ele_1_contents, ele_2_field_name, ele_2_contents, controller='library_admin' ):
         """Add information to a library using an existing template with 2 elements"""
         self.home()
-        self.visit_url( "%s/library_admin/library?obj_id=%s&information=True" % ( self.url, library_id ) )
+        self.visit_url( "%s/library_common/library_info?id=%s&cntrller=%s" % ( self.url, library_id, controller ) )
         check_str = 'Other information about library %s' % library_name
         self.check_page_for_string( check_str )
         tc.fv( '2', ele_1_field_name, ele_1_contents )
         tc.fv( '2', ele_2_field_name, ele_2_contents )
         tc.submit( 'create_new_info_button' )
         self.home()
-    def edit_library_info_template( self, library_id, obj_id, name, ele_name_1, name_1,
-                                    ele_desc_1, desc_1, ele_name_2, name_2, ele_desc_2, desc_2 ):
-        """Edit an existing library info template"""
-        self.home()
-        url = "%s/library_admin/edit_info_template?library_id=%s&obj_id=%s&response_action='browse_library'" % ( self.url, library_id, obj_id )
-        self.visit_url( url )
-        self.check_page_for_string ( 'Edit template' )
-        tc.fv( '1', 'obj_id', obj_id )
-        tc.fv( '1', 'set_num_fields', '0' )
-        tc.fv( '1', 'name', name )
-        tc.fv( '1', ele_name_1, name_1 )
-        tc.fv( '1', ele_desc_1, desc_1 )
-        tc.fv( '1', ele_name_2, name_2 )
-        tc.fv( '1', ele_desc_2, desc_2 )
-        tc.submit( 'edit_info_template_button' )
-        check_str = "Information template '%s' has been updated" % name
-        self.check_page_for_string( check_str )
-        self.home()
     def add_folder_info_template( self, cntrller, library_id, folder_id, form_id, form_name ):
         """Add a new info template to a folder"""
         self.home()
-        url = "%s/library_common/info_template?cntrller=%s&library_id=%s&folder_id=%s&response_action='folder'" % \
+        url = "%s/library_common/info_template?cntrller=%s&library_id=%s&folder_id=%s&response_action='folder_info'" % \
             ( self.url, cntrller, library_id, folder_id )
         self.visit_url( url )
         self.check_page_for_string ( "Select a form on which to base the template" )
@@ -1429,17 +1411,16 @@ class TwillTestCase( unittest.TestCase ):
     def add_folder( self, controller, library_id, folder_id, name='Folder One', description='This is Folder One' ):
         """Create a new folder"""
         self.home()
-        self.visit_url( "%s/%s/folder?library_id=%s&obj_id=%s&new=True" % \
-                        ( self.url, controller, library_id, folder_id ) )
+        self.visit_url( "%s/library_common/create_folder?cntrller=%s&library_id=%s&parent_id=%s" % ( self.url, controller, library_id, folder_id ) )
         self.check_page_for_string( 'Create a new folder' )
         tc.fv( "1", "name", name ) # form field 1 is the field named name...
         tc.fv( "1", "description", description ) # form field 2 is the field named description...
         tc.submit( "new_folder_button" )
         self.home()
-    def edit_folder_info( self, controller, folder_id, library_id, name, new_name, description, contents='', field_name='' ):
+    def folder_info( self, controller, folder_id, library_id, name, new_name, description, contents='', field_name='' ):
         """Add information to a library using an existing template with 2 elements"""
         self.home()
-        self.visit_url( "%s/%s/folder?obj_id=%s&library_id=%s&information=True" % \
+        self.visit_url( "%s/library_common/folder_info?cntrller=%s&id=%s&library_id=%s" % \
                         ( self.url, controller, folder_id, library_id) )
         # Twill cannot handle the following call for some reason - it's buggy
         # self.check_page_for_string( "Edit folder name and description" )
@@ -1457,27 +1438,14 @@ class TwillTestCase( unittest.TestCase ):
             # Twill cannot handle the following call for some reason - it's buggy
             # self.check_page_for_string( 'The information has been updated.' )
         self.home()
-    def rename_folder( self, library_id, folder_id, old_name, name='Folder One Renamed', description='This is Folder One Re-described' ):
-        """Rename a Folder"""
-        self.home()
-        self.visit_url( "%s/library_admin/folder?library_id=%s&manage=True&obj_id=%s" % ( self.url, library_id, folder_id ) )
-        self.check_page_for_string( 'Edit folder name and description' )
-        # Since twill barfs on the form submisson, we ar forced to simulate it
-        url = "%s/library_admin/folder?library_id=%s&manage=True&obj_id=%s&rename_folder_button=Save&description=%s&name=%s" % \
-        ( self.url, library_id, folder_id, description.replace( ' ', '+' ), name.replace( ' ', '+' ) )
-        self.home()
-        self.visit_url( url )
-        check_str = "Folder '%s' has been renamed to '%s'" % ( old_name, name )
-        self.check_page_for_string( check_str )
-        self.home()
-    def add_library_dataset( self, controller, filename, library_id, folder_id, folder_name,
+    def add_library_dataset( self, cntrller, filename, library_id, folder_id, folder_name,
                              file_type='auto', dbkey='hg18', roles=[], message='', root=False,
                              template_field_name1='', template_field_contents1='' ):
         """Add a dataset to a folder"""
         filename = self.get_filename( filename )
         self.home()
-        self.visit_url( "%s/%s/upload_library_dataset?upload_option=upload_file&library_id=%s&folder_id=%s&message=%s" % \
-                        ( self.url, controller, library_id, folder_id, message ) )
+        self.visit_url( "%s/library_common/upload_library_dataset?cntrller=%s&upload_option=upload_file&library_id=%s&folder_id=%s&message=%s" % \
+                        ( self.url, cntrller, library_id, folder_id, message ) )
         self.check_page_for_string( 'Upload files' )
         tc.fv( "1", "folder_id", folder_id )
         tc.formfile( "1", "files_0|file_data", filename )
@@ -1497,10 +1465,10 @@ class TwillTestCase( unittest.TestCase ):
         data = self.last_page()
         self.library_wait( library_id )
         self.home()
-    def set_library_dataset_permissions( self, library_id, folder_id, ldda_id, ldda_name, role_ids_str, permissions_in, permissions_out ):
+    def set_library_dataset_permissions( self, cntrller, library_id, folder_id, ldda_id, ldda_name, role_ids_str, permissions_in, permissions_out ):
         # role_ids_str must be a comma-separated string of role ids
-        url = "library_admin/ldda_manage_permissions?library_id=%s&folder_id=%s&obj_id=%s&update_roles_button=Save" % \
-            ( library_id, folder_id, ldda_id )
+        url = "library_common/ldda_permissions?cntrller=%s&library_id=%s&folder_id=%s&id=%s&update_roles_button=Save" % \
+            ( cntrller, library_id, folder_id, ldda_id )
         for po in permissions_out:
             key = '%s_out' % po
             url ="%s&%s=%s" % ( url, key, role_ids_str )
@@ -1517,7 +1485,7 @@ class TwillTestCase( unittest.TestCase ):
                         ele_3_field_name='', ele_3_contents='', ele_3_help='' ):
         """Edit library_dataset_dataset_association template element information"""
         self.home()
-        self.visit_url( "%s/library_admin/ldda_edit_info?library_id=%s&folder_id=%s&obj_id=%s" % \
+        self.visit_url( "%s/library_common/ldda_edit_info?cntrller=library_admin&library_id=%s&folder_id=%s&id=%s" % \
                         ( self.url, library_id, folder_id, ldda_id ) )        
         check_str = 'Edit attributes of %s' % ldda_name
         self.check_page_for_string( check_str )
@@ -1546,11 +1514,11 @@ class TwillTestCase( unittest.TestCase ):
             check_str = ele_3_help.replace( '+', ' ' )
             self.check_page_for_string( check_str )
         self.home()
-    def edit_ldda_attribute_info( self, library_id, folder_id, ldda_id, ldda_name, new_ldda_name ):
+    def edit_ldda_attribute_info( self, cntrller, library_id, folder_id, ldda_id, ldda_name, new_ldda_name ):
         """Edit library_dataset_dataset_association attribute information"""
         self.home()
-        self.visit_url( "%s/library_admin/ldda_edit_info?library_id=%s&folder_id=%s&obj_id=%s" % \
-                        ( self.url, library_id, folder_id, ldda_id ) )
+        self.visit_url( "%s/library_common/ldda_edit_info?cntrller=%s&library_id=%s&folder_id=%s&id=%s" % \
+                        ( self.url, cntrller, library_id, folder_id, ldda_id ) )
         check_str = 'Edit attributes of %s' % ldda_name
         self.check_page_for_string( check_str )
         tc.fv( '1', 'name', new_ldda_name )
@@ -1560,13 +1528,13 @@ class TwillTestCase( unittest.TestCase ):
         check_str = 'Edit attributes of %s' % new_ldda_name
         self.check_page_for_string( check_str )
         self.home()
-    def upload_new_dataset_version( self, filename, library_id, folder_id, folder_name, library_dataset_id, ldda_name, file_type='auto',
+    def upload_new_dataset_version( self, cntrller, filename, library_id, folder_id, folder_name, library_dataset_id, ldda_name, file_type='auto',
                                     dbkey='hg18', message='', template_field_name1='', template_field_contents1='' ):
         """Upload new version(s) of a dataset"""
         self.home()
         filename = self.get_filename( filename )      
-        self.visit_url( "%s/library_admin/upload_library_dataset?upload_option=upload_file&library_id=%s&folder_id=%s&replace_id=%s&message=%s" % \
-                        ( self.url, library_id, folder_id, library_dataset_id, message ) )
+        self.visit_url( "%s/library_common/upload_library_dataset?cntrller=%s&upload_option=upload_file&library_id=%s&folder_id=%s&replace_id=%s&message=%s" % \
+                        ( self.url, cntrller, library_id, folder_id, library_dataset_id, message ) )
         self.check_page_for_string( 'Upload files' )
         self.check_page_for_string( 'You are currently selecting a new file to replace' )
         self.check_page_for_string( ldda_name )
@@ -1582,11 +1550,11 @@ class TwillTestCase( unittest.TestCase ):
         self.check_page_for_string( check_str )
         self.library_wait( library_id )
         self.home()
-    def add_history_datasets_to_library( self, library_id, folder_id, folder_name, hda_id, root=False ):
+    def add_history_datasets_to_library( self, cntrller, library_id, folder_id, folder_name, hda_id, root=False ):
         """Copy a dataset from the current history to a library folder"""
         self.home()
-        self.visit_url( "%s/library_admin/add_history_datasets_to_library?library_id=%s&folder_id=%s&hda_ids=%s&add_history_datasets_to_library_button=Add+selected+datasets" % \
-                        ( self.url, library_id, folder_id, hda_id ) )
+        self.visit_url( "%s/library_common/add_history_datasets_to_library?cntrller=%s&library_id=%s&folder_id=%s&hda_ids=%s&add_history_datasets_to_library_button=Add+selected+datasets" % \
+                        ( self.url, cntrller, library_id, folder_id, hda_id ) )
         if root:
             check_str = "Added 1 datasets to the library '%s' ( each is selected )." % folder_name
         else:
@@ -1598,7 +1566,8 @@ class TwillTestCase( unittest.TestCase ):
         """Add a directory of datasets to a folder"""
         # roles is a list of tuples: [ ( role_id, role_description ) ]
         self.home()
-        self.visit_url( "%s/library_admin/upload_library_dataset?upload_option=upload_directory&library_id=%s&folder_id=%s" % ( self.url, library_id, folder_id ) )
+        self.visit_url( "%s/library_common/upload_library_dataset?cntrller=library_admin&upload_option=upload_directory&library_id=%s&folder_id=%s" % \
+            ( self.url, library_id, folder_id ) )
         self.check_page_for_string( 'Upload a directory of files' )
         tc.fv( "1", "folder_id", folder_id )
         tc.fv( "1", "file_type", file_type )
@@ -1620,8 +1589,8 @@ class TwillTestCase( unittest.TestCase ):
         """Add a directory of datasets to a folder"""
         # roles is a list of tuples: [ ( role_id, role_description ) ]
         self.home()
-        self.visit_url( "%s/library/upload_library_dataset?upload_option=upload_directory&library_id=%s&folder_id=%s" % \
-                        ( self.url, library_id, folder_id ) )
+        self.visit_url( "%s/library_common/upload_library_dataset?cntrller=library&upload_option=upload_directory&library_id=%s&folder_id=%s" % \
+            ( self.url, library_id, folder_id ) )
         self.check_page_for_string( 'Upload a directory of files' )
         tc.fv( "1", "folder_id", folder_id )
         tc.fv( "1", "file_type", file_type )
@@ -1636,11 +1605,11 @@ class TwillTestCase( unittest.TestCase ):
         tc.submit( "runtool_btn" )
         if check_str_after_submit:
             self.check_page_for_string( check_str_after_submit )
-        self.library_wait( library_id, controller='library' )
+        self.library_wait( library_id, cntrller='library' )
         self.home()
-    def download_archive_of_library_files( self, library_id, ldda_ids, format ):
+    def download_archive_of_library_files( self, cntrller, library_id, ldda_ids, format ):
         self.home()
-        self.visit_url( "%s/library/browse_library?obj_id=%s" % ( self.url, library_id ) )
+        self.visit_url( "%s/library_common/browse_library?cntrller=%s&id=%s" % ( self.url, cntrller, library_id ) )
         for ldda_id in ldda_ids:
             tc.fv( "1", "ldda_ids", ldda_id )
         tc.fv( "1", "do_action", format )
@@ -1719,18 +1688,18 @@ class TwillTestCase( unittest.TestCase ):
     def purge_library( self, library_id, library_name ):
         """Purge a library"""
         self.home()
-        self.visit_url( "%s/library_admin/purge_library?obj_id=%s" % ( self.url, library_id ) )
+        self.visit_url( "%s/library_admin/purge_library?id=%s" % ( self.url, library_id ) )
         check_str = "Library '%s' and all of its contents have been purged" % library_name
         self.check_page_for_string( check_str )
         self.home()
-    def library_wait( self, library_id, controller='library_admin', maxiter=20 ):
+    def library_wait( self, library_id, cntrller='library_admin', maxiter=20 ):
         """Waits for the tools to finish"""
         count = 0
         sleep_amount = 1
         self.home()
         while count < maxiter:
             count += 1
-            self.visit_url( "%s/%s/browse_library?obj_id=%s" % ( self.url, controller, library_id ) )
+            self.visit_url( "%s/library_common/browse_library?cntrller=%s&id=%s" % ( self.url, cntrller, library_id ) )
             page = tc.browser.get_html()
             if page.find( '<!-- running: do not change this comment, used by TwillTestCase.library_wait -->' ) > -1:
                 time.sleep( sleep_amount )

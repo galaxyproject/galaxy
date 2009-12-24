@@ -4,7 +4,7 @@
 <br/><br/>
 <ul class="manage-table-actions">
     <li>
-        <a class="action-button" href="${h.url_for( controller=controller, action='browse_library', obj_id=library_id )}"><span>Browse this data library</span></a>
+        <a class="action-button" href="${h.url_for( controller='library_common', action='browse_library', cntrller=cntrller, id=library_id )}"><span>Browse this data library</span></a>
     </li>
 </ul>
 
@@ -14,7 +14,7 @@
 
 <div class="toolForm">
     <div class="toolFormTitle">Select a form on which to base the template for the ${library_item_desc} '${library_item_name}'</div>
-    <form name="new_info_template" action="${h.url_for( controller='library_common', action='info_template', cntrller=controller )}" method="post" >
+    <form name="new_info_template" action="${h.url_for( controller='library_common', action='info_template', cntrller=cntrller )}" method="post" >
         <div class="toolFormBody">
             <div class="form-row">
                 <input type="hidden" name="library_id" value="${library_id}"/>

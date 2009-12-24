@@ -1,7 +1,7 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
 <%namespace file="/dataset/security_common.mako" import="render_permission_form" />
-<%namespace file="/library/common.mako" import="render_template_info" />
+<%namespace file="/library/common/common.mako" import="render_template_info" />
 
 <% user, roles = trans.get_user_and_roles() %>
 
@@ -13,7 +13,7 @@
     <div class="toolForm">
         <div class="toolFormTitle">Change library name and description</div>
         <div class="toolFormBody">
-            <form name="library" action="${h.url_for( controller='library', action='library', rename=True )}" method="post" >
+            <form name="library" action="${h.url_for( controller='library_common', action='library_info', id=trans.security.encode_id( library.id ), cntrller='mobile' )}" method="post" >
                 <div class="form-row">
                     <label>Name:</label>
                     <div style="float: left; width: 250px; margin-right: 10px;">
@@ -25,12 +25,6 @@
                     <label>Description:</label>
                     <div style="float: left; width: 250px; margin-right: 10px;">
                         <input type="text" name="description" value="${library.description}" size="40"/>
-                    </div>
-                    <div style="clear: both"></div>
-                </div>
-                <div class="form-row">
-                    <div style="float: left; width: 250px; margin-right: 10px;">
-                        <input type="hidden" name="obj_id" value="${library.id}"/>
                     </div>
                     <div style="clear: both"></div>
                 </div>
@@ -51,7 +45,7 @@
             </div>
         </div>
         <div class="toolForm">
-            ${render_template_info( library, library.id, 'library' )}
+            ${render_template_info( 'mobile', library, library.id, 'library' )}
         </div>
     </div>
 %endif
@@ -61,9 +55,9 @@
                                 .filter( trans.app.model.Role.table.c.deleted==False ) \
                                 .order_by( trans.app.model.Role.table.c.name )
     %>
-    ${render_permission_form( library, library.name, h.url_for( controller='library', action='library', id=library.id, permissions=True ), roles )}
+    ${render_permission_form( library, library.name, h.url_for( controller='library_common', cntrller='mobile', action='library_permissions', id=trans.security.encode_id( library.id ) ), roles )}
 %endif
 
 %if widgets:
-    ${render_template_info( library, library_id, 'library', widgets )}
+    ${render_template_info( 'mobile', library, trans.security.encode_id( library.id ), 'edit_library_information', widgets )}
 %endif

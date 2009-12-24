@@ -1,13 +1,16 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
-<%namespace file="/library/common.mako" import="render_template_info" />
+<%namespace file="/library/common/common.mako" import="render_template_info" />
 
-<% user, roles = trans.get_user_and_roles() %>
+<%
+    if cntrller != 'library_admin':
+        user, roles = trans.get_user_and_roles()
+%>
 
 <br/><br/>
 <ul class="manage-table-actions">
     <li>
-        <a class="action-button" href="${h.url_for( controller='library', action='browse_library', obj_id=library_id )}"><span>Browse this data library</span></a>
+        <a class="action-button" href="${h.url_for( controller='library_common', action='browse_library', cntrller=cntrller, id=library_id )}"><span>Browse this data library</span></a>
     </li>
 </ul>
 
@@ -18,8 +21,8 @@
 <div class="toolForm">
     <div class="toolFormTitle">Edit folder name and description</div>
     <div class="toolFormBody">
-        %if trans.app.security_agent.can_modify_library_item( user, roles, folder ):
-            <form name="folder" action="${h.url_for( controller='library', action='folder', rename=True, obj_id=folder.id, library_id=library_id )}" method="post" >
+        %if cntrller=='library_admin' or trans.app.security_agent.can_modify_library_item( user, roles, folder ):
+            <form name="folder" action="${h.url_for( controller='library_common', action='folder_info', cntrller=cntrller, id=trans.security.encode_id( folder.id ), library_id=library_id )}" method="post" >
                 <div class="form-row">
                     <label>Name:</label>
                     <input type="text" name="name" value="${folder.name}" size="40"/>
@@ -49,5 +52,5 @@
     </div>
 </div>
 %if widgets:
-    ${render_template_info( folder, library_id, 'folder', widgets )}
+    ${render_template_info( cntrller, folder, library_id, 'folder_info', widgets )}
 %endif

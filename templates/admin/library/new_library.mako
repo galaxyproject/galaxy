@@ -8,7 +8,7 @@
 <div class="toolForm">
     <div class="toolFormTitle">Create a new data library</div>
     <div class="toolFormBody">
-        <form name="library" action="${h.url_for( controller='library_admin', action='library' )}" method="post" >
+        <form name="library" action="${h.url_for( controller='library_admin', action='create_library' )}" method="post" >
             <div class="form-row">
                 <label>Name:</label>
                 <div style="float: left; width: 250px; margin-right: 10px;">

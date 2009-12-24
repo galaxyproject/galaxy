@@ -1,8 +1,11 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
-<%namespace file="/library/common.mako" import="render_template_info" />
+<%namespace file="/library/common/common.mako" import="render_template_info" />
 
-<% user, roles = trans.get_user_and_roles() %>
+<%
+    if cntrller=='library':
+        user, roles = trans.get_user_and_roles()
+%>
 
 %if library_dataset == library_dataset.library_dataset_dataset_association.library_dataset:
     <b><i>This is the latest version of this library dataset</i></b>
@@ -13,7 +16,7 @@
 
 <ul class="manage-table-actions">
     <li>
-        <a class="action-button" href="${h.url_for( controller='library', action='browse_library', obj_id=library_id )}"><span>Browse this data library</span></a>
+        <a class="action-button" href="${h.url_for( controller='library_common', action='browse_library', cntrller=cntrller, id=library_id )}"><span>Browse this data library</span></a>
     </li>
 </ul>
 
@@ -21,11 +24,11 @@
     ${render_msg( msg, messagetype )}
 %endif
 
-%if trans.app.security_agent.can_modify_library_item( user, roles, library_dataset ):
+%if cntrller=='library_admin' or trans.app.security_agent.can_modify_library_item( user, roles, library_dataset ):
     <div class="toolForm">
         <div class="toolFormTitle">Edit attributes of ${library_dataset.name}</div>
         <div class="toolFormBody">
-            <form name="edit_attributes" action="${h.url_for( controller='library', action='library_dataset', obj_id=library_dataset.id, library_id=library_id, information=True )}" method="post">
+            <form name="edit_attributes" action="${h.url_for( controller='library_common', action='library_dataset_info', id=trans.security.encode_id( library_dataset.id ), library_id=library_id )}" method="post">
                 <div class="form-row">
                     <label>Name:</label>
                     <div style="float: left; width: 250px; margin-right: 10px;">
@@ -64,5 +67,5 @@
 %endif
 
 %if widgets:
-    ${render_template_info( library_dataset, library_id, '', widgets )}
+    ${render_template_info( cntrller, library_dataset, library_id, '', widgets )}
 %endif

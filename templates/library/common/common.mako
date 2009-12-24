@@ -1,4 +1,65 @@
-<%def name="render_upload_form( controller, upload_option, action, library_id, folder_id, replace_dataset, file_formats, dbkeys, roles, history )">
+<%def name="render_template_info( cntrller, library_item, library_id, response_action, widgets, editable=True )">
+    <%
+        library_item_type = 'unknown type'
+        library_item_desc = ''
+        if isinstance( library_item, trans.app.model.Library ):
+            library_item_type = 'library'
+            library_item_desc = 'library'
+        elif isinstance( library_item, trans.app.model.LibraryFolder ):
+            library_item_type = 'folder'
+            library_item_desc = 'folder'
+        elif isinstance( library_item, trans.app.model.LibraryDataset ):
+            library_item_type = 'library_dataset'
+            library_item_desc = 'dataset'
+        elif isinstance( library_item, trans.app.model.LibraryDatasetDatasetAssociation ):
+            library_item_type = 'library_dataset_dataset_association'
+            library_item_desc = 'library dataset'
+        if cntrller == 'library':
+            user, roles = trans.get_user_and_roles()
+    %>
+    %if widgets:
+        <p/>
+        <div class="toolForm">
+            <div class="toolFormTitle">Other information about ${library_item_desc} ${library_item.name}</div>
+            <div class="toolFormBody">
+                %if editable and ( cntrller=='library_admin' or trans.app.security_agent.can_modify_library_item( user, roles, library_item ) ):
+                    <form name="edit_info" action="${h.url_for( controller='library_common', action='edit_template_info', cntrller=cntrller, library_id=library_id, response_action=response_action, num_widgets=len( widgets ) )}" method="post">
+                        <input type="hidden" name="library_item_id" value="${trans.security.encode_id( library_item.id )}"/>
+                        <input type="hidden" name="library_item_type" value="${library_item_type}"/>
+                        %for i, field in enumerate( widgets ):
+                            <div class="form-row">
+                                <label>${field[ 'label' ]}</label>
+                                ${field[ 'widget' ].get_html()}
+                                <div class="toolParamHelp" style="clear: both;">
+                                    ${field[ 'helptext' ]}
+                                </div>
+                                <div style="clear: both"></div>
+                            </div>
+                        %endfor 
+                        <div class="form-row">
+                            <input type="submit" name="edit_info_button" value="Save"/>
+                        </div>
+                    </form>
+                %else:
+                    %for i, field in enumerate( widgets ):
+                        %if field[ 'widget' ].value:
+                            <div class="form-row">
+                                <label>${field[ 'label' ]}</label>
+                                ${field[ 'widget' ].value}
+                                <div class="toolParamHelp" style="clear: both;">
+                                    ${field[ 'helptext' ]}
+                                </div>
+                                <div style="clear: both"></div>
+                            </div>
+                        %endif
+                    %endfor
+                %endif
+            </div>
+        </div>
+    %endif
+</%def>
+
+<%def name="render_upload_form( cntrller, upload_option, action, library_id, folder_id, replace_dataset, file_formats, dbkeys, roles, history )">
     <% import os, os.path %>
     %if upload_option in [ 'upload_file', 'upload_directory', 'upload_paths' ]:
         <div class="toolForm" id="upload_library_dataset">
@@ -17,9 +78,9 @@
                     <input type="hidden" name="folder_id" value="${folder_id}"/>
                     <input type="hidden" name="upload_option" value="${upload_option}"/>
                     %if replace_dataset not in [ None, 'None' ]:
-                        <input type="hidden" name="replace_id" value="${replace_dataset.id}"/>
+                        <input type="hidden" name="replace_id" value="${trans.security.encode_id( replace_dataset.id )}"/>
                         <div class="form-row">
-                            You are currently selecting a new file to replace '<a href="${h.url_for( controller=controller, action='ldda_display_info', library_id=library_id, folder_id=folder_id, obj_id=replace_dataset.library_dataset_dataset_association.id )}">${replace_dataset.name}</a>'.
+                            You are currently selecting a new file to replace '<a href="${h.url_for( controller=cntrller, action='ldda_display_info', library_id=library_id, folder_id=folder_id, id=trans.security.encode_id( replace_dataset.library_dataset_dataset_association.id ) )}">${replace_dataset.name}</a>'.
                             <div style="clear: both"></div>
                         </div>
                     %endif
@@ -59,7 +120,7 @@
                         </div>
                     %elif upload_option == 'upload_directory':
                         <%
-                            if controller == 'library_admin':
+                            if cntrller == 'library_admin':
                                 import_dir = trans.app.config.library_import_dir
                             else:
                                 # Directories of files from the Data Libraries view are restricted to a
@@ -89,7 +150,7 @@
                                             %endif
                                         %endfor
                                     %else:
-                                        %if controller == 'library_admin':
+                                        %if cntrller == 'library_admin':
                                             <option>${import_dir}</option>
                                         %else:
                                             <option>${trans.user.email}</option>
@@ -235,13 +296,13 @@
             <div class="toolFormTitle">Active datasets in your current history (${history.name})</div>
             <div class="toolFormBody">
                 %if history and history.active_datasets:
-                    <form name="add_history_datasets_to_library" action="${h.url_for( controller=controller, action='add_history_datasets_to_library', library_id=library_id )}" enctype="multipart/form-data" method="post">
+                    <form name="add_history_datasets_to_library" action="${h.url_for( controller='library_common', action='add_history_datasets_to_library', cntrller=cntrller, library_id=library_id )}" enctype="multipart/form-data" method="post">
                         <input type="hidden" name="folder_id" value="${folder_id}"/>
                         <input type="hidden" name="upload_option" value="${upload_option}"/>
                         %if replace_dataset not in [ None, 'None' ]:
-                            <input type="hidden" name="replace_id" value="${replace_dataset.id}"/>
+                            <input type="hidden" name="replace_id" value="${trans.security.encode_id( replace_dataset.id )}"/>
                             <div class="form-row">
-                                You are currently selecting a new file to replace '<a href="${h.url_for( controller=controller, action='ldda_display_info', library_id=library_id, folder_id=folder_id, obj_id=replace_dataset.library_dataset_dataset_association.id )}">${replace_dataset.name}</a>'.
+                                You are currently selecting a new file to replace '<a href="${h.url_for( controller=cntrller, action='ldda_display_info', library_id=library_id, folder_id=folder_id, id=trans.security.encode_id( replace_dataset.library_dataset_dataset_association.id ) )}">${replace_dataset.name}</a>'.
                                 <div style="clear: both"></div>
                             </div>
                         %endif
@@ -262,4 +323,48 @@
             </div>
         </div>
     %endif
+</%def>
+
+<%def name="render_actions_on_multiple_items( cntrller, default_action=None, deleted=False, show_deleted=False )">
+    <tfoot>
+        <tr>
+            <td colspan="4" style="padding-left: 42px;">
+                For selected items:
+                %if cntrller=='library_admin' and not deleted and not show_deleted:
+                    <select name="do_action" id="action_on_selected_items">
+                        <option value="manage_permissions">Edit permissions</option>
+                        <option value="delete">Delete</option>
+                    </select>
+                    <input type="submit" class="primary-button" name="action_on_datasets_button" id="action_on_datasets_button" value="Go"/>
+                %elif cntrller=='library':
+                    <select name="do_action" id="action_on_selected_items">
+                        %if default_action == 'add':
+                            <option value="add" selected>Import into your current history</option>
+                        %else:
+                            <option value="add">Import into your current history</option>
+                        %endif
+                        %if default_action == 'manage_permissions':
+                            <option value="manage_permissions" selected>Edit permissions</option>
+                            # This condition should not contain an else clause because the user is not authorized
+                            # to manage dataset permissions unless the default action is 'manage_permissions'
+                        %endif
+                        %if 'bz2' in comptypes:
+                            <option value="tbz"
+                            %if default_action == 'download':
+                                selected
+                            %endif>
+                            >Download as a .tar.bz2 file</option>
+                        %endif
+                        %if 'gz' in comptypes:
+                            <option value="tgz">Download  as a .tar.gz file</option>
+                        %endif
+                        %if 'zip' in comptypes:
+                            <option value="zip">Download as a .zip file</option>
+                        %endif
+                    </select>
+                    <input type="submit" class="primary-button" name="action_on_datasets_button" id="action_on_datasets_button" value="Go"/>
+                %endif
+            </td>
+        </tr>
+    </tfoot>
 </%def>

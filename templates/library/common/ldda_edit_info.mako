@@ -1,6 +1,6 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
-<%namespace file="/library/common.mako" import="render_template_info" />
+<%namespace file="/library/common/common.mako" import="render_template_info" />
 <% from galaxy import util %>
 
 <%def name="javascripts()">
@@ -20,7 +20,10 @@
     ${h.css( "autocomplete_tagging" )}
 </%def>
 
-<% user, roles = trans.get_user_and_roles() %>
+<%
+    if cntrller == 'library':
+        user, roles = trans.get_user_and_roles()
+%>
 
 %if ldda == ldda.library_dataset.library_dataset_dataset_association:
     <b><i>This is the latest version of this library dataset</i></b>
@@ -31,7 +34,7 @@
 
 <ul class="manage-table-actions">
     <li>
-        <a class="action-button" href="${h.url_for( controller='library', action='browse_library', obj_id=library_id )}"><span>Browse this data library</span></a>
+        <a class="action-button" href="${h.url_for( controller='library_common', action='browse_library', cntrller=cntrller, id=library_id )}"><span>Browse this data library</span></a>
     </li>
 </ul>
 
@@ -51,12 +54,12 @@
     </select>
 </%def>
 
-%if trans.app.security_agent.can_modify_library_item( user, roles, ldda.library_dataset ):
+%if cntrller=='library_admin' or trans.app.security_agent.can_modify_library_item( user, roles, ldda.library_dataset ):
     <div class="toolForm">
         <div class="toolFormTitle">Edit attributes of ${ldda.name}</div>
         <div class="toolFormBody">
-            <form name="edit_attributes" action="${h.url_for( controller='library', action='ldda_edit_info', library_id=library_id, folder_id=ldda.library_dataset.folder.id )}" method="post">
-                <input type="hidden" name="obj_id" value="${ldda.id}"/>
+            <form name="edit_attributes" action="${h.url_for( controller='library_common', action='ldda_edit_info', cntrller=cntrller, library_id=library_id, folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ) )}" method="post">
+                <input type="hidden" name="id" value="${trans.security.encode_id( ldda.id )}"/>
                 <div class="form-row">
                     <label>Name:</label>
                     <input type="text" name="name" value="${ldda.name}" size="40"/>
@@ -92,9 +95,9 @@
                     <input type="submit" name="save" value="Save"/>
                 </div>
             </form>
-            <form name="auto_detect" action="${h.url_for( controller='library', action='ldda_edit_info', library_id=library_id, folder_id=ldda.library_dataset.folder.id )}" method="post">
+            <form name="auto_detect" action="${h.url_for( controller='library_common', action='ldda_edit_info', cntrller=cntrller, library_id=library_id, folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ) )}" method="post">
                 <div class="form-row">
-                    <input type="hidden" name="id" value="${ldda.id}"/>
+                    <input type="hidden" name="id" value="${trans.security.encode_id( ldda.id )}"/>
                     <input type="submit" name="detect" value="Auto-detect"/>
                     <div class="toolParamHelp" style="clear: both;">
                         This will inspect the dataset and attempt to correct the above column values if they are not accurate.
@@ -108,8 +111,8 @@
         <div class="toolFormTitle">Change data type</div>
         <div class="toolFormBody">
             %if ldda.datatype.allow_datatype_change:
-                <form name="change_datatype" action="${h.url_for( controller='library', action='ldda_edit_info', library_id=library_id, folder_id=ldda.library_dataset.folder.id )}" method="post">
-                    <input type="hidden" name="id" value="${ldda.id}"/>
+                <form name="change_datatype" action="${h.url_for( controller='library_common', action='ldda_edit_info', cntrller=cntrller, library_id=library_id, folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ) )}" method="post">
+                    <input type="hidden" name="id" value="${trans.security.encode_id( ldda.id )}"/>
                     <div class="form-row">
                         <label>New Type:</label>
                         ${datatype( ldda, file_formats )}
@@ -164,5 +167,5 @@
     </div>
 %endif
 %if widgets:
-    ${render_template_info( ldda, library_id, 'ldda_edit_info', widgets )}
+    ${render_template_info( 'library', ldda, library_id, 'ldda_edit_info', widgets )}
 %endif

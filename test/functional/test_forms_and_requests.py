@@ -152,11 +152,19 @@ class TestFormsAndRequests( TwillTestCase ):
         permissions_out = []
         # Role one members are: admin_user, regular_user1.  Each of these users will be permitted to
         # LIBRARY_ADD, LIBRARY_MODIFY, LIBRARY_MANAGE for library items.
-        self.set_library_permissions( str( library_one.id ), library_one.name, str( regular_user1_private_role.id ), permissions_in, permissions_out )
+        self.library_permissions( self.security.encode_id( library_one.id ),
+                                  library_one.name,
+                                  str( regular_user1_private_role.id ),
+                                  permissions_in,
+                                  permissions_out )
         # create a folder in the library
         root_folder = library_one.root_folder
         name = "Folder One"
-        self.add_folder( 'library_admin', str( library_one.id ), str( root_folder.id ), name=name, description='' )
+        self.add_folder( 'library_admin',
+                         self.security.encode_id( library_one.id ),
+                         self.security.encode_id( root_folder.id ),
+                         name=name,
+                         description='' )
         global folder_one
         folder_one = sa_session.query( galaxy.model.LibraryFolder ) \
                                .filter( and_( galaxy.model.LibraryFolder.table.c.parent_id==root_folder.id,
@@ -164,7 +172,7 @@ class TestFormsAndRequests( TwillTestCase ):
                                .first()
         assert folder_one is not None, 'Problem retrieving library folder named "%s" from the database' % name
         self.home()
-        self.visit_url( '%s/library_admin/browse_library?obj_id=%s' % ( self.url, str( library_one.id ) ) )
+        self.visit_url( '%s/library_common/browse_library?cntrller=library_admin&id=%s' % ( self.url, self.security.encode_id( library_one.id ) ) )
         self.check_page_for_string( name )
         # create address
         self.logout()
