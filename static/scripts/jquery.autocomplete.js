@@ -655,7 +655,7 @@ $.Autocompleter.Select = function (options, input, select, config) {
 	function headerAtPosition(position)
 	{
 	  dataAtPosition = data[position].data;
-	  return (dataAtPosition.indexOf("#Header") == 0);
+	  return (dataAtPosition[0].indexOf("#Header") == 0);
 	}
 
 	function moveSelect(step) {
