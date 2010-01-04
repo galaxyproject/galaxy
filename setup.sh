@@ -1,6 +1,6 @@
 #!/bin/sh
 
-python ./scripts/check_python.py
+CLEAN_PYTHON=`python ./scripts/check_python.py`
 [ $? -ne 0 ] && exit 1
 
 SAMPLES="
@@ -56,4 +56,4 @@ for dir in $DIRS; do
     fi
 done
 
-python ./scripts/fetch_eggs.py
+$CLEAN_PYTHON ./scripts/fetch_eggs.py

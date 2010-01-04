@@ -1,4 +1,4 @@
 #!/bin/sh
 
 cd `dirname $0`
-python -ES ./scripts/set_metadata.py $@
+`python ./scripts/check_python.py` ./scripts/set_metadata.py $@
