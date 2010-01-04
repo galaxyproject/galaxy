@@ -526,7 +526,9 @@ def require( pkg ):
             raise Exception( "Cannot remove entry: %s" % str(entry) )
         r = require( pkg )
         if location is not None and not location.endswith( '.egg' ):
+            # re-add the path if it's a non-egg dir, in case more deps live there
             working_set.entries.append( location ) # re-add to the set if it's a dir.
+            sys.path.append( location ) # re-add to the set if it's a dir.
         return r
     except pkg_resources.DistributionNotFound, e:
         # the initial require itself is the first dep, but it can have
