@@ -21,7 +21,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.check_page_for_string( not_logged_in_security_msg )
         self.visit_url( "%s/admin/create_role" % self.url )
         self.check_page_for_string( not_logged_in_security_msg )
-        self.visit_url( "%s/admin/role" % self.url )
+        self.visit_url( "%s/admin/manage_users_and_groups_for_role" % self.url )
         self.check_page_for_string( not_logged_in_security_msg )
         self.visit_url( "%s/admin/groups" % self.url )
         self.check_page_for_string( not_logged_in_security_msg )
@@ -76,7 +76,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
             raise AssertionError( 'The DefaultHistoryPermission.action for history id %d is "%s", but it should be "%s"' \
                                   % ( latest_history.id, dhp.action, galaxy.model.Dataset.permitted_actions.DATASET_MANAGE_PERMISSIONS.action ) )
         self.home()
-        self.visit_url( "%s/admin/user?id=%s" % ( self.url, self.security.encode_id( admin_user.id ) ) )
+        self.visit_url( "%s/admin/manage_roles_and_groups_for_user?id=%s" % ( self.url, self.security.encode_id( admin_user.id ) ) )
         self.check_page_for_string( admin_user.email )
         # Try deleting the admin_user's private role
         check_str = "You cannot eliminate a user's private role association."

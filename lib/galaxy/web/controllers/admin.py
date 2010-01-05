@@ -159,7 +159,7 @@ class RoleListGrid( grids.Grid ):
     columns = [
         NameColumn( "Name",
                     key="name",
-                    link=( lambda item: dict( controller="admin", action="role", id=item.id ) ),
+                    link=( lambda item: dict( operation="Manage users and groups", id=item.id ) ),
                     model_class=model.Role,
                     attach_popup=True,
                     filterable="advanced" ),
@@ -187,7 +187,8 @@ class RoleListGrid( grids.Grid ):
     global_actions = [
         grids.GridAction( "Add new role", dict( controller='admin', action='roles', operation='create' ) )
     ]
-    operations = [ grids.GridOperation( "Delete", condition=( lambda item: not item.deleted ), allow_multiple=True ),
+    operations = [ grids.GridOperation( "Rename", condition=( lambda item: not item.deleted ), allow_multiple=False ),
+                   grids.GridOperation( "Delete", condition=( lambda item: not item.deleted ), allow_multiple=True ),
                    grids.GridOperation( "Undelete", condition=( lambda item: item.deleted ), allow_multiple=True ),
                    grids.GridOperation( "Purge", condition=( lambda item: item.deleted ), allow_multiple=True ) ]
     standard_filters = [
@@ -243,7 +244,7 @@ class GroupListGrid( grids.Grid ):
     columns = [
         NameColumn( "Name",
                     key="name",
-                    link=( lambda item: dict( controller="admin", action="group", id=item.id ) ),
+                    link=( lambda item: dict( operation="Manage users and roles", id=item.id ) ),
                     model_class=model.Group,
                     attach_popup=True,
                     filterable="advanced" ),
@@ -261,7 +262,8 @@ class GroupListGrid( grids.Grid ):
     global_actions = [
         grids.GridAction( "Add new group", dict( controller='admin', action='groups', operation='create' ) )
     ]
-    operations = [ grids.GridOperation( "Delete", condition=( lambda item: not item.deleted ), allow_multiple=True ),
+    operations = [ grids.GridOperation( "Rename", condition=( lambda item: not item.deleted ), allow_multiple=False ),
+                   grids.GridOperation( "Delete", condition=( lambda item: not item.deleted ), allow_multiple=True ),
                    grids.GridOperation( "Undelete", condition=( lambda item: item.deleted ), allow_multiple=True ),
                    grids.GridOperation( "Purge", condition=( lambda item: item.deleted ), allow_multiple=True ) ]
     standard_filters = [
@@ -327,8 +329,10 @@ class Admin( BaseController ):
                 return self.undelete_role( trans, **kwargs )
             if operation == "purge":
                 return self.purge_role( trans, **kwargs )
-            if operation == "manage users & groups":
-                return self.role( trans, **kwargs )
+            if operation == "manage users and groups":
+                return self.manage_users_and_groups_for_role( trans, **kwargs )
+            if operation == "rename":
+                return self.rename_role( trans, **kwargs )
         # Render the list view
         return self.role_list_grid( trans, **kwargs )
     @web.expose
@@ -389,7 +393,32 @@ class Admin( BaseController ):
                                     messagetype=messagetype )
     @web.expose
     @web.require_admin
-    def role( self, trans, **kwd ):
+    def rename_role( self, trans, **kwd ):
+        params = util.Params( kwd )
+        msg = util.restore_text( params.get( 'msg', ''  ) )
+        messagetype = params.get( 'messagetype', 'done' )
+        role = get_role( trans, params.id )
+        if params.get( 'rename_role_button', False ):
+            old_name = role.name
+            new_name = util.restore_text( params.name )
+            new_description = util.restore_text( params.description )
+            if not new_name:
+                msg = 'Enter a valid name'
+                return trans.fill_template( '/admin/dataset_security/role/role_rename.mako', role=role, msg=msg, messagetype='error' )
+            elif trans.sa_session.query( trans.app.model.Role ).filter( trans.app.model.Role.table.c.name==new_name ).first():
+                msg = 'A role with that name already exists'
+                return trans.fill_template( '/admin/dataset_security/role/role_rename.mako', role=role, msg=msg, messagetype='error' )
+            else:
+                role.name = new_name
+                role.description = new_description
+                trans.sa_session.add( role )
+                trans.sa_session.flush()
+                msg = "Role '%s' has been renamed to '%s'" % ( old_name, new_name )
+                return trans.response.send_redirect( web.url_for( action='roles', message=util.sanitize_text( msg ), status='done' ) )
+        return trans.fill_template( '/admin/dataset_security/role/role_rename.mako', role=role, msg=msg, messagetype=messagetype )
+    @web.expose
+    @web.require_admin
+    def manage_users_and_groups_for_role( self, trans, **kwd ):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
@@ -413,26 +442,7 @@ class Admin( BaseController ):
             trans.app.security_agent.set_entity_role_associations( roles=[ role ], users=in_users, groups=in_groups )
             trans.sa_session.refresh( role )
             msg = "Role '%s' has been updated with %d associated users and %d associated groups" % ( role.name, len( in_users ), len( in_groups ) )
-            trans.response.send_redirect( web.url_for( action='roles', message=util.sanitize_text( msg ), status=messagetype ) )
-        elif params.get( 'rename', False ):
-            if params.rename == 'submitted':
-                old_name = role.name
-                new_name = util.restore_text( params.name )
-                new_description = util.restore_text( params.description )
-                if not new_name:
-                    msg = 'Enter a valid name'
-                    return trans.fill_template( '/admin/dataset_security/role/role_rename.mako', role=role, msg=msg, messagetype='error' )
-                elif trans.sa_session.query( trans.app.model.Role ).filter( trans.app.model.Role.table.c.name==new_name ).first():
-                    msg = 'A role with that name already exists'
-                    return trans.fill_template( '/admin/dataset_security/role/role_rename.mako', role=role, msg=msg, messagetype='error' )
-                else:
-                    role.name = new_name
-                    role.description = new_description
-                    trans.sa_session.add( role )
-                    trans.sa_session.flush()
-                    msg = "Role '%s' has been renamed to '%s'" % ( old_name, new_name )
-                    return trans.response.send_redirect( web.url_for( action='roles', message=util.sanitize_text( msg ), status='done' ) )
-            return trans.fill_template( '/admin/dataset_security/role/role_rename.mako', role=role, msg=msg, messagetype=messagetype )
+            trans.response.send_redirect( web.url_for( action='roles', message=util.sanitize_text( msg ), status=messagetype ) )            
         in_users = []
         out_users = []
         in_groups = []
@@ -561,13 +571,38 @@ class Admin( BaseController ):
                 return self.undelete_group( trans, **kwargs )
             if operation == "purge":
                 return self.purge_group( trans, **kwargs )
-            if operation == "manage users & roles":
-                return self.group( trans, **kwargs )
+            if operation == "manage users and roles":
+                return self.manage_users_and_roles_for_group( trans, **kwargs )
+            if operation == "rename":
+                return self.rename_group( trans, **kwargs )
         # Render the list view
         return self.group_list_grid( trans, **kwargs )
     @web.expose
     @web.require_admin
-    def group( self, trans, **kwd ):
+    def rename_group( self, trans, **kwd ):
+        params = util.Params( kwd )
+        msg = util.restore_text( params.get( 'msg', ''  ) )
+        messagetype = params.get( 'messagetype', 'done' )
+        group = get_group( trans, params.id )
+        if params.get( 'rename_group_button', False ):
+            old_name = group.name
+            new_name = util.restore_text( params.name )
+            if not new_name:
+                msg = 'Enter a valid name'
+                return trans.fill_template( '/admin/dataset_security/group/group_rename.mako', group=group, msg=msg, messagetype='error' )
+            elif trans.sa_session.query( trans.app.model.Group ).filter( trans.app.model.Group.table.c.name==new_name ).first():
+                msg = 'A group with that name already exists'
+                return trans.fill_template( '/admin/dataset_security/group/group_rename.mako', group=group, msg=msg, messagetype='error' )
+            else:
+                group.name = new_name
+                trans.sa_session.add( group )
+                trans.sa_session.flush()
+                msg = "Group '%s' has been renamed to '%s'" % ( old_name, new_name )
+                return trans.response.send_redirect( web.url_for( action='groups', msg=util.sanitize_text( msg ), messagetype='done' ) )
+        return trans.fill_template( '/admin/dataset_security/group/group_rename.mako', group=group, msg=msg, messagetype=messagetype )
+    @web.expose
+    @web.require_admin
+    def manage_users_and_roles_for_group( self, trans, **kwd ):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
@@ -579,23 +614,6 @@ class Admin( BaseController ):
             trans.sa_session.refresh( group )
             msg += "Group '%s' has been updated with %d associated roles and %d associated users" % ( group.name, len( in_roles ), len( in_users ) )
             trans.response.send_redirect( web.url_for( action='groups', message=util.sanitize_text( msg ), status=messagetype ) )
-        if params.get( 'rename', False ):
-            if params.rename == 'submitted':
-                old_name = group.name
-                new_name = util.restore_text( params.name )
-                if not new_name:
-                    msg = 'Enter a valid name'
-                    return trans.fill_template( '/admin/dataset_security/group/group_rename.mako', group=group, msg=msg, messagetype='error' )
-                elif trans.sa_session.query( trans.app.model.Group ).filter( trans.app.model.Group.table.c.name==new_name ).first():
-                    msg = 'A group with that name already exists'
-                    return trans.fill_template( '/admin/dataset_security/group/group_rename.mako', group=group, msg=msg, messagetype='error' )
-                else:
-                    group.name = new_name
-                    trans.sa_session.add( group )
-                    trans.sa_session.flush()
-                    msg = "Group '%s' has been renamed to '%s'" % ( old_name, new_name )
-                    return trans.response.send_redirect( web.url_for( action='groups', msg=util.sanitize_text( msg ), messagetype='done' ) )
-            return trans.fill_template( '/admin/dataset_security/group/group_rename.mako', group=group, msg=msg, messagetype=messagetype )
         in_roles = []
         out_roles = []
         in_users = []
@@ -943,7 +961,7 @@ class Admin( BaseController ):
             if operation == "information":
                 return self.user_info( trans, **kwargs )
             if operation == "manage roles and groups":
-                return self.user( trans, **kwargs )
+                return self.manage_roles_and_groups_for_user( trans, **kwargs )
         # Render the list view
         return self.user_list_grid( trans, **kwargs )
     @web.expose
@@ -976,7 +994,7 @@ class Admin( BaseController ):
         return ac_data
     @web.expose
     @web.require_admin
-    def user( self, trans, **kwd ):
+    def manage_roles_and_groups_for_user( self, trans, **kwd ):
         user_id = kwd.get( 'id', None )
         message = ''
         status = ''

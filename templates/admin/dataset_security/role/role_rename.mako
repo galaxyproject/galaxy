@@ -8,7 +8,7 @@
 <div class="toolForm">
     <div class="toolFormTitle">Change role name and description</div>
     <div class="toolFormBody">
-        <form name="library" action="${h.url_for( controller='admin', action='role' )}" method="post" >
+        <form name="library" action="${h.url_for( controller='admin', action='rename_role' )}" method="post" >
             <div class="form-row">
                 <label>Name:</label>
                 <div style="float: left; width: 250px; margin-right: 10px;">
@@ -35,7 +35,9 @@
                 </div>
                 <div style="clear: both"></div>
             </div>
-            <input type="submit" name="rename_role_button" value="Save"/>
+            <div class="form-row">
+                <input type="submit" name="rename_role_button" value="Save"/>
+            </div>
         </form>
     </div>
 </div>

@@ -960,21 +960,21 @@ class TwillTestCase( unittest.TestCase ):
     def mark_user_deleted( self, user_id, email='' ):
         """Mark a user as deleted"""
         self.home()
-        self.visit_url( "%s/admin/mark_user_deleted?id=%s" % ( self.url, user_id ) )
+        self.visit_url( "%s/admin/users?operation=delete&id=%s" % ( self.url, user_id ) )
         check_str = "Deleted 1 users"
         self.check_page_for_string( check_str )
         self.home()
     def undelete_user( self, user_id, email='' ):
         """Undelete a user"""
         self.home()
-        self.visit_url( "%s/admin/undelete_user?id=%s" % ( self.url, user_id ) )
+        self.visit_url( "%s/admin/users?operation=undelete&id=%s" % ( self.url, user_id ) )
         check_str = "Undeleted 1 users"
         self.check_page_for_string( check_str )
         self.home()
     def purge_user( self, user_id, email ):
         """Purge a user account"""
         self.home()
-        self.visit_url( "%s/admin/purge_user?id=%s" % ( self.url, user_id ) )
+        self.visit_url( "%s/admin/users?operation=purge&id=%s" % ( self.url, user_id ) )
         check_str = "Purged 1 users"
         self.check_page_for_string( check_str )
         self.home()
@@ -983,7 +983,7 @@ class TwillTestCase( unittest.TestCase ):
                                               in_group_ids=[], out_group_ids=[],
                                               check_str='' ):
         self.home()
-        url = "%s/admin/user?id=%s&user_roles_groups_edit_button=Save" % ( self.url, user_id )
+        url = "%s/admin/manage_roles_and_groups_for_user?id=%s&user_roles_groups_edit_button=Save" % ( self.url, user_id )
         if in_role_ids:
             url += "&in_roles=%s" % ','.join( in_role_ids )
         if out_role_ids:
@@ -1006,7 +1006,7 @@ class TwillTestCase( unittest.TestCase ):
                      create_group_for_role='no',
                      private_role='' ):
         """Create a new role"""
-        url = "%s/admin/create_role?create_role_button=Save&name=%s&description=%s" % ( self.url, name.replace( ' ', '+' ), description.replace( ' ', '+' ) )
+        url = "%s/admin/roles?operation=create&create_role_button=Save&name=%s&description=%s" % ( self.url, name.replace( ' ', '+' ), description.replace( ' ', '+' ) )
         if in_user_ids:
             url += "&in_users=%s" % ','.join( in_user_ids )
         if in_group_ids:
@@ -1038,7 +1038,7 @@ class TwillTestCase( unittest.TestCase ):
     def rename_role( self, role_id, name='Role One Renamed', description='This is Role One Re-described' ):
         """Rename a role"""
         self.home()
-        self.visit_url( "%s/admin/role?rename=True&id=%s" % ( self.url, role_id ) )
+        self.visit_url( "%s/admin/roles?operation=rename&id=%s" % ( self.url, role_id ) )
         self.check_page_for_string( 'Change role name and description' )
         tc.fv( "1", "name", name )
         tc.fv( "1", "description", description )
@@ -1081,7 +1081,7 @@ class TwillTestCase( unittest.TestCase ):
     # Tests associated with groups
     def create_group( self, name='Group One', in_user_ids=[], in_role_ids=[] ):
         """Create a new group"""
-        url = "%s/admin/create_group?create_group_button=Save&name=%s" % ( self.url, name.replace( ' ', '+' ) )
+        url = "%s/admin/groups?operation=create&create_group_button=Save&name=%s" % ( self.url, name.replace( ' ', '+' ) )
         if in_user_ids:
             url += "&in_users=%s" % ','.join( in_user_ids )
         if in_role_ids:
@@ -1097,14 +1097,14 @@ class TwillTestCase( unittest.TestCase ):
     def rename_group( self, group_id, name='Group One Renamed' ):
         """Rename a group"""
         self.home()
-        self.visit_url( "%s/admin/group?rename=True&id=%s" % ( self.url, group_id ) )
+        self.visit_url( "%s/admin/groups?operation=rename&id=%s" % ( self.url, group_id ) )
         self.check_page_for_string( 'Change group name' )
         tc.fv( "1", "name", name )
         tc.submit( "rename_group_button" )
         self.home()
     def associate_users_and_roles_with_group( self, group_id, group_name, user_ids=[], role_ids=[] ):
         self.home()
-        url = "%s/admin/group?id=%s&group_roles_users_edit_button=Save" % ( self.url, group_id )
+        url = "%s/admin/manage_users_and_roles_for_group?id=%s&group_roles_users_edit_button=Save" % ( self.url, group_id )
         if user_ids:
             url += "&in_users=%s" % ','.join( user_ids )
         if role_ids:
