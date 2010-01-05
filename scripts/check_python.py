@@ -25,5 +25,5 @@ if __name__ == '__main__':
         check_python()
         print check_virtualenv()
         sys.exit( 0 )
-    except:
+    except Exception:
         sys.exit( 1 )
