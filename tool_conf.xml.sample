@@ -185,7 +185,7 @@
         <tool file="metag_tools/short_reads_figure_score.xml" />
         <tool file="metag_tools/short_reads_trim_seq.xml" />
     <label text="AB-SOLiD data" id="solid" />
-        <tool file="next_gen_conversion/solid_to_fastq.xml" />
+        <tool file="next_gen_conversion/solid2fastq.xml" />
         <tool file="solid_tools/solid_qual_stats.xml" />
         <tool file="solid_tools/solid_qual_boxplot.xml" />
   </section>
