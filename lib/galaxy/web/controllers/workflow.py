@@ -315,13 +315,14 @@ class WorkflowController( BaseController ):
             upgrade_message = module.check_and_update_state()
             if upgrade_message:
                 data['upgrade_messages'][step.order_index] = upgrade_message
-            # Pack atrributes into plain dictionary
+            # Pack attributes into plain dictionary
             step_dict = {
                 'id': step.order_index,
                 'type': module.type,
                 'tool_id': module.get_tool_id(),
                 'name': module.get_name(),
                 'tool_state': module.get_state(),
+                'tooltip': module.get_tooltip(),
                 'tool_errors': module.get_errors(),
                 'data_inputs': module.get_data_inputs(),
                 'data_outputs': module.get_data_outputs(),
