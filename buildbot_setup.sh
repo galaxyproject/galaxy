@@ -14,6 +14,9 @@ esac
 
 LINKS="
 /depot/data2/galaxy/alignseq.loc
+/depot/data2/galaxy/annotation_profiler/annotation_profiler.loc
+/depot/data2/galaxy/annotation_profiler/annotation_profiler_options.xml
+/depot/data2/galaxy/annotation_profiler/annotation_profiler_valid_builds.txt
 /depot/data2/galaxy/binned_scores.loc
 /depot/data2/galaxy/blastdb.loc
 /depot/data2/galaxy/bowtie_indices.loc
