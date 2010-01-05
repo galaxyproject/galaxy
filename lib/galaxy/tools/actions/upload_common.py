@@ -33,7 +33,6 @@ def persist_uploads( params ):
             new_files.append( upload_dataset )
         params['files'] = new_files
     return params
-
 def handle_library_params( trans, params, folder_id, replace_dataset=None ):
     library_bunch = util.bunch.Bunch()
     library_bunch.replace_dataset = replace_dataset
@@ -59,7 +58,6 @@ def handle_library_params( trans, params, folder_id, replace_dataset=None ):
         role = trans.sa_session.query( trans.app.model.Role ).get( role_id )
         library_bunch.roles.append( role )
     return library_bunch
-
 def get_precreated_datasets( trans, params, data_obj, controller='root' ):
     """
     Get any precreated datasets (when using asynchronous uploads).
@@ -88,7 +86,6 @@ def get_precreated_datasets( trans, params, data_obj, controller='root' ):
             else:
                 rval.append( data )
     return rval
-
 def get_precreated_dataset( precreated_datasets, name ):
     """
     Return a dataset matching a name from the list of precreated (via async
@@ -100,13 +97,11 @@ def get_precreated_dataset( precreated_datasets, name ):
         return precreated_datasets.pop( names.index( name ) )
     else:
         return None
-
 def cleanup_unused_precreated_datasets( precreated_datasets ):
     for data in precreated_datasets:
         log.info( 'Cleaned up unclaimed precreated dataset (%s).' % ( data.id ) )
         data.state = data.states.ERROR
         data.info = 'No file contents were available.'
-
 def new_history_upload( trans, uploaded_dataset, state=None ):
     hda = trans.app.model.HistoryDatasetAssociation( name = uploaded_dataset.name,
                                                      extension = uploaded_dataset.file_type,
@@ -125,7 +120,6 @@ def new_history_upload( trans, uploaded_dataset, state=None ):
     trans.app.security_agent.set_all_dataset_permissions( hda.dataset, permissions )
     trans.sa_session.flush()
     return hda
-
 def new_library_upload( trans, uploaded_dataset, library_bunch, state=None ):
     user, roles = trans.get_user_and_roles()
     if not ( trans.app.security_agent.can_add_library_item( user, roles, library_bunch.folder ) \
@@ -183,7 +177,10 @@ def new_library_upload( trans, uploaded_dataset, library_bunch, state=None ):
     ld.library_dataset_dataset_association_id = ldda.id
     trans.sa_session.add( ld )
     trans.sa_session.flush()
-    # Handle template included in the upload form, if any
+    # Handle template included in the upload form, if any.  If the upload is not asynchronous ( e.g., URL paste ),
+    # then the template and contents will be included in the library_bunch at this point.  If the upload is
+    # asynchronous ( e.g., uploading a file ), then the template and contents will be included in the library_bunch
+    # in the get_uploaded_datasets() method below.
     if library_bunch.template and library_bunch.template_field_contents:
         # Since information templates are inherited, the template fields can be displayed on the upload form.
         # If the user has added field contents, we'll need to create a new form_values and info_association
@@ -203,13 +200,11 @@ def new_library_upload( trans, uploaded_dataset, library_bunch, state=None ):
             trans.sa_session.add( dp )
             trans.sa_session.flush()
     return ldda
-
 def new_upload( trans, uploaded_dataset, library_bunch=None, state=None ):
     if library_bunch:
         return new_library_upload( trans, uploaded_dataset, library_bunch, state )
     else:
         return new_history_upload( trans, uploaded_dataset, state )
-
 def get_uploaded_datasets( trans, params, precreated_datasets, dataset_upload_inputs, library_bunch=None ):
     uploaded_datasets = []
     for dataset_upload_input in dataset_upload_inputs:
@@ -226,12 +221,26 @@ def get_uploaded_datasets( trans, params, precreated_datasets, dataset_upload_in
             if library_bunch:
                 library_bunch.folder.genome_build = uploaded_dataset.dbkey
                 trans.sa_session.add( library_bunch.folder )
+                # Handle template included in the upload form, if any.  If the upload is asynchronous ( e.g., file upload ),
+                # then the template and contents will be included in the library_bunch at this point.  If the upload is
+                # not asynchronous ( e.g., URL paste ), then the template and contents will be included in the library_bunch
+                # in the new_library_upload() method above.
+                if library_bunch.template and library_bunch.template_field_contents:
+                    # Since information templates are inherited, the template fields can be displayed on the upload form.
+                    # If the user has added field contents, we'll need to create a new form_values and info_association
+                    # for the new library_dataset_dataset_association object.
+                    # Create a new FormValues object, using the template we previously retrieved
+                    form_values = trans.app.model.FormValues( library_bunch.template, library_bunch.template_field_contents )
+                    trans.sa_session.add( form_values )
+                    trans.sa_session.flush()
+                    # Create a new info_association between the current ldda and form_values
+                    info_association = trans.app.model.LibraryDatasetDatasetInfoAssociation( data, library_bunch.template, form_values )
+                    trans.sa_session.add( info_association )
                 trans.sa_session.flush()
             else:
                 trans.history.genome_build = uploaded_dataset.dbkey
         uploaded_dataset.data = data
     return uploaded_datasets
-
 def create_paramfile( trans, uploaded_datasets ):
     """
     Create the upload tool's JSON "param" file.
@@ -278,7 +287,6 @@ def create_paramfile( trans, uploaded_datasets ):
         json_file.write( to_json_string( json ) + '\n' )
     json_file.close()
     return json_file_path
-
 def create_job( trans, params, tool, json_file_path, data_list, folder=None ):
     """
     Create the upload job.
@@ -314,7 +322,6 @@ def create_job( trans, params, tool, json_file_path, data_list, folder=None ):
     trans.app.job_queue.put( job.id, tool )
     trans.log_event( "Added job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id )
     return dict( [ ( 'output%i' % i, v ) for i, v in enumerate( data_list ) ] )
-
 def active_folders( trans, folder ):
     # Stolen from galaxy.web.controllers.library_common (importing from which causes a circular issues).
     # Much faster way of retrieving all active sub-folders within a given folder than the

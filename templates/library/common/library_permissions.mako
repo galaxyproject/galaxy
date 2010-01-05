@@ -24,5 +24,5 @@
                                 .filter( trans.app.model.Role.table.c.deleted==False ) \
                                 .order_by( trans.app.model.Role.table.c.name )
     %>
-    ${render_permission_form( library, library.name, h.url_for( controller='library_common', action='library_permissions', id=trans.security.encode_id( library.id ), cntrller=cntrller ), roles )}
+    ${render_permission_form( library, library.name, h.url_for( controller='library_common', action='library_permissions', cntrller=cntrller, id=trans.security.encode_id( library.id ), cntrller=cntrller ), roles )}
 %endif

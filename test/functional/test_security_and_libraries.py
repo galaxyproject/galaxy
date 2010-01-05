@@ -1282,7 +1282,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         message = 'This is a test for uploading a directory of files'
         template_contents = "%s contents for directory of 3 datasets in %s" % ( form_one_field_label, folder_one.name )
         roles_tuple = [ ( str( role_one.id ), role_one.name ) ]
-        check_str = "Added 3 datasets to the library '%s' ( each is selected )." % library_one.root_folder.name
+        check_str = "Added 3 datasets to the library '%s' (each is selected)." % library_one.root_folder.name
         self.add_dir_of_files_from_admin_view( self.security.encode_id( library_one.id ),
                                                self.security.encode_id( library_one.root_folder.id ),
                                                roles_tuple=roles_tuple,
@@ -1422,7 +1422,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         # Since regular_user1 does not have any sub-directories contained within her configured
         # user_library_import_dir, the only option in her server_dir select list will be the
         # directory named the same as her email
-        check_str_after_submit = "Added 1 datasets to the library '%s' ( each is selected )." % library_one.root_folder.name
+        check_str_after_submit = "Added 1 datasets to the library '%s' (each is selected)." % library_one.root_folder.name
         self.add_dir_of_files_from_libraries_view( self.security.encode_id( library_one.id ),
                                                    self.security.encode_id( library_one.root_folder.id ),
                                                    regular_user1.email,

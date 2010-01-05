@@ -102,9 +102,10 @@ class LibraryCommon( BaseController ):
         created_ldda_ids = params.get( 'created_ldda_ids', '' )
         hidden_folder_ids = util.listify( params.get( 'hidden_folder_ids', '' ) )
         if created_ldda_ids and not msg:
-            msg = "%d datasets are now uploading in the background to the library '%s' ( each is selected ).  "  % \
+            msg = "%d datasets are uploading in the background to the library '%s' (each is selected).  "  % \
                 ( len( created_ldda_ids.split( ',' ) ), library.name )
-            msg += "Do not navigate away from Galaxy or use the browser's \"stop\" or \"reload\" buttons ( on this tab ) until the upload(s) change from the \"uploading\" state."
+            msg += "Don't navigate away from Galaxy or use the browser's \"stop\" or \"reload\" buttons (on this tab) until the "
+            msg += "message \"This dataset is uploading\" is cleared from the \"Information\" column below for each selected dataset."
             messagetype = "info"
         return trans.fill_template( '/library/common/browse_library.mako',
                                     cntrller=cntrller,
@@ -645,21 +646,21 @@ class LibraryCommon( BaseController ):
                                                                                                **kwd )
                 if created_outputs:
                     total_added = len( created_outputs.values() )
+                    ldda_id_list = [ str( v.id ) for v in created_outputs.values() ]
                     if replace_dataset:
                         msg = "Added %d dataset versions to the library dataset '%s' in the folder '%s'." % ( total_added, replace_dataset_name, folder.name )
                     else:
                         if not folder.parent:
                             # Libraries have the same name as their root_folder
-                            msg = "Added %d datasets to the library '%s' ( each is selected ).  " % ( total_added, folder.name )
+                            msg = "Added %d datasets to the library '%s' (each is selected).  " % ( total_added, folder.name )
                         else:
-                            msg = "Added %d datasets to the folder '%s' ( each is selected ).  " % ( total_added, folder.name )
+                            msg = "Added %d datasets to the folder '%s' (each is selected).  " % ( total_added, folder.name )
                         if cntrller == 'library_admin':
                             msg += "Click the Go button at the bottom of this page to edit the permissions on these datasets if necessary."
                             messagetype='done'
                         else:
                             # Since permissions on all LibraryDatasetDatasetAssociations must be the same at this point, we only need
                             # to check one of them to see if the current user can manage permissions on them.
-                            ldda_id_list = [ str( v.id ) for v in created_outputs.values() ]
                             check_ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( ldda_id_list[0] )
                             if trans.app.security_agent.can_manage_library_item( user, roles, check_ldda ):
                                 if replace_dataset:
@@ -939,9 +940,9 @@ class LibraryCommon( BaseController ):
                     else:
                         if not folder.parent:
                             # Libraries have the same name as their root_folder
-                            msg = "Added %d datasets to the library '%s' ( each is selected ).  " % ( total_added, folder.name )
+                            msg = "Added %d datasets to the library '%s' (each is selected).  " % ( total_added, folder.name )
                         else:
-                            msg = "Added %d datasets to the folder '%s' ( each is selected ).  " % ( total_added, folder.name )
+                            msg = "Added %d datasets to the folder '%s' (each is selected).  " % ( total_added, folder.name )
                         if cntrller == 'library_admin':
                             msg += "Click the Go button at the bottom of this page to edit the permissions on these datasets if necessary."
                         else:
@@ -1132,18 +1133,27 @@ class LibraryCommon( BaseController ):
         ldda_ids = util.listify( ldda_ids )
         if params.do_action == 'add':
             history = trans.get_history()
+            total_imported_lddas = 0
+            msg = ''
+            messagetype = 'done'
             for ldda_id in ldda_ids:
                 ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( ldda_id ) )
-                hda = ldda.to_history_dataset_association( target_history=history, add_to_history=True )
-            trans.sa_session.add( history )
-            trans.sa_session.flush()
-            msg = "%i dataset(s) have been imported into your history" % len( ldda_ids )
+                if ldda.dataset.state in [ 'new', 'upload', 'queued', 'running', 'empty', 'discarded' ]:
+                    msg += "Cannot import dataset (%s) since it's state is (%s).  " % ( ldda.name, ldda.dataset.state )
+                    messagetype = 'error'
+                elif ldda.dataset.state in [ 'ok', 'error' ]:
+                    hda = ldda.to_history_dataset_association( target_history=history, add_to_history=True )
+                    total_imported_lddas += 1
+            if total_imported_lddas:
+                trans.sa_session.add( history )
+                trans.sa_session.flush()
+                msg += "%i dataset(s) have been imported into your history.  " % total_imported_lddas
             return trans.response.send_redirect( web.url_for( controller='library_common',
                                                               action='browse_library',
                                                               cntrller=cntrller,
                                                               id=library_id,
                                                               msg=util.sanitize_text( msg ),
-                                                              messagetype='done' ) )
+                                                              messagetype=messagetype ) )
         elif params.do_action == 'manage_permissions':
             # We need the folder containing the LibraryDatasetDatasetAssociation(s)
             ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( ldda_ids[0] ) )
@@ -1197,7 +1207,9 @@ class LibraryCommon( BaseController ):
             user, roles = trans.get_user_and_roles()
             for ldda_id in ldda_ids:
                 ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( ldda_id ) )
-                if not ldda or not trans.app.security_agent.can_access_dataset( roles, ldda.dataset ):
+                if not ldda \
+                    or not trans.app.security_agent.can_access_dataset( roles, ldda.dataset ) \
+                    or ldda.dataset.state in [ 'new', 'upload', 'queued', 'running', 'empty', 'discarded' ]:
                     continue
                 path = ""
                 parent_folder = ldda.library_dataset.folder

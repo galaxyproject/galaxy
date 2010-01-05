@@ -30,5 +30,5 @@
                                 .filter( trans.app.model.Role.table.c.deleted==False ) \
                                 .order_by( trans.app.model.Role.table.c.name )
     %>
-    ${render_permission_form( library_dataset, library_dataset.name, h.url_for( controller='library_common', action='library_dataset_permissions', id=trans.security.encode_id( library_dataset.id ), library_id=library_id ), roles )}
+    ${render_permission_form( library_dataset, library_dataset.name, h.url_for( controller='library_common', action='library_dataset_permissions', cntrller=cntrller, id=trans.security.encode_id( library_dataset.id ), library_id=library_id ), roles )}
 %endif

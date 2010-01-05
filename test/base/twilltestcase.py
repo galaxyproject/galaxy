@@ -1459,9 +1459,9 @@ class TwillTestCase( unittest.TestCase ):
             tc.fv( "1", template_field_name1, template_field_contents1 )
         tc.submit( "runtool_btn" )
         if root:
-            check_str = "Added 1 datasets to the library '%s' ( each is selected )." % folder_name
+            check_str = "Added 1 datasets to the library '%s' (each is selected)." % folder_name
         else:
-            check_str = "Added 1 datasets to the folder '%s' ( each is selected )." % folder_name
+            check_str = "Added 1 datasets to the folder '%s' (each is selected)." % folder_name
         data = self.last_page()
         self.library_wait( library_id )
         self.home()
@@ -1556,9 +1556,9 @@ class TwillTestCase( unittest.TestCase ):
         self.visit_url( "%s/library_common/add_history_datasets_to_library?cntrller=%s&library_id=%s&folder_id=%s&hda_ids=%s&add_history_datasets_to_library_button=Add+selected+datasets" % \
                         ( self.url, cntrller, library_id, folder_id, hda_id ) )
         if root:
-            check_str = "Added 1 datasets to the library '%s' ( each is selected )." % folder_name
+            check_str = "Added 1 datasets to the library '%s' (each is selected)." % folder_name
         else:
-            check_str = "Added 1 datasets to the folder '%s' ( each is selected )." % folder_name
+            check_str = "Added 1 datasets to the folder '%s' (each is selected)." % folder_name
         self.check_page_for_string( check_str )
         self.home()
     def add_dir_of_files_from_admin_view( self, library_id, folder_id, file_type='auto', dbkey='hg18', roles_tuple=[],

@@ -842,7 +842,9 @@ ${self.render_grid_table()}
             > 
                 ## Item selection column
                 <td style="width: 1.5em;">
-                    <input type="checkbox" name="id" value=${trans.security.encode_id( item.id )} class="grid-row-select-checkbox" />
+                    %if grid.operations:
+                        <input type="checkbox" name="id" value=${trans.security.encode_id( item.id )} class="grid-row-select-checkbox" />
+                    %endif
                 </td>
                 ## Data columns
                 %for column in grid.columns:

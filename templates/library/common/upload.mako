@@ -53,4 +53,4 @@
     ${render_msg( msg, messagetype )}
 %endif
 
-${render_upload_form( cntrller, upload_option, action, library_id, folder_id, replace_dataset, file_formats, dbkeys, roles, history )}
+${render_upload_form( cntrller, upload_option, action, library_id, folder_id, replace_dataset, file_formats, dbkeys, widgets, roles, history )}

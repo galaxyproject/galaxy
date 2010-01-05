@@ -59,7 +59,7 @@
     %endif
 </%def>
 
-<%def name="render_upload_form( cntrller, upload_option, action, library_id, folder_id, replace_dataset, file_formats, dbkeys, roles, history )">
+<%def name="render_upload_form( cntrller, upload_option, action, library_id, folder_id, replace_dataset, file_formats, dbkeys, widgets, roles, history )">
     <% import os, os.path %>
     %if upload_option in [ 'upload_file', 'upload_directory', 'upload_paths' ]:
         <div class="toolForm" id="upload_library_dataset">
@@ -325,19 +325,16 @@
     %endif
 </%def>
 
-<%def name="render_actions_on_multiple_items( cntrller, default_action=None, deleted=False, show_deleted=False )">
+<%def name="render_actions_on_multiple_items( cntrller, default_action=None )">
     <tfoot>
         <tr>
             <td colspan="4" style="padding-left: 42px;">
                 For selected items:
-                %if cntrller=='library_admin' and not deleted and not show_deleted:
-                    <select name="do_action" id="action_on_selected_items">
+                <select name="do_action" id="action_on_selected_items">
+                    %if cntrller=='library_admin':
                         <option value="manage_permissions">Edit permissions</option>
                         <option value="delete">Delete</option>
-                    </select>
-                    <input type="submit" class="primary-button" name="action_on_datasets_button" id="action_on_datasets_button" value="Go"/>
-                %elif cntrller=='library':
-                    <select name="do_action" id="action_on_selected_items">
+                    %elif cntrller=='library':
                         %if default_action == 'add':
                             <option value="add" selected>Import into your current history</option>
                         %else:
@@ -361,9 +358,9 @@
                         %if 'zip' in comptypes:
                             <option value="zip">Download as a .zip file</option>
                         %endif
-                    </select>
-                    <input type="submit" class="primary-button" name="action_on_datasets_button" id="action_on_datasets_button" value="Go"/>
-                %endif
+                    %endif
+                </select>
+                <input type="submit" class="primary-button" name="action_on_datasets_button" id="action_on_datasets_button" value="Go"/>
             </td>
         </tr>
     </tfoot>

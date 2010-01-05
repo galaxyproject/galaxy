@@ -111,7 +111,7 @@
                         %else:                      
                             %if rd['label'] == 'Data library':
                                 %if rd['value']:
-                                    <a href="${h.url_for( controller='library_common', action='browse_library', cntrller='library', id=trans.security.encode_id( request.library.id ) )}">${rd['value']}</a>
+                                    <a href="${h.url_for( controller='library_common', action='browse_library', cntrller='requests', id=trans.security.encode_id( request.library.id ) )}">${rd['value']}</a>
                                 %endif
                             %elif rd['label'] == 'State':
                                 <a href="${h.url_for( controller='requests', action='list', operation='events', id=trans.security.encode_id(request.id) )}">${rd['value']}</a>                                

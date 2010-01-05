@@ -62,4 +62,4 @@
 %endif
 
 <% ldda_ids = ",".join( [ trans.security.encode_id( d.id ) for d in lddas ] ) %>
-${render_permission_form( lddas[0], name_str, h.url_for( controller='library_common', action='ldda_permissions', library_id=library_id, folder_id=trans.security.encode_id( lddas[0].library_dataset.folder.id ), id=ldda_ids ), roles )}
+${render_permission_form( lddas[0], name_str, h.url_for( controller='library_common', action='ldda_permissions', cntrller=cntrller, library_id=library_id, folder_id=trans.security.encode_id( lddas[0].library_dataset.folder.id ), id=ldda_ids ), roles )}
