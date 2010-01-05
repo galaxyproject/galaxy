@@ -26,14 +26,6 @@ class RequestsGrid( grids.Grid ):
     class TypeColumn( grids.TextColumn ):
         def get_value(self, trans, grid, request):
             return request.type.name
-    class LastUpdateColumn( grids.TextColumn ):
-        def get_value(self, trans, grid, request):
-            delta = datetime.utcnow() - request.update_time
-            if delta > timedelta( minutes=60 ):
-                last_update = '%s hours' % int( delta.seconds / 60 / 60 )
-            else:
-                last_update = '%s minutes' % int( delta.seconds / 60 )
-            return last_update
     class StateColumn( grids.GridColumn ):
         def __init__( self, col_name, key, model_class, event_class, filterable, link ):
             grids.GridColumn.__init__(self, col_name, key=key, model_class=model_class, filterable=filterable, link=link)
@@ -92,7 +84,7 @@ class RequestsGrid( grids.Grid ):
     title = "Sequencing Requests"
     template = 'requests/grid.mako'
     model_class = model.Request
-    default_sort_key = "-create_time"
+    default_sort_key = "create_time"
     num_rows_per_page = 50
     preserve_state = True
     use_paging = True
@@ -111,8 +103,7 @@ class RequestsGrid( grids.Grid ):
         SamplesColumn( "Sample(s)", 
                        link=( lambda item: iff( item.deleted, None, dict( operation="show_request", id=item.id ) ) ), ),
         TypeColumn( "Type" ),
-        LastUpdateColumn( "Last update", 
-                          format=time_ago ),
+        grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
         DeletedColumn( "Deleted", 
                        key="deleted", 
                        visible=False, 
@@ -234,12 +225,7 @@ class Requests( BaseController ):
         events_list = []
         all_events = request.events
         for event in all_events:         
-            delta = datetime.utcnow() - event.update_time
-            if delta > timedelta( minutes=60 ):
-                last_update = '%s hours' % int( delta.seconds / 60 / 60 )
-            else:
-                last_update = '%s minutes' % int( delta.seconds / 60 )
-            events_list.append((event.state, last_update, event.comment))
+            events_list.append((event.state, time_ago(event.update_time), event.comment))
         return trans.fill_template( '/requests/events.mako', 
                                     events_list=events_list, request=request)
     def request_details(self, trans, id):
@@ -983,12 +969,7 @@ class Requests( BaseController ):
         events_list = []
         all_events = sample.events
         for event in all_events:
-            delta = datetime.utcnow() - event.update_time
-            if delta > timedelta( minutes=60 ):
-                last_update = '%s hours' % int( delta.seconds / 60 / 60 )
-            else:
-                last_update = '%s minutes' % int( delta.seconds / 60 )
-            events_list.append((event.state.name, event.state.desc, last_update, event.comment))
+            events_list.append((event.state.name, event.state.desc, time_ago(event.update_time), event.comment))
         return trans.fill_template( '/sample/sample_events.mako', 
                                     events_list=events_list,
                                     sample_name=sample.name,
