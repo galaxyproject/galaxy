@@ -6,8 +6,8 @@
     #end if#
   </command>
   <inputs>
-    <param name="input1" type="data" format="csfasta" label="Select Forward reads"/>
-    <param name="input2" type="data" format="qualsolid" label="Select Forward qualities"/>
+    <param name="input1" type="data" format="csfasta" label="Select reads"/>
+    <param name="input2" type="data" format="qualsolid" label="Select qualities"/>
     <conditional name="is_run">
         <param name="paired" type="select" label="Is this a mate-pair run?">
             <option value="no" selected="true">No</option>
@@ -26,12 +26,12 @@
         <option value="">No</option>
     </param>
     <param name="trim_first_base" type="select" label="Trim first base?">
-        <option value="-f">Yes</option>
-        <option value="" selected="true">No</option>
+        <option value="-f">Yes (BWA)</option>
+        <option value="" selected="true">No (bowtie)</option>
     </param>
     <param name="double_encode" type="select" label="Double encode?">
-        <option value="-d">Yes</option>
-        <option value="" selected="true">No</option>
+        <option value="-d">Yes (BWA)</option>
+        <option value="" selected="true">No (bowtie)</option>
     </param>
   </inputs>
   <outputs>
@@ -93,9 +93,9 @@ Quality scores::
 
 **Mate pairs**
 
-If your data is from a mate-paired run, you will have one additional read and quality datasets that will look similar to the ones above with one exception: the names of reads will be ending with &quot;_R3&quot;.
-In this case choose **Yes** from the *Is this a mate-pair run?* drop down and you will be able to select R reads. When processing mate pairs this tool generated two output files: one for F3 reads and the other for R3 reads.
-The reads are guaranteed to be paired -- mated reads will be in the same position in F3 and R3 fastq file. However, because pairing is verified it may take a while to process an entire SOLiD runs (several hours).
+If your data is from a mate-paired run, you will have additional read and quality datasets that will look similar to the ones above with one exception: the names of reads will be ending with &quot;_R3&quot;.
+In this case choose **Yes** from the *Is this a mate-pair run?* drop down and you will be able to select R reads. When processing mate pairs this tool generates two output files: one for F3 reads and the other for R3 reads.
+The reads are guaranteed to be paired -- mated reads will be in the same position in F3 and R3 fastq file. However, because pairing is verified it may take a while to process an entire SOLiD run (several hours).
 
 ------
 

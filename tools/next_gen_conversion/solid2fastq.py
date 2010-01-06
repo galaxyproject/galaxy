@@ -177,7 +177,6 @@ def main():
         r_out = open ( options.rout, 'w' )
     
         db = tempfile.NamedTemporaryFile()
-        print db.name
         
         try:
             con = sqlite3.connect(db.name)
