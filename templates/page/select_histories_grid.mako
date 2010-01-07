@@ -4,7 +4,7 @@
 ${javascripts()}
 ${stylesheets()}
 ${render_grid_header(False)}
-${render_grid_table()}
+${render_grid_table(show_item_checkboxes=True)}
 
 ## Initialize the grid.
 <script type="text/javascript">

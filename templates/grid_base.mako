@@ -775,13 +775,17 @@ ${self.render_grid_table()}
 </%def>
 
 ## Render grid.
-<%def name="render_grid_table()">
+<%def name="render_grid_table(show_item_checkboxes=False)">
     <%
         # Set flag to indicate whether grid has operations that operate on multiple items.
         multiple_item_ops_exist = False
         for operation in grid.operations:
             if operation.allow_multiple:
                 multiple_item_ops_exist = True
+                
+        # Show checkboxes if flag is set or if multiple item ops exist.
+        if show_item_checkboxes or multiple_item_ops_exist:
+            show_item_checkboxes = True
     %>
 
     <form action="${url()}" method="post" onsubmit="return false;">
@@ -789,7 +793,9 @@ ${self.render_grid_table()}
         <table id='grid-table' class="grid">
             <thead id="grid-table-header">
                 <tr>
-                    <th></th>
+                    %if show_item_checkboxes:
+                        <th></th>
+                    %endif
                     %for column in grid.columns:
                         %if column.visible:
                             <%
@@ -825,17 +831,17 @@ ${self.render_grid_table()}
                 </tr>
             </thead>
             <tbody id="grid-table-body">
-                ${render_grid_table_body_contents(multiple_item_ops_exist)}
+                ${render_grid_table_body_contents(show_item_checkboxes)}
             </tbody>
             <tfoot>
-                ${render_grid_table_footer_contents(multiple_item_ops_exist)}
+                ${render_grid_table_footer_contents(show_item_checkboxes)}
             </tfoot>
         </table>
     </form>
 </%def>
 
 ## Render grid table body contents.
-<%def name="render_grid_table_body_contents(multiple_item_ops_exist=False)">
+<%def name="render_grid_table_body_contents(show_item_checkboxes=False)">
         <% num_rows_rendered = 0 %>
         %if query.count() == 0:
             ## No results.
@@ -849,11 +855,11 @@ ${self.render_grid_table()}
             %endif
             > 
                 ## Item selection column
-                <td style="width: 1.5em;">
-                    %if multiple_item_ops_exist:
-                        <input type="checkbox" name="id" value=${trans.security.encode_id( item.id )} class="grid-row-select-checkbox" />
-                    %endif
-                </td>
+                %if show_item_checkboxes:
+                    <td style="width: 1.5em;">
+                            <input type="checkbox" name="id" value=${trans.security.encode_id( item.id )} class="grid-row-select-checkbox" />
+                    </td>
+                %endif
                 ## Data columns
                 %for column in grid.columns:
                     %if column.visible:
@@ -925,7 +931,7 @@ ${self.render_grid_table()}
 </%def>
 
 ## Render grid table footer contents.
-<%def name="render_grid_table_footer_contents(multiple_item_ops_exist=False)">
+<%def name="render_grid_table_footer_contents(show_item_checkboxes=False)">
     ## Row for navigating among pages.
     <%
         # Mapping between item class and plural term for item.
@@ -941,9 +947,11 @@ ${self.render_grid_table()}
         elif grid.model_class == Group:
             items_plural = "groups"
     %>
+    %if show_item_checkboxes:
+        <td></td>
+    %endif
     %if grid.use_paging and num_pages > 1:
         <tr id="page-links-row">
-            <td></td>
             <td colspan="100">
                 <span id='page-link-container'>
                     ## Page links.
@@ -965,7 +973,7 @@ ${self.render_grid_table()}
         </tr>    
     %endif
     ## Grid operations for multiple items.
-    %if multiple_item_ops_exist:
+    %if show_item_checkboxes:
         <tr>
             <td></td>
             <td colspan="100">

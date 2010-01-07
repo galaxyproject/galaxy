@@ -194,7 +194,7 @@
 %>
 </%def>
 
-<%namespace file="../tagging_common.mako" import="render_tagging_element, render_community_tagging_element" />
+<%namespace file="../tagging_common.mako" import="render_individual_tagging_element, render_community_tagging_element" />
 
 <%def name="center_panel()">
 

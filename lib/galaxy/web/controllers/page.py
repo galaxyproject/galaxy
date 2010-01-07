@@ -112,7 +112,8 @@ class HistorySelectionGrid( grids.Grid ):
     
     # Grid definition.
     title = "Saved Histories"
-    template = "/page/select_histories_grid.mako" 
+    template = "/page/select_histories_grid.mako"
+    async_template = "/page/select_histories_grid_async.mako" 
     model_class = model.History
     default_filter = { "deleted" : "False" , "shared" : "All" }
     default_sort_key = "-update_time"
