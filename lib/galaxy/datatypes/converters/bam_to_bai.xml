@@ -1,0 +1,13 @@
+<tool id="INDEXER_Bam_Bai_0" name="Bam to Bai">
+  <command>samtools index $input $output</command>
+  <inputs>
+    <page>
+      <param format="bam" name="input" type="data" label="Choose BAM"/>
+    </page>
+   </inputs>
+   <outputs>
+      <data format="bai" name="output"/>
+   </outputs>
+  <help>
+  </help>
+</tool>
