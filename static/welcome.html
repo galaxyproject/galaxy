@@ -2,146 +2,20 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<meta name="generator" content="Docutils 0.3.9: http://docutils.sourceforge.net/" />
-<link rel="stylesheet" href="style/base.css" type="text/css" />
-<style type="text/css">
-
-      .quickie {
-	    text-align: center;
-	    background: black;
-	    margin: 10px;
-      }
-
-      .current-quickie {
-	    width: 300px;
-	    background: white;
-	    margin: auto;
-      }
-
-      .current-quickie img { 
-        padding: 15px; 
-        border: 1px solid #ccc; 
-        margin: auto; 
-        background-color: white; 
-       }
-      
-      .previous {
-	    width: 100%;
-	    overflow: auto;
-	    border: solid #ccc 1px;
-      }
-      .previous .quickie {
-	    padding-top: 10px;
-	    min-height: 90px;
-	    min-width: 150px;
-      }
-      #screencasts {
-	    max-width: 50em;
-	    margin-left: auto;
-	    margin-right: auto;
-      }
-
-</style>
-<script type="text/javascript" src="http://galaxy.psu.edu/welcome_img/jquery.min.js"></script>
-<script type="text/javascript" src="http://galaxy.psu.edu/welcome_img/jquery.cycle.all.2.72.js"></script>
-<script type="text/javascript">
-
-$(document).ready(function() {
-    $('.current-quickie').cycle({
-		fx: 'fade', 
-		pause: 1,
-		speed: 100
-	});
-});
-</script>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="stylesheet" href="style/base.css" type="text/css" />
 </head>
 <body>
-<div class="document">
-<h3 align="center">Galaxy in 2010...</h3>
-<div align="center" class="current-quickie">
-		<img src="http://galaxy.psu.edu/welcome_img/welcome_images.001.png" width="300" height="200" />
-		<img src="http://galaxy.psu.edu/welcome_img/welcome_images.002.png" width="300" height="200" />
-		<img src="http://galaxy.psu.edu/welcome_img/welcome_images.003.png" width="300" height="200" />
-		<img src="http://galaxy.psu.edu/welcome_img/welcome_images.004.png" width="300" height="200" />
-		<img src="http://galaxy.psu.edu/welcome_img/welcome_images.005.png" width="300" height="200" />
-</div>
-<br>
-<hr>
-
-<h3 align="center">Galaxy Quickies</h3>
-
-<div class="previous" id="previous">
-        <table border="0" cellpadding="0" cellspacing="0" width="100%">
-            <tr>
-                <td>
-                    <a href="javascript:parent.show_in_overlay({url:'http://screencast.g2.bx.psu.edu/galaxy/quickie1_TabSeq/flow.html',width:640,height:480,scroll:'no'})">
-	                   <div class="quickie">
-                        <img src="images/qk/quickie1_small.png" border="0">
-	                   </div>
-                    </a>
-                </td>
-                <td>
-                    <a href="javascript:parent.show_in_overlay({url:'http://screencast.g2.bx.psu.edu/galaxy/quickie2_Grouping/flow.html',width:640,height:480,scroll:'no'})">
-	                   <div class="quickie">
-                        <img src="images/qk/quickie2_small.png" border="0">
-	                   </div>
-                    </a>
-                </td>
-                <td>
-                    <a href="javascript:parent.show_in_overlay({url:'http://screencast.g2.bx.psu.edu/galaxy/quickie3_Intervals/flow.html',width:640,height:480,scroll:'no'})">
-	                   <div class="quickie">
-                        <img src="images/qk/quickie3_small.png" border="0">
-	                   </div>
-                    </a>
-                </td>
-                <td>
-                    <a href="javascript:parent.show_in_overlay({url:'http://screencast.g2.bx.psu.edu/galaxy/quickie4_whatsNew/flow.html',width:640,height:480,scroll:'no'})">
-	                   <div class="quickie">
-                        <img src="images/qk/quickie4_small.png" border="0">
-	                   </div>
-                    </a>
-                </td>
-                <td>
-                    <a href="javascript:parent.show_in_overlay({url:'http://screencast.g2.bx.psu.edu/galaxy/quickie5_join/flow.html',width:640,height:480,scroll:'no'})">
-	                   <div class="quickie">
-                        <img src="images/qk/quickie5_small.png" border="0">
-	                   </div>
-                    </a>
-                </td>
-                <td>
-                    <a href="javascript:parent.show_in_overlay({url:'http://screencast.g2.bx.psu.edu/galaxy/quickie6_share/flow.html',width:640,height:480,scroll:'no'})">
-	                   <div class="quickie">
-                        <img src="images/qk/quickie6_small.png" border="0">
-	                   </div>
-                    </a>
-                </td>
-                <td>
-                    <a href="javascript:parent.show_in_overlay({url:'http://screencast.g2.bx.psu.edu/galaxy/quickie7_sr_beta/flow.html',width:640,height:480,scroll:'no'})">
-	                   <div class="quickie">
-                        <img src="images/qk/quickie7_small.png" border="0">
-	                   </div>
-                    </a>
-                </td>
-            </tr>
-      </table>
-</div>
-
-<script type="text/javascript">
-      // Scroll to last quickie in box
-      document.getElementById("previous").scrollLeft = 100000000;
-</script>
-
-<br/>
-<br/>
-<br/>
-<hr/>
-
-<p><a target="_blank" class="reference" href="http://g2.trac.bx.psu.edu/wiki/GalaxyTeam">The Galaxy team</a> is a part of <a target="_blank" class="reference" href="http://www.bx.psu.edu">BX</a> at <a target="_blank" class="reference" href="http://www.psu.edu">Penn State</a>.</p>
-
-This project is supported in part by <a target="_blank" class="reference" href="http://www.nsf.gov">NSF</a>, <a target="_blank" class="reference" href="http://www.genome.gov">NHGRI</a>, and <a target="_blank" class="reference" href="http://www.huck.psu.edu">the Huck Institutes of the Life Sciences</a>.
-<p><small>Galaxy build: <b>$Rev 1733:a4214de3752e$</b></small></p>
-</div>
-</div>
+    <div class="document">
+        <div class="warningmessagelarge">
+            <strong>Hello world! It's running...</strong>
+            <hr>
+            To customize this page edit <code>static/welcome.html</code>
+        </div>
+        <br/>
+        <img src="images/noodles.png" alt="WWFSMD?" style="display: block; margin-left: auto; margin-right: auto;" />
+        <hr/>
+        This project is supported in part by <a target="_blank" class="reference" href="http://www.nsf.gov">NSF</a>, <a target="_blank" class="reference" href="http://www.genome.gov">NHGRI</a>, and <a target="_blank" class="reference" href="http://www.huck.psu.edu">the Huck Institutes of the Life Sciences</a>.
+    </div>
 </body>
 </html>
