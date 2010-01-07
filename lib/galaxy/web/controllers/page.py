@@ -84,7 +84,7 @@ class HistorySelectionGrid( grids.Grid ):
            return accepted_filters
            
     class SharingColumn( grids.GridColumn ):
-        def filter( self, db_session, query, column_filter ):
+        def filter( self, db_session, user, query, column_filter ):
             """ Modify query to filter histories by sharing status. """
             if column_filter == "All":
                 pass
@@ -121,7 +121,7 @@ class HistorySelectionGrid( grids.Grid ):
     num_rows_per_page = 10
     columns = [
         NameColumn( "Name", key="name", model_class=model.History, filterable="advanced" ),
-        grids.TagsColumn( "Tags", "tags", model.History, model.HistoryTagAssociation, filterable="advanced"),
+        grids.IndividualTagsColumn( "Tags", "tags", model.History, model.HistoryTagAssociation, filterable="advanced"),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
         # Columns that are valid for filtering but are not visible.
         DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" ),

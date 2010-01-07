@@ -710,6 +710,7 @@ HistoryTagAssociation.table = Table( "history_tag_association", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "history_id", Integer, ForeignKey( "history.id" ), index=True ),
     Column( "tag_id", Integer, ForeignKey( "tag.id" ), index=True ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "user_tname", TrimmedString(255), index=True),
     Column( "value", TrimmedString(255), index=True),
     Column( "user_value", TrimmedString(255), index=True) )
@@ -718,6 +719,7 @@ DatasetTagAssociation.table = Table( "dataset_tag_association", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "dataset_id", Integer, ForeignKey( "dataset.id" ), index=True ),
     Column( "tag_id", Integer, ForeignKey( "tag.id" ), index=True ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "user_tname", TrimmedString(255), index=True),
     Column( "value", TrimmedString(255), index=True),
     Column( "user_value", TrimmedString(255), index=True) )
@@ -726,14 +728,34 @@ HistoryDatasetAssociationTagAssociation.table = Table( "history_dataset_associat
     Column( "id", Integer, primary_key=True ),
     Column( "history_dataset_association_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True ),
     Column( "tag_id", Integer, ForeignKey( "tag.id" ), index=True ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "user_tname", TrimmedString(255), index=True),
     Column( "value", TrimmedString(255), index=True),
     Column( "user_value", TrimmedString(255), index=True) )
+    
+WorkflowTagAssociation.table = Table( "workflow_tag_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "workflow_id", Integer, ForeignKey( "workflow.id" ), index=True ),
+    Column( "tag_id", Integer, ForeignKey( "tag.id" ), index=True ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+    Column( "user_tname", Unicode(255), index=True),
+    Column( "value", Unicode(255), index=True),
+    Column( "user_value", Unicode(255), index=True) )
+    
+StoredWorkflowTagAssociation.table = Table( "stored_workflow_tag_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "stored_workflow_id", Integer, ForeignKey( "stored_workflow.id" ), index=True ),
+    Column( "tag_id", Integer, ForeignKey( "tag.id" ), index=True ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+    Column( "user_tname", Unicode(255), index=True),
+    Column( "value", Unicode(255), index=True),
+    Column( "user_value", Unicode(255), index=True) )
 
 PageTagAssociation.table = Table( "page_tag_association", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "page_id", Integer, ForeignKey( "page.id" ), index=True ),
     Column( "tag_id", Integer, ForeignKey( "tag.id" ), index=True ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "user_tname", TrimmedString(255), index=True),
     Column( "value", TrimmedString(255), index=True),
     Column( "user_value", TrimmedString(255), index=True) )
@@ -1127,7 +1149,9 @@ assign_mapper( context, Workflow, Workflow.table,
     properties=dict( steps=relation( WorkflowStep, backref='workflow',
                                      order_by=asc(WorkflowStep.table.c.order_index),
                                      cascade="all, delete-orphan",
-                                     lazy=False ) ) )
+                                     lazy=False ),
+                     tags=relation(WorkflowTagAssociation, order_by=WorkflowTagAssociation.table.c.id, backref="workflows") 
+                                      ) )
 
     
 assign_mapper( context, WorkflowStep, WorkflowStep.table )
@@ -1181,7 +1205,8 @@ assign_mapper( context, StoredWorkflow, StoredWorkflow.table,
                                          primaryjoin=( StoredWorkflow.table.c.id == Workflow.table.c.stored_workflow_id ) ),
                      latest_workflow=relation( Workflow, post_update=True,
                                                primaryjoin=( StoredWorkflow.table.c.latest_workflow_id == Workflow.table.c.id ),
-                                               lazy=False )
+                                               lazy=False ),
+                     tags=relation(StoredWorkflowTagAssociation, order_by=StoredWorkflowTagAssociation.table.c.id, backref="stored_workflows") 
                    ) )
 
 assign_mapper( context, StoredWorkflowUserShareAssociation, StoredWorkflowUserShareAssociation.table,
@@ -1225,24 +1250,28 @@ assign_mapper( context, Tag, Tag.table,
                      ) )
 
 assign_mapper( context, HistoryTagAssociation, HistoryTagAssociation.table,
-    properties=dict( tag=relation(Tag, backref="tagged_histories") ),
-                     primary_key=[HistoryTagAssociation.table.c.history_id, HistoryTagAssociation.table.c.tag_id]
+    properties=dict( tag=relation(Tag, backref="tagged_histories"), user=relation( User ) )
                      )
 
 assign_mapper( context, DatasetTagAssociation, DatasetTagAssociation.table,
-    properties=dict( tag=relation(Tag, backref="tagged_datasets") ),
-                     primary_key=[DatasetTagAssociation.table.c.dataset_id, DatasetTagAssociation.table.c.tag_id]
+    properties=dict( tag=relation(Tag, backref="tagged_datasets"), user=relation( User ) )
                      )
 
 assign_mapper( context, HistoryDatasetAssociationTagAssociation, HistoryDatasetAssociationTagAssociation.table,
-    properties=dict( tag=relation(Tag, backref="tagged_history_dataset_associations") ),
-                     primary_key=[HistoryDatasetAssociationTagAssociation.table.c.history_dataset_association_id, HistoryDatasetAssociationTagAssociation.table.c.tag_id]
+    properties=dict( tag=relation(Tag, backref="tagged_history_dataset_associations"), user=relation( User ) )
                      )
 
 assign_mapper( context, PageTagAssociation, PageTagAssociation.table,
-    properties=dict( tag=relation(Tag, backref="tagged_pages") ),
-                     primary_key=[PageTagAssociation.table.c.page_id, PageTagAssociation.table.c.tag_id]
-               )
+    properties=dict( tag=relation(Tag, backref="tagged_pages"), user=relation( User ) )
+                    )
+
+assign_mapper( context, WorkflowTagAssociation, WorkflowTagAssociation.table,
+    properties=dict( tag=relation(Tag, backref="tagged_workflows"), user=relation( User ) )
+                    )
+                    
+assign_mapper( context, StoredWorkflowTagAssociation, StoredWorkflowTagAssociation.table,
+    properties=dict( tag=relation(Tag, backref="tagged_stored_workflows"), user=relation( User ) )
+                    )
                
 assign_mapper( context, UserPreference, UserPreference.table, 
     properties = {}

@@ -171,14 +171,17 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         to allow migration toward a more SQLAlchemy 0.4 style of use.
         """
         return self.app.model.context.current
-    def log_action( self, action, context, params):
+    def log_action( self, user=None, action=None, context=None, params=None):
         """
         Application-level logging of user actions.
         """
         if self.app.config.log_actions:
             action = self.app.model.UserAction(action=action, context=context, params=unicode( to_json_string( params ) ) )
             try:
-                action.user = self.user
+                if user:
+                    action.user = user
+                else:
+                    action.user = self.user
             except:
                 action.user = None
             try:

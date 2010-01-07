@@ -318,7 +318,7 @@ var updater_callback = function ( tracked_datasets ) {
     <p></p>
 %endif
 
-<%namespace file="../tagging_common.mako" import="render_tagging_element" />
+<%namespace file="../tagging_common.mako" import="render_individual_tagging_element" />
 <%namespace file="history_common.mako" import="render_dataset" />
 
 %if trans.get_user() is not None:
@@ -327,7 +327,7 @@ var updater_callback = function ( tracked_datasets ) {
             margin-bottom: 0.5em;
         }
     </style>
-    ${render_tagging_element( tagged_item=history, elt_context='history.mako', get_toggle_link_text_fn='get_toggle_link_text' )}
+    ${render_individual_tagging_element( user=trans.get_user(), tagged_item=history, elt_context='history.mako', get_toggle_link_text_fn='get_toggle_link_text' )}
 %endif
 
 %if not datasets:

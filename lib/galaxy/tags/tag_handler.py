@@ -73,10 +73,10 @@ class TagHandler( object ):
         
         return community_tags
         
-    def remove_item_tag( self, trans, item, tag_name ):
+    def remove_item_tag( self, trans, user, item, tag_name ):
         """Remove a tag from an item."""
         # Get item tag association.
-        item_tag_assoc = self._get_item_tag_assoc(item, tag_name)
+        item_tag_assoc = self._get_item_tag_assoc(user, item, tag_name)
         
         # Remove association.
         if item_tag_assoc:
@@ -87,7 +87,7 @@ class TagHandler( object ):
         
         return False
     
-    def delete_item_tags( self, trans, item ):
+    def delete_item_tags( self, trans, user, item ):
         """Delete tags from an item."""
         # Delete item-tag associations.
         for tag in item.tags:
@@ -96,7 +96,7 @@ class TagHandler( object ):
         # Delete tags from item.
         del item.tags[:]
         
-    def item_has_tag(self, item, tag):
+    def item_has_tag(self, user, item, tag):
         """Returns true if item is has a given tag."""
         # Get tag name.
         if isinstance(tag, basestring):
@@ -105,13 +105,13 @@ class TagHandler( object ):
             tag_name = tag.name
         
         # Check for an item-tag association to see if item has a given tag.
-        item_tag_assoc = self._get_item_tag_assoc(item, tag_name)
+        item_tag_assoc = self._get_item_tag_assoc(user, item, tag_name)
         if item_tag_assoc:
             return True
         return False
             
 
-    def apply_item_tags(self, db_session, item, tags_str):
+    def apply_item_tags(self, db_session, user, item, tags_str):
         """Apply tags to an item."""
         # Parse tags.
         parsed_tags = self.parse_tags(tags_str)
@@ -122,7 +122,7 @@ class TagHandler( object ):
             lc_name = name.lower()
             
             # Get or create item-tag association.
-            item_tag_assoc = self._get_item_tag_assoc(item, lc_name)
+            item_tag_assoc = self._get_item_tag_assoc(user, item, lc_name)
             if not item_tag_assoc:
                 #
                 # Create item-tag association.
@@ -141,6 +141,7 @@ class TagHandler( object ):
                 # Add tag to association.
                 item.tags.append(item_tag_assoc)
                 item_tag_assoc.tag = tag
+                item_tag_assoc.user = user
                     
             # Apply attributes to item-tag association. Strip whitespace from user name and tag.
             lc_value = None
@@ -211,12 +212,12 @@ class TagHandler( object ):
             
         return tag
     
-    def _get_item_tag_assoc(self, item, tag_name):
+    def _get_item_tag_assoc(self, user, item, tag_name):
         """Return ItemTagAssociation object for an item and a tag string; returns None if there is
             no such tag."""
         scrubbed_tag_name = self._scrub_tag_name(tag_name)
         for item_tag_assoc in item.tags:
-            if item_tag_assoc.tag.name == scrubbed_tag_name:
+            if ( item_tag_assoc.user == user ) and ( item_tag_assoc.tag.name == scrubbed_tag_name ):
                 return item_tag_assoc 
         return None
     

@@ -59,7 +59,7 @@ class HistoryListGrid( grids.Grid ):
            return accepted_filters
            
     class SharingColumn( grids.GridColumn ):
-        def filter( self, db_session, query, column_filter ):
+        def filter( self, db_session, user, query, column_filter ):
             """ Modify query to filter histories by sharing status. """
             if column_filter == "All":
                 pass
@@ -95,7 +95,7 @@ class HistoryListGrid( grids.Grid ):
                           link=( lambda history: iff( history.deleted, None, dict( operation="Switch", id=history.id ) ) ),
                           attach_popup=True, filterable="advanced" ),
         DatasetsByStateColumn( "Datasets (by state)", ncells=4 ),
-        grids.TagsColumn( "Tags", "tags", model.History, model.HistoryTagAssociation, filterable="advanced", grid_name="HistoryListGrid" ),
+        grids.IndividualTagsColumn( "Tags", "tags", model.History, model.HistoryTagAssociation, filterable="advanced", grid_name="HistoryListGrid" ),
         StatusColumn( "Status", attach_popup=False ),
         grids.GridColumn( "Created", key="create_time", format=time_ago ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),

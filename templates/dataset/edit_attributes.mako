@@ -55,7 +55,7 @@
                 <div style="clear: both"></div>
             </div>
             %if trans.get_user() is not None:
-			<%namespace file="../tagging_common.mako" import="render_tagging_element" />
+			<%namespace file="../tagging_common.mako" import="render_individual_tagging_element" />
             <div class="form-row">
                 <label>
                     Tags:
@@ -66,7 +66,7 @@
                             border: none;
                         }
                     </style>
-                      ${render_tagging_element(data, "edit_attributes.mako", use_toggle_link=False, in_form=True, input_size="30")}
+                    ${render_individual_tagging_element(user=trans.get_user(), tagged_item=data, elt_context="edit_attributes.mako", use_toggle_link=False, in_form=True, input_size="30")}
                 </div>
                 <div style="clear: both"></div>
             </div>

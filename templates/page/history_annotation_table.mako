@@ -1,4 +1,4 @@
-<%namespace file="../tagging_common.mako" import="render_tagging_element_html" />
+<%namespace file="../tagging_common.mako" import="render_individual_tagging_element_html" />
 <%namespace file="../root/history_common.mako" import="render_dataset" />
 
 <table>
@@ -15,7 +15,7 @@
                 </div>
             %endif
             %if trans.get_user() is not None:
-                Tags: ${render_tagging_element_html( tags=history.tags, editable=False, use_toggle_link=False )}
+                Tags: ${render_individual_tagging_element_html( tags=history.tags, editable=False, use_toggle_link=False )}
             %endif
         </td>
     </tr>

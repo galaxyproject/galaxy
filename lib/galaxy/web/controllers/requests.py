@@ -40,7 +40,7 @@ class RequestsGrid( grids.Grid ):
             elif request.state() == request.states.COMPLETE:
                 return '<div class="count-box state-color-ok">%s</div>' % request.state()
             return request.state()
-        def filter( self, db_session, query, column_filter ):
+        def filter( self, db_session, user, query, column_filter ):
             """ Modify query to filter request by state. """
             if column_filter == "All":
                 return query

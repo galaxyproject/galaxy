@@ -12,7 +12,11 @@
 
 ## Render a tagging element if there is a tagged_item.
 %if tagged_item is not None:
-    ${render_tagging_element(tagged_item=tagged_item, elt_context=elt_context, in_form=in_form, input_size=input_size, tag_click_fn=tag_click_fn)}
+    %if tag_type == "individual":
+        ${render_individual_tagging_element(user=user, tagged_item=tagged_item, elt_context=elt_context, in_form=in_form, input_size=input_size, tag_click_fn=tag_click_fn)}
+    %elif tag_type == "community":
+        ${render_community_tagging_element(tagged_item=tagged_item, elt_context=elt_context, tag_click_fn=tag_click_fn)}
+    %endif
 %endif
 
 ## Render HTML for a list of tags.
@@ -78,7 +82,7 @@
 </%def>
 
 ## Render community tagging element.
-<%def name="render_community_tagging_element(tagged_item=None, use_toggle_link=False, tag_click_fn='default_tag_click_fn')">
+<%def name="render_community_tagging_element(tagged_item=None, elt_context=None, use_toggle_link=False, tag_click_fn='default_tag_click_fn')">
     ## Build HTML.
     <% 
         elt_id = int ( floor ( random()*maxint ) ) 
@@ -93,36 +97,26 @@
 </%def>
 
 
-## Render the tags 'tags' as an autocomplete element.
-<%def name="render_tagging_element(tagged_item=None, elt_context=None, use_toggle_link=True, in_form=False, input_size='15', tag_click_fn='default_tag_click_fn', get_toggle_link_text_fn='default_get_toggle_link_text_fn', editable=True)">
+## Render individual tagging element.
+<%def name="render_individual_tagging_element(user=None, tagged_item=None, elt_context=None, use_toggle_link=True, in_form=False, input_size='15', tag_click_fn='default_tag_click_fn', get_toggle_link_text_fn='default_get_toggle_link_text_fn', editable=True)">
     ## Useful attributes.
-    <% 
-        tagged_item_id = str( trans.security.encode_id (tagged_item.id) )
+    <%
+        # Useful ids.
+        tagged_item_id = str( trans.security.encode_id ( tagged_item.id ) )
         elt_id = int ( floor ( random()*maxint ) )
+        
+        # Get list of user's item tags. TODO: this could be moved to a database query for speed purposes.
+        item_tags = [ tag for tag in tagged_item.tags if ( tag.user == user ) ]
     %>
     
     ## Build HTML.
-    ${self.render_tagging_element_html(elt_id, tagged_item.tags, editable, use_toggle_link, input_size, in_form)}
+    ${self.render_tagging_element_html(elt_id, item_tags, editable, use_toggle_link, input_size, in_form)}
     
     ## Build script that augments tags using progressive javascript.
     <script type="text/javascript">
         //
         // Set up autocomplete tagger.
         //
-        <%
-            ## Build string of tag name, values.
-            tag_names_and_values = dict()
-            for tag in tagged_item.tags:
-                tag_name = tag.user_tname
-                tag_value = ""
-                if tag.value is not None:
-                    tag_value = tag.user_value
-                ## Tag names and values may be string or unicode object.
-                if isinstance( tag_name, str ):
-                    tag_names_and_values[unicode(tag_name, 'utf-8')] = unicode(tag_value, 'utf-8')
-                else: ## isInstance( tag_name, unicode ):
-                    tag_names_and_values[tag_name] = tag_value
-        %>
     
         //
         // Default function get text to display on the toggle link.
@@ -167,6 +161,20 @@
         // Default function to handle a tag click.
         var default_tag_click_fn = function(tag_name, tag_value) { };
         
+        <%
+            ## Build dict of tag name, values.
+            tag_names_and_values = dict()
+            for tag in item_tags:
+                tag_name = tag.user_tname
+                tag_value = ""
+                if tag.value is not None:
+                    tag_value = tag.user_value
+                ## Tag names and values may be string or unicode object.
+                if isinstance( tag_name, str ):
+                    tag_names_and_values[unicode(tag_name, 'utf-8')] = unicode(tag_value, 'utf-8')
+                else: ## isInstance( tag_name, unicode ):
+                    tag_names_and_values[tag_name] = tag_value
+        %>
         var options =
         {
             tags : ${h.to_json_string(tag_names_and_values)},
@@ -174,9 +182,9 @@
             get_toggle_link_text_fn: ${get_toggle_link_text_fn},
             tag_click_fn: ${tag_click_fn},
             ## Use forward slash in controller to suppress route memory.
-            ajax_autocomplete_tag_url: "${h.url_for( controller='/tag', action='tag_autocomplete_data', id=tagged_item_id, item_class=tagged_item.__class__.__name__ )}",
-            ajax_add_tag_url: "${h.url_for( controller='/tag', action='add_tag_async', id=tagged_item_id, item_class=tagged_item.__class__.__name__, context=elt_context )}",
-            ajax_delete_tag_url: "${h.url_for( controller='/tag', action='remove_tag_async', id=tagged_item_id, item_class=tagged_item.__class__.__name__, context=elt_context )}",
+            ajax_autocomplete_tag_url: "${h.url_for( controller='/tag', action='tag_autocomplete_data', item_id=tagged_item_id, item_class=tagged_item.__class__.__name__ )}",
+            ajax_add_tag_url: "${h.url_for( controller='/tag', action='add_tag_async', item_id=tagged_item_id, item_class=tagged_item.__class__.__name__, context=elt_context )}",
+            ajax_delete_tag_url: "${h.url_for( controller='/tag', action='remove_tag_async', item_id=tagged_item_id, item_class=tagged_item.__class__.__name__, context=elt_context )}",
             delete_tag_img: "${h.url_for('/static/images/delete_tag_icon_gray.png')}",
             delete_tag_img_rollover: "${h.url_for('/static/images/delete_tag_icon_white.png')}",
             use_toggle_link: ${iff( use_toggle_link, 'true', 'false' )},

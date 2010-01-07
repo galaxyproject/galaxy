@@ -129,7 +129,7 @@ class Grid( object ):
                     if column_filter == '':
                         continue
                     # Update query.
-                    query = column.filter( trans.sa_session, query, column_filter )
+                    query = column.filter( trans.sa_session, trans.get_user(), query, column_filter )
                     # Upate current filter dict.
                     cur_filter_dict[ column.key ] = column_filter
                     # Carry filter along to newly generated urls; make sure filter is a string so
@@ -208,7 +208,7 @@ class Grid( object ):
         params = cur_filter_dict.copy()
         params['sort'] = sort_key
         params['async'] = ( 'async' in kwargs )
-        trans.log_action( unicode( "grid.view"), context, params )
+        trans.log_action( trans.get_user(), unicode( "grid.view"), context, params )
             
         # Render grid.
         def url( *args, **kwargs ):
@@ -308,7 +308,7 @@ class GridColumn( object ):
         if self.link and self.link( item ):
             return self.link( item )
         return None
-    def filter( self, db_session, query, column_filter ):
+    def filter( self, db_session, user, query, column_filter ):
         """ Modify query to reflect the column filter. """
         if column_filter == "All":
             pass
@@ -328,14 +328,14 @@ class GridColumn( object ):
         
 # Generic column that employs freetext and, hence, supports freetext, case-independent filtering.
 class TextColumn( GridColumn ):
-    def filter( self, db_session, query, column_filter ):
+    def filter( self, db_session, user, query, column_filter ):
         """ Modify query to filter using free text, case independence. """
         if column_filter == "All":
             pass
         elif column_filter:
-            query = query.filter( self.get_filter( column_filter ) )
+            query = query.filter( self.get_filter( user, column_filter ) )
         return query
-    def get_filter( self, column_filter ):
+    def get_filter( self, user, column_filter ):
         """ Returns a SQLAlchemy criterion derived from column_filter. """
         model_class_key_field = getattr( self.model_class, self.key )
         
@@ -347,30 +347,26 @@ class TextColumn( GridColumn ):
                 clause_list.append( func.lower( model_class_key_field ).like( "%" + filter.lower() + "%" ) )
             return and_( *clause_list )
 
-# Generic column that supports tagging.        
-class TagsColumn( TextColumn ):
+# Column that supports community tags.
+class CommunityTagsColumn( TextColumn ):
     def __init__( self, col_name, key, model_class, model_tag_association_class, filterable, grid_name=None ):
         GridColumn.__init__(self, col_name, key=key, model_class=model_class, filterable=filterable)
         self.model_tag_association_class = model_tag_association_class
         # Tags cannot be sorted.
         self.sortable = False
         # Column-specific attributes.
-        self.tag_elt_id_gen = 0
         self.grid_name = grid_name
     def get_value( self, trans, grid, item ):
-        self.tag_elt_id_gen += 1
-        elt_id="tagging-elt" + str( self.tag_elt_id_gen )
-        div_elt = "<div id=%s></div>" % elt_id
-        return div_elt + trans.fill_template( "/tagging_common.mako", trans=trans, tagged_item=item, elt_context=self.grid_name,
-                                                elt_id = elt_id, in_form=True, input_size="20", tag_click_fn="add_tag_to_grid_filter" )
-    def filter( self, db_session, query, column_filter ):
+        return trans.fill_template( "/tagging_common.mako", tag_type="community", trans=trans, user=trans.get_user(), tagged_item=item, elt_context=self.grid_name,
+                                    in_form=True, input_size="20", tag_click_fn="add_tag_to_grid_filter" )
+    def filter( self, db_session, user, query, column_filter ):
         """ Modify query to filter model_class by tag. Multiple filters are ANDed. """
         if column_filter == "All":
             pass
         elif column_filter:
-            query = query.filter( self.get_filter( column_filter ) )
+            query = query.filter( self.get_filter( user, column_filter ) )
         return query
-    def get_filter( self, column_filter ):
+    def get_filter( self, user, column_filter ):
             # Parse filter to extract multiple tags.
             tag_handler = TagHandler()
             if isinstance( column_filter, list ):
@@ -380,11 +376,33 @@ class TagsColumn( TextColumn ):
             clause_list = []
             for name, value in raw_tags.items():
                 if name:
-                    # Search for tag names.
+                    # Filter by all tags.
                     clause_list.append( self.model_class.tags.any( func.lower( self.model_tag_association_class.user_tname ).like( "%" + name.lower() + "%" ) ) )
                     if value:
-                        # Search for tag values.
+                        # Filter by all values.
                         clause_list.append( self.model_class.tags.any( func.lower( self.model_tag_association_class.user_value ).like( "%" + value.lower() + "%" ) ) )
+            return and_( *clause_list )
+            
+# Column that supports individual tags.
+class IndividualTagsColumn( CommunityTagsColumn ):
+    def get_value( self, trans, grid, item ):
+        return trans.fill_template( "/tagging_common.mako", tag_type="individual", trans=trans, user=trans.get_user(), tagged_item=item, elt_context=self.grid_name,
+                                    in_form=True, input_size="20", tag_click_fn="add_tag_to_grid_filter" )
+    def get_filter( self, user, column_filter ):
+            # Parse filter to extract multiple tags.
+            tag_handler = TagHandler()
+            if isinstance( column_filter, list ):
+                # Collapse list of tags into a single string; this is redundant but effective. TODO: fix this by iterating over tags.
+                column_filter = ",".join( column_filter )
+            raw_tags = tag_handler.parse_tags( column_filter.encode("utf-8") )
+            clause_list = []
+            for name, value in raw_tags.items():
+                if name:
+                    # Filter by individual's tag names.
+                    clause_list.append( self.model_class.tags.any( and_( func.lower( self.model_tag_association_class.user_tname ).like( "%" + name.lower() + "%" ), self.model_tag_association_class.user == user ) ) )
+                    if value:
+                        # Filter by individual's tag values.
+                        clause_list.append( self.model_class.tags.any( and_( func.lower( self.model_tag_association_class.user_value ).like( "%" + value.lower() + "%" ), self.model_tag_association_class.user == user ) ) )
             return and_( *clause_list )
             
 # Column that performs multicolumn filtering.
@@ -392,7 +410,7 @@ class MulticolFilterColumn( TextColumn ):
     def __init__( self, col_name, cols_to_filter, key, visible, filterable="default" ):
         GridColumn.__init__( self, col_name, key=key, visible=visible, filterable=filterable)
         self.cols_to_filter = cols_to_filter
-    def filter( self, db_session, query, column_filter ):
+    def filter( self, db_session, user, query, column_filter ):
         """ Modify query to filter model_class by tag. Multiple filters are ANDed. """
         if column_filter == "All":
             return query
@@ -401,13 +419,13 @@ class MulticolFilterColumn( TextColumn ):
             for filter in column_filter:
                 part_clause_list = []
                 for column in self.cols_to_filter:
-                    part_clause_list.append( column.get_filter( filter ) )
+                    part_clause_list.append( column.get_filter( user, filter ) )
                 clause_list.append( or_( *part_clause_list ) )
             complete_filter = and_( *clause_list )
         else:
             clause_list = []
             for column in self.cols_to_filter:
-                clause_list.append( column.get_filter( column_filter ) )
+                clause_list.append( column.get_filter( user, column_filter ) )
             complete_filter = or_( *clause_list )
         
         return query.filter( complete_filter )

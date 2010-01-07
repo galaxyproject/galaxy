@@ -238,8 +238,8 @@
                 ## User tags.
                 <p>
                 <div>
-                    ##Yours:
-                    ##${render_tagging_element( tagged_item=page, elt_context='display.mako', use_toggle_link=False )}
+                    Yours:
+                    ${render_individual_tagging_element( tagged_item=page, elt_context='display.mako', use_toggle_link=False )}
                 </div>
             </div>
         </div>

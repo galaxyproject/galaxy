@@ -19,63 +19,59 @@ class TagsController ( BaseController ):
 
     @web.expose
     @web.require_login( "Add tag to an item." )
-    def add_tag_async( self, trans, id=None, item_class=None, new_tag=None, context=None ):
+    def add_tag_async( self, trans, item_id=None, item_class=None, new_tag=None, context=None ):
         """ Add tag to an item. """
-        
-        # Check that user owns item.
-        item = self._get_item(trans, item_class, trans.security.decode_id( id ) )
-        self._do_security_check( trans, item )
-        
+                
         # Apply tag.
-        self.tag_handler.apply_item_tags( trans.sa_session, item, new_tag.encode('utf-8') )
+        item = self._get_item( trans, item_class, trans.security.decode_id( item_id ) )
+        user = trans.get_user()
+        self.tag_handler.apply_item_tags( trans.sa_session, user, item, new_tag.encode('utf-8') )
         trans.sa_session.flush()
         
         # Log.
         params = dict( item_id=item.id, item_class=item_class, tag=new_tag)
-        trans.log_action( unicode( "tag"), context, params )
+        trans.log_action( user, unicode( "tag"), context, params )
         
     @web.expose
     @web.require_login( "Remove tag from an item." )
-    def remove_tag_async( self, trans, id=None, item_class=None, tag_name=None, context=None ):
+    def remove_tag_async( self, trans, item_id=None, item_class=None, tag_name=None, context=None ):
         """ Remove tag from an item. """
         
-        # Check that user owns item.
-        item = self._get_item(trans, item_class, trans.security.decode_id(id))
-        self._do_security_check(trans, item)
-        
         # Remove tag.
-        self.tag_handler.remove_item_tag( trans, item, tag_name.encode('utf-8') )
+        item = self._get_item( trans, item_class, trans.security.decode_id( item_id) )
+        user = trans.get_user()
+        self.tag_handler.remove_item_tag( trans, user, item, tag_name.encode('utf-8') )
         trans.sa_session.flush()
         
         # Log.
         params = dict( item_id=item.id, item_class=item_class, tag=tag_name)
-        trans.log_action( unicode( "untag"), context, params )
+        trans.log_action( user, unicode( "untag"), context, params )
         
     # Retag an item. All previous tags are deleted and new tags are applied.
-    @web.expose
+    #@web.expose
     @web.require_login( "Apply a new set of tags to an item; previous tags are deleted." )
-    def retag_async( self, trans, id=None, item_class=None, new_tags=None ):
-        """ Apply a new set of tags to an item; previous tags are deleted. """  
-        item = self._get_item(trans, item_class, trans.security.decode_id(id))
+    def retag_async( self, trans, item_id=None, item_class=None, new_tags=None ):
+        """ Apply a new set of tags to an item; previous tags are deleted. """
         
-        self._do_security_check(trans, item)
-        
+        # Apply tags.  
+        item = self._get_item( trans, item_class, trans.security.decode_id( item_id ) )
+        user = trans.get_user()
         tag_handler.delete_item_tags( trans, item )
-        self.tag_handler.apply_item_tags( trans.sa_session, item, new_tags.encode('utf-8') )
+        self.tag_handler.apply_item_tags( trans.sa_session, user, item, new_tags.encode('utf-8') )
         trans.sa_session.flush()
                 
     @web.expose
     @web.require_login( "get autocomplete data for an item's tags" )
-    def tag_autocomplete_data( self, trans, q=None, limit=None, timestamp=None, id=None, item_class=None ):
+    def tag_autocomplete_data( self, trans, q=None, limit=None, timestamp=None, item_id=None, item_class=None ):
         """ Get autocomplete data for an item's tags. """
 
         #
         # Get item, do security check, and get autocomplete data.
         #
         item = None
-        if id is not None:
-            item = self._get_item(trans, item_class, trans.security.decode_id(id))
-            self._do_security_check(trans, item)
+        if item_id is not None:
+            item = self._get_item( trans, item_class, trans.security.decode_id( item_id ) )
+        user = trans.get_user()
             
         # Get item class. TODO: we should have a mapper that goes from class_name to class object.
         if item_class == 'History':
@@ -87,11 +83,11 @@ class TagsController ( BaseController ):
         
         q = q.encode('utf-8')
         if q.find(":") == -1:
-            return self._get_tag_autocomplete_names(trans, q, limit, timestamp, item, item_class)
+            return self._get_tag_autocomplete_names(trans, q, limit, timestamp, user, item, item_class)
         else:
-            return self._get_tag_autocomplete_values(trans, q, limit, timestamp, item, item_class)
+            return self._get_tag_autocomplete_values(trans, q, limit, timestamp, user, item, item_class)
     
-    def _get_tag_autocomplete_names( self, trans, q, limit, timestamp, item=None, item_class=None ):
+    def _get_tag_autocomplete_names( self, trans, q, limit, timestamp, user=None, item=None, item_class=None ):
         """Returns autocomplete data for tag names ordered from most frequently used to
             least frequently used."""
         #    
@@ -109,8 +105,10 @@ class TagsController ( BaseController ):
         # Build select statement.
         cols_to_select = [ item_tag_assoc_class.table.c.tag_id, func.count('*') ] 
         from_obj = item_tag_assoc_class.table.join(item_class.table).join(Tag.table)
-        where_clause = and_(self._get_column_for_filtering_item_by_user_id(item_class)==trans.get_user().id,
-                            Tag.table.c.name.like(q + "%"))
+        where_clause = and_(
+                            Tag.table.c.name.like(q + "%"),
+                            item_tag_assoc_class.table.c.user_id == user.id
+                            )
         order_by = [ func.count("*").desc() ]
         group_by = item_tag_assoc_class.table.c.tag_id
         
@@ -125,7 +123,7 @@ class TagsController ( BaseController ):
             tag = self.tag_handler.get_tag_by_id(trans.sa_session, row[0])
                 
             # Exclude tags that are already applied to the item.    
-            if ( item is not None ) and ( self.tag_handler.item_has_tag(item, tag) ):
+            if ( item is not None ) and ( self.tag_handler.item_has_tag( trans.get_user(), item, tag ) ):
                 continue
             # Add tag to autocomplete data. Use the most frequent name that user
             # has employed for the tag.
@@ -135,7 +133,7 @@ class TagsController ( BaseController ):
         
         return ac_data
         
-    def _get_tag_autocomplete_values(self, trans, q, limit, timestamp, item=None, item_class=None):
+    def _get_tag_autocomplete_values(self, trans, q, limit, timestamp, user=None, item=None, item_class=None):
         """Returns autocomplete data for tag values ordered from most frequently used to
             least frequently used."""
             
@@ -158,9 +156,9 @@ class TagsController ( BaseController ):
         # Build select statement.
         cols_to_select = [ item_tag_assoc_class.table.c.value, func.count('*') ] 
         from_obj = item_tag_assoc_class.table.join(item_class.table).join(Tag.table)
-        where_clause = and_(self._get_column_for_filtering_item_by_user_id(item_class)==trans.get_user().id,
-                            Tag.table.c.id==tag.id,
-                            item_tag_assoc_class.table.c.value.like(tag_value + "%"))
+        where_clause = and_( item_tag_assoc_class.table.c.user_id == user.id,
+                             Tag.table.c.id==tag.id,
+                             item_tag_assoc_class.table.c.value.like(tag_value + "%") )
         order_by = [ func.count("*").desc(),  item_tag_assoc_class.table.c.value ]
         group_by = item_tag_assoc_class.table.c.value
         
@@ -182,8 +180,8 @@ class TagsController ( BaseController ):
         
         # Build select stmt.
         cols_to_select = [ item_tag_assoc_class.table.c.user_tname, func.count('*') ]
-        where_clause = and_(self._get_column_for_filtering_item_by_user_id(item_class)==user.id ,
-                            item_tag_assoc_class.table.c.tag_id==tag.id)
+        where_clause = and_( item_tag_assoc_class.table.c.user_id == user.id,
+                             item_tag_assoc_class.table.c.tag_id == tag.id )
         group_by = item_tag_assoc_class.table.c.user_tname
         order_by = [ func.count("*").desc() ]
         
@@ -198,35 +196,8 @@ class TagsController ( BaseController ):
             
         return user_tag_names
     
-    def _get_column_for_filtering_item_by_user_id(self, item_class): 
-        """ Returns the column to use when filtering by user id. """
-        if item_class is HistoryDatasetAssociation:
-            # Use the user_id associated with the HDA's history.
-            return History.table.c.user_id
-        else:
-            # Generically, just use the user_id column of the tagged item's table.
-            return item_class.table.c.user_id
-    
-    def _get_item(self, trans, item_class_name, id):
+    def _get_item( self, trans, item_class_name, id ):
         """ Get an item based on type and id. """
         item_class = self.tag_handler.item_tag_assoc_info[item_class_name].item_class
         item = trans.sa_session.query(item_class).filter("id=" + str(id))[0]
-        return item;
-        
-    def _do_security_check(self, trans, item):
-        """ Do security check on an item. """
-        if isinstance(item, History):
-            history = item;
-            # Check that the history exists, and is either owned by the current
-            # user (if logged in) or the current history
-            assert history is not None
-            if history.user is None:
-                assert history == trans.get_history()
-            else:
-                assert history.user == trans.user
-        elif isinstance(item, HistoryDatasetAssociation):
-            # TODO.
-            pass
-        elif isinstance(item, Page):
-            # TODO.
-            pass
+        return item

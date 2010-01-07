@@ -776,6 +776,14 @@ ${self.render_grid_table()}
 
 ## Render grid.
 <%def name="render_grid_table()">
+    <%
+        # Set flag to indicate whether grid has operations that operate on multiple items.
+        multiple_item_ops_exist = False
+        for operation in grid.operations:
+            if operation.allow_multiple:
+                multiple_item_ops_exist = True
+    %>
+
     <form action="${url()}" method="post" onsubmit="return false;">
         <div class='loading-elt-overlay'></div>
         <table id='grid-table' class="grid">
@@ -817,17 +825,17 @@ ${self.render_grid_table()}
                 </tr>
             </thead>
             <tbody id="grid-table-body">
-                ${render_grid_table_body_contents()}
+                ${render_grid_table_body_contents(multiple_item_ops_exist)}
             </tbody>
             <tfoot>
-                ${render_grid_table_footer_contents()}
+                ${render_grid_table_footer_contents(multiple_item_ops_exist)}
             </tfoot>
         </table>
     </form>
 </%def>
 
 ## Render grid table body contents.
-<%def name="render_grid_table_body_contents()">
+<%def name="render_grid_table_body_contents(multiple_item_ops_exist=False)">
         <% num_rows_rendered = 0 %>
         %if query.count() == 0:
             ## No results.
@@ -842,7 +850,7 @@ ${self.render_grid_table()}
             > 
                 ## Item selection column
                 <td style="width: 1.5em;">
-                    %if grid.operations:
+                    %if multiple_item_ops_exist:
                         <input type="checkbox" name="id" value=${trans.security.encode_id( item.id )} class="grid-row-select-checkbox" />
                     %endif
                 </td>
@@ -917,7 +925,7 @@ ${self.render_grid_table()}
 </%def>
 
 ## Render grid table footer contents.
-<%def name="render_grid_table_footer_contents()">
+<%def name="render_grid_table_footer_contents(multiple_item_ops_exist=False)">
     ## Row for navigating among pages.
     <%
         # Mapping between item class and plural term for item.
@@ -956,14 +964,8 @@ ${self.render_grid_table()}
             </td>
         </tr>    
     %endif
-    ## Grid operations.
-    <%
-        num_allow_multiple_ops = 0
-        for operation in grid.operations:
-            if operation.allow_multiple:
-                num_allow_multiple_ops += 1
-    %>
-    %if num_allow_multiple_ops:
+    ## Grid operations for multiple items.
+    %if multiple_item_ops_exist:
         <tr>
             <td></td>
             <td colspan="100">

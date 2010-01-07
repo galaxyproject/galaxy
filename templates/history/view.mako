@@ -1,7 +1,7 @@
 <%inherit file="/base_panels.mako"/>
 <%namespace file="/display_common.mako" import="get_history_link" />
 <%namespace file="/root/history_common.mako" import="render_dataset" />
-<%namespace file="../tagging_common.mako" import="render_tagging_element, render_community_tagging_element" />
+<%namespace file="../tagging_common.mako" import="render_individual_tagging_element, render_community_tagging_element" />
 
 <%def name="javascripts()">
     ${parent.javascripts()}
@@ -404,11 +404,11 @@
                     none
                 %endif
             </div>
-            ## User tags.
+            ## Individual tags.
             <p>
             <div>
-                ##Yours:
-                ##${render_tagging_element( tagged_item=history, elt_context='view.mako', use_toggle_link=False )}
+                Yours:
+                ${render_individual_tagging_element( user=trans.get_user(), tagged_item=history, elt_context='view.mako', use_toggle_link=False )}
             </div>
         </div>
         
