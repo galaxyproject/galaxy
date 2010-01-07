@@ -18,6 +18,7 @@ class Registry( object ):
         self.datatype_converters = odict()
         self.datatype_indexers = odict()
         self.converters = []
+        self.available_tracks = []
         self.set_external_metadata_tool = None
         self.indexers = []
         self.sniff_order = []
@@ -54,6 +55,8 @@ class Registry( object ):
                             # Use default mime type as per datatype spec
                             mimetype = self.datatypes_by_extension[extension].get_mime()
                         self.mimetypes_by_extension[extension] = mimetype
+                        if hasattr( getattr( module, datatype_class ), "get_track_type" ):
+                            self.available_tracks.append( extension )
                         if display_in_upload:
                             self.upload_file_formats.append( extension )
                         for converter in elem.findall( 'converter' ):
@@ -206,7 +209,10 @@ class Registry( object ):
                 if not included:
                     self.sniff_order.append(datatype)
         append_to_sniff_order()
-
+    
+    def get_available_tracks(self):
+        return self.available_tracks
+        
     def get_mimetype_by_extension(self, ext ):
         """Returns a mimetype based on an extension"""
         try:

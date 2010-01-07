@@ -63,6 +63,4 @@ class LastzCoverage( Tabular ):
         resolution = max( resolution, 1 )
         return resolution
 
-    def get_track_type( self ):
-        return "LineTrack"
 

@@ -23,34 +23,25 @@ from galaxy.util.bunch import Bunch
 
 from galaxy.visualization.tracks.data.array_tree import ArrayTreeDataProvider
 from galaxy.visualization.tracks.data.interval_index import IntervalIndexDataProvider
+from galaxy.visualization.tracks.data.bam import BamDataProvider
 
 # Message strings returned to browser
 messages = Bunch(
     PENDING = "pending",
     NO_DATA = "no data",
     NO_CHROMOSOME = "no chromosome",
+    NO_CONVERTER = "no converter",
     DATA = "data",
     ERROR = "error"
 )
-
-# Dataset type required for each track type. This needs to be more flexible,
-# there might be multiple types of indexes that suffice for a given track type.
-track_type_to_dataset_type = {
-    "line": "array_tree",
-    "feature": "interval_index"
-}
 
 # Mapping from dataset type to a class that can fetch data from a file of that
 # type. This also needs to be more flexible.
 dataset_type_to_data_provider = {
     "array_tree": ArrayTreeDataProvider,
-    "interval_index": IntervalIndexDataProvider
+    "interval_index": IntervalIndexDataProvider,
+    "bai": BamDataProvider
 }
-
-# FIXME: hardcoding this for now, but it should be derived from the available
-#        converters
-browsable_types = ( "wig", "bed" )
-
 
 class TracksController( BaseController ):
     """
@@ -107,11 +98,12 @@ class TracksController( BaseController ):
             # Find all datasets in the current history that are of that dbkey
             # and can be displayed
             datasets = {}
+            available_tracks = trans.app.datatypes_registry.get_available_tracks()
             for dataset in session.query( model.HistoryDatasetAssociation ).filter_by( deleted=False, history_id=trans.history.id ):
-                if dataset.metadata.dbkey == dbkey and dataset.extension in browsable_types:
+                if dataset.metadata.dbkey == dbkey and dataset.extension in available_tracks:
                     datasets[dataset.id] = (dataset.extension, dataset.name)
             # Render the template
-            return trans.fill_template( "tracks/new_browser.mako", converters=browsable_types, dbkey=dbkey, dbkey_set=dbkey_set, datasets=datasets )
+            return trans.fill_template( "tracks/new_browser.mako", available_tracks=available_tracks, dbkey=dbkey, dbkey_set=dbkey_set, datasets=datasets )
 
     @web.expose
     def browser(self, trans, id, chrom=""):
@@ -127,8 +119,10 @@ class TracksController( BaseController ):
         for t in vis.latest_revision.config['tracks']:
             dataset_id = t['dataset_id']
             dataset = hda_query.get( dataset_id )
+            track_type, indexer = dataset.datatype.get_track_type()
             tracks.append( {
-                "type": dataset.datatype.get_track_type(),
+                "type": track_type,
+                "indexer": indexer,
                 "name": dataset.name,
                 "dataset_id": dataset.id
             } )
@@ -184,14 +178,14 @@ class TracksController( BaseController ):
         return manifest
 
     @web.json
-    def data( self, trans, dataset_id, track_type, chrom, low, high, **kwargs ):
+    def data( self, trans, dataset_id, indexer, chrom, low, high, **kwargs ):
         """
         Called by the browser to request a block of data
         """
         # Load the requested dataset
         dataset = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( dataset_id )
         # No dataset for that id
-        if not dataset:
+        if not dataset or not chrom:
             return messages.NO_DATA
         # Dataset is in error state, can't display
         if dataset.state == trans.app.model.Job.states.ERROR:
@@ -200,12 +194,11 @@ class TracksController( BaseController ):
         if dataset.state != trans.app.model.Job.states.OK:
             return messages.PENDING
         # Determine what to return based on the type of track being drawn.
-        converted_dataset_type = track_type_to_dataset_type[track_type]
+        converted_dataset_type = indexer
         converted_dataset = self.__dataset_as_type( trans, dataset, converted_dataset_type )
-        # If at this point we still don't have an `array_tree_dataset`, there
-        # is no way we can display this data as an array tree
         if not converted_dataset:
-            return messages.ERROR
+            # No converter
+            return messages.NO_CONVERTER
         # Need to check states again for the converted version
         if converted_dataset.state == model.Dataset.states.ERROR:
             return messages.ERROR
@@ -228,6 +221,7 @@ class TracksController( BaseController ):
         converted dataset (possibly new) is returned, if it cannot be converted,
         None is returned.
         """
+        log.debug("Inside dataset as type")
         # Already of correct type
         if dataset.extension == type:
             return dataset

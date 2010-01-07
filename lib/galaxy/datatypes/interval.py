@@ -325,8 +325,6 @@ class Interval( Tabular ):
     def get_track_resolution( self, dataset, start, end):
         return None
 
-    def get_track_type( self ):
-        return "FeatureTrack"
     
 class Bed( Interval ):
     """Tab delimited data in BED format"""
@@ -484,6 +482,9 @@ class Bed( Interval ):
                 else: return False
             return True
         except: return False
+    
+    def get_track_type( self ):
+        return "FeatureTrack", "interval_index"
 
 class _RemoteCallMixin:
     def _get_remote_call_url( self, redirect_url, site_name, dataset, type, app, base_url ):
@@ -904,7 +905,7 @@ class Wiggle( Tabular, _RemoteCallMixin ):
         resolution = max( resolution, 1 )
         return resolution
     def get_track_type( self ):
-        return "LineTrack"
+        return "LineTrack", "array_tree"
 
 class CustomTrack ( Tabular ):
     """UCSC CustomTrack"""

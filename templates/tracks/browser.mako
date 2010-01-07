@@ -20,7 +20,7 @@ ${h.js( "jquery", "jquery.event.drag", "jquery.mousewheel", "trackster" )}
         view.add_track( new LabelTrack( $("#nav-labeltrack" ) ) );
    
         %for track in tracks:
-            view.add_track( new ${track["type"]}( "${track['name']}", ${track['dataset_id']} ) );
+            view.add_track( new ${track["type"]}( "${track['name']}", ${track['dataset_id']}, "${track['indexer']}" ) );
         %endfor
         
         $(document).bind( "redraw", function( e ) {

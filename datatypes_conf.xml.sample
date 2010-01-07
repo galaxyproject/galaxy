@@ -3,7 +3,9 @@
     <registration converters_path="lib/galaxy/datatypes/converters">
         <datatype extension="ab1" type="galaxy.datatypes.binary:Ab1" mimetype="application/octet-stream" display_in_upload="true"/>
         <datatype extension="axt" type="galaxy.datatypes.sequence:Axt" display_in_upload="true"/>
-        <datatype extension="bam" type="galaxy.datatypes.binary:Bam" mimetype="application/octet-stream" display_in_upload="true"/>
+        <datatype extension="bam" type="galaxy.datatypes.binary:Bam" mimetype="application/octet-stream" display_in_upload="true">
+            <converter file="bam_to_bai.xml" target_datatype="bai"/>
+        </datatype>
         <datatype extension="bed" type="galaxy.datatypes.interval:Bed" display_in_upload="true">
             <converter file="bed_to_gff_converter.xml" target_datatype="gff"/>
             <converter file="interval_to_coverage.xml" target_datatype="coverage"/>

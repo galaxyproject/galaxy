@@ -81,7 +81,7 @@ var View = function( chrom, max_high ) {
     this.max_high = max_high;
     this.center = (this.max_high - this.max_low) / 2;
     this.span = this.max_high - this.max_low;
-    this.zoom_factor = 2;
+    this.zoom_factor = 3;
     this.zoom_level = 0;
 };
 $.extend( View.prototype, {
@@ -241,12 +241,12 @@ $.extend( LabelTrack.prototype, Track.prototype, {
     }
 });
 
-var LineTrack = function ( name, dataset_id, height ) {
+var LineTrack = function ( name, dataset_id, indexer, height ) {
     this.tile_cache = new Cache(CACHED_TILES_LINE);
     Track.call( this, name, $("#viewport") );
     TiledTrack.call( this );
     
-    this.track_type = "line";
+    this.indexer = indexer;
     this.height_px = (height ? height : 100);
     this.container_div.addClass( "line-track" );
     this.dataset_id = dataset_id;
@@ -258,7 +258,7 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
     init: function() {
         var track = this;
         track.content_div.text(DATA_LOADING);
-        $.getJSON( data_url, {  stats: true, track_type: track.track_type,
+        $.getJSON( data_url, {  stats: true, indexer: track.indexer,
                                 chrom: track.view.chrom, low: null, high: null,
                                 dataset_id: track.dataset_id }, function ( data ) {
             if (!data || data == "error") {
@@ -300,7 +300,7 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
         
         if (!track.data_queue[key]) {
             track.data_queue[key] = true;
-            $.getJSON( data_url, {  track_type: this.track_type, chrom: this.view.chrom, 
+            $.getJSON( data_url, {  indexer: this.indexer, chrom: this.view.chrom, 
                                     low: low, high: high, dataset_id: this.dataset_id,
                                     resolution: this.view.resolution }, function ( data ) {
                 track.cache.set(key, data);
@@ -360,12 +360,12 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
     }
 });
 
-var FeatureTrack = function ( name, dataset_id, height ) {
+var FeatureTrack = function ( name, dataset_id, indexer, height ) {
     this.tile_cache = new Cache(CACHED_TILES_FEATURE);
     Track.call( this, name, $("#viewport") );
     TiledTrack.call( this );
     
-    this.track_type = "feature";
+    this.indexer = indexer;
     this.height_px = (height ? height : 100);
     this.container_div.addClass( "feature-track" );
     this.dataset_id = dataset_id;
@@ -384,7 +384,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
     init: function() {
         var track = this;
         track.content_div.text(DATA_LOADING);
-        $.getJSON( data_url, {  track_type: track.track_type, low: track.view.max_low, 
+        $.getJSON( data_url, {  indexer: track.indexer, low: track.view.max_low, 
                                 high: track.view.max_high, dataset_id: track.dataset_id,
                                 chrom: track.view.chrom }, function ( data ) {
             if (data == "error") {
@@ -414,7 +414,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
         
         if (!track.data_queue[key]) {
             track.data_queue[key] = true;
-            $.getJSON( data_url, {  track_type: track.track_type, chrom: track.view.chrom, 
+            $.getJSON( data_url, {  indexer: track.indexer, chrom: track.view.chrom, 
                                     low: low, high: high, dataset_id: track.dataset_id,
                                     include_blocks: true }, function ( data ) {
                 track.data_cache.set(key, data);
@@ -454,8 +454,6 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
         if (!this.inc_slots[level]) {
             this.inc_slots[level] = {};
             this.inc_slots[level].w_scale = DENSITY / Math.pow(FEATURE_LEVELS, level+1);
-            // this.inc_slots[level].w_scale = 1000 / (this.view.high - this.view.low);
-            
         }
         var slots = this.inc_slots[level];
         // console.log(level, slots.w_scale, slots);
@@ -622,6 +620,74 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                     }
                 }
                 j++;
+            }
+        }        
+
+        parent_element.append( new_canvas );
+        return new_canvas;
+    }
+});
+
+var ReadTrack = function ( name, dataset_id, indexer, height ) {
+    this.tile_cache = new Cache(CACHED_TILES_FEATURE);
+    Track.call( this, name, $("#viewport") );
+    TiledTrack.call( this );
+    FeatureTrack.call( this, name, dataset_id, indexer, height );
+    this.default_font = "9px Monaco, Lucida Console, monospace";
+    
+};
+$.extend( ReadTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
+    draw_tile: function( resolution, tile_index, parent_element, w_scale ) {
+        if (!this.values) {
+            return;
+        }
+        var tile_low = tile_index * DENSITY * resolution,
+            tile_high = ( tile_index + 1 ) * DENSITY * resolution,
+            tile_span = DENSITY * resolution;
+        // console.log("drawing " + tile_index);
+        // Once we zoom in enough, show name labels
+        var data, slots, required_height;
+            required_height = this.height_px;
+            slots = this.zo_slots;
+            data = this.values;
+        
+        // console.log(tile_low, tile_high, tile_length, w_scale);
+        var width = Math.ceil( tile_span * w_scale ),
+            new_canvas = $("<canvas class='tile'></canvas>");
+        
+        var dummy_canvas = $("<canvas></canvas>").get(0).getContext("2d");
+        
+        new_canvas.css({
+            position: "absolute",
+            top: 0,
+            left: ( tile_low - this.view.low ) * w_scale - this.left_offset
+        });
+        new_canvas.get(0).width = width + this.left_offset;
+        new_canvas.get(0).height = required_height;
+        // console.log(( tile_low - this.view.low ) * w_scale, tile_index, w_scale);
+        var ctx = new_canvas.get(0).getContext("2d");
+        ctx.fillStyle = this.base_color;
+        ctx.font = this.default_font;
+        ctx.textAlign = "right";
+        var px_per_char = ctx.measureText("A").width;
+        
+        var j = 0;
+        for (var i = 0, len = data.length; i < len; i++) {
+            var feature = data[i];
+            if (feature.start <= tile_high && feature.end >= tile_low) {
+                var f_start = Math.floor( Math.max(0, (feature.start - tile_low) * w_scale) ),
+                    f_end   = Math.ceil( Math.min(width, (feature.end - tile_low) * w_scale) ),
+                    y_center = slots[feature.uid] * this.vertical_gap;
+                
+                var thickness, y_start, thick_start = null, thick_end = null;
+                if (w_scale > px_per_char) {
+                    for (var c = 0, str_len = feature.name.length; c < str_len; c++) {
+                        var c_start = Math.floor( Math.max(0, (feature.start + c - tile_low) * w_scale) );
+                        ctx.fillText(feature.name[c], c_start + this.left_offset, y_center + 8);
+                    }
+                } else {
+                    ctx.fillRect(f_start + this.left_offset, y_center + 4, f_end - f_start, 3);
+                }
             }
         }        
 

@@ -11,7 +11,7 @@ $( function() {
 </script>
 </%def>
 
-% if not converters:
+% if not available_tracks:
     <div class="errormessagelarge">
         There are no available converters needed for visualization. Please verify that your tool_conf.xml file contains
         converters for datatypes (see tool_conf.xml.sample) for examples.
@@ -46,7 +46,7 @@ $( function() {
                     <div style="clear: both;"></div>
                 </div>
                 <div class="form-row">
-                    <label for="dataset_ids">Datasets to include: </label>
+                    <label for="dataset_ids">Datasets to visualize: (${", ".join(available_tracks)} files are supported)</label>
                     %for dataset_id, (dataset_ext, dataset_name) in datasets.iteritems():
                     <div>
                         <input type="checkbox" id="${dataset_id}" name="dataset_ids" value="${dataset_id}" />

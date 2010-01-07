@@ -132,7 +132,9 @@ class Bam( Binary ):
             return dataset.peek
         except:
             return "Binary bam alignments file (%s)" % ( data.nice_size( dataset.get_size() ) )
-
+    def get_track_type( self ):
+        return "ReadTrack", "bai"
+    
 class Binseq( Binary ):
     """Class describing a zip archive of binary sequence files"""
     file_ext = "binseq.zip"
