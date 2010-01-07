@@ -1,6 +1,6 @@
 <tool id="cshl_fastq_to_fasta" name="FASTQ to FASTA">
 	<description>converter</description>
-	<command>gunzip -cf $input | fastq_to_fasta -Q 33 $SKIPN $RENAMESEQ -o $output -v </command>
+	<command>gunzip -cf $input | fastq_to_fasta $SKIPN $RENAMESEQ -o $output -v </command>
 
 	<inputs>
 		<param format="fastq" name="input" type="data" label="FASTQ Library to convert" />
