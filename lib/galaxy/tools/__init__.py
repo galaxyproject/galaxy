@@ -1550,7 +1550,6 @@ class DataSourceTool( Tool ):
             out.close()
 
     def exec_after_process( self, app, inp_data, out_data, param_dict, job = None ):
-        log.debug('after proc called')
         name, data = out_data.items()[0]
         data.set_size()
         #TODO: these should be already be set before the tool runs:
