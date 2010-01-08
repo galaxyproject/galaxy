@@ -19,7 +19,7 @@
 #else:
 --pre_set_options="None" --strand=$params.strand --seed=$params.seed --gfextend=$params.gfextend --chain=$params.chain --transition=$params.transition --O=$params.O --E=$params.E --X=$params.X --Y=$params.Y --K=$params.K --L=$params.L --entropy=$params.entropy 
 #end if
---identity_min=$min_ident --identity_max=$max_ident --coverage=$min_cvrg --output=$output1 --num_threads=$num_threads --lastzSeqsFileDir=${GALAXY_DATA_INDEX_DIR}
+--identity_min=$min_ident --identity_max=$max_ident --coverage=$min_cvrg --output=$output1 --lastzSeqsFileDir=${GALAXY_DATA_INDEX_DIR}
     </command>
     <inputs>
         <param name="input2" format="fasta" type="data" label="Align sequencing reads in" />
@@ -109,10 +109,6 @@
         <param name="min_ident" type="integer" size="3" value="0" label="Do not report matches below this identity (%)"/>
         <param name="max_ident" type="integer" size="3" value="100" label="Do not report matches above this identity (%)"/>
         <param name="min_cvrg" type="integer" size="3" value="0" label="Do not report matches that cover less than this percentage of each read"/>
-        <param name="num_threads" type="select" label="Number of threads" help="Split this job over the selected number of threads">
-            <option value="4">4</option>
-            <option value="8">8</option>
-        </param>
     </inputs>
     <outputs>
         <data format="tabular" name="output1">
@@ -149,14 +145,15 @@
             <param name="K" value="3000" />
             <param name="L" value="3000" />
             <param name="entropy" value="noentropy" />
-            <!-- how_to_name is not the default. It is changed to modify 
-            	 input1_2bit by adding the ref_name as a nickname -->
+            <!--
+             how_to_name is not the default. It is changed to modify 
+            	 input1_2bit by adding the ref_name as a nickname
+            -->
             <param name="how_to_name" value="yes" />
             <param name="ref_name" value="Ref" />
             <param name="min_ident" value="0" />
             <param name="max_ident" value="100" />
             <param name="min_cvrg" value="0" />
-            <param name="num_threads" value="4" />
             <output name="output1" file="lastz_wrapper_out2.sam" />
         </test>
         <test>
@@ -176,11 +173,10 @@
             <param name="min_ident" value="0" />
             <param name="max_ident" value="100" />
             <param name="min_cvrg" value="0" />
-            <param name="num_threads" value="4" />
             <output name="output1" file="lastz_wrapper_out3.tabular" />
         </test>
-        <test> 
-        	<!-- 
+        <test>
+            <!--
         	Lastz command: first you will need to split the file phiX_split.fasta into two files, 
         	phiX1.fasta and phiX2.fasta, each with 1 sequence (phiX1 and phiX2, respectively). Then:
         	lastz phiX1.fasta test-data/b1.fasta *yasra95short *ambiguousn *nolaj *identity=0..100 *coverage=0 *format=general-:score,name1,strand1,size1,start1,zstart1,end1,length1,text1,name2,strand2,size2,start2,zstart2,end2,start2+,zstart2+,end2+,length2,text2,diff,cigar,identity,coverage,gaprate,diagonal,shingle > lastz_wrapper_out4.tabular 
@@ -200,7 +196,6 @@
             <param name="min_ident" value="0" />
             <param name="max_ident" value="100" />
             <param name="min_cvrg" value="0" />
-            <param name="num_threads" value="4" />
             <output name="output1" file="lastz_wrapper_out4.tabular" />
         </test>
     </tests>
