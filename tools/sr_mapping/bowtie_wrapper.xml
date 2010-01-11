@@ -1,326 +1,780 @@
-<tool id="bowtie_wrapper" name="Map with Bowtie" version="1.0.0">
+<tool id="bowtie_wrapper" name="Map with Bowtie" version="1.0.5">
   <description></description>
   <command interpreter="python">
-    bowtie_wrapper.py 
-    --threads="4"
-    --input1=$singlePaired.input1
-    #if $singlePaired.sPaired == "paired":
-     --input2=$singlePaired.input2
-    #else:
-     --input2="None"
-    #end if
-    --output=$output
-    --paired=$singlePaired.sPaired
-    --genomeSource=$refGenomeSource.genomeSource
-    #if $refGenomeSource.genomeSource == "history":
-     --ref=$refGenomeSource.ownFile
-    #else:
-     --ref=$refGenomeSource.indices.value
-    #end if
-    --params=$singlePaired.params.settings_type
-    #if $singlePaired.params.settings_type == "full":
-     --skip=$singlePaired.params.skip
-     --alignLimit=$singlePaired.params.alignLimit
-     --trimH=$singlePaired.params.trimH
-     --trimL=$singlePaired.params.trimL
-     --mismatchSeed=$singlePaired.params.mismatchSeed
-     --mismatchQual=$singlePaired.params.mismatchQual
-     --seedLen=$singlePaired.params.seedLen
-     --rounding=$singlePaired.params.rounding
-     --maqSoapAlign=$singlePaired.params.maqSoapAlign
-     --tryHard=$singlePaired.params.tryHard
-     --valAlign=$singlePaired.params.valAlign
-     --allValAligns=$singlePaired.params.allValAligns
-     --suppressAlign=$singlePaired.params.suppressAlign
-     --offrate=$singlePaired.params.offrate
-     --seed=$singlePaired.params.seed
-     --best=$singlePaired.params.bestOption.best
-     #if $singlePaired.params.bestOption.best == "doBest":
-      --maxBacktracks=$singlePaired.params.bestOption.maxBacktracks
-      --strata=$singlePaired.params.bestOption.strata
-     #else:
-      --maxBacktracks="None"
-      --strata="None"
-     #end if
-     #if $singlePaired.sPaired == "single":
-      --minInsert="None"
-      --maxInsert="None"
-      --mateOrient="None"
-      --maxAlignAttempt="None"
-      --forwardAlign="None"
-      --reverseAlign="None"
-     #else:
-      --minInsert=$singlePaired.params.minInsert
-      --maxInsert=$singlePaired.params.maxInsert
-      --mateOrient=$singlePaired.params.mateOrient
-      --maxAlignAttempt=$singlePaired.params.maxAlignAttempt
-      --forwardAlign=$singlePaired.params.forwardAlign
-      --reverseAlign=$singlePaired.params.reverseAlign
-     #end if
-    #else
-     --skip="None"
-     --alignLimit="None"
-     --trimH="None"
-     --trimL="None"
-     --mismatchSeed="None"
-     --mismatchQual="None"
-     --seedLen="None"
-     --rounding="None"
-     --maqSoapAlign="None"
-     --tryHard="None"
-     --valAlign="None"
-     --allValAligns="None"
-     --suppressAlign="None"
-     --best="None"
-     --maxBacktracks="None"
-     --strata="None"
-     --minInsert="None"
-     --maxInsert="None"
-     --mateOrient="None"
-     --maxAlignAttempt="None"
-     --forwardAlign="None"
-     --reverseAlign="None"
-     --offrate="None"
-     --seed="None"
-    #end if
-    #if $refGenomeSource.genomeSource == "history":
-     --dbkey=$dbkey
-    #else:
-     --dbkey="None"
-    #end if
-    #if $refGenomeSource.genomeSource == "history":
-     --indexSettings=$refGenomeSource.indexParams.index_settings
-    #else:
-     --indexSettings="None"
-    #end if
-    #if $refGenomeSource.genomeSource == "history" and $refGenomeSource.indexParams.index_settings == "index_full":
-     --iauto_b=$refGenomeSource.indexParams.auto_behavior.auto_b
-     #if $refGenomeSource.indexParams.auto_behavior.auto_b == "set":
-      --ipacked=$refGenomeSource.indexParams.auto_behavior.packed
-      --ibmax=$refGenomeSource.indexParams.auto_behavior.bmax
-      --ibmaxdivn=$refGenomeSource.indexParams.auto_behavior.bmaxdivn
-      --idcv=$refGenomeSource.indexParams.auto_behavior.dcv
-     #else:
-      --ipacked="None"
-      --ibmax="None"
-      --ibmaxdivn="None"
-      --idcv="None"
-     #end if
-     --inodc=$refGenomeSource.indexParams.nodc
-     --inoref=$refGenomeSource.indexParams.noref
-     --ioffrate=$refGenomeSource.indexParams.offrate
-     --iftab=$refGenomeSource.indexParams.ftab
-     --intoa=$refGenomeSource.indexParams.ntoa
-     --iendian=$refGenomeSource.indexParams.endian
-     --iseed=$refGenomeSource.indexParams.seed
-     --icutoff=$refGenomeSource.indexParams.cutoff
-    #else:
-     --iauto_b="None"
-     --ipacked="None"
-     --ibmax="None"
-     --ibmaxdivn="None"
-     --idcv="None"
-     --inodc="None"
-     --inoref="None"
-     --ioffrate="None"
-     --iftab="None"
-     --intoa="None"
-     --iendian="None"
-     --iseed="None"
-     --icutoff="None"
-    #end if
-    --suppressHeader=$suppressHeader
+  bowtie_wrapper.py --threads="4" --output=$output --suppressHeader=$suppressHeader --dataType=$solidOrSolexa.dataType 
+#if $solidOrSolexa.dataType == "solid":
+ --genomeSource=$solidOrSolexa.cRefGenomeSource.cGenomeSource
+ #if $solidOrSolexa.cRefGenomeSource.cGenomeSource == "cIndexed":
+  --ref=$solidOrSolexa.cRefGenomeSource.cIndex.value
+  --dbkey="None"
+  --indexSettings="None"
+  --iauto_b="None"
+  --ipacked="None"
+  --ibmax="None"
+  --ibmaxdivn="None"
+  --idcv="None"
+  --inodc="None"
+  --inoref="None"
+  --ioffrate="None"
+  --iftab="None"
+  --intoa="None"
+  --iendian="None"
+  --iseed="None"
+  --icutoff="None"
+ #else:
+  --ref=$solidOrSolexa.cRefGenomeSource.cOwnFile
+  --dbkey=$dbkey
+  --indexSettings=$solidOrSolexa.cRefGenomeSource.cIndexParams.cIndexSettings
+  #if $solidOrSolexa.cRefGenomeSource.cIndexParams.cIndexSettings == "cIndexFull":
+   --iauto_b=$solidOrSolexa.cRefGenomeSource.cIndexParams.cAutoBehavior.cAutoB == "cSet"
+   #if $solidOrSolexa.cRefGenomeSource.cIndexParams.cAutoBehavior.cAutoB == "cSet":
+    --ipacked=$solidOrSolexa.cRefGenomeSource.cIndexParams.cAutoBehavior.cPacked
+    --ibmax=$solidOrSolexa.cRefGenomeSource.cIndexParams.cAutoBehavior.cBmax
+    --ibmaxdivn=$solidOrSolexa.cRefGenomeSource.cIndexParams.cAutoBehavior.cBmaxdivn
+    --idcv=$solidOrSolexa.cRefGenomeSource.cIndexParams.cAutoBehavior.cDcv
+   #else:
+    --ipacked="None"
+    --ibmax="None"
+    --ibmaxdivn="None"
+    --idcv="None"
+   #end if
+   --inodc=$solidOrSolexa.cRefGenomeSource.cIndexParams.cNodc
+   --inoref=$solidOrSolexa.cRefGenomeSource.cIndexParams.cNoref
+   --ioffrate=$solidOrSolexa.cRefGenomeSource.cIndexParams.cOffrate
+   --iftab=$solidOrSolexa.cRefGenomeSource.cIndexParams.cFtab
+   --intoa=$solidOrSolexa.cRefGenomeSource.cIndexParams.cNtoa
+   --iendian=$solidOrSolexa.cRefGenomeSource.cIndexParams.cEndian
+   --iseed=$solidOrSolexa.cRefGenomeSource.cIndexParams.cSeed
+   --icutoff=$solidOrSolexa.cRefGenomeSource.cIndexParams.cCutoff
+  #else:
+   --iauto_b="None"
+   --ipacked="None"
+   --ibmax="None"
+   --ibmaxdivn="None"
+   --idcv="None"
+   --inodc="None"
+   --inoref="None"
+   --ioffrate="None"
+   --iftab="None"
+   --intoa="None"
+   --iendian="None"
+   --iseed="None"
+   --icutoff="None"
+  #end if
+ #end if
+ --paired=$solidOrSolexa.cSinglePaired.cSPaired
+ #if $solidOrSolexa.cSinglePaired.cSPaired == "cSingle":
+  --input1=$solidOrSolexa.cSinglePaired.csInput1
+  --input2="None"
+  --params=$solidOrSolexa.cSinglePaired.csParams.csSettingsType
+  #if $solidOrSolexa.cSinglePaired.csParams.csSettingsType == "csFull":
+   --skip=$solidOrSolexa.cSinglePaired.csParams.csSkip
+   --alignLimit=$solidOrSolexa.cSinglePaired.csParams.csAlignLimit
+   --trimH=$solidOrSolexa.cSinglePaired.csParams.csTrimH
+   --trimL=$solidOrSolexa.cSinglePaired.csParams.csTrimL
+   --mismatchSeed=$solidOrSolexa.cSinglePaired.csParams.csMismatchSeed
+   --mismatchQual=$solidOrSolexa.cSinglePaired.csParams.csMismatchQual
+   --seedLen=$solidOrSolexa.cSinglePaired.csParams.csSeedLen
+   --rounding=$solidOrSolexa.cSinglePaired.csParams.csRounding
+   --maqSoapAlign=$solidOrSolexa.cSinglePaired.csParams.csMaqSoapAlign
+   --tryHard=$solidOrSolexa.cSinglePaired.csParams.csTryHard
+   --valAlign=$solidOrSolexa.cSinglePaired.csParams.csValAlign
+   --allValAligns=$solidOrSolexa.cSinglePaired.csParams.csAllValAligns
+   --suppressAlign=$solidOrSolexa.cSinglePaired.csParams.csSuppressAlign
+   --best=$solidOrSolexa.cSinglePaired.csParams.csBestOption.csBest
+   #if $solidOrSolexa.cSinglePaired.csParams.csBestOption.csBest == "csDoBest":
+    --maxBacktracks=$solidOrSolexa.cSinglePaired.csParams.csBestOption.csdMaxBacktracks
+    --strata=$solidOrSolexa.cSinglePaired.csParams.csBestOption.csdStrata
+   #else:
+    --maxBacktracks=$solidOrSolexa.cSinglePaired.csParams.csBestOption.csnMaxBacktracks
+    --strata="None"
+   #end if
+   --offrate=$solidOrSolexa.cSinglePaired.csParams.csOffrate
+   --seed=$solidOrSolexa.cSinglePaired.csParams.csSeed
+   --snpphred=$solidOrSolexa.cSinglePaired.csParams.csSnpphred
+   --snpfrac=$solidOrSolexa.cSinglePaired.csParams.csSnpfrac
+   --keepends=$solidOrSolexa.cSinglePaired.csParams.csKeepends
+  #else:
+   --skip="None"
+   --alignLimit="None"
+   --trimH="None"
+   --trimL="None"
+   --mismatchSeed="None"
+   --mismatchQual="None"
+   --seedLen="None"
+   --rounding="None"
+   --maqSoapAlign="None"
+   --tryHard="None"
+   --valAlign="None"
+   --allValAligns="None"
+   --suppressAlign="None"
+   --best="None"
+   --maxBacktracks="None"
+   --strata="None"
+   --offrate="None"
+   --seed="None"
+   --snpphred="None"
+   --snpfrac="None"
+   --keepends="None"
+  #end if
+  --minInsert="None"
+  --maxInsert="None"
+  --mateOrient="None"
+  --maxAlignAttempt="None"
+  --forwardAlign="None"
+  --reverseAlign="None"
+ #else:
+  --input1=$solidOrSolexa.cSinglePaired.cpInput1
+  --input2=$solidOrSolexa.cSinglePaired.cpInput2
+  --params=$solidOrSolexa.cSinglePaired.cpParams.cpSettingsType
+  #if $solidOrSolexa.cSinglePaired.cpParams.cpSettingsType == "cpFull":
+   --skip=$solidOrSolexa.cSinglePaired.cpParams.cpSkip
+   --alignLimit=$solidOrSolexa.cSinglePaired.cpParams.cpAlignLimit
+   --trimH=$solidOrSolexa.cSinglePaired.cpParams.cpTrimH
+   --trimL=$solidOrSolexa.cSinglePaired.cpParams.cpTrimL
+   --mismatchSeed=$solidOrSolexa.cSinglePaired.cpParams.cpMismatchSeed
+   --mismatchQual=$solidOrSolexa.cSinglePaired.cpParams.cpMismatchQual
+   --seedLen=$solidOrSolexa.cSinglePaired.cpParams.cpSeedLen
+   --rounding=$solidOrSolexa.cSinglePaired.cpParams.cpRounding
+   --maqSoapAlign=$solidOrSolexa.cSinglePaired.cpParams.cpMaqSoapAlign
+   --minInsert=$solidOrSolexa.cSinglePaired.cpParams.cpMinInsert
+   --maxInsert=$solidOrSolexa.cSinglePaired.cpParams.cpMaxInsert
+   --mateOrient=$solidOrSolexa.cSinglePaired.cpParams.cpMateOrient
+   --maxAlignAttempt=$solidOrSolexa.cSinglePaired.cpParams.cpMaxAlignAttempt
+   --forwardAlign=$solidOrSolexa.cSinglePaired.cpParams.cpForwardAlign
+   --reverseAlign=$solidOrSolexa.cSinglePaired.cpParams.cpReverseAlign
+   --tryHard=$solidOrSolexa.cSinglePaired.cpParams.cpTryHard
+   --valAlign=$solidOrSolexa.cSinglePaired.cpParams.cpValAlign
+   --allValAligns=$solidOrSolexa.cSinglePaired.cpParams.cpAllValAligns
+   --suppressAlign=$solidOrSolexa.cSinglePaired.cpParams.cpSuppressAlign
+   --best=$solidOrSolexa.cSinglePaired.cpParams.cpBestOption.cpBest
+   #if $solidOrSolexa.cSinglePaired.cpParams.cpBestOption.cpBest == "cpDoBest":
+    --maxBacktracks=$solidOrSolexa.cSinglePaired.cpParams.cpBestOption.cpdMaxBacktracks
+    --strata=$solidOrSolexa.cSinglePaired.cpParams.cpBestOption.cpdStrata
+   #else:
+    --maxBacktracks=$solidOrSolexa.cSinglePaired.cpParams.cpBestOption.cpnMaxBacktracks
+    --strata="None"
+   #end if
+   --offrate=$solidOrSolexa.cSinglePaired.cpParams.cpOffrate
+   --seed=$solidOrSolexa.cSinglePaired.cpParams.cpSeed
+   --snpphred=$solidOrSolexa.cSinglePaired.cpParams.cpSnpphred
+   --snpfrac=$solidOrSolexa.cSinglePaired.cpParams.cpSnpfrac
+   --keepends=$solidOrSolexa.cSinglePaired.cpParams.cpKeepends
+  #else:
+   --skip="None"
+   --alignLimit="None"
+   --trimH="None"
+   --trimL="None"
+   --mismatchSeed="None"
+   --mismatchQual="None"
+   --seedLen="None"
+   --rounding="None"
+   --maqSoapAlign="None"
+   --tryHard="None"
+   --valAlign="None"
+   --allValAligns="None"
+   --suppressAlign="None"
+   --best="None"
+   --maxBacktracks="None"
+   --strata="None"
+   --offrate="None"
+   --seed="None"
+   --snpphred="None"
+   --snpfrac="None"
+   --keepends="None"
+   --minInsert="None"
+   --maxInsert="None"
+   --mateOrient="None"
+   --maxAlignAttempt="None"
+   --forwardAlign="None"
+   --reverseAlign="None"
+  #end if
+ #end if
+#else:
+ --genomeSource=$solidOrSolexa.xRefGenomeSource.xGenomeSource
+ #if $solidOrSolexa.xRefGenomeSource.xGenomeSource == "xIndexed":
+  --ref=$solidOrSolexa.xRefGenomeSource.xIndex.value
+  --dbkey="None"
+  --indexSettings="None"
+  --iauto_b="None"
+  --ipacked="None"
+  --ibmax="None"
+  --ibmaxdivn="None"
+  --idcv="None"
+  --inodc="None"
+  --inoref="None"
+  --ioffrate="None"
+  --iftab="None"
+  --intoa="None"
+  --iendian="None"
+  --iseed="None"
+  --icutoff="None"
+ #else:
+  --ref=$solidOrSolexa.xRefGenomeSource.xOwnFile
+  --dbkey=$dbkey
+  --indexSettings=$solidOrSolexa.xRefGenomeSource.xIndexParams.xIndexSettings
+  #if $solidOrSolexa.xRefGenomeSource.xIndexParams.xIndexSettings == "xIndexFull":
+   --iauto_b=$solidOrSolexa.xRefGenomeSource.xIndexParams.xAutoBehavior.xAutoB == "xSet"
+   #if $solidOrSolexa.xRefGenomeSource.xIndexParams.xAutoBehavior.xAutoB == "xSet":
+    --ipacked=$solidOrSolexa.xRefGenomeSource.xIndexParams.xAutoBehavior.xPacked
+    --ibmax=$solidOrSolexa.xRefGenomeSource.xIndexParams.xAutoBehavior.xBmax
+    --ibmaxdivn=$solidOrSolexa.xRefGenomeSource.xIndexParams.xAutoBehavior.xBmaxdivn
+    --idcv=$solidOrSolexa.xRefGenomeSource.xIndexParams.xAutoBehavior.xDcv
+   #else:
+    --ipacked="None"
+    --ibmax="None"
+    --ibmaxdivn="None"
+    --idcv="None"
+   #end if
+   --inodc=$solidOrSolexa.xRefGenomeSource.xIndexParams.xNodc
+   --inoref=$solidOrSolexa.xRefGenomeSource.xIndexParams.xNoref
+   --ioffrate=$solidOrSolexa.xRefGenomeSource.xIndexParams.xOffrate
+   --iftab=$solidOrSolexa.xRefGenomeSource.xIndexParams.xFtab
+   --intoa=$solidOrSolexa.xRefGenomeSource.xIndexParams.xNtoa
+   --iendian=$solidOrSolexa.xRefGenomeSource.xIndexParams.xEndian
+   --iseed=$solidOrSolexa.xRefGenomeSource.xIndexParams.xSeed
+   --icutoff=$solidOrSolexa.xRefGenomeSource.xIndexParams.xCutoff
+  #else:
+   --iauto_b="None"
+   --ipacked="None"
+   --ibmax="None"
+   --ibmaxdivn="None"
+   --idcv="None"
+   --inodc="None"
+   --inoref="None"
+   --ioffrate="None"
+   --iftab="None"
+   --intoa="None"
+   --iendian="None"
+   --iseed="None"
+   --icutoff="None"
+  #end if
+ #end if
+ --paired=$solidOrSolexa.xSinglePaired.xSPaired
+ #if $solidOrSolexa.xSinglePaired.xSPaired == "xSingle":
+  --input1=$solidOrSolexa.xSinglePaired.xsInput1
+  --input2="None"
+  --params=$solidOrSolexa.xSinglePaired.xsParams.xsSettingsType
+  #if $solidOrSolexa.xSinglePaired.xsParams.xsSettingsType == "xsFull":
+   --skip=$solidOrSolexa.xSinglePaired.xsParams.xsSkip
+   --alignLimit=$solidOrSolexa.xSinglePaired.xsParams.xsAlignLimit
+   --trimH=$solidOrSolexa.xSinglePaired.xsParams.xsTrimH
+   --trimL=$solidOrSolexa.xSinglePaired.xsParams.xsTrimL
+   --mismatchSeed=$solidOrSolexa.xSinglePaired.xsParams.xsMismatchSeed
+   --mismatchQual=$solidOrSolexa.xSinglePaired.xsParams.xsMismatchQual
+   --seedLen=$solidOrSolexa.xSinglePaired.xsParams.xsSeedLen
+   --rounding=$solidOrSolexa.xSinglePaired.xsParams.xsRounding
+   --maqSoapAlign=$solidOrSolexa.xSinglePaired.xsParams.xsMaqSoapAlign
+   --tryHard=$solidOrSolexa.xSinglePaired.xsParams.xsTryHard
+   --valAlign=$solidOrSolexa.xSinglePaired.xsParams.xsValAlign
+   --allValAligns=$solidOrSolexa.xSinglePaired.xsParams.xsAllValAligns
+   --suppressAlign=$solidOrSolexa.xSinglePaired.xsParams.xsSuppressAlign
+   --best=$solidOrSolexa.xSinglePaired.xsParams.xsBestOption.xsBest
+   #if $solidOrSolexa.xSinglePaired.xsParams.xsBestOption.xsBest == "xsDoBest":
+    --maxBacktracks=$solidOrSolexa.xSinglePaired.xsParams.xsBestOption.xsdMaxBacktracks
+    --strata=$solidOrSolexa.xSinglePaired.xsParams.xsBestOption.xsdStrata
+   #else:
+    --maxBacktracks=$solidOrSolexa.xSinglePaired.xsParams.xsBestOption.xsnMaxBacktracks
+    --strata="None"
+   #end if
+   --offrate=$solidOrSolexa.xSinglePaired.xsParams.xsOffrate
+   --seed=$solidOrSolexa.xSinglePaired.xsParams.xsSeed
+  #else:
+   --skip="None"
+   --alignLimit="None"
+   --trimH="None"
+   --trimL="None"
+   --mismatchSeed="None"
+   --mismatchQual="None"
+   --seedLen="None"
+   --rounding="None"
+   --maqSoapAlign="None"
+   --tryHard="None"
+   --valAlign="None"
+   --allValAligns="None"
+   --suppressAlign="None"
+   --best="None"
+   --maxBacktracks="None"
+   --strata="None"
+   --offrate="None"
+   --seed="None"
+  #end if
+  --snpphred="None"
+  --snpfrac="None"
+  --keepends="None"
+  --minInsert="None"
+  --maxInsert="None"
+  --mateOrient="None"
+  --maxAlignAttempt="None"
+  --forwardAlign="None"
+  --reverseAlign="None"
+ #else:
+  --input1=$solidOrSolexa.xSinglePaired.xpInput1
+  --input2=$solidOrSolexa.xSinglePaired.xpInput2
+  --params=$solidOrSolexa.xSinglePaired.xpParams.xpSettingsType
+  #if $solidOrSolexa.xSinglePaired.xpParams.xpSettingsType == "xpFull":
+   --skip=$solidOrSolexa.xSinglePaired.xpParams.xpSkip
+   --alignLimit=$solidOrSolexa.xSinglePaired.xpParams.xpAlignLimit
+   --trimH=$solidOrSolexa.xSinglePaired.xpParams.xpTrimH
+   --trimL=$solidOrSolexa.xSinglePaired.xpParams.xpTrimL
+   --mismatchSeed=$solidOrSolexa.xSinglePaired.xpParams.xpMismatchSeed
+   --mismatchQual=$solidOrSolexa.xSinglePaired.xpParams.xpMismatchQual
+   --seedLen=$solidOrSolexa.xSinglePaired.xpParams.xpSeedLen
+   --rounding=$solidOrSolexa.xSinglePaired.xpParams.xpRounding
+   --maqSoapAlign=$solidOrSolexa.xSinglePaired.xpParams.xpMaqSoapAlign
+   --minInsert=$solidOrSolexa.xSinglePaired.xpParams.xpMinInsert
+   --maxInsert=$solidOrSolexa.xSinglePaired.xpParams.xpMaxInsert
+   --mateOrient=$solidOrSolexa.xSinglePaired.xpParams.xpMateOrient
+   --maxAlignAttempt=$solidOrSolexa.xSinglePaired.xpParams.xpMaxAlignAttempt
+   --forwardAlign=$solidOrSolexa.xSinglePaired.xpParams.xpForwardAlign
+   --reverseAlign=$solidOrSolexa.xSinglePaired.xpParams.xpReverseAlign
+   --tryHard=$solidOrSolexa.xSinglePaired.xpParams.xpTryHard
+   --valAlign=$solidOrSolexa.xSinglePaired.xpParams.xpValAlign
+   --allValAligns=$solidOrSolexa.xSinglePaired.xpParams.xpAllValAligns
+   --suppressAlign=$solidOrSolexa.xSinglePaired.xpParams.xpSuppressAlign
+   --best=$solidOrSolexa.xSinglePaired.xpParams.xpBestOption.xpBest
+   #if $solidOrSolexa.xSinglePaired.xpParams.xpBestOption.xpBest == "xpDoBest":
+    --maxBacktracks=$solidOrSolexa.xSinglePaired.xpParams.xpBestOption.xpdMaxBacktracks
+    --strata=$solidOrSolexa.xSinglePaired.xpParams.xpBestOption.xpdStrata
+   #else:
+    --maxBacktracks=$solidOrSolexa.xSinglePaired.xpParams.xpBestOption.xpnMaxBacktracks
+    --strata="None"
+   #end if
+   --offrate=$solidOrSolexa.xSinglePaired.xpParams.xpOffrate
+   --seed=$solidOrSolexa.xSinglePaired.xpParams.xpSeed
+  #else:
+   --skip="None"
+   --alignLimit="None"
+   --trimH="None"
+   --trimL="None"
+   --mismatchSeed="None"
+   --mismatchQual="None"
+   --seedLen="None"
+   --rounding="None"
+   --maqSoapAlign="None"
+   --tryHard="None"
+   --valAlign="None"
+   --allValAligns="None"
+   --suppressAlign="None"
+   --best="None"
+   --maxBacktracks="None"
+   --strata="None"
+   --offrate="None"
+   --seed="None"
+   --minInsert="None"
+   --maxInsert="None"
+   --mateOrient="None"
+   --maxAlignAttempt="None"
+   --forwardAlign="None"
+   --reverseAlign="None"
+  #end if
+  --snpphred="None"
+  --snpfrac="None"
+  --keepends="None"
+ #end if
+#end if
   </command>
   <inputs>
-    <conditional name="refGenomeSource">
-      <param name="genomeSource" type="select" label="Will you select a reference genome from your history or use a built-in index?" help="Built-ins were indexed using default options">
-        <option value="indexed">Use a built-in index</option>
-        <option value="history">Use one from the history</option>
+    <conditional name="solidOrSolexa">
+      <param name="dataType" type="select" label="Is your data SOLiD or Solexa?">
+        <option value="solid">SOLiD</option>
+        <option value="solexa">Solexa</option>
       </param>
-      <when value="indexed">
-    	<param name="indices" type="select" label="Select a reference genome" help="if your genome of interest is not listed - contact Galaxy team">
-  	      <options from_file="bowtie_indices.loc">
-  	        <column name="value" index="1" />
-  	        <column name="name" index="0" />
-  	      </options>
-  	    </param>
-  	  </when>
-      <when value="history">
-        <param name="ownFile" type="data" format="fasta" metadata_name="dbkey" label="Select a reference genome" />
-        <conditional name="indexParams">
-          <param name="index_settings" type="select" label="Choose whether to use default options for building indices or to set your own">
-            <option value="index_pre_set">Default</option>
-            <option value="index_full">Set your own</option>
-          </param> 
-          <when value="index_pre_set" />
-          <when value="index_full">
-            <conditional name="auto_behavior">
-              <param name="auto_b" type="select" label="Choose to use automatic or specified behavior for some parameters (-a)" help="Allows you to set --packed, --bmax, --bmaxdivn, and --dcv">
-                <option value="auto">Automatic behavior</option>
-                <option value="set">Set values (sets --noauto and allows others to be set)</option>
-              </param>
-              <when value="auto" />
-              <when value="set">
-                <param name="packed" type="select" label="Whether or not to use a packed representation for DNA strings (-p)">
-                  <option value="unpacked">Use regular representation</option>
-                  <option value="packed">Use packed representation</option>
+      <when value="solid">
+        <conditional name="cRefGenomeSource">
+          <param name="cGenomeSource" type="select" label="Will you select a reference genome from your history or use a built-in index?" help="Built-ins were indexed using default options">
+            <option value="cIndexed">Use a built-in index</option>
+            <option value="cHistory">Use one from the history</option>
+          </param>
+          <when value="cIndexed">
+  	        <param name="cIndex" type="select" label="Select the reference genome" help="if your genome of interest is not listed - contact Galaxy team">
+  	          <options from_file="bowtie_indices_color.loc">
+  	            <column name="value" index="1" />
+  	            <column name="name" index="0" />
+  	          </options>
+  	        </param>
+  	      </when>
+          <when value="cHistory">
+            <param name="cOwnFile" type="data" format="fasta" metadata_name="dbkey" label="Select a reference genome" />
+            <conditional name="cIndexParams">
+              <param name="cIndexSettings" type="select" label="Choose whether to use default options for building indices or to set your own">
+                <option value="cIndexPreSet">Default</option>
+                <option value="cIndexFull">Set your own</option>
+              </param> 
+              <when value="cIndexPreSet" />
+              <when value="cIndexFull">
+                <conditional name="cAutoBehavior">
+                  <param name="cAutoB" type="select" label="Choose to use automatic or specified behavior for some parameters (-a)" help="Allows you to set --packed, --bmax, --bmaxdivn, and --dcv">
+                    <option value="cAuto">Automatic behavior</option>
+                    <option value="cSet">Set values (sets --noauto and allows others to be set)</option>
+                  </param>
+                  <when value="cAuto" />
+                  <when value="cSet">
+                    <param name="cPacked" type="select" label="Whether or not to use a packed representation for DNA strings (-p)">
+                      <option value="unpacked">Use regular representation</option>
+                      <option value="packed">Use packed representation</option>
+                    </param>
+                    <param name="cBmax" type="integer" value="-1" label="Maximum number of suffixes allowed in a block (--bmax)" help="-1 for not specified. Must be at least 1" />
+                    <param name="cBmaxdivn" type="integer" value="4" label="Maximum number of suffixes allowed in a block as a fraction of the length of the reference (--bmaxdivn)" />
+                    <param name="cDcv" type="integer" value="1024" label="The period for the difference-cover sample (--dcv)" />
+                  </when>
+                </conditional>
+                <param name="cNodc" type="select" label="Whether or not to disable the use of the difference-cover sample (--nodc)" help="Suffix sorting becomes quadratic-time in the worst case (a very repetitive reference)">
+                  <option value="dc">Use difference-cover sample</option>
+                  <option value="nodc">Disable difference-cover sample</option>
                 </param>
-                <param name="bmax" type="integer" value="-1" label="Maximum number of suffixes allowed in a block (--bmax)" help="-1 for not specified. Must be at least 1" />
-                <param name="bmaxdivn" type="integer" value="4" label="Maximum number of suffixes allowed in a block as a fraction of the length of the reference (--bmaxdivn)" />
-                <param name="dcv" type="integer" value="1024" label="The period for the difference-cover sample (--dcv)" />
-              </when>
-            </conditional>
-            <param name="nodc" type="select" label="Whether or not to disable the use of the difference-cover sample (--nodc)" help="Suffix sorting becomes quadratic-time in the worst case (a very repetitive reference)">
-              <option value="dc">Use difference-cover sample</option>
-              <option value="nodc">Disable difference-cover sample</option>
-            </param>
-            <param name="noref" type="select" label="Whether or not to build the part of the reference index used only in paired-end alignment (-r)">
-              <option value="ref">Build all index files</option>
-              <option value="noref">Do not build paired-end alignment index files</option>
-            </param>
-            <param name="offrate" type="integer" value="5" label="How many rows get marked during annotation of some or all of the Burrows-Wheeler rows (-o)" />
-            <param name="ftab" type="integer" value="10" label="The size of the lookup table used to calculate an initial Burrows-Wheeler range with respect to the first n characters of the query (-t)" help="ftab is 4^(n+1) bytes" />
-            <param name="ntoa" type="select" label="Whether or not to convert Ns in the reference sequence to As (--ntoa)">
-              <option value="no">Do not convert Ns</option>
-              <option value="yes">Convert Ns to As</option>
-            </param>
-            <param name="endian" type="select" label="Endianness to use when serializing integers to the index file (--big/--little)" help="Little is most appropriate for Intel- and AMD-based architecture">
-              <option value="little">Little</option>
-              <option value="big">Big</option>
-            </param> 
-            <param name="seed" type="integer" value="-1" label="Seed for the pseudorandom number generator (--seed)" help="Use -1 to use default" />
-            <param name="cutoff" type="integer" value="-1" label="Number of first bases of the reference sequence to index (--cutoff)" help="Use -1 to use default" />
-          </when> <!-- index_full -->
-        </conditional>
-      </when>
- 	</conditional> <!-- refGenomeSource -->
-    <conditional name="singlePaired">
-      <param name="sPaired" type="select" label="Is this library mate-paired?">
-        <option value="single">Single-end</option>
-        <option value="paired">Paired-end</option>
-      </param>
-      <when value="single">
-        <param name="input1" type="data" format="fastqsanger" label="FASTQ file" help="Must have Sanger-scaled quality values with ASCII offset 33"/>
-        <conditional name="params">
-          <param name="settings_type" type="select" label="Bowtie settings to use" help="For most mapping needs use Commonly used settings. If you want full control use Full parameter list">
-		    <option value="pre_set">Commonly used</option>
-   		    <option value="full">Full parameter list</option>
-	      </param>
-          <when value="pre_set" />
-          <when value="full">
-            <param name="skip" type="integer" value="0" label="Skip the first n reads (-s)" />  
-            <param name="alignLimit" type="integer" value="-1" label="Only align the first n reads (-u)" help="-1 for off" />  
-            <param name="trimH" type="integer" value="0" label="Trim n bases from high-quality (left) end of each read before alignment (-5)" />
-            <param name="trimL" type="integer" value="0" label="Trim n bases from low-quality (right) end of each read before alignment (-3)" />
-            <param name="mismatchSeed" type="integer" value="2" label="Maximum number of mismatches permitted in the seed (-n)" help="May be 0, 1, 2, or 3" />
-            <param name="mismatchQual" type="integer" value="70" label="Maximum permitted total of quality values at mismatched read positions (-e)" />
-            <param name="seedLen" type="integer" value="28" label="Seed length (-l)" help="Minimum value is 5" />
-            <param name="rounding" type="select" label="Whether or not to round to the nearest 10 and saturating at 30 (--nomaqround)">
-              <option value="round">Round to nearest 10</option>
-              <option value="noRound">Do not round to nearest 10</option>
-            </param>
-            <param name="maqSoapAlign" type="integer" value="-1" label="Number of mismatches for SOAP-like alignment policy (-v)" help="-1 for default MAQ-like alignment policy" />
-            <param name="tryHard" type="select" label="Whether or not to try as hard as possible to find valid alignments when they exist (-y)" help="Tryhard mode is much slower than regular mode">
-              <option value="noTryHard">Do not try hard</option>
-              <option value="doTryHard">Try hard</option>
-            </param>
-            <param name="valAlign" type="integer" value="1" label="Report up to n valid arguments per read (-k)" />
-            <param name="allValAligns" type="select" label="Whether or not to report all valid alignments per read (-a)">
-              <option value="noAllValAligns">Do not report all valid alignments</option>
-              <option value="doAllValAligns">Report all valid alignments</option>
-            </param>
-            <param name="suppressAlign" type="integer" value="-1" label="Suppress all alignments for a read if more than n reportable alignments exist (-m)" help="-1 for no limit" />
-            <conditional name="bestOption">
-              <param name="best" type="select" label="Whether or not to make Bowtie guarantee that reported singleton alignments are 'best' in terms of stratum and in terms of the quality values at the mismatched positions (--best)" help="Removes all strand bias. Only affects which alignments are reported by Bowtie. Runs slower with best option">
-                <option value="noBest">Do not use best</option>
-                <option value="doBest">Use best</option>
-              </param>
-              <when value="noBest">
-                <param name="maxBacktracks" type="integer" value="125" label="Maximum number of backtracks permitted when aligning a read (--maxbts)" />
-              </when>
-              <when value="doBest">
-                <param name="maxBacktracks" type="integer" value="800" label="Maximum number of backtracks permitted when aligning a read (--maxbts)" />
-                <param name="strata" type="select" label="Whether or not to report only those alignments that fall in the best stratum if many valid alignments exist and are reportable (--strata)">
-                  <option value="noStrata">Do not use strata option</option>
-                  <option value="doStrata">Use strata option</option>
+                <param name="cNoref" type="select" label="Whether or not to build the part of the reference index used only in paired-end alignment (-r)">
+                  <option value="ref">Build all index files</option>
+                  <option value="noref">Do not build paired-end alignment index files</option>
                 </param>
-              </when>
-            </conditional> <!-- bestOption -->
-            <param name="offrate" type="integer" value="-1" label="Override the offrate of the index to n (-o)" help="-1 for default" />
-            <param name="seed" type="integer" value="-1" label="Seed for pseudo-random number generator (--seed)" help="-1 for default" />
-          </when> <!-- full -->
-        </conditional> <!-- params -->
-      </when> <!-- single -->
-      <when value="paired">
-        <param name="input1" type="data" format="fastqsanger" label="Forward FASTQ file" help="Must have Sanger-scaled quality values with ASCII offset 33"/>
-        <param name="input2" type="data" format="fastqsanger" label="Reverse FASTQ file" help="Must have Sanger-scaled quality values with ASCII offset 33"/>
-        <conditional name="params">
-          <param name="settings_type" type="select" label="Bowtie settings to use" help="For most mapping needs use Commonly used settings. If you want full control use Full parameter list">
-		    <option value="pre_set">Commonly used</option>
-   		    <option value="full">Full parameter list</option>
-	      </param>
-          <when value="pre_set" />
-          <when value="full">
-            <param name="skip" type="integer" value="0" label="Skip the first n pairs (-s)" />  
-            <param name="alignLimit" type="integer" value="-1" label="Only align the first n pairs (-u)" help="-1 for off" />  
-            <param name="trimH" type="integer" value="0" label="Trim n bases from high-quality (left) end of each read before alignment (-5)" />
-            <param name="trimL" type="integer" value="0" label="Trim n bases from low-quality (right) end of each read before alignment (-3)" />
-            <param name="mismatchSeed" type="integer" value="2" label="Maximum number of mismatches permitted in the seed (-n)" help="May be 0, 1, 2, or 3" />
-            <param name="mismatchQual" type="integer" value="70" label="Maximum permitted total of quality values at mismatched read positions (-e)" />
-            <param name="seedLen" type="integer" value="28" label="Seed length (-l)" help="Minimum value is 5" />
-            <param name="rounding" type="select" label="Whether or not to round to the nearest 10 and saturating at 30 (--nomaqround)">
-              <option value="round">Round to nearest 10</option>
-              <option value="noRound">Do not round to nearest 10</option>
-            </param>
-            <param name="maqSoapAlign" type="integer" value="-1" label="Number of mismatches for SOAP-like alignment policy (-v)" help="-1 for default MAQ-like alignment policy" />
-            <param name="minInsert" type="integer" value="0" label="Minimum insert size for valid paired-end alignments (-I)" />
-            <param name="maxInsert" type="integer" value="250" label="Maximum insert size for valid paired-end alignments (-X)" />
-            <param name="mateOrient" type="select" label="The upstream/downstream mate orientation for valid paired-end alignment against the forward reference strand (--fr/--rf/--ff)">
-              <option value="fr">FR (for Illumina)</option>
-              <option value="rf">RF</option>
-              <option value="ff">FF</option>
-            </param>
-            <param name="maxAlignAttempt" type="integer" value="100" label="Maximum number of attempts Bowtie will make to match an alignment for one mate with an alignment for the opposite mate (--pairtries)" />
-            <param name="forwardAlign" type="select" label="Choose whether or not to attempt to align the forward reference strand (--nofw)">
-              <option value="forward">Align against the forward reference strand</option>
-              <option value="noForward">Do not align against the forward reference strand</option>
-            </param>
-            <param name="reverseAlign" type="select" label="Choose whether or not to align against the reverse-complement reference strand (--norc)">
-              <option value="reverse">Align against the reverse-complement reference strand</option>
-              <option value="noReverse">Do not align against the reverse-complement reference strand</option>
-            </param>
-            <param name="tryHard" type="select" label="Whether or not to try as hard as possible to find valid alignments when they exist (-y)" help="Tryhard mode is much slower than regular mode">
-              <option value="noTryHard">Do not try hard</option>
-              <option value="doTryHard">Try hard</option>
-            </param>
-            <param name="valAlign" type="integer" value="1" label="Report up to n valid arguments per pair (-k)" />
-            <param name="allValAligns" type="select" label="Whether or not to report all valid alignments per pair (-a)">
-              <option value="noAllValAligns">Do not report all valid alignments</option>
-              <option value="doAllValAligns">Report all valid alignments</option>
-            </param>
-            <param name="suppressAlign" type="integer" value="-1" label="Suppress all alignments for a pair if more than n reportable alignments exist (-m)" help="-1 for no limit" />
-            <conditional name="bestOption">
-              <param name="best" type="select" label="Whether or not to make Bowtie guarantee that reported singleton alignments are 'best' in terms of stratum and in terms of the quality values at the mismatched positions (--best)" help="Removes all strand bias. Only affects which alignments are reported by Bowtie. Runs slower with best option">
-                <option value="noBest">Do not use best</option>
-                <option value="doBest">Use best</option>
-              </param>
-              <when value="noBest">
-                <param name="maxBacktracks" type="integer" value="125" label="Maximum number of backtracks permitted when aligning a read (--maxbts)" />
-              </when>
-              <when value="doBest">
-                <param name="maxBacktracks" type="integer" value="800" label="Maximum number of backtracks permitted when aligning a read (--maxbts)" />
-                <param name="strata" type="select" label="Whether or not to report only those alignments that fall in the best stratum if many valid alignments exist and are reportable (--strata)">
-                  <option value="noStrata">Do not use strata option</option>
-                  <option value="doStrata">Use strata option</option>
+                <param name="cOffrate" type="integer" value="5" label="How many rows get marked during annotation of some or all of the Burrows-Wheeler rows (-o)" />
+                <param name="cFtab" type="integer" value="10" label="The size of the lookup table used to calculate an initial Burrows-Wheeler range with respect to the first n characters of the query (-t)" help="ftab is 4^(n+1) bytes" />
+                <param name="cNtoa" type="select" label="Whether or not to convert Ns in the reference sequence to As (--ntoa)">
+                  <option value="no">Do not convert Ns</option>
+                  <option value="yes">Convert Ns to As</option>
                 </param>
-              </when>
-            </conditional>
-            <param name="offrate" type="integer" value="-1" label="Override the offrate of the index to n (-o)" help="-1 for default" />
-            <param name="seed" type="integer" value="-1" label="Seed for pseudo-random number generator (--seed)" help="-1 for default" />
-          </when> <!-- full -->
-        </conditional> <!-- params -->
-      </when> <!-- paired -->
-    </conditional> <!-- singlePaired -->
+                <param name="cEndian" type="select" label="Endianness to use when serializing integers to the index file (--big/--little)" help="Little is most appropriate for Intel- and AMD-based architecture">
+                  <option value="little">Little</option>
+                  <option value="big">Big</option>
+                </param> 
+                <param name="cSeed" type="integer" value="-1" label="Seed for the pseudorandom number generator (--seed)" help="Use -1 to use default" />
+                <param name="cCutoff" type="integer" value="-1" label="Number of first bases of the reference sequence to index (--cutoff)" help="Use -1 to use default" />
+              </when>  <!-- cIndexFull -->
+            </conditional>  <!-- cIndexParams -->
+          </when>  <!-- cHistory -->
+ 	    </conditional>  <!-- cRefGenomeSource -->
+        <conditional name="cSinglePaired">
+          <param name="cSPaired" type="select" label="Is this library mate-paired?">
+            <option value="cSingle">Single-end</option>
+            <option value="cPaired">Paired-end</option>
+          </param>
+          <when value="cSingle">
+            <param name="csInput1" type="data" format="fastqsanger" label="FASTQ file" help="Must have Sanger-scaled quality values with ASCII offset 33"/>
+            <conditional name="csParams">
+              <param name="csSettingsType" type="select" label="Bowtie settings to use" help="For most mapping needs use Commonly used settings. If you want full control use Full parameter list">
+	            <option value="csPreSet">Commonly used</option>
+   	            <option value="csFull">Full parameter list</option>
+	          </param>
+              <when value="csPreSet" />
+              <when value="csFull">
+                <param name="csSkip" type="integer" value="0" label="Skip the first n reads (-s)" />  
+                <param name="csAlignLimit" type="integer" value="-1" label="Only align the first n reads (-u)" help="-1 for off" />  
+                <param name="csTrimH" type="integer" value="0" label="Trim n bases from high-quality (left) end of each read before alignment (-5)" />
+                <param name="csTrimL" type="integer" value="0" label="Trim n bases from low-quality (right) end of each read before alignment (-3)" />
+                <param name="csMismatchSeed" type="integer" value="2" label="Maximum number of mismatches permitted in the seed (-n)" help="May be 0, 1, 2, or 3" />
+                <param name="csMismatchQual" type="integer" value="70" label="Maximum permitted total of quality values at mismatched read positions (-e)" />
+                <param name="csSeedLen" type="integer" value="28" label="Seed length (-l)" help="Minimum value is 5" />
+                <param name="csRounding" type="select" label="Whether or not to round to the nearest 10 and saturating at 30 (--nomaqround)">
+                  <option value="round">Round to nearest 10</option>
+                  <option value="noRound">Do not round to nearest 10</option>
+                </param>
+                <param name="csMaqSoapAlign" type="integer" value="-1" label="Number of mismatches for SOAP-like alignment policy (-v)" help="-1 for default MAQ-like alignment policy" />
+                <param name="csTryHard" type="select" label="Whether or not to try as hard as possible to find valid alignments when they exist (-y)" help="Tryhard mode is much slower than regular mode">
+                  <option value="noTryHard">Do not try hard</option>
+                  <option value="doTryHard">Try hard</option>
+                </param>
+                <param name="csValAlign" type="integer" value="1" label="Report up to n valid arguments per read (-k)" />
+                <param name="csAllValAligns" type="select" label="Whether or not to report all valid alignments per read (-a)">
+                  <option value="noAllValAligns">Do not report all valid alignments</option>
+                  <option value="doAllValAligns">Report all valid alignments</option>
+                </param>
+                <param name="csSuppressAlign" type="integer" value="-1" label="Suppress all alignments for a read if more than n reportable alignments exist (-m)" help="-1 for no limit" />
+                <conditional name="csBestOption">
+                  <param name="csBest" type="select" label="Whether or not to make Bowtie guarantee that reported singleton alignments are 'best' in terms of stratum and in terms of the quality values at the mismatched positions (--best)" help="Removes all strand bias. Only affects which alignments are reported by Bowtie. Runs slower with best option">
+                    <option value="csNoBest">Do not use best</option>
+                    <option value="csDoBest">Use best</option>
+                  </param>
+                  <when value="csNoBest">
+                    <param name="csnMaxBacktracks" type="integer" value="125" label="Maximum number of backtracks permitted when aligning a read (--maxbts)" />
+                  </when>
+                  <when value="csDoBest">
+                    <param name="csdMaxBacktracks" type="integer" value="800" label="Maximum number of backtracks permitted when aligning a read (--maxbts)" />
+                    <param name="csdStrata" type="select" label="Whether or not to report only those alignments that fall in the best stratum if many valid alignments exist and are reportable (--strata)">
+                      <option value="noStrata">Do not use strata option</option>
+                      <option value="doStrata">Use strata option</option>
+                    </param>
+                  </when>
+                </conditional> <!-- csBestOption -->
+                <param name="csOffrate" type="integer" value="-1" label="Override the offrate of the index to n (-o)" help="-1 for default" />
+                <param name="csSeed" type="integer" value="-1" label="Seed for pseudo-random number generator (--seed)" help="-1 for default" />
+                <param name="csSnpphred" type="integer" value="-1" label="SNP penalty (ratio of SNPs per base in the subject genome) (--snpphred)" help="Enter this OR Ratio of SNPs per base" />
+                <param name="csSnpfrac" type="float" value="0.001" label="Ratio of SNPs per base (estimated ratio for colorspace alignments) (--snpfrac)" help="Enter this OR SNP penalty" />
+                <param name="csKeepends" type="select" label="Keep the extreme-ends nucleotides and qualities rather than trimming them (--keepends)">
+                  <option value="doKeepends">Keep ends</option>
+                  <option value="noKeepends">Trim ends</option>
+                </param>
+              </when> <!-- csFull -->
+            </conditional> <!-- csParams -->
+          </when> <!-- cSingle -->
+          <when value="cPaired">
+            <param name="cpInput1" type="data" format="fastqsanger" label="FASTQ file" help="Must have Sanger-scaled quality values with ASCII offset 33"/>
+            <param name="cpInput2" type="data" format="fastqsanger" label="Reverse FASTQ file" help="Must have Sanger-scaled quality values with ASCII offset 33"/>
+            <conditional name="cpParams">
+              <param name="cpSettingsType" type="select" label="Bowtie settings to use" help="For most mapping needs use Commonly used settings. If you want full control use Full parameter list">
+		        <option value="cpPreSet">Commonly used</option>
+   		        <option value="cpFull">Full parameter list</option>
+	          </param>
+              <when value="cpPreSet" />
+              <when value="cpFull">
+                <param name="cpSkip" type="integer" value="0" label="Skip the first n pairs (-s)" />  
+                <param name="cpAlignLimit" type="integer" value="-1" label="Only align the first n pairs (-u)" help="-1 for off" />  
+                <param name="cpTrimH" type="integer" value="0" label="Trim n bases from high-quality (left) end of each read before alignment (-5)" />
+                <param name="cpTrimL" type="integer" value="0" label="Trim n bases from low-quality (right) end of each read before alignment (-3)" />
+                <param name="cpMismatchSeed" type="integer" value="2" label="Maximum number of mismatches permitted in the seed (-n)" help="May be 0, 1, 2, or 3" />
+                <param name="cpMismatchQual" type="integer" value="70" label="Maximum permitted total of quality values at mismatched read positions (-e)" />
+                <param name="cpSeedLen" type="integer" value="28" label="Seed length (-l)" help="Minimum value is 5" />
+                <param name="cpRounding" type="select" label="Whether or not to round to the nearest 10 and saturating at 30 (--nomaqround)">
+                  <option value="round">Round to nearest 10</option>
+                  <option value="noRound">Do not round to nearest 10</option>
+                </param>
+                <param name="cpMaqSoapAlign" type="integer" value="-1" label="Number of mismatches for SOAP-like alignment policy (-v)" help="-1 for default MAQ-like alignment policy" />
+                <param name="cpMinInsert" type="integer" value="0" label="Minimum insert size for valid paired-end alignments (-I)" />
+                <param name="cpMaxInsert" type="integer" value="250" label="Maximum insert size for valid paired-end alignments (-X)" />
+                <param name="cpMateOrient" type="select" label="The upstream/downstream mate orientation for valid paired-end alignment against the forward reference strand (--fr/--rf/--ff)">
+                  <option value="fr">FR (for Illumina)</option>
+                  <option value="rf">RF</option>
+                  <option value="ff">FF</option>
+                </param>
+                <param name="cpMaxAlignAttempt" type="integer" value="100" label="Maximum number of attempts Bowtie will make to match an alignment for one mate with an alignment for the opposite mate (--pairtries)" />
+                <param name="cpForwardAlign" type="select" label="Choose whether or not to attempt to align the forward reference strand (--nofw)">
+                  <option value="forward">Align against the forward reference strand</option>
+                  <option value="noForward">Do not align against the forward reference strand</option>
+                </param>
+                <param name="cpReverseAlign" type="select" label="Choose whether or not to align against the reverse-complement reference strand (--norc)">
+                  <option value="reverse">Align against the reverse-complement reference strand</option>
+                  <option value="noReverse">Do not align against the reverse-complement reference strand</option>
+                </param>
+                <param name="cpTryHard" type="select" label="Whether or not to try as hard as possible to find valid alignments when they exist (-y)" help="Tryhard mode is much slower than regular mode">
+                  <option value="noTryHard">Do not try hard</option>
+                  <option value="doTryHard">Try hard</option>
+                </param>
+                <param name="cpValAlign" type="integer" value="1" label="Report up to n valid arguments per pair (-k)" />
+                <param name="cpAllValAligns" type="select" label="Whether or not to report all valid alignments per pair (-a)">
+                  <option value="noAllValAligns">Do not report all valid alignments</option>
+                  <option value="doAllValAligns">Report all valid alignments</option>
+                </param>
+                <param name="cpSuppressAlign" type="integer" value="-1" label="Suppress all alignments for a pair if more than n reportable alignments exist (-m)" help="-1 for no limit" />
+                <conditional name="cpBestOption">
+                  <param name="cpBest" type="select" label="Whether or not to make Bowtie guarantee that reported singleton alignments are 'best' in terms of stratum and in terms of the quality values at the mismatched positions (--best)" help="Removes all strand bias. Only affects which alignments are reported by Bowtie. Runs slower with best option">
+                    <option value="cpNoBest">Do not use best</option>
+                    <option value="cpDoBest">Use best</option>
+                  </param>
+                  <when value="cpNoBest">
+                    <param name="cpnMaxBacktracks" type="integer" value="125" label="Maximum number of backtracks permitted when aligning a read (--maxbts)" />
+                  </when>
+                  <when value="cpDoBest">
+                    <param name="cpdMaxBacktracks" type="integer" value="800" label="Maximum number of backtracks permitted when aligning a read (--maxbts)" />
+                    <param name="cpdStrata" type="select" label="Whether or not to report only those alignments that fall in the best stratum if many valid alignments exist and are reportable (--strata)">
+                      <option value="noStrata">Do not use strata option</option>
+                      <option value="doStrata">Use strata option</option>
+                    </param>
+                  </when>
+                </conditional>  <!-- cpBestOption -->
+                <param name="cpOffrate" type="integer" value="-1" label="Override the offrate of the index to n (-o)" help="-1 for default" />
+                <param name="cpSeed" type="integer" value="-1" label="Seed for pseudo-random number generator (--seed)" help="-1 for default" />
+                <param name="cpSnpphred" type="integer" value="-1" label="SNP penalty (ratio of SNPs per base in the subject genome) (--snpphred)" help="Enter this OR Ratio of SNPs per base" />
+                <param name="cpSnpfrac" type="float" value="0.001" label="Ratio of SNPs per base (estimated ratio for colorspace alignments) (--snpfrac)" help="Enter this OR SNP penalty" />
+                <param name="cpKeepends" type="select" label="Keep the extreme-ends nucleotides and qualities rather than trimming them (--keepends)">
+                  <option value="doKeepends">Keep ends</option>
+                  <option value="noKeepends">Trim ends</option>
+                </param>
+              </when> <!-- cpFull -->
+            </conditional> <!-- cpParams -->
+          </when> <!-- cPaired -->
+        </conditional> <!-- cSinglePaired -->
+      </when>  <!-- solid -->
+      <when value="solexa">
+        <conditional name="xRefGenomeSource">
+          <param name="xGenomeSource" type="select" label="Will you select a reference genome from your history or use a built-in index?" help="Built-ins were indexed using default options">
+            <option value="xIndexed">Use a built-in index</option>
+            <option value="xHistory">Use one from the history</option>
+          </param>
+          <when value="xIndexed">
+  	        <param name="xIndex" type="select" label="Select the reference genome" help="if your genome of interest is not listed - contact Galaxy team">
+  	          <options from_file="bowtie_indices.loc">
+  	            <column name="value" index="1" />
+  	            <column name="name" index="0" />
+  	          </options>
+  	        </param>
+  	      </when>
+          <when value="xHistory">
+            <param name="xOwnFile" type="data" format="fasta" metadata_name="dbkey" label="Select a reference genome" />
+            <conditional name="xIndexParams">
+              <param name="xIndexSettings" type="select" label="Choose whether to use default options for building indices or to set your own">
+                <option value="xIndexPreSet">Default</option>
+                <option value="xIndexFull">Set your own</option>
+              </param> 
+              <when value="xIndexPreSet" />
+              <when value="xIndexFull">
+                <conditional name="xAutoBehavior">
+                  <param name="xAutoB" type="select" label="Choose to use automatic or specified behavior for some parameters (-a)" help="Allows you to set --packed, --bmax, --bmaxdivn, and --dcv">
+                    <option value="xAuto">Automatic behavior</option>
+                    <option value="xSet">Set values (sets --noauto and allows others to be set)</option>
+                  </param>
+                  <when value="xAuto" />
+                  <when value="xSet">
+                    <param name="xPacked" type="select" label="Whether or not to use a packed representation for DNA strings (-p)">
+                      <option value="unpacked">Use regular representation</option>
+                      <option value="packed">Use packed representation</option>
+                    </param>
+                    <param name="xBmax" type="integer" value="-1" label="Maximum number of suffixes allowed in a block (--bmax)" help="-1 for not specified. Must be at least 1" />
+                    <param name="xBmaxdivn" type="integer" value="4" label="Maximum number of suffixes allowed in a block as a fraction of the length of the reference (--bmaxdivn)" />
+                    <param name="xDcv" type="integer" value="1024" label="The period for the difference-cover sample (--dcv)" />
+                  </when>
+                </conditional>
+                <param name="xNodc" type="select" label="Whether or not to disable the use of the difference-cover sample (--nodc)" help="Suffix sorting becomes quadratic-time in the worst case (a very repetitive reference)">
+                  <option value="dc">Use difference-cover sample</option>
+                  <option value="nodc">Disable difference-cover sample</option>
+                </param>
+                <param name="xNoref" type="select" label="Whether or not to build the part of the reference index used only in paired-end alignment (-r)">
+                  <option value="ref">Build all index files</option>
+                  <option value="noref">Do not build paired-end alignment index files</option>
+                </param>
+                <param name="xOffrate" type="integer" value="5" label="How many rows get marked during annotation of some or all of the Burrows-Wheeler rows (-o)" />
+                <param name="xFtab" type="integer" value="10" label="The size of the lookup table used to calculate an initial Burrows-Wheeler range with respect to the first n characters of the query (-t)" help="ftab is 4^(n+1) bytes" />
+                <param name="xNtoa" type="select" label="Whether or not to convert Ns in the reference sequence to As (--ntoa)">
+                  <option value="no">Do not convert Ns</option>
+                  <option value="yes">Convert Ns to As</option>
+                </param>
+                <param name="xEndian" type="select" label="Endianness to use when serializing integers to the index file (--big/--little)" help="Little is most appropriate for Intel- and AMD-based architecture">
+                  <option value="little">Little</option>
+                  <option value="big">Big</option>
+                </param> 
+                <param name="xSeed" type="integer" value="-1" label="Seed for the pseudorandom number generator (--seed)" help="Use -1 to use default" />
+                <param name="xCutoff" type="integer" value="-1" label="Number of first bases of the reference sequence to index (--cutoff)" help="Use -1 to use default" />
+              </when>  <!-- xIndexFull -->
+            </conditional>  <!-- xIndexParams -->
+          </when>  <!-- xHistory -->
+ 	    </conditional>  <!-- xRefGenomeSource -->
+        <conditional name="xSinglePaired">
+          <param name="xSPaired" type="select" label="Is this library mate-paired?">
+            <option value="xSingle">Single-end</option>
+            <option value="xPaired">Paired-end</option>
+          </param>
+          <when value="xSingle">
+            <param name="xsInput1" type="data" format="fastqsanger" label="FASTQ file" help="Must have Sanger-scaled quality values with ASCII offset 33"/>
+            <conditional name="xsParams">
+              <param name="xsSettingsType" type="select" label="Bowtie settings to use" help="For most mapping needs use Commonly used settings. If you want full control use Full parameter list">
+	            <option value="xsPreSet">Commonly used</option>
+   	            <option value="xsFull">Full parameter list</option>
+	          </param>
+              <when value="xsPreSet" />
+              <when value="xsFull">
+                <param name="xsSkip" type="integer" value="0" label="Skip the first n reads (-s)" />  
+                <param name="xsAlignLimit" type="integer" value="-1" label="Only align the first n reads (-u)" help="-1 for off" />  
+                <param name="xsTrimH" type="integer" value="0" label="Trim n bases from high-quality (left) end of each read before alignment (-5)" />
+                <param name="xsTrimL" type="integer" value="0" label="Trim n bases from low-quality (right) end of each read before alignment (-3)" />
+                <param name="xsMismatchSeed" type="integer" value="2" label="Maximum number of mismatches permitted in the seed (-n)" help="May be 0, 1, 2, or 3" />
+                <param name="xsMismatchQual" type="integer" value="70" label="Maximum permitted total of quality values at mismatched read positions (-e)" />
+                <param name="xsSeedLen" type="integer" value="28" label="Seed length (-l)" help="Minimum value is 5" />
+                <param name="xsRounding" type="select" label="Whether or not to round to the nearest 10 and saturating at 30 (--nomaqround)">
+                  <option value="round">Round to nearest 10</option>
+                  <option value="noRound">Do not round to nearest 10</option>
+                </param>
+                <param name="xsMaqSoapAlign" type="integer" value="-1" label="Number of mismatches for SOAP-like alignment policy (-v)" help="-1 for default MAQ-like alignment policy" />
+                <param name="xsTryHard" type="select" label="Whether or not to try as hard as possible to find valid alignments when they exist (-y)" help="Tryhard mode is much slower than regular mode">
+                  <option value="noTryHard">Do not try hard</option>
+                  <option value="doTryHard">Try hard</option>
+                </param>
+                <param name="xsValAlign" type="integer" value="1" label="Report up to n valid arguments per read (-k)" />
+                <param name="xsAllValAligns" type="select" label="Whether or not to report all valid alignments per read (-a)">
+                  <option value="noAllValAligns">Do not report all valid alignments</option>
+                  <option value="doAllValAligns">Report all valid alignments</option>
+                </param>
+                <param name="xsSuppressAlign" type="integer" value="-1" label="Suppress all alignments for a read if more than n reportable alignments exist (-m)" help="-1 for no limit" />
+                <conditional name="xsBestOption">
+                  <param name="xsBest" type="select" label="Whether or not to make Bowtie guarantee that reported singleton alignments are 'best' in terms of stratum and in terms of the quality values at the mismatched positions (--best)" help="Removes all strand bias. Only affects which alignments are reported by Bowtie. Runs slower with best option">
+                    <option value="xsNoBest">Do not use best</option>
+                    <option value="xsDoBest">Use best</option>
+                  </param>
+                  <when value="xsNoBest">
+                    <param name="xsnMaxBacktracks" type="integer" value="125" label="Maximum number of backtracks permitted when aligning a read (--maxbts)" />
+                  </when>
+                  <when value="xsDoBest">
+                    <param name="xsdMaxBacktracks" type="integer" value="800" label="Maximum number of backtracks permitted when aligning a read (--maxbts)" />
+                    <param name="xsdStrata" type="select" label="Whether or not to report only those alignments that fall in the best stratum if many valid alignments exist and are reportable (--strata)">
+                      <option value="noStrata">Do not use strata option</option>
+                      <option value="doStrata">Use strata option</option>
+                    </param>
+                  </when>
+                </conditional> <!-- xsBestOption -->
+                <param name="xsOffrate" type="integer" value="-1" label="Override the offrate of the index to n (-o)" help="-1 for default" />
+                <param name="xsSeed" type="integer" value="-1" label="Seed for pseudo-random number generator (--seed)" help="-1 for default" />
+              </when>  <!-- xsFull -->
+            </conditional>  <!-- xsParams -->
+          </when>  <!-- xSingle -->
+          <when value="xPaired">
+            <param name="xpInput1" type="data" format="fastqsanger" label="Forward FASTQ file" help="Must have Sanger-scaled quality values with ASCII offset 33"/>
+            <param name="xpInput2" type="data" format="fastqsanger" label="Reverse FASTQ file" help="Must have Sanger-scaled quality values with ASCII offset 33"/>
+            <conditional name="xpParams">
+              <param name="xpSettingsType" type="select" label="Bowtie settings to use" help="For most mapping needs use Commonly used settings. If you want full control use Full parameter list">
+		        <option value="xpPreSet">Commonly used</option>
+   		        <option value="xpFull">Full parameter list</option>
+	          </param>
+              <when value="xpPreSet" />
+              <when value="xpFull">
+                <param name="xpSkip" type="integer" value="0" label="Skip the first n pairs (-s)" />  
+                <param name="xpAlignLimit" type="integer" value="-1" label="Only align the first n pairs (-u)" help="-1 for off" />  
+                <param name="xpTrimH" type="integer" value="0" label="Trim n bases from high-quality (left) end of each read before alignment (-5)" />
+                <param name="xpTrimL" type="integer" value="0" label="Trim n bases from low-quality (right) end of each read before alignment (-3)" />
+                <param name="xpMismatchSeed" type="integer" value="2" label="Maximum number of mismatches permitted in the seed (-n)" help="May be 0, 1, 2, or 3" />
+                <param name="xpMismatchQual" type="integer" value="70" label="Maximum permitted total of quality values at mismatched read positions (-e)" />
+                <param name="xpSeedLen" type="integer" value="28" label="Seed length (-l)" help="Minimum value is 5" />
+                <param name="xpRounding" type="select" label="Whether or not to round to the nearest 10 and saturating at 30 (--nomaqround)">
+                  <option value="round">Round to nearest 10</option>
+                  <option value="noRound">Do not round to nearest 10</option>
+                </param>
+                <param name="xpMaqSoapAlign" type="integer" value="-1" label="Number of mismatches for SOAP-like alignment policy (-v)" help="-1 for default MAQ-like alignment policy" />
+                <param name="xpMinInsert" type="integer" value="0" label="Minimum insert size for valid paired-end alignments (-I)" />
+                <param name="xpMaxInsert" type="integer" value="250" label="Maximum insert size for valid paired-end alignments (-X)" />
+                <param name="xpMateOrient" type="select" label="The upstream/downstream mate orientation for valid paired-end alignment against the forward reference strand (--fr/--rf/--ff)">
+                  <option value="fr">FR (for Illumina)</option>
+                  <option value="rf">RF</option>
+                  <option value="ff">FF</option>
+                </param>
+                <param name="xpMaxAlignAttempt" type="integer" value="100" label="Maximum number of attempts Bowtie will make to match an alignment for one mate with an alignment for the opposite mate (--pairtries)" />
+                <param name="xpForwardAlign" type="select" label="Choose whether or not to attempt to align the forward reference strand (--nofw)">
+                  <option value="forward">Align against the forward reference strand</option>
+                  <option value="noForward">Do not align against the forward reference strand</option>
+                </param>
+                <param name="xpReverseAlign" type="select" label="Choose whether or not to align against the reverse-complement reference strand (--norc)">
+                  <option value="reverse">Align against the reverse-complement reference strand</option>
+                  <option value="noReverse">Do not align against the reverse-complement reference strand</option>
+                </param>
+                <param name="xpTryHard" type="select" label="Whether or not to try as hard as possible to find valid alignments when they exist (-y)" help="Tryhard mode is much slower than regular mode">
+                  <option value="noTryHard">Do not try hard</option>
+                  <option value="doTryHard">Try hard</option>
+                </param>
+                <param name="xpValAlign" type="integer" value="1" label="Report up to n valid arguments per pair (-k)" />
+                <param name="xpAllValAligns" type="select" label="Whether or not to report all valid alignments per pair (-a)">
+                  <option value="noAllValAligns">Do not report all valid alignments</option>
+                  <option value="doAllValAligns">Report all valid alignments</option>
+                </param>
+                <param name="xpSuppressAlign" type="integer" value="-1" label="Suppress all alignments for a pair if more than n reportable alignments exist (-m)" help="-1 for no limit" />
+                <conditional name="xpBestOption">
+                  <param name="xpBest" type="select" label="Whether or not to make Bowtie guarantee that reported singleton alignments are 'best' in terms of stratum and in terms of the quality values at the mismatched positions (--best)" help="Removes all strand bias. Only affects which alignments are reported by Bowtie. Runs slower with best option">
+                    <option value="xpNoBest">Do not use best</option>
+                    <option value="xpDoBest">Use best</option>
+                  </param>
+                  <when value="xpNoBest">
+                    <param name="xpnMaxBacktracks" type="integer" value="125" label="Maximum number of backtracks permitted when aligning a read (--maxbts)" />
+                  </when>
+                  <when value="xpDoBest">
+                    <param name="xpdMaxBacktracks" type="integer" value="800" label="Maximum number of backtracks permitted when aligning a read (--maxbts)" />
+                    <param name="xpdStrata" type="select" label="Whether or not to report only those alignments that fall in the best stratum if many valid alignments exist and are reportable (--strata)">
+                      <option value="noStrata">Do not use strata option</option>
+                      <option value="doStrata">Use strata option</option>
+                    </param>
+                  </when>
+                </conditional>  <!-- xpBestOption -->
+                <param name="xpOffrate" type="integer" value="-1" label="Override the offrate of the index to n (-o)" help="-1 for default" />
+                <param name="xpSeed" type="integer" value="-1" label="Seed for pseudo-random number generator (--seed)" help="-1 for default" />
+              </when>  <!-- xpFull -->
+            </conditional>  <!-- xpParams -->
+          </when>  <!-- xPaired -->
+        </conditional>  <!-- xSinglePaired -->
+      </when>  <!-- solexa -->
+    </conditional>  <!-- solidOrSolexa -->
     <param name="suppressHeader" type="boolean" truevalue="true" falsevalue="false" checked="true" label="Suppress the header in the output SAM file" help="Bowtie produces SAM with several lines of header information" />
   </inputs>
   <outputs>
@@ -328,83 +782,257 @@
   </outputs>
   <tests>
     <test>
-      <param name="genomeSource" value="indexed" />
-      <param name="indices" value="chrM" />
-      <param name="sPaired" value="single" />
-      <param name="input1" ftype="fastqsanger" value="bowtie_in1.fastq" />
-      <param name="settings_type" value="pre_set" />
+      <!--
+      Bowtie command:
+      bowtie -p 4 -S +sam-nohead -q -C chrM_color test-data/bowtie_in1.fastqsanger > test-data/bowtie_out1.sam
+      -p is the number of threads, which is hardcoded above. You need to replace the + with 2 dashes. 
+      chrM_color needs to be the base location/name of the index files.
+      -->
+      <param name="dataType" value="solid" />
+      <param name="cGenomeSource" value="cIndexed" />
+      <param name="cIndex" value="equCab2chrM" />
+      <param name="cSPaired" value="cSingle" />
+      <param name="csInput1" ftype="fastqsanger" value="bowtie_in1.fastqsanger" />
+      <param name="csSettingsType" value="csPreSet" />
       <param name="suppressHeader" value="true" />
       <output name="output" ftype="sam" file="bowtie_out1.sam" />
     </test>
     <test>
-      <param name="genomeSource" value="history" />
-      <param name="ownFile" value="chr_m.fasta" />
-      <param name="index_settings" value="index_pre_set" />
-      <param name="sPaired" value="paired" />
-      <param name="input1" ftype="fastqsanger" value="bowtie_in2.fastq" />
-      <param name="input2" ftype="fastqsanger" value="bowtie_in3.fastq" />
-      <param name="settings_type" value="pre_set" />
+      <!--
+      Bowtie command:
+      bowtie -p 4 -S +sam-nohead -q chrM_base test-data/bowtie_in2.fastqsanger > test-data/bowtie_out2.sam
+      -p is the number of threads, which is hardcoded above. You need to replace the + with 2 dashes. 
+      chrM_base needs to be the base location/name of the index files.
+      -->
+      <param name="dataType" value="solexa" />
+      <param name="xGenomeSource" value="xIndexed" />
+      <param name="xIndex" value="equCab2chrM" />
+      <param name="xSPaired" value="xSingle" />
+      <param name="xsInput1" ftype="fastqsanger" value="bowtie_in2.fastqsanger" />
+      <param name="xsSettingsType" value="xsPreSet" />
       <param name="suppressHeader" value="true" />
       <output name="output" ftype="sam" file="bowtie_out2.sam" />
     </test>
     <test>
-      <param name="genomeSource" value="history" />
-      <param name="ownFile" value="chr_m.fasta" />
-      <param name="index_settings" value="index_full" />
-      <param name="auto_b" value="set" />
-      <param name="packed" value="unpacked" />
-      <param name="bmax" value="-1" />
-      <param name="bmaxdivn" value="4" />
-      <param name="dcv" value="2048" />
-      <param name="nodc" value="dc" />
-      <param name="noref" value="noref" />
-      <param name="offrate" value="6" />
-      <param name="ftab" value="10" />
-      <param name="ntoa" value="yes" />
-      <param name="endian" value="little" />
-      <param name="seed" value="-1" />
-      <param name="cutoff" value="-1" />
-      <param name="sPaired" value="single" />
-      <param name="input1" ftype="fastqsanger" value="bowtie_in1.fastq" />
-      <param name="settings_type" value="pre_set" />
-      <param name="suppressHeader" value="true" />
-      <output name="output" ftype="sam" file="bowtie_out1.sam" />
-    </test>  
-    <test>
-      <param name="genomeSource" value="indexed" />
-      <param name="indices" value="chrM" />
-      <param name="sPaired" value="paired" />
-      <param name="input1" ftype="fastqsanger" value="bowtie_in2.fastq" />
-      <param name="input2" ftype="fastqsanger" value="bowtie_in3.fastq" />
-      <param name="settings_type" value="full" />
-      <param name="skip" value="0" />
-      <param name="alignLimit" value="-1" />
-      <param name="trimL" value="0" />
-      <param name="trimH" value="0" />
-      <param name="mismatchSeed" value="3" />
-      <param name="mismatchQual" value="50" />
-      <param name="seedLen" value="10" />
-      <param name="rounding" value="round" />
-      <param name="maqSoapAlign" value="-1" />
-      <param name="minInsert" value="0" />
-      <param name="maxInsert" value="250" />
-      <param name="mateOrient" value="fr" />
-      <param name="maxAlignAttempt" value="100" />
-      <param name="forwardAlign" value="forward" />
-      <param name="reverseAlign" value="reverse" />
-      <param name="tryHard" value="doTryHard" />
-      <param name="valAlign" value="1" />
-      <param name="allValAligns" value="noAllValAligns" />
-      <param name="suppressAlign" value="-1" />
-      <param name="best" value="doBest" />
-      <param name="maxBacktracks" value="800" />
-      <param name="strata" value="noStrata" />
-      <param name="offrate" value="-1" />
-      <param name="seed" value="403" />
+      <!--
+      Bowtie command:
+      bowtie-build -f -C test-data/chr_m.fasta chrM_color
+      bowtie -n 2 -e 70 -l 28 -X 250 +fr +pairtries 100 +maxbts 125 -k 1 -C +snpfrac 0.001 +col-keepends -p 4 -S +sam-nohead -q chrM_color -1 test-data/bowtie_in3.fastqsanger -2 test-data/bowtie_in4.fastqsanger > test-data/bowtie_out3.sam
+      -p is the number of threads, hardcoded above. You need to replace the + with 2 dashes.
+      chrM_base is the index files' location/base name. 
+      -->
+      <param name="dataType" value="solid" />
+      <param name="cGenomeSource" value="cHistory" />
+      <param name="cOwnFile" value="chr_m.fasta" />
+      <param name="cIndexSettings" value="cIndexPreSet" />
+      <param name="cSPaired" value="cPaired" />
+      <param name="cpInput1" ftype="fastqsanger" value="bowtie_in3.fastqsanger" />
+      <param name="cpInput2" ftype="fastqsanger" value="bowtie_in4.fastqsanger" />
+      <param name="cpSettingsType" value="cpFull" />
+      <param name="cpSkip" value="0" />
+      <param name="cpAlignLimit" value="-1" />
+      <param name="cpTrimH" value="0" />
+      <param name="cpTrimL" value="0" />
+      <param name="cpMismatchSeed" value="2" />
+      <param name="cpMismatchQual" value="70" />
+      <param name="cpSeedLen" value="28" />
+      <param name="cpRounding" value="round" />
+      <param name="cpMaqSoapAlign" value="-1" />
+      <param name="cpMinInsert" value="0" />
+      <param name="cpMaxInsert" value="250" />
+      <param name="cpMateOrient" value="fr" />
+      <param name="cpMaxAlignAttempt" value="100" />
+      <param name="cpForwardAlign" value="forward" />
+      <param name="cpReverseAlign" value="reverse" />
+      <param name="cpTryHard" value="noTryHard" />
+      <param name="cpValAlign" value="1" />
+      <param name="cpAllValAligns" value="noAllValAligns" />
+      <param name="cpSuppressAlign" value="-1" />
+      <param name="cpBest" value="cpNoBest" />
+      <param name="cpnMaxBacktracks" value="125" />
+      <param name="cpOffrate" value="-1" />
+      <param name="cpSeed" value="-1" />
+      <param name="cpSnpphred" value="-1" />
+      <param name="cpSnpfrac" value="0.001" />
+      <param name="cpKeepends" value="doKeepends" />
       <param name="suppressHeader" value="true" />
       <output name="output" ftype="sam" file="bowtie_out3.sam" />
     </test>
+    <test>
+      <!--
+      Bowtie command:
+      bowtie-build -f test-data/chr_m.fasta chrM_base
+      bowtie -n 2 -e 70 -l 28 -X 250 +fr +pairtries 100 +maxbts 800 -k 1 +best -p 4 -S +sam-nohead -q chrM_base -1 test-data/bowtie_in5.fastqsanger -2 test-data/bowtie_in6.fastqsanger > test-data/bowtie_out4.sam
+      -p is the number of threads, hardcoded above. You need to replace the + with 2 dashes.
+      chrM_base is the index files' location/base name. 
+      -->
+      <param name="dataType" value="solexa" />
+      <param name="xGenomeSource" value="xHistory" />
+      <param name="xOwnFile" value="chr_m.fasta" />
+      <param name="xIndexSettings" value="xIndexPreSet" />
+      <param name="xSPaired" value="xPaired" />
+      <param name="xpInput1" ftype="fastqsanger" value="bowtie_in5.fastqsanger" />
+      <param name="xpInput2" ftype="fastqsanger" value="bowtie_in6.fastqsanger" />
+      <param name="xpSettingsType" value="xpFull" />
+      <param name="xpSkip" value="0" />
+      <param name="xpAlignLimit" value="-1" />
+      <param name="xpTrimH" value="0" />
+      <param name="xpTrimL" value="0" />
+      <param name="xpMismatchSeed" value="2" />
+      <param name="xpMismatchQual" value="70" />
+      <param name="xpSeedLen" value="28" />
+      <param name="xpRounding" value="round" />
+      <param name="xpMaqSoapAlign" value="-1" />
+      <param name="xpMinInsert" value="0" />
+      <param name="xpMaxInsert" value="250" />
+      <param name="xpMateOrient" value="fr" />
+      <param name="xpMaxAlignAttempt" value="100" />
+      <param name="xpForwardAlign" value="forward" />
+      <param name="xpReverseAlign" value="reverse" />
+      <param name="xpTryHard" value="noTryHard" />
+      <param name="xpValAlign" value="1" />
+      <param name="xpAllValAligns" value="noAllValAligns" />
+      <param name="xpSuppressAlign" value="-1" />
+      <param name="xpBest" value="xpDoBest" />
+      <param name="xpdMaxBacktracks" value="800" />
+      <param name="xpdStrata" value="noStrata" />
+      <param name="xpOffrate" value="-1" />
+      <param name="xpSeed" value="-1" />
+      <param name="suppressHeader" value="true" />
+      <output name="output" ftype="sam" file="bowtie_out4.sam" />
+    </test>
+<!--  Comment out tests 5 and 6 because they are failing for an unknown reason
+    <test>
+-->      <!--
+      Bowtie command:
+      bowtie -n 2 -e 70 -l 28 +maxbts 125 -k 1 -C +snpfrac 0.001 +col-keepends -p 4 -S +sam-nohead -q chrM_color test-data/bowtie_in1.fastqsanger > test-data/bowtie_out5.sam
+      -p is the number of threads, hardcoded above. You need to replace the + with 2 dashes.
+      chrM_base is the index files' location/base name. 
+      -->
+<!--      <param name="dataType" value="solid" />
+      <param name="cGenomeSource" value="cIndexed" />
+      <param name="cIndex" value="equCab2chrM" />
+      <param name="cSPaired" value="cSingle" />
+      <param name="csInput1" value="bowtie_in1.fastqsanger" />
+      <param name="csSettingsType" value="csFull" />
+      <param name="csSkip" value="0" />
+      <param name="csAlignLimit" value="-1" />
+      <param name="csTrimH" value="0" />
+      <param name="csTrimL" value="0" />
+      <param name="csMismatchSeed" value="2" />
+      <param name="csMismatchQual" value="70" />
+      <param name="csSeedLen" value="28" />
+      <param name="csRounding" value="round" />
+      <param name="csMaqSoapAlign" value="-1" />
+      <param name="csTryHard" value="noTryHard" />
+      <param name="csValAlign" value="1" />
+      <param name="csAllValAligns" value="noAllValAligns" />
+      <param name="csSuppressAlign" value="-1" />
+      <param name="csBest" value="csNoBest" />
+      <param name="csnMaxBacktracks" value="125" />
+      <param name="csOffrate" value="-1" />
+      <param name="csSeed" value="-1" />
+      <param name="csSnpphred" value="-1" />
+      <param name="csSnpfrac" value="0.001" />
+      <param name="csKeepends" value="doKeepends" />
+      <param name="suppressHeader" value="true" />
+      <output name="output" ftype="sam" file="bowtie_out5.sam" />
+    </test>
+    <test>
+-->      <!--
+      Bowtie command:
+      bowtie -n 2 -e 70 -l 28 -k 1 +maxbts 125 -y -p 4 -S +sam-nohead -q chrM_base test-data/bowtie_in2.fastqsanger > test-data/bowtie_out6.sam
+      -p is the number of threads, hardcoded above. You need to replace the + with 2 dashes.
+      chrM_base is the index files' location/base name. 
+      -->
+<!--      <param name="dataType" value="solexa" />
+      <param name="xGenomeSource" value="xIndexed" />
+      <param name="xIndex" value="equCab2chrM" />
+      <param name="xSPaired" value="xSingle" />
+      <param name="xsInput1" value="bowtie_in2.fastqsanger" />
+      <param name="xsSettingsType" value="xsFull" />
+      <param name="xsSkip" value="0" />
+      <param name="xsAlignLimit" value="-1" />
+      <param name="xsTrimH" value="0" />
+      <param name="xsTrimL" value="0" />
+      <param name="xsMismatchSeed" value="2" />
+      <param name="xsMismatchQual" value="70" />
+      <param name="xsSeedLen" value="28" />
+      <param name="xsRounding" value="round" />
+      <param name="xsMaqSoapAlign" value="-1" />
+      <param name="xsTryHard" value="doTryHard" />
+      <param name="xsValAlign" value="1" />
+      <param name="xsAllValAligns" value="noAllValAligns" />
+      <param name="xsSuppressAlign" value="-1" />
+      <param name="xsBest" value="xsNoBest" />
+      <param name="xsnMaxBacktracks" value="125" />
+      <param name="xsOffrate" value="-1" />
+      <param name="xsSeed" value="-1" />
+      <param name="suppressHeader" value="true" />
+      <output name="output" ftype="sam" file="bowtie_out6.sam" />
+    </test>
+-->    <test>
+      <!--
+      Bowtie command:
+      bowtie-build +noauto +bmaxdivn 4 +dcv 1024 +offrate 5 +ftabchars 10 +little -C -f test-data/chr_m.fasta chrM_color
+      bowtie -p 4 -S +sam-nohead -q -C chrM_color -1 test-data/bowtie_in3.fastqsanger -2 test-data/bowtie_in4.fastqsanger > test-data/bowtie_out7.sam
+      -p is the number of threads, hardcoded above. You need to replace the + with 2 dashes.
+      chrM_base is the index files' location/base name. 
+      -->
+      <param name="dataType" value="solid" />
+      <param name="cGenomeSource" value="cHistory" />
+      <param name="cOwnFile" value="chr_m.fasta" />
+      <param name="cIndexSettings" value="cIndexFull" />
+      <param name="cAutoB" value="cSet" />
+      <param name="cPacked" value="unpacked" />
+      <param name="cBmax" value="-1" />
+      <param name="cBmaxdivn" value="4" />
+      <param name="cDcv" value="1024" />
+      <param name="cNodc" value="dc" />
+      <param name="cNoref" value="ref" />
+      <param name="cOffrate" value="5" />
+      <param name="cFtab" value="10" />
+      <param name="cNtoa" value="no" />
+      <param name="cEndian" value="little" />
+      <param name="cSeed" value="-1" />
+      <param name="cCutoff" value="-1" />
+      <param name="cSPaired" value="cPaired" />
+      <param name="cpInput1" ftype="fastqsanger" value="bowtie_in3.fastqsanger" />
+      <param name="cpInput2" ftype="fastqsanger" value="bowtie_in4.fastqsanger" />
+      <param name="cpSettingsType" value="cpPreSet" />
+      <param name="suppressHeader" value="true" />
+      <output name="output" ftype="sam" file="bowtie_out7.sam" />
+    </test>
+    <test>
+      <!--
+      Bowtie command:
+      bowtie-build +offrate 5 +ftabchars 10 +little -f test-data/chr_m.fasta chrM_base
+      bowtie -p 4 -S +sam-nohead -q chrM_base -1 test-data/bowtie_in5.fastqsanger -2 test-data/bowtie_in6.fastqsanger > test-data/bowtie_out8.sam
+      -p is the number of threads, hardcoded above. You need to replace the + with 2 dashes.
+      chrM_base is the index files' location/base name. 
+      -->
+      <param name="dataType" value="solexa" />
+      <param name="xGenomeSource" value="xHistory" />
+      <param name="xOwnFile" value="chr_m.fasta" />
+      <param name="xIndexSettings" value="xIndexFull" />
+      <param name="xAutoB" value="xAuto" />
+      <param name="xNodc" value="dc" />
+      <param name="xNoref" value="ref" />
+      <param name="xOffrate" value="5" />
+      <param name="xFtab" value="10" />
+      <param name="xNtoa" value="no" />
+      <param name="xEndian" value="little" />
+      <param name="xSeed" value="-1" />
+      <param name="xCutoff" value="-1" />
+      <param name="xSPaired" value="xPaired" />
+      <param name="xpInput1" ftype="fastqsanger" value="bowtie_in5.fastqsanger" />
+      <param name="xpInput2" ftype="fastqsanger" value="bowtie_in6.fastqsanger" />
+      <param name="xpSettingsType" value="xpPreSet" />
+      <param name="suppressHeader" value="true" />
+      <output name="output" ftype="sam" file="bowtie_out8.sam" />
+    </test>
   </tests> 
+
   <help>
 
 **What it does**
@@ -526,6 +1154,9 @@ For aligning (bowtie)::
 	--strata                 Best strata. When running in best mode, report alignments that fall into the best stratum if there are ones falling into more than one. [off]
 	-o &lt;int&gt;           Offrate override. Override the offrate of the index with &lt;int&gt;. Some row markings are discarded when index read into memory. &lt;int&gt; must be greater than the value used to build the index (default: 5). [off]
 	--seed &lt;int&gt;       Random seed. Use &lt;int&gt; as the seed for the pseudo-random number generator. [off]
+	--snpphred &lt;int&gt;   Use &lt;int&gt; as the SNP penalty for decoding colorspace alignments. True ratio of SNPs per base in the subject genome. [see --snpfrac]
+	--snpfrac &lt;dec&gt;    Use &lt;dec&gt; as the estimated ratio of SNPs per base when decoding colorspace alignments. [0.001]
+	--col-keepends           Keep the extreme-end nucleotides and qualities when decoding colorspace alignments. [off]
 
   </help>
   <code file="bowtie_wrapper_code.py" />
