@@ -1,31 +1,40 @@
+<%inherit file="/base.mako"/>
+
 <% _=n_ %>
-<!-- -->
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 
-<html>
+<%def name="title()">Extract workflow from history</%def>
 
-<head>
-<title>Galaxy</title>
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<link href="${h.url_for('/static/style/history.css')}" rel="stylesheet" type="text/css" />
-<link href="${h.url_for('/static/style/base.css')}" rel="stylesheet" type="text/css" />
+<%def name="stylesheets()">
+    ${h.css( 'history', 'base' )}
+    <style type="text/css">
+    div.toolForm{
+        margin-top: 10px;
+        margin-bottom: 10px;
+    }
+    div.historyItem {
+        margin-right: 0;
+    }
+    th {
+        border-bottom: solid black 1px;
+    }
+    </style>
+</%def>
 
-<style type="text/css">
-div.toolForm{
-    margin-top: 10px;
-    margin-bottom: 10px;
-}
-div.historyItem {
-    margin-right: 0;
-}
-th {
-    border-bottom: solid black 1px;
-}
-</style>
-
-</head>
-
-<body>
+<%def name="javascripts()">
+    ${parent.javascripts()}
+    <script type="text/javascript">
+    $(function() {
+        $("#checkall").click( function() {
+            $("input[type=checkbox]").attr( 'checked', true );
+            return false;
+        }).show();
+        $("#uncheckall").click( function() {
+            $("input[type=checkbox]").attr( 'checked', false );
+            return false;
+        }).show();
+    });
+    </script>
+</%def>
 
 <%def name="history_item( data, creator_disabled=False )">
     %if data.state in [ "no state", "", None ]:
@@ -71,7 +80,11 @@ into a workflow will be shown in gray.</p>
     <label>${_('Workflow name')}</label>
     <input name="workflow_name" type="text" value="Workflow constructed from history '${history.name}'" size="60"/>
 </div>
-<p><input type="submit" value="${_('Create Workflow')}" /></p>
+<p>
+    <input type="submit" value="${_('Create Workflow')}" />
+    <button id="checkall" style="display: none;">Check all</button>
+    <button id="uncheckall" style="display: none;">Uncheck all</button>
+</p>
 
 <table border="0" cellspacing="0">
     
@@ -128,7 +141,3 @@ into a workflow will be shown in gray.</p>
 </table>
 
 </form>
-    
-</body>
-
-</html>
