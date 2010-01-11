@@ -285,7 +285,7 @@ class LibraryCommon( BaseController ):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
-        folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( int( id ) )
+        folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( trans.security.decode_id( id ) )
         if not folder:
             msg = "Invalid folder specified, id: %s" % str( id )
             return trans.response.send_redirect( web.url_for( controller='library_common',

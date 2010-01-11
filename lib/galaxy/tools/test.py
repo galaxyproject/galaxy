@@ -30,8 +30,8 @@ class ToolTestBuilder( object ):
                 self.required_files.append( ( value, extra ) )
         except: pass
         self.inputs.append( ( name, value, extra ) )
-    def add_output( self, name, file ):
-        self.outputs.append( ( name, file ) )
+    def add_output( self, name, file, sort ):
+        self.outputs.append( ( name, file, sort ) )
     def __expand_grouping_for_data_input( self, name, value, extra, grouping_name, grouping_value ):
         # Currently handles grouping.Conditional and grouping.Repeat
         if isinstance( grouping_value, grouping.Conditional  ):

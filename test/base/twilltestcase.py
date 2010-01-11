@@ -36,12 +36,14 @@ class TwillTestCase( unittest.TestCase ):
         #self.set_history()
 
     # Functions associated with files
-    def files_diff( self, file1, file2 ):
+    def files_diff( self, file1, file2, sort=False ):
         """Checks the contents of 2 files for differences"""
         if not filecmp.cmp( file1, file2 ):
             files_differ = False
             local_file = open( file1, 'U' ).readlines()
             history_data = open( file2, 'U' ).readlines()
+            if sort:
+                history_data.sort()
             if len( local_file ) == len( history_data ):
                 for i in range( len( history_data ) ):
                     if local_file[i].rstrip( '\r\n' ) != history_data[i].rstrip( '\r\n' ):
@@ -520,7 +522,7 @@ class TwillTestCase( unittest.TestCase ):
             hid = elem.get('hid')
             hids.append(hid)
         return hids
-    def verify_dataset_correctness( self, filename, hid=None, wait=True, maxseconds=120 ):
+    def verify_dataset_correctness( self, filename, hid=None, wait=True, maxseconds=120, sort=False ):
         """Verifies that the attributes and contents of a history item meet expectations"""
         if wait:
             self.wait( maxseconds=maxseconds ) #wait for job to finish
@@ -555,7 +557,7 @@ class TwillTestCase( unittest.TestCase ):
             data = self.last_page()
             file( temp_name, 'wb' ).write(data)
             try:
-                self.files_diff( local_name, temp_name )
+                self.files_diff( local_name, temp_name, sort=sort )
             except AssertionError, err:
                 os.remove(temp_name)
                 errmsg = 'History item %s different than expected, difference:\n' % hid

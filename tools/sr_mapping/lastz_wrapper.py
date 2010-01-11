@@ -27,6 +27,7 @@ usage: lastz_wrapper.py [options]
     --identity_min: Minimum identity (don't report matches under this identity)
     --identity_max: Maximum identity (don't report matches above this identity)
     --coverage: The minimum coverage value (don't report matches covering less than this) 
+    --unmask: Whether to convert lowercase bases to uppercase
     --out_format: The format of the output file (sam, diffs, or tabular (general))
     --output: The name of the output file
     --lastzSeqsFileDir: Directory of local lastz_seqs.loc file
@@ -145,11 +146,16 @@ def __main__():
     parser.add_option( '', '--identity_min', dest='identity_min', help="Minimum identity (don't report matches under this identity)" )
     parser.add_option( '', '--identity_max', dest='identity_max', help="Maximum identity (don't report matches above this identity)" )
     parser.add_option( '', '--coverage', dest='coverage', help="The minimum coverage value (don't report matches covering less than this)" )
+    parser.add_option( '', '--unmask', dest='unmask', help='Whether to convert lowercase bases to uppercase' )
     parser.add_option( '', '--out_format', dest='format', help='The format of the output file (sam, diffs, or tabular (general))' )
     parser.add_option( '', '--output', dest='output', help='The output file' )
     parser.add_option( '', '--lastzSeqsFileDir', dest='lastzSeqsFileDir', help='Directory of local lastz_seqs.loc file' )
     ( options, args ) = parser.parse_args()
 
+    if options.unmask == 'yes':
+        unmask = '[unmask]'
+    else:
+        unmask = ''
     if options.ref_name != 'None':
         ref_name = '[nickname=%s]' % options.ref_name
     else:
@@ -214,8 +220,8 @@ def __main__():
             tmp_out_fd, tmp_out_name = tempfile.mkstemp( suffix='.out' )
             os.close( tmp_out_fd )
             # Generate the command line for calling lastz on the current sequence
-            command = 'lastz %s%s %s %s --ambiguousn --nolaj --identity=%s..%s --coverage=%s --format=%s%s > %s' % \
-                ( tmp_in_name, ref_name, input2, set_options, options.identity_min, 
+            command = 'lastz %s%s%s %s %s --ambiguousn --nolaj --identity=%s..%s --coverage=%s --format=%s%s > %s' % \
+                ( tmp_in_name, unmask, ref_name, input2, set_options, options.identity_min, 
                   options.identity_max, options.coverage, format, tabular_fields, tmp_out_name )
             # Create a job object
             job = Bunch()
@@ -238,8 +244,8 @@ def __main__():
             # Create a temporary file to contain the output from lastz execution on the current chrom
             tmp_out_fd, tmp_out_name = tempfile.mkstemp( suffix='.out' )
             os.close( tmp_out_fd )
-            command = 'lastz %s/%s%s %s %s --ambiguousn --nolaj --identity=%s..%s --coverage=%s --format=%s%s >> %s' % \
-                ( options.input1, chrom, ref_name, input2, set_options, options.identity_min, 
+            command = 'lastz %s/%s%s%s %s %s --ambiguousn --nolaj --identity=%s..%s --coverage=%s --format=%s%s >> %s' % \
+                ( options.input1, chrom, unmask, ref_name, input2, set_options, options.identity_min, 
                   options.identity_max, options.coverage, format, tabular_fields, tmp_out_name )
             # Create a job object
             job = Bunch()

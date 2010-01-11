@@ -531,7 +531,8 @@ class Tool:
                     file = attrib.pop( 'file', None )
                     if file is None:
                         raise Exception( "Test output does not have a 'file'")
-                    test.add_output( name, file )
+                    sort = util.string_as_bool( attrib.pop( 'sort', False ) )
+                    test.add_output( name, file, sort )
             except Exception, e:
                 test.error = True
                 test.exception = e
