@@ -60,9 +60,9 @@ class ToolTestCase( TwillTestCase ):
             page_inputs = self.__expand_grouping(testdef.tool.inputs_by_page[i], all_inputs)
             self.submit_form( **page_inputs )
             print "page_inputs (%i)" % i, page_inputs
-        # Check the result
-        assert len( testdef.outputs ) == 1, "ToolTestCase does not deal with multiple outputs properly yet."
-        for name, file, sort in testdef.outputs:
+        # Check the results ( handles single or multiple tool outputs )
+        for output_tuple in testdef.outputs:
+            name, file, sort = output_tuple
             self.verify_dataset_correctness( file, maxseconds=testdef.maxseconds, sort=sort )
         self.delete_history( id=self.security.encode_id( latest_history.id ) )
 
