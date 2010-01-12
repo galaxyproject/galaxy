@@ -81,8 +81,7 @@ class TwillTestCase( unittest.TestCase ):
     def upload_file( self, filename, ftype='auto', dbkey='unspecified (?)' ):
         """Uploads a file"""
         filename = self.get_filename(filename)
-        self.home()
-        self.visit_page( "tool_runner/index?tool_id=upload1" )
+        self.visit_url( "%s/tool_runner?tool_id=upload1" % self.url )
         try: 
             tc.fv("1","file_type", ftype)
             tc.fv("1","dbkey", dbkey)

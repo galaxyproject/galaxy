@@ -372,7 +372,7 @@ class Tool:
         # Parse tool help
         self.parse_help( root )
         # Description of outputs produced by an invocation of the tool
-        self.outputs = {}
+        self.outputs = odict()
         out_elem = root.find("outputs")
         if out_elem:
             for data_elem in out_elem.findall("data"):
@@ -790,10 +790,10 @@ class Tool:
             elif state.page == self.last_page:
                 out_data = self.execute( trans, incoming=params )
                 try:
-                    assert type( out_data ) is types.DictType
+                    assert isinstance( out_data, odict )
                     return 'tool_executed.mako', dict( out_data=out_data )
                 except:
-                    return 'message.mako', dict( message_type='error', message=out_data, refresh_frames=[] )
+                    return 'message.mako', dict( message_type='error', message='odict not returned from tool execution', refresh_frames=[] )
             # Otherwise move on to the next page
             else:
                 state.page += 1

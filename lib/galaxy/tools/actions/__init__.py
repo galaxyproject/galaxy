@@ -1,4 +1,5 @@
 from galaxy.util.bunch import Bunch
+from galaxy.util.odict import odict
 from galaxy.tools.parameters import *
 from galaxy.tools.parameters.grouping import *
 from galaxy.util.template import fill_template
@@ -107,7 +108,7 @@ class DefaultToolAction( object ):
                     input_values[ input.name ] = galaxy.tools.SelectToolParameterWrapper( input, input_values[ input.name ], tool.app, other_values = incoming )
                 else:
                     input_values[ input.name ] = galaxy.tools.InputValueWrapper( input, input_values[ input.name ], incoming )
-        out_data = {}
+        out_data = odict()
         # Collect any input datasets from the incoming parameters
         inp_data = self.collect_input_datasets( tool, incoming, trans )
 

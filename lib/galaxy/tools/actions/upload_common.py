@@ -1,6 +1,7 @@
 import os, tempfile, StringIO
 from cgi import FieldStorage
 from galaxy import datatypes, util
+from galaxy.util.odict import odict
 from galaxy.datatypes import sniff
 from galaxy.util.json import to_json_string
 from galaxy.model.orm import eagerload_all
@@ -321,7 +322,10 @@ def create_job( trans, params, tool, json_file_path, data_list, folder=None ):
     # Queue the job for execution
     trans.app.job_queue.put( job.id, tool )
     trans.log_event( "Added job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id )
-    return dict( [ ( 'output%i' % i, v ) for i, v in enumerate( data_list ) ] )
+    output = odict()
+    for i, v in enumerate( data_list ):
+        output[ 'output%i' % i ] = v
+    return output
 def active_folders( trans, folder ):
     # Stolen from galaxy.web.controllers.library_common (importing from which causes a circular issues).
     # Much faster way of retrieving all active sub-folders within a given folder than the

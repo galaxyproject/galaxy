@@ -1,5 +1,6 @@
 from __init__ import ToolAction
 from galaxy.datatypes.metadata import JobExternalOutputMetadataWrapper
+from galaxy.util.odict import odict
 
 import logging
 log = logging.getLogger( __name__ )
@@ -59,4 +60,4 @@ class SetMetadataToolAction( ToolAction ):
         # Queue the job for execution
         trans.app.job_queue.put( job.id, tool )
         trans.log_event( "Added set external metadata job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id )
-        return []
+        return odict()
