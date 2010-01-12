@@ -39,7 +39,7 @@
         %endif
         <div class="tag-area
             %if tag_type == 'individual':
-                individual-tags
+                individual-tag-area
             %endif
         ">
 
