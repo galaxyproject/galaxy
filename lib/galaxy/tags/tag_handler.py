@@ -1,9 +1,7 @@
-from galaxy.model import Tag
+from galaxy import model
 import re
 from sqlalchemy.sql.expression import func, and_
 from sqlalchemy.sql import select
-from galaxy.model import History, HistoryTagAssociation, Dataset, DatasetTagAssociation, \
-    HistoryDatasetAssociation, HistoryDatasetAssociationTagAssociation, Page, PageTagAssociation
 
 class TagHandler( object ):
     
@@ -31,10 +29,11 @@ class TagHandler( object ):
             
     # Initialize with known classes.
     item_tag_assoc_info = {}
-    item_tag_assoc_info["History"] = ItemTagAssocInfo( History, HistoryTagAssociation, HistoryTagAssociation.table.c.history_id )
+    item_tag_assoc_info["History"] = ItemTagAssocInfo( model.History, model.HistoryTagAssociation, model.HistoryTagAssociation.table.c.history_id )
     item_tag_assoc_info["HistoryDatasetAssociation"] = \
-        ItemTagAssocInfo( HistoryDatasetAssociation, HistoryDatasetAssociationTagAssociation, HistoryDatasetAssociationTagAssociation.table.c.history_dataset_association_id )
-    item_tag_assoc_info["Page"] = ItemTagAssocInfo( Page, PageTagAssociation, PageTagAssociation.table.c.page_id )
+        ItemTagAssocInfo( model.HistoryDatasetAssociation, model.HistoryDatasetAssociationTagAssociation, model.HistoryDatasetAssociationTagAssociation.table.c.history_dataset_association_id )
+    item_tag_assoc_info["Page"] = ItemTagAssocInfo( model.Page, model.PageTagAssociation, model.PageTagAssociation.table.c.page_id )
+    item_tag_assoc_info["StoredWorkflow"] = ItemTagAssocInfo( model.StoredWorkflow, model.StoredWorkflowTagAssociation, model.StoredWorkflowTagAssociation.table.c.stored_workflow_id )
         
     def get_tag_assoc_class(self, item_class):
         """ Returns tag association class for item class. """
@@ -55,7 +54,7 @@ class TagHandler( object ):
             
         # Build select statement.    
         cols_to_select = [ item_tag_assoc_class.table.c.tag_id, func.count('*') ] 
-        from_obj = item_tag_assoc_class.table.join(item_class.table).join(Tag.table)
+        from_obj = item_tag_assoc_class.table.join( item_class.table ).join( model.Tag.table )
         where_clause = ( self.get_id_col_in_item_tag_assoc_table(item_class) == item.id )
         order_by = [ func.count("*").desc() ]
         group_by = item_tag_assoc_class.table.c.tag_id
@@ -101,7 +100,7 @@ class TagHandler( object ):
         # Get tag name.
         if isinstance(tag, basestring):
             tag_name = tag
-        elif isinstance(tag, Tag):
+        elif isinstance(tag, model.Tag):
             tag_name = tag.name
         
         # Check for an item-tag association to see if item has a given tag.
@@ -168,12 +167,12 @@ class TagHandler( object ):
     
     def get_tag_by_id(self, db_session, tag_id):
         """Get a Tag object from a tag id."""
-        return db_session.query(Tag).filter(Tag.id==tag_id).first()    
+        return db_session.query( model.Tag ).filter_by( id=tag_id) .first()    
         
     def get_tag_by_name(self, db_session, tag_name):
         """Get a Tag object from a tag name (string)."""
         if tag_name:
-            return db_session.query( Tag ).filter( Tag.name==tag_name.lower() ).first()
+            return db_session.query( model.Tag ).filter_by( name=tag_name.lower() ).first()
         return None
     
     def _create_tag(self, db_session, tag_str):
@@ -184,9 +183,9 @@ class TagHandler( object ):
         for sub_tag in tag_hierarchy:
             # Get or create subtag.
             tag_name = tag_prefix + self._scrub_tag_name(sub_tag)
-            tag = db_session.query(Tag).filter(Tag.name==tag_name).first()
+            tag = db_session.query( model.Tag ).filter_by( name=tag_name).first()
             if not tag:
-                tag = Tag(type=0, name=tag_name)
+                tag = model.Tag(type=0, name=tag_name)
                 
             # Set tag parent.
             tag.parent = parent_tag

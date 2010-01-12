@@ -20,7 +20,7 @@
 %endif
 
 ## Render HTML for a list of tags.
-<%def name="render_tagging_element_html(elt_id=None, tags=None, editable=True, use_toggle_link=True, input_size='15', in_form=False)">
+<%def name="render_tagging_element_html(elt_id=None, tags=None, editable=True, use_toggle_link=True, input_size='15', in_form=False, tag_type='individual')">
     ## Useful attributes.
     <% 
         num_tags = len( tags )
@@ -35,9 +35,13 @@
         %endif
     >
         %if use_toggle_link:
-            <a class="toggle-link" href="#">${num_tags} Tags</a>
+            <a class="toggle-link" href="#">${num_tags} Tag${iff( num_tags == 1, "", "s")}</a>
         %endif
-        <div class="tag-area">
+        <div class="tag-area
+            %if tag_type == 'individual':
+                individual-tags
+            %endif
+        ">
 
             ## Build buttons for current tags.
             %for tag in tags:
@@ -88,7 +92,7 @@
         elt_id = int ( floor ( random()*maxint ) ) 
         community_tags = tag_handler.get_community_tags(trans.sa_session, tagged_item, 10)
     %>
-    ${self.render_tagging_element_html(elt_id=elt_id, tags=community_tags, use_toggle_link=use_toggle_link, editable=False)}
+    ${self.render_tagging_element_html(elt_id=elt_id, tags=community_tags, use_toggle_link=use_toggle_link, editable=False, tag_type="community")}
     
     ## Set up tag click function.
     <script type="text/javascript">

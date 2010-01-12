@@ -4,7 +4,14 @@
 
 <p>
     %if stored.importable:
+        <p>
+        Anyone can view this workflow by visiting the following URL:
+        <% url = h.url_for( action='display_by_username_and_slug', username=trans.get_user().username, slug=stored.slug, qualified=True ) %>
+        <blockquote>
+            <a href="${url}">${url}</a>
+        </blockquote>
     
+        <p>
         Anyone can import this workflow into their history via the following URL:
         <% url = h.url_for( action='imp', id=trans.security.encode_id(stored.id), qualified=True ) %>
         <blockquote>

@@ -513,6 +513,7 @@ StoredWorkflow.table = Table( "stored_workflow", metadata,
     Column( "name", TEXT ),
     Column( "deleted", Boolean, default=False ),
     Column( "importable", Boolean, default=False ),
+    Column( "slug", TEXT, index=True )
     )
 
 Workflow.table = Table( "workflow", metadata,

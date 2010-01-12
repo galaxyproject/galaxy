@@ -10,19 +10,18 @@ from sqlalchemy.sql.expression import ClauseElement
 import webhelpers, logging, operator
 from datetime import datetime
 from cgi import escape
-import re
 
 log = logging.getLogger( __name__ )
 
 # States for passing messages
 SUCCESS, INFO, WARNING, ERROR = "done", "info", "warning", "error"
 
+class NameColumn( grids.TextColumn ):
+    def get_value( self, trans, grid, history ):
+        return history.get_display_name()
+
 class HistoryListGrid( grids.Grid ):
     # Custom column types
-    class NameColumn( grids.TextColumn ):
-        def get_value(self, trans, grid, history):
-            return history.get_display_name()
-            
     class DatasetsByStateColumn( grids.GridColumn ):
         def get_value( self, trans, grid, history ):
             rval = []
@@ -174,21 +173,24 @@ class SharedHistoryListGrid( grids.Grid ):
         return query.filter( model.HistoryUserShareAssociation.user == trans.user )
         
 class PublicHistoryListGrid( grids.Grid ):
+    class NameURLColumn( PublicURLColumn, NameColumn ):
+        pass
+        
     title = "Public Histories"
     model_class = model.History
     default_sort_key = "-update_time"
     default_filter = dict( public_url="All", username="All", tags="All" )
     use_async = True
     columns = [
-        PublicURLColumn( "Name", key="name", model_class=model.History, filterable="advanced"),
+        NameURLColumn( "Name", key="name", model_class=model.History, filterable="advanced" ),
         OwnerColumn( "Owner", key="username", model_class=model.User, filterable="advanced", sortable=False ), 
-        grids.GridColumn( "Created", key="create_time", format=time_ago ),
+        grids.CommunityTagsColumn( "Community Tags", "tags", model.History, model.HistoryTagAssociation, filterable="advanced", grid_name="PublicHistoryListGrid" ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago )
     ]
     columns.append( 
         grids.MulticolFilterColumn(  
         "Search", 
-        cols_to_filter=[ columns[0], columns[1] ], 
+        cols_to_filter=[ columns[0], columns[1], columns[2] ], 
         key="free-text-search", visible=False, filterable="standard" )
                 )
     operations = []
@@ -213,7 +215,6 @@ class HistoryController( BaseController ):
     public_list_grid = PublicHistoryListGrid()
         
     @web.expose
-    @web.require_login()  
     def list_public( self, trans, **kwargs ):
         grid = self.public_list_grid( trans, **kwargs )
         if 'async' in kwargs:
@@ -272,7 +273,7 @@ class HistoryController( BaseController ):
                 elif operation == "enable import via link":
                     for history in histories:
                         if not history.importable:
-                            self.make_history_importable( trans.sa_session, history )
+                            self.make_item_importable( trans.sa_session, history )
                 elif operation == "disable import via link":
                     if history_ids:
                         histories = [ self.get_history( trans, history_id ) for history_id in history_ids ]
@@ -432,7 +433,7 @@ class HistoryController( BaseController ):
         importable = importable in ['True', 'true', 't', 'T'];
         if history and history.importable != importable:
             if importable:
-                self.make_history_importable( trans.sa_session, history )
+                self.make_item_importable( trans.sa_session, history )
             else:
                 history.importable = importable
             trans.sa_session.flush()
@@ -536,8 +537,9 @@ class HistoryController( BaseController ):
                                            user_owns_history = user_owns_history,
                                            show_deleted = False )
     
-    @web.expose            
+    @web.expose
     def display_by_username_and_slug( self, trans, username, slug ):
+       """ Display history based on a username and slug. """ 
        session = trans.sa_session
        user = session.query( model.User ).filter_by( username=username ).first()
        if user is None:
@@ -545,7 +547,7 @@ class HistoryController( BaseController ):
        history = trans.sa_session.query( model.History ).filter_by( user=user, slug=slug, deleted=False, importable=True ).first()
        if history is None:
            raise web.httpexceptions.HTTPNotFound()
-       
+   
        query = trans.sa_session.query( model.HistoryDatasetAssociation ) \
                                .filter( model.HistoryDatasetAssociation.history == history ) \
                                .options( eagerload( "children" ) ) \
@@ -848,7 +850,7 @@ class HistoryController( BaseController ):
         for history in histories:
             trans.sa_session.add( history )
             if params.get( 'enable_import_via_link', False ):
-                self.make_history_importable( trans.sa_session, history )
+                self.make_item_importable( trans.sa_session, history )
                 trans.sa_session.flush()
             elif params.get( 'disable_import_via_link', False ):
                 history.importable = False
@@ -965,17 +967,3 @@ class HistoryController( BaseController ):
         else:
             msg = '%d cloned histories are now included in your previously stored histories.' % len( histories )
         return trans.show_ok_message( msg )
-        
-    def make_history_importable( self, sa_session, history ):
-        """ Makes history importable and sets history's slug. Does not flush/commit changes, however. """
-        history.importable = True
-        
-        # Set history slug. Slug must be unique among user's importable pages.
-        slug_base = re.sub( "\s+", "-", history.name.lower() )
-        slug = slug_base
-        count = 1
-        while sa_session.query( model.History ).filter_by( user=history.user, slug=slug, importable=True ).count() != 0:
-            # Slug taken; choose a new slug based on count. This approach can handle numerous histories with the same name gracefully.
-            slug = '%s-%i' % ( slug_base, count )
-            count += 1
-        history.slug = slug

@@ -260,25 +260,6 @@ var updater_callback = function ( tracked_datasets ) {
             count++;
         return count;
     };
- 
-    //
-    // Function provides text for tagging toggle link.
-    //
-    var get_toggle_link_text = function(tags)
-    {
-        var text = "";
-        var num_tags = array_length(tags);
-        if (num_tags != 0)
-          {
-            text = num_tags + (num_tags != 1 ? " Tags" : " Tag");
-          }
-        else
-          {
-            // No tags.
-            text = "Add tags to history";
-          }
-        return text;
-    };
 </script>
 
 <style>
@@ -327,7 +308,7 @@ var updater_callback = function ( tracked_datasets ) {
             margin-bottom: 0.5em;
         }
     </style>
-    ${render_individual_tagging_element( user=trans.get_user(), tagged_item=history, elt_context='history.mako', get_toggle_link_text_fn='get_toggle_link_text' )}
+    ${render_individual_tagging_element( user=trans.get_user(), tagged_item=history, elt_context='history.mako' )}
 %endif
 
 %if not datasets:

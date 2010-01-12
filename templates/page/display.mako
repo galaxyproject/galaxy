@@ -151,13 +151,11 @@
     function community_tag_click(tag_name, tag_value) 
     {
         // Do nothing until community tags implemented in published pages grid.
-        /*
         var href = '${h.url_for( controller='/page', action='list_published')}';
         href = href + "?f-tags=" + tag_name;
         if (tag_value != null && tag_value != "")
             href = href + ":" + tag_value;
         self.location = href;
-        */
     }
     </script>
 </%def>

@@ -256,14 +256,11 @@
     //
     function community_tag_click(tag_name, tag_value) 
     {
-        // Do nothing until community tags are implemented in public histories grid.
-        /*
         var href = '${h.url_for( controller='/history', action='list_public')}';
         href = href + "?f-tags=" + tag_name;
         if (tag_value != null && tag_value != "")
             href = href + ":" + tag_value;
         self.location = href;
-        */
     }
     </script>
 </%def>
@@ -339,78 +336,79 @@
     </div>
     
     <div class="unified-panel-body">
-        <div class="page-body">
-            ## Render view of history.
-            <div id="top-links" class="historyLinks" style="padding: 0px 0px 5px 0px">
-                %if not user_owns_history:
-                    <a href="${h.url_for( controller='history', action='imp', id=trans.security.encode_id(history.id) )}">import and start using history</a> |
-                %endif
-                <a href="${get_history_link( history )}">${_('refresh')}</a> 
-                %if show_deleted:
-                | <a href="${h.url_for('history', show_deleted=False)}">${_('hide deleted')}</a> 
-                %endif
-            </div>
-
-            <div id="history-name-area" class="historyLinks" style="color: gray; font-weight: bold; padding: 0px 0px 5px 0px">
-                %if user_owns_history:
-                    <div style="float: right"><a id="history-rename" title="Rename" class="icon-button edit" target="galaxy_main" href="${h.url_for( controller='history', action='rename' )}"></a></div>
-                %endif
-                <div id="history-name">${history.get_display_name()}</div>
-            </div>
-
-            %if history.deleted:
-                <div class="warningmessagesmall">
-                    ${_('You are currently viewing a deleted history!')}
-                </div>
-                <p></p>
-            %endif
-
-            %if not datasets:
-
-                <div class="infomessagesmall" id="emptyHistoryMessage">
-
-            %else:    
-
-                ## Render requested datasets, ordered from newest to oldest
-                %for data in datasets:
-                    %if data.visible:
-                        <div class="historyItemContainer visible-right-border" id="historyItemContainer-${data.id}">
-                            ${render_dataset( data, data.hid, show_deleted_on_refresh = show_deleted, user_owns_dataset=user_owns_history )}
-                        </div>
+        <div style="overflow: auto; height: 100%;">        
+            <div class="page-body">
+                ## Render view of history.
+                <div id="top-links" class="historyLinks" style="padding: 0px 0px 5px 0px">
+                    %if not user_owns_history:
+                        <a href="${h.url_for( controller='history', action='imp', id=trans.security.encode_id(history.id) )}">import and start using history</a> |
                     %endif
-                %endfor
-
-                <div class="infomessagesmall" id="emptyHistoryMessage" style="display:none;">
-            %endif
-                    ${_("Your history is empty. Click 'Get Data' on the left pane to start")}
+                    <a href="${get_history_link( history )}">${_('refresh')}</a> 
+                    %if show_deleted:
+                    | <a href="${h.url_for('history', show_deleted=False)}">${_('hide deleted')}</a> 
+                    %endif
                 </div>
-        </div>
-        
-        <div class="page-meta">
-            ## Histories.
-            <div><strong>Related Histories</strong></div>
-            <p>
-                <a href="${h.url_for ( controller='/history', action='list_public' )}">All public histories</a><br>
-                <a href="${href_to_user_histories}">Histories owned by ${history.user.username}</a>
-            
-            ## Tags.
-            <div><strong>Tags</strong></div>
-            <p>
-            ## Community tags.
-            <div>
-                Community:
-                ${render_community_tagging_element( tagged_item=history, tag_click_fn='community_tag_click', use_toggle_link=False )}
-                %if len ( history.tags ) == 0:
-                    none
+
+                <div id="history-name-area" class="historyLinks" style="color: gray; font-weight: bold; padding: 0px 0px 5px 0px">
+                    %if user_owns_history:
+                        <div style="float: right"><a id="history-rename" title="Rename" class="icon-button edit" target="galaxy_main" href="${h.url_for( controller='history', action='rename' )}"></a></div>
+                    %endif
+                    <div id="history-name">${history.get_display_name()}</div>
+                </div>
+
+                %if history.deleted:
+                    <div class="warningmessagesmall">
+                        ${_('You are currently viewing a deleted history!')}
+                    </div>
+                    <p></p>
                 %endif
+
+                %if not datasets:
+
+                    <div class="infomessagesmall" id="emptyHistoryMessage">
+
+                %else:    
+
+                    ## Render requested datasets, ordered from newest to oldest
+                    %for data in datasets:
+                        %if data.visible:
+                            <div class="historyItemContainer visible-right-border" id="historyItemContainer-${data.id}">
+                                ${render_dataset( data, data.hid, show_deleted_on_refresh = show_deleted, user_owns_dataset=user_owns_history )}
+                            </div>
+                        %endif
+                    %endfor
+
+                    <div class="infomessagesmall" id="emptyHistoryMessage" style="display:none;">
+                %endif
+                        ${_("Your history is empty. Click 'Get Data' on the left pane to start")}
+                    </div>
             </div>
-            ## Individual tags.
-            <p>
-            <div>
-                Yours:
-                ${render_individual_tagging_element( user=trans.get_user(), tagged_item=history, elt_context='view.mako', use_toggle_link=False )}
+        
+            <div class="page-meta">
+                ## Histories.
+                <div><strong>Related Histories</strong></div>
+                <p>
+                    <a href="${h.url_for ( controller='/history', action='list_public' )}">All public histories</a><br>
+                    <a href="${href_to_user_histories}">Histories owned by ${history.user.username}</a>
+            
+                ## Tags.
+                <div><strong>Tags</strong></div>
+                <p>
+                ## Community tags.
+                <div>
+                    Community:
+                    ${render_community_tagging_element( tagged_item=history, tag_click_fn='community_tag_click', use_toggle_link=False )}
+                    %if len ( history.tags ) == 0:
+                        none
+                    %endif
+                </div>
+                ## Individual tags.
+                <p>
+                <div>
+                    Yours:
+                    ${render_individual_tagging_element( user=trans.get_user(), tagged_item=history, elt_context='view.mako', use_toggle_link=False )}
+                </div>
             </div>
         </div>
-        
     </div>
 </%def>

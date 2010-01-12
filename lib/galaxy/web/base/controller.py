@@ -2,7 +2,7 @@
 Contains functionality needed in every web interface
 """
 
-import os, time, logging
+import os, time, logging, re
 
 # Pieces of Galaxy to make global in every controller
 from galaxy import config, tools, web, model, util
@@ -28,7 +28,7 @@ class PublicURLColumn( grids.TextColumn ):
             return dict( action='display_by_username_and_slug', username=item.user.username, slug=item.slug )
         else:
             return None
-
+        
 class BaseController( object ):
     """
     Base class for Galaxy web application controllers.
@@ -57,6 +57,20 @@ class BaseController( object ):
             if history.user != user:
                 error( "History is not owned by current user" )
         return history
+            
+    def make_item_importable( self, sa_session, item ):
+        """ Makes item importable and sets item's slug. Does not flush/commit changes, however. Item must have name, user, importable, and slug attributes. """
+        item.importable = True
+
+        # Set history slug. Slug must be unique among user's importable pages.
+        slug_base = re.sub( "\s+", "-", item.name.lower() )
+        slug = slug_base
+        count = 1
+        while sa_session.query( item.__class__ ).filter_by( user=item.user, slug=slug, importable=True ).count() != 0:
+            # Slug taken; choose a new slug based on count. This approach can handle numerous histories with the same name gracefully.
+            slug = '%s-%i' % ( slug_base, count )
+            count += 1
+        item.slug = slug
         
 Root = BaseController
 """

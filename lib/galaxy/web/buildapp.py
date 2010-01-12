@@ -81,6 +81,7 @@ def app_factory( global_conf, **kwargs ):
     webapp.add_route( '/datasets/:dataset_id/:action/:filename', controller='dataset', action='index', dataset_id=None, filename=None)
     webapp.add_route( '/u/:username/p/:slug', controller='page', action='display_by_username_and_slug' )
     webapp.add_route( '/u/:username/h/:slug', controller='history', action='display_by_username_and_slug' )
+    webapp.add_route( '/u/:username/w/:slug', controller='workflow', action='display_by_username_and_slug' )
     webapp.finalize_config()
     # Wrap the webapp in some useful middleware
     if kwargs.get( 'middleware', True ):

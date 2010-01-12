@@ -4,6 +4,7 @@ import pkg_resources
 pkg_resources.require( "simplejson" )
 import simplejson
 
+from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.tools.parameters import *
 from galaxy.tools import DefaultToolState
 from galaxy.tools.parameters.grouping import Repeat, Conditional
@@ -15,11 +16,89 @@ from galaxy.workflow.modules import *
 from galaxy.model.mapping import desc
 from galaxy.model.orm import *
 
+class StoredWorkflowListGrid( grids.Grid ):    
+    class StepsColumn( grids.GridColumn ):
+        def get_value(self, trans, grid, workflow):
+            return len( workflow.latest_workflow.steps )
+    
+    # Grid definition
+    use_panels = True
+    title = "Saved Workflows"
+    model_class = model.StoredWorkflow
+    default_filter = { "name" : "All", "tags": "All" }
+    default_sort_key = "-update_time"
+    columns = [
+        grids.TextColumn( "Name", key="name", model_class=model.StoredWorkflow, attach_popup=True, filterable="advanced" ),
+        grids.IndividualTagsColumn( "Tags", "tags", model.StoredWorkflow, model.StoredWorkflowTagAssociation, filterable="advanced", grid_name="StoredWorkflowListGrid" ),
+        StepsColumn( "Steps" ),
+        grids.GridColumn( "Created", key="create_time", format=time_ago ),
+        grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
+    ]
+    columns.append( 
+        grids.MulticolFilterColumn(  
+        "Search", 
+        cols_to_filter=[ columns[0], columns[1] ], 
+        key="free-text-search", visible=False, filterable="standard" )
+                )
+    operations = [
+        grids.GridOperation( "Edit", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False ),
+        grids.GridOperation( "Run", condition=( lambda item: not item.deleted ), async_compatible=False ),
+        grids.GridOperation( "Clone", condition=( lambda item: not item.deleted ), async_compatible=False  ),
+        grids.GridOperation( "Rename", condition=( lambda item: not item.deleted ), async_compatible=False  ),
+        grids.GridOperation( "Sharing", condition=( lambda item: not item.deleted ), async_compatible=False ),
+        grids.GridOperation( "Delete", condition=( lambda item: item.deleted ), async_compatible=True ),
+    ]
+    def apply_default_filter( self, trans, query, **kwargs ):
+        return query.filter_by( user=trans.user, deleted=False )
+
+class PublicStoredWorkflowListGrid( grids.Grid ):
+    title = "Public Workflows"
+    model_class = model.StoredWorkflow
+    default_sort_key = "-update_time"
+    default_filter = dict( public_url="All", username="All", tags="All" )
+    use_async = True
+    columns = [
+        PublicURLColumn( "Name", key="name", model_class=model.StoredWorkflow, filterable="advanced" ),
+        OwnerColumn( "Owner", key="username", model_class=model.User, filterable="advanced", sortable=False ), 
+        grids.CommunityTagsColumn( "Community Tags", "tags", model.StoredWorkflow, model.StoredWorkflowTagAssociation, filterable="advanced", grid_name="PublicWorkflowListGrid" ),
+        grids.GridColumn( "Last Updated", key="update_time", format=time_ago )
+    ]
+    columns.append( 
+        grids.MulticolFilterColumn(  
+        "Search", 
+        cols_to_filter=[ columns[0], columns[1], columns[2] ], 
+        key="free-text-search", visible=False, filterable="standard" )
+                )
+    operations = []
+    def build_initial_query( self, session ):
+        # Join so that searching stored_workflow.user makes sense.
+        return session.query( self.model_class ).join( model.User.table )
+    def apply_default_filter( self, trans, query, **kwargs ):
+        # A public workflow is importable, has a slug, and is not deleted.
+        return query.filter( self.model_class.importable==True ).filter( self.model_class.slug != None ).filter( self.model_class.deleted == False )
+
 class WorkflowController( BaseController ):
+    stored_list_grid = StoredWorkflowListGrid()
+    public_list_grid = PublicStoredWorkflowListGrid()
     
     @web.expose
     def index( self, trans ):
         return trans.fill_template( "workflow/index.mako" )
+        
+    @web.expose
+    @web.require_login( "use Galaxy workflows" )
+    def list_grid( self, trans, **kwargs ):
+        """ List user's stored workflows. """
+        status = message = None
+        if 'operation' in kwargs:
+            operation = kwargs['operation'].lower()
+            print operation
+            if operation == "rename":
+                return self.rename( trans, **kwargs )
+            history_ids = util.listify( kwargs.get( 'id', [] ) )
+            if operation == "sharing":
+                return self.sharing( trans, id=history_ids )
+        return self.stored_list_grid( trans, **kwargs )
                                    
     @web.expose
     @web.require_login( "use Galaxy workflows" )
@@ -64,7 +143,52 @@ class WorkflowController( BaseController ):
         return trans.fill_template( "workflow/list_for_run.mako",
                                     workflows = workflows,
                                     shared_by_others = shared_by_others )
-    
+                                    
+    @web.expose
+    def list_public( self, trans, **kwargs ):
+        grid = self.public_list_grid( trans, **kwargs )
+        if 'async' in kwargs:
+            return grid
+        else:
+            # Render grid wrapped in panels
+            return trans.fill_template( "workflow/list_public.mako", grid=grid )
+                                    
+    @web.expose
+    def display_by_username_and_slug( self, trans, username, slug ):
+        """ View workflow based on a username and slug. """ 
+        session = trans.sa_session
+        
+        # Get and verify user and stored workflow.
+        user = session.query( model.User ).filter_by( username=username ).first()
+        if user is None:
+            raise web.httpexceptions.HTTPNotFound()
+        stored_workflow = trans.sa_session.query( model.StoredWorkflow ).filter_by( user=user, slug=slug, deleted=False, importable=True ).first()
+        if stored_workflow is None:
+            raise web.httpexceptions.HTTPNotFound()
+        
+        # Get data for workflow's steps.
+        for step in stored_workflow.latest_workflow.steps:
+            if step.type == 'tool' or step.type is None:
+                # Restore the tool state for the step
+                module = module_factory.from_workflow_step( trans, step )
+                # Any connected input needs to have value DummyDataset (these
+                # are not persisted so we need to do it every time)
+                module.add_dummy_datasets( connections=step.input_connections )                  
+                # Store state with the step
+                step.module = module
+                step.state = module.state
+                # Error dict
+                if step.tool_errors:
+                    errors[step.id] = step.tool_errors
+            else:
+                ## Non-tool specific stuff?
+                step.module = module_factory.from_workflow_step( trans, step )
+                step.state = step.module.get_runtime_state()
+            # Connections by input name
+            step.input_connections_by_name = dict( ( conn.input_name, conn ) for conn in step.input_connections )
+            
+        return trans.fill_template_mako( "workflow/display.mako", workflow = stored_workflow,  steps = stored_workflow.latest_workflow.steps )
+                              
     @web.expose
     @web.require_login( "use Galaxy workflows" )
     def share( self, trans, id, email="" ):
@@ -108,7 +232,7 @@ class WorkflowController( BaseController ):
         stored = get_stored_workflow( trans, id )
         session.add( stored )
         if 'enable_import_via_link' in kwargs:
-            stored.importable = True
+            self.make_item_importable( trans.sa_session, stored )
             session.flush()
         elif 'disable_import_via_link' in kwargs:
             stored.importable = False
@@ -150,15 +274,19 @@ class WorkflowController( BaseController ):
     
     @web.expose
     @web.require_login( "use Galaxy workflows" )
-    def rename( self, trans, id, new_name=None ):
+    def rename( self, trans, id, new_name=None, **kwargs ):
         stored = get_stored_workflow( trans, id )
         if new_name is not None:
             stored.name = new_name
             trans.sa_session.flush()
-            trans.set_message( "Workflow renamed to '%s'." % new_name )
+            # For current workflows grid:
+            trans.set_message ( "Workflow renamed to '%s'." % new_name )
             return self.list( trans )
+            # For new workflows grid:
+            #message = "Workflow renamed to '%s'." % new_name
+            #return self.list_grid( trans, message=message, status='done' )
         else:
-            return form( url_for( id=trans.security.encode_id(stored.id) ), "Rename workflow", submit_text="Rename" ) \
+            return form( url_for( action='rename', id=trans.security.encode_id(stored.id) ), "Rename workflow", submit_text="Rename" ) \
                 .add_text( "new_name", "Workflow Name", value=stored.name )
     
     @web.expose

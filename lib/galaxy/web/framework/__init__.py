@@ -553,6 +553,12 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         context.
         """
         self.template_context['message'] = message
+    def get_message( self ):
+        """
+        Convenience method for getting the 'message' element of the template
+        context.
+        """
+        return self.template_context['message']
     def show_message( self, message, type='info', refresh_frames=[], cont=None ):
         """
         Convenience method for displaying a simple page with a single message.

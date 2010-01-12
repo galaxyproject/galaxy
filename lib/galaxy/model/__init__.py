@@ -1114,6 +1114,7 @@ class StoredWorkflow( object ):
         self.id = None
         self.user = None
         self.name = None
+        self.slug = None
         self.latest_workflow_id = None
         self.workflows = []
 

@@ -260,7 +260,12 @@
                                             // Build href from history info.
                                             var href;
                                             if (history_slug != "" && history_user_username != "")
-                                                var href = "/u/" + history_user_username + "/h/" + history_slug;
+                                            {
+                                                var href = 
+                                                    '${h.url_for( controller='/history', action='display_by_username_and_slug', username='USERNAME',                slug='SLUG' )}';
+                                                href = href.replace('USERNAME', history_user_username);
+                                                href = href.replace('SLUG', history_slug);
+                                            }
                                             else
                                                 var href = '${h.url_for( controller='/history', action='view' )}?id=' + item_id;
                                             wym.insert("<a href='" + href + "'>History '" + history_name + "'</a>");

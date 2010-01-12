@@ -14,19 +14,31 @@ def format_bool( b ):
         return ""
 
 class PageListGrid( grids.Grid ):
+    # Custom column.
+    class URLColumn( PublicURLColumn ):
+        def get_value( self, trans, grid, item ):
+            return url_for( action='display_by_username_and_slug', username=item.user.username, slug=item.slug )
+    
     # Grid definition
     use_panels = True
     title = "Pages"
     model_class = model.Page
-    default_filter = { "published" : "All"}
+    default_filter = { "published" : "All", "tags" : "All", "title" : "All"}
     default_sort_key = "-create_time"
     columns = [
-        grids.TextColumn( "Title", key="title", model_class=model.Page, attach_popup=True, filterable="standard" ),
-        PublicURLColumn( "Public URL" ),
-        grids.GridColumn( "Published", key="published", format=format_bool, filterable="standard" ),
+        grids.TextColumn( "Title", key="title", model_class=model.Page, attach_popup=True, filterable="advanced" ),
+        URLColumn( "Public URL" ),
+        grids.IndividualTagsColumn( "Tags", "tags", model.Page, model.PageTagAssociation, filterable="advanced", grid_name="PageListGrid" ),
+        grids.GridColumn( "Published", key="published", format=format_bool, filterable="advanced" ),
         grids.GridColumn( "Created", key="create_time", format=time_ago ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
     ]
+    columns.append( 
+        grids.MulticolFilterColumn(  
+        "Search", 
+        cols_to_filter=[ columns[0], columns[2] ], 
+        key="free-text-search", visible=False, filterable="standard" )
+                )
     global_actions = [
         grids.GridAction( "Add new page", dict( action='create' ) )
     ]
@@ -52,13 +64,13 @@ class PageAllPublishedGrid( grids.Grid ):
     columns = [
         PublicURLColumn( "Title", key="title", model_class=model.Page, filterable="advanced"),
         OwnerColumn( "Owner", key="username", model_class=model.User, filterable="advanced", sortable=False ), 
-        grids.GridColumn( "Created", key="create_time", format=time_ago ),
+        grids.CommunityTagsColumn( "Community Tags", "tags", model.Page, model.PageTagAssociation, filterable="advanced", grid_name="PageAllPublishedGrid" ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago )
     ]
     columns.append( 
         grids.MulticolFilterColumn(  
         "Search", 
-        cols_to_filter=[ columns[0], columns[1] ], 
+        cols_to_filter=[ columns[0], columns[1], columns[2] ], 
         key="free-text-search", visible=False, filterable="standard" )
                 )
     def build_initial_query( self, session ):

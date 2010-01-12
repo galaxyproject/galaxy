@@ -2,8 +2,6 @@
 Tags Controller: handles tagging/untagging of entities and provides autocomplete support.
 """
 
-from galaxy.model import History, HistoryTagAssociation, Dataset, DatasetTagAssociation, \
-    HistoryDatasetAssociation, HistoryDatasetAssociationTagAssociation, Page, PageTagAssociation
 from galaxy.web.base.controller import *
 from galaxy.tags.tag_handler import *
 from sqlalchemy.sql.expression import func, and_
@@ -75,11 +73,13 @@ class TagsController ( BaseController ):
             
         # Get item class. TODO: we should have a mapper that goes from class_name to class object.
         if item_class == 'History':
-            item_class = History
+            item_class = model.History
         elif item_class == 'HistoryDatasetAssociation':
-            item_class = HistoryDatasetAssociation
+            item_class = model.HistoryDatasetAssociation
         elif item_class == 'Page':
-            item_class = Page
+            item_class = model.Page
+        elif item_class == 'StoredWorkflow':
+            item_class = model.StoredWorkflow
         
         q = q.encode('utf-8')
         if q.find(":") == -1:
@@ -104,9 +104,9 @@ class TagsController ( BaseController ):
         
         # Build select statement.
         cols_to_select = [ item_tag_assoc_class.table.c.tag_id, func.count('*') ] 
-        from_obj = item_tag_assoc_class.table.join(item_class.table).join(Tag.table)
+        from_obj = item_tag_assoc_class.table.join( item_class.table ).join( model.Tag.table )
         where_clause = and_(
-                            Tag.table.c.name.like(q + "%"),
+                            model.Tag.table.c.name.like(q + "%"),
                             item_tag_assoc_class.table.c.user_id == user.id
                             )
         order_by = [ func.count("*").desc() ]
@@ -155,9 +155,9 @@ class TagsController ( BaseController ):
         
         # Build select statement.
         cols_to_select = [ item_tag_assoc_class.table.c.value, func.count('*') ] 
-        from_obj = item_tag_assoc_class.table.join(item_class.table).join(Tag.table)
+        from_obj = item_tag_assoc_class.table.join( item_class.table ).join( model.Tag.table )
         where_clause = and_( item_tag_assoc_class.table.c.user_id == user.id,
-                             Tag.table.c.id==tag.id,
+                             model.Tag.table.c.id==tag.id,
                              item_tag_assoc_class.table.c.value.like(tag_value + "%") )
         order_by = [ func.count("*").desc(),  item_tag_assoc_class.table.c.value ]
         group_by = item_tag_assoc_class.table.c.value
