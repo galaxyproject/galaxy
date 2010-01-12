@@ -1,15 +1,12 @@
-<tool id="bowtie_wrapper" name="Map with Bowtie for Illumina" version="1.0.6">
+<tool id="bowtie_color_wrapper" name="Map with Bowtie for SOLiD" version="1.0.0">
   <description></description>
   <command interpreter="python">
     bowtie_wrapper.py 
     --threads="4"
-    --dataType="solexa"
-    --output=$output
-    --suppressHeader=$suppressHeader
+    --dataType="solid"
+    --output=$output 
+    --suppressHeader=$suppressHeader 
     --genomeSource=$refGenomeSource.genomeSource
-    --snpphred="None"
-    --snpfrac="None"
-    --keepends="None"
     #if $refGenomeSource.genomeSource == "history":
      --ref=$refGenomeSource.ownFile
      --dbkey=$dbkey
@@ -34,7 +31,7 @@
       --intoa=$refGenomeSource.indexParams.ntoa
       --iendian=$refGenomeSource.indexParams.endian
       --iseed=$refGenomeSource.indexParams.seed
-      --icutoff=$refGenomeSource.indexParams.cutoff 
+      --icutoff=$refGenomeSource.indexParams.cutoff
      #else:
       --iautoB="None"
       --ipacked="None"
@@ -97,6 +94,9 @@
       #end if
       --offrate=$singlePaired.sParams.sOffrate
       --seed=$singlePaired.sParams.sSeed
+      --snpphred=$singlePaired.sParams.sSnpphred
+      --snpfrac=$singlePaired.sParams.sSnpfrac
+      --keepends=$singlePaired.sParams.sKeepends
      #else:
       --skip="None"
       --alignLimit="None"
@@ -160,6 +160,9 @@
       #end if
       --offrate=$singlePaired.pParams.pOffrate
       --seed=$singlePaired.pParams.pSeed
+      --snpphred=$singlePaired.pParams.pSnpphred
+      --snpfrac=$singlePaired.pParams.pSnpfrac
+      --keepends=$singlePaired.pParams.pKeepends
      #else:
       --skip="None"
       --alignLimit="None"
@@ -170,6 +173,12 @@
       --seedLen="None"
       --rounding="None"
       --maqSoapAlign="None"
+      --minInsert="None"
+      --maxInsert="None"
+      --mateOrient="None"
+      --maxAlignAttempt="None"
+      --forwardAlign="None"
+      --reverseAlign="None"
       --tryHard="None"
       --valAlign="None"
       --allValAligns="None"
@@ -179,14 +188,11 @@
       --strata="None"
       --offrate="None"
       --seed="None"
-      --minInsert="None"
-      --maxInsert="None"
-      --mateOrient="None"
-      --maxAlignAttempt="None"
-      --forwardAlign="None"
-      --reverseAlign="None"
-     #end if    
-    #end if    
+      --snpphred="None"
+      --snpfrac="None"
+      --keepends="None"
+     #end if
+    #end if
   </command>
   <inputs>
     <conditional name="refGenomeSource">
@@ -195,13 +201,13 @@
         <option value="history">Use one from the history</option>
       </param>
       <when value="indexed">
-    	<param name="index" type="select" label="Select a reference genome" help="if your genome of interest is not listed - contact Galaxy team">
-  	      <options from_file="bowtie_indices.loc">
+  	    <param name="index" type="select" label="Select the reference genome" help="if your genome of interest is not listed - contact Galaxy team">
+  	      <options from_file="bowtie_indices_color.loc">
   	        <column name="value" index="1" />
   	        <column name="name" index="0" />
   	      </options>
   	    </param>
-  	  </when>
+      </when>
       <when value="history">
         <param name="ownFile" type="data" format="fasta" metadata_name="dbkey" label="Select a reference genome" />
         <conditional name="indexParams">
@@ -247,10 +253,10 @@
             </param> 
             <param name="seed" type="integer" value="-1" label="Seed for the pseudorandom number generator (--seed)" help="Use -1 to use default" />
             <param name="cutoff" type="integer" value="-1" label="Number of first bases of the reference sequence to index (--cutoff)" help="Use -1 to use default" />
-          </when>  <!-- indexFull -->
-        </conditional>  <!-- indexParams -->
-      </when>  <!-- history -->
- 	</conditional>  <!-- refGenomeSource -->
+          </when>  <!-- cIndexFull -->
+        </conditional>  <!-- cIndexParams -->
+      </when>  <!-- cHistory -->
+ 	</conditional>  <!-- cRefGenomeSource -->
     <conditional name="singlePaired">
       <param name="sPaired" type="select" label="Is this library mate-paired?">
         <option value="single">Single-end</option>
@@ -260,8 +266,8 @@
         <param name="sInput1" type="data" format="fastqsanger" label="FASTQ file" help="Must have Sanger-scaled quality values with ASCII offset 33"/>
         <conditional name="sParams">
           <param name="sSettingsType" type="select" label="Bowtie settings to use" help="For most mapping needs use Commonly used settings. If you want full control use Full parameter list">
-		    <option value="preSet">Commonly used</option>
-   		    <option value="full">Full parameter list</option>
+	        <option value="preSet">Commonly used</option>
+   	        <option value="full">Full parameter list</option>
 	      </param>
           <when value="preSet" />
           <when value="full">
@@ -302,14 +308,20 @@
                   <option value="doStrata">Use strata option</option>
                 </param>
               </when>
-            </conditional> <!-- bestOption -->
+            </conditional> <!-- csBestOption -->
             <param name="sOffrate" type="integer" value="-1" label="Override the offrate of the index to n (-o)" help="-1 for default" />
             <param name="sSeed" type="integer" value="-1" label="Seed for pseudo-random number generator (--seed)" help="-1 for default" />
-          </when> <!-- full -->
-        </conditional> <!-- sParams -->
-      </when> <!-- single -->
+            <param name="sSnpphred" type="integer" value="-1" label="SNP penalty (ratio of SNPs per base in the subject genome) (--snpphred)" help="Enter this OR Ratio of SNPs per base" />
+            <param name="sSnpfrac" type="float" value="0.001" label="Ratio of SNPs per base (estimated ratio for colorspace alignments) (--snpfrac)" help="Enter this OR SNP penalty" />
+            <param name="sKeepends" type="select" label="Keep the extreme-ends nucleotides and qualities rather than trimming them (--keepends)">
+              <option value="doKeepends">Keep ends</option>
+              <option value="noKeepends">Trim ends</option>
+            </param>
+          </when> <!-- csFull -->
+        </conditional> <!-- csParams -->
+      </when> <!-- cSingle -->
       <when value="paired">
-        <param name="pInput1" type="data" format="fastqsanger" label="Forward FASTQ file" help="Must have Sanger-scaled quality values with ASCII offset 33"/>
+        <param name="pInput1" type="data" format="fastqsanger" label="FASTQ file" help="Must have Sanger-scaled quality values with ASCII offset 33"/>
         <param name="pInput2" type="data" format="fastqsanger" label="Reverse FASTQ file" help="Must have Sanger-scaled quality values with ASCII offset 33"/>
         <conditional name="pParams">
           <param name="pSettingsType" type="select" label="Bowtie settings to use" help="For most mapping needs use Commonly used settings. If you want full control use Full parameter list">
@@ -333,9 +345,9 @@
             <param name="pMinInsert" type="integer" value="0" label="Minimum insert size for valid paired-end alignments (-I)" />
             <param name="pMaxInsert" type="integer" value="250" label="Maximum insert size for valid paired-end alignments (-X)" />
             <param name="pMateOrient" type="select" label="The upstream/downstream mate orientation for valid paired-end alignment against the forward reference strand (--fr/--rf/--ff)">
+              <option value="ff">FF (for SOLiD)</option>
               <option value="fr">FR (for Illumina)</option>
               <option value="rf">RF</option>
-              <option value="ff">FF (for SOLiD)</option>
             </param>
             <param name="pMaxAlignAttempt" type="integer" value="100" label="Maximum number of attempts Bowtie will make to match an alignment for one mate with an alignment for the opposite mate (--pairtries)" />
             <param name="pForwardAlign" type="select" label="Choose whether or not to attempt to align the forward reference strand (--nofw)">
@@ -371,13 +383,19 @@
                   <option value="doStrata">Use strata option</option>
                 </param>
               </when>
-            </conditional>
+            </conditional>  <!-- cpBestOption -->
             <param name="pOffrate" type="integer" value="-1" label="Override the offrate of the index to n (-o)" help="-1 for default" />
             <param name="pSeed" type="integer" value="-1" label="Seed for pseudo-random number generator (--seed)" help="-1 for default" />
-          </when> <!-- full -->
-        </conditional> <!-- pParams -->
-      </when> <!-- paired -->
-    </conditional> <!-- singlePaired -->
+            <param name="pSnpphred" type="integer" value="-1" label="SNP penalty (ratio of SNPs per base in the subject genome) (--snpphred)" help="Enter this OR Ratio of SNPs per base" />
+            <param name="pSnpfrac" type="float" value="0.001" label="Ratio of SNPs per base (estimated ratio for colorspace alignments) (--snpfrac)" help="Enter this OR SNP penalty" />
+            <param name="pKeepends" type="select" label="Keep the extreme-ends nucleotides and qualities rather than trimming them (--keepends)">
+              <option value="doKeepends">Keep ends</option>
+              <option value="noKeepends">Trim ends</option>
+            </param>
+          </when> <!-- cpFull -->
+        </conditional> <!-- cpParams -->
+      </when> <!-- cPaired -->
+    </conditional> <!-- cSinglePaired -->
     <param name="suppressHeader" type="boolean" truevalue="true" falsevalue="false" checked="true" label="Suppress the header in the output SAM file" help="Bowtie produces SAM with several lines of header information" />
   </inputs>
   <outputs>
@@ -387,23 +405,23 @@
     <test>
       <!--
       Bowtie command:
-      bowtie -p 4 -S +sam-nohead -q chrM_base test-data/bowtie_in2.fastqsanger > test-data/bowtie_out2.sam
+      bowtie -p 4 -S +sam-nohead -q -C chrM_color test-data/bowtie_in1.fastqsanger > test-data/bowtie_out1.sam
       -p is the number of threads, which is hardcoded above. You need to replace the + with 2 dashes. 
-      chrM_base needs to be the base location/name of the index files.
+      chrM_color needs to be the base location/name of the index files.
       -->
       <param name="genomeSource" value="indexed" />
       <param name="index" value="equCab2chrM" />
       <param name="sPaired" value="single" />
-      <param name="sInput1" ftype="fastqsanger" value="bowtie_in2.fastqsanger" />
+      <param name="sInput1" ftype="fastqsanger" value="bowtie_in1.fastqsanger" />
       <param name="sSettingsType" value="preSet" />
       <param name="suppressHeader" value="true" />
-      <output name="output" ftype="sam" file="bowtie_out2.sam" />
+      <output name="output" ftype="sam" file="bowtie_out1.sam" />
     </test>
     <test>
       <!--
       Bowtie command:
-      bowtie-build -f test-data/chr_m.fasta chrM_base
-      bowtie -n 2 -e 70 -l 28 -X 250 +fr +pairtries 100 +maxbts 800 -k 1 +best -p 4 -S +sam-nohead -q chrM_base -1 test-data/bowtie_in5.fastqsanger -2 test-data/bowtie_in6.fastqsanger > test-data/bowtie_out4.sam
+      bowtie-build -f -C test-data/chr_m.fasta chrM_color
+      bowtie -n 2 -e 70 -l 28 -X 250 +ff +pairtries 100 +maxbts 125 -k 1 -C +snpfrac 0.001 +col-keepends -p 4 -S +sam-nohead -q chrM_color -1 test-data/bowtie_in3.fastqsanger -2 test-data/bowtie_in4.fastqsanger > test-data/bowtie_out3.sam
       -p is the number of threads, hardcoded above. You need to replace the + with 2 dashes.
       chrM_base is the index files' location/base name. 
       -->
@@ -411,8 +429,8 @@
       <param name="ownFile" value="chr_m.fasta" />
       <param name="indexSettings" value="indexPreSet" />
       <param name="sPaired" value="paired" />
-      <param name="pInput1" ftype="fastqsanger" value="bowtie_in5.fastqsanger" />
-      <param name="pInput2" ftype="fastqsanger" value="bowtie_in6.fastqsanger" />
+      <param name="pInput1" ftype="fastqsanger" value="bowtie_in3.fastqsanger" />
+      <param name="pInput2" ftype="fastqsanger" value="bowtie_in4.fastqsanger" />
       <param name="pSettingsType" value="full" />
       <param name="pSkip" value="0" />
       <param name="pAlignLimit" value="-1" />
@@ -425,7 +443,7 @@
       <param name="pMaqSoapAlign" value="-1" />
       <param name="pMinInsert" value="0" />
       <param name="pMaxInsert" value="250" />
-      <param name="pMateOrient" value="fr" />
+      <param name="pMateOrient" value="ff" />
       <param name="pMaxAlignAttempt" value="100" />
       <param name="pForwardAlign" value="forward" />
       <param name="pReverseAlign" value="reverse" />
@@ -433,26 +451,27 @@
       <param name="pValAlign" value="1" />
       <param name="pAllValAligns" value="noAllValAligns" />
       <param name="pSuppressAlign" value="-1" />
-      <param name="pBest" value="doBest" />
-      <param name="pdMaxBacktracks" value="800" />
-      <param name="pdStrata" value="noStrata" />
+      <param name="pBest" value="noBest" />
+      <param name="pnMaxBacktracks" value="125" />
       <param name="pOffrate" value="-1" />
       <param name="pSeed" value="-1" />
+      <param name="pSnpphred" value="-1" />
+      <param name="pSnpfrac" value="0.001" />
+      <param name="pKeepends" value="doKeepends" />
       <param name="suppressHeader" value="true" />
-      <output name="output" ftype="sam" file="bowtie_out4.sam" />
+      <output name="output" ftype="sam" file="bowtie_out3.sam" />
     </test>
-<!--  Comment out test 3 because they are failing for an unknown reason  -->
     <test>
       <!--
       Bowtie command:
-      bowtie -n 2 -e 70 -l 28 -k 1 +maxbts 125 -y -p 4 -S +sam-nohead -q chrM_base test-data/bowtie_in2.fastqsanger > test-data/bowtie_out6.sam
+      bowtie -n 2 -e 70 -l 28 +maxbts 125 -k 1 -C +snpfrac 0.001 +col-keepends -p 4 -S +sam-nohead -q chrM_color test-data/bowtie_in1.fastqsanger > test-data/bowtie_out5.sam
       -p is the number of threads, hardcoded above. You need to replace the + with 2 dashes.
       chrM_base is the index files' location/base name. 
       -->
       <param name="genomeSource" value="indexed" />
       <param name="index" value="equCab2chrM" />
       <param name="sPaired" value="single" />
-      <param name="sInput1" ftype="fastqsanger" value="bowtie_in2.fastqsanger" />
+      <param name="sInput1" ftype="fastqsanger" value="bowtie_in1.fastqsanger" />
       <param name="sSettingsType" value="full" />
       <param name="sSkip" value="0" />
       <param name="sAlignLimit" value="-1" />
@@ -463,7 +482,7 @@
       <param name="sSeedLen" value="28" />
       <param name="sRounding" value="round" />
       <param name="sMaqSoapAlign" value="-1" />
-      <param name="sTryHard" value="doTryHard" />
+      <param name="sTryHard" value="noTryHard" />
       <param name="sValAlign" value="1" />
       <param name="sAllValAligns" value="noAllValAligns" />
       <param name="sSuppressAlign" value="-1" />
@@ -471,21 +490,28 @@
       <param name="snMaxBacktracks" value="125" />
       <param name="sOffrate" value="-1" />
       <param name="sSeed" value="-1" />
+      <param name="sSnpphred" value="-1" />
+      <param name="sSnpfrac" value="0.001" />
+      <param name="sKeepends" value="doKeepends" />
       <param name="suppressHeader" value="true" />
-      <output name="output" ftype="sam" file="bowtie_out6.sam" />
+      <output name="output" ftype="sam" file="bowtie_out5.sam" />
     </test>
     <test>
       <!--
       Bowtie command:
-      bowtie-build +offrate 5 +ftabchars 10 +little -f test-data/chr_m.fasta chrM_base
-      bowtie -p 4 -S +sam-nohead -q chrM_base -1 test-data/bowtie_in5.fastqsanger -2 test-data/bowtie_in6.fastqsanger > test-data/bowtie_out8.sam
+      bowtie-build +noauto +bmaxdivn 4 +dcv 1024 +offrate 5 +ftabchars 10 +little -C -f test-data/chr_m.fasta chrM_color
+      bowtie -p 4 -S +sam-nohead -q -C chrM_color -1 test-data/bowtie_in3.fastqsanger -2 test-data/bowtie_in4.fastqsanger > test-data/bowtie_out7.sam
       -p is the number of threads, hardcoded above. You need to replace the + with 2 dashes.
       chrM_base is the index files' location/base name. 
       -->
-      <param name="genomeSource" value="history" />
+      <param name="genomeSource" value="cHistory" />
       <param name="ownFile" value="chr_m.fasta" />
       <param name="indexSettings" value="indexFull" />
-      <param name="autoB" value="auto" />
+      <param name="autoB" value="set" />
+      <param name="packed" value="unpacked" />
+      <param name="bmax" value="-1" />
+      <param name="bmaxdivn" value="4" />
+      <param name="dcv" value="1024" />
       <param name="nodc" value="dc" />
       <param name="noref" value="ref" />
       <param name="offrate" value="5" />
@@ -495,11 +521,11 @@
       <param name="seed" value="-1" />
       <param name="cutoff" value="-1" />
       <param name="sPaired" value="paired" />
-      <param name="pInput1" ftype="fastqsanger" value="bowtie_in5.fastqsanger" />
-      <param name="pInput2" ftype="fastqsanger" value="bowtie_in6.fastqsanger" />
+      <param name="pInput1" ftype="fastqsanger" value="bowtie_in3.fastqsanger" />
+      <param name="pInput2" ftype="fastqsanger" value="bowtie_in4.fastqsanger" />
       <param name="pSettingsType" value="preSet" />
       <param name="suppressHeader" value="true" />
-      <output name="output" ftype="sam" file="bowtie_out8.sam" />
+      <output name="output" ftype="sam" file="bowtie_out7.sam" />
     </test>
   </tests> 
 

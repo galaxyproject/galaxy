@@ -42,7 +42,7 @@ usage: bowtie_wrapper.py [options]
     -S, --seed=S: Seed for pseudo-random number generator
     -d, --dbkey=d: Dbkey of reference genome
     -C, --params=C: Whether to use default or specified parameters
-    -u, --iauto_b=u: Automatic or specified behavior
+    -u, --iautoB=u: Automatic or specified behavior
     -K, --ipacked=K: Whether or not to use a packed representation for DNA strings
     -Q, --ibmax=Q: Maximum number of suffixes allowed in a block
     -Y, --ibmaxdivn=Y: Maximum number of suffixes allowed in a block as a fraction of the length of the reference
@@ -105,7 +105,7 @@ def __main__():
     parser.add_option( '-7', '--keepends', dest='keepends', help='Keep extreme-end nucleotides and qualities' )
     parser.add_option( '-d', '--dbkey', dest='dbkey', help='Dbkey of reference genome' )
     parser.add_option( '-C', '--params', dest='params', help='Whether to use default or specified parameters' )
-    parser.add_option( '-u', '--iauto_b', dest='iauto_b', help='Automatic or specified behavior' )
+    parser.add_option( '-u', '--iautoB', dest='iautoB', help='Automatic or specified behavior' )
     parser.add_option( '-K', '--ipacked', dest='ipacked', help='Whether or not to use a packed representation for DNA strings' )
     parser.add_option( '-Q', '--ibmax', dest='ibmax', help='Maximum number of suffixes allowed in a block' )
     parser.add_option( '-Y', '--ibmaxdivn', dest='ibmaxdivn', help='Maximum number of suffixes allowed in a block as a fraction of the length of the reference' )
@@ -129,17 +129,17 @@ def __main__():
     else:
         colorspace = ''
     # index if necessary
-    if options.genomeSource == 'cHistory' or options.genomeSource == 'xHistory':
+    if options.genomeSource == 'history':
         # set up commands
-        if options.index_settings =='cIndexPreSet' or options.index_settings == 'xIndexPreSet':
+        if options.index_settings =='indexPreSet':
             indexing_cmds = '%s' % colorspace
         else:
             try:
-                if options.iauto_b == 'set':
-                    iauto_b = '--noauto'
+                if options.iautoB != 'None' and options.iautoB == 'set':
+                    iautoB = '--noauto'
                 else:
-                    iauto_b = ''
-                if options.ipacked == 'packed':
+                    iautoB = ''
+                if options. ipacked != 'None' and options.ipacked == 'packed':
                     ipacked = '--packed'
                 else:
                     ipacked = ''
@@ -155,11 +155,11 @@ def __main__():
                     idcv = '--dcv %s' % options.idcv
                 else:
                     idcv = ''
-                if options.inodc == 'nodc':
+                if options.inodc != 'None' and options.inodc == 'nodc':
                     inodc = '--nodc'
                 else:
                     inodc = ''
-                if options.inoref == 'noref':
+                if options.inoref != 'None' and options.inoref == 'noref':
                     inoref = '--noref'
                 else:
                     inoref = ''
@@ -167,24 +167,24 @@ def __main__():
                     iftab = '--ftabchars %s' % options.iftab
                 else:
                     iftab = ''
-                if options.intoa == 'yes':
+                if options.intoa != 'None' and options.intoa == 'yes':
                     intoa = '--ntoa'
                 else:
                     intoa = ''
-                if options.iendian == 'big':
+                if options.iendian != 'None' and options.iendian == 'big':
                     iendian = '--big'
                 else:
                     iendian = '--little'
-                if int( options.iseed ) > 0:
+                if options.iseed != 'None' and int( options.iseed ) > 0:
                     iseed = '--seed %s' % options.iseed
                 else:
                     iseed = ''
-                if int( options.icutoff ) > 0:
+                if options.icutoff != 'None' and int( options.icutoff ) > 0:
                     icutoff = '--cutoff %s' % options.icutoff
                 else:
                     icutoff = ''
                 indexing_cmds = '%s %s %s %s %s %s %s --offrate %s %s %s %s %s %s %s' % \
-                                ( iauto_b, ipacked, ibmax, ibmaxdivn, idcv, inodc, 
+                                ( iautoB, ipacked, ibmax, ibmaxdivn, idcv, inodc, 
                                   inoref, options.ioffrate, iftab, intoa, iendian, 
                                   iseed, icutoff, colorspace )
             except ValueError:
@@ -206,8 +206,7 @@ def __main__():
         suppressHeader = '--sam-nohead'
     else:
         suppressHeader = ''
-    if options.params == 'csPreSet' or options.params == 'cpPreSet' or \
-            options.params == 'xsPreSet' or options.params == 'xpPreSet':
+    if options.params == 'preSet':
         aligning_cmds = '-p %s -S %s -q %s ' % ( options.threads, suppressHeader, colorspace )
     else:
         try:
@@ -215,27 +214,28 @@ def __main__():
                 skip = '-s %s' % options.skip
             else:
                 skip = ''
-            if int( options.alignLimit ) >= 0:
+            if options.alignLimit != 'None' and int( options.alignLimit ) >= 0:
                 alignLimit = '-u %s' % options.alignLimit
             else:
                 alignLimit = ''
-            if int( options.trimH ) > 0:
+            if options.trimH != 'None' and int( options.trimH ) > 0:
                 trimH = '-5 %s' % options.trimH
             else:
                 trimH = ''
-            if int( options.trimL ) > 0:
+            if options.trimL != 'None' and int( options.trimL ) > 0:
                 trimL = '-3 %s' % options.trimL
             else:
                 trimL = ''
-            if options.mismatchSeed == '0' or options.mismatchSeed == '1' or options.mismatchSeed == '2' or options.mismatchSeed == '3':
+            if options. mismatchSeed != 'None' and (options.mismatchSeed == '0' or options.mismatchSeed == '1' \
+                        or options.mismatchSeed == '2' or options.mismatchSeed == '3'):
                 mismatchSeed = '-n %s' % options.mismatchSeed
             else:
                 mismatchSeed = ''
-            if int( options.mismatchQual ) >= 0:
+            if options.mismatchQual != 'None' and int( options.mismatchQual ) >= 0:
                 mismatchQual = '-e %s' % options.mismatchQual
             else:
                 mismatchQual = ''
-            if int( options.seedLen ) >= 5:
+            if options.seedLen != 'None' and int( options.seedLen ) >= 5:
                 seedLen = '-l %s' % options.seedLen
             else:
                 seedLen = ''
@@ -292,8 +292,7 @@ def __main__():
                 suppressAlign = '-m %s' % options.suppressAlign
             else:
                 suppressAlign = ''
-            if options.best == 'csDoBest' or options.best == 'cpDoBest' or \
-                    options.best == 'xsDoBest' or options.best == 'xpDoBest':
+            if options.best == 'doBest':
                 best = '--best'
             else:
                 best = ''
@@ -332,7 +331,7 @@ def __main__():
         except ValueError, e:
             stop_err( 'Something is wrong with the alignment parameters and the alignment could not be run\n' + str( e ) )
     # prepare actual aligning commands
-    if options.paired == 'cPaired' or options.paired == 'xPaired':
+    if options.paired == 'paired':
         cmd2 = 'bowtie %s %s -1 %s -2 %s > %s 2> /dev/null' % ( aligning_cmds, options.ref, options.input1, options.input2, options.output ) 
     else:
         cmd2 = 'bowtie %s %s %s > %s 2> /dev/null' % ( aligning_cmds, options.ref, options.input1, options.output ) 
