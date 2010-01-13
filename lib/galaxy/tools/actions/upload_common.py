@@ -59,7 +59,7 @@ def handle_library_params( trans, params, folder_id, replace_dataset=None ):
         role = trans.sa_session.query( trans.app.model.Role ).get( role_id )
         library_bunch.roles.append( role )
     return library_bunch
-def get_precreated_datasets( trans, params, data_obj, controller='root' ):
+def get_precreated_datasets( trans, params, data_obj, controller='root' ):    
     """
     Get any precreated datasets (when using asynchronous uploads).
     """
@@ -75,15 +75,15 @@ def get_precreated_datasets( trans, params, data_obj, controller='root' ):
             log.exception( 'Unable to load precreated dataset (%s) sent in upload form' % id )
             continue
         if data_obj is trans.app.model.HistoryDatasetAssociation:
-            if user is None and trans.galaxy_session.current_history != data.history:
+            if trans.user is None and trans.galaxy_session.current_history != data.history:
                 log.error( 'Got a precreated dataset (%s) but it does not belong to anonymous user\'s current session (%s)' % ( data.id, trans.galaxy_session.id ) )
-            elif data.history.user != user:
-                log.error( 'Got a precreated dataset (%s) but it does not belong to current user (%s)' % ( data.id, user.id ) )
+            elif data.history.user != trans.user:
+                log.error( 'Got a precreated dataset (%s) but it does not belong to current user (%s)' % ( data.id, trans.user.id ) )
             else:
                 rval.append( data )
         elif data_obj is trans.app.model.LibraryDatasetDatasetAssociation:
             if controller == 'library' and not trans.app.security_agent.can_add_library_item( roles, data.library_dataset.folder ):
-                log.error( 'Got a precreated dataset (%s) but this user (%s) is not allowed to write to it' % ( data.id, user.id ) )
+                log.error( 'Got a precreated dataset (%s) but this user (%s) is not allowed to write to it' % ( data.id, trans.user.id ) )
             else:
                 rval.append( data )
     return rval
