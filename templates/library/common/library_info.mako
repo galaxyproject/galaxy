@@ -4,7 +4,7 @@
 
 <%
     if not trans.user_is_admin():
-        user, roles = trans.get_user_and_roles()
+        roles = trans.get_current_user_roles()
 %>
 
 <br/><br/>
@@ -18,7 +18,7 @@
     ${render_msg( msg, messagetype )}
 %endif
 
-%if cntrller == 'library_admin' or trans.app.security_agent.can_modify_library_item( user, roles, library ):
+%if cntrller == 'library_admin' or trans.app.security_agent.can_modify_library_item( roles, library ):
     <div class="toolForm">
         <div class="toolFormTitle">Change library name and description</div>
         <div class="toolFormBody">

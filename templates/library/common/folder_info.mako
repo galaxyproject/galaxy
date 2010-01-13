@@ -4,7 +4,7 @@
 
 <%
     if cntrller != 'library_admin':
-        user, roles = trans.get_user_and_roles()
+        roles = trans.get_current_user_roles()
 %>
 
 <br/><br/>
@@ -21,7 +21,7 @@
 <div class="toolForm">
     <div class="toolFormTitle">Edit folder name and description</div>
     <div class="toolFormBody">
-        %if cntrller=='library_admin' or trans.app.security_agent.can_modify_library_item( user, roles, folder ):
+        %if cntrller=='library_admin' or trans.app.security_agent.can_modify_library_item( roles, folder ):
             <form name="folder" action="${h.url_for( controller='library_common', action='folder_info', cntrller=cntrller, id=trans.security.encode_id( folder.id ), library_id=library_id )}" method="post" >
                 <div class="form-row">
                     <label>Name:</label>

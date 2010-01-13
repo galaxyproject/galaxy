@@ -161,7 +161,7 @@ class RootController( BaseController ):
             except:
                 return "Dataset id '%s' is invalid" %str( id )
         if data:
-            user, roles = trans.get_user_and_roles()
+            roles = trans.get_current_user_roles()
             if trans.app.security_agent.can_access_dataset( roles, data.dataset ):
                 mime = trans.app.datatypes_registry.get_mimetype_by_extension( data.extension.lower() )
                 trans.response.set_content_type(mime)
@@ -194,7 +194,7 @@ class RootController( BaseController ):
             if data:
                 child = data.get_child_by_designation( designation )
                 if child:
-                    user, roles = trans.get_user_and_roles()
+                    roles = trans.get_current_user_roles()
                     if trans.app.security_agent.can_access_dataset( roles, child ):
                         return self.display( trans, id=child.id, tofile=tofile, toext=toext )
                     else:
@@ -211,7 +211,7 @@ class RootController( BaseController ):
         if 'authz_method' in kwd:
             authz_method = kwd['authz_method']
         if data:
-            user, roles = trans.get_user_and_roles()
+            roles = trans.get_current_user_roles()
             if authz_method == 'rbac' and trans.app.security_agent.can_access_dataset( roles, data ):
                 trans.response.set_content_type( data.get_mime() )
                 trans.log_event( "Formatted dataset id %s for display at %s" % ( str( id ), display_app ) )
@@ -266,7 +266,7 @@ class RootController( BaseController ):
             return trans.show_error_message( "Problem retrieving dataset." )
         if id is not None and data.history.user is not None and data.history.user != trans.user:
             return trans.show_error_message( "This instance of a dataset (%s) in a history does not belong to you." % ( data.id ) )
-        user, roles = trans.get_user_and_roles()
+        roles = trans.get_current_user_roles()
         if trans.app.security_agent.can_access_dataset( roles, data.dataset ):
             if data.state == trans.model.Dataset.states.UPLOAD:
                 return trans.show_error_message( "Please wait until this dataset finishes uploading before attempting to edit its metadata." )

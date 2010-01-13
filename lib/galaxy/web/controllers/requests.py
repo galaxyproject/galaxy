@@ -604,7 +604,7 @@ class Requests( BaseController ):
         all_libraries = trans.sa_session.query( trans.app.model.Library ) \
                                         .filter( trans.app.model.Library.table.c.deleted == False ) \
                                         .order_by( trans.app.model.Library.name )
-        user, roles = trans.get_user_and_roles()
+        roles = trans.get_current_user_roles()
         actions_to_check = [ trans.app.security_agent.permitted_actions.LIBRARY_ADD ]
         libraries = odict()
         for library in all_libraries:

@@ -234,11 +234,11 @@ class LibraryCommon( BaseController ):
         messagetype = params.get( 'messagetype', 'done' )
         folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( trans.security.decode_id( id ) )
         if cntrller != 'library_admin':
-            user, roles = trans.get_user_and_roles()
+            roles = trans.get_current_user_roles()
         # See if we have any associated templates
         widgets = folder.get_template_widgets( trans )
         if params.get( 'rename_folder_button', False ):
-            if cntrller=='library_admin' or trans.app.security_agent.can_modify_library_item( user, roles, folder ):
+            if cntrller=='library_admin' or trans.app.security_agent.can_modify_library_item( roles, folder ):
                 old_name = folder.name
                 new_name = util.restore_text( params.name )
                 new_description = util.restore_text( params.description )
@@ -295,10 +295,10 @@ class LibraryCommon( BaseController ):
                                                               msg=util.sanitize_text( msg ),
                                                               messagetype='error' ) )
         if cntrller == 'library':
-            user, roles = trans.get_user_and_roles()
+            roles = trans.get_current_user_roles()
         if params.get( 'update_roles_button', False ):
             # The user clicked the Save button on the 'Associate With Roles' form
-            if cntrller == 'library_admin' or trans.app.security_agent.can_manage_library_item( user, roles, folder ):
+            if cntrller == 'library_admin' or trans.app.security_agent.can_manage_library_item( roles, folder ):
                 permissions = {}
                 for k, v in trans.app.model.Library.permitted_actions.items():
                     in_roles = [ trans.sa_session.query( trans.app.model.Role ).get( int( x ) ) for x in util.listify( params.get( k + '_in', [] ) ) ]
@@ -344,14 +344,14 @@ class LibraryCommon( BaseController ):
         if isinstance( dbkey, list ):
             dbkey = dbkey[0]
         if cntrller == 'library':
-            user, roles = trans.get_user_and_roles()
+            roles = trans.get_current_user_roles()
         file_formats = [ dtype_name for dtype_name, dtype_value in trans.app.datatypes_registry.datatypes_by_extension.iteritems() if dtype_value.allow_datatype_change ]
         file_formats.sort()
         # See if we have any associated templates
         widgets = ldda.get_template_widgets( trans )
         if params.get( 'change', False ):
             # The user clicked the Save button on the 'Change data type' form
-            if cntrller=='library_admin' or trans.app.security_agent.can_modify_library_item( user, roles, ldda ):
+            if cntrller=='library_admin' or trans.app.security_agent.can_modify_library_item( roles, ldda ):
                 if ldda.datatype.allow_datatype_change and trans.app.datatypes_registry.get_datatype_by_extension( params.datatype ).allow_datatype_change:
                     trans.app.datatypes_registry.change_datatype( ldda, params.datatype )
                     trans.sa_session.flush()
@@ -373,7 +373,7 @@ class LibraryCommon( BaseController ):
                                         messagetype=messagetype )
         elif params.get( 'save', False ):
             # The user clicked the Save button on the 'Edit Attributes' form
-            if cntrller=='library_admin' or trans.app.security_agent.can_modify_library_item( user, roles, ldda ):
+            if cntrller=='library_admin' or trans.app.security_agent.can_modify_library_item( roles, ldda ):
                 old_name = ldda.name
                 new_name = util.restore_text( params.get( 'name', '' ) )
                 new_info = util.restore_text( params.get( 'info', '' ) )
@@ -413,7 +413,7 @@ class LibraryCommon( BaseController ):
                                         messagetype=messagetype )
         elif params.get( 'detect', False ):
             # The user clicked the Auto-detect button on the 'Edit Attributes' form
-            if cntrller=='library_admin' or trans.app.security_agent.can_modify_library_item( user, roles, ldda ):
+            if cntrller=='library_admin' or trans.app.security_agent.can_modify_library_item( roles, ldda ):
                 for name, spec in ldda.datatype.metadata_spec.items():
                     # We need to be careful about the attributes we are resetting
                     if name not in [ 'name', 'info', 'dbkey' ]:
@@ -435,7 +435,7 @@ class LibraryCommon( BaseController ):
                                         widgets=widgets,
                                         msg=msg,
                                         messagetype=messagetype )
-        if cntrller=='library_admin' or trans.app.security_agent.can_modify_library_item( user, roles, ldda ):
+        if cntrller=='library_admin' or trans.app.security_agent.can_modify_library_item( roles, ldda ):
             if "dbkey" in ldda.datatype.metadata_spec and not ldda.metadata.dbkey:
                 # Copy dbkey into metadata, for backwards compatability
                 # This looks like it does nothing, but getting the dbkey
@@ -497,7 +497,7 @@ class LibraryCommon( BaseController ):
                                                            messagetype='error' ) )
             lddas.append( ldda )
         if params.get( 'update_roles_button', False ):
-            if cntrller=='library_admin' or ( trans.app.security_agent.can_manage_library_item( user, roles, ldda ) and \
+            if cntrller=='library_admin' or ( trans.app.security_agent.can_manage_library_item( roles, ldda ) and \
                                               trans.app.security_agent.can_manage_dataset( roles, ldda.dataset ) ):
                 permissions = {}
                 accessible = False
@@ -623,10 +623,10 @@ class LibraryCommon( BaseController ):
             replace_dataset = None
             upload_option = params.get( 'upload_option', 'upload_file' )
         if cntrller == 'library':
-            user, roles = trans.get_user_and_roles()
+            roles = trans.get_current_user_roles()
         if cntrller == 'library_admin' or \
-            ( trans.app.security_agent.can_add_library_item( user, roles, folder ) or \
-              ( replace_dataset and trans.app.security_agent.can_modify_library_item( user, roles, replace_dataset ) ) ):
+            ( trans.app.security_agent.can_add_library_item( roles, folder ) or \
+              ( replace_dataset and trans.app.security_agent.can_modify_library_item( roles, replace_dataset ) ) ):
             if params.get( 'runtool_btn', False ) or params.get( 'ajax_upload', False ):
                 # See if we have any inherited templates, but do not inherit contents.
                 info_association, inherited = folder.get_info_association( inherited=True )
@@ -662,7 +662,7 @@ class LibraryCommon( BaseController ):
                             # Since permissions on all LibraryDatasetDatasetAssociations must be the same at this point, we only need
                             # to check one of them to see if the current user can manage permissions on them.
                             check_ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( ldda_id_list[0] )
-                            if trans.app.security_agent.can_manage_library_item( user, roles, check_ldda ):
+                            if trans.app.security_agent.can_manage_library_item( roles, check_ldda ):
                                 if replace_dataset:
                                     default_action = ''
                                 else:
@@ -949,8 +949,8 @@ class LibraryCommon( BaseController ):
                             # Since permissions on all LibraryDatasetDatasetAssociations must be the same at this point, we only need
                             # to check one of them to see if the current user can manage permissions on them.
                             check_ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( ldda_id_list[0] ) )
-                            user, roles = trans.get_user_and_roles()
-                            if trans.app.security_agent.can_manage_library_item( user, roles, check_ldda ):
+                            roles = trans.get_current_user_roles()
+                            if trans.app.security_agent.can_manage_library_item( roles, check_ldda ):
                                 if replace_dataset:
                                     default_action = ''
                                 else:
@@ -1040,9 +1040,9 @@ class LibraryCommon( BaseController ):
                                                               msg=util.sanitize_text( msg ),
                                                               messagetype='error' ) )
         if cntrller == 'library':
-            user, roles = trans.get_user_and_roles()
+            roles = trans.get_current_user_roles()
         if params.get( 'edit_attributes_button', False ):
-            if cntrller=='library_admin' or trans.app.security_agent.can_modify_library_item( user, roles, library_dataset ):
+            if cntrller=='library_admin' or trans.app.security_agent.can_modify_library_item( roles, library_dataset ):
                 if params.get( 'edit_attributes_button', False ):
                     old_name = library_dataset.name
                     new_name = util.restore_text( params.get( 'name', '' ) )
@@ -1081,9 +1081,9 @@ class LibraryCommon( BaseController ):
                                                               msg=util.sanitize_text( msg ),
                                                               messagetype='error' ) )
         if cntrller == 'library':
-            user, roles = trans.get_user_and_roles()
+            roles = trans.get_current_user_roles()
         if params.get( 'update_roles_button', False ):
-            if cntrller == 'library_admin' or trans.app.security_agent.can_manage_library_item( user, roles, library_dataset ):
+            if cntrller == 'library_admin' or trans.app.security_agent.can_manage_library_item( roles, library_dataset ):
                 # The user clicked the Save button on the 'Associate With Roles' form
                 permissions = {}
                 for k, v in trans.app.model.Library.permitted_actions.items():
@@ -1204,7 +1204,7 @@ class LibraryCommon( BaseController ):
                                                                   msg=util.sanitize_text( msg ),
                                                                   messagetype='error' ) )
             seen = []
-            user, roles = trans.get_user_and_roles()
+            roles = trans.get_current_user_roles()
             for ldda_id in ldda_ids:
                 ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( ldda_id ) )
                 if not ldda \

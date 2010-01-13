@@ -524,13 +524,13 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         self.sa_session.add( self.galaxy_session )
         self.sa_session.flush()
     user = property( get_user, set_user )
-    def get_user_and_roles( self ):
+    def get_current_user_roles( self ):
         user = self.get_user()
         if user:
             roles = user.all_roles()
         else:
             roles = []
-        return user, roles
+        return roles
     def user_is_admin( self ):
         admin_users = self.app.config.get( "admin_users", "" ).split( "," )
         return self.user and admin_users and self.user.email in admin_users

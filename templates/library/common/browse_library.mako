@@ -16,12 +16,12 @@
 
 <%
     if cntrller in [ 'library', 'requests' ]:
-        user, roles = trans.get_user_and_roles()
-        can_add = trans.app.security_agent.can_add_library_item( user, roles, library )
+        roles = trans.get_current_user_roles()
+        can_add = trans.app.security_agent.can_add_library_item( roles, library )
         if can_add:
             info_association, inherited = library.get_info_association()
-        can_modify = trans.app.security_agent.can_modify_library_item( user, roles, library )
-        can_manage = trans.app.security_agent.can_manage_library_item( user, roles, library )
+        can_modify = trans.app.security_agent.can_modify_library_item( roles, library )
+        can_manage = trans.app.security_agent.can_manage_library_item( roles, library )
     elif cntrller in [ 'library_admin', 'requests_admin' ]:
         info_association, inherited = library.get_info_association()
 
@@ -162,8 +162,8 @@
         if ldda == library_dataset.library_dataset_dataset_association:
             current_version = True
             if cntrller in [ 'library', 'requests' ]:
-                can_modify_library_dataset = trans.app.security_agent.can_modify_library_item( user, roles, library_dataset )
-                can_manage_library_dataset = trans.app.security_agent.can_manage_library_item( user, roles, library_dataset )
+                can_modify_library_dataset = trans.app.security_agent.can_modify_library_item( roles, library_dataset )
+                can_manage_library_dataset = trans.app.security_agent.can_manage_library_item( roles, library_dataset )
         else:
             current_version = False
         if current_version and ldda.state not in ( 'ok', 'error', 'empty', 'deleted', 'discarded' ):
@@ -191,7 +191,7 @@
                         <a class="action-button" href="${h.url_for( controller='library_common', action='ldda_display_info', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), id=trans.security.encode_id( ldda.id ) )}">View this dataset's information</a>
                     %endif
                     %if cntrller in [ 'library_admin', 'requests_admin' ] or can_manage_library_dataset:
-                        <a class="action-button" href="${h.url_for( controller='library_common', action='ldda_permissions', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), id=ldda.id, permissions=True )}">Edit this dataset's permissions</a>
+                        <a class="action-button" href="${h.url_for( controller='library_common', action='ldda_permissions', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), id=trans.security.encode_id( ldda.id ), permissions=True )}">Edit this dataset's permissions</a>
                     %endif
                     %if cntrller in [ 'library_admin', 'requests_admin' ] or can_modify_library_dataset:
                         <a class="action-button" href="${h.url_for( controller='library_common', action='upload_library_dataset', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), replace_id=trans.security.encode_id( library_dataset.id ) )}">Upload a new version of this dataset</a>
@@ -247,11 +247,11 @@
                                                                   trans.app.security_agent.permitted_actions.LIBRARY_MANAGE ] )
                 if not can_show:
                     return ""
-            can_add = trans.app.security_agent.can_add_library_item( user, roles, folder )
+            can_add = trans.app.security_agent.can_add_library_item( roles, folder )
             if can_add:
                 info_association, inherited = folder.get_info_association( restrict=True )
-            can_modify = trans.app.security_agent.can_modify_library_item( user, roles, folder )
-            can_manage = trans.app.security_agent.can_manage_library_item( user, roles, folder )
+            can_modify = trans.app.security_agent.can_modify_library_item( roles, folder )
+            can_manage = trans.app.security_agent.can_manage_library_item( roles, folder )
         elif cntrller in [ 'library_admin', 'requests_admin' ]:
             info_association, inherited = folder.get_info_association( restrict=True )
     %>

@@ -4,7 +4,7 @@
 
 <%
     if cntrller=='library':
-        user, roles = trans.get_user_and_roles()
+        roles = trans.get_current_user_roles()
 %>
 
 %if library_dataset == library_dataset.library_dataset_dataset_association.library_dataset:
@@ -24,7 +24,7 @@
     ${render_msg( msg, messagetype )}
 %endif
 
-%if cntrller=='library_admin' or trans.app.security_agent.can_modify_library_item( user, roles, library_dataset ):
+%if cntrller=='library_admin' or trans.app.security_agent.can_modify_library_item( roles, library_dataset ):
     <div class="toolForm">
         <div class="toolFormTitle">Edit attributes of ${library_dataset.name}</div>
         <div class="toolFormBody">

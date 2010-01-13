@@ -4,7 +4,7 @@
 
 <%
     if not trans.user_is_admin():
-        user, roles = trans.get_user_and_roles()
+        roles = trans.get_current_user_roles()
 %>
 
 <br/><br/>
@@ -18,7 +18,7 @@
     ${render_msg( msg, messagetype )}
 %endif
 
-%if trans.user_is_admin or trans.app.security_agent.can_manage_library_item( user, user_roles, library ):
+%if trans.user_is_admin or trans.app.security_agent.can_manage_library_item( user_roles, library ):
     <%
         roles = trans.sa_session.query( trans.app.model.Role ) \
                                 .filter( trans.app.model.Role.table.c.deleted==False ) \

@@ -15,14 +15,14 @@
             library_item_type = 'library_dataset_dataset_association'
             library_item_desc = 'library dataset'
         if cntrller == 'library':
-            user, roles = trans.get_user_and_roles()
+            roles = trans.get_current_user_roles()
     %>
     %if widgets:
         <p/>
         <div class="toolForm">
             <div class="toolFormTitle">Other information about ${library_item_desc} ${library_item.name}</div>
             <div class="toolFormBody">
-                %if editable and ( cntrller=='library_admin' or trans.app.security_agent.can_modify_library_item( user, roles, library_item ) ):
+                %if editable and ( cntrller=='library_admin' or trans.app.security_agent.can_modify_library_item( roles, library_item ) ):
                     <form name="edit_info" action="${h.url_for( controller='library_common', action='edit_template_info', cntrller=cntrller, library_id=library_id, response_action=response_action, num_widgets=len( widgets ) )}" method="post">
                         <input type="hidden" name="library_item_id" value="${trans.security.encode_id( library_item.id )}"/>
                         <input type="hidden" name="library_item_type" value="${library_item_type}"/>

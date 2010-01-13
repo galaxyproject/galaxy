@@ -6,7 +6,7 @@
 <%def name="stylesheets()">
     ${h.css( "base", "autocomplete_tagging" )}
 </%def>
-<% user, user_roles = trans.get_user_and_roles() %>
+<% user_roles = trans.get_current_user_roles() %>
 
 <%def name="javascripts()">
     ${parent.javascripts()}

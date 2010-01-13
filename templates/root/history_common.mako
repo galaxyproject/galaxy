@@ -7,7 +7,7 @@
     	    data_state = "queued"
     	else:
     	    data_state = data.state
-    	user, roles = trans.get_user_and_roles()
+    	roles = trans.get_current_user_roles()
     %>
     %if not trans.user_is_admin() and not trans.app.security_agent.can_access_dataset( roles, data.dataset ):
         <div class="historyItemWrapper historyItem historyItem-${data_state} historyItem-noPermission" id="historyItem-${data.id}">

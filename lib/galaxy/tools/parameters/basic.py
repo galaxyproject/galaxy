@@ -1177,7 +1177,7 @@ class DataToolParameter( ToolParameter ):
         field = form_builder.SelectField( self.name, self.multiple, None, self.refresh_on_change, refresh_on_change_values = self.refresh_on_change_values )
         # CRUCIAL: the dataset_collector function needs to be local to DataToolParameter.get_html_field()
         def dataset_collector( hdas, parent_hid ):
-            user, roles = trans.get_user_and_roles()
+            roles = trans.get_current_user_roles()
             for i, hda in enumerate( hdas ):
                 if len( hda.name ) > 30:
                     hda_name = '%s..%s' % ( hda.name[:17], hda.name[-11:] )
