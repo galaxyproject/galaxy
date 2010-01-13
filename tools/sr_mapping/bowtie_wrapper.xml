@@ -12,7 +12,6 @@
     --keepends="None"
     #if $refGenomeSource.genomeSource == "history":
      --ref=$refGenomeSource.ownFile
-     --dbkey=$dbkey
      --indexSettings=$refGenomeSource.indexParams.indexSettings
      #if $refGenomeSource.indexParams.indexSettings == "indexFull":
       --iautoB=$refGenomeSource.indexParams.autoBehavior.autoB
@@ -52,7 +51,6 @@
      #end if
     #else:
      --ref=$refGenomeSource.index.value
-     --dbkey="None"
      --indexSettings="None"
      --iautoB="None"
      --ipacked="None"
@@ -129,6 +127,8 @@
     #else:
      --input1=$singlePaired.pInput1
      --input2=$singlePaired.pInput2
+     --maxInsert=$singlePaired.pMaxInsert
+     --mateOrient=$singlePaired.pMateOrient
      --params=$singlePaired.pParams.pSettingsType
      #if $singlePaired.pParams.pSettingsType == "full":
       --skip=$singlePaired.pParams.pSkip
@@ -141,8 +141,6 @@
       --rounding=$singlePaired.pParams.pRounding
       --maqSoapAlign=$singlePaired.pParams.pMaqSoapAlign
       --minInsert=$singlePaired.pParams.pMinInsert
-      --maxInsert=$singlePaired.pParams.pMaxInsert
-      --mateOrient=$singlePaired.pParams.pMateOrient
       --maxAlignAttempt=$singlePaired.pParams.pMaxAlignAttempt
       --forwardAlign=$singlePaired.pParams.pForwardAlign
       --reverseAlign=$singlePaired.pParams.pReverseAlign
@@ -180,8 +178,6 @@
       --offrate="None"
       --seed="None"
       --minInsert="None"
-      --maxInsert="None"
-      --mateOrient="None"
       --maxAlignAttempt="None"
       --forwardAlign="None"
       --reverseAlign="None"
@@ -311,6 +307,12 @@
       <when value="paired">
         <param name="pInput1" type="data" format="fastqsanger" label="Forward FASTQ file" help="Must have Sanger-scaled quality values with ASCII offset 33"/>
         <param name="pInput2" type="data" format="fastqsanger" label="Reverse FASTQ file" help="Must have Sanger-scaled quality values with ASCII offset 33"/>
+        <param name="pMaxInsert" type="integer" value="1000" label="Maximum insert size for valid paired-end alignments (-X)" />
+        <param name="pMateOrient" type="select" label="The upstream/downstream mate orientation for valid paired-end alignment against the forward reference strand (--fr/--rf/--ff)">
+          <option value="fr">FR (for Illumina)</option>
+          <option value="rf">RF</option>
+          <option value="ff">FF (for SOLiD)</option>
+        </param>
         <conditional name="pParams">
           <param name="pSettingsType" type="select" label="Bowtie settings to use" help="For most mapping needs use Commonly used settings. If you want full control use Full parameter list">
 		    <option value="preSet">Commonly used</option>
@@ -331,12 +333,6 @@
             </param>
             <param name="pMaqSoapAlign" type="integer" value="-1" label="Number of mismatches for SOAP-like alignment policy (-v)" help="-1 for default MAQ-like alignment policy" />
             <param name="pMinInsert" type="integer" value="0" label="Minimum insert size for valid paired-end alignments (-I)" />
-            <param name="pMaxInsert" type="integer" value="250" label="Maximum insert size for valid paired-end alignments (-X)" />
-            <param name="pMateOrient" type="select" label="The upstream/downstream mate orientation for valid paired-end alignment against the forward reference strand (--fr/--rf/--ff)">
-              <option value="fr">FR (for Illumina)</option>
-              <option value="rf">RF</option>
-              <option value="ff">FF (for SOLiD)</option>
-            </param>
             <param name="pMaxAlignAttempt" type="integer" value="100" label="Maximum number of attempts Bowtie will make to match an alignment for one mate with an alignment for the opposite mate (--pairtries)" />
             <param name="pForwardAlign" type="select" label="Choose whether or not to attempt to align the forward reference strand (--nofw)">
               <option value="forward">Align against the forward reference strand</option>
@@ -403,7 +399,7 @@
       <!--
       Bowtie command:
       bowtie-build -f test-data/chr_m.fasta chrM_base
-      bowtie -n 2 -e 70 -l 28 -X 250 +fr +pairtries 100 +maxbts 800 -k 1 +best -p 4 -S +sam-nohead -q chrM_base -1 test-data/bowtie_in5.fastqsanger -2 test-data/bowtie_in6.fastqsanger > test-data/bowtie_out4.sam
+      bowtie -X 1000 +fr -n 2 -e 70 -l 28 +pairtries 100 +maxbts 800 -k 1 +best -p 4 -S +sam-nohead -q chrM_base -1 test-data/bowtie_in5.fastqsanger -2 test-data/bowtie_in6.fastqsanger > test-data/bowtie_out4.sam
       -p is the number of threads, hardcoded above. You need to replace the + with 2 dashes.
       chrM_base is the index files' location/base name. 
       -->
@@ -413,6 +409,8 @@
       <param name="sPaired" value="paired" />
       <param name="pInput1" ftype="fastqsanger" value="bowtie_in5.fastqsanger" />
       <param name="pInput2" ftype="fastqsanger" value="bowtie_in6.fastqsanger" />
+      <param name="pMaxInsert" value="1000" />
+      <param name="pMateOrient" value="fr" />
       <param name="pSettingsType" value="full" />
       <param name="pSkip" value="0" />
       <param name="pAlignLimit" value="-1" />
@@ -424,8 +422,6 @@
       <param name="pRounding" value="round" />
       <param name="pMaqSoapAlign" value="-1" />
       <param name="pMinInsert" value="0" />
-      <param name="pMaxInsert" value="250" />
-      <param name="pMateOrient" value="fr" />
       <param name="pMaxAlignAttempt" value="100" />
       <param name="pForwardAlign" value="forward" />
       <param name="pReverseAlign" value="reverse" />
@@ -441,7 +437,6 @@
       <param name="suppressHeader" value="true" />
       <output name="output" ftype="sam" file="bowtie_out4.sam" />
     </test>
-<!--  Comment out test 3 because they are failing for an unknown reason  -->
     <test>
       <!--
       Bowtie command:
@@ -478,7 +473,7 @@
       <!--
       Bowtie command:
       bowtie-build +offrate 5 +ftabchars 10 +little -f test-data/chr_m.fasta chrM_base
-      bowtie -p 4 -S +sam-nohead -q chrM_base -1 test-data/bowtie_in5.fastqsanger -2 test-data/bowtie_in6.fastqsanger > test-data/bowtie_out8.sam
+      bowtie -X 1000 +fr -p 4 -S +sam-nohead -q chrM_base -1 test-data/bowtie_in5.fastqsanger -2 test-data/bowtie_in6.fastqsanger > test-data/bowtie_out8.sam
       -p is the number of threads, hardcoded above. You need to replace the + with 2 dashes.
       chrM_base is the index files' location/base name. 
       -->
@@ -497,6 +492,8 @@
       <param name="sPaired" value="paired" />
       <param name="pInput1" ftype="fastqsanger" value="bowtie_in5.fastqsanger" />
       <param name="pInput2" ftype="fastqsanger" value="bowtie_in6.fastqsanger" />
+      <param name="pMaxInsert" value="1000" />
+      <param name="pMateOrient" value="fr" />
       <param name="pSettingsType" value="preSet" />
       <param name="suppressHeader" value="true" />
       <output name="output" ftype="sam" file="bowtie_out8.sam" />

@@ -40,7 +40,6 @@ usage: bowtie_wrapper.py [options]
     -6, --snpfrac=6: Fraction of sites expected to be SNP sites
     -7, --keepends=7: Keep extreme-end nucleotides and qualities
     -S, --seed=S: Seed for pseudo-random number generator
-    -d, --dbkey=d: Dbkey of reference genome
     -C, --params=C: Whether to use default or specified parameters
     -u, --iautoB=u: Automatic or specified behavior
     -K, --ipacked=K: Whether or not to use a packed representation for DNA strings
@@ -103,7 +102,6 @@ def __main__():
     parser.add_option( '-8', '--snpphred', dest='snpphred', help='SNP penalty on Phred scale' )
     parser.add_option( '-6', '--snpfrac', dest='snpfrac', help='Fraction of sites expected to be SNP sites' )
     parser.add_option( '-7', '--keepends', dest='keepends', help='Keep extreme-end nucleotides and qualities' )
-    parser.add_option( '-d', '--dbkey', dest='dbkey', help='Dbkey of reference genome' )
     parser.add_option( '-C', '--params', dest='params', help='Whether to use default or specified parameters' )
     parser.add_option( '-u', '--iautoB', dest='iautoB', help='Automatic or specified behavior' )
     parser.add_option( '-K', '--ipacked', dest='ipacked', help='Whether or not to use a packed representation for DNA strings' )
@@ -206,8 +204,17 @@ def __main__():
         suppressHeader = '--sam-nohead'
     else:
         suppressHeader = ''
+    if options.maxInsert != 'None' and int( options.maxInsert ) > 0:
+        maxInsert = '-X %s' % options.maxInsert
+    else:
+        maxInsert = ''
+    if options.mateOrient != 'None':
+        mateOrient = '--%s' % options.mateOrient
+    else:
+        mateOrient = ''
     if options.params == 'preSet':
-        aligning_cmds = '-p %s -S %s -q %s ' % ( options.threads, suppressHeader, colorspace )
+        aligning_cmds = '%s %s -p %s -S %s -q %s ' % \
+                ( maxInsert, mateOrient, options.threads, suppressHeader, colorspace )
     else:
         try:
             if options.skip != 'None' and int( options.skip ) > 0:
@@ -251,14 +258,6 @@ def __main__():
                 minInsert = '-I %s' % options.minInsert
             else:
                 minInsert = ''
-            if options.maxInsert != 'None' and int( options.maxInsert ) > 0:
-                maxInsert = '-X %s' % options.maxInsert
-            else:
-                maxInsert = ''
-            if options.mateOrient != 'None':
-                mateOrient = '--%s' % options.mateOrient
-            else:
-                mateOrient = ''
             if options.maxAlignAttempt != 'None' and int( options.maxAlignAttempt ) >= 0:
                 maxAlignAttempt = '--pairtries %s' % options.maxAlignAttempt
             else:
