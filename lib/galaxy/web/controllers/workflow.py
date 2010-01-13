@@ -145,13 +145,13 @@ class WorkflowController( BaseController ):
                                     shared_by_others = shared_by_others )
                                     
     @web.expose
-    def list_public( self, trans, **kwargs ):
+    def list_published( self, trans, **kwargs ):
         grid = self.public_list_grid( trans, **kwargs )
         if 'async' in kwargs:
             return grid
         else:
             # Render grid wrapped in panels
-            return trans.fill_template( "workflow/list_public.mako", grid=grid )
+            return trans.fill_template( "workflow/list_published.mako", grid=grid )
                                     
     @web.expose
     def display_by_username_and_slug( self, trans, username, slug ):
@@ -187,7 +187,7 @@ class WorkflowController( BaseController ):
             # Connections by input name
             step.input_connections_by_name = dict( ( conn.input_name, conn ) for conn in step.input_connections )
             
-        return trans.fill_template_mako( "workflow/display.mako", workflow = stored_workflow,  steps = stored_workflow.latest_workflow.steps )
+        return trans.fill_template_mako( "workflow/display.mako", item=stored_workflow, item_data=stored_workflow.latest_workflow.steps )
                               
     @web.expose
     @web.require_login( "use Galaxy workflows" )

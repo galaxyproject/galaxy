@@ -76,7 +76,7 @@
                 %if in_form:
                     <textarea class="tag-input" rows='1' cols='${input_size}'></textarea>
                 %else:
-                    <input class="tag-input" type='text' size='${input_size}'></input>
+                    <input class="tag-input" type='text' size='${input_size}'/>
                 %endif
                 ## Add "add tag" button.
                 <img src='${h.url_for('/static/images/add_icon.png')}' rollover='${h.url_for('/static/images/add_icon_dark.png')}' class="add-tag-button"/>

@@ -172,11 +172,11 @@ class SharedHistoryListGrid( grids.Grid ):
     def apply_default_filter( self, trans, query, **kwargs ):
         return query.filter( model.HistoryUserShareAssociation.user == trans.user )
         
-class PublicHistoryListGrid( grids.Grid ):
+class HistoryAllPublishedGrid( grids.Grid ):
     class NameURLColumn( PublicURLColumn, NameColumn ):
         pass
         
-    title = "Public Histories"
+    title = "Published Histories"
     model_class = model.History
     default_sort_key = "-update_time"
     default_filter = dict( public_url="All", username="All", tags="All" )
@@ -212,16 +212,16 @@ class HistoryController( BaseController ):
     
     stored_list_grid = HistoryListGrid()
     shared_list_grid = SharedHistoryListGrid()
-    public_list_grid = PublicHistoryListGrid()
+    published_list_grid = HistoryAllPublishedGrid()
         
     @web.expose
-    def list_public( self, trans, **kwargs ):
-        grid = self.public_list_grid( trans, **kwargs )
+    def list_published( self, trans, **kwargs ):
+        grid = self.published_list_grid( trans, **kwargs )
         if 'async' in kwargs:
             return grid
         else:
             # Render grid wrapped in panels
-            return trans.fill_template( "history/list_public.mako", grid=grid )
+            return trans.fill_template( "history/list_published.mako", grid=grid )
     
     @web.expose
     @web.require_login( "work with multiple histories" )
@@ -555,12 +555,8 @@ class HistoryController( BaseController ):
                                .options( eagerload_all( "dataset.actions" ) )
        # Do not show deleted datasets.
        query = query.filter( model.HistoryDatasetAssociation.deleted == False )
-       user_owns_history = ( trans.get_user() == history.user )
-       return trans.stream_template_mako( "history/view.mako",
-                                          history = history,
-                                          datasets = query.all(),
-                                          user_owns_history = user_owns_history,
-                                          show_deleted = False )
+       return trans.stream_template_mako( "history/display.mako",
+                                          item = history, item_data = query.all() )
                                           
     @web.expose
     @web.require_login( "share histories with other users" )

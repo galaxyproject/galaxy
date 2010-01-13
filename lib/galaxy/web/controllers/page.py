@@ -321,7 +321,7 @@ class PageController( BaseController ):
         page = trans.sa_session.query( model.Page ).filter_by( user=user, slug=slug, deleted=False, published=True ).first()
         if page is None:
             raise web.httpexceptions.HTTPNotFound()
-        return trans.fill_template( "page/display.mako", page=page )
+        return trans.fill_template( "page/display.mako", item=page )
         
     @web.expose
     @web.require_login("select a history from saved histories")

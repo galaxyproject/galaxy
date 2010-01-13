@@ -1,6 +1,6 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
-<%namespace file="/display_common.mako" import="get_history_link" />
+<%namespace file="/display_base.mako" import="get_history_link" />
 
 ##<h2>Import via link</h2>
 
