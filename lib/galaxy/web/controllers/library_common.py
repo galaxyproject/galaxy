@@ -911,7 +911,7 @@ class LibraryCommon( BaseController ):
                 dataset_names = []
                 created_ldda_ids = ''
                 for hda_id in hda_ids:
-                    hda = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( trans.security.decode_id( hda_id ) )
+                    hda = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( hda_id )
                     if hda:
                         ldda = hda.to_library_dataset_dataset_association( target_folder=folder, replace_dataset=replace_dataset )
                         created_ldda_ids = '%s,%s' % ( created_ldda_ids, str( ldda.id ) )
