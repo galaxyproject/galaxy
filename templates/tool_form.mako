@@ -161,10 +161,15 @@ function checkUncheckAll( name, check )
                 </label>
             %endif
             <%
-            field = param.get_html_field( trans, parent_state[ param.name ], other_values )
-            field.refresh_on_change = param.refresh_on_change
+                field = param.get_html_field( trans, parent_state[ param.name ], other_values )
+                field.refresh_on_change = param.refresh_on_change
+                
+                # Field may contain characters submitted by user and these characters may be unicode; handle non-ascii characters gracefully.
+                field_html = field.get_html( prefix )
+                if field_html is not unicode:
+                    field_html = unicode( field_html, 'utf-8' )
             %>
-            <div class="form-row-input">${field.get_html( prefix )}</div>
+            <div class="form-row-input">${field_html}</div>
             %if parent_errors.has_key( param.name ):
             <div class="form-row-error-message">
                 <div><img style="vertical-align: middle;" src="${h.url_for('/static/style/error_small.png')}">&nbsp;<span style="vertical-align: middle;">${parent_errors[param.name]}</span></div>
