@@ -221,7 +221,6 @@ class TracksController( BaseController ):
         converted dataset (possibly new) is returned, if it cannot be converted,
         None is returned.
         """
-        log.debug("Inside dataset as type")
         # Already of correct type
         if dataset.extension == type:
             return dataset

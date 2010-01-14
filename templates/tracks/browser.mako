@@ -1,4 +1,13 @@
-<%inherit file="/base.mako"/>
+<%inherit file="/base_panels.mako"/>
+
+<%def name="init()">
+<%
+    self.has_left_panel=False
+    self.has_right_panel=True
+    self.active_view="visualization"
+    self.message_box_visible=False
+%>
+</%def>
 
 <%def name="stylesheets()">
 ${parent.stylesheets()}
@@ -53,13 +62,16 @@ ${h.js( "jquery", "jquery.event.drag", "jquery.mousewheel", "trackster" )}
         });
 
         // To adjust the size of the viewport to fit the fixed-height footer
-        $(window).resize( function( e ) {
-            $("#content").height( $(window).height() - $("#nav-container").height() );
+        var refresh = function( e ) {
+            $("#content").height( $(window).height() - $("#nav-container").height() - $("#masthead").height());
             $("#viewport-container").height( $("#content").height() - $("#top-labeltrack").height() - $("#nav-labeltrack").height() );
+            $("#nav-container").width( $("#center").width() );
             view.redraw();
-        });
-        
-        $(window).resize();
+        };
+        $(window).bind( "resize", function(e) { refresh(e); } );
+        $("#right-border").bind( "click", function(e) { refresh(e); } );
+        $("#right-border").bind( "dragend", function(e) { refresh(e); } );
+        $(window).trigger( "resize" );
 
         $("#viewport").bind( "dragstart", function( e ) {
             this.original_low = view.low;
@@ -103,15 +115,16 @@ ${h.js( "jquery", "jquery.event.drag", "jquery.mousewheel", "trackster" )}
 </script>
 </%def>
 
+<%def name="center_panel()">
 <div id="content">
     <div id="top-labeltrack"></div>
     <div id="viewport-container" style="overflow-x: hidden; overflow-y: auto;">
         <div id="viewport"></div>
     </div>
-    <div id="nav-labeltrack"></div>
+    
 </div>
 <div id="nav-container">
-    ## <div style="height: 5px; border-top: solid #ccc 1px"></div>
+    <div id="nav-labeltrack"></div>
     <div id="nav">
         <div id="overview">
             <div id="overview-viewport">
@@ -133,3 +146,9 @@ ${h.js( "jquery", "jquery.event.drag", "jquery.mousewheel", "trackster" )}
         </div>
     </div>
 </div>
+</%def>
+
+<%def name="right_panel()">
+    <div>Configs</div>
+
+</%def>

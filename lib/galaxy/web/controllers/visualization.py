@@ -25,17 +25,16 @@ class VisualizationListGrid( grids.Grid ):
         return query.filter_by( user=trans.user )
 
 class VisualizationController( BaseController ):
-    
+    list_grid = VisualizationListGrid()
     @web.expose
     @web.require_login()
-    def index( self, trans ):
-        return trans.fill_template( "panels.mako", active_view='visualization', main_url=url_for( action='list' ) )
+    def index( self, trans, *args, **kwargs ):
+        return trans.fill_template( "panels.mako", grid=self.list_grid( trans, *args, **kwargs ), active_view='visualization', main_url=url_for( action='list' ) )
     
-    list_grid = VisualizationListGrid()    
-    @web.expose
-    @web.require_login()
-    def list( self, trans, *args, **kwargs ):
-        return self.list_grid( trans, *args, **kwargs )
+    # @web.expose
+    # @web.require_login()
+    # def list( self, trans, *args, **kwargs ):
+    #     return self.list_grid( trans, *args, **kwargs )
     
     #@web.expose
     #@web.require_admin  

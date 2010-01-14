@@ -1,5 +1,5 @@
 /* Trackster
-    2009, James Taylor, Kanwei Li
+    2010, James Taylor, Kanwei Li
 */
 var DEBUG = false;
 
@@ -19,22 +19,22 @@ var right_img = new Image();
 right_img.src = "../images/visualization/strand_right.png";
 right_img.onload = function() {
     RIGHT_STRAND = CONTEXT.createPattern(right_img, "repeat");
-}
+};
 var left_img = new Image();
 left_img.src = "../images/visualization/strand_left.png";
 left_img.onload = function() {
     LEFT_STRAND = CONTEXT.createPattern(left_img, "repeat");
-}
+};
 var right_img_inv = new Image();
 right_img_inv.src = "../images/visualization/strand_right_inv.png";
 right_img_inv.onload = function() {
     RIGHT_STRAND_INV = CONTEXT.createPattern(right_img_inv, "repeat");
-}
+};
 var left_img_inv = new Image();
 left_img_inv.src = "../images/visualization/strand_left_inv.png";
 left_img_inv.onload = function() {
     LEFT_STRAND_INV = CONTEXT.createPattern(left_img_inv, "repeat");
-}
+};
 
 function commatize( number ) {
     number += ''; // Convert to string
@@ -49,7 +49,7 @@ var Cache = function( num_elements ) {
     this.num_elements = num_elements;
     this.obj_cache = {};
     this.key_ary = [];
-}
+};
 $.extend( Cache.prototype, {
     get: function( key ) {
         var index = this.key_ary.indexOf(key);
@@ -109,7 +109,7 @@ $.extend( View.prototype, {
         
         // 10^log10(range / DENSITY) Close approximation for browser window, assuming DENSITY = window width
         this.resolution = Math.pow( 10, Math.ceil( Math.log( (this.high - this.low) / DENSITY ) / Math.LN10 ) );
-        this.zoom_res = Math.max(1,Math.ceil( Math.log( this.resolution, FEATURE_LEVELS ) / Math.log(FEATURE_LEVELS) ));
+        this.zoom_res = Math.pow( FEATURE_LEVELS, Math.max(0,Math.ceil( Math.log( this.resolution, FEATURE_LEVELS ) / Math.log(FEATURE_LEVELS) )));
         
         // Overview
         $("#overview-box").css( {
@@ -282,10 +282,10 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
                 var min_label = $("<div class='yaxislabel'>" + track.min_value + "</div>");
                 var max_label = $("<div class='yaxislabel'>" + track.max_value + "</div>");
                 
-                max_label.css({ position: "relative", top: "35px" });
-                max_label.prependTo(track.container_div)
+                max_label.css({ position: "relative", top: "25px" });
+                max_label.prependTo(track.container_div);
                 
-                min_label.css({ position: "relative", top: track.height_px + 32 + "px" });
+                min_label.css({ position: "relative", top: track.height_px + 55 + "px" });
                 min_label.prependTo(track.container_div);
                 
                 track.draw();
@@ -371,13 +371,15 @@ var FeatureTrack = function ( name, dataset_id, indexer, height ) {
     this.dataset_id = dataset_id;
     this.zo_slots = {};
     this.show_labels_scale = 0.001;
-    this.showing_labels = false;
-    this.vertical_gap = 10;
+    this.showing_details = false;
+    this.vertical_detail_px = 10;
+    this.vertical_nodetail_px = 3;
     this.base_color = "#2C3143";
     this.default_font = "9px Monaco, Lucida Console, monospace";
     this.left_offset = 200;
     this.inc_slots = {};
     this.data_queue = {};
+    this.s_e_by_tile = {};
     this.data_cache = new Cache(20);
 };
 $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
@@ -425,10 +427,8 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
         }
     },
     calc_slots: function() {
-        // console.log("num vals: " + this.values.length);
         var end_ary = [],
             scale = this.content_div.width() / (this.view.high - this.view.low),
-            max_high = this.view.max_high,
             max_low = this.view.max_low;
         // console.log(scale, this.view.high, this.view.low);
         for (var i = 0, len = this.values.length; i < len; i++) {
@@ -447,43 +447,62 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                 j++;
             }
         }
-        this.height_px = end_ary.length * this.vertical_gap + 15;
+        this.height_px = end_ary.length * this.vertical_nodetail_px + 15;
         this.content_div.css( "height", this.height_px + "px" );
     },
     incremental_slots: function( level, features ) {
         if (!this.inc_slots[level]) {
             this.inc_slots[level] = {};
-            this.inc_slots[level].w_scale = DENSITY / Math.pow(FEATURE_LEVELS, level+1);
+            this.inc_slots[level].w_scale = 1 / level;
+            this.s_e_by_tile[level] = {};
         }
-        var slots = this.inc_slots[level];
-        // console.log(level, slots.w_scale, slots);
-        var end_ary = [],
+        // TODO: Should calculate zoom tile index, which will improve performance
+        // by only having to look at a smaller subset
+        // if (this.s_e_by_tile[0] === undefined) { this.s_e_by_tile[0] = []; }
+        var w_scale = this.inc_slots[level].w_scale,
             undone = [],
             highest_slot = 0, // To measure how big to draw canvas
             dummy_canvas = $("<canvas></canvas>").get(0).getContext("2d"),
             max_low = this.view.max_low;
             
+        var f_start, f_end, slotted = [];
+        
+        // If feature already exists in slots (from previously seen tiles), use the same slot,
+        // otherwise if not seen, add to "undone" list for slot calculation
         for (var i = 0, len = features.length; i < len; i++) {
             var feature = features[i];
-            // console.log(feature.name, feature.uid, slots[feature.uid]);
-            if (slots[feature.uid]) {
-                highest_slot = Math.max(highest_slot, slots[feature.uid]);
-                end_ary[ slots[feature.uid] ] = Math.ceil( (feature.end - max_low) * slots.w_scale );
+            if (this.inc_slots[level][feature.uid] !== undefined) {
+                highest_slot = Math.max(highest_slot, this.inc_slots[level][feature.uid]);
+                slotted.push(this.inc_slots[level][feature.uid]);
             } else {
-                undone.push(feature);
-            }            
+                undone.push(i);
+            }
         }
+        
+        // console.log("Slotted: ", features.length - undone.length, "/", features.length, slotted);
         for (var i = 0, len = undone.length; i < len; i++) {
-            var feature = undone[i];
-            f_start = Math.floor( (feature.start - max_low) * slots.w_scale );
+            var feature = features[undone[i]];
+            f_start = Math.floor( (feature.start - max_low) * w_scale );
             f_start -= dummy_canvas.measureText(feature.name).width;
-            f_end = Math.ceil( (feature.end - max_low) * slots.w_scale );
-            // console.log(f_start, f_end, feature.name);
+            f_end = Math.ceil( (feature.end - max_low) * w_scale );
+            
             var j = 0;
+            // Try to fit the feature to the first slot that doesn't overlap any other features in that slot
             while (true) {
-                if (end_ary[j] === undefined || end_ary[j] < f_start) {
-                    end_ary[j] = f_end;
-                    slots[feature.uid] = j;
+                var found = true;
+                if (this.s_e_by_tile[level][j] !== undefined) {
+                    for (var k = 0, k_len = this.s_e_by_tile[level][j].length; k < k_len; k++) {
+                        var s_e = this.s_e_by_tile[level][j][k];
+                        if (f_end > s_e[0] && f_start < s_e[1]) {
+                            found = false;
+                            break;
+                        }
+                    }
+                }
+                if (found) {
+                    if (this.s_e_by_tile[level][j] === undefined) { this.s_e_by_tile[level][j] = []; }
+                    this.s_e_by_tile[level][j].push([f_start, f_end]);
+                    this.inc_slots[level][feature.uid] = j;
                     highest_slot = Math.max(highest_slot, j);
                     break;
                 }
@@ -504,8 +523,8 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
         // Once we zoom in enough, show name labels
         var data, slots, required_height;
         if (w_scale > this.show_labels_scale) {
-            if (!this.showing_labels) {
-                this.showing_labels = true;
+            if (!this.showing_details) {
+                this.showing_details = true;
             }
             for (var k in this.data_cache.obj_cache) {
                 var k_split = k.split("_"), k_low = k_split[0], k_high = k_split[1];
@@ -519,12 +538,13 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                 this.get_data(tile_low, tile_high);
                 return;
             }
-            required_height = this.incremental_slots( this.view.zoom_res, data ) * this.vertical_gap + 15;
+            // Calculate new slots incrementally for this new chunk of data and update height if necessary
+            required_height = this.incremental_slots( this.view.zoom_res, data ) * this.vertical_detail_px + 15;
             // console.log(required_height);
             slots = this.inc_slots[this.view.zoom_res];
         } else {
-            if (this.showing_labels) {
-                this.showing_labels = false;
+            if (this.showing_details) {
+                this.showing_details = false;
             }
             required_height = this.height_px;
             slots = this.zo_slots;
@@ -554,14 +574,14 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
             if (feature.start <= tile_high && feature.end >= tile_low) {
                 var f_start = Math.floor( Math.max(0, (feature.start - tile_low) * w_scale) ),
                     f_end   = Math.ceil( Math.min(width, (feature.end - tile_low) * w_scale) ),
-                    y_center = slots[feature.uid] * this.vertical_gap;
+                    y_center = slots[feature.uid] * (this.showing_details ? this.vertical_detail_px : this.vertical_nodetail_px);
                 
                 var thickness, y_start, thick_start = null, thick_end = null;
                 if (feature.thick_start && feature.thick_end) {
                     thick_start = Math.floor( Math.max(0, (feature.thick_start - tile_low) * w_scale) );
                     thick_end = Math.ceil( Math.min(width, (feature.thick_end - tile_low) * w_scale) );
                 }
-                if (!this.showing_labels) {
+                if (!this.showing_details) {
                     // Non-detail levels
                     ctx.fillRect(f_start + this.left_offset, y_center + 5, f_end - f_start, 1);
                 } else {
@@ -569,6 +589,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                     if (ctx.fillText && feature.start > tile_low) {
                         ctx.fillText(feature.name, f_start - 1 + this.left_offset, y_center + 8);
                         // ctx.fillText(commatize(feature.start), f_start - 1 + this.left_offset, y_center + 8);
+                        // ctx.fillText(slots[feature.uid], f_start - 1 + this.left_offset, y_center + 8);
                     }
                     var blocks = feature.blocks;
                     if (blocks) {
@@ -592,13 +613,12 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                             thickness = 5;
                             y_start = 3;
                             ctx.fillRect(block_start + this.left_offset, y_center + y_start, block_end - block_start, thickness);
-
-                            if (thick_start && (block_start < thick_end || block_end > thick_start) ) {
+                            
+                            if (thick_start !== undefined && (block_start <= thick_end || block_end >= thick_start) ) {
                                 thickness = 9;
                                 y_start = 1;
                                 var block_thick_start = Math.max(block_start, thick_start),
                                     block_thick_end = Math.min(block_end, thick_end);
-
                                 ctx.fillRect(block_thick_start + this.left_offset, y_center + y_start, block_thick_end - block_thick_start, thickness);
 
                             }
@@ -654,9 +674,7 @@ $.extend( ReadTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
         // console.log(tile_low, tile_high, tile_length, w_scale);
         var width = Math.ceil( tile_span * w_scale ),
             new_canvas = $("<canvas class='tile'></canvas>");
-        
-        var dummy_canvas = $("<canvas></canvas>").get(0).getContext("2d");
-        
+
         new_canvas.css({
             position: "absolute",
             top: 0,
@@ -677,7 +695,7 @@ $.extend( ReadTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
             if (feature.start <= tile_high && feature.end >= tile_low) {
                 var f_start = Math.floor( Math.max(0, (feature.start - tile_low) * w_scale) ),
                     f_end   = Math.ceil( Math.min(width, (feature.end - tile_low) * w_scale) ),
-                    y_center = slots[feature.uid] * this.vertical_gap;
+                    y_center = slots[feature.uid] * this.vertical_detail_px;
                 
                 var thickness, y_start, thick_start = null, thick_end = null;
                 if (w_scale > px_per_char) {
