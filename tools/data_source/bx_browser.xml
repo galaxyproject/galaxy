@@ -7,7 +7,7 @@
 <tool name="BX main" id="bx_browser" tool_type="data_source">
     <description>browser</description>
     <command interpreter="python">data_source.py $output $__app__.config.output_size_limit</command>
-    <inputs action="http://main.genome-browser.bx.psu.edu/" check_values="false" method="get">
+    <inputs action="http://main.genome-browser.bx.psu.edu/cgi-bin/hgTables" check_values="false" method="get">
         <display>go to BX Browser $GALAXY_URL</display>
         <param name="GALAXY_URL" type="baseurl" value="/tool_runner" />
         <param name="tool_id" type="hidden" value="bx_browser" />

@@ -2,8 +2,10 @@
 # This tool takes a tab-delimited text file as input and creates filters on columns based on certain properties.
 # The tool will skip over invalid lines within the file, informing the user about the number of lines skipped.
 
+from __future__ import division
 import sys, re, os.path
 from galaxy import eggs
+
 # Older py compatibility
 try:
     set()

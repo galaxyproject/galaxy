@@ -1,4 +1,4 @@
-<tool id="Filter1" name="Filter">
+<tool id="Filter1" name="Filter" version="1.0.1">
   <description>data on any column using simple expressions</description>
   <command interpreter="python">
     filtering.py $input $out_file1 "$cond" ${input.metadata.columns} "${input.metadata.column_types}"
