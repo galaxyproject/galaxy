@@ -65,7 +65,9 @@ while (<IN>) {
 			{
 				$SNPs_exist = 1;	
 				$SNPs{ uc( $bases[ $base ] ) } += 1;
-			}		 	
+			} elsif ( $bases[ $base ] =~ m/[\.,]/ ) {
+			    $SNPs{ uc( $fields[ $ref_base_column ] ) } += 1;
+		    }		 	
 		}
 	} 
 	

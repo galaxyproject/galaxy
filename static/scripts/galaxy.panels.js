@@ -210,7 +210,7 @@ function show_in_overlay( options ) {
         hide_modal();
         $("#overlay-background").unbind( "click.overlay" );
     });
-    show_modal( null, $("<div style='margin: -5px;'><img id='close_button' style='position:absolute;right:3px;top:3px;' src='../images/icon_error_sml.gif'><iframe style='margin: 0; padding: 0;' src='" + options.url + "' width='" + width + "' height='" + height + "' scrolling='" + scroll + "' frameborder='0'></iframe></div>" ) );
+    show_modal( null, $("<div style='margin: -5px;'><img id='close_button' style='position:absolute;right:-12px;top:-12px;' src='../images/delete_icon.png'><iframe style='margin: 0; padding: 0;' src='" + options.url + "' width='" + width + "' height='" + height + "' scrolling='" + scroll + "' frameborder='0'></iframe></div>" ) );
     $("#close_button").bind( "click", function() { hide_modal() } );
 }
     
