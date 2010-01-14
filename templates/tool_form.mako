@@ -166,7 +166,7 @@ function checkUncheckAll( name, check )
                 
                 # Field may contain characters submitted by user and these characters may be unicode; handle non-ascii characters gracefully.
                 field_html = field.get_html( prefix )
-                if field_html is not unicode:
+                if type( field_html ) is not unicode:
                     field_html = unicode( field_html, 'utf-8' )
             %>
             <div class="form-row-input">${field_html}</div>
