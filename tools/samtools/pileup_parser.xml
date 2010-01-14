@@ -272,9 +272,9 @@ In addition to calling variants, it is often useful to know the quality adjusted
 
 will report everything from the original file::
 
- chrM  412  A  2  .,    II    0  0  0  0  2
- chrM  413  G  4  ..t,  III2  0  0  0  1  3
- chrM  414  C  4  ...a  III2  0  0  0  0  3
+ chrM  412  A  2  .,    II    2  0  0  0  2
+ chrM  413  G  4  ..t,  III2  0  0  2  1  3
+ chrM  414  C  4  ...a  III2  3  0  0  0  3
  chrM  415  C  4  TTTt  III7  0  0  0  4  4
  
 Here, you can see that although the total coverage at position 414 is 4 (column 4), the quality adjusted coverage is 3 (last column). This is because only three out of four reads have bases with quality above the set threshold of 20 (the actual qualities are III2 or, after conversion,  40, 40, 40, 17).
