@@ -9,10 +9,10 @@
     <data name="bed_file2" format="bed"/>
   </outputs>
   <tests>
-    <!-- NOTE: this tool generates 2 output files, but our functional tests currently only handle the last one generated -->
     <test>
       <param name="lav_file" value="2.lav" ftype="lav" />
-      <output name="bed_file2" file="lav_to_bed_out2.bed" />
+      <output name="bed_file2" file="lav_to_bed_out_1.bed" />
+      <output name="bed_file2" file="lav_to_bed_out_2.bed" />
     </test>
   </tests>
   <help>

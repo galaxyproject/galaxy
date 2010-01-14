@@ -308,7 +308,7 @@
                         %endif
                         %for hda in history.active_datasets:
                             <div class="form-row">
-                                <input name="hda_ids" value="${hda.id}" type="checkbox"/>${hda.hid}: ${hda.name}
+                                <input name="hda_ids" value="${trans.security.encode_id( hda.id )}" type="checkbox"/>${hda.hid}: ${hda.name}
                             </div>
                         %endfor
                         <div class="form-row">
