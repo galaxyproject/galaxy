@@ -3,7 +3,7 @@ a{color:#303030;}
 div.historyLinks{padding:5px;margin:5px 0 5px 0;}
 div.historyItem{margin:5px -5px 5px 0px;padding:5px 11px 5px 5px;border:solid #888888 1px;border-left:solid #888888 5px;border-right:none;background:#EEEEEE;}
 div.historyItem .state-icon{display:inline-block;vertical-align:middle;width:16px;height:16px;background-position:0 1px;background-repeat:no-repeat;}
-div.historyItem .historyItemTitle{line-height:16px;}
+div.historyItem .historyItemTitle{font-weight:bold;line-height:16px;}
 div.historyItem div.historyItem{margin-right:-11px;}
 div.historyItem-ok{border-color:#66AA66;background:#CCFFCC;}
 div.historyItem-ok .state-icon{display:none;}
