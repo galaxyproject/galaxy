@@ -160,16 +160,28 @@ class Fastq ( Sequence ):
         """
         data_lines = 0
         sequences = 0
+        seq_counter = 0     # blocks should be 4 lines long
         for line in file( dataset.file_name ):
             line = line.strip()
             if line and line.startswith( '#' ):
                 # We don't count comment lines for sequence data types
                 continue
-            if line and line.startswith( '@' ):
-                sequences += 1
-                data_lines +=1
+            if line and line.startswith( '@' ): 
+                if seq_counter >= 4:
+                    # count previous block
+                    # blocks should be 4 lines long
+                    sequences += 1
+                    seq_counter = 1
+                else:
+                    # in case quality line starts with @
+                    seq_counter += 1
+                data_lines += 1
             else:
                 data_lines += 1
+                seq_counter += 1
+        if seq_counter >= 4:
+            # count final block
+            sequences += 1
         dataset.metadata.data_lines = data_lines
         dataset.metadata.sequences = sequences
     def sniff ( self, filename ):
