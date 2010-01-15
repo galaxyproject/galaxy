@@ -66,7 +66,7 @@ class Fasta( Sequence ):
         
         A sequence in FASTA format consists of a single-line description, followed by lines of sequence data. 
         The first character of the description line is a greater-than (">") symbol in the first column. 
-        All lines should be shorter than 80 charcters
+        All lines should be shorter than 80 characters
         
         For complete details see http://www.ncbi.nlm.nih.gov/blast/fasta.shtml
         
@@ -139,7 +139,7 @@ class csFasta( Sequence ):
                             break
                         elif line[0] not in string.ascii_uppercase:
                             return False
-                        elif len( line ) > 1 and not re.search( '^\d+$', line[1:] ):
+                        elif len( line ) > 1 and not re.search( '^[\d.]+$', line[1:] ):
                             return False
                         return True
                     else:
