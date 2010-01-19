@@ -105,18 +105,18 @@ class InRangeValidator( Validator ):
     """
     @classmethod
     def from_element( cls, param, elem ):
-        return cls( elem.get( 'message', None ), elem.get( 'min' ), elem.get( 'max' ) )
+        return cls( elem.get( 'message', None ), elem.get( 'min', '-inf' ), elem.get( 'max', '+inf' ) )
     def __init__( self, message, range_min, range_max ):
-        self.message = message or ( "Value must be between %f and %f" % ( range_min, range_max ) )
         self.min = float( range_min )
-        self.max = float( range_max )    
+        self.max = float( range_max )  
+        self.message = message or ( "Value must be between %f and %f" % ( self.min, self.max ) )  
     def validate( self, value, history=None ):
         if not( self.min <= float( value ) <= self.max ):
             raise ValueError( self.message )   
         
 class LengthValidator( Validator ):
     """
-    Validator that ensures a number is in a specific range
+    Validator that ensures the length of the provided string (value) is in a specific range
 
     >>> from galaxy.tools.parameters import ToolParameter
     >>> p = ToolParameter.build( None, XML( '''
