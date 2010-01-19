@@ -104,7 +104,7 @@ class ToolRunner( BaseController ):
         try:
             params_objects = job.get_param_values( trans.app )
         except:
-            raise Exception( "Failed to get paramemeters for dataset id %d " % hid )
+            raise Exception( "Failed to get paramemeters for dataset id %d " % data.id )
         # Unpack unvalidated values to strings, they'll be validated when the
         # form is submitted (this happens when re-running a job that was
         # initially run by a workflow)
