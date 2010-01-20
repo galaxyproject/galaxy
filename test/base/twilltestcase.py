@@ -301,7 +301,7 @@ class TwillTestCase( unittest.TestCase ):
         self.home()
     def unshare_history( self, history_id, user_id, check_str1='', check_str2='', check_str_after_submit='' ):
         """Unshare a history that has been shared with another user"""
-        self.visit_url( "%s/history/list?id=%s&operation=sharing" % ( self.url, history_id ) )
+        self.visit_url( "%s/history/list?id=%s&operation=share+or+publish" % ( self.url, history_id ) )
         if check_str1:
             self.check_page_for_string( check_str1 )
         if check_str2:
@@ -352,27 +352,27 @@ class TwillTestCase( unittest.TestCase ):
         if check_str_after_submit:
             self.check_page_for_string( check_str_after_submit )
         self.home()
-    def enable_import_via_link( self, history_id, check_str='', check_str_after_submit='' ):
+    def make_accessible_via_link( self, history_id, check_str='', check_str_after_submit='' ):
         self.home()
-        self.visit_page( "history/list?operation=sharing&id=%s" % history_id )
+        self.visit_page( "history/list?operation=share+or+publish&id=%s" % history_id )
         if check_str:
             self.check_page_for_string( check_str )
         # twill barfs on this form, possibly because it contains no fields, but not sure.
         # In any case, we have to mimic the form submission
         self.home()
-        self.visit_page( 'history/sharing?id=%s&enable_import_via_link=True' % history_id )
+        self.visit_page( 'history/sharing?id=%s&make_accessible_via_link=True' % history_id )
         if check_str_after_submit:
             self.check_page_for_string( check_str_after_submit )
         self.home()
-    def disable_import_via_link( self, history_id, check_str='', check_str_after_submit='' ):
+    def disable_access_via_link( self, history_id, check_str='', check_str_after_submit='' ):
         self.home()
-        self.visit_page( "history/list?operation=sharing&id=%s" % history_id )
+        self.visit_page( "history/list?operation=share+or+publish&id=%s" % history_id )
         if check_str:
             self.check_page_for_string( check_str )
         # twill barfs on this form, possibly because it contains no fields, but not sure.
         # In any case, we have to mimic the form submission
         self.home()
-        self.visit_page( 'history/sharing?id=%s&disable_import_via_link=True' % history_id )
+        self.visit_page( 'history/sharing?id=%s&disable_link_access=True' % history_id )
         if check_str_after_submit:
             self.check_page_for_string( check_str_after_submit )
         self.home()

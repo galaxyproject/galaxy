@@ -42,3 +42,4 @@ def js( *args ):
           in a better way.
     """
     return "\n".join( [ javascript_include_tag( "/static/scripts/" + name + ".js?v=2" ) for name in args ] )
+    

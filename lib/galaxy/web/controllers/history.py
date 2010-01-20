@@ -4,7 +4,6 @@ from galaxy import util
 from galaxy.model.mapping import desc
 from galaxy.model.orm import *
 from galaxy.util.json import *
-from galaxy.util.odict import odict
 from galaxy.tags.tag_handler import TagHandler
 from sqlalchemy.sql.expression import ClauseElement
 import webhelpers, logging, operator
@@ -32,20 +31,6 @@ class HistoryListGrid( grids.Grid ):
                 else:
                     rval.append( '' )
             return rval
-            
-    class StatusColumn( grids.GridColumn ):
-        def get_value( self, trans, grid, history ):
-            if history.deleted:
-                return "deleted"
-            elif history.users_shared_with:
-                return "shared"
-            elif history.importable:
-                return "importable"
-            return ""
-        def get_link( self, trans, grid, item ):
-            if item.users_shared_with or item.importable:
-                return dict( operation="sharing", id=item.id )
-            return None
                 
     class DeletedColumn( grids.GridColumn ):
        def get_accepted_filters( self ):
@@ -56,33 +41,6 @@ class HistoryListGrid( grids.Grid ):
                args = { self.key: val }
                accepted_filters.append( grids.GridColumnFilter( label, args) )
            return accepted_filters
-           
-    class SharingColumn( grids.GridColumn ):
-        def filter( self, db_session, user, query, column_filter ):
-            """ Modify query to filter histories by sharing status. """
-            if column_filter == "All":
-                pass
-            elif column_filter:
-                if column_filter == "private":
-                    query = query.filter( model.History.users_shared_with == None )
-                    query = query.filter( model.History.importable == False )
-                elif column_filter == "shared":
-                    query = query.filter( model.History.users_shared_with != None )
-                elif column_filter == "importable":
-                    query = query.filter( model.History.importable == True )
-            return query
-        def get_accepted_filters( self ):
-            """ Returns a list of accepted filters for this column. """
-            accepted_filter_labels_and_vals = odict()
-            accepted_filter_labels_and_vals["private"] = "private"
-            accepted_filter_labels_and_vals["shared"] = "shared"
-            accepted_filter_labels_and_vals["importable"] = "importable"
-            accepted_filter_labels_and_vals["all"] = "All"
-            accepted_filters = []
-            for label, val in accepted_filter_labels_and_vals.items():
-                args = { self.key: val }
-                accepted_filters.append( grids.GridColumnFilter( label, args) )
-            return accepted_filters
 
     # Grid definition
     title = "Saved Histories"
@@ -95,12 +53,11 @@ class HistoryListGrid( grids.Grid ):
                           attach_popup=True, filterable="advanced" ),
         DatasetsByStateColumn( "Datasets (by state)", ncells=4 ),
         grids.IndividualTagsColumn( "Tags", "tags", model.History, model.HistoryTagAssociation, filterable="advanced", grid_name="HistoryListGrid" ),
-        StatusColumn( "Status", attach_popup=False ),
+        SharingStatusColumn( "Sharing", key="sharing", model_class=model.History, filterable="advanced", sortable=False ),
         grids.GridColumn( "Created", key="create_time", format=time_ago ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
         # Columns that are valid for filtering but are not visible.
-        DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" ),
-        SharingColumn( "Shared", key="shared", visible=False, filterable="advanced" ),
+        DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" )
     ]
     columns.append( 
         grids.MulticolFilterColumn(  
@@ -111,20 +68,17 @@ class HistoryListGrid( grids.Grid ):
                 
     operations = [
         grids.GridOperation( "Switch", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False ),
-        grids.GridOperation( "Share", condition=( lambda item: not item.deleted ), async_compatible=False ),
-        grids.GridOperation( "Unshare", condition=( lambda item: not item.deleted ), async_compatible=False  ),
+        grids.GridOperation( "Share or Publish", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False ),
         grids.GridOperation( "Rename", condition=( lambda item: not item.deleted ), async_compatible=False  ),
         grids.GridOperation( "Delete", condition=( lambda item: not item.deleted ), async_compatible=True ),
         grids.GridOperation( "Undelete", condition=( lambda item: item.deleted ), async_compatible=True ),
-        grids.GridOperation( "Enable import via link", condition=( lambda item: item.deleted ), async_compatible=True ),
-        grids.GridOperation( "Disable import via link", condition=( lambda item: item.deleted ), async_compatible=True )
     ]
     standard_filters = [
         grids.GridColumnFilter( "Active", args=dict( deleted=False ) ),
         grids.GridColumnFilter( "Deleted", args=dict( deleted=True ) ),
         grids.GridColumnFilter( "All", args=dict( deleted='All' ) ),
     ]
-    default_filter = dict( name="All", deleted="False", tags="All", shared="All" )
+    default_filter = dict( name="All", deleted="False", tags="All", sharing="All" )
     num_rows_per_page = 50
     preserve_state = False
     use_async = True
@@ -198,10 +152,10 @@ class HistoryAllPublishedGrid( grids.Grid ):
         # Join so that searching history.user makes sense.
         return session.query( self.model_class ).join( model.User.table )
     def apply_default_filter( self, trans, query, **kwargs ):
-        # A public history is importable, has a slug, and is not deleted.
-        return query.filter( self.model_class.importable==True ).filter( self.model_class.slug != None ).filter( self.model_class.deleted == False )
+        # A public history is published, has a slug, and is not deleted.
+        return query.filter( self.model_class.published == True ).filter( self.model_class.slug != None ).filter( self.model_class.deleted == False )
     
-class HistoryController( BaseController ):
+class HistoryController( BaseController, Sharable ):
     @web.expose
     def index( self, trans ):
         return ""
@@ -231,13 +185,11 @@ class HistoryController( BaseController ):
         status = message = None
         if 'operation' in kwargs:
             operation = kwargs['operation'].lower()
-            if operation == "share":
-                return self.share( trans, **kwargs )
+            if operation == "share or publish":
+                return self.sharing( trans, **kwargs )
             if operation == "rename":
                 return self.rename( trans, **kwargs )
             history_ids = util.listify( kwargs.get( 'id', [] ) )
-            if operation == "sharing":
-                return self.sharing( trans, id=history_ids )
             # Display no message by default
             status, message = None, None
             refresh_history = False
@@ -519,9 +471,8 @@ class HistoryController( BaseController ):
         if not history_to_view:
             return trans.show_error_message( "The specified history does not exist." )
         # Admin users can view any history
-        # TODO: Use a new flag to determine if history is viewable?
         if not trans.user_is_admin and not history_to_view.importable:
-            error( "Either you are not allowed to view this history or the owner of this history has not published it." )
+            error( "Either you are not allowed to view this history or the owner of this history has not made it accessible." )
         # View history.
         query = trans.sa_session.query( model.HistoryDatasetAssociation ) \
                                 .filter( model.HistoryDatasetAssociation.history == history_to_view ) \
@@ -558,6 +509,111 @@ class HistoryController( BaseController ):
        return trans.stream_template_mako( "history/display.mako",
                                           item = history, item_data = query.all() )
                                           
+    @web.expose
+    @web.require_login( "share Galaxy histories" )
+    def sharing( self, trans, id=None, histories=[], **kwargs ):
+        """ Handle history sharing. """
+
+        # Get session and histories.
+        session = trans.sa_session
+        if id:
+            ids = util.listify( id )
+            if ids:
+                histories = [ self.get_history( trans, history_id ) for history_id in ids ]
+        else:
+            # Use histories passed in.
+            pass
+            
+        # Do operation on histories.
+        for history in histories:
+            if 'make_accessible_via_link' in kwargs:
+                self._make_item_accessible( trans.sa_session, history )
+            elif 'make_accessible_and_publish' in kwargs:
+                self._make_item_accessible( trans.sa_session, history )
+                history.published = True
+            elif 'publish' in kwargs:
+                if history.importable:
+                    history.published = True
+                else:
+                    # TODO: report error here.
+                    pass
+            elif 'disable_link_access' in kwargs:
+                history.importable = False
+            elif 'unpublish' in kwargs:
+                history.published = False
+            elif 'disable_link_access_and_unpubish' in kwargs:
+                history.importable = stored.published = False
+            elif 'unshare_user' in kwargs:
+                user = trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( kwargs[ 'unshare_user' ] ) )
+                if not user:
+                    msg = 'History (%s) does not seem to be shared with user (%s)' % ( history.name, user.email )
+                    return trans.fill_template( 'history/sharing.mako', histories=histories, msg=msg, messagetype='error' )
+                husas = trans.sa_session.query( trans.app.model.HistoryUserShareAssociation ).filter_by( user=user, history=history ).all()
+                if husas:
+                    for husa in husas:
+                        trans.sa_session.delete( husa )    
+                        
+        # Legacy issue: histories made accessible before recent updates may not have a slug. Create slug for any histories that need them.
+        for history in histories:
+            if history.importable and not history.slug:
+                self._make_item_accessible( trans.sa_session, history )
+                
+        session.flush()
+                
+        return trans.fill_template( "/sharing_base.mako", item=history )
+        
+    ## TODO: remove this method when history sharing has been verified to work correctly with new sharing() method.
+    @web.expose
+    @web.require_login( "share histories with other users" )
+    def sharing_old( self, trans, histories=[], id=None, **kwd ):
+        """Performs sharing of histories among users."""
+        # histories looks like: [ historyX, historyY ]
+        params = util.Params( kwd )
+        msg = util.restore_text ( params.get( 'msg', '' ) )
+        if id:
+            ids = util.listify( id )
+            if ids:
+                histories = [ self.get_history( trans, history_id ) for history_id in ids ]
+        for history in histories:
+            trans.sa_session.add( history )
+            if params.get( 'enable_import_via_link', False ):
+                self.make_item_importable( trans.sa_session, history )
+                trans.sa_session.flush()
+            elif params.get( 'disable_import_via_link', False ):
+                history.importable = False
+                trans.sa_session.flush()
+            elif params.get( 'unshare_user', False ):
+                user = trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( kwd[ 'unshare_user' ] ) )
+                if not user:
+                    msg = 'History (%s) does not seem to be shared with user (%s)' % ( history.name, user.email )
+                    return trans.fill_template( 'history/sharing.mako', histories=histories, msg=msg, messagetype='error' )
+                husas = trans.sa_session.query( trans.app.model.HistoryUserShareAssociation ).filter_by( user=user, history=history ).all()
+                if husas:
+                    for husa in husas:
+                        trans.sa_session.delete( husa )
+                        trans.sa_session.flush()
+        histories = []
+        # Get all histories that have been shared with others
+        husas = trans.sa_session.query( trans.app.model.HistoryUserShareAssociation ) \
+                                .join( "history" ) \
+                                .filter( and_( trans.app.model.History.user == trans.user,
+                                               trans.app.model.History.deleted == False ) ) \
+                                .order_by( trans.app.model.History.table.c.name )
+        for husa in husas:
+            history = husa.history
+            if history not in histories:
+                histories.append( history )
+        # Get all histories that are importable
+        importables = trans.sa_session.query( trans.app.model.History ) \
+                                      .filter_by( user=trans.user, importable=True, deleted=False ) \
+                                      .order_by( trans.app.model.History.table.c.name )
+        for importable in importables:
+            if importable not in histories:
+                histories.append( importable )
+        # Sort the list of histories by history.name
+        histories.sort( key=operator.attrgetter( 'name') )
+        return trans.fill_template( 'history/sharing.mako', histories=histories, msg=msg, messagetype='done' )
+                                      
     @web.expose
     @web.require_login( "share histories with other users" )
     def share( self, trans, id=None, email="", **kwd ):
@@ -613,6 +669,7 @@ class HistoryController( BaseController ):
                 # User seems to be sharing an empty history
                 send_to_err = "You cannot share an empty history.  "
         return trans.fill_template( "/history/share.mako", histories=histories, email=email, send_to_err=send_to_err )
+        
     @web.expose
     @web.require_login( "share restricted histories with other users" )
     def share_restricted( self, trans, id=None, email="", **kwd ):
@@ -832,56 +889,6 @@ class HistoryController( BaseController ):
             msg += send_to_err
         return self.sharing( trans, histories=shared_histories, msg=msg )
         
-    @web.expose
-    @web.require_login( "share histories with other users" )
-    def sharing( self, trans, histories=[], id=None, **kwd ):
-        """Performs sharing of histories among users."""
-        # histories looks like: [ historyX, historyY ]
-        params = util.Params( kwd )
-        msg = util.restore_text ( params.get( 'msg', '' ) )
-        if id:
-            ids = util.listify( id )
-            if ids:
-                histories = [ self.get_history( trans, history_id ) for history_id in ids ]
-        for history in histories:
-            trans.sa_session.add( history )
-            if params.get( 'enable_import_via_link', False ):
-                self.make_item_importable( trans.sa_session, history )
-                trans.sa_session.flush()
-            elif params.get( 'disable_import_via_link', False ):
-                history.importable = False
-                trans.sa_session.flush()
-            elif params.get( 'unshare_user', False ):
-                user = trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( kwd[ 'unshare_user' ] ) )
-                if not user:
-                    msg = 'History (%s) does not seem to be shared with user (%s)' % ( history.name, user.email )
-                    return trans.fill_template( 'history/sharing.mako', histories=histories, msg=msg, messagetype='error' )
-                husas = trans.sa_session.query( trans.app.model.HistoryUserShareAssociation ).filter_by( user=user, history=history ).all()
-                if husas:
-                    for husa in husas:
-                        trans.sa_session.delete( husa )
-                        trans.sa_session.flush()
-        histories = []
-        # Get all histories that have been shared with others
-        husas = trans.sa_session.query( trans.app.model.HistoryUserShareAssociation ) \
-                                .join( "history" ) \
-                                .filter( and_( trans.app.model.History.user == trans.user,
-                                               trans.app.model.History.deleted == False ) ) \
-                                .order_by( trans.app.model.History.table.c.name )
-        for husa in husas:
-            history = husa.history
-            if history not in histories:
-                histories.append( history )
-        # Get all histories that are importable
-        importables = trans.sa_session.query( trans.app.model.History ) \
-                                      .filter_by( user=trans.user, importable=True, deleted=False ) \
-                                      .order_by( trans.app.model.History.table.c.name )
-        for importable in importables:
-            if importable not in histories:
-                histories.append( importable )
-        # Sort the list of histories by history.name
-        histories.sort( key=operator.attrgetter( 'name') )
-        return trans.fill_template( 'history/sharing.mako', histories=histories, msg=msg, messagetype='done' )
     @web.expose
     @web.require_login( "rename histories" )
     def rename( self, trans, id=None, name=None, **kwd ):

@@ -184,6 +184,7 @@ class History( object ):
         self.deleted = False
         self.purged = False
         self.genome_build = None
+        self.published = False
         # Relationships
         self.user = user
         self.datasets = []
@@ -1115,6 +1116,7 @@ class StoredWorkflow( object ):
         self.user = None
         self.name = None
         self.slug = None
+        self.published = False
         self.latest_workflow_id = None
         self.workflows = []
 
@@ -1391,6 +1393,8 @@ class Page( object ):
         self.slug = None
         self.latest_revision_id = None
         self.revisions = []
+        self.importable = None
+        self.published = None
 
 class PageRevision( object ):
     def __init__( self ):

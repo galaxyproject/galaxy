@@ -51,8 +51,8 @@ class StoredWorkflowListGrid( grids.Grid ):
     def apply_default_filter( self, trans, query, **kwargs ):
         return query.filter_by( user=trans.user, deleted=False )
 
-class PublicStoredWorkflowListGrid( grids.Grid ):
-    title = "Public Workflows"
+class StoredWorkflowAllPublishedGrid( grids.Grid ):
+    title = "Published Workflows"
     model_class = model.StoredWorkflow
     default_sort_key = "-update_time"
     default_filter = dict( public_url="All", username="All", tags="All" )
@@ -74,12 +74,12 @@ class PublicStoredWorkflowListGrid( grids.Grid ):
         # Join so that searching stored_workflow.user makes sense.
         return session.query( self.model_class ).join( model.User.table )
     def apply_default_filter( self, trans, query, **kwargs ):
-        # A public workflow is importable, has a slug, and is not deleted.
-        return query.filter( self.model_class.importable==True ).filter( self.model_class.slug != None ).filter( self.model_class.deleted == False )
+        # A public workflow is published, has a slug, and is not deleted.
+        return query.filter( self.model_class.published==True ).filter( self.model_class.slug != None ).filter( self.model_class.deleted == False )
 
-class WorkflowController( BaseController ):
+class WorkflowController( BaseController, Sharable ):
     stored_list_grid = StoredWorkflowListGrid()
-    public_list_grid = PublicStoredWorkflowListGrid()
+    published_list_grid = StoredWorkflowAllPublishedGrid()
     
     @web.expose
     def index( self, trans ):
@@ -146,7 +146,7 @@ class WorkflowController( BaseController ):
                                     
     @web.expose
     def list_published( self, trans, **kwargs ):
-        grid = self.public_list_grid( trans, **kwargs )
+        grid = self.published_list_grid( trans, **kwargs )
         if 'async' in kwargs:
             return grid
         else:
@@ -228,15 +228,27 @@ class WorkflowController( BaseController ):
     @web.expose
     @web.require_login( "use Galaxy workflows" )
     def sharing( self, trans, id, **kwargs ):
+        """ Handle workflow sharing. """
+        
+        # Get session and workflow.
         session = trans.sa_session
         stored = get_stored_workflow( trans, id )
         session.add( stored )
-        if 'enable_import_via_link' in kwargs:
-            self.make_item_importable( trans.sa_session, stored )
-            session.flush()
-        elif 'disable_import_via_link' in kwargs:
+        
+        # Do operation on workflow.
+        if 'make_accessible_via_link' in kwargs:
+            self._make_item_accessible( trans.sa_session, stored )
+        elif 'make_accessible_and_publish' in kwargs:
+            self._make_item_accessible( trans.sa_session, stored )
+            stored.published = True
+        elif 'publish' in kwargs:
+            stored.published = True
+        elif 'disable_link_access' in kwargs:
             stored.importable = False
-            session.flush()
+        elif 'unpublish' in kwargs:
+            stored.published = False
+        elif 'disable_link_access_and_unpubish' in kwargs:
+            stored.importable = stored.published = False
         elif 'unshare_user' in kwargs:
             user = session.query( model.User ).get( trans.security.decode_id( kwargs['unshare_user' ] ) )
             if not user:
@@ -244,10 +256,16 @@ class WorkflowController( BaseController ):
             association = session.query( model.StoredWorkflowUserShareAssociation ) \
                                  .filter_by( user=user, stored_workflow=stored ).one()
             session.delete( association )
-            session.flush()
-        return trans.fill_template( "workflow/sharing.mako",
-                                    stored=stored )
+            
+        # Legacy issue: workflows made accessible before recent updates may not have a slug. Create slug for any workflows that need them.
+        if stored.importable and not stored.slug:
+            self._make_item_accessible( trans.sa_session, stored )
+            
+        session.flush()
         
+        return trans.fill_template( "/sharing_base.mako",
+                                    item=stored )
+
     @web.expose
     @web.require_login( "use Galaxy workflows" )
     def imp( self, trans, id, **kwargs ):

@@ -3,7 +3,23 @@
 
 <%!
     from galaxy.model import History, StoredWorkflow, Page
+    from galaxy.web.framework.helpers import iff
 %>
+
+## Get display name for a class.
+<%def name="get_class_display_name( a_class )">
+<%
+    ## Start with exceptions, end with default.
+    if a_class is StoredWorkflow:
+        return "Workflow"
+    else:
+        return a_class.__name__
+%>
+</%def>
+
+<%def name="title()">
+    Galaxy :: ${iff( item.published, "Published ", "Accessible " ) + self.get_class_display_name( item.__class__ )} : ${item.name}
+</%def>
 
 <%def name="init()">
 <%
@@ -85,10 +101,12 @@
     %>
     
     <div class="unified-panel-header" unselectable="on">
-        <div class="unified-panel-header-inner">
-            <a href="${href_to_all_items}">Published ${item_plural}</a> | 
-            <a href="${href_to_user_items}">${item.user.username}</a> | ${self.get_item_name( item )}
-        </div>
+        %if item.published:
+            <div class="unified-panel-header-inner">
+                <a href="${href_to_all_items}">Published ${item_plural}</a> | 
+                <a href="${href_to_user_items}">${item.user.username}</a> | ${self.get_item_name( item )}
+            </div>
+        %endif
     </div>
     
     <div class="unified-panel-body">
@@ -101,31 +119,33 @@
                 ${self.render_item( item, item_data )}
             </div>
         
-            <div class="page-meta">
-                ## Page meta.
-                <div><strong>Related ${item_plural}</strong></div>
-                <p>
-                    <a href="${href_to_all_items}">All published ${item_plural.lower()}</a><br>
-                    <a href="${href_to_user_items}">${item_plural} owned by ${item.user.username}</a>
+            %if item.published:
+                <div class="page-meta">
+                    ## Page meta.
+                    <div><strong>Related ${item_plural}</strong></div>
+                    <p>
+                        <a href="${href_to_all_items}">All published ${item_plural.lower()}</a><br>
+                        <a href="${href_to_user_items}">${item_plural} owned by ${item.user.username}</a>
             
-                ## Tags.
-                <div><strong>Tags</strong></div>
-                <p>
-                ## Community tags.
-                <div>
-                    Community:
-                    ${render_community_tagging_element( tagged_item=item, tag_click_fn='community_tag_click', use_toggle_link=False )}
-                    %if len ( item.tags ) == 0:
-                        none
-                    %endif
+                    ## Tags.
+                    <div><strong>Tags</strong></div>
+                    <p>
+                    ## Community tags.
+                    <div>
+                        Community:
+                        ${render_community_tagging_element( tagged_item=item, tag_click_fn='community_tag_click', use_toggle_link=False )}
+                        %if len ( item.tags ) == 0:
+                            none
+                        %endif
+                    </div>
+                    ## Individual tags.
+                    <p>
+                    <div>
+                        Yours:
+                        ${render_individual_tagging_element( user=trans.get_user(), tagged_item=item, elt_context='view.mako', use_toggle_link=False, tag_click_fn='community_tag_click' )}
+                    </div>
                 </div>
-                ## Individual tags.
-                <p>
-                <div>
-                    Yours:
-                    ${render_individual_tagging_element( user=trans.get_user(), tagged_item=item, elt_context='view.mako', use_toggle_link=False, tag_click_fn='community_tag_click' )}
-                </div>
-            </div>
+            %endif
         </div>
     </div>
 </%def>

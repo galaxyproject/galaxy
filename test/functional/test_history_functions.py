@@ -179,24 +179,24 @@ class TestHistory( TwillTestCase ):
         self.share_current_history( regular_user1.email,
                                     check_str=history3.name )
         # Check out list of histories to make sure history3 was shared
-        self.view_stored_active_histories( check_str='operation=sharing' )
-        # Enable importing history3 via a URL
-        self.enable_import_via_link( self.security.encode_id( history3.id ),
-                                     check_str='Unshare',
-                                     check_str_after_submit='Send the above link to users' )
-        # Make sure history3 is now import-able
+        self.view_stored_active_histories( check_str='operation=share' )
+        # Make history3 accessible via link.
+        self.make_accessible_via_link( self.security.encode_id( history3.id ),
+                                     check_str='Make History Accessible via Link',
+                                     check_str_after_submit='Anyone can view and import this history' )
+        # Make sure history3 is now accessible.
         sa_session.refresh( history3 )
         if not history3.importable:
-            raise AssertionError, "History 3 is not marked as importable after enable_import_via_link"
+            raise AssertionError, "History 3 is not marked as importable after make_accessible_via_link"
         # Try importing history3
         self.import_history_via_url( self.security.encode_id( history3.id ),
                                      admin_user.email,
                                      check_str_after_submit='You cannot import your own history.' )
-        # Disable the import link for history3
-        self.disable_import_via_link( self.security.encode_id( history3.id ),
-                                     check_str='Send the above link to users',
-                                     check_str_after_submit='Enable import via link' )
-        # Try importing history3 after disabling the URL
+        # Disable access via link for history3.
+        self.disable_access_via_link( self.security.encode_id( history3.id ),
+                                     check_str='Anyone can view and import this history',
+                                     check_str_after_submit='Make History Accessible via Link' )
+        # Try importing history3 after disabling access via link.
         self.import_history_via_url( self.security.encode_id( history3.id ),
                                      admin_user.email,
                                      check_str_after_submit='The owner of this history has disabled imports via this link.' )
@@ -314,6 +314,9 @@ class TestHistory( TwillTestCase ):
         assert history4 is not None, "Problem retrieving history4 from database"
         self.rename_history( self.security.encode_id( history4.id ), history4.name, new_name=urllib.quote( 'history 4' ) )
         sa_session.refresh( history4 )
+        # Galaxy's new history sharing code does not yet support sharing multiple histories; when support for sharing multiple histories is added, 
+        # this test will be uncommented and updated.
+        """
         self.upload_file( '2.bed', dbkey='hg18' )
         ids = '%s,%s' % ( self.security.encode_id( history3.id ), self.security.encode_id( history4.id ) )
         emails = '%s,%s' % ( regular_user2.email, regular_user3.email )
@@ -329,6 +332,7 @@ class TestHistory( TwillTestCase ):
         self.login( email=regular_user3.email )
         # Shared history3 should be in regular_user3's list of shared histories
         self.view_shared_histories( check_str=history3.name, check_str2=admin_user.email )
+        """
     def test_045_change_permissions_on_current_history( self ):
         """Testing changing permissions on the current history"""
         # Logged in as regular_user3

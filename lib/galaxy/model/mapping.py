@@ -79,7 +79,8 @@ History.table = Table( "history", metadata,
     Column( "purged", Boolean, index=True, default=False ),
     Column( "genome_build", TrimmedString( 40 ) ),
     Column( "importable", Boolean, default=False ),
-    Column( "slug", TEXT, index=True ) )
+    Column( "slug", TEXT, index=True ),
+    Column( "published", Boolean, index=True ) )
 
 HistoryUserShareAssociation.table = Table( "history_user_share_association", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -513,7 +514,8 @@ StoredWorkflow.table = Table( "stored_workflow", metadata,
     Column( "name", TEXT ),
     Column( "deleted", Boolean, default=False ),
     Column( "importable", Boolean, default=False ),
-    Column( "slug", TEXT, index=True )
+    Column( "slug", TEXT, index=True ),
+    Column( "published", Boolean, index=True )
     )
 
 Workflow.table = Table( "workflow", metadata,
@@ -667,6 +669,7 @@ Page.table = Table( "page", metadata,
             ForeignKey( "page_revision.id", use_alter=True, name='page_latest_revision_id_fk' ), index=True ),
     Column( "title", TEXT ),
     Column( "slug", TEXT, unique=True, index=True ),
+    Column( "importable", Boolean, index=True, default=False ), 
     Column( "published", Boolean, index=True, default=False ), 
     Column( "deleted", Boolean, index=True, default=False ), 
     )
