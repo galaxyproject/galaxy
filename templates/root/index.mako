@@ -23,8 +23,8 @@
             "Clone": function() {
                 galaxy_main.location = "${h.url_for( controller='history', action='clone')}";
             },
-            "Share": function() {
-                galaxy_main.location = "${h.url_for( controller='history', action='share' )}";
+            "Share or Publish": function() {
+                galaxy_main.location = "${h.url_for( controller='history', action='sharing' )}";
             },
             "Extract Workflow": function() {
                 galaxy_main.location = "${h.url_for( controller='workflow', action='build_from_current_history' )}";

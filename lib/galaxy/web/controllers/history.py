@@ -516,13 +516,13 @@ class HistoryController( BaseController, Sharable ):
 
         # Get session and histories.
         session = trans.sa_session
+        # Id values take precedence over histories passed in; last resort is current history.
         if id:
             ids = util.listify( id )
             if ids:
                 histories = [ self.get_history( trans, history_id ) for history_id in ids ]
-        else:
-            # Use histories passed in.
-            pass
+        elif not histories:
+            histories = [ trans.history ]
             
         # Do operation on histories.
         for history in histories:
