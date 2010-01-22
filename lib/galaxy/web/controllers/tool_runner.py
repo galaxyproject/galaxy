@@ -47,7 +47,9 @@ class ToolRunner( BaseController ):
         #do param translation here, used by datasource tools
         if tool.input_translator:
             tool.input_translator.translate( params )
-        history = trans.get_history()
+        # We may be visiting Galaxy for the first time ( e.g., sending data from UCSC ),
+        # so make sure to create a new history if we've never had one before.
+        history = trans.get_history( create=True )
         template, vars = tool.handle_input( trans, params.__dict__ )
         if len(params) > 0:
             trans.log_event( "Tool params: %s" % (str(params)), tool_id=tool_id )
