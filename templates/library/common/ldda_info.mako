@@ -105,7 +105,7 @@
             <div class="toolFormTitle">Expired versions of ${ldda.name}</div>
             %for expired_ldda in expired_lddas:
                 <div class="form-row">
-                    <a href="${h.url_for( controller='library_common', action='ldda_display_info', library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( expired_ldda.library_dataset.folder.id ), id=trans.security.encode_id( expired_ldda.id ) )}">${expired_ldda.name}</a>
+                    <a href="${h.url_for( controller='library_common', action='ldda_display_info', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( expired_ldda.library_dataset.folder.id ), id=trans.security.encode_id( expired_ldda.id ) )}">${expired_ldda.name}</a>
                 </div>
             %endfor
         %endif
