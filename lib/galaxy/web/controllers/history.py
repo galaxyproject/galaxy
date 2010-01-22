@@ -542,7 +542,7 @@ class HistoryController( BaseController, Sharable ):
             elif 'unpublish' in kwargs:
                 history.published = False
             elif 'disable_link_access_and_unpubish' in kwargs:
-                history.importable = stored.published = False
+                history.importable = history.published = False
             elif 'unshare_user' in kwargs:
                 user = trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( kwargs[ 'unshare_user' ] ) )
                 if not user:

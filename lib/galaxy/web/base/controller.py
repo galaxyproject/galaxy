@@ -115,6 +115,15 @@ class SharingStatusColumn( grids.GridColumn ):
             
 class Sharable:
     """ Mixin for a controller that manages and item that can be shared. """
+    
+    # Implemented methods.
+    @web.expose
+    @web.require_login( "share Galaxy items" )
+    def set_public_username( self, trans, id, username, **kwargs ):
+        """ Set user's public username and delegate to sharing() """
+        trans.get_user().username = username
+        trans.sa_session.flush
+        return self.sharing( trans, id, **kwargs )
             
     # Abstract methods.
             
