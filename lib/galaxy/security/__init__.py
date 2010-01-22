@@ -5,6 +5,7 @@ Galaxy Security
 import logging, socket
 from datetime import datetime, timedelta
 from galaxy.util.bunch import Bunch
+from galaxy.util import listify
 from galaxy.model.orm import *
 
 log = logging.getLogger(__name__)
@@ -17,6 +18,8 @@ class Action( object ):
 
 class RBACAgent:
     """Class that handles galaxy security"""
+    IN_ACCESSIBLE = 'access_error'
+    ILL_LEGITIMATE = 'legitimate_error'
     permitted_actions = Bunch(
         DATASET_MANAGE_PERMISSIONS = Action( "manage permissions", "Role members can manage the roles associated with this dataset", "grant" ),
         DATASET_ACCESS = Action( "access", "Role members can import this dataset into their history for analysis", "restrict" ),
@@ -73,6 +76,10 @@ class RBACAgent:
     def library_is_public( self, library ):
         raise "Unimplemented Method"
     def make_library_public( self, library ):
+        raise "Unimplemented Method"
+    def get_library_dataset_permissions( self, library_dataset ):
+        raise "Unimplemented Method"
+    def check_library_dataset_access( self, trans, library_id, **kwd ):
         raise "Unimplemented Method"
     def get_component_associations( self, **kwd ):
         raise "Unimplemented Method"
@@ -283,8 +290,6 @@ class GalaxyRBACAgent( RBACAgent ):
         permissions looks like: { Action : [ Role, Role ] }
         """
         # Delete all of the current permissions on the dataset
-        # TODO: If setting ACCESS permission, at least 1 user must have every role associated with this dataset,
-        # or the dataset is inaccessible.  See admin/library_dataset_dataset_association()
         for dp in dataset.actions:
             self.sa_session.delete( dp )
         # Add the new permissions on the dataset
@@ -299,8 +304,6 @@ class GalaxyRBACAgent( RBACAgent ):
         Set a specific permission on a dataset, leaving all other current permissions on the dataset alone
         permissions looks like: { Action : [ Role, Role ] }
         """
-        # TODO: If setting ACCESS permission, at least 1 user must have every role associated with this dataset,
-        # or the dataset is inaccessible.  See admin/library_dataset_dataset_association()
         for action, roles in permission.items():
             if isinstance( action, Action ):
                 action = action.action
@@ -405,18 +408,92 @@ class GalaxyRBACAgent( RBACAgent ):
             else:
                 permissions[ action ] = [ library_dataset_permission.role ]
         return permissions
+    def check_library_dataset_access( self, trans, library_id, **kwd ):
+        # library_id must be decoded before being sent
+        msg = ''
+        permissions = {}
+        # accessible will be True only if at least 1 user has every role in DATASET_ACCESS_in
+        accessible = False 
+        # legitimate will be True only if all roles in DATASET_ACCESS_in are in the set
+        # of roles returned from library.get_legitimate_roles()
+        legitimate = False
+        error = None
+        for k, v in get_permitted_actions( filter='DATASET' ).items():
+            in_roles = [ self.sa_session.query( self.model.Role ).get( x ) for x in listify( kwd.get( k + '_in', [] ) ) ]
+            if v == self.permitted_actions.DATASET_ACCESS and in_roles:
+                library = self.model.Library.get( library_id )
+                if not self.library_is_public( library ):
+                    # Ensure that roles being associated with DATASET_ACCESS are a subset of the legitimate roles
+                    # derived from the roles associated with the LIBRARY_ACCESS permission on the library if it's
+                    # not public.  This will keep ill-legitimate roles from being associated with the DATASET_ACCESS
+                    # permission on the dataset (i.e., if Role1 is associated with LIBRARY_ACCESS, then only those users
+                    # that have Role1 should be associated with DATASET_ACCESS.
+                    legitimate_roles = library.get_legitimate_roles( trans )
+                    ill_legitimate_roles = []
+                    for role in in_roles:
+                        if role not in legitimate_roles:
+                            ill_legitimate_roles.append( role )
+                    if ill_legitimate_roles:
+                        error = self.ILL_LEGITIMATE
+                        msg += "The following roles are not associated with users that have the 'access library' permission on this "
+                        msg += "library, so they cannot be associated with the 'access' permission on the datasets: "
+                        for role in ill_legitimate_roles:
+                            msg += "%s, " % role.name
+                        msg = msg.rstrip( ", " )
+                        new_in_roles = []
+                        for role in in_roles:
+                            if role in legitimate_roles:
+                                new_in_roles.append( role )
+                        in_roles = new_in_roles
+                    else:
+                        legitimate = True
+                if len( in_roles ) == 1:
+                    accessible = True
+                else:
+                    # At least 1 user must have every role associated with the access 
+                    # permission on this dataset, or the dataset is not accessible.
+                    in_roles_set = set()
+                    for role in in_roles:
+                        in_roles_set.add( role )
+                    users_set = set()
+                    for role in in_roles:
+                        for ura in role.users:
+                            users_set.add( ura.user )
+                        for gra in role.groups:
+                            group = gra.group
+                            for uga in group.users:
+                                users_set.add( uga.user )
+                    # Make sure that at least 1 user has every role being associated with the dataset
+                    for user in users_set:
+                        user_roles_set = set()
+                        for ura in user.roles:
+                            user_roles_set.add( ura.role )
+                        if in_roles_set.issubset( user_roles_set ):
+                            accessible = True
+                            break
+                if not accessible:
+                    error = self.IN_ACCESSIBLE
+                    # Don't set the permissions for DATASET_ACCESS if inaccessible, but set all other permissions
+                    permissions[ self.get_action( v.action ) ] = []
+                    msg += "At least 1 user must have every role associated with accessing datasets.  The roles you "
+                    msg += "attempted to associate for access would make the datasets in-accessible by everyone, "
+                    msg += "so access permissions were left in their original state (or not set).  All other "
+                    msg += "permissions were updated for the datasets."
+                else:
+                    permissions[ self.get_action( v.action ) ] = in_roles
+            else:
+                permissions[ self.get_action( v.action ) ] = in_roles
+        return permissions, in_roles, error, msg
     def copy_library_permissions( self, source_library_item, target_library_item, user=None ):
         # Copy all relevant permissions from source.
         permissions = {}
         for role_assoc in source_library_item.actions:
-            if role_assoc.action == self.permitted_actions.LIBRARY_ACCESS and \
-                not( isinstance( source_library_item, galaxy.model.Libary ) and isinstance( target_library_item, galaxy.model.Libary ) ):
+            if role_assoc.action != self.permitted_actions.LIBRARY_ACCESS.action:
                 # LIBRARY_ACCESS is a special permission that is set only at the library level.
-                continue
-            if role_assoc.action in permissions:
-                permissions[role_assoc.action].append( role_assoc.role )
-            else:
-                permissions[role_assoc.action] = [ role_assoc.role ]
+                if role_assoc.action in permissions:
+                    permissions[role_assoc.action].append( role_assoc.role )
+                else:
+                    permissions[role_assoc.action] = [ role_assoc.role ]
         self.set_all_library_permissions( target_library_item, permissions )
         if user:
             item_class = None

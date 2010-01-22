@@ -140,6 +140,18 @@ class ToolRunner( BaseController ):
         """
         Precreate datasets for asynchronous uploading.
         """
+        roles = kwd.get( 'roles', False )
+        if roles:
+            # The user associated the DATASET_ACCESS permission on the uploaded datasets with 1 or more roles.
+            # We need to ensure that the roles are legitimately derived from the roles associated with the LIBRARY_ACCESS
+            # permission if the library is not public ( this should always be the case since any ill-legitimate roles
+            # were filtered out of the roles displayed on the upload form.  In addition, we need to ensure that the user
+            # did not associated roles that would make the dataset in-accessible by everyone.
+            library_id = trans.app.security.decode_id( kwd.get( 'library_id', '' ) )
+            vars = dict( DATASET_ACCESS_in=roles )
+            permissions, in_roles, error, msg = trans.app.security_agent.check_library_dataset_access( trans, library_id, **vars )
+            if error:
+                return [ 'error', msg ]
         permissions = trans.app.security_agent.history_get_default_permissions( trans.history )
         def create_dataset( name ):
             ud = Bunch( name=name, file_type=None, dbkey=None )

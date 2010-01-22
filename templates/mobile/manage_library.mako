@@ -3,13 +3,13 @@
 <%namespace file="/dataset/security_common.mako" import="render_permission_form" />
 <%namespace file="/library/common/common.mako" import="render_template_info" />
 
-<% roles = trans.get_current_user_roles() %>
+<% current_user_roles = trans.get_current_user_roles() %>
 
 %if msg:
     ${render_msg( msg, messagetype )}
 %endif
 
-%if trans.app.security_agent.can_modify_library_item( roles, library ):
+%if trans.app.security_agent.can_modify_library_item( current_user_roles, library ):
     <div class="toolForm">
         <div class="toolFormTitle">Change library name and description</div>
         <div class="toolFormBody">
@@ -49,12 +49,8 @@
         </div>
     </div>
 %endif
-%if trans.app.security_agent.can_manage_library_item( roles, library ):
-    <%
-        roles = trans.sa_session.query( trans.app.model.Role ) \
-                                .filter( trans.app.model.Role.table.c.deleted==False ) \
-                                .order_by( trans.app.model.Role.table.c.name )
-    %>
+%if trans.app.security_agent.can_manage_library_item( current_user_roles, library ):
+    <% roles = library.get_legitimate_roles( trans ) %>
     ${render_permission_form( library, library.name, h.url_for( controller='library_common', cntrller='mobile', action='library_permissions', id=trans.security.encode_id( library.id ) ), roles )}
 %endif
 

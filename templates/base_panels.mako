@@ -95,16 +95,33 @@
                             }
                             // Make a synchronous request to create the datasets first
                             var async_datasets;
+                            var upload_error = false;
                             $.ajax( {
                                 async:      false,
                                 type:       "POST",
                                 url:        "${h.url_for(controller='/tool_runner', action='upload_async_create')}",
                                 data:       $(this).formSerialize(),
                                 dataType:   "json",
-                                success:    function( d, s ) { async_datasets = d.join() }
+                                success:    function(array_obj, status) {
+                                                if (array_obj.length > 0) {
+                                                    if (array_obj[0] == 'error') {
+                                                        upload_error = true;
+                                                        upload_form_error(array_obj[1]);
+                                                    } else {
+                                                        async_datasets = array_obj.join();
+                                                    }
+                                                } else {
+                                                    // ( gvk 1/22/10 ) FIXME: this block is never entered, so there may be a bug somewhere
+                                                    // I've done some debugging like checking to see if array_obj is undefined, but have not
+                                                    // tracked down the behavior that will result in this block being entered.  I believe the
+                                                    // intent was to have this block entered if the upload button is clicked on the upload
+                                                    // form but no file was selected.
+                                                    upload_error = true;
+                                                    upload_form_error( 'No data was entered in the upload form.  You may choose to upload a file, paste some data directly in the data box, or enter URL(s) to fetch data.' );
+                                                }
+                                            }
                             } );
-                            if (async_datasets == '') {
-                                upload_form_error( 'No data was entered in the upload form.  You may choose to upload a file, paste some data directly in the data box, or enter URL(s) to fetch from.' );
+                            if (upload_error == true) {
                                 return false;
                             } else {
                                 $(this).find("input[name=async_datasets]").val( async_datasets );

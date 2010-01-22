@@ -2,11 +2,6 @@
 <%namespace file="/message.mako" import="render_msg" />
 <%namespace file="/library/common/common.mako" import="render_template_info" />
 
-<%
-    if cntrller=='library':
-        roles = trans.get_current_user_roles()
-%>
-
 %if library_dataset == library_dataset.library_dataset_dataset_association.library_dataset:
     <b><i>This is the latest version of this library dataset</i></b>
 %else:
@@ -24,7 +19,7 @@
     ${render_msg( msg, messagetype )}
 %endif
 
-%if cntrller=='library_admin' or trans.app.security_agent.can_modify_library_item( roles, library_dataset ):
+%if cntrller=='library_admin' or trans.app.security_agent.can_modify_library_item( current_user_roles, library_dataset ):
     <div class="toolForm">
         <div class="toolFormTitle">Edit attributes of ${library_dataset.name}</div>
         <div class="toolFormBody">

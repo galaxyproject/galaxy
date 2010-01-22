@@ -1454,7 +1454,7 @@ class TwillTestCase( unittest.TestCase ):
         tc.fv( "1", "dbkey", dbkey )
         tc.fv( "1", "message", message.replace( '+', ' ' ) )
         for role_id in roles:
-            tc.fv( "1", "roles", role_id ) # form field 7 is the select list named out_groups, note the buttons...
+            tc.fv( "1", "roles", role_id )
         # Add template field contents, if any...
         if template_field_name1:
             tc.fv( "1", template_field_name1, template_field_contents1 )
@@ -1463,7 +1463,6 @@ class TwillTestCase( unittest.TestCase ):
             check_str = "Added 1 datasets to the library '%s' (each is selected)." % folder_name
         else:
             check_str = "Added 1 datasets to the folder '%s' (each is selected)." % folder_name
-        data = self.last_page()
         self.library_wait( library_id )
         self.home()
     def set_library_dataset_permissions( self, cntrller, library_id, folder_id, ldda_id, ldda_name, role_ids_str, permissions_in, permissions_out ):

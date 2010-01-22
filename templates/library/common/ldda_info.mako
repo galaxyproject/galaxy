@@ -8,8 +8,6 @@
         current_version = True
     else:
         current_version = False
-    if cntrller == 'library':
-        roles = trans.get_current_user_roles()
 %>
 
 %if current_version:
@@ -42,15 +40,15 @@
         %if not library.deleted and not ldda.library_dataset.folder.deleted and not ldda.deleted:
             <a id="dataset-${ldda.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
             <div popupmenu="dataset-${ldda.id}-popup">
-                %if cntrller=='library_admin' or trans.app.security_agent.can_modify_library_item( roles, ldda.library_dataset ):
+                %if cntrller=='library_admin' or trans.app.security_agent.can_modify_library_item( current_user_roles, ldda.library_dataset ):
                     <a class="action-button" href="${h.url_for( controller='library_common', action='ldda_edit_info', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ), id=trans.security.encode_id( ldda.id ) )}">Edit this dataset's information</a>
                 %else:
                     <a class="action-button" href="${h.url_for( controller='library_common', action='ldda_display_info', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ), id=trans.security.encode_id( ldda.id ) )}">View this dataset's information</a>
                 %endif
-                %if cntrller=='library_admin' or trans.app.security_agent.can_manage_dataset( roles, ldda.dataset ) and trans.app.security_agent.can_manage_library_item( roles, ldda.library_dataset ):
+                %if cntrller=='library_admin' or trans.app.security_agent.can_manage_dataset( current_user_roles, ldda.dataset ) and trans.app.security_agent.can_manage_library_item( current_user_roles, ldda.library_dataset ):
                     <a class="action-button" href="${h.url_for( controller='library_common', action='ldda_permissions', library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ), id=trans.security.encode_id( ldda.id ) )}">Edit this dataset's permissions</a>
                 %endif
-                %if current_version and ( cntrller=='library_admin' or trans.app.security_agent.can_modify_library_item( roles, ldda.library_dataset ) ):
+                %if current_version and ( cntrller=='library_admin' or trans.app.security_agent.can_modify_library_item( current_user_roles, ldda.library_dataset ) ):
                     <a class="action-button" href="${h.url_for( controller='library_common', action='upload_library_dataset', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ), replace_id=trans.security.encode_id( ldda.library_dataset.id ) )}">Upload a new version of this dataset</a>
                 %endif
                 %if cntrller=='library' and ldda.has_data:

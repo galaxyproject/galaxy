@@ -6,7 +6,7 @@
 
 <p>The menu on the left provides the following features</p>
 <ul>
-    <li><strong>Security</strong>
+    <li><strong>Security</strong> - see the <strong>Data Security and Data Libraries</strong> section below for details
         <p/>
         <ul>
             <li>
@@ -16,14 +16,15 @@
             <p/>
             <li>
                 <strong>Manage groups</strong> - provides a view of all groups along with the members of the group and the roles associated with
-                each group (both private and non-private roles).  Non-private roles include a link to a page that allows you to manage the users
-                and groups that are associated with the role.  The page also includes a view of the data library datasets that are associated with the
-                role and the permissions applied to each dataset.
+                each group (both private and non-private roles).  The group names include a link to a page that allows you to manage the users and 
+                roles that are associated with the group.
             </li>
             <p/>
             <li>
                 <strong>Manage roles</strong> - provides a view of all non-private roles along with the role type, and the users and groups that
-                are associated with the role.
+                are associated with the role.  The role names include a link to a page that allows you to manage the users and groups that are associated 
+                with the role.  The page also includes a view of the data library datasets that are associated with the role and the permissions applied 
+                to each dataset.
             </li>
         </ul>
     </li>
@@ -33,8 +34,21 @@
         <ul>
             <li>
                 <strong>Manage data libraries</strong> - Data libraries enable a Galaxy administrator to upload datasets into a data library.  Currently,
-                only administrators can create data libraries, but permission to perform the following functions on the data library can be granted to
-                users (a library item is one of: a data library, a library folder, a library dataset).
+                only administrators can create data libraries.
+                <p/>
+                When a data library is first created, it is considered "public" since it will be displayed in the "Data Libraries" view for any user, even 
+                those that are not logged in.  The Galaxy administrator can restrict access to a data library by associating roles with the data library's 
+                "access library" permission.  This permission will conservatively override the [dataset] "access" permission for the data library's contained 
+                datasets.
+                <p/>
+                For example, if a data library's "access library" permission is associated with Role1 and the data library contains "public" datasets, the 
+                data library will still only be displayed to those users that have Role1.  However, if the data library's "access library" permission is 
+                associated with both Role1 and Role2 and the data library contains datasets whose [dataset] "access" permission is associated with only Role1, 
+                then users that have Role2 will be able to access the library, but will not see those contained datasets whose [dataset] "access" permission 
+                is associated with only Role1.
+                <p/>
+                In addition to the "access library" permission, permission to perform the following functions on the data library (and it's contents) can 
+                be granted to users (a library item is one of: a data library, a library folder, a library dataset).
                 <p/>
                 <ul>
                     <li><strong>add library item</strong> - Role members can add library items to this data library or folder</li>
@@ -42,10 +56,10 @@
                     <li><strong>manage library permissions</strong> - Role members can manage permissions applied to this library item</li>
                 </ul>
                 <p/>
-                The default behavior is for no permissions to be applied to a data library item, but applied permissions are inherited downward, so it is
-                important to set desired permissions on a new data library when it is created.  When this is done, new folders and datasets added to the
-                data library will automatically inherit those permissions.  In the same way, permissions can be applied to a folder, which will be 
-                automatically inherited by all contained datasets and sub-folders.
+                The default behavior is for no permissions to be applied to a data library item, but applied permissions are inherited downward (with the exception
+                of the "access library" permission, which is only available on the data library itself).  Because of this, it is important to set desired permissions 
+                on a new data library when it is created.  When this is done, new folders and datasets added to the data library will automatically inherit those 
+                permissions.  In the same way, permissions can be applied to a folder, which will be automatically inherited by all contained datasets and sub-folders.
                 <p/>
                 The "Data Libraries" menu item allows users to access the datasets in a data library as long as they are not restricted from accessing them.
                 Importing a library dataset into a history will not make a copy of the dataset, but will be a "pointer" to the dataset on disk.  This
@@ -71,7 +85,20 @@
             </li>
         </ul>
     </li>
+    <p/>
+    <li><strong>Forms</strong>
+        <p/>To be completed
+    </li>
+    <p/>
+    <li><strong>Sequencing Requests</strong>
+        <p/>To be completed
+    </li>
+    <p/>
+    <li><strong>Cloud</strong>
+        <p/>To be completed
+    </li>
 </ul>
+<p/>
 <p><strong>Data Security and Data Libraries</strong></p>
 <p/>
 <strong>Security</strong> - Data security in Galaxy is a new feature, so familiarize yourself with the details which can be found 
@@ -120,9 +147,10 @@ in the way Galaxy has behaved in the past.
             <li>
                 <strong>access</strong> - users associated with the role can import this dataset into their history for analysis.
                 <p>
-                    If no roles with the "access" permission are associated with a dataset, the dataset is "public" and may be accessed by
-                    anyone.  Public data library datasets will be accessible to all users (as well as anyone not logged in during a Galaxy session)
-                    from the list of data libraries displayed when the "Data Libraries" menu item is selected.
+                    If no roles with the "access" permission are associated with a dataset, the dataset is "public" and may be accessed by anyone 
+                    that can access the data library in which it is contained.  See the <strong>Manage data libraries</strong> section above for 
+                    details.  Public datasets contained in public data libraries will be accessible to all users (as well as anyone not logged in 
+                    during a Galaxy session) from the list of data libraries displayed when the "Data Libraries" menu item is selected.
                 </p>
                 <p>
                     Associating a dataset with a role that includes the "access" permission restricts the set of users that can access it.  
@@ -139,11 +167,11 @@ in the way Galaxy has behaved in the past.
                 <p>
                     In order for a user to make a dataset private (i.e., only they can access it), they should associate the dataset with
                     their private role (the role identical to their Galaxy user name / email address).  Associating additional roles that
-                    include the "access" permission is not possible, since it would render the dataset inaccessible to everyone.  To make
-                    a dataset private to themselves and one or more other users, the user can create a new role and associate the dataset
-                    with that role, not their "private role".  Galaxy makes this easy by telling the user they are about to share a private
-                    dataset and giving them the option of doing so.  If they respond positively, the sharing role is automatically created
-                    for them.
+                    include the "access" permission is not possible, since it would render the dataset inaccessible to everyone.
+                <p>
+                    To make a dataset private to themselves and one or more other users, the user can create a new role and associate the dataset 
+                    with that role, not their "private role".  Galaxy makes this easy by telling the user they are about to share a private dataset 
+                    and giving them the option of doing so.  If they respond positively, the sharing role is automatically created for them.
                 </p>
                 <p>
                     Private data (data associated with roles that include the "access" permission) must be made public in order to be used
@@ -156,3 +184,4 @@ in the way Galaxy has behaved in the past.
         </ul>
     </li>
 </ul>
+<br/>

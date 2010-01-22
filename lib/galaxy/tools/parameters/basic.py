@@ -1177,7 +1177,7 @@ class DataToolParameter( ToolParameter ):
         field = form_builder.SelectField( self.name, self.multiple, None, self.refresh_on_change, refresh_on_change_values = self.refresh_on_change_values )
         # CRUCIAL: the dataset_collector function needs to be local to DataToolParameter.get_html_field()
         def dataset_collector( hdas, parent_hid ):
-            roles = trans.get_current_user_roles()
+            current_user_roles = trans.get_current_user_roles()
             for i, hda in enumerate( hdas ):
                 if len( hda.name ) > 30:
                     hda_name = '%s..%s' % ( hda.name[:17], hda.name[-11:] )
@@ -1189,7 +1189,7 @@ class DataToolParameter( ToolParameter ):
                     hid = str( hda.hid )
                 if not hda.dataset.state in [galaxy.model.Dataset.states.ERROR, galaxy.model.Dataset.states.DISCARDED] and \
                     hda.visible and \
-                    trans.app.security_agent.can_access_dataset( roles, hda.dataset ):
+                    trans.app.security_agent.can_access_dataset( current_user_roles, hda.dataset ):
                     # If we are sending data to an external application, then we need to make sure there are no roles
                     # associated with the dataset that restrict it's access from "public".
                     if self.tool and self.tool.tool_type == 'data_destination' and not trans.app.security_agent.dataset_is_public( hda.dataset ):
@@ -1204,7 +1204,7 @@ class DataToolParameter( ToolParameter ):
                         if target_ext:
                             if converted_dataset:
                                 hda = converted_dataset
-                            if not trans.app.security_agent.can_access_dataset( roles, hda.dataset ):
+                            if not trans.app.security_agent.can_access_dataset( current_user_roles, hda.dataset ):
                                 continue
                             selected = ( value and ( hda in value ) )
                             field.add_option( "%s: (as %s) %s" % ( hid, target_ext, hda_name ), hda.id, selected )

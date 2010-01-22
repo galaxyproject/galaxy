@@ -7,9 +7,9 @@
     	    data_state = "queued"
     	else:
     	    data_state = data.state
-    	roles = trans.get_current_user_roles()
+    	current_user_roles = trans.get_current_user_roles()
     %>
-    %if not trans.user_is_admin() and not trans.app.security_agent.can_access_dataset( roles, data.dataset ):
+    %if not trans.user_is_admin() and not trans.app.security_agent.can_access_dataset( current_user_roles, data.dataset ):
         <div class="historyItemWrapper historyItem historyItem-${data_state} historyItem-noPermission" id="historyItem-${data.id}">
     %else:
         <div class="historyItemWrapper historyItem historyItem-${data_state}" id="historyItem-${data.id}">
@@ -49,7 +49,7 @@
         ## Body for history items, extra info and actions, data "peek"
         
         <div id="info${data.id}" class="historyItemBody">
-            %if not trans.user_is_admin() and not trans.app.security_agent.can_access_dataset( roles, data.dataset ):
+            %if not trans.user_is_admin() and not trans.app.security_agent.can_access_dataset( current_user_roles, data.dataset ):
                 <div>You do not have permission to view this dataset.</div>
             %elif data_state == "upload":
                 <div>Dataset is uploading</div>

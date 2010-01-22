@@ -36,8 +36,8 @@
         
         <div class="secondary">
         ## Body for history items, extra info and actions, data "peek"
-        	<% roles = trans.get_current_user_roles() %>
-            %if not trans.user_is_admin() and not trans.app.security_agent.can_access_dataset( roles, data.dataset ):
+        	<% current_user_roles = trans.get_current_user_roles() %>
+            %if not trans.user_is_admin() and not trans.app.security_agent.can_access_dataset( current_user_roles, data.dataset ):
                 <div>You do not have permission to view this dataset.</div>
             %elif data_state == "queued":
                 <div>Job is waiting to run</div>

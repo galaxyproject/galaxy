@@ -21,13 +21,13 @@ class Library( BaseController ):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
-        roles = trans.get_current_user_roles()
+        current_user_roles = trans.get_current_user_roles()
         all_libraries = trans.sa_session.query( trans.app.model.Library ) \
                                         .filter( trans.app.model.Library.table.c.deleted==False ) \
                                         .order_by( trans.app.model.Library.name )
         authorized_libraries = []
         for library in all_libraries:
-            if trans.app.security_agent.library_is_public( library ) or trans.app.security_agent.can_access_library( roles, library ):
+            if trans.app.security_agent.can_access_library( current_user_roles, library ):
                 authorized_libraries.append( library )
         return trans.fill_template( '/library/browse_libraries.mako', 
                                     libraries=authorized_libraries,

@@ -5,7 +5,7 @@ Naming: try to use class names that have a distinct plural form so that
 the relationship cardinalities are obvious (e.g. prefer Dataset to Data)
 """
 
-import os.path, os, errno, sys, codecs
+import os.path, os, errno, sys, codecs, operator
 import galaxy.datatypes
 from galaxy.util.bunch import Bunch
 from galaxy import util
@@ -435,6 +435,12 @@ class Dataset( object ):
             os.remove(self.data.file_name)
         except OSError, e:
             log.critical('%s delete error %s' % (self.__class__.__name__, e))
+    def get_access_roles( self, trans ):
+        roles = []
+        for dp in self.actions:
+            if dp.action == trans.app.security_agent.permitted_actions.DATASET_ACCESS.action:
+                roles.append( dp.role )
+        return roles
 
 class DatasetInstance( object ):
     """A base class for all 'dataset instances', HDAs, LDAs, etc"""
@@ -747,6 +753,49 @@ class Library( object ):
                     return template.get_widgets( trans.user, contents=info.content )
             return template.get_widgets( trans.user )
         return []
+    def get_access_roles( self, trans ):
+        roles = []
+        for lp in self.actions:
+            if lp.action == trans.app.security_agent.permitted_actions.LIBRARY_ACCESS.action:
+                roles.append( lp.role )
+        return roles
+    def get_legitimate_roles( self, trans ):
+        if trans.app.security_agent.library_is_public( self ):
+            return trans.sa_session.query( trans.app.model.Role ) \
+                                   .filter( trans.app.model.Role.table.c.deleted==False ) \
+                                   .order_by( trans.app.model.Role.table.c.name )
+        def sort_by_attr( seq, attr ):
+            """
+            Sort the sequence of objects by object's attribute
+            Arguments:
+            seq  - the list or any sequence (including immutable one) of objects to sort.
+            attr - the name of attribute to sort by
+            """
+            # Use the "Schwartzian transform"
+            # Create the auxiliary list of tuples where every i-th tuple has form
+            # (seq[i].attr, i, seq[i]) and sort it. The second item of tuple is needed not
+            # only to provide stable sorting, but mainly to eliminate comparison of objects
+            # (which can be expensive or prohibited) in case of equal attribute values.
+            intermed = map( None, map( getattr, seq, ( attr, ) * len( seq ) ), xrange( len( seq ) ), seq )
+            intermed.sort()
+            return map( operator.getitem, intermed, ( -1, ) * len( intermed ) )            
+        roles = set()
+        # If a library has roles associated with the LIBRARY_ACCESS permission, we need to start with them.
+        access_roles = self.get_access_roles( trans )
+        for role in access_roles:
+            roles.add( role )
+            # Each role potentially has users.  We need to find all roles that each of those users have.
+            for ura in role.users:
+                roles.add( ura.role )
+            # Each role also potentially has groups which, in turn, have members ( users ).  We need to 
+            # find all roles that each group's members have.
+            for gra in role.groups:
+                group = gra.group
+                for uga in group.users:
+                    user = uga.user
+                    for ura in user.roles:
+                        roles.add( ura.role )
+        return sort_by_attr( [ role for role in roles ], 'name' )
     def get_display_name( self ):
         # Library name can be either a string or a unicode object. If string, 
         # convert to unicode object assuming 'utf-8' format.
@@ -937,6 +986,8 @@ class LibraryDatasetDatasetAssociation( DatasetInstance ):
         return ldda
     def clear_associated_files( self, metadata_safe = False, purge = False ):
         return
+    def get_access_roles( self, trans ):
+        return self.dataset.get_access_roles( trans )
     def get_info_association( self, restrict=False, inherited=False ):
         # If restrict is True, we will return this ldda's info_association whether it
         # exists or not.  If restrict is False, we'll return the next available info_association

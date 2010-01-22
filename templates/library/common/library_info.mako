@@ -2,11 +2,6 @@
 <%namespace file="/message.mako" import="render_msg" />
 <%namespace file="/library/common/common.mako" import="render_template_info" />
 
-<%
-    if not trans.user_is_admin():
-        roles = trans.get_current_user_roles()
-%>
-
 <br/><br/>
 <ul class="manage-table-actions">
     <li>
@@ -18,7 +13,7 @@
     ${render_msg( msg, messagetype )}
 %endif
 
-%if cntrller == 'library_admin' or trans.app.security_agent.can_modify_library_item( roles, library ):
+%if cntrller == 'library_admin' or trans.app.security_agent.can_modify_library_item( current_user_roles, library ):
     <div class="toolForm">
         <div class="toolFormTitle">Change library name and description</div>
         <div class="toolFormBody">

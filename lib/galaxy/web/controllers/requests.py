@@ -604,11 +604,11 @@ class Requests( BaseController ):
         all_libraries = trans.sa_session.query( trans.app.model.Library ) \
                                         .filter( trans.app.model.Library.table.c.deleted == False ) \
                                         .order_by( trans.app.model.Library.name )
-        roles = trans.get_current_user_roles()
+        current_user_roles = trans.get_current_user_roles()
         actions_to_check = [ trans.app.security_agent.permitted_actions.LIBRARY_ADD ]
         libraries = odict()
         for library in all_libraries:
-            can_show, hidden_folder_ids = trans.app.security_agent.show_library_item( trans.user, roles, library, actions_to_check )
+            can_show, hidden_folder_ids = trans.app.security_agent.show_library_item( trans.user, current_user_roles, library, actions_to_check )
             if can_show:
                 libraries[ library ] = hidden_folder_ids
         # create data library selectbox with refresh on change enabled
@@ -662,7 +662,7 @@ class Requests( BaseController ):
                 folder_list.add_option('Select one', 'none')
             # get all show-able folders for the selected library
             showable_folders = trans.app.security_agent.get_showable_folders( trans.user,
-                                                                              roles, 
+                                                                              current_user_roles, 
                                                                               selected_lib, 
                                                                               actions_to_check, 
                                                                               selected_hidden_folder_ids )

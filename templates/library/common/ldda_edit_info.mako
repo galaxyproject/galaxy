@@ -20,11 +20,6 @@
     ${h.css( "autocomplete_tagging" )}
 </%def>
 
-<%
-    if cntrller == 'library':
-        roles = trans.get_current_user_roles()
-%>
-
 %if ldda == ldda.library_dataset.library_dataset_dataset_association:
     <b><i>This is the latest version of this library dataset</i></b>
 %else:
@@ -54,7 +49,7 @@
     </select>
 </%def>
 
-%if cntrller=='library_admin' or trans.app.security_agent.can_modify_library_item( roles, ldda.library_dataset ):
+%if cntrller=='library_admin' or trans.app.security_agent.can_modify_library_item( current_user_roles, ldda.library_dataset ):
     <div class="toolForm">
         <div class="toolFormTitle">Edit attributes of ${ldda.name}</div>
         <div class="toolFormBody">

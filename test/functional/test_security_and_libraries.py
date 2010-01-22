@@ -243,6 +243,14 @@ class TestSecurityAndLibraries( TwillTestCase ):
         global regular_user3
         regular_user3 = sa_session.query( galaxy.model.User ).filter( galaxy.model.User.table.c.email==email ).first()
         assert regular_user3 is not None, 'Problem retrieving user with email "%s" from the database' % email
+        global regular_user3_private_role
+        regular_user3_private_role = None
+        for role in regular_user3.all_roles():
+            if role.name == regular_user3.email and role.description == 'Private Role for %s' % regular_user3.email:
+                regular_user3_private_role = role
+                break
+        if not regular_user3_private_role:
+            raise AssertionError( "Private role not found for user '%s'" % regular_user3.email )
         # Make sure DefaultUserPermissions were created
         if not regular_user3.default_permissions:
             raise AssertionError( 'No DefaultUserPermissions were created for user %s when the admin created the account' % email )
@@ -510,16 +518,32 @@ class TestSecurityAndLibraries( TwillTestCase ):
                                                galaxy.model.Library.table.c.deleted==False ) ) \
                                 .first()
         assert library_one is not None, 'Problem retrieving library named "%s" from the database' % name
-        # Set permissions on the library, sort for later testing
+        # Make sure library_one is public
+        assert 'access library' not in [ a.action for a in library_one.actions ], 'Library %s is not public when first created' % library_one.name
+        # Set permissions on the library, sort for later testing.
         permissions_in = [ k for k, v in galaxy.model.Library.permitted_actions.items() ]
         permissions_out = []
-        # Role one members are: admin_user, regular_user1, regular_user3.  Each of these users will be permitted to
-        # LIBRARY_ADD, LIBRARY_MODIFY, LIBRARY_MANAGE for library items.
+        # Role one members are: admin_user, regular_user1, regular_user3.  Each of these users will be permitted for
+        # LIBRARY_ACCESS, LIBRARY_ADD, LIBRARY_MODIFY, LIBRARY_MANAGE on this library and it's contents.
         self.library_permissions( self.security.encode_id( library_one.id ),
                                   library_one.name,
                                   str( role_one.id ),
                                   permissions_in,
-                                  permissions_out )                                            
+                                  permissions_out )
+        # Make sure the library is accessible by admin_user
+        self.visit_url( '%s/library/browse_libraries' % self.url )
+        self.check_page_for_string( library_one.name )
+        # Make sure the library is not accessible by regular_user2 since regular_user2 does not have Role1.
+        self.logout()
+        self.login( email=regular_user2.email )
+        self.visit_url( '%s/library/browse_libraries' % self.url )
+        try:
+            self.check_page_for_string( library_one.name )
+            raise AssertionError, 'Library %s is accessible by %s when it should be restricted' % ( library_one.name, regular_user2.email )
+        except:
+            pass
+        self.logout()
+        self.login( email=admin_user.email )
         # Rename the library
         rename = "Library One's been Renamed"
         redescription = "This is Library One's Re-described"
@@ -593,7 +617,11 @@ class TestSecurityAndLibraries( TwillTestCase ):
     def test_085_add_public_dataset_to_root_folder( self ):
         """Testing adding a public dataset to the root folder, making sure library template is inherited"""
         # Logged in as admin_user
-        actions = [ v.action for k, v in galaxy.model.Library.permitted_actions.items() ]
+        #actions = [ v.action for k, v in galaxy.model.Library.permitted_actions.items() ]
+        actions = []
+        for k, v in galaxy.model.Library.permitted_actions.items():
+            if k != 'LIBRARY_ACCESS':
+                actions.append( v.action )
         actions.sort()
         message = 'Testing adding a public dataset to the root folder'
         # The form_one template should be inherited to the library dataset upload form.
@@ -625,8 +653,8 @@ class TestSecurityAndLibraries( TwillTestCase ):
                                      .all()
         ldda_permissions = [ lddap_obj.action for lddap_obj in ldda_permissions ]
         ldda_permissions.sort()
-        assert actions == ldda_permissions, "Permissions for ldda id %s not correctly inherited from library %s" \
-                            % ( ldda_one.id, library_one.name )
+        assert actions == ldda_permissions, "Permissions (%s) for ldda id %s not correctly inherited from library %s which has permissions (%s)." \
+                            % ( str( ldda_permissions ), ldda_one.id, library_one.name, str( actions ) )
         # Make sure DatasetPermissions are correct - default is 'manage permissions'
         if len( ldda_one.dataset.actions ) > 1:
             raise AssertionError( '%d DatasetPermissionss were created for dataset id %d when it was created ( should have been 1 )' \
@@ -640,15 +668,56 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.visit_url( "%s/library_common/ldda_edit_info?cntrller=library_admin&library_id=%s&folder_id=%s&id=%s" % \
                         ( self.url, self.security.encode_id( library_one.id ), self.security.encode_id( library_one.root_folder.id ), self.security.encode_id( ldda_one.id ) ) )
         self.check_page_for_string( template_contents )
-        # Make sure other users can access the dataset from the Libraries view
+        # Make sure only users that have Role1 can access library_one even though it now contains a public dataset
         self.logout()
+        # regular_user2 does not have Role1
         self.login( email=regular_user2.email )
-        self.home()
-        self.visit_url( '%s/library_common/browse_library?cntrller=library_admin&id=%s' % ( self.url, self.security.encode_id( library_one.id ) ) )
-        self.check_page_for_string( "1.bed" )
+        self.visit_url( '%s/library/browse_libraries' % self.url )
+        try:
+            self.check_page_for_string( library_one.name )
+            raise AssertionError, 'Library %s is accessible by %s when it should be restricted' % ( library_one.name, regular_user2.email )
+        except:
+            pass
         self.logout()
         self.login( email=admin_user.email )
         self.home()
+        # Make sure only legitimate roles are displayed on the permissions form for the public dataset.
+        # Legitimate roles are as follows:
+        # 'Role One' since the LIBRARY_ACCESS permission is associated with Role One.  # Role one members are: admin_user, regular_user1, regular_user3.
+        # 'test@bx.psu.edu' ( admin_user's private role ) since admin_user has Role One
+        # 'Role Two' since admin_user has Role Two
+        # 'Role Three' since admin_user has Role Three
+        # 'test1@bx.psu.edu' ( regular_user1's private role ) since regular_user1 has Role One
+        # 'test3@bx.psu.edu' ( regular_user3's private role ) since regular_user3 has Role One
+        library_id = self.security.encode_id( library_one.id )
+        folder_id = self.security.encode_id( library_one.root_folder.id )
+        id = self.security.encode_id( ldda_one.id )
+        self.visit_url( '%s/library_common/ldda_permissions?cntrller=library_admin&library_id=%s&folder_id=%s&id=%s' % \
+                        ( self.url, library_id, folder_id, id ) )
+        self.check_page_for_string( role_one.name )
+        self.check_page_for_string( admin_user_private_role.name )
+        self.check_page_for_string( role_two.name )
+        self.check_page_for_string( role_three.name )
+        self.check_page_for_string( regular_user1_private_role.name )
+        self.check_page_for_string( regular_user3_private_role.name )
+        try:
+            self.check_page_for_string( regular_user2_private_role.name )
+            raise AssertionError, "Role (%s) incorrectly displayed on permission form for library dataset (%s)." % \
+                ( regular_user2_private_role.name, ldda_one.name )
+        except:
+            pass
+        # Even though the dataset is public, only users with Role1 should be able to see the library_one
+        # from the Data Libraries view.  Role one members are: admin_user, regular_user1, regular_user3.
+        self.logout()
+        self.login( email=regular_user1.email )
+        self.visit_url( '%s/library/browse_libraries' % self.url )
+        self.check_page_for_string( library_one.name )
+        self.logout()
+        self.login( email=regular_user2.email )
+        self.visit_url( '%s/library/browse_libraries' % self.url )
+        self.check_page_for_string( "You are not authorized to access any libraries" )
+        self.logout()
+        self.login( email=admin_user.email )
     def test_090_add_new_folder_to_root_folder( self ):
         """Testing adding a folder to a library root folder"""
         # logged in as admin_user
@@ -696,7 +765,11 @@ class TestSecurityAndLibraries( TwillTestCase ):
         # logged in as admin_user
         name = "Folder One's Subfolder"
         description = "This is the Folder One's subfolder"
-        self.add_folder( 'library_admin', self.security.encode_id( library_one.id ), self.security.encode_id( folder_one.id ), name=name, description=description )
+        self.add_folder( 'library_admin',
+                         self.security.encode_id( library_one.id ),
+                         self.security.encode_id( folder_one.id ),
+                         name=name,
+                         description=description )
         global subfolder_one
         subfolder_one = sa_session.query( galaxy.model.LibraryFolder ) \
                                   .filter( and_( galaxy.model.LibraryFolder.table.c.parent_id==folder_one.id,
@@ -728,6 +801,18 @@ class TestSecurityAndLibraries( TwillTestCase ):
         tc.submit( 'edit_info_button' )
         self.check_page_for_string( 'The information has been updated.' )
         self.check_page_for_string( template_contents )
+        # Make sure no roles except Role1 are displayed on the permissions form for the sub-folder.
+        library_id = self.security.encode_id( library_one.id )
+        id = self.security.encode_id( subfolder_one.id )
+        self.visit_url( '%s/library_common/folder_permissions?cntrller=library_admin&id=%s&library_id=%s' % \
+                        ( self.url, id, library_id ) )
+        self.check_page_for_string( role_one.name )
+        try:
+            self.check_page_for_string( role_two.name )
+            raise AssertionError, "Role (%s) incorrectly displayed on permission form for library dataset (%s)." % \
+                ( role_two.name, ldda_one.name )
+        except:
+            pass
     def test_100_add_2nd_new_folder_to_root_folder( self ):
         """Testing adding a 2nd folder to a library root folder"""
         # logged in as admin_user
@@ -762,7 +847,11 @@ class TestSecurityAndLibraries( TwillTestCase ):
     def test_105_add_public_dataset_to_root_folders_2nd_subfolder( self ):
         """Testing adding a public dataset to the root folder's 2nd sub-folder"""
         # Logged in as admin_user
-        actions = [ v.action for k, v in galaxy.model.Library.permitted_actions.items() ]
+        #actions = [ v.action for k, v in galaxy.model.Library.permitted_actions.items() ]
+        actions = []
+        for k, v in galaxy.model.Library.permitted_actions.items():
+            if k != 'LIBRARY_ACCESS':
+                actions.append( v.action )
         actions.sort()
         message = "Testing adding a public dataset to the folder named %s" % folder_two.name
         # The form_one template should be inherited to the library dataset upload form.
@@ -796,7 +885,11 @@ class TestSecurityAndLibraries( TwillTestCase ):
     def test_110_add_2nd_public_dataset_to_root_folders_2nd_subfolder( self ):
         """Testing adding a 2nd public dataset to the root folder's 2nd sub-folder"""
         # Logged in as admin_user
-        actions = [ v.action for k, v in galaxy.model.Library.permitted_actions.items() ]
+        #actions = [ v.action for k, v in galaxy.model.Library.permitted_actions.items() ]
+        actions = []
+        for k, v in galaxy.model.Library.permitted_actions.items():
+            if k != 'LIBRARY_ACCESS':
+                actions.append( v.action )
         actions.sort()
         message = "Testing adding a 2nd public dataset to the folder named %s" % folder_two.name
         # The form_one template should be inherited to the library dataset upload form.
@@ -830,6 +923,9 @@ class TestSecurityAndLibraries( TwillTestCase ):
     def test_115_add_dataset_with_private_role_restriction_to_folder( self ):
         """Testing adding a dataset with a private role restriction to a folder"""
         # Logged in as admin_user
+        #
+        # Keep in mind that # LIBRARY_ACCESS = "Role One" on the whole library
+        #
         # Add a dataset restricted by the following:
         # DATASET_MANAGE_PERMISSIONS = "test@bx.psu.edu" via DefaultUserPermissions
         # DATASET_ACCESS = "regular_user1" private role via this test method
@@ -877,7 +973,20 @@ class TestSecurityAndLibraries( TwillTestCase ):
     def test_120_accessing_dataset_with_private_role_restriction( self ):
         """Testing accessing a dataset with a private role restriction"""
         # Logged in as admin_user
-        # admin_user should not be able to see 2.bed from the analysis view's access libraries
+        #
+        # Keep in mind that # LIBRARY_ACCESS = "Role One" on the whole library
+        # Role one members are: admin_user, regular_user1, regular_user3.  Each of these users will be permitted for
+        # LIBRARY_ACCESS, LIBRARY_ADD, LIBRARY_MODIFY, LIBRARY_MANAGE on this library and it's contents.
+        #
+        # Legitimate roles displayed on the permission form are as follows:
+        # 'Role One' since the LIBRARY_ACCESS permission is associated with Role One.  # Role one members are: admin_user, regular_user1, regular_user3.
+        # 'test@bx.psu.edu' ( admin_user's private role ) since admin_user has Role One
+        # 'Role Two' since admin_user has Role Two
+        # 'Role Three' since admin_user has Role Three
+        # 'test1@bx.psu.edu' ( regular_user1's private role ) since regular_user1 has Role One
+        # 'test3@bx.psu.edu' ( regular_user3's private role ) since regular_user3 has Role One
+        #
+        # admin_user should not be able to see 4.bed from the analysis view's access libraries
         self.home()
         self.visit_url( '%s/library_common/browse_library?cntrller=library&id=%s' % ( self.url, self.security.encode_id( library_one.id ) ) )
         try:
@@ -901,23 +1010,15 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.check_page_for_string( folder_one.name )
         self.check_page_for_string( '4.bed' )
         self.logout()
-        # regular_user2 should not be able to see 1.bed from the analysis view's access librarys
+        # regular_user2 should not be to see the library since they do not have 
+        # Role One which is associated with the LIBRARY_ACCESS permission
         self.login( email='test2@bx.psu.edu' )
-        try:
-            self.check_page_for_string( folder_one.name )
-            raise AssertionError( '%s can see library folder %s when it contains only datasets restricted by role %s' \
-                                  % ( regular_user2.email, folder_one.name, regular_user1_private_role.description ) )
-        except:
-            pass
-        try:
-            self.check_page_for_string( '4.bed' )
-            raise AssertionError( '%s can see dataset 4.bed in library folder %s when it was restricted by role %s' \
-                                  % ( regular_user2.email, folder_one.name, regular_user1_private_role.description ) )
-        except:
-            pass
+        self.visit_url( '%s/library/browse_libraries' % self.url )
+        self.check_page_for_string( "You are not authorized to access any libraries" )
         self.logout()
-        # regular_user3 should not be able to see 2.bed from the analysis view's access librarys
+        # regular_user3 should not be able to see 4.bed from the analysis view's access librarys
         self.login( email='test3@bx.psu.edu' )
+        self.visit_url( '%s/library_common/browse_library?cntrller=library&id=%s' % ( self.url, self.security.encode_id( library_one.id ) ) )
         try:
             self.check_page_for_string( folder_one.name )
             raise AssertionError( '%s can see library folder %s when it contains only datasets restricted by role %s' \
@@ -929,16 +1030,18 @@ class TestSecurityAndLibraries( TwillTestCase ):
             raise AssertionError( '%s can see dataset 4.bed in library folder %s when it was restricted by role %s' \
                                   % ( regular_user3.email, folder_one.name, regular_user1_private_role.description ) )
         except:
-            pass # This is the behavior we want
+            pass
         self.logout()
         self.login( email=admin_user.email )
         self.home()
     def test_125_change_dataset_access_permission( self ):
         """Testing changing the access permission on a dataset with a private role restriction"""
         # Logged in as admin_user
-        # We need admin_user to be able to access 2.bed
-        permissions_in = [ k for k, v in galaxy.model.Dataset.permitted_actions.items() ] + \
-                         [ k for k, v in galaxy.model.Library.permitted_actions.items() ]
+        # We need admin_user to be able to access 4.bed
+        permissions_in = [ k for k, v in galaxy.model.Dataset.permitted_actions.items() ]
+        for k, v in galaxy.model.Library.permitted_actions.items():
+            if k != 'LIBRARY_ACCESS':
+                permissions_in.append( k )
         permissions_out = []
         role_ids_str = '%s,%s' % ( str( role_one.id ), str( admin_user_private_role.id ) )
         self.set_library_dataset_permissions( 'library_admin',
@@ -960,6 +1063,22 @@ class TestSecurityAndLibraries( TwillTestCase ):
         # Add a dataset restricted by role_two, which is currently associated as follows:
         # groups: group_two
         # users: test@bx.psu.edu, test1@bx.psu.edu via group_two
+        #
+        # We first need to make library_one public
+        permissions_in = []
+        for k, v in galaxy.model.Library.permitted_actions.items():
+            if k != 'LIBRARY_ACCESS':
+                permissions_in.append( k )
+        permissions_out = []
+        # Role one members are: admin_user, regular_user1, regular_user3.  Each of these users will now be permitted for
+        # LIBRARY_ADD, LIBRARY_MODIFY, LIBRARY_MANAGE on this library and it's contents.  The library will be public from
+        # this point on.
+        self.library_permissions( self.security.encode_id( library_one.id ),
+                                  library_one.name,
+                                  str( role_one.id ),
+                                  permissions_in,
+                                  permissions_out )
+        sa_session.refresh( library_one )
         message = 'Testing adding a dataset with a role that is associated with a group and users'
         # The form_one template should be inherited to the library dataset upload form.
         template_contents = "%s contents for %s 5.bed" % ( form_one_field_label, folder_one.name )

@@ -51,8 +51,8 @@ class DefaultToolAction( object ):
                             trans.sa_session.add( assoc )
                             trans.sa_session.flush()
                             data = new_data
-                roles = trans.get_current_user_roles()
-                if data and not trans.app.security_agent.can_access_dataset( roles, data.dataset ):
+                current_user_roles = trans.get_current_user_roles()
+                if data and not trans.app.security_agent.can_access_dataset( current_user_roles, data.dataset ):
                     raise "User does not have permission to use a dataset (%s) provided for input." % data.id
                 return data
             if isinstance( input, DataToolParameter ):
@@ -269,10 +269,10 @@ class DefaultToolAction( object ):
         #        parameters to the command as a special case.
         for name, value in tool.params_to_strings( incoming, trans.app ).iteritems():
             job.add_parameter( name, value )
-        roles = trans.get_current_user_roles()
+        current_user_roles = trans.get_current_user_roles()
         for name, dataset in inp_data.iteritems():
             if dataset:
-                if not trans.app.security_agent.can_access_dataset( roles, dataset.dataset ):
+                if not trans.app.security_agent.can_access_dataset( current_user_roles, dataset.dataset ):
                     raise "User does not have permission to use a dataset (%s) provided for input." % data.id
                 job.add_input_dataset( name, dataset )
             else:

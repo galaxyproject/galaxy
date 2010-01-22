@@ -59,7 +59,7 @@ def handle_library_params( trans, params, folder_id, replace_dataset=None ):
         role = trans.sa_session.query( trans.app.model.Role ).get( role_id )
         library_bunch.roles.append( role )
     return library_bunch
-def get_precreated_datasets( trans, params, data_obj, controller='root' ):    
+def get_precreated_datasets( trans, params, data_obj, controller='root' ):
     """
     Get any precreated datasets (when using asynchronous uploads).
     """
@@ -67,7 +67,7 @@ def get_precreated_datasets( trans, params, data_obj, controller='root' ):
     async_datasets = []
     if params.get( 'async_datasets', None ) not in ["None", "", None]:
         async_datasets = params['async_datasets'].split(',')
-    roles = trans.get_current_user_roles()
+    current_user_roles = trans.get_current_user_roles()
     for id in async_datasets:
         try:
             data = trans.sa_session.query( data_obj ).get( int( id ) )
@@ -82,7 +82,7 @@ def get_precreated_datasets( trans, params, data_obj, controller='root' ):
             else:
                 rval.append( data )
         elif data_obj is trans.app.model.LibraryDatasetDatasetAssociation:
-            if controller == 'library' and not trans.app.security_agent.can_add_library_item( roles, data.library_dataset.folder ):
+            if controller == 'library' and not trans.app.security_agent.can_add_library_item( current_user_roles, data.library_dataset.folder ):
                 log.error( 'Got a precreated dataset (%s) but this user (%s) is not allowed to write to it' % ( data.id, trans.user.id ) )
             else:
                 rval.append( data )
@@ -122,8 +122,8 @@ def new_history_upload( trans, uploaded_dataset, state=None ):
     trans.sa_session.flush()
     return hda
 def new_library_upload( trans, uploaded_dataset, library_bunch, state=None ):
-    roles = trans.get_current_user_roles()
-    if not ( trans.app.security_agent.can_add_library_item( roles, library_bunch.folder ) \
+    current_user_roles = trans.get_current_user_roles()
+    if not ( trans.app.security_agent.can_add_library_item( current_user_roles, library_bunch.folder ) \
              or trans.user.email in trans.app.config.get( "admin_users", "" ).split( "," ) ):
         # This doesn't have to be pretty - the only time this should happen is if someone's being malicious.
         raise Exception( "User is not authorized to add datasets to this library." )

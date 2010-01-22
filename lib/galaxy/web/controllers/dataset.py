@@ -192,8 +192,8 @@ class DatasetInterface( BaseController ):
         data = data = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( dataset_id )
         if not data:
             raise paste.httpexceptions.HTTPRequestRangeNotSatisfiable( "Invalid reference dataset id: %s." % str( dataset_id ) )
-        roles = trans.get_current_user_roles()
-        if trans.app.security_agent.can_access_dataset( roles, data.dataset ):
+        current_user_roles = trans.get_current_user_roles()
+        if trans.app.security_agent.can_access_dataset( current_user_roles, data.dataset ):
             if data.state == trans.model.Dataset.states.UPLOAD:
                 return trans.show_error_message( "Please wait until this dataset finishes uploading before attempting to view it." )
             
@@ -298,10 +298,10 @@ class DatasetInterface( BaseController ):
         if 'display_url' not in kwd or 'redirect_url' not in kwd:
             return trans.show_error_message( 'Invalid parameters specified for "display at" link, please contact a Galaxy administrator' )
         redirect_url = kwd['redirect_url'] % urllib.quote_plus( kwd['display_url'] )
-        roles = trans.get_current_user_roles()
+        current_user_roles = trans.get_current_user_roles()
         if trans.app.security_agent.dataset_is_public( data.dataset ):
             return trans.response.send_redirect( redirect_url ) # anon access already permitted by rbac
-        if trans.app.security_agent.can_access_dataset( roles, data.dataset ):
+        if trans.app.security_agent.can_access_dataset( current_user_roles, data.dataset ):
             trans.app.host_security_agent.set_dataset_permissions( data, trans.user, site )
             return trans.response.send_redirect( redirect_url )
         else:

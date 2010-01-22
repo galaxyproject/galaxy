@@ -161,8 +161,8 @@ class RootController( BaseController ):
             except:
                 return "Dataset id '%s' is invalid" %str( id )
         if data:
-            roles = trans.get_current_user_roles()
-            if trans.app.security_agent.can_access_dataset( roles, data.dataset ):
+            current_user_roles = trans.get_current_user_roles()
+            if trans.app.security_agent.can_access_dataset( current_user_roles, data.dataset ):
                 mime = trans.app.datatypes_registry.get_mimetype_by_extension( data.extension.lower() )
                 trans.response.set_content_type(mime)
                 if tofile:
@@ -194,8 +194,8 @@ class RootController( BaseController ):
             if data:
                 child = data.get_child_by_designation( designation )
                 if child:
-                    roles = trans.get_current_user_roles()
-                    if trans.app.security_agent.can_access_dataset( roles, child ):
+                    current_user_roles = trans.get_current_user_roles()
+                    if trans.app.security_agent.can_access_dataset( current_user_roles, child ):
                         return self.display( trans, id=child.id, tofile=tofile, toext=toext )
                     else:
                         return "You are not privileged to access this dataset."
@@ -211,8 +211,8 @@ class RootController( BaseController ):
         if 'authz_method' in kwd:
             authz_method = kwd['authz_method']
         if data:
-            roles = trans.get_current_user_roles()
-            if authz_method == 'rbac' and trans.app.security_agent.can_access_dataset( roles, data ):
+            current_user_roles = trans.get_current_user_roles()
+            if authz_method == 'rbac' and trans.app.security_agent.can_access_dataset( current_user_roles, data ):
                 trans.response.set_content_type( data.get_mime() )
                 trans.log_event( "Formatted dataset id %s for display at %s" % ( str( id ), display_app ) )
                 return data.as_display_type( display_app, **kwd )
@@ -266,8 +266,8 @@ class RootController( BaseController ):
             return trans.show_error_message( "Problem retrieving dataset." )
         if id is not None and data.history.user is not None and data.history.user != trans.user:
             return trans.show_error_message( "This instance of a dataset (%s) in a history does not belong to you." % ( data.id ) )
-        roles = trans.get_current_user_roles()
-        if trans.app.security_agent.can_access_dataset( roles, data.dataset ):
+        current_user_roles = trans.get_current_user_roles()
+        if trans.app.security_agent.can_access_dataset( current_user_roles, data.dataset ):
             if data.state == trans.model.Dataset.states.UPLOAD:
                 return trans.show_error_message( "Please wait until this dataset finishes uploading before attempting to edit its metadata." )
             params = util.Params( kwd, sanitize=False )
@@ -333,7 +333,7 @@ class RootController( BaseController ):
             elif params.update_roles_button:
                 if not trans.user:
                     return trans.show_error_message( "You must be logged in if you want to change permissions." )
-                if trans.app.security_agent.can_manage_dataset( roles, data.dataset ):
+                if trans.app.security_agent.can_manage_dataset( current_user_roles, data.dataset ):
                     permissions = {}
                     for k, v in trans.app.model.Dataset.permitted_actions.items():
                         in_roles = params.get( k + '_in', [] )
@@ -358,7 +358,10 @@ class RootController( BaseController ):
             ldatatypes = [ dtype_name for dtype_name, dtype_value in trans.app.datatypes_registry.datatypes_by_extension.iteritems() if dtype_value.allow_datatype_change ]
             ldatatypes.sort()
             trans.log_event( "Opened edit view on dataset %s" % str(id) )
-            return trans.fill_template( "/dataset/edit_attributes.mako", data=data, datatypes=ldatatypes )
+            return trans.fill_template( "/dataset/edit_attributes.mako",
+                                        data=data,
+                                        datatypes=ldatatypes,
+                                        current_user_roles=current_user_roles )
         else:
             return trans.show_error_message( "You do not have permission to edit this dataset's ( id: %s ) information." % str( id ) )
 

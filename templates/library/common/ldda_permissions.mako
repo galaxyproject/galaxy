@@ -3,11 +3,6 @@
 <%namespace file="/dataset/security_common.mako" import="render_permission_form" />
 
 <%
-    from galaxy import util
-
-    roles = trans.sa_session.query( trans.app.model.Role ) \
-                            .filter( trans.app.model.Role.table.c.deleted==False ) \
-                            .order_by( trans.app.model.Role.table.c.name )
     if len( lddas ) > 1:
         name_str = '%d selected datasets' % len( lddas )
     else:
