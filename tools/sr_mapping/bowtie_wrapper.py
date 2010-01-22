@@ -186,7 +186,7 @@ def __main__():
                                   inoref, options.ioffrate, iftab, intoa, iendian, 
                                   iseed, icutoff, colorspace )
             except ValueError:
-                indexing_cmds = ''
+                indexing_cmds = '%s' % colorspace
         try:
             shutil.copy( options.ref, tmp_index_dir )
         except Exception, e:
@@ -311,10 +311,10 @@ def __main__():
                 snpphred = '--snpphred %s' % options.snpphred
             else:
                 snpphred = ''
-            if options.snpfrac != 'None' and float( options.snpfrac ) >= 0:
-                snpfrac = '--snpfrac %s' % options.snpfrac
-            else:
-                snpfrac = ''
+                if options.snpfrac != 'None' and float( options.snpfrac ) >= 0:
+                    snpfrac = '--snpfrac %s' % options.snpfrac
+                else:
+                    snpfrac = ''
             if options.keepends != 'None' and options.keepends == 'doKeepends':
                 keepends = '--col-keepends'
             else:

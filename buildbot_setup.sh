@@ -21,6 +21,7 @@ LINKS="
 /depot/data2/galaxy/blastdb.loc
 /depot/data2/galaxy/bowtie_indices.loc
 /depot/data2/galaxy/bowtie_indices_color.loc
+/depot/data2/galaxy/bwa_index.loc
 /depot/data2/galaxy/encode_datasets.loc
 /galaxy/home/universe/encode_feature_partitions
 /depot/data2/galaxy/lastz_seqs.loc
@@ -32,8 +33,6 @@ LINKS="
 /depot/data2/galaxy/quality_scores.loc
 /depot/data2/galaxy/regions.loc
 /depot/data2/galaxy/sam_fa_indices.loc
-/depot/data2/galaxy/sequence_index_base.loc
-/depot/data2/galaxy/sequence_index_color.loc
 /depot/data2/galaxy/taxonomy
 /depot/data2/galaxy/twobit.loc
 "

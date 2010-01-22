@@ -199,9 +199,9 @@
   	    </param>
   	  </when>
       <when value="history">
-        <param name="ownFile" type="data" format="fasta" metadata_name="dbkey" label="Select a reference genome" />
+        <param name="ownFile" type="data" format="fasta" metadata_name="dbkey" label="Select the reference genome" />
         <conditional name="indexParams">
-          <param name="indexSettings" type="select" label="Choose whether to use default options for building indices or to set your own">
+          <param name="indexSettings" type="select" label="Choose whether to use Default options for building indices or to Set your own">
             <option value="indexPreSet">Default</option>
             <option value="indexFull">Set your own</option>
           </param> 
@@ -214,7 +214,7 @@
               </param>
               <when value="auto" />
               <when value="set">
-                <param name="packed" type="select" label="Whether or not to use a packed representation for DNA strings (-p)">
+                <param name="packed" type="select" label="Whether or not to use a packed representation for DNA strings (--packed)">
                   <option value="unpacked">Use regular representation</option>
                   <option value="packed">Use packed representation</option>
                 </param>
@@ -223,7 +223,7 @@
                 <param name="dcv" type="integer" value="1024" label="The period for the difference-cover sample (--dcv)" />
               </when>
             </conditional>
-            <param name="nodc" type="select" label="Whether or not to disable the use of the difference-cover sample (--nodc)" help="Suffix sorting becomes quadratic-time in the worst case (a very repetitive reference)">
+            <param name="nodc" type="select" label="Whether or not to disable the use of the difference-cover sample (--nodc)" help="Suffix sorting becomes quadratic-time in the worst case (with a very repetitive reference)">
               <option value="dc">Use difference-cover sample</option>
               <option value="nodc">Disable difference-cover sample</option>
             </param>
@@ -374,7 +374,7 @@
         </conditional> <!-- pParams -->
       </when> <!-- paired -->
     </conditional> <!-- singlePaired -->
-    <param name="suppressHeader" type="boolean" truevalue="true" falsevalue="false" checked="true" label="Suppress the header in the output SAM file" help="Bowtie produces SAM with several lines of header information" />
+    <param name="suppressHeader" type="boolean" truevalue="true" falsevalue="false" checked="true" label="Suppress the header in the output SAM file" help="Bowtie produces SAM with several lines of header information by default" />
   </inputs>
   <outputs>
     <data format="sam" name="output" />
@@ -506,6 +506,8 @@
 
 Bowtie_ is a short read aligner designed to be ultrafast and memory-efficient. It is developed by Ben Langmead and Cole Trapnell. Please cite: Langmead B, Trapnell C, Pop M, Salzberg SL. Ultrafast and memory-efficient alignment of short DNA sequences to the human genome. Genome Biology 10:R25.
 
+This tool uses Bowtie version 0.12.1.
+
 .. _Bowtie: http://bowtie-bio.sourceforge.net/index.shtml
 
 ------
@@ -514,7 +516,7 @@ Bowtie_ is a short read aligner designed to be ultrafast and memory-efficient. I
 
 .. class:: warningmark
 
-There is no such thing (yet) as automated gearshift in short read mapping. It is all like stick-shift driving in San Francisco. In other words = running this tool with default parameters will probably not give you meaningful results. A way to deal with this is to **understand** the parameters by carefully reading `documentation`__ and experimenting. Fortunaly, Galaxy makes experimenting easy.
+There is no such thing (yet) as an automated gearshift in short read mapping. It is all like stick-shift driving in San Francisco. In other words = running this tool with default parameters will probably not give you meaningful results. A way to deal with this is to **understand** the parameters by carefully reading the `documentation`__ and experimenting. Fortunately, Galaxy makes experimenting easy.
 
  .. __: http://bowtie-bio.sourceforge.net/index.shtml
 
@@ -522,7 +524,7 @@ There is no such thing (yet) as automated gearshift in short read mapping. It is
 
 **Input formats**
 
-Bowtie accepts files in Sanger FASTQ format. 
+Bowtie accepts files in Sanger FASTQ format. Use the FASTQ Groomer to prepare your files.
 
 ------
 
@@ -578,52 +580,93 @@ All of the options have a default value. You can change any of them. Most of the
 This is an exhaustive list of Bowtie options:
 
 For indexing (bowtie-build)::
-	-a                      No auto behavior. Disable the default behavior where bowtie automatically selects values for --bmax/--dcv/--packed parameters according to the memory available. [off]
-	-p                      Packing. Use a packed representation for DNA strings. [auto] 
-	--bmax &lt;int&gt;      Suffix maximum. The maximum number of suffixes allowed in a block. [auto]
-	--bmaxdivn &lt;int&gt;  Suffix maximum fraction. The maximum number of suffixes allowed in a block expressed as a fraction of the length of the reference. [4]
-	--dcv &lt;int&gt;       Difference-cover sample. Use &lt;int&gt; as the period for the difference-cover sample. [1024]
-	--nodc &lt;int&gt;      No difference-cover sample. Disable the difference-cover sample. [off]
-	-r                      No reference indexes. Do not build the NAME.3.ebwt and NAME.4.ebwt portions of the index, used only for paired-end alignment. [off]
-	-o                      Offrate. How many Burrows-Wheeler rows get marked by the indexer. The indexer will mark every 2^&lt;int&gt; rows. The marked rows correspond to rows on the genome. [5]
-	-t &lt;int&gt;          Ftab. The lookup table used to calculate an initial Burrows-Wheeler range with respect to the first &lt;int&gt; characters of the query. Ftab is 4^&lt;int&gt;+1 bytes. [10]
-	--ntoa                  N conversion. Convert Ns to As before building the index. Otherwise, Ns are simply excluded from the index and Bowtie will not find alignments that overlap them. [off]
-	--big                   Endianness. Endianness to use when serializing integers to the index file. [off]
-	--little                Endianness. [--little]
-	--seed &lt;int&gt;      Random seed. Use &lt;int&gt; as the seed for the pseudo-random number generator. [off]
-	--cutoff &lt;int&gt;    Cutoff. Index only the first &lt;int&gt; bases of the reference sequences (cumulative across sequences) and ignore the rest. [off]
+
+  -a               No auto behavior. Disable the default behavior where bowtie automatically 
+                   selects values for --bmax/--bmaxdivn/--dcv/--packed parameters according 
+                   to the memory available. [off]
+  --packed         Packing. Use a packed representation for DNA strings. [auto] 
+  --bmax INT       Suffix maximum. The maximum number of suffixes allowed in a block. [auto]
+  --bmaxdivn INT   Suffix maximum fraction. The maximum number of suffixes allowed in a block 
+                   expressed as a fraction of the length of the reference. [4]
+  --dcv INT        Difference-cover sample. Use INT as the period for the difference-cover 
+                   sample. [1024]
+  --nodc INT       No difference-cover sample. Disable the difference-cover sample. [off]
+  -r               No reference indexes. Do not build the NAME.3.ebwt and NAME.4.ebwt portions 
+                   of the index. Used only for paired-end alignment. [off]
+  -o               Offrate. How many Burrows-Wheeler rows get marked by the indexer. The 
+                   indexer will mark every 2^INT rows. The marked rows correspond to rows on 
+                   the genome. [5]
+  -t INT           Ftab. The lookup table used to calculate an initial Burrows-Wheeler range 
+                   with respect to the first INT characters of the query. Ftab is 4^INT+1 
+                   bytes. [10]
+  --ntoa           N conversion. Convert Ns to As before building the index. Otherwise, Ns are 
+                   simply excluded from the index and Bowtie will not find alignments that 
+                   overlap them. [off]
+  --big            Endianness. Endianness to use when serializing integers to the index file. [off]
+  --little         Endianness. [--little]
+  --seed INT       Random seed. Use INT as the seed for the pseudo-random number generator. [off]
+  --cutoff INT     Cutoff. Index only the first INT bases of the reference sequences (cumulative 
+                   across sequences) and ignore the rest. [off]
 
 For aligning (bowtie)::
-	-s &lt;int&gt;           Skip. Do not align the first &lt;int&gt; reads or pairs in the input. [off]
-	-u &lt;int&gt;           Align limit. Only align the first &lt;int&gt; reads/pairs from the input. [no limit]
-	-5 &lt;int&gt;           High-quality trim. Trim &lt;int&gt; bases from the high-quality (left) end of each read before alignment. [0]
-	-3 &lt;int&gt;           Low-quality trim. Trim &lt;int&gt; bases from the low-quality (right) end of each read before alignment. [0]
-	-n &lt;int&gt;           Mismatch seed. Maximum number of mismatches permitted in the seed (defined with seed length option). Can be 0, 1, 2, or 3. [2]
-	-e &lt;int&gt;           Mismatch quality. Maximum permitted total of quality values at mismatched read positions. Bowtie rounds quality values to the nearest 10 and saturates at 30. [70]
-	-l &lt;int&gt;           Seed length. The number of bases on the high-quality end of the read to which the -n ceiling applies. Must be at least 5. [28]
-	--nomaqround             Suppress MAQ rounding. Values are internally rounded to the nearest 10 and saturate at 30. This options turns off that rounding. [off] 
-	-v &lt;int&gt;           MAQ- or SOAP-like alignment policy. This option turns off the default MAQ-like alignment policy in favor of a SOAP-like one. End-to-end alignments with at most &lt;int&gt; mismatches. [off]
-	-I &lt;int&gt;           Minimum insert. The minimum insert size for valid paired-end alignments. Does checking on untrimmed reads if -5 or -3 is used. [0]
-	--fr                     Mate orientation. The upstream/downstream mate orientations for a valid paired-end alignment against the forward reference strand. [--fr]
-	--rf                     Mate orientation. [off]
-	--ff                     Mate orientation. [off]
-	-X &lt;int&gt;           Maximum insert. The maximum insert size for valid paired-end alignments. Does checking on untrimmed reads if -5 or -3 is used. [250]
-	--pairtries &lt;int&gt;  Maximum alignment attempts for paired-end data. [100] 
-	--nofw                   No forward aligning. Choosing this option means that Bowtie will not attempt to align against the forward reference strand. [off]
-	--norc                   No reverse-complement aligning. Setting this will mean that Bowtie will not attempt to align against the reverse-complement reference strand. [off]
-	--maxbts &lt;int&gt;     Maximum backtracks. The maximum number of backtracks permitted when aligning a read in -n 2 or -n 3 mode. [125 without --best] [800 with --best]
-	-y                       Try hard. Try as hard as possible to find valid alignments when they exist, including paired-end alignments. [off]
-	--chunkmbs &lt;int&gt;   Thread memory. The number of megabytes of memory a given thread is given to store path descriptors in --best mode. [32]
-	-k &lt;int&gt;           Valid alignments. The number of valid alignments per read or pair. [off] 
-	-a                       All valid alignments. Choosing this means that all valid alignments per read or pair will be reported. [off]
-	-m &lt;int&gt;           Suppress alignments. Suppress all alignments for a particular read or pair if more than &lt;int&gt; reportable alignments exist for it. [no limit]
-	--best                   Best mode. Make Bowtie guarantee that reported singleton alignments are "best" in terms of stratum (the number of mismatches) and quality values at mismatched position. [off]
-	--strata                 Best strata. When running in best mode, report alignments that fall into the best stratum if there are ones falling into more than one. [off]
-	-o &lt;int&gt;           Offrate override. Override the offrate of the index with &lt;int&gt;. Some row markings are discarded when index read into memory. &lt;int&gt; must be greater than the value used to build the index (default: 5). [off]
-	--seed &lt;int&gt;       Random seed. Use &lt;int&gt; as the seed for the pseudo-random number generator. [off]
-	--snpphred &lt;int&gt;   Use &lt;int&gt; as the SNP penalty for decoding colorspace alignments. True ratio of SNPs per base in the subject genome. [see --snpfrac]
-	--snpfrac &lt;dec&gt;    Use &lt;dec&gt; as the estimated ratio of SNPs per base when decoding colorspace alignments. [0.001]
-	--col-keepends           Keep the extreme-end nucleotides and qualities when decoding colorspace alignments. [off]
+
+  -s INT           Skip. Do not align the first INT reads or pairs in the input. [off]
+  -u INT           Align limit. Only align the first INT reads/pairs from the input. [no limit]
+  -5 INT           High-quality trim. Trim INT bases from the high-quality (left) end of each 
+                   read before alignment. [0]
+  -3 INT           Low-quality trim. Trim INT bases from the low-quality (right) end of each 
+                   read before alignment. [0]
+  -n INT           Mismatch seed. Maximum number of mismatches permitted in the seed (defined 
+                   with seed length option). Can be 0, 1, 2, or 3. [2]
+  -e INT           Mismatch quality. Maximum permitted total of quality values at mismatched 
+                   read positions. Bowtie rounds quality values to the nearest 10 and saturates 
+                   at 30. [70]
+  -l INT           Seed length. The number of bases on the high-quality end of the read to 
+                   which the -n ceiling applies. Must be at least 5. [28]
+  --nomaqround     Suppress MAQ rounding. Values are internally rounded to the nearest 10 and 
+                   saturate at 30. This options turns off that rounding. [off] 
+  -v INT           MAQ- or SOAP-like alignment policy. This option turns off the default 
+                   MAQ-like alignment policy in favor of a SOAP-like one. End-to-end alignments 
+                   with at most INT mismatches. [off]
+  -I INT           Minimum insert. The minimum insert size for valid paired-end alignments. 
+                   Does checking on untrimmed reads if -5 or -3 is used. [0]
+  -X INT           Maximum insert. The maximum insert size for valid paired-end alignments. 
+                   Does checking on untrimmed reads if -5 or -3 is used. [250]
+  --fr             Mate orientation. The upstream/downstream mate orientations for a valid 
+                   paired-end alignment against the forward reference strand. [--fr]
+  --rf             Mate orientation. [off]
+  --ff             Mate orientation. [off]
+  --pairtries INT  Maximum alignment attempts for paired-end data. [100] 
+  --nofw           No forward aligning. Choosing this option means that Bowtie will not attempt 
+                   to align against the forward reference strand. [off]
+  --norc           No reverse-complement aligning. Setting this will mean that Bowtie will not 
+                   attempt to align against the reverse-complement reference strand. [off]
+  --maxbts INT     Maximum backtracks. The maximum number of backtracks permitted when aligning 
+                   a read in -n 2 or -n 3 mode. [125 without --best] [800 with --best]
+  -y               Try hard. Try as hard as possible to find valid alignments when they exist, 
+                   including paired-end alignments. [off]
+  --chunkmbs INT   Thread memory. The number of megabytes of memory a given thread is given to 
+                   store path descriptors in --best mode. [32]
+  -k INT           Valid alignments. The number of valid alignments per read or pair. [off] 
+  -a               All valid alignments. Choosing this means that all valid alignments per read 
+                   or pair will be reported. [off]
+  -m INT           Suppress alignments. Suppress all alignments for a particular read or pair 
+                   if more than INT reportable alignments exist for it. [no limit]
+  --best           Best mode. Make Bowtie guarantee that reported singleton alignments are 
+                   "best" in terms of stratum (the number of mismatches) and quality values at 
+                   mismatched position. [off]
+  --strata         Best strata. When running in best mode, report alignments that fall into the 
+                   best stratum if there are ones falling into more than one. [off]
+  -o INT           Offrate override. Override the offrate of the index with INT. Some row 
+                   markings are discarded when index read into memory. INT must be greater than 
+                   the value used to build the index (default: 5). [off]
+  --seed INT       Random seed. Use INT as the seed for the pseudo-random number generator. [off]
+  --snpphred INT   Use INT as the SNP penalty for decoding colorspace alignments. True ratio of 
+                   SNPs per base in the subject genome. [see --snpfrac]
+  --snpfrac DEC    Use DEC as the estimated ratio of SNPs per base when decoding colorspace 
+                   alignments. [0.001]
+  --col-keepends   Keep the extreme-end nucleotides and qualities when decoding colorspace 
+                   alignments. [off]
 
   </help>
   <code file="bowtie_wrapper_code.py" />

@@ -1,112 +1,48 @@
-<tool id="bwa_wrapper" name="Map with BWA" version="1.0.1">
+<tool id="bwa_wrapper" name="Map with BWA" version="1.0.3">
   <description></description>
-  <command interpreter="python">
-    bwa_wrapper.py 
-    --threads="4"
-    #if $solidOrSolexa.solidRefGenomeSource.refGenomeSource == "history":
-     --ref=$solidOrSolexa.solidRefGenomeSource.ownFile
-    #else:
-     --ref=$solidOrSolexa.solidRefGenomeSource.indices.value
-    #end if
-    --fastq=$paired.input1
-    #if $paired.sPaired == "paired":
-     --rfastq=$paired.input2 
-    #else:
-     --rfastq="None"
-    #end if
-    --output=$output
-    --genAlignType=$paired.sPaired
-    --params=$params.source_select
-    --fileType=$solidOrSolexa.solidSolexa
-    --fileSource=$solidOrSolexa.solidRefGenomeSource.refGenomeSource
-    #if $params.source_select == "pre_set":
-     --maxEditDist="None"
-     --fracMissingAligns="None"
-     --maxGapOpens="None"
-     --maxGapExtens="None"
-     --disallowLongDel="None"
-     --disallowIndel="None"
-     --seed="None"
-     --maxEditDistSeed="None"
-     --mismatchPenalty="None"
-     --gapOpenPenalty="None"
-     --gapExtensPenalty="None"
-     --colorSpaceRev="None"
-     --suboptAlign="None"
-     --noIterSearch="None"
-     --outputTopN="None"
-     --maxInsertSize="None"
-     --maxOccurPairing="None"
-    #else:
-     --maxEditDist=$params.maxEditDist
-     --fracMissingAligns=$params.fracMissingAligns
-     --maxGapOpens=$params.maxGapOpens
-     --maxGapExtens=$params.maxGapExtens
-     --disallowLongDel=$params.disallowLongDel
-     --disallowIndel=$params.disallowIndel
-     --seed=$params.seed
-     --maxEditDistSeed=$params.maxEditDistSeed
-     --mismatchPenalty=$params.mismatchPenalty
-     --gapOpenPenalty=$params.gapOpenPenalty
-     --gapExtensPenalty=$params.gapExtensPenalty
-     --colorSpaceRev=$params.colorSpaceRev
-     --suboptAlign=$params.suboptAlign
-     --noIterSearch=$params.noIterSearch
-     --outputTopN=$params.outputTopN
-     --maxInsertSize=$params.maxInsertSize
-     --maxOccurPairing=$params.maxOccurPairing
-    #end if
-    #if $solidOrSolexa.solidRefGenomeSource.refGenomeSource == "history":
-     --dbkey=$dbkey
-    #else:
-     --dbkey="None"
-    #end if
-    --suppressHeader=$suppressHeader
+  <command interpreter="python">bwa_wrapper.py 
+--threads="4"
+#if $genomeSource.refGenomeSource == "history":
+--ref=$genomeSource.ownFile
+#else:
+--ref=$genomeSource.indices.value
+#end if
+--fastq=$paired.input1
+#if $paired.sPaired == "paired":
+--rfastq=$paired.input2 
+#else:
+--rfastq="None"
+#end if
+--output=$output --genAlignType=$paired.sPaired --params=$params.source_select --fileSource=$genomeSource.refGenomeSource
+#if $params.source_select == "pre_set":
+--maxEditDist="None" --fracMissingAligns="None" --maxGapOpens="None" --maxGapExtens="None" --disallowLongDel="None" --disallowIndel="None" --seed="None" --maxEditDistSeed="None" --mismatchPenalty="None" --gapOpenPenalty="None" --gapExtensPenalty="None" --suboptAlign="None" --noIterSearch="None" --outputTopN="None" --maxInsertSize="None" --maxOccurPairing="None"
+#else:
+--maxEditDist=$params.maxEditDist --fracMissingAligns=$params.fracMissingAligns --maxGapOpens=$params.maxGapOpens --maxGapExtens=$params.maxGapExtens --disallowLongDel=$params.disallowLongDel --disallowIndel=$params.disallowIndel --seed=$params.seed --maxEditDistSeed=$params.maxEditDistSeed --mismatchPenalty=$params.mismatchPenalty --gapOpenPenalty=$params.gapOpenPenalty --gapExtensPenalty=$params.gapExtensPenalty --suboptAlign=$params.suboptAlign --noIterSearch=$params.noIterSearch --outputTopN=$params.outputTopN --maxInsertSize=$params.maxInsertSize --maxOccurPairing=$params.maxOccurPairing
+#end if
+#if $genomeSource.refGenomeSource == "history":
+--dbkey=$dbkey
+#else:
+--dbkey="None"
+#end if
+--suppressHeader=$suppressHeader
   </command>
   <inputs>
-    <conditional name="solidOrSolexa">
-   	  <param name="solidSolexa" type="select" label="Select SOLiD or Solexa format for the original dataset">
-	    <option value="solexa">Illumina</option>
-	    <option value="solid">SOLiD</option>
+	<conditional name="genomeSource">
+	  <param name="refGenomeSource" type="select" label="Will you select a reference genome from your history or use a built-in index?">
+	    <option value="indexed">Use a built-in index</option>
+	    <option value="history">Use one from the history</option>
 	  </param>
-	  <when value="solid">
-	    <conditional name="solidRefGenomeSource">
-	      <param name="refGenomeSource" type="select" label="Will you select a reference genome from your history or use a built-in index?">
-	        <option value="indexed">Use a built-in index</option>
-	        <option value="history">Use one from the history</option>
-	      </param>
-	      <when value="indexed">
- 	    	<param name="indices" type="select" label="Select a reference genome" help="if your genome of interest is not listed - contact Galaxy team">
- 	  	      <options from_file="sequence_index_color.loc">
-  	  	        <column name="value" index="1" />
-	  	        <column name="name" index="0" />
-	  	      </options>
-	  	    </param>
-	  	  </when>
-	      <when value="history">
-	        <param name="ownFile" type="data" format="fasta" metadata_name="dbkey" label="Select a reference genome" />
-	      </when>
-	  	</conditional>
-	  </when>
-	  <when value="solexa">
-	    <conditional name="solidRefGenomeSource">
-	      <param name="refGenomeSource" type="select" label="Will you select a reference genome from your history or use a built-in index?">
-	        <option value="indexed">Use a built-in index</option>
-	        <option value="history">Use one from the history</option>
-	      </param>
-	      <when value="indexed">
- 	        <param name="indices" type="select" label="Select a reference genome">
- 	  	      <options from_file="sequence_index_base.loc">
-  	  	        <column name="value" index="1" />
-	  	        <column name="name" index="0" />
-	  	      </options>
-	        </param>
-	      </when>
-	      <when value="history">
-	        <param name="ownFile" type="data" format="fasta" metadata_name="dbkey" label="Select a reference from history" />
-	      </when>
-	    </conditional>
-	  </when>
+      <when value="indexed">
+ 	    <param name="indices" type="select" label="Select a reference genome">
+ 	  	  <options from_file="bwa_index.loc">
+  	  	    <column name="value" index="1" />
+	  	    <column name="name" index="0" />
+	  	  </options>
+	    </param>
+      </when>
+	  <when value="history">
+	    <param name="ownFile" type="data" format="fasta" metadata_name="dbkey" label="Select a reference from history" />
+      </when>
 	</conditional>
     <conditional name="paired">
       <param name="sPaired" type="select" label="Is this library mate-paired?">
@@ -122,32 +58,28 @@
       </when>
     </conditional>	
     <conditional name="params">
-      <param name="source_select" type="select" label="BWA settings to use" help="For most mapping needs use Commonly used settings. If you want full control use Full List">
-        <option value="pre_set">Commonly used</option>
+      <param name="source_select" type="select" label="BWA settings to use" help="For most mapping needs use Commonly Used settings. If you want full control use Full Parameter List">
+        <option value="pre_set">Commonly Used</option>
         <option value="full">Full Parameter List</option>
       </param>
       <when value="pre_set" />
       <when value="full">
-        <param name="maxEditDist" type="integer" value="0" label="Maximum edit distance" help="Enter this value OR a fraction of missing alignments, not both" />  
-        <param name="fracMissingAligns" type="float" value="0.04" label="Fraction of missing alignments given 2% uniform base error rate" help="Enter this value OR maximum edit distance, not both" />  
-        <param name="maxGapOpens" type="integer" value="1" label="Maximum number of gap opens" />
-        <param name="maxGapExtens" type="integer" value="-1" label="Maximum number of gap extensions" help="-1 for k-difference mode (disallowing long gaps)" />
-        <param name="disallowLongDel" type="integer" value="16" label="Disallow long deletion within [value] towards the 3'-end" />
-        <param name="disallowIndel" type="integer" value="5" label="Disallow insertion/deletion within [value] bp towards the end" />
-        <param name="seed" type="integer" value="-1" label="Number of first subsequences to take as seed" help="Enter -1 for infinity" />
-        <param name="maxEditDistSeed" type="integer" value="2" label="Maximum edit distance in the seed" />
-        <param name="mismatchPenalty" type="integer" value="3" label="Mismatch penalty" help="BWA will not search for suboptimal hits with a score lower than [value]" />
-        <param name="gapOpenPenalty" type="integer" value="11" label="Gap open penalty" />
-        <param name="gapExtensPenalty" type="integer" value="4" label="Gap extension penalty" />
-        <param name="colorSpaceRev" type="select" label="Reverse query but don't complement it" help="Reverse query for all alignment in color space">
-          <option value="false">Don't reverse query</option>
-          <option value="true">Reverse query</option>
-        </param>
-        <param name="suboptAlign" type="boolean" truevalue="true" falsevalue="false" checked="no" label="Proceed with suboptimal alignments even if the top hit is a repeat" help="By default, BWA only searches for suboptimal alignments if the top hit is unique. Using this option has no effect on accuracy for single-end reads. It is mainly designed for improving the alignment accuracy of paired-end reads. However, the pairing procedure will be slowed down, especially for very short reads (~32bp)" />
-        <param name="noIterSearch" type="boolean" truevalue="true" falsevalue="false" checked="no" label="Disable iterative search" help="All hits with no more than maxDiff differences will be found. This mode is much slower than the default." />
-        <param name="outputTopN" type="integer" value="-1" label="Output top [value] hits" help="For single-end reads only. Enter -1 to disable outputting multiple hits" />
-        <param name="maxInsertSize" type="integer" value="500" label="Maximum insert size for a read pair to be considered as being mapped properly" help="For paired-end reads only. Only used when there are not enough good alignment to infer the distribution of insert sizes" />
-        <param name="maxOccurPairing" type="integer" value="100000" label="Maximum occurrences of a read for pairing" help="For paired-end reads only. A read with more occurrences will be treated as a single-end read. Reducing this parameter helps faster pairing" />
+        <param name="maxEditDist" type="integer" value="0" label="Maximum edit distance (-n)" help="Enter this value OR a fraction of missing alignments, not both" />  
+        <param name="fracMissingAligns" type="float" value="0.04" label="Fraction of missing alignments given 2% uniform base error rate (-n)" help="Enter this value OR maximum edit distance, not both" />  
+        <param name="maxGapOpens" type="integer" value="1" label="Maximum number of gap opens (-o)" />
+        <param name="maxGapExtens" type="integer" value="-1" label="Maximum number of gap extensions (-e)" help="-1 for k-difference mode (disallowing long gaps)" />
+        <param name="disallowLongDel" type="integer" value="16" label="Disallow long deletion within [value] towards the 3'-end (-d)" />
+        <param name="disallowIndel" type="integer" value="5" label="Disallow insertion/deletion within [value] bp towards the end (-i)" />
+        <param name="seed" type="integer" value="-1" label="Number of first subsequences to take as seed (-l)" help="Enter -1 for infinity" />
+        <param name="maxEditDistSeed" type="integer" value="2" label="Maximum edit distance in the seed (-k)" />
+        <param name="mismatchPenalty" type="integer" value="3" label="Mismatch penalty (-M)" help="BWA will not search for suboptimal hits with a score lower than [value]" />
+        <param name="gapOpenPenalty" type="integer" value="11" label="Gap open penalty (-O)" />
+        <param name="gapExtensPenalty" type="integer" value="4" label="Gap extension penalty (-E)" />
+        <param name="suboptAlign" type="boolean" truevalue="true" falsevalue="false" checked="no" label="Proceed with suboptimal alignments even if the top hit is a repeat" help="By default, BWA only searches for suboptimal alignments if the top hit is unique. Using this option has no effect on accuracy for single-end reads. It is mainly designed for improving the alignment accuracy of paired-end reads. However, the pairing procedure will be slowed down, especially for very short reads (~32bp) (-R)" />
+        <param name="noIterSearch" type="boolean" truevalue="true" falsevalue="false" checked="no" label="Disable iterative search" help="All hits with no more than maxDiff differences will be found. This mode is much slower than the default (-N)" />
+        <param name="outputTopN" type="integer" value="-1" label="Output top [value] hits" help="For single-end reads only. Enter -1 to disable outputting multiple hits. NOTE: If you put in a positive value here, your output will NOT be in SAM format (-n)" />
+        <param name="maxInsertSize" type="integer" value="500" label="Maximum insert size for a read pair to be considered as being mapped properly" help="For paired-end reads only. Only used when there are not enough good alignment to infer the distribution of insert sizes (-a)" />
+        <param name="maxOccurPairing" type="integer" value="100000" label="Maximum occurrences of a read for pairing" help="For paired-end reads only. A read with more occurrences will be treated as a single-end read. Reducing this parameter helps faster pairing (-o)" />
       </when>
     </conditional>
     <param name="suppressHeader" type="boolean" truevalue="true" falsevalue="false" checked="true" label="Suppress the header in the output SAM file" help="BWA produces SAM with several lines of header information" />
@@ -157,85 +89,32 @@
   </outputs>
   <tests>
     <test>
-      <param name="solidSolexa" value="solexa" />
+      <!--
+      BWA commands:
+      bwa aln -t 4 phiX test-data/bwa_wrapper_in1.fastq > bwa_wrapper_out1.sai
+      bwa samse phiX bwa_wrapper_out1.sai test-data/bwa_wrapper_in1.fastq >> bwa_wrapper_out1.sam
+      phiX.fasta is the prefix for the reference
+      -->
       <param name="refGenomeSource" value="indexed" />
       <param name="indices" value="phiX" />
       <param name="sPaired" value="single" />
       <param name="input1" value="bwa_wrapper_in1.fastq" ftype="fastqsanger" />
       <param name="source_select" value="pre_set" />
       <param name="suppressHeader" value="true" />
-      <output name="output" file="bwa_wrapper_out0.sam" ftype="sam" />
+      <output name="output" file="bwa_wrapper_out1.sam" ftype="sam" sort="true" />
     </test>
     <test>
-      <param name="solidSolexa" value="solid" />
+      <!--
+      BWA commands:
+      cp test-data/phiX.fasta phiX.fasta
+      bwa index -a is phiX.fasta
+      bwa aln -n 0.04 -o 1 -e -1 -d 16 -i 5 -k 2 -t 4 -M 3 -O 11 -E 4 -R -N phiX.fasta test-data/bwa_wrapper_in1.fastq > bwa_wrapper_out1.sai
+      bwa samse phiX.fasta bwa_wrapper_out1.sai test-data/bwa_wrapper_in1.fastq >> bwa_wrapper_out2.sam
+      phiX.fasta is the prefix for the reference
+      -->
       <param name="refGenomeSource" value="history" />
       <param name="ownFile" value="phiX.fasta" />
       <param name="sPaired" value="single" />
-      <param name="input1" value="bwa_wrapper_in0.fastq" ftype="fastqsanger" />
-      <param name="source_select" value="pre_set" />
-      <param name="suppressHeader" value="true" />
-      <output name="output" file="bwa_wrapper_out0b.sam" ftype="sam" />
-    </test>
-    <test>
-      <param name="solidSolexa" value="solid" />
-      <param name="refGenomeSource" value="indexed" />
-      <param name="indices" value="phiX" />
-      <param name="sPaired" value="single" />
-      <param name="input1" value="bwa_wrapper_in2.fastq" ftype="fastqsanger" />
-      <param name="source_select" value="full" />
-      <param name="maxEditDist" value="0" />  
-      <param name="fracMissingAligns" value="0.04" />  
-      <param name="maxGapOpens" value="1" />
-      <param name="maxGapExtens" value="-1" />
-      <param name="disallowLongDel" value="16" />
-      <param name="disallowIndel" value="5" />
-      <param name="seed" value="-1" />
-      <param name="maxEditDistSeed" value="2" />
-      <param name="mismatchPenalty" value="3" />
-      <param name="gapOpenPenalty" value="11" />
-      <param name="gapExtensPenalty" value="4" />
-      <param name="colorSpaceRev" value="true" />
-      <param name="suboptAlign" value="true" />
-      <param name="noIterSearch" value="true" />
-      <param name="outputTopN" value="-1" />
-      <param name="maxInsertSize" value="500" />
-      <param name="maxOccurPairing" value="100000" />
-      <param name="suppressHeader" value="true" />
-      <output name="output" file="bwa_wrapper_out1.sam" ftype="sam" />
-    </test>
-    <test>
-      <param name="solidSolexa" value="solid" />
-      <param name="refGenomeSource" value="indexed" />
-      <param name="indices" value="phiX" />
-      <param name="sPaired" value="paired" />
-      <param name="input1" value="bwa_wrapper_in3.fastq" ftype="fastqsanger" />
-      <param name="input2" value="bwa_wrapper_in4.fastq" ftype="fastqsanger" />
-      <param name="source_select" value="full" />
-      <param name="maxEditDist" value="0" />  
-      <param name="fracMissingAligns" value="0.04" />  
-      <param name="maxGapOpens" value="1" />
-      <param name="maxGapExtens" value="-1" />
-      <param name="disallowLongDel" value="16" />
-      <param name="disallowIndel" value="5" />
-      <param name="seed" value="-1" />
-      <param name="maxEditDistSeed" value="2" />
-      <param name="mismatchPenalty" value="3" />
-      <param name="gapOpenPenalty" value="11" />
-      <param name="gapExtensPenalty" value="4" />
-      <param name="colorSpaceRev" value="true" />
-      <param name="suboptAlign" value="true" />
-      <param name="noIterSearch" value="true" />
-      <param name="outputTopN" value="-1" />
-      <param name="maxInsertSize" value="500" />
-      <param name="maxOccurPairing" value="100000" />
-      <param name="suppressHeader" value="true" />
-      <output name="output" file="bwa_wrapper_out2.sam" ftype="sam" />
-    </test> 
-    <test>
-      <param name="solidSolexa" value="solexa" />
-      <param name="refGenomeSource" value="indexed" />
-      <param name="indices" value="phiX" />
-      <param name="sPaired" value="single" />
       <param name="input1" value="bwa_wrapper_in1.fastq" ftype="fastqsanger" />
       <param name="source_select" value="full" />
       <param name="maxEditDist" value="0" />  
@@ -249,22 +128,27 @@
       <param name="mismatchPenalty" value="3" />
       <param name="gapOpenPenalty" value="11" />
       <param name="gapExtensPenalty" value="4" />
-      <param name="colorSpaceRev" value="false" />
       <param name="suboptAlign" value="true" />
       <param name="noIterSearch" value="true" />
       <param name="outputTopN" value="-1" />
       <param name="maxInsertSize" value="500" />
       <param name="maxOccurPairing" value="100000" />
       <param name="suppressHeader" value="true" />
-      <output name="output" file="bwa_wrapper_out3.sam" ftype="sam" />
+      <output name="output" file="bwa_wrapper_out2.sam" ftype="sam" sort="true" />
     </test> 
     <test>
-      <param name="solidSolexa" value="solexa" />
+      <!--
+      BWA commands:
+      bwa aln -n 0.04 -o 1 -e -1 -d 16 -i 5 -k 2 -t 4 -M 3 -O 11 -E 4 -R -N phiX.fasta test-data/bwa_wrapper_in2.fastq > bwa_wrapper_out3a.sai
+      bwa aln -n 0.04 -o 1 -e -1 -d 16 -i 5 -k 2 -t 4 -M 3 -O 11 -E 4 -R -N phiX.fasta test-data/bwa_wrapper_in3.fastq > bwa_wrapper_out3b.sai
+      bwa sampe -a 500 -o 100000 phiX.fasta bwa_wrapper_out3a.sai bwa_wrapper_out3b.sai test-data/bwa_wrapper_in2.fastq test-data/bwa_wrapper_in3.fastq >> bwa_wrapper_out3.sam
+      phiX.fasta is the prefix for the reference
+      -->
       <param name="refGenomeSource" value="indexed" />
       <param name="indices" value="phiX" />
       <param name="sPaired" value="paired" />
-      <param name="input1" value="bwa_wrapper_in5.fastq" ftype="fastqsanger" />
-      <param name="input2" value="bwa_wrapper_in6.fastq" ftype="fastqsanger" />
+      <param name="input1" value="bwa_wrapper_in2.fastq" ftype="fastqsanger" />
+      <param name="input2" value="bwa_wrapper_in3.fastq" ftype="fastqsanger" />
       <param name="source_select" value="full" />
       <param name="maxEditDist" value="0" />  
       <param name="fracMissingAligns" value="0.04" />  
@@ -277,21 +161,22 @@
       <param name="mismatchPenalty" value="3" />
       <param name="gapOpenPenalty" value="11" />
       <param name="gapExtensPenalty" value="4" />
-      <param name="colorSpaceRev" value="false" />
       <param name="suboptAlign" value="true" />
       <param name="noIterSearch" value="true" />
       <param name="outputTopN" value="-1" />
       <param name="maxInsertSize" value="500" />
       <param name="maxOccurPairing" value="100000" />
       <param name="suppressHeader" value="true" />
-      <output name="output" file="bwa_wrapper_out4.sam" ftype="sam" />
+      <output name="output" file="bwa_wrapper_out3.sam" ftype="sam" sort="true" />
     </test>
   </tests> 
   <help>
     	
 **What it does**   	
     	
-BWA is a fast light-weighted tool that aligns relatively short sequences (queries) to a sequence database (large), such as the human reference genome. It is developed by Heng Li at the Sanger Insitute.
+BWA is a fast light-weighted tool that aligns relatively short sequences (queries) to a sequence database (large), such as the human reference genome. It is developed by Heng Li at the Sanger Insitute. Li H. and Durbin R. (2009) Fast and accurate short read alignment with Burrows-Wheeler transform. Bioinformatics, 25, 1754-60. 
+
+This tool uses BWA version 0.5.3.
 
 ------
 
@@ -299,7 +184,7 @@ BWA is a fast light-weighted tool that aligns relatively short sequences (querie
 
 .. class:: warningmark
 
-There is no such thing (yet) as automated gearshift in short read mapping. It is all like stick-shift driving in San Francisco. In other words = running this tool with default parameters will probably not give you meaningful results. A way to deal with this is to **understand** the parameters by carefully reading `documentation`__ and experimenting. Fortunaly, Galaxy makes experimenting easy.
+There is no such thing (yet) as an automated gearshift in short read mapping. It is all like stick-shift driving in San Francisco. In other words = running this tool with default parameters will probably not give you meaningful results. A way to deal with this is to **understand** the parameters by carefully reading the `documentation`__ and experimenting. Fortunately, Galaxy makes experimenting easy.
 
  .. __: http://bio-bwa.sourceforge.net/
 
@@ -307,7 +192,7 @@ There is no such thing (yet) as automated gearshift in short read mapping. It is
 
 **Input formats**
 
-BWA accepts files in Sanger FASTQ format. 
+BWA accepts files in Sanger FASTQ format. Use the FASTQ Groomer to prepare your files.
 
 ------
 
@@ -315,31 +200,35 @@ BWA accepts files in Sanger FASTQ format.
 
 The output is in SAM format, and has the following columns::
 
-  1  QNAME  -  Query (pair) NAME
-  2  FLAG   -  bitwise FLAG
-  3  RNAME  -  Reference sequence NAME
-  4  POS    -  1-based leftmost POSition/coordinate of clipped sequence
-  5  MAPQ   -  MAPping Quality (Phred-scaled)
-  6  CIGAR  -  extended CIGAR string
-  7  MRNM   -  Mate Reference sequence NaMe ('=' if same as RNAME)
-  8  MPOS   -  1-based Mate POSition
-  9  ISIZE  -  Inferred insert SIZE
-  10 SEQ    -  query SEQuence on the same strand as the reference
-  11 QUAL   -  query QUALity (ASCII-33 gives the Phred base quality)
-  12 OPT    -  variable OPTional fields in the format TAG:VTYPE:VALU
+    Column  Description
+  --------  --------------------------------------------------------   
+  1  QNAME  Query (pair) NAME
+  2  FLAG   bitwise FLAG
+  3  RNAME  Reference sequence NAME
+  4  POS    1-based leftmost POSition/coordinate of clipped sequence
+  5  MAPQ   MAPping Quality (Phred-scaled)
+  6  CIGAR  extended CIGAR string
+  7  MRNM   Mate Reference sequence NaMe ('=' if same as RNAME)
+  8  MPOS   1-based Mate POSition
+  9  ISIZE  Inferred insert SIZE
+  10 SEQ    query SEQuence on the same strand as the reference
+  11 QUAL   query QUALity (ASCII-33 gives the Phred base quality)
+  12 OPT    variable OPTional fields in the format TAG:VTYPE:VALU
   
 The flags are as follows::
 
-  Flag    -  Description
-  0x0001  -  the read is paired in sequencing
-  0x0002  -  the read is mapped in a proper pair
-  0x0004  -  the query sequence itself is unmapped
-  0x0008  -  the mate is unmapped
-  0x0010  -  strand of the query (1 for reverse)
-  0x0020  -  strand of the mate
-  0x0040  -  the read is the first read in a pair
-  0x0080  -  the read is the second read in a pair
-  0x0100  -  the alignment is not primary
+    Flag  Description
+  ------  -------------------------------------
+  Flag    Description
+  0x0001  the read is paired in sequencing
+  0x0002  the read is mapped in a proper pair
+  0x0004  the query sequence itself is unmapped
+  0x0008  the mate is unmapped
+  0x0010  strand of the query (1 for reverse)
+  0x0020  strand of the mate
+  0x0040  the read is the first read in a pair
+  0x0080  the read is the second read in a pair
+  0x0100  the alignment is not primary
 
 It looks like this (scroll sideways to see the entire example)::
 
@@ -393,13 +282,17 @@ For **aln**::
 For **samse**::
 
   -n INT  Output up to INT top hits. Value -1 to disable outputting multiple 
-          hits. [-1]
+          hits. NOTE: Entering a value other than -1 will result in output that
+          is not in SAM format, and therefore not usable further down the 
+          pipeline. Check the BWA documentation for details on the format of 
+          the output. [-1]
 
 For **sampe**::
 
   -a INT  Maximum insert size for a read pair to be considered as being mapped 
-          properly. Since 0.4.5, this option is only used when there are not 
-          enough good alignment to infer the distribution of insert sizes. [500]
+          properly. Since version 0.4.5, this option is only used when there 
+          are not enough good alignment to infer the distribution of insert 
+          sizes. [500]
   -o INT  Maximum occurrences of a read for pairing. A read with more 
           occurrences will be treated as a single-end read. Reducing this 
           parameter helps faster pairing. [100000]
