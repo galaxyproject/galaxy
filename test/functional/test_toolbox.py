@@ -69,7 +69,7 @@ class ToolTestCase( TwillTestCase ):
             name, file, sort = output_tuple
             # Get the correct hid
             elem = data_list[ elem_index ]
-            self.assertTrue( elem )
+            self.assertTrue( elem is not None )
             elem_hid = elem.get( 'hid' )
             elem_index += 1
             self.verify_dataset_correctness( file, hid=elem_hid, maxseconds=testdef.maxseconds, sort=sort )
