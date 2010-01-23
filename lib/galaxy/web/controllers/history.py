@@ -105,18 +105,18 @@ class SharedHistoryListGrid( grids.Grid ):
             return history.user.email
     # Grid definition
     title = "Histories shared with you by others"
-    template='/history/grid.mako'
     model_class = model.History
     default_sort_key = "-update_time"
     default_filter = {}
     columns = [
-        grids.GridColumn( "Name", key="name" ),
+        grids.GridColumn( "Name", key="name", attach_popup=True ), # link=( lambda item: dict( operation="View", id=item.id ) ), attach_popup=True ),
         DatasetsByStateColumn( "Datasets (by state)", ncells=4 ),
         grids.GridColumn( "Created", key="create_time", format=time_ago ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
         SharedByColumn( "Shared by", key="user_id" )
     ]
     operations = [
+        grids.GridOperation( "View", allow_multiple=False, target="_top" ),
         grids.GridOperation( "Clone" ),
         grids.GridOperation( "Unshare" )
     ]
@@ -312,7 +312,11 @@ class HistoryController( BaseController, Sharable ):
         if 'operation' in kwargs:
             ids = util.listify( kwargs.get( 'id', [] ) )
             operation = kwargs['operation'].lower()
-            if operation == "clone":
+            if operation == "view":
+                # Display history.
+                history = self.get_history( trans, ids[0], False)
+                return self.display_by_username_and_slug( trans, history.user.username, history.slug )
+            elif operation == "clone":
                 if not ids:
                     message = "Select a history to clone"
                     return self.shared_list_grid( trans, status='error', message=message, **kwargs )
@@ -487,26 +491,33 @@ class HistoryController( BaseController, Sharable ):
                                            datasets = query.all(),
                                            user_owns_history = user_owns_history,
                                            show_deleted = False )
-    
+                                           
     @web.expose
     def display_by_username_and_slug( self, trans, username, slug ):
-       """ Display history based on a username and slug. """ 
-       session = trans.sa_session
-       user = session.query( model.User ).filter_by( username=username ).first()
-       if user is None:
-           raise web.httpexceptions.HTTPNotFound()
-       history = trans.sa_session.query( model.History ).filter_by( user=user, slug=slug, deleted=False, importable=True ).first()
-       if history is None:
+        """ Display history based on a username and slug. """ 
+        
+        # Get history.
+        session = trans.sa_session
+        user = session.query( model.User ).filter_by( username=username ).first()
+        history_query_base = trans.sa_session.query( model.History ).filter_by( user=user, slug=slug, deleted=False )
+        if user is not None:
+            # User can view history if it's importable or if it's shared with him/her.
+            history = history_query_base.filter( or_( model.History.importable==True, model.History.users_shared_with.any( model.HistoryUserShareAssociation.user==trans.get_user() ) ) ).first()
+        else:
+            # User not logged in, so only way to view history is if it's importable.
+            history = history_query_base.filter_by( importable=True ).first()
+        if history is None:
            raise web.httpexceptions.HTTPNotFound()
    
-       query = trans.sa_session.query( model.HistoryDatasetAssociation ) \
+        # Get datasets.
+        query = trans.sa_session.query( model.HistoryDatasetAssociation ) \
                                .filter( model.HistoryDatasetAssociation.history == history ) \
                                .options( eagerload( "children" ) ) \
                                .join( "dataset" ).filter( model.Dataset.purged == False ) \
                                .options( eagerload_all( "dataset.actions" ) )
-       # Do not show deleted datasets.
-       query = query.filter( model.HistoryDatasetAssociation.deleted == False )
-       return trans.stream_template_mako( "history/display.mako",
+        # Do not show deleted datasets.
+        query = query.filter( model.HistoryDatasetAssociation.deleted == False )
+        return trans.stream_template_mako( "history/display.mako",
                                           item = history, item_data = query.all() )
                                           
     @web.expose

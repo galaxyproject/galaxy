@@ -82,8 +82,9 @@
                 <td>${len(workflow.latest_workflow.steps)}</td>
                 <td>
                     <div popupmenu="shared-${i}-popup">
-                    <a class="action-button" href="${h.url_for( action='run', id=trans.security.encode_id(workflow.id) )}">Run</a>
-                    <a class="action-button" href="${h.url_for( action='clone', id=trans.security.encode_id(workflow.id) )}">Clone</a>
+						<a class="action-button" href="${h.url_for( action='display_by_username_and_slug', username=workflow.user.username, slug=workflow.slug)}" target="_top">View</a>
+	                    <a class="action-button" href="${h.url_for( action='run', id=trans.security.encode_id(workflow.id) )}">Run</a>
+	                    <a class="action-button" href="${h.url_for( action='clone', id=trans.security.encode_id(workflow.id) )}">Clone</a>
                     </div>
                 </td>
             </tr>    

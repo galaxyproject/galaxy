@@ -1,4 +1,12 @@
-<%inherit file="/base_panels.mako"/>
+<%!
+	def inherit( context ):
+	    if context.get('no_panels'):
+	        return '/base.mako'
+	    else:
+	        return '/base_panels.mako'
+	from galaxy import model
+%>
+<%inherit file="${inherit( context )}"/>
 <%namespace file="./tagging_common.mako" import="render_individual_tagging_element, render_community_tagging_element" />
 
 <%!
@@ -10,7 +18,7 @@
 <%def name="get_class_display_name( a_class )">
 <%
     ## Start with exceptions, end with default.
-    if a_class is StoredWorkflow:
+    if a_class is model.StoredWorkflow:
         return "Workflow"
     else:
         return a_class.__name__
@@ -18,7 +26,7 @@
 </%def>
 
 <%def name="title()">
-    Galaxy :: ${iff( item.published, "Published ", "Accessible " ) + self.get_class_display_name( item.__class__ )} : ${item.name}
+    Galaxy | ${iff( item.published, "Published ", iff( item.importable , "Accessible ", "Shared " ) ) + self.get_class_display_name( item.__class__ )} | ${item.name}
 </%def>
 
 <%def name="init()">
@@ -84,6 +92,12 @@
     <% return item.name %>
 </%def>
 
+##
+## When page has no panels, center panel is body.
+##
+<%def name="body()">
+	${self.center_panel()}
+</%def>
 
 ##
 ## Page content. Pages that inherit this page should override render_item_links() and render_item()
@@ -101,12 +115,18 @@
     %>
     
     <div class="unified-panel-header" unselectable="on">
-        %if item.published:
-            <div class="unified-panel-header-inner">
-                <a href="${href_to_all_items}">Published ${item_plural}</a> | 
-                <a href="${href_to_user_items}">${item.user.username}</a> | ${self.get_item_name( item )}
-            </div>
-        %endif
+		<div class="unified-panel-header-inner">
+	        %if item.published:    
+	                <a href="${href_to_all_items}">Published ${item_plural}</a> | 
+	                <a href="${href_to_user_items}">${item.user.username}</a>
+	        %elif item.importable:
+				Accessible ${self.get_class_display_name( item.__class__ )}
+			%else:
+				## Item shared with user.
+				Shared ${self.get_class_display_name( item.__class__ )}
+	        %endif
+			| ${self.get_item_name( item )}
+	    </div>
     </div>
     
     <div class="unified-panel-body">

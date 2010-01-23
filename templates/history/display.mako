@@ -229,11 +229,11 @@
 
 <%def name="render_item_links( history )">
     %if history.user != trans.get_user():
-        <a href="${h.url_for( controller='/history', action='imp', id=trans.security.encode_id(history.id) )}">import and start using history</a> |
+        <a href="${h.url_for( controller='/history', action='imp', id=trans.security.encode_id(history.id) )}">import and start using history</a>
     %else:
-        your history |
+        your history
     %endif
-    <a href="${self.get_history_link( history )}">${_('refresh')}</a> 
+    ##<a href="${self.get_history_link( history )}">${_('refresh')}</a> 
     %if show_deleted:
         | <a href="${h.url_for('history', show_deleted=False)}">${_('hide deleted')}</a> 
     %endif

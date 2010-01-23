@@ -158,13 +158,18 @@ class WorkflowController( BaseController, Sharable ):
         """ View workflow based on a username and slug. """ 
         session = trans.sa_session
         
-        # Get and verify user and stored workflow.
+        # Get history.
+        session = trans.sa_session
         user = session.query( model.User ).filter_by( username=username ).first()
-        if user is None:
-            raise web.httpexceptions.HTTPNotFound()
-        stored_workflow = trans.sa_session.query( model.StoredWorkflow ).filter_by( user=user, slug=slug, deleted=False, importable=True ).first()
+        workflow_query_base = trans.sa_session.query( model.StoredWorkflow ).filter_by( user=user, slug=slug, deleted=False )
+        if user is not None:
+            # User can view workflow if it's importable or if it's shared with him/her.
+            stored_workflow = workflow_query_base.filter( or_( model.StoredWorkflow.importable==True, model.StoredWorkflow.users_shared_with.any( model.StoredWorkflowUserShareAssociation.user==trans.get_user() ) ) ).first()
+        else:
+            # User not logged in, so only way to view workflow is if it's importable.
+            stored_workflow = workflow_query_base.filter_by( importable=True ).first()
         if stored_workflow is None:
-            raise web.httpexceptions.HTTPNotFound()
+           raise web.httpexceptions.HTTPNotFound()
         
         # Get data for workflow's steps.
         for step in stored_workflow.latest_workflow.steps:

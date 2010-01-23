@@ -197,37 +197,7 @@ ${self.render_grid_table()}
                });
            });
        }
-       
-       // Overrides function in galaxy.base.js so that click does operation.
-       function make_popup_menus() 
-       {
-           jQuery( "div[popupmenu]" ).each( function() {
-               var options = {};
-               $(this).find( "a" ).each( function() {
-                   var confirmtext = $(this).attr( "confirm" ),
-                       href = $(this).attr( "href" ),
-                       target = $(this).attr( "target" );
-                   options[ $(this).text() ] = function() {
-                       if ( !confirmtext || confirm( confirmtext ) ) {
-                            if ( href.indexOf( "operation" ) > -1 ) {
-                                do_operation_from_href(href);
-                            } else {
-                                var f = window;
-                                if ( target == "_parent" ) {
-                                    f = window.parent;
-                                }
-                                f.location = href;
-                            }
-                       }
-                   };
-               });
-               var b = $( "#" + $(this).attr( 'popupmenu' ) );
-               make_popupmenu( b, options );
-               $(this).remove();
-               b.addClass( "popup" ).show();
-           });
-       }
-       
+
        // Initialize grid elements.
        function init_grid_elements() 
        {

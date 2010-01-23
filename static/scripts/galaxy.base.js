@@ -37,6 +37,10 @@ function make_popup_menus()
                     if ( target == "_parent" ) {
                         f = window.parent;
                     }
+                    else if 
+                    ( target == "_top" ) {
+                        f = window.top;
+                    }
                     f.location = href;
                 }
             };
