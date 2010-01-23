@@ -14,5 +14,5 @@
 %endif
 
 %if cntrller == 'library_admin' or trans.app.security_agent.can_manage_library_item( current_user_roles, library ):
-    ${render_permission_form( library, library.name, h.url_for( controller='library_common', action='library_permissions', cntrller=cntrller, id=trans.security.encode_id( library.id ), cntrller=cntrller ), roles )}
+    ${render_permission_form( library, library.name, h.url_for( controller='library_common', action='library_permissions', cntrller=cntrller, id=trans.security.encode_id( library.id ) ), roles )}
 %endif
