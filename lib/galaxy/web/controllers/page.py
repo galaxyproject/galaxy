@@ -29,7 +29,7 @@ class PageListGrid( grids.Grid ):
         grids.TextColumn( "Title", key="title", model_class=model.Page, attach_popup=True, filterable="advanced" ),
         URLColumn( "Public URL" ),
         grids.IndividualTagsColumn( "Tags", "tags", model.Page, model.PageTagAssociation, filterable="advanced", grid_name="PageListGrid" ),
-        grids.GridColumn( "Published", key="published", format=format_bool, filterable="advanced" ),
+        SharingStatusColumn( "Sharing", key="sharing", model_class=model.History, filterable="advanced", sortable=False ),
         grids.GridColumn( "Created", key="create_time", format=time_ago ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
     ]
@@ -46,9 +46,8 @@ class PageListGrid( grids.Grid ):
         grids.GridOperation( "View", allow_multiple=False, url_args=dict( action='display') ),
         grids.GridOperation( "Edit name/id", allow_multiple=False, url_args=dict( action='edit') ),
         grids.GridOperation( "Edit content", allow_multiple=False, url_args=dict( action='edit_content') ),
+        grids.GridOperation( "Share or Publish", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False ),
         grids.GridOperation( "Delete" ),
-        grids.GridOperation( "Publish", condition=( lambda item: not item.published ) ),
-        grids.GridOperation( "Unpublish", condition=( lambda item: item.published ) ),
     ]
     def apply_default_filter( self, trans, query, **kwargs ):
         return query.filter_by( user=trans.user, deleted=False )
@@ -149,7 +148,7 @@ class HistorySelectionGrid( grids.Grid ):
     def apply_default_filter( self, trans, query, **kwargs ):
         return query.filter_by( user=trans.user, purged=False )
 
-class PageController( BaseController ):
+class PageController( BaseController, Sharable ):
     
     _page_list = PageListGrid()
     _all_published_list = PageAllPublishedGrid()
@@ -157,7 +156,8 @@ class PageController( BaseController ):
     
     @web.expose
     @web.require_login()  
-    def index( self, trans, *args, **kwargs ):
+    def list( self, trans, *args, **kwargs ):
+        """ List user's pages. """
         # Handle operation
         if 'operation' in kwargs and 'id' in kwargs:
             session = trans.sa_session
@@ -167,15 +167,24 @@ class PageController( BaseController ):
                 item = session.query( model.Page ).get( trans.security.decode_id( id ) )
                 if operation == "delete":
                     item.deleted = True
-                elif operation == "publish":
-                    item.published = True
-                elif operation == "unpublish":
-                    item.published = False
+                if operation == "share or publish":
+                    return self.sharing( trans, **kwargs )
             session.flush()
+            
         # Build grid
         grid = self._page_list( trans, *args, **kwargs )
+        
+        # Build list of pages shared with user.
+        shared_by_others = trans.sa_session \
+            .query( model.PageUserShareAssociation ) \
+            .filter_by( user=trans.get_user() ) \
+            .join( model.Page.table ) \
+            .filter( model.Page.deleted == False ) \
+            .order_by( desc( model.Page.update_time ) ) \
+            .all()
+        
         # Render grid wrapped in panels
-        return trans.fill_template( "page/index.mako", grid=grid )
+        return trans.fill_template( "page/index.mako", grid=grid, shared_by_others=shared_by_others )
              
     @web.expose
     def list_published( self, trans, *args, **kwargs ):
@@ -222,7 +231,7 @@ class PageController( BaseController ):
                 session.flush()
                 # Display the management page
                 ## trans.set_message( "Page '%s' created" % page.title )
-                return trans.response.send_redirect( web.url_for( action='index' ) )
+                return trans.response.send_redirect( web.url_for( action='list' ) )
         return trans.show_form( 
             web.FormBuilder( web.url_for(), "Create new page", submit_text="Submit" )
                 .add_text( "page_title", "Page title", value=page_title, error=page_title_err )
@@ -288,6 +297,78 @@ class PageController( BaseController ):
         return trans.fill_template( "page/editor.mako", page=page )
         
     @web.expose
+    @web.require_login( "use Galaxy pages" )
+    def sharing( self, trans, id, **kwargs ):
+        """ Handle page sharing. """
+
+        # Get session and page.
+        session = trans.sa_session
+        page = trans.sa_session.query( model.Page ).get( trans.security.decode_id( id ) )
+
+        # Do operation on page.
+        if 'make_accessible_via_link' in kwargs:
+            self._make_item_accessible( trans.sa_session, page )
+        elif 'make_accessible_and_publish' in kwargs:
+            self._make_item_accessible( trans.sa_session, page )
+            page.published = True
+        elif 'publish' in kwargs:
+            page.published = True
+        elif 'disable_link_access' in kwargs:
+            page.importable = False
+        elif 'unpublish' in kwargs:
+            page.published = False
+        elif 'disable_link_access_and_unpubish' in kwargs:
+            page.importable = page.published = False
+        elif 'unshare_user' in kwargs:
+            user = session.query( model.User ).get( trans.security.decode_id( kwargs['unshare_user' ] ) )
+            if not user:
+                error( "User not found for provided id" )
+            association = session.query( model.PageUserShareAssociation ) \
+                                 .filter_by( user=user, page=page ).one()
+            session.delete( association )
+
+        session.flush()
+
+        return trans.fill_template( "/sharing_base.mako",
+                                    item=page )
+                                    
+    @web.expose
+    @web.require_login( "use Galaxy pages" )
+    def share( self, trans, id, email="" ):
+        msg = mtype = None
+        page = trans.sa_session.query( model.Page ).get( trans.security.decode_id( id ) )
+        if email:
+            other = trans.sa_session.query( model.User ) \
+                                    .filter( and_( model.User.table.c.email==email,
+                                                   model.User.table.c.deleted==False ) ) \
+                                    .first()
+            if not other:
+                mtype = "error"
+                msg = ( "User '%s' does not exist" % email )
+            elif other == trans.get_user():
+                mtype = "error"
+                msg = ( "You cannot share a workflow with yourself" )
+            elif trans.sa_session.query( model.PageUserShareAssociation ) \
+                    .filter_by( user=other, page=page ).count() > 0:
+                mtype = "error"
+                msg = ( "Workflow already shared with '%s'" % email )
+            else:
+                share = model.PageUserShareAssociation()
+                share.page = page
+                share.user = other
+                session = trans.sa_session
+                session.add( share )
+                self.set_item_slug( session, page )
+                session.flush()
+                trans.set_message( "Page '%s' shared with user '%s'" % ( page.title, other.email ) )
+                return trans.response.send_redirect( url_for( controller='page', action='sharing', id=id ) )
+        return trans.fill_template( "/share_base.mako",
+                                    message = msg,
+                                    messagetype = mtype,
+                                    item=page,
+                                    email=email )
+        
+    @web.expose
     @web.require_login() 
     def save( self, trans, id, content ):
         id = trans.security.decode_id( id )
@@ -308,20 +389,30 @@ class PageController( BaseController ):
     def display( self, trans, id ):
         id = trans.security.decode_id( id )
         page = trans.sa_session.query( model.Page ).get( id )
-        if page.user is not trans.user:
-            error( "Page is not owned by current user" )
-        return trans.fill_template( "page/display.mako", page=page )
-        
+        if not page:
+            raise web.httpexceptions.HTTPNotFound()
+        return self.display_by_username_and_slug( trans, page.user.username, page.slug )
+
     @web.expose
     def display_by_username_and_slug( self, trans, username, slug ):
+        """ Display page based on a username and slug. """ 
+        session = trans.sa_session
+
+        # Get page.
         session = trans.sa_session
         user = session.query( model.User ).filter_by( username=username ).first()
-        if user is None:
-            raise web.httpexceptions.HTTPNotFound()
-        page = trans.sa_session.query( model.Page ).filter_by( user=user, slug=slug, deleted=False, published=True ).first()
+        page_query_base = trans.sa_session.query( model.Page ).filter_by( user=user, slug=slug, deleted=False )
+        if user is not None:
+            # User can view page if it's importable or if it's shared with him/her.
+            page = page_query_base.filter( or_( model.Page.user==trans.get_user(), model.Page.importable==True, model.Page.users_shared_with.any( model.PageUserShareAssociation.user==trans.get_user() ) ) ).first()
+        else:
+            # User not logged in, so only way to view page is if it's importable.
+            page = page_query_base.filter_by( importable=True ).first()
         if page is None:
-            raise web.httpexceptions.HTTPNotFound()
-        return trans.fill_template( "page/display.mako", item=page )
+           raise web.httpexceptions.HTTPNotFound()
+
+        return trans.fill_template_mako( "page/display.mako", item=page)
+    
         
     @web.expose
     @web.require_login("select a history from saved histories")

@@ -1452,6 +1452,11 @@ class PageRevision( object ):
         self.user = None
         self.title = None
         self.content = None
+        
+class PageUserShareAssociation( object ):
+    def __init__( self ):
+        self.page = None
+        self.user = None
 
 class Visualization( object ):
     def __init__( self ):

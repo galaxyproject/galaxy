@@ -1,10 +1,5 @@
 <%inherit file="/display_base.mako"/>
 
-<%def name="title()">
-    <% page = item %>
-    Galaxy :: ${page.user.username} :: ${page.title}
-</%def>
-
 <%def name="javascripts()">
     ${parent.javascripts()}
     ${h.js( "jquery", "json2", "jquery.jstore-all", "jquery.autocomplete", "autocomplete_tagging" )}

@@ -143,9 +143,11 @@ class Sharable:
     def _make_item_accessible( self, sa_session, item ):
         """ Makes item accessible--viewable and importable--and sets item's slug. Does not flush/commit changes, however. Item must have name, user, importable, and slug attributes. """
         item.importable = True
+        self.set_item_slug( sa_session, item )
 
-        # Set item slug. Slug must be unique among user's importable items for item's class.
-        if item.slug is None:
+    def set_item_slug( self, sa_session, item ):
+        """ Set item slug. Slug is unique among user's importable items for item's class. """
+        if item.slug is None or item.slug == "":
             slug_base = re.sub( "\s+", "-", item.name.lower() )
             slug = slug_base
             count = 1

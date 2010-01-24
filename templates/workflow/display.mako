@@ -73,7 +73,7 @@
     %if workflow.user != trans.get_user():
         <a href="${h.url_for( controller='/workflow', action='imp', id=trans.security.encode_id(workflow.id) )}">import and start using workflow</a>
     %else:
-        you own this workflow
+        your workflow
     %endif
 </%def>
 

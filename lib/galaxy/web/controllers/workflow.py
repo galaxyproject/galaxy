@@ -155,10 +155,10 @@ class WorkflowController( BaseController, Sharable ):
                                     
     @web.expose
     def display_by_username_and_slug( self, trans, username, slug ):
-        """ View workflow based on a username and slug. """ 
+        """ Display workflow based on a username and slug. """ 
         session = trans.sa_session
         
-        # Get history.
+        # Get workflow.
         session = trans.sa_session
         user = session.query( model.User ).filter_by( username=username ).first()
         workflow_query_base = trans.sa_session.query( model.StoredWorkflow ).filter_by( user=user, slug=slug, deleted=False )
@@ -221,6 +221,7 @@ class WorkflowController( BaseController, Sharable ):
                 share.user = other
                 session = trans.sa_session
                 session.add( share )
+                self.set_item_slug( session, stored )
                 session.flush()
                 trans.set_message( "Workflow '%s' shared with user '%s'" % ( stored.name, other.email ) )
                 return trans.response.send_redirect( url_for( controller='workflow', action='sharing', id=id ) )

@@ -10,19 +10,18 @@
 %>
 <%inherit file="${inherit(context)}"/>
 
+##
+## Override methods from base.mako and base_panels.mako
+##
+
+<%def name="center_panel()">
+	${make_grid( grid )}
+</%def>
+
 ## Render the grid's basic elements. Each of these elements can be subclassed.
-<table>
-    <tr>
-        <td width="75%">${self.render_grid_header()}</td>
-        <td></td>
-        <td width="25%" id="grid-message" valign="top">${self.render_grid_message()}</td>
-    </tr>
-</table>
-
-${self.render_grid_table()}
-
-
-## Function definitions.
+<%def name="body()">
+	${make_grid( grid )}
+</%def>
 
 <%def name="title()">${grid.title}</%def>
 
@@ -711,10 +710,26 @@ ${self.render_grid_table()}
     </style>
 </%def>
 
+##
+## Custom grid methods.
+##
+
 <%namespace file="./grid_common.mako" import="*" />
 
+<%def name="make_grid( grid )">
+	<table>
+	    <tr>
+	        <td width="75%">${self.render_grid_header( grid )}</td>
+	        <td></td>
+	        <td width="25%" id="grid-message" valign="top">${self.render_grid_message( grid )}</td>
+	    </tr>
+	</table>
+
+	${self.render_grid_table( grid )}
+</%def>
+
 ## Render grid message.
-<%def name="render_grid_message()">
+<%def name="render_grid_message( grid )">
     %if message:
         <p>
             <div class="${message_type}message transient-message">${util.restore_text( message )}</div>
@@ -724,7 +739,7 @@ ${self.render_grid_table()}
 </%def>
 
 ## Render grid header.
-<%def name="render_grid_header(render_title=True)">
+<%def name="render_grid_header( grid, render_title=True)">
     <div class="grid-header">
         %if render_title:
             <h2>${grid.title}</h2>
@@ -740,12 +755,12 @@ ${self.render_grid_table()}
             </ul>
         %endif
     
-        ${render_grid_filters()}
+        ${render_grid_filters( grid )}
     </div>
 </%def>
 
 ## Render grid.
-<%def name="render_grid_table(show_item_checkboxes=False)">
+<%def name="render_grid_table( grid, show_item_checkboxes=False)">
     <%
         # Set flag to indicate whether grid has operations that operate on multiple items.
         multiple_item_ops_exist = False
@@ -801,17 +816,17 @@ ${self.render_grid_table()}
                 </tr>
             </thead>
             <tbody id="grid-table-body">
-                ${render_grid_table_body_contents(show_item_checkboxes)}
+                ${render_grid_table_body_contents( grid, show_item_checkboxes )}
             </tbody>
             <tfoot>
-                ${render_grid_table_footer_contents(show_item_checkboxes)}
+                ${render_grid_table_footer_contents( grid, show_item_checkboxes )}
             </tfoot>
         </table>
     </form>
 </%def>
 
 ## Render grid table body contents.
-<%def name="render_grid_table_body_contents(show_item_checkboxes=False)">
+<%def name="render_grid_table_body_contents(grid, show_item_checkboxes=False)">
         <% num_rows_rendered = 0 %>
         %if query.count() == 0:
             ## No results.
@@ -901,27 +916,15 @@ ${self.render_grid_table()}
 </%def>
 
 ## Render grid table footer contents.
-<%def name="render_grid_table_footer_contents(show_item_checkboxes=False)">
+<%def name="render_grid_table_footer_contents(grid, show_item_checkboxes=False)">
     ## Row for navigating among pages.
-    <%
-        # Mapping between item class and plural term for item.
-        items_plural = "items"
-        if grid.model_class == History:
-            items_plural = "histories"
-        elif grid.model_class == HistoryDatasetAssociation:
-             items_plural = "datasets"
-        elif grid.model_class == User:
-            items_plural = "users"
-        elif grid.model_class == Role:
-            items_plural = "roles"
-        elif grid.model_class == Group:
-            items_plural = "groups"
-    %>
-    %if show_item_checkboxes:
-        <td></td>
-    %endif
+	<%namespace file="/display_common.mako" import="get_class_plural" />
+	<% items_plural = get_class_plural( grid.model_class ).lower() %>
     %if grid.use_paging and num_pages > 1:
         <tr id="page-links-row">
+		    %if show_item_checkboxes:
+		        <td></td>
+		    %endif
             <td colspan="100">
                 <span id='page-link-container'>
                     ## Page links.

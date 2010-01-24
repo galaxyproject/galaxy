@@ -8,8 +8,8 @@
             multiple_item_ops_exist = True
 %>
 
-${render_grid_table_body_contents(show_item_checkboxes=multiple_item_ops_exist)}
+${render_grid_table_body_contents( grid, show_item_checkboxes=multiple_item_ops_exist )}
 *****
 ${num_pages}
 *****
-${render_grid_message()}
+${render_grid_message( grid )}

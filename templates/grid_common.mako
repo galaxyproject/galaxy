@@ -4,7 +4,7 @@
 %>
 
 ## Render a filter UI for a grid column. Filter is rendered as a table row.
-<%def name="render_grid_column_filter(column)">
+<%def name="render_grid_column_filter( grid, column )">
     <tr>
         <%
             column_label = column.label
@@ -95,7 +95,7 @@
 </%def>
 
 ## Print grid search/filtering UI.
-<%def name="render_grid_filters()">
+<%def name="render_grid_filters( grid )">
     ## Standard search.
     <div>
         <table><tr>
@@ -103,7 +103,7 @@
                 <table>
                 %for column in grid.columns:
                     %if column.filterable == "standard":
-                       ${render_grid_column_filter(column)}
+                       ${render_grid_column_filter( grid, column )}
                     %endif
                 %endfor
                 </table>
@@ -168,7 +168,7 @@
                         </script>
                     %endif
             
-                    ${render_grid_column_filter(column)}
+                    ${render_grid_column_filter( grid, column )}
                 %endif
             %endfor
         </table>

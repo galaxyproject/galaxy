@@ -7,26 +7,16 @@
 	from galaxy import model
 %>
 <%inherit file="${inherit( context )}"/>
-<%namespace file="./tagging_common.mako" import="render_individual_tagging_element, render_community_tagging_element" />
+<%namespace file="/tagging_common.mako" import="render_individual_tagging_element, render_community_tagging_element" />
+<%namespace file="/display_common.mako" import="*" />
 
 <%!
     from galaxy.model import History, StoredWorkflow, Page
     from galaxy.web.framework.helpers import iff
 %>
 
-## Get display name for a class.
-<%def name="get_class_display_name( a_class )">
-<%
-    ## Start with exceptions, end with default.
-    if a_class is model.StoredWorkflow:
-        return "Workflow"
-    else:
-        return a_class.__name__
-%>
-</%def>
-
 <%def name="title()">
-    Galaxy | ${iff( item.published, "Published ", iff( item.importable , "Accessible ", "Shared " ) ) + self.get_class_display_name( item.__class__ )} | ${item.name}
+    Galaxy | ${iff( item.published, "Published ", iff( item.importable , "Accessible ", iff( item.users_shared_with, "Shared ", "Private " ) ) ) + get_class_display_name( item.__class__ )} | ${get_item_name( item )}
 </%def>
 
 <%def name="init()">
@@ -88,10 +78,6 @@
     Item
 </%def>
 
-<%def name="get_item_name( item )">
-    <% return item.name %>
-</%def>
-
 ##
 ## When page has no panels, center panel is body.
 ##
@@ -120,12 +106,13 @@
 	                <a href="${href_to_all_items}">Published ${item_plural}</a> | 
 	                <a href="${href_to_user_items}">${item.user.username}</a>
 	        %elif item.importable:
-				Accessible ${self.get_class_display_name( item.__class__ )}
+				Accessible ${get_class_display_name( item.__class__ )}
+			%elif item.users_shared_with:
+				Shared ${get_class_display_name( item.__class__ )}
 			%else:
-				## Item shared with user.
-				Shared ${self.get_class_display_name( item.__class__ )}
+				Private ${get_class_display_name( item.__class__ )}
 	        %endif
-			| ${self.get_item_name( item )}
+			| ${get_item_name( item )}
 	    </div>
     </div>
     
@@ -168,44 +155,4 @@
             %endif
         </div>
     </div>
-</%def>
-
-
-##
-## Utility methods.
-##
-
-## Get plural term for item.
-<%def name="get_item_plural( item )">
-    <%
-        items_plural = "items"
-        if isinstance( item, History ):
-            items_plural = "Histories"
-        elif isinstance( item, StoredWorkflow ):
-            items_plural = "Workflows"
-        elif isinstance( item, Page ):
-            items_plural = "Pages"
-        return items_plural
-    %>
-</%def>
-
-## Returns the controller name for an item based on its class.
-<%def name="get_controller_name( item )">
-    <%
-        if isinstance( item, History ):
-            return "history"
-        elif isinstance( item, StoredWorkflow ):
-            return "workflow"
-        elif isinstance( item, Page ):
-            return "page"
-    %>
-</%def>
-
-## Return a link to view a history.
-<%def name="get_history_link( history, qualify=False )">
-    %if history.slug and history.user.username:
-        <% return h.url_for( controller='/history', action='display_by_username_and_slug', username=history.user.username, slug=history.slug, qualified=qualify ) %>
-    %else:
-        <% return h.url_for( controller='/history', action='view', id=trans.security.encode_id( history.id ), qualified=qualify ) %>
-    %endif
 </%def>

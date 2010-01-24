@@ -212,7 +212,7 @@
                         "Insert Link to History",
                         table_html +
                         "<div><input id='make-importable' type='checkbox' checked/>" +
-                        "Publish the selected histories so that they can viewed by everyone.</div>"
+                        "Make the selected histories accessible so that they can viewed by everyone.</div>"
                         ,
                         {
                             "Insert": function() 
@@ -231,8 +231,8 @@
                                     if (make_importable)
                                         $.ajax({
                                           type: "POST",
-                                          url: '${h.url_for( controller='history', action='set_importable_async' )}',
-                                          data: { id: item_id, importable: 'True' },
+                                          url: '${h.url_for( controller='history', action='set_accessible_async' )}',
+                                          data: { id: item_id, accessible: 'True' },
                                           error: function() { alert('Make history importable failed; id=' + item_id) }
                                         });
                             
@@ -412,7 +412,7 @@
             });
             ## Close button
             $("#close-button").click(function() {
-                <% next_url = h.url_for( controller='page', action='index' ) %>
+                <% next_url = h.url_for( controller='page', action='list' ) %>
                 // var new_content = editor.xhtml();
                 // var changed = ( initial_content != new_content );
                 var changed = false;

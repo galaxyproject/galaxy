@@ -683,6 +683,12 @@ PageRevision.table = Table( "page_revision", metadata,
     Column( "content", TEXT )
     )
 
+PageUserShareAssociation.table = Table( "page_user_share_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "page_id", Integer, ForeignKey( "page.id" ), index=True ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True )
+    )
+
 Visualization.table = Table( "visualization", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
@@ -1236,6 +1242,11 @@ assign_mapper( context, Page, Page.table,
                                                lazy=False ),
                      tags=relation(PageTagAssociation, order_by=PageTagAssociation.table.c.id, backref="pages") 
                    ) )
+                   
+assign_mapper( context, PageUserShareAssociation, PageUserShareAssociation.table,
+   properties=dict( user=relation( User, backref='pages_shared_by_others' ),
+                    page=relation( Page, backref='users_shared_with' )
+                  ) )
 
 assign_mapper( context, VisualizationRevision, VisualizationRevision.table )
 

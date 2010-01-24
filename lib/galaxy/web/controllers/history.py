@@ -225,7 +225,7 @@ class HistoryController( BaseController, Sharable ):
                 elif operation == "enable import via link":
                     for history in histories:
                         if not history.importable:
-                            self.make_item_importable( trans.sa_session, history )
+                            self._make_item_importable( trans.sa_session, history )
                 elif operation == "disable import via link":
                     if history_ids:
                         histories = [ self.get_history( trans, history_id ) for history_id in history_ids ]
@@ -380,16 +380,16 @@ class HistoryController( BaseController, Sharable ):
         return
         
     @web.expose
-    @web.require_login( "set history's importable flag" )
-    def set_importable_async( self, trans, id=None, importable=False ):
+    @web.require_login( "set history's accessible flag" )
+    def set_accessible_async( self, trans, id=None, accessible=False ):
         """ Set history's importable attribute and sets history's slug. """
         history = self.get_history( trans, id, True )
             
         # Only set if importable value would change; this prevents a change in the update_time unless attribute really changed.
-        importable = importable in ['True', 'true', 't', 'T'];
+        importable = accessible in ['True', 'true', 't', 'T'];
         if history and history.importable != importable:
             if importable:
-                self.make_item_importable( trans.sa_session, history )
+                self._make_item_accessible( trans.sa_session, history )
             else:
                 history.importable = importable
             trans.sa_session.flush()
@@ -588,7 +588,7 @@ class HistoryController( BaseController, Sharable ):
         for history in histories:
             trans.sa_session.add( history )
             if params.get( 'enable_import_via_link', False ):
-                self.make_item_importable( trans.sa_session, history )
+                self._make_item_accessible( trans.sa_session, history )
                 trans.sa_session.flush()
             elif params.get( 'disable_import_via_link', False ):
                 history.importable = False
@@ -893,6 +893,7 @@ class HistoryController( BaseController, Sharable ):
                     share.history = history
                     share.user = send_to_user
                     trans.sa_session.add( share )
+                    self.set_item_slug( trans.sa_session, history )
                     trans.sa_session.flush()
                     if history not in shared_histories:
                         shared_histories.append( history )
