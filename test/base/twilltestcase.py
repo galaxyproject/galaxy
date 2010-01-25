@@ -608,7 +608,8 @@ class TwillTestCase( unittest.TestCase ):
     # Functions associated with user accounts
     def create( self, email='test@bx.psu.edu', password='testuser' ):
         self.home()
-        self.visit_page( "user/create?email=%s&password=%s&confirm=%s&create_user_button=Submit" % ( email, password, password ) )
+        # Create user, setting username to email.
+        self.visit_page( "user/create?email=%s&username=%s&password=%s&confirm=%s&create_user_button=Submit" % ( email, email, password, password ) )
         self.check_page_for_string( "Now logged in as %s" %email )
         self.home()
         # Make sure a new private role was created for the user
