@@ -148,7 +148,15 @@ class Sharable:
     def set_item_slug( self, sa_session, item ):
         """ Set item slug. Slug is unique among user's importable items for item's class. """
         if item.slug is None or item.slug == "":
+            # Replace whitespace with '-'
             slug_base = re.sub( "\s+", "-", item.name.lower() )
+            # Remove all non-alphanumeric characters.
+            slug_base = re.sub( "[^a-zA-Z0-9\-]", "", slug_base )
+            # Remove trailing '-'.
+            if slug_base.endswith('-'):
+                slug_base = slug_base[:-1]
+                
+            # Make sure that slug is not taken; if it is, add a number to it.
             slug = slug_base
             count = 1
             while sa_session.query( item.__class__ ).filter_by( user=item.user, slug=slug, importable=True ).count() != 0:
