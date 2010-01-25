@@ -701,7 +701,14 @@ class LibraryCommon( BaseController ):
         # If we're using nginx upload, override the form action
         action = web.url_for( controller='library_common', action='upload_library_dataset', cntrller=cntrller )
         if upload_option == 'upload_file' and trans.app.config.nginx_upload_path:
-            action = web.url_for( trans.app.config.nginx_upload_path ) + '?nginx_redir=' + action
+            # url_for is intentionally not used on the base URL here -
+            # nginx_upload_path is expected to include the proxy prefix if the
+            # administrator intends for it to be part of the URL.  We also
+            # redirect to the library or library_admin controller rather than
+            # library_common because GET arguments can't be used in conjunction
+            # with nginx upload (nginx can't do percent decoding without a
+            # bunch of hacky rewrite rules).
+            action = trans.app.config.nginx_upload_path + '?nginx_redir=' + web.url_for( controller=cntrller, action='upload_library_dataset' )
         return trans.fill_template( '/library/common/upload.mako',
                                     cntrller=cntrller,
                                     upload_option=upload_option,
