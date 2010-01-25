@@ -5,7 +5,7 @@ import pkg_resources;
 
 pkg_resources.require( "simplejson" )
 
-import logging, os, string, sys, tempfile, glob, shutil, types
+import logging, os, string, sys, tempfile, glob, shutil, types, urllib
 import simplejson
 import binascii
 from UserDict import DictMixin
@@ -432,10 +432,11 @@ class Tool:
             # Handle properties of the input form
             self.check_values = util.string_as_bool( input_elem.get("check_values", "true") )
             self.nginx_upload = util.string_as_bool( input_elem.get( "nginx_upload", "false" ) )
+            self.action = input_elem.get( 'action', '/tool_runner/index' )
             if self.nginx_upload and self.app.config.nginx_upload_path:
-                self.action = input_elem.get( "action", self.app.config.nginx_upload_path + "?nginx_redir=/tool_runner/index" )
-            else:
-                self.action = input_elem.get( "action", "/tool_runner/index")
+                if '?' in urllib.unquote_plus( self.action ):
+                    raise Exception( 'URL parameters in a non-default tool action can not be used in conjunction with nginx upload.  Please convert them to hidden POST parameters' )
+                self.action = self.app.config.nginx_upload_path + '?nginx_redir=' + urllib.unquote_plus( self.action )
             self.target = input_elem.get( "target", "galaxy_main" )
             self.method = input_elem.get( "method", "post" )
             # Parse the actual parameters
