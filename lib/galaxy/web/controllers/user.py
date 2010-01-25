@@ -593,7 +593,7 @@ class User( BaseController ):
                 for i in range(15):
                     new_pass = new_pass + choice(chars)
                 mail = os.popen("%s -t" % trans.app.config.sendmail_path, 'w')
-                mail.write("To: %s\nFrom: no-reply@%s\nSubject: Galaxy Password Reset\n\nYour password has been reset to \"%s\" (no quotes)." % (email, trans.request.remote_addr, new_pass) )
+                mail.write("To: %s\nFrom: no-reply@nowhere.edu\nSubject: Galaxy Password Reset\n\nYour password has been reset to \"%s\" (no quotes)." % (email, new_pass) )
                 if mail.close():
                     return trans.show_error_message( 'Failed to reset password.  If this problem persists, please submit a bug report.' )
                 reset_user.set_password_cleartext( new_pass )
