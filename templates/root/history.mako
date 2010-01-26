@@ -20,7 +20,7 @@ ${h.js( "jquery", "json2", "jquery.jstore-all", "jquery.autocomplete", "autocomp
 <script type="text/javascript">
 $(function() {
     // Load jStore for local storage
-    $.extend(jQuery.jStore.defaults, { project: 'galaxy', flash: '/static/jStore.Flash.html' })
+    $.extend(jQuery.jStore.defaults, { project: 'galaxy', flash: '${h.url_for("/static/jStore.Flash.html")}' })
     $.jStore.load(); // Auto-select best storage
 
     $.jStore.ready(function(engine) {

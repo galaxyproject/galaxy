@@ -132,6 +132,7 @@ class TracksController( BaseController ):
             error( "No chromosome lengths file found for '%s'" % dataset.name )
         return trans.fill_template( 'tracks/browser.mako',
                                     #dataset_ids=dataset_ids,
+                                    title = vis.title,
                                     id=id,
                                     tracks=tracks,
                                     chrom=chrom,
@@ -249,3 +250,9 @@ class TracksController( BaseController ):
         trans.sa_session.add( assoc )
         trans.sa_session.flush()
         return new_dataset
+    
+    @web.json
+    def update_config( self, trans, **kwargs ):
+        raise RuntimeError
+        
+        

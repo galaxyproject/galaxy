@@ -8,7 +8,7 @@ from shutil import copyfile
 from os import path
 
 # Scripts that should not be packed -- just copied
-do_not_pack = set( [ "ie_pngfix.js", "aflax.js" ] )
+do_not_pack = set()
 
 cmd = "java -jar ../../scripts/yuicompressor.jar --type js %(fname)s -o packed/%(fname)s"
 

@@ -59,7 +59,7 @@
         }
         
         // Load jStore for local storage
-        $.extend(jQuery.jStore.defaults, { project: 'galaxy', flash: '/static/jStore.Flash.html' })
+        $.extend(jQuery.jStore.defaults, { project: 'galaxy', flash: '${h.url_for("/static/jStore.Flash.html")}' })
         $.jStore.load(); // Auto-select best storage
         
         // Canvas overview management

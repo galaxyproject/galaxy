@@ -4,7 +4,7 @@
 var DEBUG = false;
 
 var DENSITY = 1000,
-    FEATURE_LEVELS = 100,
+    FEATURE_LEVELS = 10,
     DATA_ERROR = "There was an error in indexing this dataset.",
     DATA_NONE = "No data for this chrom/contig.",
     DATA_PENDING = "Currently indexing... please wait",
@@ -47,8 +47,7 @@ function commatize( number ) {
 
 var Cache = function( num_elements ) {
     this.num_elements = num_elements;
-    this.obj_cache = {};
-    this.key_ary = [];
+    this.clear();
 };
 $.extend( Cache.prototype, {
     get: function( key ) {
@@ -71,11 +70,16 @@ $.extend( Cache.prototype, {
         }
         this.obj_cache[key] = value;
         return value;
+    },
+    clear: function() {
+        this.obj_cache = {};
+        this.key_ary = [];
     }
 });
 
-var View = function( chrom, max_high ) {
+var View = function( chrom, max_high, config ) {
     this.chrom = chrom;
+    this.config = config;
     this.tracks = [];
     this.max_low = 0;
     this.max_high = max_high;
@@ -181,7 +185,6 @@ $.extend( TiledTrack.prototype, Track.prototype, {
 
         var w_scale = this.content_div.width() / range;
 
-        var max_height = 20;
         var tile_element;
         // Index of first tile that overlaps visible region
         var tile_index = Math.floor( low / resolution / DENSITY );
@@ -201,22 +204,30 @@ $.extend( TiledTrack.prototype, Track.prototype, {
                 });
                 // Our responsibility to move the element to the new parent
                 parent_element.append( cached );
-                max_height = Math.max( max_height, cached.height() );
+                this.max_height = Math.max( this.max_height, cached.height() );
             } else {
-                tile_element = this.draw_tile( resolution, tile_index, parent_element, w_scale );
-                if ( tile_element ) {
-                    this.tile_cache.set(key, tile_element);
-                    max_height = Math.max( max_height, tile_element.height() );
-                }
+                this.delayed_draw(this, key, low, high, tile_index, resolution, parent_element, w_scale);
             }
-            this.content_div.css( "height", max_height );
             tile_index += 1;
         }
+    }, delayed_draw: function(track, key, low, high, tile_index, resolution, parent_element, w_scale) {
+        // Put a 50ms delay on drawing so that if the user scrolls fast, we don't load extra data
+        setTimeout(function() {
+            if ( !(low > track.view.high || high < track.view.low) ) {
+                tile_element = track.draw_tile( resolution, tile_index, parent_element, w_scale );
+                if ( tile_element ) {
+                    track.tile_cache.set(key, tile_element);
+                    track.max_height = Math.max( track.max_height, tile_element.height() );
+                    track.content_div.css( "height", track.max_height );
+                }
+            }
+        }, 50);
     }
 });
 
 var LabelTrack = function ( parent_element ) {
     Track.call( this, null, parent_element );
+    this.hidden = true;
     this.container_div.addClass( "label-track" );
 };
 $.extend( LabelTrack.prototype, Track.prototype, {
@@ -241,7 +252,7 @@ $.extend( LabelTrack.prototype, Track.prototype, {
     }
 });
 
-var LineTrack = function ( name, dataset_id, indexer, height ) {
+var LineTrack = function ( name, dataset_id, indexer, height, minval, maxval ) {
     this.tile_cache = new Cache(CACHED_TILES_LINE);
     Track.call( this, name, $("#viewport") );
     TiledTrack.call( this );
@@ -251,12 +262,19 @@ var LineTrack = function ( name, dataset_id, indexer, height ) {
     this.container_div.addClass( "line-track" );
     this.dataset_id = dataset_id;
     this.data_queue = {};
-    this.cache = new Cache(CACHED_DATA); // We need to cache some data because of
+    this.data_cache = new Cache(CACHED_DATA); // We need to cache some data because of
                                          // asynchronous calls
+    if (minval !== undefined && maxval !== undefined) {
+        this.min_value = minval;
+        this.max_value = maxval;
+        this.vertical_range = maxval - minval;
+    }
 };
 $.extend( LineTrack.prototype, TiledTrack.prototype, {
     init: function() {
-        var track = this;
+        var track = this,
+            track_id = track.view.tracks.indexOf(track);
+            
         track.content_div.text(DATA_LOADING);
         $.getJSON( data_url, {  stats: true, indexer: track.indexer,
                                 chrom: track.view.chrom, low: null, high: null,
@@ -274,13 +292,20 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
             } else {
                 track.content_div.text("");
                 track.content_div.css( "height", track.height_px + "px" );
-                track.min_value = data.min;
-                track.max_value = data.max;
-                track.vertical_range = track.max_value - track.min_value;
+                
+                if (track.min_value === undefined || track.max_value === undefined) {
+                    track.min_value = data.min;
+                    track.max_value = data.max;
+                    track.vertical_range = track.max_value - track.min_value;
+                    
+                    // Update the config
+                    $('#track_' + track_id + '_minval').val(track.min_value);
+                    $('#track_' + track_id + '_maxval').val(track.max_value);
+                }
                 
                 // Draw y-axis labels
-                var min_label = $("<div class='yaxislabel'>" + track.min_value + "</div>");
-                var max_label = $("<div class='yaxislabel'>" + track.max_value + "</div>");
+                var min_label = $("<div></div>").addClass('yaxislabel').attr("id", 'linetrack_' + track_id + '_minval').text(track.min_value);
+                var max_label = $("<div></div>").addClass('yaxislabel').attr("id", 'linetrack_' + track_id + '_maxval').text(track.max_value);
                 
                 max_label.css({ position: "relative", top: "25px" });
                 max_label.prependTo(track.container_div);
@@ -303,11 +328,11 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
             $.getJSON( data_url, {  indexer: this.indexer, chrom: this.view.chrom, 
                                     low: low, high: high, dataset_id: this.dataset_id,
                                     resolution: this.view.resolution }, function ( data ) {
-                track.cache.set(key, data);
+                track.data_cache.set(key, data);
                 delete track.data_queue[key];
                 track.draw();
             });
-        }            
+        }
     },
     draw_tile: function( resolution, tile_index, parent_element, w_scale ) {
         if (!this.vertical_range) { // We don't have the necessary information yet
@@ -319,12 +344,12 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
             canvas = $("<canvas class='tile'></canvas>"),
             key = resolution + "_" + tile_index;
         
-        if (!this.cache.get(key)) {
+        if (!this.data_cache.get(key)) {
             this.get_data( resolution, tile_index );
             return;
         }
         
-        var data = this.cache.get(key);
+        var data = this.data_cache.get(key);
         canvas.css( {
             position: "absolute",
             top: 0,
@@ -345,7 +370,14 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
             } else {
                 // Translate
                 x = x * w_scale;
-                y = (y - this.min_value) / this.vertical_range * this.height_px;
+                // console.log(y, this.min_value, this.vertical_range, (y - this.min_value) / this.vertical_range * this.height_px);
+                if (y <= this.min_value) {
+                    y = this.min_value;
+                } else if (y >= this.max_value) {
+                    y = this.max_value;
+                }
+                y = Math.round( this.height_px - (y - this.min_value) / this.vertical_range * this.height_px );
+                // console.log(canvas.get(0).height, canvas.get(0).width);
                 if ( in_path ) {
                     ctx.lineTo( x, y );
                 } else {
@@ -357,6 +389,29 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
         ctx.stroke();
         parent_element.append( canvas );
         return canvas;
+    }, gen_options: function(track_id) {
+        var container = $("<div></div>").addClass("form-row");
+        
+        var minval = 'track_' + track_id + '_minval',
+            maxval = 'track_' + track_id + '_maxval',
+            min_label = $('<label></label>').attr("for", minval).text("Min value:"),
+            min_input = $('<input></input>').attr("id", minval).val(this.min_value || ""),
+            max_label = $('<label></label>').attr("for", maxval).text("Max value:"),
+            max_input = $('<input></input>').attr("id", maxval).val(this.max_value || "");
+        
+        return container.append(min_label).append(min_input).append(max_label).append(max_input);
+    }, update_options: function(track_id) {
+        var min_value = $('#track_' + track_id + '_minval').val(),
+            max_value = $('#track_' + track_id + '_maxval').val();
+        if ( min_value !== this.min_value || max_value !== this.max_value) {
+            this.min_value = parseFloat(min_value);
+            this.max_value = parseFloat(max_value);
+            this.vertical_range = this.max_value - this.min_value;
+            $('#linetrack_' + track_id + '_minval').text(this.min_value);
+            $('#linetrack_' + track_id + '_maxval').text(this.max_value);
+            this.tile_cache.clear();
+            this.draw();
+        }
     }
 });
 
@@ -374,7 +429,8 @@ var FeatureTrack = function ( name, dataset_id, indexer, height ) {
     this.showing_details = false;
     this.vertical_detail_px = 10;
     this.vertical_nodetail_px = 3;
-    this.base_color = "#2C3143";
+    this.block_color = "black";
+    this.label_color = "black";
     this.default_font = "9px Monaco, Lucida Console, monospace";
     this.left_offset = 200;
     this.inc_slots = {};
@@ -564,7 +620,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
         new_canvas.get(0).height = required_height;
         // console.log(( tile_low - this.view.low ) * w_scale, tile_index, w_scale);
         var ctx = new_canvas.get(0).getContext("2d");
-        ctx.fillStyle = this.base_color;
+        ctx.fillStyle = this.block_color;
         ctx.font = this.default_font;
         ctx.textAlign = "right";
 
@@ -586,10 +642,10 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                     ctx.fillRect(f_start + this.left_offset, y_center + 5, f_end - f_start, 1);
                 } else {
                     // Showing labels, blocks, details
-                    if (ctx.fillText && feature.start > tile_low) {
+                    if (feature.start > tile_low) {
+                        ctx.fillStyle = this.label_color;
                         ctx.fillText(feature.name, f_start - 1 + this.left_offset, y_center + 8);
-                        // ctx.fillText(commatize(feature.start), f_start - 1 + this.left_offset, y_center + 8);
-                        // ctx.fillText(slots[feature.uid], f_start - 1 + this.left_offset, y_center + 8);
+                        ctx.fillStyle = this.block_color;
                     }
                     var blocks = feature.blocks;
                     if (blocks) {
@@ -601,7 +657,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                                 ctx.fillStyle = LEFT_STRAND;
                             }
                             ctx.fillRect(f_start + this.left_offset, y_center, f_end - f_start, 10);
-                            ctx.fillStyle = this.base_color;
+                            ctx.fillStyle = this.block_color;
                         }
                         
                         for (var k = 0, k_len = blocks.length; k < k_len; k++) {
@@ -614,7 +670,8 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                             y_start = 3;
                             ctx.fillRect(block_start + this.left_offset, y_center + y_start, block_end - block_start, thickness);
                             
-                            if (thick_start !== undefined && (block_start <= thick_end || block_end >= thick_start) ) {
+                            // Draw thick regions: check if block intersects with thick region
+                            if (thick_start !== undefined && !(block_start > thick_end || block_end < thick_start) ) {
                                 thickness = 9;
                                 y_start = 1;
                                 var block_thick_start = Math.max(block_start, thick_start),
@@ -635,7 +692,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                                 ctx.fillStyle = LEFT_STRAND_INV;
                             }
                             ctx.fillRect(f_start + this.left_offset, y_center, f_end - f_start, 10);
-                            ctx.fillStyle = this.base_color;
+                            ctx.fillStyle = this.block_color;
                         }
                     }
                 }
@@ -645,6 +702,25 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
 
         parent_element.append( new_canvas );
         return new_canvas;
+    }, gen_options: function(track_id) {
+        var container = $("<div></div>").addClass("form-row");
+
+        var block_color = 'track_' + track_id + '_block_color',
+            block_color_label = $('<label></label>').attr("for", block_color).text("Block color:"),
+            block_color_input = $('<input></input>').attr("id", block_color).attr("name", block_color).val(this.block_color),
+            label_color = 'track_' + track_id + '_label_color',
+            label_color_label = $('<label></label>').attr("for", label_color).text("Label color:"),
+            label_color_input = $('<input></input>').attr("id", label_color).attr("name", label_color).val(this.label_color);
+        return container.append(block_color_label).append(block_color_input).append(label_color_label).append(label_color_input);
+    }, update_options: function(track_id) {
+        var block_color = $('#track_' + track_id + '_block_color').val(),
+            label_color = $('#track_' + track_id + '_label_color').val();
+        if (block_color !== this.block_color || label_color !== this.label_color) {
+            this.block_color = block_color;
+            this.label_color = label_color;
+            this.tile_cache.clear();
+            this.draw();
+        }
     }
 });
 
@@ -684,7 +760,7 @@ $.extend( ReadTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
         new_canvas.get(0).height = required_height;
         // console.log(( tile_low - this.view.low ) * w_scale, tile_index, w_scale);
         var ctx = new_canvas.get(0).getContext("2d");
-        ctx.fillStyle = this.base_color;
+        ctx.fillStyle = this.block_color;
         ctx.font = this.default_font;
         ctx.textAlign = "right";
         var px_per_char = ctx.measureText("A").width;
