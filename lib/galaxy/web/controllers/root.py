@@ -357,11 +357,12 @@ class RootController( BaseController ):
             # the built-in 'id' is overwritten in lots of places as well
             ldatatypes = [ dtype_name for dtype_name, dtype_value in trans.app.datatypes_registry.datatypes_by_extension.iteritems() if dtype_value.allow_datatype_change ]
             ldatatypes.sort()
-            trans.log_event( "Opened edit view on dataset %s" % str(id) )
+            all_roles = trans.app.security_agent.get_legitimate_roles( trans, data.dataset )
             return trans.fill_template( "/dataset/edit_attributes.mako",
                                         data=data,
                                         datatypes=ldatatypes,
-                                        current_user_roles=current_user_roles )
+                                        current_user_roles=current_user_roles,
+                                        all_roles=all_roles )
         else:
             return trans.show_error_message( "You do not have permission to edit this dataset's ( id: %s ) information." % str( id ) )
 

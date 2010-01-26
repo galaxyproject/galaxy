@@ -1457,7 +1457,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
                 self.visit_url( '%s/root/edit?id=%s' % ( self.url, str( last_hda_created.id ) ) )
                 self.check_page_for_string( 'Edit Attributes' )
                 self.check_page_for_string( last_hda_created.name )
-                check_str = 'Manage dataset permissions and role associations of %s' % last_hda_created.name
+                check_str = 'Manage dataset permissions on %s' % last_hda_created.name
                 self.check_page_for_string( check_str )
                 self.check_page_for_string( 'Role members can manage the roles associated with permissions on this dataset' )
                 self.check_page_for_string( 'Role members can import this dataset into their history for analysis' )
@@ -1510,7 +1510,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
                 self.check_page_for_string( last_hda_created.name )
                 try:
                     # This should no longer be possible
-                    check_str = 'Manage dataset permissions and role associations of %s' % last_hda_created.name
+                    check_str = 'Manage dataset permissions on %s' % last_hda_created.name
                     self.check_page_for_string( check_str )
                     raise AssertionError( '%s incorrectly has DATASET_MANAGE_PERMISSIONS on datasets imported from a library' % admin_user.email )
                 except:

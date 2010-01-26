@@ -183,7 +183,7 @@ class LibraryCommon( BaseController ):
                                                               id=trans.security.encode_id( library.id ),
                                                               msg=util.sanitize_text( msg ),
                                                               messagetype='done' ) )
-        roles = library.get_legitimate_roles( trans )
+        roles = trans.app.security_agent.get_legitimate_roles( trans, library )
         return trans.fill_template( '/library/common/library_permissions.mako',
                                     cntrller=cntrller,
                                     library=library,
@@ -307,7 +307,7 @@ class LibraryCommon( BaseController ):
         # If the library is public all roles are legitimate, but if the library is restricted, only those
         # roles associated with the LIBRARY_ACCESS permission are legitimate.
         library = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( library_id ) )
-        roles = library.get_legitimate_roles( trans )
+        roles = trans.app.security_agent.get_legitimate_roles( trans, library )
         return trans.fill_template( '/library/common/folder_permissions.mako',
                                     cntrller=cntrller,
                                     folder=folder,
@@ -492,7 +492,7 @@ class LibraryCommon( BaseController ):
         # If the library is public all roles are legitimate, but if the library is restricted, only those
         # roles associated with the LIBRARY_ACCESS permission are legitimate.
         library = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( library_id ) )
-        roles = library.get_legitimate_roles( trans )
+        roles = trans.app.security_agent.get_legitimate_roles( trans, library )
         if params.get( 'update_roles_button', False ):
             current_user_roles = trans.get_current_user_roles()
             if cntrller=='library_admin' or ( trans.app.security_agent.can_manage_library_item( current_user_roles, ldda ) and \
@@ -694,7 +694,7 @@ class LibraryCommon( BaseController ):
         # If the library is public, all active roles are legitimate.  If the library is restricted by the
         # LIBRARY_ACCESS permission, only those roles associated with that permission are legitimate.
         library = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( library_id ) )
-        roles = library.get_legitimate_roles( trans )
+        roles = trans.app.security_agent.get_legitimate_roles( trans, library )
         # Send the current history to the form to enable importing datasets from history to library
         history = trans.get_history()
         trans.sa_session.refresh( history )
@@ -977,7 +977,7 @@ class LibraryCommon( BaseController ):
                 dbkeys = get_dbkey_options( last_used_build )
                 # Send list of legitimate roles to the form so the dataset can be associated with 1 or more of them.
                 library = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( library_id ) )
-                roles = library.get_legitimate_roles( trans )
+                roles = trans.app.security_agent.get_legitimate_roles( trans, library )
                 return trans.fill_template( "/library/common/upload.mako",
                                             upload_option=upload_option,
                                             library_id=library_id,
@@ -1101,7 +1101,7 @@ class LibraryCommon( BaseController ):
                 msg = "You are not authorized to managed the permissions of this dataset"
                 messagetype = "error"
         library = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( library_id ) )
-        roles = library.get_legitimate_roles( trans )
+        roles = trans.app.security_agent.get_legitimate_roles( trans, library )
         return trans.fill_template( '/library/common/library_dataset_permissions.mako',
                                     cntrller=cntrller,
                                     library_dataset=library_dataset,

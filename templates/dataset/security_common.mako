@@ -102,7 +102,7 @@
         });
     </script>
     <div class="toolForm">
-        <div class="toolFormTitle">Manage ${obj_type} permissions and role associations of ${obj_str}</div>
+        <div class="toolFormTitle">Manage ${obj_type} permissions on ${obj_str}</div>
         <div class="toolFormBody">
             <form name="edit_role_associations" id="edit_role_associations" action="${form_url}" method="post">
                 <div class="form-row"></div>

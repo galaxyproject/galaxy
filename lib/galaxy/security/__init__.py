@@ -2,7 +2,7 @@
 Galaxy Security
 
 """
-import logging, socket
+import logging, socket, operator
 from datetime import datetime, timedelta
 from galaxy.util.bunch import Bunch
 from galaxy.util import listify
@@ -79,6 +79,8 @@ class RBACAgent:
         raise "Unimplemented Method"
     def get_permissions( self, library_dataset ):
         raise "Unimplemented Method"
+    def get_legitimate_roles( self, trans, item ):
+        raise "Unimplemented Method"
     def check_library_dataset_access( self, trans, library_id, **kwd ):
         raise "Unimplemented Method"
     def get_component_associations( self, **kwd ):
@@ -107,6 +109,51 @@ class GalaxyRBACAgent( RBACAgent ):
     def sa_session( self ):
         """Returns a SQLAlchemy session"""
         return self.model.context
+    def get_legitimate_roles( self, trans, item ):
+        """
+        Return a sorted list of legitimate roles that can be associated with a permission on
+        item where item is a Library or a Dataset.  If item is public, all roles are legitimate.
+        If item is restricted, legitimate roles are derived from the users and groups associated
+        with each role that is associated with the access permission ( i.e., DATASET_MANAGE_PERMISSIONS
+        or LIBRARY_MANAGE ) on item.
+        """
+        if ( isinstance( item, self.model.Library ) and self.library_is_public( item ) ) or \
+            ( isinstance( item, self.model.Dataset ) and self.dataset_is_public( item ) ):
+            return trans.sa_session.query( trans.app.model.Role ) \
+                                   .filter( trans.app.model.Role.table.c.deleted==False ) \
+                                   .order_by( trans.app.model.Role.table.c.name )
+        def sort_by_attr( seq, attr ):
+            """
+            Sort the sequence of objects by object's attribute
+            Arguments:
+            seq  - the list or any sequence (including immutable one) of objects to sort.
+            attr - the name of attribute to sort by
+            """
+            # Use the "Schwartzian transform"
+            # Create the auxiliary list of tuples where every i-th tuple has form
+            # (seq[i].attr, i, seq[i]) and sort it. The second item of tuple is needed not
+            # only to provide stable sorting, but mainly to eliminate comparison of objects
+            # (which can be expensive or prohibited) in case of equal attribute values.
+            intermed = map( None, map( getattr, seq, ( attr, ) * len( seq ) ), xrange( len( seq ) ), seq )
+            intermed.sort()
+            return map( operator.getitem, intermed, ( -1, ) * len( intermed ) )            
+        roles = set()
+        # If a library has roles associated with the LIBRARY_ACCESS permission, we need to start with them.
+        access_roles = item.get_access_roles( trans )
+        for role in access_roles:
+            roles.add( role )
+            # Each role potentially has users.  We need to find all roles that each of those users have.
+            for ura in role.users:
+                roles.add( ura.role )
+            # Each role also potentially has groups which, in turn, have members ( users ).  We need to 
+            # find all roles that each group's members have.
+            for gra in role.groups:
+                group = gra.group
+                for uga in group.users:
+                    user = uga.user
+                    for ura in user.roles:
+                        roles.add( ura.role )
+        return sort_by_attr( [ role for role in roles ], 'name' )
     def allow_action( self, roles, action, item ):
         """
         Method for checking a permission for the current user ( based on roles ) to perform a
@@ -328,8 +375,9 @@ class GalaxyRBACAgent( RBACAgent ):
         self.sa_session.flush()
     def get_permissions( self, item ):
         """
-        Return a dictionary containing the actions and associated roles on item.
-        The dictionary looks like: { Action : [ Role, Role ] }
+        Return a dictionary containing the actions and associated roles on item
+        where item is one of Library, LibraryFolder, LibraryDatasetDatasetAssociation,
+        LibraryDataset, Dataset.  The dictionary looks like: { Action : [ Role, Role ] }.
         """
         permissions = {}
         for item_permission in item.actions:
@@ -409,7 +457,7 @@ class GalaxyRBACAgent( RBACAgent ):
         # accessible will be True only if at least 1 user has every role in DATASET_ACCESS_in
         accessible = False 
         # legitimate will be True only if all roles in DATASET_ACCESS_in are in the set
-        # of roles returned from library.get_legitimate_roles()
+        # of roles returned from self.get_legitimate_roles()
         legitimate = False
         error = None
         for k, v in get_permitted_actions( filter='DATASET' ).items():
@@ -422,7 +470,7 @@ class GalaxyRBACAgent( RBACAgent ):
                     # not public.  This will keep ill-legitimate roles from being associated with the DATASET_ACCESS
                     # permission on the dataset (i.e., if Role1 is associated with LIBRARY_ACCESS, then only those users
                     # that have Role1 should be associated with DATASET_ACCESS.
-                    legitimate_roles = library.get_legitimate_roles( trans )
+                    legitimate_roles = self.get_legitimate_roles( trans, library )
                     ill_legitimate_roles = []
                     for role in in_roles:
                         if role not in legitimate_roles:

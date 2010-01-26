@@ -164,7 +164,7 @@
 
 %if trans.app.security_agent.can_manage_dataset( current_user_roles, data.dataset ):
     <%namespace file="/dataset/security_common.mako" import="render_permission_form" />
-    ${render_permission_form( data.dataset, data.get_display_name(), h.url_for( controller='root', action='edit', id=data.id ), current_user_roles )}
+    ${render_permission_form( data.dataset, data.get_display_name(), h.url_for( controller='root', action='edit', id=data.id ), all_roles )}
 %elif trans.user:
     <div class="toolForm">
         <div class="toolFormTitle">View Permissions</div>
