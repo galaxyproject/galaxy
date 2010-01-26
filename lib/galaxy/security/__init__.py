@@ -148,7 +148,7 @@ class GalaxyRBACAgent( RBACAgent ):
             for action in self.get_actions():
                 these_perms[ action ] = []
             # collect this dataset's perms
-            these_perms = self.get_dataset_permissions( dataset )
+            these_perms = self.get_permissions( dataset )
             # join or intersect this dataset's permissions with others
             for action, roles in these_perms.items():
                 if action not in perms.keys():
