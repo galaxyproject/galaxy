@@ -14,7 +14,6 @@ ${parent.stylesheets()}
 
 ${h.css( "history" )}
 <link rel="stylesheet" type="text/css" href="${h.url_for('/static/trackster.css')}" />
-<link rel="stylesheet" type="text/css" href="${h.url_for('/static/ui.theme.css')}" />
 <style type="text/css">
     ul#sortable-ul {
         list-style: none;
