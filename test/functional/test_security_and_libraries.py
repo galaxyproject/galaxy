@@ -1216,7 +1216,8 @@ class TestSecurityAndLibraries( TwillTestCase ):
         if not dps:
             raise AssertionError( 'No DatasetPermissionss created for dataset id: %d' % last_dataset_created.id )
         if len( dps ) > 1:
-            raise AssertionError( 'More than 1 DatasetPermissionss created for dataset id: %d' % last_dataset_created.id )
+            actions = [ dp.action for dp in dps ]
+            raise AssertionError( 'More than 1 DatasetPermissionss created for dataset id: %d, permissions: %s' % ( last_dataset_created.id, str( actions ) ) )
         for dp in dps:
             if not dp.action == 'manage permissions':
                 raise AssertionError( 'DatasetPermissions.action "%s" is not the DefaultHistoryPermission setting of "manage permissions"' \
@@ -1427,7 +1428,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         for ldda in latest_3_lddas:
             ldda_ids += '%s,' % self.security.encode_id( ldda.id )
         ldda_ids = ldda_ids.rstrip( ',' )
-        permissions = [ 'DATASET_ACCESS', 'DATASET_MANAGE_PERMISSIONS' ]
+        permissions = [ 'DATASET_ACCESS', 'LIBRARY_MANAGE' ]
         def build_url( permissions, role ):
             # We'll bypass the library_admin/datasets method and directly call the library_admin/dataset method, setting
             # access, manage permissions, and edit metadata permissions to role_one
@@ -1458,7 +1459,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
                 self.check_page_for_string( last_hda_created.name )
                 check_str = 'Manage dataset permissions and role associations of %s' % last_hda_created.name
                 self.check_page_for_string( check_str )
-                self.check_page_for_string( 'Role members can manage the roles associated with this dataset' )
+                self.check_page_for_string( 'Role members can manage the roles associated with permissions on this dataset' )
                 self.check_page_for_string( 'Role members can import this dataset into their history for analysis' )
         # admin_user is associated with role_one, so should have all permissions on imported datasets
         check_edit_page1( latest_3_lddas )
@@ -1516,7 +1517,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
                     pass
                 try:
                     # This should no longer be possible
-                    self.check_page_for_string( 'Role members can manage the roles associated with this dataset' )
+                    self.check_page_for_string( 'Role members can manage roles associated with permissions on this library item' )
                     raise AssertionError( '%s incorrectly has DATASET_MANAGE_PERMISSIONS on datasets imported from a library' % admin_user.email )
                 except:
                     pass

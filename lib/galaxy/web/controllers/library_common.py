@@ -299,6 +299,7 @@ class LibraryCommon( BaseController ):
                 messagetype = "error"
             return trans.response.send_redirect( web.url_for( controller='library_common',
                                                               action='folder_permissions',
+                                                              cntrller=cntrller,
                                                               id=trans.security.encode_id( folder.id ),
                                                               library_id=library_id,
                                                               msg=util.sanitize_text( msg ),
@@ -542,12 +543,11 @@ class LibraryCommon( BaseController ):
             for ldda in lddas:
                 permissions = []
                 # Check the library level permissions - the permissions on the LibraryDatasetDatasetAssociation
-                # will always be the same as the permissions on the associated LibraryDataset, so we only need to
-                # check one Library object
-                for library_permission in trans.app.security_agent.get_library_dataset_permissions( ldda.library_dataset ):
+                # will always be the same as the permissions on the associated LibraryDataset.
+                for library_permission in trans.app.security_agent.get_permissions( ldda.library_dataset ):
                     if library_permission.action not in permissions:
                         permissions.append( library_permission.action )
-                for dataset_permission in trans.app.security_agent.get_dataset_permissions( ldda.dataset ):
+                for dataset_permission in trans.app.security_agent.get_permissions( ldda.dataset ):
                     if dataset_permission.action not in permissions:
                         permissions.append( dataset_permission.action )
                 permissions.sort()

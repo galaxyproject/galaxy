@@ -21,12 +21,12 @@ class RBACAgent:
     IN_ACCESSIBLE = 'access_error'
     ILL_LEGITIMATE = 'legitimate_error'
     permitted_actions = Bunch(
-        DATASET_MANAGE_PERMISSIONS = Action( "manage permissions", "Role members can manage the roles associated with this dataset", "grant" ),
+        DATASET_MANAGE_PERMISSIONS = Action( "manage permissions", "Role members can manage the roles associated with permissions on this dataset", "grant" ),
         DATASET_ACCESS = Action( "access", "Role members can import this dataset into their history for analysis", "restrict" ),
-        LIBRARY_ACCESS = Action( "access library", "Restrict access to this library to role members only", "restrict" ),
+        LIBRARY_ACCESS = Action( "access library", "Restrict access to this library to only role members", "restrict" ),
         LIBRARY_ADD = Action( "add library item", "Role members can add library items to this library item", "grant" ),
         LIBRARY_MODIFY = Action( "modify library item", "Role members can modify this library item", "grant" ),
-        LIBRARY_MANAGE = Action( "manage library permissions", "Role members can manage roles associated with this library item", "grant" )
+        LIBRARY_MANAGE = Action( "manage library permissions", "Role members can manage roles associated with permissions on this library item", "grant" )
     )
     def get_action( self, name, default=None ):
         """Get a permitted action by its dict key or action name"""
@@ -77,7 +77,7 @@ class RBACAgent:
         raise "Unimplemented Method"
     def make_library_public( self, library ):
         raise "Unimplemented Method"
-    def get_library_dataset_permissions( self, library_dataset ):
+    def get_permissions( self, library_dataset ):
         raise "Unimplemented Method"
     def check_library_dataset_access( self, trans, library_id, **kwd ):
         raise "Unimplemented Method"
@@ -326,26 +326,25 @@ class GalaxyRBACAgent( RBACAgent ):
             if dp.action == self.permitted_actions.DATASET_ACCESS.action:
                 self.sa_session.delete( dp )
         self.sa_session.flush()
-    def get_dataset_permissions( self, dataset ):
+    def get_permissions( self, item ):
         """
-        Return a dictionary containing the actions and associated roles on dataset.
+        Return a dictionary containing the actions and associated roles on item.
         The dictionary looks like: { Action : [ Role, Role ] }
-        dataset must be an instance of Dataset()
-         """
+        """
         permissions = {}
-        for dp in dataset.actions:
-            action = self.get_action( dp.action )
+        for item_permission in item.actions:
+            action = self.get_action( item_permission.action )
             if action in permissions:
-                permissions[ action ].append( dp.role )
+                permissions[ action ].append( item_permission.role )
             else:
-                permissions[ action ] = [ dp.role ]
+                permissions[ action ] = [ item_permission.role ]
         return permissions
     def copy_dataset_permissions( self, src, dst ):
         if not isinstance( src, self.model.Dataset ):
             src = src.dataset
         if not isinstance( dst, self.model.Dataset ):
             dst = dst.dataset
-        self.set_all_dataset_permissions( dst, self.get_dataset_permissions( src ) )
+        self.set_all_dataset_permissions( dst, self.get_permissions( src ) )
     def privately_share_dataset( self, dataset, users = [] ):
         intersect = None
         for user in users:
@@ -385,6 +384,14 @@ class GalaxyRBACAgent( RBACAgent ):
                         action = action.action
                     for role_assoc in [ permission_class( action, library_item, role ) for role in roles ]:
                         self.sa_session.add( role_assoc )
+                    if isinstance( library_item, self.model.LibraryDatasetDatasetAssociation ) and \
+                        action == self.permitted_actions.LIBRARY_MANAGE.action:
+                        # Handle the special case when we are setting the LIBRARY_MANAGE_PERMISSION on a
+                        # library_dataset_dataset_association since the roles need to be applied to the
+                        # DATASET_MANAGE_PERMISSIONS permission on the associated dataset
+                        permissions = {}
+                        permissions[ self.permitted_actions.DATASET_MANAGE_PERMISSIONS ] = roles
+                        self.set_dataset_permission( library_item.dataset, permissions )
         self.sa_session.flush()
     def library_is_public( self, library ):
         # A library is considered public if there are no "access" actions associated with it.
@@ -395,19 +402,6 @@ class GalaxyRBACAgent( RBACAgent ):
             if lp.action == self.permitted_actions.LIBRARY_ACCESS.action:
                 self.sa_session.delete( lp )
         self.sa_session.flush()
-    def get_library_dataset_permissions( self, library_dataset ):
-        # Permissions will always be the same for LibraryDatasets and associated
-        # LibraryDatasetDatasetAssociations
-        if isinstance( library_dataset, self.model.LibraryDatasetDatasetAssociation ):
-            library_dataset = library_dataset.library_dataset
-        permissions = {}
-        for library_dataset_permission in library_dataset.actions:
-            action = self.get_action( library_dataset_permission.action )
-            if action in permissions:
-                permissions[ action ].append( library_dataset_permission.role )
-            else:
-                permissions[ action ] = [ library_dataset_permission.role ]
-        return permissions
     def check_library_dataset_access( self, trans, library_id, **kwd ):
         # library_id must be decoded before being sent
         msg = ''

@@ -172,7 +172,7 @@
             <div class="form-row">
                 %if data.dataset.actions:
                     <ul>
-                        %for action, roles in trans.app.security_agent.get_dataset_permissions( data.dataset ).items():
+                        %for action, roles in trans.app.security_agent.get_permissions( data.dataset ).items():
                             %if roles:
                                 <li>${action.description}</li>
                                 <ul>
