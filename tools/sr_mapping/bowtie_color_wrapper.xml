@@ -283,7 +283,7 @@
               <option value="noTryHard">Do not try hard</option>
               <option value="doTryHard">Try hard</option>
             </param>
-            <param name="sValAlign" type="integer" value="1" label="Report up to n valid arguments per read (-k)" />
+            <param name="sValAlign" type="integer" value="1" label="Report up to n valid alignments per read (-k)" />
             <param name="sAllValAligns" type="select" label="Whether or not to report all valid alignments per read (-a)">
               <option value="noAllValAligns">Do not report all valid alignments</option>
               <option value="doAllValAligns">Report all valid alignments</option>
