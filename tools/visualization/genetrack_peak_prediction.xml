@@ -3,7 +3,7 @@
   <description> - generates peak predictions from an index file</description>
 
   <command interpreter="python">
-      genetrack_peak_prediction.py -i $input -o $output --level=$level --sigma=$sigma --mode=$mode --exclusion=$exclusion --strand=$strand -v 0 
+      genetrack_peak_prediction.py -i $input -o $output --level=$level --sigma=$sigma --mode=$mode --exclusion=$exclusion --strand=$strand -v 0 -w $input.extra_files_path
   </command>
     
   <inputs>

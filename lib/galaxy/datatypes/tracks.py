@@ -30,7 +30,7 @@ class GeneTrack( tabular.Tabular ):
         if hda.has_data:
             # Get the disk file name and data id
             file_name = hda.dataset.get_file_name()
-            data_id  = hda.dataset.id
+            data_id  = hda.id
             # Make it secure
             hashkey = hmac_new( app.config.tool_secret, file_name )
             encoded = binascii.hexlify( file_name )
