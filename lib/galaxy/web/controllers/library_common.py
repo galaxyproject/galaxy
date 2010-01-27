@@ -489,10 +489,18 @@ class LibraryCommon( BaseController ):
                                                            msg=util.sanitize_text( msg ),
                                                            messagetype='error' ) )
             lddas.append( ldda )
-        # If the library is public all roles are legitimate, but if the library is restricted, only those
-        # roles associated with the LIBRARY_ACCESS permission are legitimate.
         library = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( library_id ) )
-        roles = trans.app.security_agent.get_legitimate_roles( trans, library )
+        # If access to the dataset is restricted, then use the roles associated with the DATASET_ACCESS permission to
+        # determine the legitimate roles.  If the dataset is public, see if access to the library is restricted.  If
+        # it is, use the roles associated with the LIBRARY_ACCESS permission to determine the legitimate roles.  If both
+        # the dataset and the library are public, all roles are legitimate.  All of the datasets will have the same
+        # permissions at this point.
+        ldda = lddas[0]
+        if trans.app.security_agent.dataset_is_public( ldda.dataset ):
+            # The dataset is public, so check access to the library
+            roles = trans.app.security_agent.get_legitimate_roles( trans, library )
+        else:
+            roles = trans.app.security_agent.get_legitimate_roles( trans, ldda.dataset )
         if params.get( 'update_roles_button', False ):
             current_user_roles = trans.get_current_user_roles()
             if cntrller=='library_admin' or ( trans.app.security_agent.can_manage_library_item( current_user_roles, ldda ) and \
