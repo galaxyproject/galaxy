@@ -138,13 +138,15 @@ class GalaxyRBACAgent( RBACAgent ):
             intermed.sort()
             return map( operator.getitem, intermed, ( -1, ) * len( intermed ) )            
         roles = set()
-        # If a library has roles associated with the LIBRARY_ACCESS permission, we need to start with them.
+        # If item has roles associated with the access permission, we need to start with them.
         access_roles = item.get_access_roles( trans )
         for role in access_roles:
             roles.add( role )
             # Each role potentially has users.  We need to find all roles that each of those users have.
             for ura in role.users:
-                roles.add( ura.role )
+                user = ura.user
+                for ura2 in user.roles:
+                    roles.add( ura2.role )
             # Each role also potentially has groups which, in turn, have members ( users ).  We need to 
             # find all roles that each group's members have.
             for gra in role.groups:
