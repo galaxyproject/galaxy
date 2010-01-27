@@ -327,9 +327,13 @@ CHUNK_SIZE = 2**16
 def send_file( start_response, trans, body ):
     # If configured use X-Accel-Redirect header for nginx
     base = trans.app.config.nginx_x_accel_redirect_base
+    apache_xsendfile = trans.app.config.apache_xsendfile
     if base:
         trans.response.headers['X-Accel-Redirect'] = \
             base + os.path.abspath( body.name )
+        body = [ "" ]
+    elif apache_xsendfile:
+        trans.response.headers['X-Sendfile'] = os.path.abspath( body.name )
         body = [ "" ]
     # Fall back on sending the file in chunks
     else:
