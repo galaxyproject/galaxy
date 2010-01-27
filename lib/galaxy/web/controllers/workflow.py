@@ -118,6 +118,14 @@ class WorkflowController( BaseController, Sharable ):
             .filter( model.StoredWorkflow.deleted == False ) \
             .order_by( desc( model.StoredWorkflow.update_time ) ) \
             .all()
+            
+        # Legacy issue: all shared workflows must have slugs.
+        slug_set = False
+        for workflow_assoc in shared_by_others:
+            slug_set = self.set_item_slug( trans.sa_session, workflow_assoc.stored_workflow )
+        if slug_set:
+            trans.sa_session.flush()
+
         return trans.fill_template( "workflow/list.mako",
                                     workflows = workflows,
                                     shared_by_others = shared_by_others )

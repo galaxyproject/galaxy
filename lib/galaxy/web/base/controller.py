@@ -146,7 +146,7 @@ class Sharable:
         self.set_item_slug( sa_session, item )
 
     def set_item_slug( self, sa_session, item ):
-        """ Set item slug. Slug is unique among user's importable items for item's class. """
+        """ Set item slug. Slug is unique among user's importable items for item's class. Returns true if item's slug was set; false otherwise. """
         if item.slug is None or item.slug == "":
             # Replace whitespace with '-'
             slug_base = re.sub( "\s+", "-", item.name.lower() )
@@ -164,6 +164,9 @@ class Sharable:
                 slug = '%s-%i' % ( slug_base, count )
                 count += 1
             item.slug = slug
+            return True
+            
+        return False
         
 """
 Deprecated: `BaseController` used to be available under the name `Root`
