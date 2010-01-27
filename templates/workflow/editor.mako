@@ -90,11 +90,15 @@
                          // Determine if any parameters were 'upgraded' and provide message
                          upgrade_message = ""
                          $.each( data['upgrade_messages'], function( k, v ) {
-                            upgrade_message += ( "<li>Step " + ( parseInt(k) + 1 ) + ": " + workflow.nodes[k].name + " -- " + v.join( ", " ) );
+                            upgrade_message += ( "<li>Step " + ( parseInt(k) + 1 ) + ": " + workflow.nodes[k].name + "<ul>");
+                            $.each( v, function( i, vv ) {
+                                upgrade_message += "<li>" + vv +"</li>";
+                            });
+                            upgrade_message += "</ul></li>";
                          });
                          if ( upgrade_message ) {
                             show_modal( "Workflow loaded with changes",
-                                        "Values were not found for the following parameters (possibly a result of tool upgrades), <br/> default values have been used. Please review the following parameters and then save.<ul>" + upgrade_message + "</ul>",
+                                        "Problems were encountered loading this workflow (possibly a result of tool upgrades). Please review the following parameters and then save.<ul>" + upgrade_message + "</ul>",
                                         { "Continue" : hide_modal } );
                          } else {
                             hide_modal();

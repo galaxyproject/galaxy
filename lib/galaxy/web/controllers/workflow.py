@@ -474,7 +474,9 @@ class WorkflowController( BaseController, Sharable ):
             # Fix any missing parameters
             upgrade_message = module.check_and_update_state()
             if upgrade_message:
-                data['upgrade_messages'][step.order_index] = upgrade_message
+                # FIXME: Frontend should be able to handle workflow messages
+                #        as a dictionary not just the values
+                data['upgrade_messages'][step.order_index] = upgrade_message.values()
             # Pack attributes into plain dictionary
             step_dict = {
                 'id': step.order_index,
@@ -706,6 +708,8 @@ class WorkflowController( BaseController, Sharable ):
             error( "Workflow cannot be run because of validation errors in some steps" )
         # Build the state for each step
         errors = {}
+        has_upgrade_messages = False
+        has_errors = False
         if kwargs:
             # If kwargs were provided, the states for each step should have
             # been POSTed
@@ -720,6 +724,10 @@ class WorkflowController( BaseController, Sharable ):
                 step_errors = None
                 if step.type == 'tool' or step.type is None:
                     module = module_factory.from_workflow_step( trans, step )
+                    # Fix any missing parameters
+                    step.upgrade_messages = module.check_and_update_state()
+                    if step.upgrade_messages:
+                        has_upgrade_messages = True
                     # Any connected input needs to have value DummyDataset (these
                     # are not persisted so we need to do it every time)
                     module.add_dummy_datasets( connections=step.input_connections )    
@@ -761,18 +769,24 @@ class WorkflowController( BaseController, Sharable ):
                                             workflow=stored,
                                             outputs=outputs )
         else:
+            # Prepare each step
             for step in workflow.steps:
+                # Contruct modules
                 if step.type == 'tool' or step.type is None:
                     # Restore the tool state for the step
-                    module = module_factory.from_workflow_step( trans, step )
+                    step.module = module_factory.from_workflow_step( trans, step )
+                    # Fix any missing parameters
+                    step.upgrade_messages = step.module.check_and_update_state()
+                    if step.upgrade_messages:
+                        has_upgrade_messages = True
                     # Any connected input needs to have value DummyDataset (these
                     # are not persisted so we need to do it every time)
-                    module.add_dummy_datasets( connections=step.input_connections )                  
+                    step.module.add_dummy_datasets( connections=step.input_connections )                  
                     # Store state with the step
-                    step.module = module
-                    step.state = module.state
+                    step.state = step.module.state
                     # Error dict
                     if step.tool_errors:
+                        has_errors = True
                         errors[step.id] = step.tool_errors
                 else:
                     ## Non-tool specific stuff?
@@ -785,6 +799,7 @@ class WorkflowController( BaseController, Sharable ):
                     "workflow/run.mako", 
                     steps=workflow.steps,
                     workflow=stored,
+                    has_upgrade_messages=has_upgrade_messages,
                     errors=errors,
                     incoming=kwargs )
     
@@ -978,3 +993,4 @@ def cleanup_param_values( inputs, values ):
                 cleanup( prefix, input.cases[current_case].inputs, group_values )
     cleanup( "", inputs, values )
     return associations
+    

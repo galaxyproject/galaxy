@@ -1068,7 +1068,6 @@ class Tool:
         
     def params_from_strings( self, params, app, ignore_errors=False ):
         return params_from_strings( self.inputs, params, app, ignore_errors )
-        
             
     def check_and_update_param_values( self, values, trans ):
         """
@@ -1076,7 +1075,7 @@ class Tool:
         values where neccesary. This could be called after loading values
         from a database in case new parameters have been added. 
         """
-        messages = []
+        messages = {}
         self.check_and_update_param_values_helper( self.inputs, values, trans, messages )
         return messages
         
@@ -1088,8 +1087,8 @@ class Tool:
         for input in inputs.itervalues():
             # No value, insert the default
             if input.name not in values:
-                messages.append( prefix + input.label )
-                values[input.name] = input.get_initial_value( trans, context )
+                messages[ input.name ] = "No value found for '%s%s', used default" % ( prefix, input.label )
+                values[ input.name ] = input.get_initial_value( trans, context )
             # Value, visit recursively as usual
             else:
                 if isinstance( input, Repeat ):

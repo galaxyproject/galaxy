@@ -104,6 +104,9 @@ from galaxy.tools.parameters import DataToolParameter, RuntimeValue
                 ${param.value_to_display_text( value, app )}
             %endif
         </div>
+        %if step.upgrade_messages and param.name in step.upgrade_messages:
+        <div class="warningmark">${step.upgrade_messages[param.name]}</div>
+        %endif
         %if error_dict.has_key( param.name ):
         <div style="color: red; font-weight: bold; padding-top: 1px; padding-bottom: 3px;">
             <div style="width: 300px;"><img style="vertical-align: middle;" src="${h.url_for('/static/style/error_small.png')}">&nbsp;<span style="vertical-align: middle;">${error_dict[param.name]}</span></div>
@@ -114,6 +117,14 @@ from galaxy.tools.parameters import DataToolParameter, RuntimeValue
 </%def>
 
 <h2>Running workflow "${workflow.name}"</h2>
+
+%if has_upgrade_messages:
+<div class="warningmessage">
+    Problems were encourered when loading this workflow, likely due to tool
+    version changes. Missing parameter values have been replaced with default.
+    Please review the parameter values below.
+</div>
+%endif
 
 <form id="tool_form" name="tool_form" method="POST">
 ## <input type="hidden" name="workflow_name" value="${workflow.name | h}" />

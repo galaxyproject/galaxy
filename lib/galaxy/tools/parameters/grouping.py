@@ -47,6 +47,8 @@ class Repeat( Group ):
             return self.title
         else:
             return self.title + "s"
+    def label( self ):
+        return "Repeat (%s)" % self.title
     def value_to_basic( self, value, app ):
         rval = []
         for d in value:
@@ -333,6 +335,9 @@ class Conditional( Group ):
         self.cases = []
         self.value_ref = None
         self.value_ref_in_group = True #When our test_param is not part of the conditional Group, this is False
+    @property
+    def label( self ):
+        return "Conditional (%s)" % self.name
     def get_current_case( self, value, trans ):
         # Convert value to user representation
         str_value = self.test_param.filter_value( value, trans )
@@ -354,10 +359,10 @@ class Conditional( Group ):
         rval[ self.test_param.name ] = self.test_param.value_from_basic( value[ self.test_param.name ], app, ignore_errors )
         for input in self.cases[current_case].inputs.itervalues():
             if ignore_errors and input.name not in value:
-                #two options here, either try to use unvalidated None or use initial==default value
-                #using unvalidated values here will cause, i.e., integer fields within groupings to be filled in workflow building mode like '<galaxy.tools.parameters.basic.UnvalidatedValue object at 0x981818c>'
-                #we will go with using the default value
-                rval[ input.name ] = input.get_initial_value( None, value ) #use default value
+                # If we do not have a value, and are ignoring errors, we simply
+                # do nothing. There will be no value for the parameter in the
+                # conditional's values dictionary.                 
+                pass
             else:
                 rval[ input.name ] = input.value_from_basic( value[ input.name ], app, ignore_errors )
         return rval
