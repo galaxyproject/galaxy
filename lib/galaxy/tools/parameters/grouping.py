@@ -69,8 +69,11 @@ class Repeat( Group ):
             rval_dict['__index__'] = d.get( '__index__', i )
             # Restore child inputs
             for input in self.inputs.itervalues():
-                if ignore_errors and input.name not in d: #this wasn't tested
-                    rval_dict[ input.name ] = input.get_initial_value( None, d )
+                if ignore_errors and input.name not in d:
+                    # If we do not have a value, and are ignoring errors, we simply
+                    # do nothing. There will be no value for the parameter in the
+                    # conditional's values dictionary.     
+                    pass
                 else:
                     rval_dict[ input.name ] = input.value_from_basic( d[input.name], app, ignore_errors )
             rval.append( rval_dict )
