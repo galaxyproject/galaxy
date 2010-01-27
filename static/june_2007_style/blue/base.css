@@ -9,6 +9,7 @@ body{background:#FFFFFF;color:#303030;background-image:url(base_bg.png);backgrou
 img{border:0;}
 a:link,a:visited,a:active{color:#303030;}
 h1,h2,h3,h4{color:#023858;}
+h1:first-child,h2:first-child,h3:first-child,h4:first-child{margin-top:0px;}
 hr{border:none;height:0px;border-bottom:dotted #303030 1px;}
 th{text-align:left;}
 div.toolForm{border:solid #d8b365 1px;}
