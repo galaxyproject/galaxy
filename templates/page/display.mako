@@ -153,7 +153,7 @@
 <%def name="init()">
 <%
     self.has_left_panel=False
-    self.has_right_panel=False
+    self.has_right_panel=item.published
     self.active_view="user"
     self.overlay_visible=False
 %>

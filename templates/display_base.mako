@@ -22,7 +22,7 @@
 <%def name="init()">
 <%
     self.has_left_panel=False
-    self.has_right_panel=False
+    self.has_right_panel=item.published
     self.message_box_visible=False
 %>
 </%def>
@@ -54,8 +54,8 @@
         .page-body
         {
             padding: 10px;
-            float: left;
-            width: 65%;
+            ## float: left;
+            ## width: 65%;
         }
         .page-meta
         {
@@ -126,16 +126,41 @@
                 ${self.render_item( item, item_data )}
             </div>
         
+
+        </div>
+    </div>
+</%def>
+
+<%def name="right_panel()">
+
+    <%
+        ## FIXME: duplicated from above for now
+        controller_name = get_controller_name( item )
+        item_plural = get_item_plural( item )
+        href_to_all_items = h.url_for( controller='/' + controller_name, action='list_published')
+        href_to_user_items = h.url_for( controller='/' + controller_name, action='list_published', xxx=item.user.username)
+        href_to_user_items = href_to_user_items.replace( 'xxx', 'f-username')
+    %>
+
+    <div class="unified-panel-header" unselectable="on">
+        <div class="unified-panel-header-inner">
+            About this ${get_class_display_name( item.__class__ )}
+        </div>
+    </div>
+    
+    <div class="unified-panel-body">
+        <div style="overflow: auto; height: 100%;">        
+
             %if item.published:
-                <div class="page-meta">
+                <div style="padding: 10px;">
                     ## Page meta.
-                    <div><strong>Related ${item_plural}</strong></div>
+                    <h4>Related ${item_plural}</h4>
                     <p>
                         <a href="${href_to_all_items}">All published ${item_plural.lower()}</a><br>
                         <a href="${href_to_user_items}">${item_plural} owned by ${item.user.username}</a>
             
                     ## Tags.
-                    <div><strong>Tags</strong></div>
+                    <h4>Tags</strong></h4>
                     <p>
                     ## Community tags.
                     <div>
@@ -153,6 +178,9 @@
                     </div>
                 </div>
             %endif
+    
+    
         </div>
     </div>
+
 </%def>
