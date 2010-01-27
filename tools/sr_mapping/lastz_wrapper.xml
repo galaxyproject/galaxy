@@ -52,13 +52,13 @@
             </param>
             <when value="pre_set">
                 <param name="pre_set_options" type="select" label="Select mapping mode">
-                    <option value="yasra95short">Illumina-Solexa/AB-SOLiD 95% identity</option>
-                    <option value="yasra85short">Illumina-Solexa/AB-SOLiD 85% identity</option>
                     <option value="yasra98">Roche-454 98% identity</option>
                     <option value="yasra95">Roche-454 95% identity</option>
                     <option value="yasra90">Roche-454 90% identity</option>
                     <option value="yasra85">Roche-454 85% identity</option>
                     <option value="yasra75">Roche-454 75% identity</option>
+                    <option value="yasra95short">Illumina 95% identity</option>
+                    <option value="yasra85short">Illumina 85% identity</option>
                 </param>
             </when>
             <when value="full">
