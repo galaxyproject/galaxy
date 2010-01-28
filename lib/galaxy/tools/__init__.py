@@ -1097,8 +1097,16 @@ class Tool:
                         self.check_and_update_param_values_helper( input.inputs, d, trans, messages, context, rep_prefix )
                 elif isinstance( input, Conditional ):
                     group_values = values[ input.name ]
-                    current = group_values["__current_case__"]
-                    self.check_and_update_param_values_helper( input.cases[current].inputs, group_values, trans, messages, context, prefix )
+                    if input.test_param.name not in group_values:
+                        # No test param invalidates the whole conditional
+                        values[ input.name ] = group_values = input.get_initial_value( trans, context )
+                        messages[ input.test_param.name ] = "No value found for '%s%s', used default" % ( prefix, input.test_param.label )
+                        current_case = group_values['__current_case__']
+                        for child_input in input.cases[current_case].inputs.itervalues():
+                            messages[ child_input.name ] = "Value no longer valid for '%s%s', replaced with default" % ( prefix, child_input.label )                    
+                    else:
+                        current = group_values["__current_case__"]                    
+                        self.check_and_update_param_values_helper( input.cases[current].inputs, group_values, trans, messages, context, prefix )
                 else:
                     # Regular tool parameter, no recursion needed
                     pass        

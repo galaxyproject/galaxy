@@ -359,7 +359,15 @@ class Conditional( Group ):
     def value_from_basic( self, value, app, ignore_errors=False ):
         rval = dict()
         current_case = rval['__current_case__'] = value['__current_case__']
-        rval[ self.test_param.name ] = self.test_param.value_from_basic( value[ self.test_param.name ], app, ignore_errors )
+        # Test param
+        if ignore_errors and self.test_param.name not in value:
+            # If ignoring errors, do nothing. However this is potentially very
+            # problematic since if we are missing the value of test param,
+            # the entire conditional is wrong.
+            pass
+        else:
+            rval[ self.test_param.name ] = self.test_param.value_from_basic( value[ self.test_param.name ], app, ignore_errors )
+        # Inputs associated with current case
         for input in self.cases[current_case].inputs.itervalues():
             if ignore_errors and input.name not in value:
                 # If we do not have a value, and are ignoring errors, we simply

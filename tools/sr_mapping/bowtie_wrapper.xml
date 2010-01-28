@@ -186,7 +186,7 @@
   </command>
   <inputs>
     <conditional name="refGenomeSource">
-      <param name="genomeSource" type="select" label="Will you select a reference genome from your history or use a built-in index?" help="Built-ins were indexed using default options">
+      <param name="genomeSourceFood" type="select" label="Will you select a reference genome from your history or use a built-in index?" help="Built-ins were indexed using default options">
         <option value="indexed">Use a built-in index</option>
         <option value="history">Use one from the history</option>
       </param>
