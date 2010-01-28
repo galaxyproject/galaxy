@@ -151,7 +151,7 @@ class ToolRunner( BaseController ):
             # did not associated roles that would make the dataset in-accessible by everyone.
             library_id = trans.app.security.decode_id( kwd.get( 'library_id', '' ) )
             vars = dict( DATASET_ACCESS_in=roles )
-            permissions, in_roles, error, msg = trans.app.security_agent.check_library_dataset_access( trans, library_id, **vars )
+            permissions, in_roles, error, msg = trans.app.security_agent.check_access_permission( trans, library_id, library=True, **vars )
             if error:
                 return [ 'error', msg ]
         permissions = trans.app.security_agent.history_get_default_permissions( trans.history )

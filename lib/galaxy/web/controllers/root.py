@@ -240,6 +240,8 @@ class RootController( BaseController ):
     @web.expose
     def edit(self, trans, id=None, hid=None, **kwd):
         """Allows user to modify parameters of an HDA."""
+        msg = ''
+        error = False
         def __ok_to_edit_metadata( dataset_id ):
             #prevent modifying metadata when dataset is queued or running as input/output
             #This code could be more efficient, i.e. by using mappers, but to prevent slowing down loading a History panel, we'll leave the code here for now
@@ -334,13 +336,29 @@ class RootController( BaseController ):
                 if not trans.user:
                     return trans.show_error_message( "You must be logged in if you want to change permissions." )
                 if trans.app.security_agent.can_manage_dataset( current_user_roles, data.dataset ):
-                    permissions = {}
-                    for k, v in trans.app.model.Dataset.permitted_actions.items():
-                        in_roles = params.get( k + '_in', [] )
-                        if not isinstance( in_roles, list ):
-                            in_roles = [ in_roles ]
-                        in_roles = [ trans.sa_session.query( trans.app.model.Role ).get( x ) for x in in_roles ]
-                        permissions[ trans.app.security_agent.get_action( v.action ) ] = in_roles
+                    # The user associated the DATASET_ACCESS permission on the dataset with 1 or more roles.  We need
+                    # to ensure that they did not associated roles that would make the dataset in-accessible by everyone.
+                    permissions, in_roles, error, msg = \
+                    trans.app.security_agent.derive_roles_from_access( trans, data.dataset.id, **kwd )
+                    a = trans.app.security_agent.get_action( trans.app.security_agent.permitted_actions.DATASET_ACCESS.action )
+                    if error == trans.app.security_agent.IN_ACCESSIBLE:
+                        # If derive_roles_from_access() returned an "in_accessible" error, then we keep the original role
+                        # associations for the DATASET_ACCESS permission on the dataset.
+                        permissions[ a ] = data.dataset.get_access_roles( trans )
+                    # Make sure the user is not associating another user's private role with the DATASET_ACCESS permission.
+                    # It would be better to filter out other user's private roles from the access box on the permission form,
+                    # but that gets a bit tricky since we are not differentiating between permissions ( i.e., the same set of
+                    # derived roles are used for both the manage permissions and the access box ).
+                    current_user_private_role = trans.app.security_agent.get_private_user_role( trans.user )
+                    access_roles = permissions[ a ]
+                    for role in access_roles:
+                        if role.type == trans.app.model.Role.types.PRIVATE and role is not current_user_private_role:
+                            error = trans.app.security_agent.IN_ACCESSIBLE
+                            permissions[ a ] = data.dataset.get_access_roles( trans )
+                            msg = "You cannot associate another user's private role with the access permission on this dataset "
+                            msg += "or it will become in-accessible to you.  Access permissions were left in their original state."
+                            messagetype = 'error'
+                            break
                     trans.app.security_agent.set_all_dataset_permissions( data.dataset, permissions )
                     trans.sa_session.refresh( data.dataset )
                 else:
@@ -358,11 +376,18 @@ class RootController( BaseController ):
             ldatatypes = [ dtype_name for dtype_name, dtype_value in trans.app.datatypes_registry.datatypes_by_extension.iteritems() if dtype_value.allow_datatype_change ]
             ldatatypes.sort()
             all_roles = trans.app.security_agent.get_legitimate_roles( trans, data.dataset )
+            if error:
+                messagetype = 'error'
+            else:
+                msg = 'Your changes completed successfully.'
+                messagetype = 'done'
             return trans.fill_template( "/dataset/edit_attributes.mako",
                                         data=data,
                                         datatypes=ldatatypes,
                                         current_user_roles=current_user_roles,
-                                        all_roles=all_roles )
+                                        all_roles=all_roles,
+                                        msg=msg,
+                                        messagetype=messagetype )
         else:
             return trans.show_error_message( "You do not have permission to edit this dataset's ( id: %s ) information." % str( id ) )
 

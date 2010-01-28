@@ -30,6 +30,10 @@
     </select>
 </%def>
 
+%if msg:
+    ${render_msg( msg, messagetype )}
+%endif
+
 <div class="toolForm">
     <div class="toolFormTitle">${_('Edit Attributes')}</div>
     <div class="toolFormBody">

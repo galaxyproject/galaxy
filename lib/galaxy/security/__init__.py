@@ -81,7 +81,7 @@ class RBACAgent:
         raise "Unimplemented Method"
     def get_legitimate_roles( self, trans, item ):
         raise "Unimplemented Method"
-    def check_library_dataset_access( self, trans, library_id, **kwd ):
+    def derive_roles_from_access( self, trans, item_id, library=False, **kwd ):
         raise "Unimplemented Method"
     def get_component_associations( self, **kwd ):
         raise "Unimplemented Method"
@@ -119,6 +119,7 @@ class GalaxyRBACAgent( RBACAgent ):
         """
         if ( isinstance( item, self.model.Library ) and self.library_is_public( item ) ) or \
             ( isinstance( item, self.model.Dataset ) and self.dataset_is_public( item ) ):
+            # If item is public, private roles will always be allowed
             return trans.sa_session.query( trans.app.model.Role ) \
                                    .filter( trans.app.model.Role.table.c.deleted==False ) \
                                    .order_by( trans.app.model.Role.table.c.name )
@@ -136,7 +137,7 @@ class GalaxyRBACAgent( RBACAgent ):
             # (which can be expensive or prohibited) in case of equal attribute values.
             intermed = map( None, map( getattr, seq, ( attr, ) * len( seq ) ), xrange( len( seq ) ), seq )
             intermed.sort()
-            return map( operator.getitem, intermed, ( -1, ) * len( intermed ) )            
+            return map( operator.getitem, intermed, ( -1, ) * len( intermed ) )        
         roles = set()
         # If item has roles associated with the access permission, we need to start with them.
         access_roles = item.get_access_roles( trans )
@@ -172,7 +173,7 @@ class GalaxyRBACAgent( RBACAgent ):
                 break
         return ret_val
     def can_access_dataset( self, roles, dataset ):
-        return self.allow_action( roles, self.permitted_actions.DATASET_ACCESS, dataset )
+        return self.dataset_is_public( dataset ) or self.allow_action( roles, self.permitted_actions.DATASET_ACCESS, dataset )
     def can_manage_dataset( self, roles, dataset ):
         return self.allow_action( roles, self.permitted_actions.DATASET_MANAGE_PERMISSIONS, dataset )
     def can_access_library( self, roles, library ):
@@ -452,8 +453,9 @@ class GalaxyRBACAgent( RBACAgent ):
             if lp.action == self.permitted_actions.LIBRARY_ACCESS.action:
                 self.sa_session.delete( lp )
         self.sa_session.flush()
-    def check_library_dataset_access( self, trans, library_id, **kwd ):
-        # library_id must be decoded before being sent
+    def derive_roles_from_access( self, trans, item_id, library=False, **kwd ):
+        # Check the access permission on a dataset.  If library is true, item_id refers to a library.  If library
+        # is False, item_id refers to a dataset ( item_id must currently be decoded before being sent ).
         msg = ''
         permissions = {}
         # accessible will be True only if at least 1 user has every role in DATASET_ACCESS_in
@@ -465,22 +467,32 @@ class GalaxyRBACAgent( RBACAgent ):
         for k, v in get_permitted_actions( filter='DATASET' ).items():
             in_roles = [ self.sa_session.query( self.model.Role ).get( x ) for x in listify( kwd.get( k + '_in', [] ) ) ]
             if v == self.permitted_actions.DATASET_ACCESS and in_roles:
-                library = self.model.Library.get( library_id )
-                if not self.library_is_public( library ):
+                if library:
+                    item = self.model.Library.get( item_id )
+                else:
+                    item = self.model.Dataset.get( item_id )
+                if ( library and not self.library_is_public( item ) ) or ( not library and not self.dataset_is_public( item ) ):
                     # Ensure that roles being associated with DATASET_ACCESS are a subset of the legitimate roles
-                    # derived from the roles associated with the LIBRARY_ACCESS permission on the library if it's
-                    # not public.  This will keep ill-legitimate roles from being associated with the DATASET_ACCESS
-                    # permission on the dataset (i.e., if Role1 is associated with LIBRARY_ACCESS, then only those users
-                    # that have Role1 should be associated with DATASET_ACCESS.
-                    legitimate_roles = self.get_legitimate_roles( trans, library )
+                    # derived from the roles associated with the access permission on item if it's not public.  This
+                    # will keep ill-legitimate roles from being associated with the DATASET_ACCESS permission on the
+                    # dataset (i.e., in the case where item is a library, if Role1 is associated with LIBRARY_ACCESS,
+                    # then only those users that have Role1 should be associated with DATASET_ACCESS.
+                    legitimate_roles = self.get_legitimate_roles( trans, item )
                     ill_legitimate_roles = []
                     for role in in_roles:
                         if role not in legitimate_roles:
                             ill_legitimate_roles.append( role )
                     if ill_legitimate_roles:
+                        # NOTE: this condition should never occur since ill-legitimate roles are filtered out of the set of
+                        # roles displayed on the permissions forms, but just in case there is a bug somewhere that incorrectly
+                        # filters, we'll display this message.
                         error = self.ILL_LEGITIMATE
-                        msg += "The following roles are not associated with users that have the 'access library' permission on this "
-                        msg += "library, so they cannot be associated with the 'access' permission on the datasets: "
+                        if library:
+                            msg += "The following roles are not associated with users that have the 'access library' permission on this "
+                            msg += "library, so they cannot be associated with the 'access' permission on the datasets: "
+                        else:
+                            msg += "The following roles are not associated with users that have the 'access' permission on this "
+                            msg += "dataset, so they were incorrectly displayed on the permission form: "
                         for role in ill_legitimate_roles:
                             msg += "%s, " % role.name
                         msg = msg.rstrip( ", " )

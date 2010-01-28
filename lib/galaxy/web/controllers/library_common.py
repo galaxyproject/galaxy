@@ -469,6 +469,7 @@ class LibraryCommon( BaseController ):
                                     library=library,
                                     show_deleted=show_deleted,
                                     widgets=widgets,
+                                    current_user_roles=current_user_roles,
                                     msg=msg,
                                     messagetype=messagetype )
     @web.expose
@@ -506,11 +507,11 @@ class LibraryCommon( BaseController ):
             if cntrller=='library_admin' or ( trans.app.security_agent.can_manage_library_item( current_user_roles, ldda ) and \
                                               trans.app.security_agent.can_manage_dataset( current_user_roles, ldda.dataset ) ):
                 permissions, in_roles, error, msg = \
-                    trans.app.security_agent.check_library_dataset_access( trans, trans.app.security.decode_id( library_id ), **kwd )
+                    trans.app.security_agent.derive_roles_from_access( trans, trans.app.security.decode_id( library_id ), library=True, **kwd )
                 for ldda in lddas:
                     # Set the DATASET permissions on the Dataset.
                     if error == trans.app.security_agent.IN_ACCESSIBLE:
-                        # If the check_library_dataset_access() returned a "in_accessible" error, then we keep the original role
+                        # If derive_roles_from_access() returned an "in_accessible" error, then we keep the original role
                         # associations for the DATASET_ACCESS permission on each ldda.
                         a = trans.app.security_agent.get_action( trans.app.security_agent.permitted_actions.DATASET_ACCESS.action )
                         permissions[ a ] = ldda.get_access_roles( trans )
@@ -619,7 +620,7 @@ class LibraryCommon( BaseController ):
                 if roles:
                     vars = dict( DATASET_ACCESS_in=roles )
                     permissions, in_roles, error, msg = \
-                        trans.app.security_agent.check_library_dataset_access( trans, trans.app.security.decode_id( library_id ), **vars )
+                        trans.app.security_agent.derive_roles_from_access( trans, trans.app.security.decode_id( library_id ), library=True, **vars )
                     if error:
                         if error == trans.app.security_agent.IN_ACCESSIBLE:
                             msg = "At least 1 user must have every role associated with accessing datasets.  The roles you "
