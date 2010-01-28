@@ -714,6 +714,7 @@ class WorkflowController( BaseController, Sharable ):
             # If kwargs were provided, the states for each step should have
             # been POSTed
             for step in workflow.steps:
+                step.upgrade_messages = {}
                 # Connections by input name
                 step.input_connections_by_name = \
                     dict( ( conn.input_name, conn ) for conn in step.input_connections ) 
@@ -771,6 +772,7 @@ class WorkflowController( BaseController, Sharable ):
         else:
             # Prepare each step
             for step in workflow.steps:
+                step.upgrade_messages = {}
                 # Contruct modules
                 if step.type == 'tool' or step.type is None:
                     # Restore the tool state for the step
