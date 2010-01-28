@@ -491,8 +491,20 @@ class WorkflowController( BaseController, Sharable ):
                 'form_html': module.get_config_form(),
             }
             # Connections
+            input_connections = step.input_connections
+            if step.type is None or step.type == 'tool':
+                # Determine full (prefixed) names of valid input datasets
+                data_input_names = {}
+                def callback( input, value, prefixed_name, prefixed_label ):
+                    if isinstance( input, DataToolParameter ):
+                        data_input_names[ prefixed_name ] = True
+                visit_input_values( module.tool.inputs, module.state.inputs, callback )
+                # Filter
+                # FIXME: this removes connection without displaying a message currently!
+                input_connections = [ conn for conn in input_connections if conn.input_name in data_input_names ]
+            # Encode input connections as dictionary
             input_conn_dict = {}
-            for conn in step.input_connections:
+            for conn in input_connections:
                 input_conn_dict[ conn.input_name ] = \
                     dict( id=conn.output_step.order_index, output_name=conn.output_name )
             step_dict['input_connections'] = input_conn_dict
