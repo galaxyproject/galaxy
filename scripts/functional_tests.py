@@ -17,6 +17,10 @@ eggs.require( "Paste" )
 eggs.require( "PasteDeploy" )
 eggs.require( "Cheetah" )
 
+# this should not be required, but it is under certain conditions, thanks to this bug:
+# http://code.google.com/p/python-nose/issues/detail?id=284
+eggs.require( "pysqlite" )
+
 import atexit, logging, os, os.path, sys, tempfile
 import twill, unittest, time
 import subprocess, sys, threading, random
