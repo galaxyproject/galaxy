@@ -1476,7 +1476,22 @@ class PageTagAssociation ( ItemTagAssociation ):
 class WorkflowTagAssociation ( ItemTagAssociation ):
     pass
     
+class WorkflowStepTagAssociation ( ItemTagAssociation ):
+    pass
+    
 class StoredWorkflowTagAssociation ( ItemTagAssociation ):
+    pass
+    
+class HistoryAnnotationAssociation( object ):
+    pass
+    
+class HistoryDatasetAssociationAnnotationAssociation( object ):
+    pass
+    
+class StoredWorkflowAnnotationAssociation( object ):
+    pass
+    
+class WorkflowStepAnnotationAssociation( object ):
     pass
     
 class UserPreference ( object ):

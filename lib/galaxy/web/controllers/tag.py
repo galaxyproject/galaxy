@@ -70,17 +70,8 @@ class TagsController ( BaseController ):
         if item_id is not None:
             item = self._get_item( trans, item_class, trans.security.decode_id( item_id ) )
         user = trans.get_user()
-            
-        # Get item class. TODO: we should have a mapper that goes from class_name to class object.
-        if item_class == 'History':
-            item_class = model.History
-        elif item_class == 'HistoryDatasetAssociation':
-            item_class = model.HistoryDatasetAssociation
-        elif item_class == 'Page':
-            item_class = model.Page
-        elif item_class == 'StoredWorkflow':
-            item_class = model.StoredWorkflow
-        
+        item_class = self.get_class( item_class )
+                    
         q = q.encode('utf-8')
         if q.find(":") == -1:
             return self._get_tag_autocomplete_names(trans, q, limit, timestamp, user, item, item_class)

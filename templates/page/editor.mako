@@ -233,52 +233,31 @@
                                           type: "POST",
                                           url: '${h.url_for( controller='history', action='set_accessible_async' )}',
                                           data: { id: item_id, accessible: 'True' },
-                                          error: function() { alert('Make history importable failed; id=' + item_id) }
+                                          error: function() { alert('Make history accessible failed; id=' + item_id) }
                                         });
-                            
-                                    // Insert link.
-                                    wym._exec(WYMeditor.CREATE_LINK, sStamp);
-                                    var link_text = $("a[href=" + sStamp + "]", wym._doc.body).text();
-                                    if (
-                                        link_text == "" // Firefox.
-                                        ||
-                                        link_text == sStamp // Safari
-                                        )
-                                    {
-                                        // User selected no text; create link from scratch and use default text.
                                         
-                                        // Get history name.
-                                        $.get( '${h.url_for( controller='history', action='get_name_slug_username_async' )}?id=' + item_id,
-                                        function( history_info ) {
-                                            // Parse history info.
-                                            history_info = history_info.split(",");
-                                            var 
-                                                history_name = history_info[0], 
-                                                history_slug = history_info[1],
-                                                history_user_username = history_info[2];
-                                                
-                                            // Build href from history info.
-                                            var href;
-                                            if (history_slug != "" && history_user_username != "")
-                                            {
-                                                var href = 
-                                                    '${h.url_for( controller='/history', action='display_by_username_and_slug', username='USERNAME',                slug='SLUG' )}';
-                                                href = href.replace('USERNAME', history_user_username);
-                                                href = href.replace('SLUG', history_slug);
-                                            }
-                                            else
-                                                var href = '${h.url_for( controller='/history', action='view' )}?id=' + item_id;
-                                            wym.insert("<a href='" + href + "'>History '" + history_name + "'</a>");
-                                        });
-                                    }
-                                    else
-                                    {
-                                        // Link created from selected text; add href and title.
-                                        $("a[href=" + sStamp + "]", wym._doc.body)
-                                             .attr(WYMeditor.HREF, '${h.url_for( controller='history', action='view' )}' + '?id=' + item_id)
-                                             .attr(WYMeditor.TITLE, "History" + item_id);
-                                    }
-                                    
+                                    // Insert link. This is done by getting history info and then manipulating wym.
+                                    $.getJSON( '${h.url_for( controller='history', action='get_name_and_link_async' )}?id=' + item_id, function( history_info ) {
+                                        // Get link text.
+                                        wym._exec(WYMeditor.CREATE_LINK, sStamp);
+                                        var link_text = $("a[href=" + sStamp + "]", wym._doc.body).text();
+                                        
+                                        // Insert link: need to do different actions depending on link text.
+                                        if (
+                                            link_text == "" // Firefox.
+                                            ||
+                                            link_text == sStamp // Safari
+                                            )
+                                        {
+                                            // User selected no text; create link from scratch and use default text.
+                                            wym.insert("<a href='" + history_info.link + "'>History '" + history_info.name + "'</a>");
+                                        }
+                                        else
+                                        {
+                                            // Link created from selected text; add href and title.
+                                            $("a[href=" + sStamp + "]", wym._doc.body).attr(WYMeditor.HREF, history_info.link).attr(WYMeditor.TITLE, "History" + item_id);
+                                        }
+                                    });                                    
                                 });
                                 
                                 hide_modal();
@@ -393,12 +372,34 @@
             var editor = $.wymeditors(0);
             var save = function ( callback ) {
                 show_modal( "Saving page", "progress" );
-                $.ajax( {
+				// Gather annotations.
+				var annotations = new Array();
+				
+				$('.annotation', editor._doc.body).each( function() {
+					var item_class = $(this).attr( 'item_class' );
+					var item_id = $(this).attr( 'item_id' );
+					var text = $(this).text();
+					annotation = {
+						"item_class" : item_class,
+						"item_id" : item_id,
+						"text" : text
+					};
+					annotations[ annotations.length ] = annotation;
+				});
+				
+				// Remove inserted elements temporarily.
+				var annotated_history = $('.annotated_item');
+				alert(annotated_history);
+				annotated_history.remove();
+				
+				// Do save.
+                $.ajax( {	
                     url: "${h.url_for( action='save' )}",
                     type: "POST",
                     data: {
                         id: "${trans.security.encode_id(page.id)}",
                         content: editor.xhtml(),
+						annotations: JSON.stringify(annotations),
                         "_": "true"
                     },
                     success: function() {

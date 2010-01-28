@@ -59,6 +59,20 @@ class BaseController( object ):
                 error( "History is not owned by current user" )
         return history
         
+    def get_class( self, class_name ):
+        """ Returns the class object that a string denotes. Without this method, we'd have to do eval(<class_name>). """
+        if class_name == 'History':
+            item_class = model.History
+        elif class_name == 'HistoryDatasetAssociation':
+            item_class = model.HistoryDatasetAssociation
+        elif class_name == 'Page':
+            item_class = model.Page
+        elif class_name == 'StoredWorkflow':
+            item_class = model.StoredWorkflow
+        else:
+            item_class = None
+        return item_class
+        
 Root = BaseController
 
 class SharingStatusColumn( grids.GridColumn ):
@@ -79,7 +93,7 @@ class SharingStatusColumn( grids.GridColumn ):
         return ", ".join( sharing_statuses )
         
     def get_link( self, trans, grid, item ):
-        if not item.deleted and ( item.users_shared_with or item.importable ):
+        if not item.deleted and ( item.users_shared_with or item.importable or item.published ):
             return dict( operation="share or publish", id=item.id )
         return None
         

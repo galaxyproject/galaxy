@@ -708,6 +708,8 @@ VisualizationRevision.table = Table( "visualization_revision", metadata,
     Column( "title", TEXT ),
     Column( "config", JSONType )
     )
+    
+# Tagging tables.
 
 Tag.table = Table( "tag", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -769,6 +771,43 @@ PageTagAssociation.table = Table( "page_tag_association", metadata,
     Column( "user_tname", TrimmedString(255), index=True),
     Column( "value", TrimmedString(255), index=True),
     Column( "user_value", TrimmedString(255), index=True) )
+    
+WorkflowStepTagAssociation.table = Table( "workflow_step_tag_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "workflow_step_id", Integer, ForeignKey( "workflow_step.id" ), index=True ),
+    Column( "tag_id", Integer, ForeignKey( "tag.id" ), index=True ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+    Column( "user_tname", Unicode(255), index=True),
+    Column( "value", Unicode(255), index=True),
+    Column( "user_value", Unicode(255), index=True) )
+    
+# Annotation tables.
+
+HistoryAnnotationAssociation.table = Table( "history_annotation_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "history_id", Integer, ForeignKey( "history.id" ), index=True ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+    Column( "annotation", TEXT, index=True) )
+
+HistoryDatasetAssociationAnnotationAssociation.table = Table( "history_dataset_association_annotation_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "history_dataset_association_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+    Column( "annotation", TEXT, index=True) )
+
+StoredWorkflowAnnotationAssociation.table = Table( "stored_workflow_annotation_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "stored_workflow_id", Integer, ForeignKey( "stored_workflow.id" ), index=True ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+    Column( "annotation", TEXT, index=True) )
+
+WorkflowStepAnnotationAssociation.table = Table( "workflow_step_annotation_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "workflow_step_id", Integer, ForeignKey( "workflow_step.id" ), index=True ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+    Column( "annotation", TEXT, index=True) )
+
+# User tables.
     
 UserPreference.table = Table( "user_preference", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -893,8 +932,9 @@ assign_mapper( context, HistoryDatasetAssociation, HistoryDatasetAssociation.tab
         visible_children=relation( 
             HistoryDatasetAssociation, 
             primaryjoin=( ( HistoryDatasetAssociation.table.c.parent_id == HistoryDatasetAssociation.table.c.id ) & ( HistoryDatasetAssociation.table.c.visible == True ) ) ),
-        tags=relation(HistoryDatasetAssociationTagAssociation, order_by=HistoryDatasetAssociationTagAssociation.table.c.id, backref='history_tag_associations')
-            ) )
+        tags=relation( HistoryDatasetAssociationTagAssociation, order_by=HistoryDatasetAssociationTagAssociation.table.c.id, backref='history_tag_associations' ),
+        annotations=relation( HistoryDatasetAssociationAnnotationAssociation, order_by=HistoryDatasetAssociationAnnotationAssociation.table.c.id, backref="hdas" ) ) 
+            )
 
 assign_mapper( context, Dataset, Dataset.table,
     properties=dict( 
@@ -930,8 +970,9 @@ assign_mapper( context, History, History.table,
     properties=dict( galaxy_sessions=relation( GalaxySessionToHistoryAssociation ),
                      datasets=relation( HistoryDatasetAssociation, backref="history", order_by=asc(HistoryDatasetAssociation.table.c.hid) ),
                      active_datasets=relation( HistoryDatasetAssociation, primaryjoin=( ( HistoryDatasetAssociation.table.c.history_id == History.table.c.id ) & ( not_( HistoryDatasetAssociation.table.c.deleted ) ) ), order_by=asc( HistoryDatasetAssociation.table.c.hid ), viewonly=True ),
-                     tags=relation(HistoryTagAssociation, order_by=HistoryTagAssociation.table.c.id, backref="histories") 
-                      ) )
+                     tags=relation( HistoryTagAssociation, order_by=HistoryTagAssociation.table.c.id, backref="histories" ),
+                     annotations=relation( HistoryAnnotationAssociation, order_by=HistoryAnnotationAssociation.table.c.id, backref="histories" ) )  
+                      )
 
 assign_mapper( context, HistoryUserShareAssociation, HistoryUserShareAssociation.table,
     properties=dict( user=relation( User, backref='histories_shared_by_others' ),
@@ -1164,7 +1205,11 @@ assign_mapper( context, Workflow, Workflow.table,
                                       ) )
 
     
-assign_mapper( context, WorkflowStep, WorkflowStep.table )
+assign_mapper( context, WorkflowStep, WorkflowStep.table,
+                properties=dict(
+                    tags=relation(WorkflowStepTagAssociation, order_by=WorkflowStepTagAssociation.table.c.id, backref="workflow_steps"), 
+                    annotations=relation( WorkflowStepAnnotationAssociation, order_by=WorkflowStepAnnotationAssociation.table.c.id, backref="workflow_steps" ) ) 
+                )
 
 assign_mapper( context, WorkflowStepConnection, WorkflowStepConnection.table,
     properties=dict( input_step=relation( WorkflowStep, backref="input_connections", cascade="all",
@@ -1216,8 +1261,9 @@ assign_mapper( context, StoredWorkflow, StoredWorkflow.table,
                      latest_workflow=relation( Workflow, post_update=True,
                                                primaryjoin=( StoredWorkflow.table.c.latest_workflow_id == Workflow.table.c.id ),
                                                lazy=False ),
-                     tags=relation(StoredWorkflowTagAssociation, order_by=StoredWorkflowTagAssociation.table.c.id, backref="stored_workflows") 
-                   ) )
+                     tags=relation( StoredWorkflowTagAssociation, order_by=StoredWorkflowTagAssociation.table.c.id, backref="stored_workflows" ),
+                     annotations=relation( StoredWorkflowAnnotationAssociation, order_by=StoredWorkflowAnnotationAssociation.table.c.id, backref="stored_workflows" ) ) 
+                   )
 
 assign_mapper( context, StoredWorkflowUserShareAssociation, StoredWorkflowUserShareAssociation.table,
     properties=dict( user=relation( User, backref='workflows_shared_by_others' ),
@@ -1287,7 +1333,27 @@ assign_mapper( context, WorkflowTagAssociation, WorkflowTagAssociation.table,
 assign_mapper( context, StoredWorkflowTagAssociation, StoredWorkflowTagAssociation.table,
     properties=dict( tag=relation(Tag, backref="tagged_stored_workflows"), user=relation( User ) )
                     )
-               
+                    
+assign_mapper( context, WorkflowStepTagAssociation, WorkflowStepTagAssociation.table,
+    properties=dict( tag=relation(Tag, backref="tagged_workflow_steps"), user=relation( User ) )
+                    )
+                    
+assign_mapper( context, HistoryAnnotationAssociation, HistoryAnnotationAssociation.table,
+    properties=dict( history=relation( History ), user=relation( User ) )
+                    )
+                    
+assign_mapper( context, HistoryDatasetAssociationAnnotationAssociation, HistoryDatasetAssociationAnnotationAssociation.table,
+    properties=dict( hda=relation( HistoryDatasetAssociation ), user=relation( User ) )
+                    )
+                    
+assign_mapper( context, StoredWorkflowAnnotationAssociation, StoredWorkflowAnnotationAssociation.table,
+    properties=dict( stored_workflow=relation( StoredWorkflow ), user=relation( User ) )
+                    )
+
+assign_mapper( context, WorkflowStepAnnotationAssociation, WorkflowStepAnnotationAssociation.table,
+    properties=dict( workflow_step=relation( WorkflowStep ), user=relation( User ) )
+                    )
+                    
 assign_mapper( context, UserPreference, UserPreference.table, 
     properties = {}
               )

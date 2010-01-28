@@ -2,6 +2,7 @@ from galaxy.web.base.controller import *
 from galaxy.web.framework.helpers import time_ago, grids
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.util.odict import odict
+from galaxy.util.json import from_json_string
 
 import re
 
@@ -193,7 +194,7 @@ class PageController( BaseController, Sharable ):
             return grid
         else:
             # Render grid wrapped in panels
-            return trans.fill_template( "page/index.mako", grid=grid )
+            return trans.fill_template( "page/list_published.mako", grid=grid )
 
              
     @web.expose
@@ -370,18 +371,52 @@ class PageController( BaseController, Sharable ):
         
     @web.expose
     @web.require_login() 
-    def save( self, trans, id, content ):
+    def save( self, trans, id, content, annotations ):
         id = trans.security.decode_id( id )
         page = trans.sa_session.query( model.Page ).get( id )
         assert page.user == trans.user
+        
         # Sanitize content
         content = sanitize_html( content, 'utf-8', 'text/html' )
-        # Add a new revision to the page with the provided content
+        
+        # Add a new revision to the page with the provided content.
         page_revision = model.PageRevision()
         page_revision.title = page.title
         page_revision.page = page
         page.latest_revision = page_revision
         page_revision.content = content
+        
+        # Save annotations.
+        annotations = from_json_string( annotations )
+        for annotation_dict in annotations:
+            item_id = trans.security.decode_id( annotation_dict[ 'item_id' ] )
+            item_class = self.get_class( annotation_dict[ 'item_class' ] )
+            item = trans.sa_session.query( item_class ).filter_by( id=item_id ).first()
+            if not item:
+                raise RuntimeError( "cannot find annotated item" )
+            text = sanitize_html( annotation_dict[ 'text' ], 'utf-8', 'text/html' )
+            
+            # Add/update annotation.
+            if item_id and item_class and text:
+                # Get annotation association.
+                annotation_assoc_class = eval( "model.%sAnnotationAssociation" % item_class.__name__ )
+                annotation_assoc = trans.sa_session.query( annotation_assoc_class ).filter_by( user=trans.get_user() )
+                if item_class == model.History.__class__:
+                    annotation_assoc = annotation_assoc.filter_by( history=item )
+                elif item_class == model.HistoryDatasetAssociation.__class__:
+                    annotation_assoc = annotation_assoc.filter_by( hda=item )
+                elif item_class == model.StoredWorkflow.__class__:
+                    annotation_assoc = annotation_assoc.filter_by( stored_workflow=item )
+                elif item_class == model.WorkflowStep.__class__:
+                    annotation_assoc = annotation_assoc.filter_by( workflow_step=item )
+                annotation_assoc = annotation_assoc.first()
+                if not annotation_assoc:
+                    # Create association.
+                    annotation_assoc = annotation_assoc_class()
+                    item.annotations.append( annotation_assoc )
+                    annotation_assoc.user = trans.get_user()
+                # Set annotation user text.
+                annotation_assoc.annotation = text
         trans.sa_session.flush()
         
     @web.expose
@@ -449,4 +484,3 @@ class PageController( BaseController, Sharable ):
     def get_editor_iframe( self, trans ):
         """ Returns the document for the page editor's iframe. """
         return trans.fill_template( "page/wymiframe.mako" )
-        

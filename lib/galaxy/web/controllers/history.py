@@ -367,16 +367,18 @@ class HistoryController( BaseController, Sharable ):
         trans.sa_session.flush()
     
     @web.expose
-    @web.require_login( "get history name, slug, and owner's username" )
-    def get_name_slug_username_async( self, trans, id=None ):
-        """ Returns the name, slug, and owner's username for a given history. """
+    @web.json
+    @web.require_login( "get history name and link" )
+    def get_name_and_link_async( self, trans, id=None ):
+        """ Returns history's name and link. """
         history = self.get_history( trans, id, False )
         
         # To get info: user must own history.
         if history.user == trans.get_user():
-            slug = iff( history.slug, history.slug, "" )
-            username = iff ( history.user.username, history.user.username, "" )
-            return history.name + "," +  slug + "," + username
+            if self.set_item_slug( trans.sa_session, history ):
+                trans.sa_session.flush()
+            return_dict = { "name" : history.name, "link" : "/u/%s/h/%s" % ( history.user.username, history.slug ) }
+            return return_dict
         return
         
     @web.expose
