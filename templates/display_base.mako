@@ -4,16 +4,13 @@
 	        return '/base.mako'
 	    else:
 	        return '/base_panels.mako'
-	from galaxy import model
+	
+	from galaxy.model import History, StoredWorkflow, Page
+	from galaxy.web.framework.helpers import iff
 %>
 <%inherit file="${inherit( context )}"/>
 <%namespace file="/tagging_common.mako" import="render_individual_tagging_element, render_community_tagging_element" />
 <%namespace file="/display_common.mako" import="*" />
-
-<%!
-    from galaxy.model import History, StoredWorkflow, Page
-    from galaxy.web.framework.helpers import iff
-%>
 
 <%def name="title()">
     Galaxy | ${iff( item.published, "Published ", iff( item.importable , "Accessible ", iff( item.users_shared_with, "Shared ", "Private " ) ) ) + get_class_display_name( item.__class__ )} | ${get_item_name( item )}
@@ -21,9 +18,11 @@
 
 <%def name="init()">
 <%
-    self.has_left_panel=False
-    self.has_right_panel=item.published
-    self.message_box_visible=False
+	self.has_left_panel=False
+	self.has_right_panel=item.published
+	self.message_box_visible=False
+	self.active_view="user"
+	self.overlay_visible=False
 %>
 </%def>
 

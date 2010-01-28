@@ -387,11 +387,6 @@
 					annotations[ annotations.length ] = annotation;
 				});
 				
-				// Remove inserted elements temporarily.
-				var annotated_history = $('.annotated_item');
-				alert(annotated_history);
-				annotated_history.remove();
-				
 				// Do save.
                 $.ajax( {	
                     url: "${h.url_for( action='save' )}",

@@ -150,15 +150,6 @@
     ${h.css( "base", "history", "autocomplete_tagging" )}
 </%def>
 
-<%def name="init()">
-<%
-    self.has_left_panel=False
-    self.has_right_panel=item.published
-    self.active_view="user"
-    self.overlay_visible=False
-%>
-</%def>
-
 <%def name="get_item_name( page )">
     <% return page.title %>
 </%def>
