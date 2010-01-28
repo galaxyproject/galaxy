@@ -35,7 +35,6 @@ class Ab1( Binary ):
 
     def set_peek( self, dataset, is_multi_byte=False ):
         if not dataset.dataset.purged:
-            export_url = "/history_add_to?" + urlencode( {'history_id':dataset.history_id,'ext':'ab1','name':'ab1 sequence','info':'Sequence file','dbkey':dataset.dbkey} )
             dataset.peek  = "Binary ab1 sequence file"
             dataset.blurb = data.nice_size( dataset.get_size() )
         else:
@@ -121,7 +120,6 @@ class Bam( Binary ):
             return False
     def set_peek( self, dataset, is_multi_byte=False ):
         if not dataset.dataset.purged:
-            export_url = "/history_add_to?" + urlencode( {'history_id':dataset.history_id,'ext':'bam','name':'bam alignments','info':'Alignments file','dbkey':dataset.dbkey} )
             dataset.peek  = "Binary bam alignments file" 
             dataset.blurb = data.nice_size( dataset.get_size() )
         else:
@@ -163,7 +161,6 @@ class Scf( Binary ):
 
     def set_peek( self, dataset, is_multi_byte=False ):
         if not dataset.dataset.purged:
-            export_url = "/history_add_to?" + urlencode({'history_id':dataset.history_id,'ext':'scf','name':'scf sequence','info':'Sequence file','dbkey':dataset.dbkey})
             dataset.peek  = "Binary scf sequence file" 
             dataset.blurb = data.nice_size( dataset.get_size() )
         else:
@@ -193,7 +190,6 @@ class Sff( Binary ):
             return False
     def set_peek( self, dataset, is_multi_byte=False ):
         if not dataset.dataset.purged:
-            export_url = "/history_add_to?" + urlencode( {'history_id':dataset.history_id,'ext':'sff','name':'sff file','info':'sff file','dbkey':dataset.dbkey} )
             dataset.peek  = "Binary sff file" 
             dataset.blurb = data.nice_size( dataset.get_size() )
         else:

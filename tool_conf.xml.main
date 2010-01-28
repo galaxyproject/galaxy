@@ -279,14 +279,14 @@
         <tool file="solid_tools/solid_qual_boxplot.xml" />
   </section>
   <section name="NGS: Mapping" id="ngs_mapping">
-    <label text="Illumina" />
+    <label text="Illumina" id="illumina"/>
     <tool file="sr_mapping/bowtie_wrapper.xml" />
     <tool file="sr_mapping/bwa_wrapper.xml" />
-    <label text="Roche-454" />
+    <label text="Roche-454" id="roche_454"/>
     <tool file="sr_mapping/lastz_wrapper.xml" />
     <tool file="metag_tools/megablast_wrapper.xml" />
     <tool file="metag_tools/megablast_xml_parser.xml" />
-    <label text="AB-SOLiD" />
+    <label text="AB-SOLiD" id="ab_solid"/>
     <tool file="sr_mapping/bowtie_color_wrapper.xml" />
   </section>
   <section name="NGS: SAM Tools" id="samtools">
