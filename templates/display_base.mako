@@ -152,6 +152,14 @@
 
             %if item.published:
                 <div style="padding: 10px;">
+                    <h4>Author</h4>
+                    
+                    <p>${item.user.username}</p>
+                    
+                    <div><img src="http://www.gravatar.com/avatar/${h.md5(item.user.email)}?s=150"></div>
+                    
+                    
+                    
                     ## Page meta.
                     <h4>Related ${item_plural}</h4>
                     <p>
