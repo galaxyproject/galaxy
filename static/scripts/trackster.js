@@ -94,7 +94,18 @@ $.extend( View.prototype, {
         this.tracks.push( track );
         if (track.init) { track.init(); }
     },
-    redraw: function () {
+    remove_track: function( track ) {
+        delete this.tracks[track];        
+    },
+    update_options: function() {
+        for (var track_id in view.tracks) {
+            var track = view.tracks[track_id];
+            if (track.update_options) {
+                track.update_options(track_id);
+            }
+        }
+    },
+    redraw: function() {
         var span = this.span / Math.pow(this.zoom_factor, this.zoom_level),
             low = this.center - (span / 2),
             high = low + span;
@@ -252,23 +263,22 @@ $.extend( LabelTrack.prototype, Track.prototype, {
     }
 });
 
-var LineTrack = function ( name, dataset_id, indexer, height, minval, maxval ) {
+var LineTrack = function ( name, dataset_id, indexer, prefs ) {
+    this.track_type = "LineTrack";
     this.tile_cache = new Cache(CACHED_TILES_LINE);
     Track.call( this, name, $("#viewport") );
     TiledTrack.call( this );
     
     this.indexer = indexer;
-    this.height_px = (height ? height : 100);
+    this.height_px = 100;
     this.container_div.addClass( "line-track" );
     this.dataset_id = dataset_id;
     this.data_queue = {};
     this.data_cache = new Cache(CACHED_DATA); // We need to cache some data because of
                                          // asynchronous calls
-    if (minval !== undefined && maxval !== undefined) {
-        this.min_value = minval;
-        this.max_value = maxval;
-        this.vertical_range = maxval - minval;
-    }
+    this.prefs = { 'min_value': undefined, 'max_value': undefined };
+    if (prefs.min_value !== undefined) { this.prefs.min_value = prefs.min_value; }
+    if (prefs.max_value !== undefined) { this.prefs.max_value = prefs.max_value; }
 };
 $.extend( LineTrack.prototype, TiledTrack.prototype, {
     init: function() {
@@ -293,19 +303,19 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
                 track.content_div.text("");
                 track.content_div.css( "height", track.height_px + "px" );
                 
-                if (track.min_value === undefined || track.max_value === undefined) {
-                    track.min_value = data.min;
-                    track.max_value = data.max;
-                    track.vertical_range = track.max_value - track.min_value;
-                    
+                if (track.prefs.min_value === undefined || track.prefs.max_value === undefined) {
+                    track.prefs.min_value = data.min;
+                    track.prefs.max_value = data.max;
+
                     // Update the config
-                    $('#track_' + track_id + '_minval').val(track.min_value);
-                    $('#track_' + track_id + '_maxval').val(track.max_value);
+                    $('#track_' + track_id + '_minval').val(track.prefs.min_value);
+                    $('#track_' + track_id + '_maxval').val(track.prefs.max_value);
                 }
+                track.vertical_range = track.prefs.max_value - track.prefs.min_value;
                 
                 // Draw y-axis labels
-                var min_label = $("<div></div>").addClass('yaxislabel').attr("id", 'linetrack_' + track_id + '_minval').text(track.min_value);
-                var max_label = $("<div></div>").addClass('yaxislabel').attr("id", 'linetrack_' + track_id + '_maxval').text(track.max_value);
+                var min_label = $("<div></div>").addClass('yaxislabel').attr("id", 'linetrack_' + track_id + '_minval').text(track.prefs.min_value);
+                var max_label = $("<div></div>").addClass('yaxislabel').attr("id", 'linetrack_' + track_id + '_maxval').text(track.prefs.max_value);
                 
                 max_label.css({ position: "relative", top: "25px" });
                 max_label.prependTo(track.container_div);
@@ -358,8 +368,13 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
                 
         canvas.get(0).width = Math.ceil( tile_length * w_scale );
         canvas.get(0).height = this.height_px;
-        var ctx = canvas.get(0).getContext("2d");
-        var in_path = false;
+        var ctx = canvas.get(0).getContext("2d"),
+            in_path = false,
+            min_value = this.prefs.min_value,
+            max_value = this.prefs.max_value,
+            vertical_range = this.vertical_range,
+            height_px = this.height_px;
+            
         ctx.beginPath();
         for ( var i = 0; i < data.length - 1; i++ ) {
             var x = data[i][0] - tile_low;
@@ -371,12 +386,12 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
                 // Translate
                 x = x * w_scale;
                 // console.log(y, this.min_value, this.vertical_range, (y - this.min_value) / this.vertical_range * this.height_px);
-                if (y <= this.min_value) {
-                    y = this.min_value;
-                } else if (y >= this.max_value) {
-                    y = this.max_value;
+                if (y <= min_value) {
+                    y = min_value;
+                } else if (y >= max_value) {
+                    y = max_value;
                 }
-                y = Math.round( this.height_px - (y - this.min_value) / this.vertical_range * this.height_px );
+                y = Math.round( height_px - (y - min_value) / vertical_range * height_px );
                 // console.log(canvas.get(0).height, canvas.get(0).width);
                 if ( in_path ) {
                     ctx.lineTo( x, y );
@@ -395,33 +410,37 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
         var minval = 'track_' + track_id + '_minval',
             maxval = 'track_' + track_id + '_maxval',
             min_label = $('<label></label>').attr("for", minval).text("Min value:"),
-            min_input = $('<input></input>').attr("id", minval).val(this.min_value || ""),
+            min_val = (this.prefs.min_value === undefined ? "" : this.prefs.min_value),
+            min_input = $('<input></input>').attr("id", minval).val(min_val),
             max_label = $('<label></label>').attr("for", maxval).text("Max value:"),
-            max_input = $('<input></input>').attr("id", maxval).val(this.max_value || "");
+            max_val = (this.prefs.max_value === undefined ? "" : this.prefs.max_value),
+            max_input = $('<input></input>').attr("id", maxval).val(max_val);
         
         return container.append(min_label).append(min_input).append(max_label).append(max_input);
     }, update_options: function(track_id) {
         var min_value = $('#track_' + track_id + '_minval').val(),
             max_value = $('#track_' + track_id + '_maxval').val();
-        if ( min_value !== this.min_value || max_value !== this.max_value) {
-            this.min_value = parseFloat(min_value);
-            this.max_value = parseFloat(max_value);
-            this.vertical_range = this.max_value - this.min_value;
-            $('#linetrack_' + track_id + '_minval').text(this.min_value);
-            $('#linetrack_' + track_id + '_maxval').text(this.max_value);
+        if ( min_value !== this.prefs.min_value || max_value !== this.prefs.max_value) {
+            this.prefs.min_value = parseFloat(min_value);
+            this.prefs.max_value = parseFloat(max_value);
+            this.vertical_range = this.prefs.max_value - this.prefs.min_value;
+            // Update the y-axis
+            $('#linetrack_' + track_id + '_minval').text(this.prefs.min_value);
+            $('#linetrack_' + track_id + '_maxval').text(this.prefs.max_value);
             this.tile_cache.clear();
             this.draw();
         }
     }
 });
 
-var FeatureTrack = function ( name, dataset_id, indexer, height ) {
+var FeatureTrack = function ( name, dataset_id, indexer, prefs ) {
+    this.track_type = "FeatureTrack";
     this.tile_cache = new Cache(CACHED_TILES_FEATURE);
     Track.call( this, name, $("#viewport") );
     TiledTrack.call( this );
     
     this.indexer = indexer;
-    this.height_px = (height ? height : 100);
+    this.height_px = 100;
     this.container_div.addClass( "feature-track" );
     this.dataset_id = dataset_id;
     this.zo_slots = {};
@@ -429,14 +448,16 @@ var FeatureTrack = function ( name, dataset_id, indexer, height ) {
     this.showing_details = false;
     this.vertical_detail_px = 10;
     this.vertical_nodetail_px = 3;
-    this.block_color = "black";
-    this.label_color = "black";
     this.default_font = "9px Monaco, Lucida Console, monospace";
     this.left_offset = 200;
     this.inc_slots = {};
     this.data_queue = {};
     this.s_e_by_tile = {};
     this.data_cache = new Cache(20);
+    this.prefs = { 'block_color': 'black', 'label_color': 'black' };
+    if (prefs.block_color !== undefined) { this.prefs.block_color = prefs.block_color; }
+    if (prefs.label_color !== undefined) { this.prefs.label_color = prefs.label_color; }
+    
 };
 $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
     init: function() {
@@ -609,18 +630,23 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
 
         // console.log(tile_low, tile_high, tile_length, w_scale);
         var width = Math.ceil( tile_span * w_scale ),
-            new_canvas = $("<canvas class='tile'></canvas>");
+            new_canvas = $("<canvas class='tile'></canvas>"),
+            label_color = this.prefs.label_color,
+            block_color = this.prefs.block_color,
+            left_offset = this.left_offset,
+            showing_details = this.showing_details,
+            y_scale = (this.showing_details ? this.vertical_detail_px : this.vertical_nodetail_px);
         
         new_canvas.css({
             position: "absolute",
             top: 0,
-            left: ( tile_low - this.view.low ) * w_scale - this.left_offset
+            left: ( tile_low - this.view.low ) * w_scale - left_offset
         });
-        new_canvas.get(0).width = width + this.left_offset;
+        new_canvas.get(0).width = width + left_offset;
         new_canvas.get(0).height = required_height;
         // console.log(( tile_low - this.view.low ) * w_scale, tile_index, w_scale);
         var ctx = new_canvas.get(0).getContext("2d");
-        ctx.fillStyle = this.block_color;
+        ctx.fillStyle = this.prefs.block_color;
         ctx.font = this.default_font;
         ctx.textAlign = "right";
 
@@ -630,22 +656,22 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
             if (feature.start <= tile_high && feature.end >= tile_low) {
                 var f_start = Math.floor( Math.max(0, (feature.start - tile_low) * w_scale) ),
                     f_end   = Math.ceil( Math.min(width, (feature.end - tile_low) * w_scale) ),
-                    y_center = slots[feature.uid] * (this.showing_details ? this.vertical_detail_px : this.vertical_nodetail_px);
+                    y_center = slots[feature.uid] * y_scale;
                 
                 var thickness, y_start, thick_start = null, thick_end = null;
                 if (feature.thick_start && feature.thick_end) {
                     thick_start = Math.floor( Math.max(0, (feature.thick_start - tile_low) * w_scale) );
                     thick_end = Math.ceil( Math.min(width, (feature.thick_end - tile_low) * w_scale) );
                 }
-                if (!this.showing_details) {
+                if (!showing_details) {
                     // Non-detail levels
-                    ctx.fillRect(f_start + this.left_offset, y_center + 5, f_end - f_start, 1);
+                    ctx.fillRect(f_start + left_offset, y_center + 5, f_end - f_start, 1);
                 } else {
                     // Showing labels, blocks, details
                     if (feature.start > tile_low) {
-                        ctx.fillStyle = this.label_color;
-                        ctx.fillText(feature.name, f_start - 1 + this.left_offset, y_center + 8);
-                        ctx.fillStyle = this.block_color;
+                        ctx.fillStyle = label_color;
+                        ctx.fillText(feature.name, f_start - 1 + left_offset, y_center + 8);
+                        ctx.fillStyle = block_color;
                     }
                     var blocks = feature.blocks;
                     if (blocks) {
@@ -656,8 +682,8 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                             } else if (feature.strand == "-") {
                                 ctx.fillStyle = LEFT_STRAND;
                             }
-                            ctx.fillRect(f_start + this.left_offset, y_center, f_end - f_start, 10);
-                            ctx.fillStyle = this.block_color;
+                            ctx.fillRect(f_start + left_offset, y_center, f_end - f_start, 10);
+                            ctx.fillStyle = block_color;
                         }
                         
                         for (var k = 0, k_len = blocks.length; k < k_len; k++) {
@@ -668,7 +694,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                             // Draw the block
                             thickness = 5;
                             y_start = 3;
-                            ctx.fillRect(block_start + this.left_offset, y_center + y_start, block_end - block_start, thickness);
+                            ctx.fillRect(block_start + left_offset, y_center + y_start, block_end - block_start, thickness);
                             
                             // Draw thick regions: check if block intersects with thick region
                             if (thick_start !== undefined && !(block_start > thick_end || block_end < thick_start) ) {
@@ -676,7 +702,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                                 y_start = 1;
                                 var block_thick_start = Math.max(block_start, thick_start),
                                     block_thick_end = Math.min(block_end, thick_end);
-                                ctx.fillRect(block_thick_start + this.left_offset, y_center + y_start, block_thick_end - block_thick_start, thickness);
+                                ctx.fillRect(block_thick_start + left_offset, y_center + y_start, block_thick_end - block_thick_start, thickness);
 
                             }
                         }
@@ -684,15 +710,15 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                         // If there are no blocks, we treat the feature as one big exon
                         thickness = 9;
                         y_start = 1;
-                        ctx.fillRect(f_start + this.left_offset, y_center + y_start, f_end - f_start, thickness);
+                        ctx.fillRect(f_start + left_offset, y_center + y_start, f_end - f_start, thickness);
                         if ( feature.strand ) {
                             if (feature.strand == "+") {
                                 ctx.fillStyle = RIGHT_STRAND_INV;
                             } else if (feature.strand == "-") {
                                 ctx.fillStyle = LEFT_STRAND_INV;
                             }
-                            ctx.fillRect(f_start + this.left_offset, y_center, f_end - f_start, 10);
-                            ctx.fillStyle = this.block_color;
+                            ctx.fillRect(f_start + left_offset, y_center, f_end - f_start, 10);
+                            ctx.fillStyle = prefs.block_color;
                         }
                     }
                 }
@@ -707,29 +733,29 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
 
         var block_color = 'track_' + track_id + '_block_color',
             block_color_label = $('<label></label>').attr("for", block_color).text("Block color:"),
-            block_color_input = $('<input></input>').attr("id", block_color).attr("name", block_color).val(this.block_color),
+            block_color_input = $('<input></input>').attr("id", block_color).attr("name", block_color).val(this.prefs.block_color),
             label_color = 'track_' + track_id + '_label_color',
             label_color_label = $('<label></label>').attr("for", label_color).text("Label color:"),
-            label_color_input = $('<input></input>').attr("id", label_color).attr("name", label_color).val(this.label_color);
+            label_color_input = $('<input></input>').attr("id", label_color).attr("name", label_color).val(this.prefs.label_color);
         return container.append(block_color_label).append(block_color_input).append(label_color_label).append(label_color_input);
     }, update_options: function(track_id) {
         var block_color = $('#track_' + track_id + '_block_color').val(),
             label_color = $('#track_' + track_id + '_label_color').val();
-        if (block_color !== this.block_color || label_color !== this.label_color) {
-            this.block_color = block_color;
-            this.label_color = label_color;
+        if (block_color !== this.prefs.block_color || label_color !== this.prefs.label_color) {
+            this.prefs.block_color = block_color;
+            this.prefs.label_color = label_color;
             this.tile_cache.clear();
             this.draw();
         }
     }
 });
 
-var ReadTrack = function ( name, dataset_id, indexer, height ) {
+var ReadTrack = function ( name, dataset_id, indexer, prefs ) {
+    this.track_type = "ReadTrack";
     this.tile_cache = new Cache(CACHED_TILES_FEATURE);
     Track.call( this, name, $("#viewport") );
     TiledTrack.call( this );
-    FeatureTrack.call( this, name, dataset_id, indexer, height );
-    this.default_font = "9px Monaco, Lucida Console, monospace";
+    FeatureTrack.call( this, name, dataset_id, indexer, prefs );
     
 };
 $.extend( ReadTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
@@ -760,7 +786,7 @@ $.extend( ReadTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
         new_canvas.get(0).height = required_height;
         // console.log(( tile_low - this.view.low ) * w_scale, tile_index, w_scale);
         var ctx = new_canvas.get(0).getContext("2d");
-        ctx.fillStyle = this.block_color;
+        ctx.fillStyle = this.prefs.block_color;
         ctx.font = this.default_font;
         ctx.textAlign = "right";
         var px_per_char = ctx.measureText("A").width;

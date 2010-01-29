@@ -19,6 +19,7 @@ log = logging.getLogger(__name__)
 from galaxy.util.json import to_json_string
 from galaxy.web.base.controller import *
 from galaxy.web.framework import simplejson
+from galaxy.web.framework.helpers import time_ago, grids
 from galaxy.util.bunch import Bunch
 
 from galaxy.visualization.tracks.data.array_tree import ArrayTreeDataProvider
@@ -43,12 +44,40 @@ dataset_type_to_data_provider = {
     "bai": BamDataProvider
 }
 
+class DatasetSelectionGrid( grids.Grid ):
+    # Grid definition.
+    available_tracks = None
+    title = "Add Tracks"
+    template = "/tracks/add_tracks.mako"
+    async_template = "/page/select_histories_grid_async.mako"
+    model_class = model.HistoryDatasetAssociation
+    default_filter = { "deleted" : "False" , "shared" : "All" }
+    default_sort_key = "name"
+    use_async = True
+    use_paging = False
+    columns = [
+        grids.TextColumn( "Name", key="name", model_class=model.HistoryDatasetAssociation ),
+        # grids.IndividualTagsColumn( "Tags", "tags", model.History, model.HistoryTagAssociation, filterable="advanced"),
+        grids.GridColumn( "Filetype", key="extension" ),
+        # Columns that are valid for filtering but are not visible.
+        # SharingColumn( "Shared", key="shared", visible=False, filterable="advanced" )
+    ]
+    def apply_default_filter( self, trans, query, **kwargs ):
+        if self.available_tracks is None:
+             self.available_tracks = trans.app.datatypes_registry.get_available_tracks()
+        return query.select_from(   model.HistoryDatasetAssociation.table \
+                                    .join( model.History.table ) ) \
+                                    .filter( model.History.user == trans.user ) \
+                                    .filter( model.HistoryDatasetAssociation.extension.in_(self.available_tracks) )
+        
 class TracksController( BaseController ):
     """
     Controller for track browser interface. Handles building a new browser from
     datasets in the current history, and display of the resulting browser.
     """
-
+    
+    available_tracks = None
+    
     @web.expose
     def index( self, trans ):
         return trans.fill_template( "tracks/index.mako" )
@@ -98,12 +127,13 @@ class TracksController( BaseController ):
             # Find all datasets in the current history that are of that dbkey
             # and can be displayed
             datasets = {}
-            available_tracks = trans.app.datatypes_registry.get_available_tracks()
+            if self.available_tracks is None:
+                 self.available_tracks = trans.app.datatypes_registry.get_available_tracks()
             for dataset in session.query( model.HistoryDatasetAssociation ).filter_by( deleted=False, history_id=trans.history.id ):
-                if dataset.metadata.dbkey == dbkey and dataset.extension in available_tracks:
+                if dataset.metadata.dbkey == dbkey and dataset.extension in self.available_tracks:
                     datasets[dataset.id] = (dataset.extension, dataset.name)
             # Render the template
-            return trans.fill_template( "tracks/new_browser.mako", available_tracks=available_tracks, dbkey=dbkey, dbkey_set=dbkey_set, datasets=datasets )
+            return trans.fill_template( "tracks/new_browser.mako", available_tracks=self.available_tracks, dbkey=dbkey, dbkey_set=dbkey_set, datasets=datasets )
 
     @web.expose
     def browser(self, trans, id, chrom=""):
@@ -118,13 +148,18 @@ class TracksController( BaseController ):
         hda_query = session.query( model.HistoryDatasetAssociation )
         for t in vis.latest_revision.config['tracks']:
             dataset_id = t['dataset_id']
+            try:
+                prefs = t['prefs']
+            except KeyError:
+                prefs = {}
             dataset = hda_query.get( dataset_id )
             track_type, indexer = dataset.datatype.get_track_type()
             tracks.append( {
-                "type": track_type,
+                "track_type": track_type,
                 "indexer": indexer,
                 "name": dataset.name,
-                "dataset_id": dataset.id
+                "dataset_id": dataset.id,
+                "prefs": simplejson.dumps(prefs),
             } )
             dbkey = dataset.dbkey
         chrom_lengths = self._chroms( trans, dbkey )
@@ -252,7 +287,40 @@ class TracksController( BaseController ):
         return new_dataset
     
     @web.json
-    def update_config( self, trans, **kwargs ):
-        raise RuntimeError
+    def save( self, trans, **kwargs ):
+        decoded_id = trans.security.decode_id( kwargs['id'] )
+        session = trans.sa_session
+        vis = session.query( model.Visualization ).get( decoded_id )
+        
+        decoded_payload = simplejson.loads( kwargs['payload'] )
+        vis_rev = model.VisualizationRevision()
+        vis_rev.visualization = vis
+        vis_rev.title = vis.title
+        tracks = []
+        for track in decoded_payload:
+            tracks.append( {    "dataset_id": str(track['dataset_id']),
+                                "name": track['name'],
+                                "indexer": track['indexer'],
+                                "track_type": track['track_type'],
+                                "prefs": track['prefs']
+            } )
+        vis_rev.config = { "tracks": tracks }
+        vis.latest_revision = vis_rev
+        session.add( vis_rev )
+        session.flush()
+    
+    data_grid = DatasetSelectionGrid()
+    
+    @web.expose
+    @web.require_login( "see all available datasets" )
+    def list_datasets( self, trans, **kwargs ):
+        """List all datasets that can be added as tracks"""
+        
+        
+        # Render the list view
+        # return trans.fill_template( 'tracks/add_tracks.mako', grid=data_grid( trans, status=status, message=message, **kwargs ) )
+        return self.data_grid( trans, **kwargs )
+        
+        # 
         
         

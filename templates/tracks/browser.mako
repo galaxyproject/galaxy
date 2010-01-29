@@ -78,16 +78,18 @@ ${h.css( "history" )}
 ##        <input name="title" id="title" value="${title}" />
         <div id="show-hide-move">
             <ul id="sortable-ul"></ul>
-##            <input type="submit" id="update-config" value="Save settings" />
-            <input type="button" id="refresh-button" value="Refresh" />
         </div>
+##      <input type="submit" id="update-config" value="Save settings" />
+        <input type="button" id="refresh-button" value="Refresh" />
+        <input type="button" id="save-button" value="Save" />
+        <input id="add-track" type="button" value="Add Track" />
     </form>
 
 </%def>
 
 <%def name="javascripts()">
 ${parent.javascripts()}
-${h.js( "jquery", "jquery.event.drag", "jquery.mousewheel", "trackster", "ui.core", "ui.sortable" )}
+${h.js( "json2", "jquery", "jquery.event.drag", "jquery.mousewheel", "trackster", "ui.core", "ui.sortable" )}
 
 <script type="text/javascript">
 
@@ -100,7 +102,9 @@ ${h.js( "jquery", "jquery.event.drag", "jquery.mousewheel", "trackster", "ui.cor
         view.add_track( new LabelTrack( $("#nav-labeltrack" ) ) );
    
         %for track in tracks:
-            view.add_track( new ${track["type"]}( "${track['name']}", ${track['dataset_id']}, "${track['indexer']}" ) );
+            view.add_track( 
+                new ${track["track_type"]}( "${track['name']}", ${track['dataset_id']}, "${track['indexer']}", ${track['prefs']} ) 
+            );
         %endfor
         
         $(document).bind( "redraw", function( e ) {
@@ -164,12 +168,51 @@ ${h.js( "jquery", "jquery.event.drag", "jquery.mousewheel", "trackster", "ui.cor
         });
         
         $("#refresh-button").bind( "click", function(e) {
-            for (var track_id in view.tracks) {
-                var track = view.tracks[track_id];
-                if (track.update_options) {
-                    track.update_options(track_id);
+            view.update_options();
+        });
+        
+        // Use a popup grid to add more tracks
+        $("#add-track").bind( "click", function(e) {
+            $.ajax({
+                url: "${h.url_for( action='list_datasets' )}",
+                data: {},
+                error: function() { alert( "Grid refresh failed" ) },
+                success: function(table_html) {
+                    show_modal("Add Track &mdash; Select Dataset(s)", table_html, {
+                        "Insert": function() {
+                            hide_modal();
+                        },
+                        "Cancel": function() {
+                            hide_modal();
+                        }
+                    });
                 }
+            });
+        });
+        
+        $("#save-button").bind("click", function(e) {
+            view.update_options();
+            var sorted = $("ul#sortable-ul").sortable('toArray');
+            var payload = [];
+            for (var i in sorted) {
+                var track_id = parseInt(sorted[i].split("track_")[1]),
+                    track = view.tracks[track_id];
+                
+                payload.push( {
+                    "track_type": track.track_type,
+                    "indexer": track.indexer,
+                    "name": track.name,
+                    "dataset_id": track.dataset_id,
+                    "prefs": track.prefs
+                });
             }
+            $.ajax({
+                url: "${h.url_for( action='save' )}",
+                data: {
+                    'id': '${id}',
+                    'payload': JSON.stringify(payload)
+                }
+            });
         });
         
         // Execute this on page load
@@ -195,12 +238,12 @@ ${h.js( "jquery", "jquery.event.drag", "jquery.mousewheel", "trackster", "ui.cor
                 var track = view.tracks[track_id];
                 if (!track.hidden) {
                     var label = $('<label for="track_' + track_id + 'title">' + track.name + '</label>');
-                    var title = $('<div class="toolFormTitle"></div>');
+                    var title = $('<div class="historyItemTitle"></div>');
                     var del_icon = $('<a style="display:block; float:right" href="#" class="icon-button delete" />');
-                    var body = $('<div class="toolFormBody"></div>');
+                    var body = $('<div class="historyItemBody"></div>');
                     // var checkbox = $('<input type="checkbox" checked="checked"></input>').attr("id", "track_" + track_id + "title");
                     var li = $('<li class="sortable"></li>').attr("id", "track_" + track_id);
-                    var div = $('<div class="toolForm"></div>');
+                    var div = $('<div class="historyItemContainer historyItem"></div>');
                     del_icon.prependTo(title);
                     label.appendTo(title);
                     // checkbox.prependTo(title);

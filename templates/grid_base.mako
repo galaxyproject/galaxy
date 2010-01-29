@@ -205,6 +205,7 @@
                var grid = this;
                var checkboxes = $(this).find("input.grid-row-select-checkbox");
                var update = $(this).find( "span.grid-selected-count" );
+               update.text("");
                $(checkboxes).each( function() {
                    $(this).change( function() {
                        var n = $(checkboxes).filter("[checked]").size();
@@ -834,6 +835,7 @@
             <% num_rows_rendered = 1 %>
         %endif
         %for i, item in enumerate( query ):
+            <% encoded_id = trans.security.encode_id( item.id ) %>
             <tr \
             %if current_item == item:
                 class="current" \
@@ -842,7 +844,7 @@
                 ## Item selection column
                 %if show_item_checkboxes:
                     <td style="width: 1.5em;">
-                            <input type="checkbox" name="id" value=${trans.security.encode_id( item.id )} class="grid-row-select-checkbox" />
+                        <input type="checkbox" id="${encoded_id}" name="id" value="${encoded_id}" class="grid-row-select-checkbox" />
                     </td>
                 %endif
                 ## Data columns
@@ -875,12 +877,12 @@
                                     cls = "menubutton"
                                 if column.attach_popup and href:
                                     cls = "menubutton split"
-                                    
+
                             %>
-                            %if href:                    
+                            %if href:
                                 <td><div id="${id}" class="${cls}" style="float: left;"><a class="label" href="${href}">${v}</a></td>
                             %else:
-                                <td><div id="${id}" class="${cls}">${v}</div></td>
+                                <td><div id="${id}" class="${cls}"><label for="${encoded_id}">${v}</label></div></td>
                             %endif
                         %endfor
                     %endif

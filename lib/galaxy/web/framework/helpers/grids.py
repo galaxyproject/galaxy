@@ -12,7 +12,7 @@ log = logging.getLogger( __name__ )
 
 class Grid( object ):
     """
-    Specifieds the content and format of a grid (data table).
+    Specifies the content and format of a grid (data table).
     """
     title = ""
     exposed = True
@@ -157,10 +157,10 @@ class Grid( object ):
             if sort_key.startswith( "-" ):
                 sort_key = sort_key[1:]
                 sort_order = 'desc'
-                query = query.order_by( self.model_class.table.c.get( sort_key ).desc() )
+                query = query.order_by( func.lower( self.model_class.table.c.get( sort_key ) ).desc() )
             else:
                 sort_order = 'asc'
-                query = query.order_by( self.model_class.table.c.get( sort_key ).asc() )
+                query = query.order_by( func.lower( self.model_class.table.c.get( sort_key ) ).asc() )
         extra_url_args['sort'] = encoded_sort_key
         
         # There might be a current row
@@ -230,7 +230,7 @@ class Grid( object ):
                 else:
                     new_kwargs[ 'id' ] = trans.security.encode_id( id )
             return url_for( **new_kwargs )
-        
+
         async_request = ( ( self.use_async ) and ( 'async' in kwargs ) and ( kwargs['async'] in [ 'True', 'true'] ) )
         return trans.fill_template( iff( async_request, self.async_template, self.template),
                                     grid=self,

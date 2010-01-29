@@ -1,16 +1,3 @@
-body, html {
-    height: 100%;
-}
-
-body {
-    margin: 0 0;
-    padding: 0;
-    font-family: verdana;
-    font-size: 12px;
-    overflow: hidden;
-    background: #eeeeee;
-}
-
 #content {
     width: 100%;
 }
@@ -22,10 +9,6 @@ body {
 #nav-container {
     position: fixed;
     bottom: 0;
-}
-
-input {
-    font-size: 100%;
 }
 
 /*canvas{ 
