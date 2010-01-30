@@ -763,6 +763,7 @@ class ColumnListParameter( SelectToolParameter ):
         self.force_select = string_as_bool( elem.get( "force_select", True ))
         self.accept_default = string_as_bool( elem.get( "accept_default", False ))
         self.data_ref = elem.get( "data_ref", None )
+        self.default_value = elem.get( "default_value", None )
         self.is_dynamic = True
     def from_html( self, value, trans=None, context={} ):
         """
@@ -801,7 +802,7 @@ class ColumnListParameter( SelectToolParameter ):
         # Generate options
         if not dataset.metadata.columns:
             if self.accept_default:
-                column_list.append( '1' )
+                column_list.append( self.default_value or '1' )
             return column_list
         if not self.force_select:
             column_list.append( 'None' )
@@ -823,6 +824,13 @@ class ColumnListParameter( SelectToolParameter ):
             if col != 'None':
                 options.append( ( 'c' + col, col, False ) )
         return options
+    def get_initial_value( self, trans, context ):
+        if self.default_value is not None:
+            # dataset not ready / in workflow / etc
+            if self.need_late_validation( trans, context ):
+                return UnvalidatedValue( self.default_value )
+            return self.default_value
+        return SelectToolParameter.get_initial_value( self, trans, context )
     def get_legal_values( self, trans, other_values ):
         return set( self.get_column_list( trans, other_values ) )
     def get_dependencies( self ):
