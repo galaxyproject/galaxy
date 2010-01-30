@@ -1379,15 +1379,19 @@ class TwillTestCase( unittest.TestCase ):
         check_str = "Library '%s' has been renamed to '%s'" % ( old_name, name )
         self.check_page_for_string( check_str )
         self.home()
-    def add_library_info_template( self, cntrller, library_id, form_id, form_name ):
+    def add_info_template( self, cntrller, item_type, library_id, form_id, form_name, folder_id=None, ldda_id=None ):
         """Add a new info template to a library item"""
         self.home()
-        url = "%s/library_common/info_template?cntrller=%s&library_id=%s&response_action='browse_library'" % ( self.url, cntrller, library_id )
+        if item_type == 'library':
+            url = "%s/library_common/add_info_template?cntrller=%s&item_type=%s&library_id=%s" % ( self.url, cntrller, item_type, library_id )
+        elif item_type == 'folder':
+            url = "%s/library_common/add_info_template?cntrller=%s&item_type=%s&library_id=%s&folder_id=%s" % ( self.url, cntrller, item_type, library_id, folder_id )
+        elif item_type == 'ldda':
+            url = "%s/library_common/add_info_template?cntrller=%s&item_type=%s&library_id=%s&folder_id=%s&ldda_id=%s" % ( self.url, cntrller, item_type, library_id, folder_id, ldda_id )
         self.visit_url( url )
         self.check_page_for_string ( "Select a form on which to base the template" )
-        tc.fv( '1', 'library_id', library_id )
         tc.submit( 'add_info_template_button' )
-        self.check_page_for_string = 'An information template based on the form "%s" has been added to this data library.' % form_name
+        self.check_page_for_string = 'An information template based on the form "%s" has been added to this' % form_name
         self.home()
     def library_info( self, library_id, library_name, ele_1_field_name, ele_1_contents, ele_2_field_name, ele_2_contents, controller='library_admin' ):
         """Add information to a library using an existing template with 2 elements"""
@@ -1398,17 +1402,6 @@ class TwillTestCase( unittest.TestCase ):
         tc.fv( '2', ele_1_field_name, ele_1_contents )
         tc.fv( '2', ele_2_field_name, ele_2_contents )
         tc.submit( 'create_new_info_button' )
-        self.home()
-    def add_folder_info_template( self, cntrller, library_id, folder_id, form_id, form_name ):
-        """Add a new info template to a folder"""
-        self.home()
-        url = "%s/library_common/info_template?cntrller=%s&library_id=%s&folder_id=%s&response_action='folder_info'" % \
-            ( self.url, cntrller, library_id, folder_id )
-        self.visit_url( url )
-        self.check_page_for_string ( "Select a form on which to base the template" )
-        tc.fv( '1', 'library_id', library_id )
-        tc.submit( 'add_info_template_button' )
-        self.check_page_for_string = 'An information template based on the form "%s" has been added to this folder.' % form_name
         self.home()
     def add_folder( self, controller, library_id, folder_id, name='Folder One', description='This is Folder One' ):
         """Create a new folder"""

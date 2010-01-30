@@ -293,19 +293,22 @@ LibraryInfoAssociation.table = Table( 'library_info_association', metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "library_id", Integer, ForeignKey( "library.id" ), index=True ),
     Column( "form_definition_id", Integer, ForeignKey( "form_definition.id" ), index=True ),
-    Column( "form_values_id", Integer, ForeignKey( "form_values.id" ), index=True ) )
+    Column( "form_values_id", Integer, ForeignKey( "form_values.id" ), index=True ),
+    Column( "deleted", Boolean, index=True, default=False ) )
 
 LibraryFolderInfoAssociation.table = Table( 'library_folder_info_association', metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "library_folder_id", Integer, ForeignKey( "library_folder.id" ), nullable=True, index=True ),
     Column( "form_definition_id", Integer, ForeignKey( "form_definition.id" ), index=True ),
-    Column( "form_values_id", Integer, ForeignKey( "form_values.id" ), index=True ) )
+    Column( "form_values_id", Integer, ForeignKey( "form_values.id" ), index=True ),
+    Column( "deleted", Boolean, index=True, default=False ) )
 
 LibraryDatasetDatasetInfoAssociation.table = Table( 'library_dataset_dataset_info_association', metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "library_dataset_dataset_association_id", Integer, ForeignKey( "library_dataset_dataset_association.id" ), nullable=True, index=True ),
     Column( "form_definition_id", Integer, ForeignKey( "form_definition.id" ), index=True ),
-    Column( "form_values_id", Integer, ForeignKey( "form_values.id" ), index=True ) )
+    Column( "form_values_id", Integer, ForeignKey( "form_values.id" ), index=True ),
+    Column( "deleted", Boolean, index=True, default=False ) )
 
 Job.table = Table( "job", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -1080,7 +1083,7 @@ assign_mapper( context, Library, Library.table,
 
 assign_mapper( context, LibraryInfoAssociation, LibraryInfoAssociation.table,
                properties=dict( library=relation( Library,
-                                                  primaryjoin=( LibraryInfoAssociation.table.c.library_id == Library.table.c.id ), backref="info_association" ),
+                                                  primaryjoin=( ( LibraryInfoAssociation.table.c.library_id == Library.table.c.id ) & ( not_( LibraryInfoAssociation.table.c.deleted ) ) ), backref="info_association" ),
                                 template=relation( FormDefinition,
                                                    primaryjoin=( LibraryInfoAssociation.table.c.form_definition_id == FormDefinition.table.c.id ) ), 
                                 info=relation( FormValues,
@@ -1108,7 +1111,7 @@ assign_mapper( context, LibraryFolder, LibraryFolder.table,
 
 assign_mapper( context, LibraryFolderInfoAssociation, LibraryFolderInfoAssociation.table,
                properties=dict( folder=relation( LibraryFolder,
-                                                 primaryjoin=( LibraryFolderInfoAssociation.table.c.library_folder_id == LibraryFolder.table.c.id ), backref="info_association" ),
+                                                 primaryjoin=( ( LibraryFolderInfoAssociation.table.c.library_folder_id == LibraryFolder.table.c.id ) & ( not_( LibraryFolderInfoAssociation.table.c.deleted ) ) ), backref="info_association" ),
                                 template=relation( FormDefinition,
                                                    primaryjoin=( LibraryFolderInfoAssociation.table.c.form_definition_id == FormDefinition.table.c.id ) ), 
                                 info=relation( FormValues,
@@ -1147,7 +1150,7 @@ assign_mapper( context, LibraryDatasetDatasetAssociation, LibraryDatasetDatasetA
 
 assign_mapper( context, LibraryDatasetDatasetInfoAssociation, LibraryDatasetDatasetInfoAssociation.table,
                properties=dict( library_dataset_dataset_association=relation( LibraryDatasetDatasetAssociation,
-                                                                              primaryjoin=( LibraryDatasetDatasetInfoAssociation.table.c.library_dataset_dataset_association_id == LibraryDatasetDatasetAssociation.table.c.id ), backref="info_association" ),
+                                                                              primaryjoin=( ( LibraryDatasetDatasetInfoAssociation.table.c.library_dataset_dataset_association_id == LibraryDatasetDatasetAssociation.table.c.id ) & ( not_( LibraryDatasetDatasetInfoAssociation.table.c.deleted ) ) ), backref="info_association" ),
                                 template=relation( FormDefinition,
                                                    primaryjoin=( LibraryDatasetDatasetInfoAssociation.table.c.form_definition_id == FormDefinition.table.c.id ) ), 
                                 info=relation( FormValues,

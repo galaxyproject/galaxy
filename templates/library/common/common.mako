@@ -1,31 +1,24 @@
-<%def name="render_template_info( cntrller, library_item, library_id, response_action, widgets, editable=True )">
+<%def name="render_template_info( cntrller, item_type, library_id, widgets, folder_id=None, ldda_id=None, editable=True )">
     <%
-        library_item_type = 'unknown type'
-        library_item_desc = ''
-        if isinstance( library_item, trans.app.model.Library ):
-            library_item_type = 'library'
-            library_item_desc = 'library'
-        elif isinstance( library_item, trans.app.model.LibraryFolder ):
-            library_item_type = 'folder'
-            library_item_desc = 'folder'
-        elif isinstance( library_item, trans.app.model.LibraryDataset ):
-            library_item_type = 'library_dataset'
-            library_item_desc = 'dataset'
-        elif isinstance( library_item, trans.app.model.LibraryDatasetDatasetAssociation ):
-            library_item_type = 'library_dataset_dataset_association'
-            library_item_desc = 'library dataset'
+        if item_type == 'library':
+            item_desc = 'library'
+            item = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( library_id ) )
+        elif item_type == 'folder':
+            item_desc = 'folder'
+            item = trans.sa_session.query( trans.app.model.LibraryFolder ).get( trans.security.decode_id( folder_id ) )
+        elif item_type == 'ldda':
+            item_desc = 'dataset'
+            item = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( ldda_id ) )
         if cntrller == 'library':
             current_user_roles = trans.get_current_user_roles()
     %>
     %if widgets:
         <p/>
         <div class="toolForm">
-            <div class="toolFormTitle">Other information about ${library_item_desc} ${library_item.name}</div>
+            <div class="toolFormTitle">Other information about ${item_desc} ${item.name}</div>
             <div class="toolFormBody">
-                %if editable and ( cntrller=='library_admin' or trans.app.security_agent.can_modify_library_item( current_user_roles, library_item ) ):
-                    <form name="edit_info" action="${h.url_for( controller='library_common', action='edit_template_info', cntrller=cntrller, library_id=library_id, response_action=response_action, num_widgets=len( widgets ) )}" method="post">
-                        <input type="hidden" name="library_item_id" value="${trans.security.encode_id( library_item.id )}"/>
-                        <input type="hidden" name="library_item_type" value="${library_item_type}"/>
+                %if editable and ( cntrller=='library_admin' or trans.app.security_agent.can_modify_library_item( current_user_roles, item ) ):
+                    <form name="edit_info" action="${h.url_for( controller='library_common', action='edit_template_info', cntrller=cntrller, item_type=item_type, library_id=library_id, num_widgets=len( widgets ), folder_id=folder_id, ldda_id=ldda_id, show_deleted=show_deleted )}" method="post">
                         %for i, field in enumerate( widgets ):
                             <div class="form-row">
                                 <label>${field[ 'label' ]}</label>

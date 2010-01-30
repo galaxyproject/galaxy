@@ -576,10 +576,11 @@ class TestSecurityAndLibraries( TwillTestCase ):
         assert form_one is not None, 'Problem retrieving form named (%s) from the database' % form_name
         # Add a new information template to the library
         template_name = 'Library Template 1'
-        self.add_library_info_template( 'library_admin',
-                                        self.security.encode_id( library_one.id ),
-                                        str( form_one.id ),
-                                        form_one.name )
+        self.add_info_template( 'library_admin',
+                                'library',
+                                self.security.encode_id( library_one.id ),
+                                str( form_one.id ),
+                                form_one.name )
         # Make sure the template fields are displayed on the library information page
         field_dict = form_one.fields[ 0 ]
         global form_one_field_label
@@ -1991,11 +1992,12 @@ class TestSecurityAndLibraries( TwillTestCase ):
                              .first()
         # Add an information template to the folder
         template_name = 'Folder Template 1'
-        self.add_folder_info_template( 'library',
-                                        self.security.encode_id( library_one.id ),
-                                        self.security.encode_id( folder_x.id ),
-                                        self.security.encode_id( form_one.id ),
-                                        form_one.name )
+        self.add_info_template( 'library',
+                                'folder',
+                                self.security.encode_id( library_one.id ),
+                                self.security.encode_id( form_one.id ),
+                                form_one.name,
+                                folder_id=self.security.encode_id( folder_x.id ) )
         # Modify the folder's information
         contents = '%s folder contents' % form_one_field_label
         new_name = "Root Folder's Folder Y"
@@ -2033,10 +2035,11 @@ class TestSecurityAndLibraries( TwillTestCase ):
         assert ldda_x is not None, 'Problem retrieving ldda_x from the database'
         # Add an information template to the library
         template_name = 'Library Template 3'
-        self.add_library_info_template( 'library',
-                                        self.security.encode_id( library_three.id ),
-                                        self.security.encode_id( form_one.id ),
-                                        form_one.name )
+        self.add_info_template( 'library',
+                                'library',
+                                self.security.encode_id( library_three.id ),
+                                self.security.encode_id( form_one.id ),
+                                form_one.name )
         # Add information to the library using the template
         contents = '%s library contents' % form_one_field_label
         self.visit_url( '%s/library_common/library_info?cntrller=library&id=%s' % ( self.url, self.security.encode_id( library_three.id ) ) )

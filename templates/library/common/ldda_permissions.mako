@@ -13,7 +13,7 @@
 <br/><br/>
 <ul class="manage-table-actions">
     <li>
-        <a class="action-button" href="${h.url_for( controller='library_common', action='browse_library', cntrller=cntrller, id=library_id )}"><span>Browse this data library</span></a>
+        <a class="action-button" href="${h.url_for( controller='library_common', action='browse_library', cntrller=cntrller, id=library_id, show_deleted=show_deleted )}"><span>Browse this data library</span></a>
     </li>
 </ul>
 
@@ -59,4 +59,4 @@
 <% ldda_ids = ",".join( [ trans.security.encode_id( d.id ) for d in lddas ] ) %>
 ## LIBRARY_ACCESS is a special permission that is set only at the library level,
 ## and DATASET_MANAGE_PERMISSIONS is inherited to the dataset from the ldda.
-${render_permission_form( lddas[0], name_str, h.url_for( controller='library_common', action='ldda_permissions', cntrller=cntrller, library_id=library_id, folder_id=trans.security.encode_id( lddas[0].library_dataset.folder.id ), id=ldda_ids ), roles, do_not_render=[ 'LIBRARY_ACCESS', 'DATASET_MANAGE_PERMISSIONS' ] )}
+${render_permission_form( lddas[0], name_str, h.url_for( controller='library_common', action='ldda_permissions', cntrller=cntrller, library_id=library_id, folder_id=trans.security.encode_id( lddas[0].library_dataset.folder.id ), id=ldda_ids, show_deleted=show_deleted ), roles, do_not_render=[ 'LIBRARY_ACCESS', 'DATASET_MANAGE_PERMISSIONS' ] )}

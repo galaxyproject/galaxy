@@ -5,7 +5,7 @@
 <br/><br/>
 <ul class="manage-table-actions">
     <li>
-        <a class="action-button" href="${h.url_for( controller='library_common', action='browse_library', cntrller=cntrller, id=trans.security.encode_id( library.id ) )}"><span>Browse this data library</span></a>
+        <a class="action-button" href="${h.url_for( controller='library_common', action='browse_library', cntrller=cntrller, id=trans.security.encode_id( library.id ), show_deleted=show_deleted )}"><span>Browse this data library</span></a>
     </li>
 </ul>
 
@@ -17,7 +17,7 @@
     <div class="toolForm">
         <div class="toolFormTitle">Change library name and description</div>
         <div class="toolFormBody">
-            <form name="library" action="${h.url_for( controller='library_common', action='library_info', id=trans.security.encode_id( library.id ), cntrller=cntrller )}" method="post" >
+            <form name="library" action="${h.url_for( controller='library_common', action='library_info', id=trans.security.encode_id( library.id ), cntrller=cntrller, show_deleted=show_deleted )}" method="post" >
                 <div class="form-row">
                     <label>Name:</label>
                     <div style="float: left; width: 250px; margin-right: 10px;">
@@ -52,5 +52,5 @@
 %endif
 
 %if widgets:
-    ${render_template_info( cntrller, library, trans.security.encode_id( library.id ), 'library_info', widgets )}
+    ${render_template_info( cntrller=cntrller, item_type='library', library_id=trans.security.encode_id( library.id ), widgets=widgets )}
 %endif

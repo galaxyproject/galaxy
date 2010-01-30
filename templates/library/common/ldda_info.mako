@@ -19,7 +19,7 @@
 
 <ul class="manage-table-actions">
     <li>
-        <a class="action-button" href="${h.url_for( controller='library_common', action='browse_library', cntrller=cntrller, id=trans.security.encode_id( library.id ) )}"><span>Browse this data library</span></a>
+        <a class="action-button" href="${h.url_for( controller='library_common', action='browse_library', cntrller=cntrller, id=trans.security.encode_id( library.id ), show_deleted=show_deleted )}"><span>Browse this data library</span></a>
     </li>
 </ul>
 
@@ -41,19 +41,17 @@
             <a id="dataset-${ldda.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
             <div popupmenu="dataset-${ldda.id}-popup">
                 %if cntrller=='library_admin' or trans.app.security_agent.can_modify_library_item( current_user_roles, ldda.library_dataset ):
-                    <a class="action-button" href="${h.url_for( controller='library_common', action='ldda_edit_info', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ), id=trans.security.encode_id( ldda.id ) )}">Edit this dataset's information</a>
-                %else:
-                    <a class="action-button" href="${h.url_for( controller='library_common', action='ldda_display_info', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ), id=trans.security.encode_id( ldda.id ) )}">View this dataset's information</a>
+                    <a class="action-button" href="${h.url_for( controller='library_common', action='ldda_edit_info', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ), id=trans.security.encode_id( ldda.id ), show_deleted=show_deleted )}">Edit this dataset's information</a>
                 %endif
                 %if cntrller=='library_admin' or trans.app.security_agent.can_manage_dataset( current_user_roles, ldda.dataset ) and trans.app.security_agent.can_manage_library_item( current_user_roles, ldda.library_dataset ):
-                    <a class="action-button" href="${h.url_for( controller='library_common', action='ldda_permissions', library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ), id=trans.security.encode_id( ldda.id ) )}">Edit this dataset's permissions</a>
+                    <a class="action-button" href="${h.url_for( controller='library_common', action='ldda_permissions', library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ), id=trans.security.encode_id( ldda.id ), show_deleted=show_deleted )}">Edit this dataset's permissions</a>
                 %endif
                 %if current_version and ( cntrller=='library_admin' or trans.app.security_agent.can_modify_library_item( current_user_roles, ldda.library_dataset ) ):
-                    <a class="action-button" href="${h.url_for( controller='library_common', action='upload_library_dataset', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ), replace_id=trans.security.encode_id( ldda.library_dataset.id ) )}">Upload a new version of this dataset</a>
+                    <a class="action-button" href="${h.url_for( controller='library_common', action='upload_library_dataset', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ), replace_id=trans.security.encode_id( ldda.library_dataset.id ), show_deleted=show_deleted )}">Upload a new version of this dataset</a>
                 %endif
                 %if cntrller=='library' and ldda.has_data:
-                    <a class="action-button" href="${h.url_for( controller='library_common', action='act_on_multiple_datasets', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), ldda_ids=trans.security.encode_id( ldda.id ), do_action='add' )}">Import this dataset into your current history</a>
-                    <a class="action-button" href="${h.url_for( controller='library', action='download_dataset_from_folder', cntrller=cntrller, id=trans.security.encode_id( ldda.id ), library_id=trans.security.encode_id( library.id ) )}">Download this dataset</a>
+                    <a class="action-button" href="${h.url_for( controller='library_common', action='act_on_multiple_datasets', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), ldda_ids=trans.security.encode_id( ldda.id ), do_action='add', show_deleted=show_deleted )}">Import this dataset into your current history</a>
+                    <a class="action-button" href="${h.url_for( controller='library', action='download_dataset_from_folder', cntrller=cntrller, id=trans.security.encode_id( ldda.id ), library_id=trans.security.encode_id( library.id ), show_deleted=show_deleted )}">Download this dataset</a>
                 %endif
             </div>
         %endif
@@ -97,7 +95,7 @@
         %endif
     </div>
     %if widgets:
-        ${render_template_info( 'library_common', ldda, trans.security.encode_id( library.id ), 'ldda_display_info', widgets, editable=False )}
+        ${render_template_info( cntrller=cntrller, item_type='ldda', library_id=library_id, widgets=widgets, folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ), ldda_id=trans.security.encode_id( ldda.id ), editable=False )}
     %endif
     %if current_version:
         <% expired_lddas = [ e_ldda for e_ldda in ldda.library_dataset.expired_datasets ] %>
@@ -105,7 +103,7 @@
             <div class="toolFormTitle">Expired versions of ${ldda.name}</div>
             %for expired_ldda in expired_lddas:
                 <div class="form-row">
-                    <a href="${h.url_for( controller='library_common', action='ldda_display_info', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( expired_ldda.library_dataset.folder.id ), id=trans.security.encode_id( expired_ldda.id ) )}">${expired_ldda.name}</a>
+                    <a href="${h.url_for( controller='library_common', action='ldda_display_info', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( expired_ldda.library_dataset.folder.id ), id=trans.security.encode_id( expired_ldda.id ), show_deleted=show_deleted )}">${expired_ldda.name}</a>
                 </div>
             %endfor
         %endif

@@ -5,7 +5,7 @@
 <br/><br/>
 <ul class="manage-table-actions">
     <li>
-        <a class="action-button" href="${h.url_for( controller='library_common', action='browse_library', cntrller=cntrller, id=trans.security.encode_id( library.id ) )}"><span>Browse this data library</span></a>
+        <a class="action-button" href="${h.url_for( controller='library_common', action='browse_library', cntrller=cntrller, id=trans.security.encode_id( library.id ), show_deleted=show_deleted )}"><span>Browse this data library</span></a>
     </li>
 </ul>
 
@@ -14,5 +14,5 @@
 %endif
 
 %if cntrller == 'library_admin' or trans.app.security_agent.can_manage_library_item( current_user_roles, library ):
-    ${render_permission_form( library, library.name, h.url_for( controller='library_common', action='library_permissions', cntrller=cntrller, id=trans.security.encode_id( library.id ) ), roles )}
+    ${render_permission_form( library, library.name, h.url_for( controller='library_common', action='library_permissions', cntrller=cntrller, id=trans.security.encode_id( library.id ), show_deleted=show_deleted ), roles )}
 %endif

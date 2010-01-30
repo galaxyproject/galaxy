@@ -84,41 +84,39 @@ class LibraryCommon( BaseController ):
         if not library_id:
             # To handle bots
             msg = "You must specify a library id."
-            return trans.response.send_redirect( web.url_for( controller=cntrller,
-                                                              action='browse_libraries',
-                                                              default_action=params.get( 'default_action', None ),
-                                                              msg=util.sanitize_text( msg ),
-                                                              messagetype='error' ) )
+            messagetype = 'error'
         library = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( library_id ) )
         if not library:
             # To handle bots
             msg = "Invalid library id ( %s )." % str( library_id )
-            return trans.response.send_redirect( web.url_for( controller=cntrller,
-                                                              action='browse_libraries',
-                                                              default_action=params.get( 'default_action', None ),
-                                                              msg=util.sanitize_text( msg ),
-                                                              messagetype='error' ) )
-        show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
-        created_ldda_ids = params.get( 'created_ldda_ids', '' )
-        hidden_folder_ids = util.listify( params.get( 'hidden_folder_ids', '' ) )
-        current_user_roles = trans.get_current_user_roles()
-        if created_ldda_ids and not msg:
-            msg = "%d datasets are uploading in the background to the library '%s' (each is selected).  "  % \
-                ( len( created_ldda_ids.split( ',' ) ), library.name )
-            msg += "Don't navigate away from Galaxy or use the browser's \"stop\" or \"reload\" buttons (on this tab) until the "
-            msg += "message \"This dataset is uploading\" is cleared from the \"Information\" column below for each selected dataset."
-            messagetype = "info"
-        return trans.fill_template( '/library/common/browse_library.mako',
-                                    cntrller=cntrller,
-                                    library=library,
-                                    created_ldda_ids=created_ldda_ids,
-                                    hidden_folder_ids=hidden_folder_ids,
-                                    default_action=params.get( 'default_action', None ),
-                                    show_deleted=show_deleted,
-                                    comptypes=comptypes,
-                                    current_user_roles=current_user_roles,
-                                    msg=msg,
-                                    messagetype=messagetype )
+            messagetype = 'error'
+        else:
+            show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
+            created_ldda_ids = params.get( 'created_ldda_ids', '' )
+            hidden_folder_ids = util.listify( params.get( 'hidden_folder_ids', '' ) )
+            current_user_roles = trans.get_current_user_roles()
+            if created_ldda_ids and not msg:
+                msg = "%d datasets are uploading in the background to the library '%s' (each is selected).  "  % \
+                    ( len( created_ldda_ids.split( ',' ) ), library.name )
+                msg += "Don't navigate away from Galaxy or use the browser's \"stop\" or \"reload\" buttons (on this tab) until the "
+                msg += "message \"This job is running\" is cleared from the \"Information\" column below for each selected dataset."
+                messagetype = "info"
+            return trans.fill_template( '/library/common/browse_library.mako',
+                                        cntrller=cntrller,
+                                        library=library,
+                                        created_ldda_ids=created_ldda_ids,
+                                        hidden_folder_ids=hidden_folder_ids,
+                                        default_action=params.get( 'default_action', None ),
+                                        show_deleted=show_deleted,
+                                        comptypes=comptypes,
+                                        current_user_roles=current_user_roles,
+                                        msg=msg,
+                                        messagetype=messagetype )
+        return trans.response.send_redirect( web.url_for( controller=cntrller,
+                                                          action='browse_libraries',
+                                                          default_action=params.get( 'default_action', None ),
+                                                          msg=util.sanitize_text( msg ),
+                                                          messagetype=messagetype ) )
     @web.expose
     def library_info( self, trans, cntrller, **kwd ):
         params = util.Params( kwd )
@@ -129,6 +127,7 @@ class LibraryCommon( BaseController ):
         # See if we have any associated templates
         widgets = library.get_template_widgets( trans )
         current_user_roles = trans.get_current_user_roles()
+        show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
         if params.get( 'rename_library_button', False ):
             old_name = library.name
             new_name = util.restore_text( params.name )
@@ -149,6 +148,7 @@ class LibraryCommon( BaseController ):
                                                                   action='library_info',
                                                                   cntrller=cntrller,
                                                                   id=trans.security.encode_id( library.id ),
+                                                                  show_deleted=show_deleted,
                                                                   msg=util.sanitize_text( msg ),
                                                                   messagetype='done' ) )
         return trans.fill_template( '/library/common/library_info.mako',
@@ -156,6 +156,7 @@ class LibraryCommon( BaseController ):
                                     library=library,
                                     widgets=widgets,
                                     current_user_roles=current_user_roles,
+                                    show_deleted=show_deleted,
                                     msg=msg,
                                     messagetype=messagetype )
     @web.expose
@@ -166,6 +167,7 @@ class LibraryCommon( BaseController ):
         library_id = params.get( 'id', None )
         library = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( library_id ) )
         current_user_roles = trans.get_current_user_roles()
+        show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
         if params.get( 'update_roles_button', False ):
             # The user clicked the Save button on the 'Associate With Roles' form
             permissions = {}
@@ -181,6 +183,7 @@ class LibraryCommon( BaseController ):
                                                               action='library_permissions',
                                                               cntrller=cntrller,
                                                               id=trans.security.encode_id( library.id ),
+                                                              show_deleted=show_deleted,
                                                               msg=util.sanitize_text( msg ),
                                                               messagetype='done' ) )
         roles = trans.app.security_agent.get_legitimate_roles( trans, library )
@@ -189,6 +192,7 @@ class LibraryCommon( BaseController ):
                                     library=library,
                                     current_user_roles=current_user_roles,
                                     roles=roles,
+                                    show_deleted=show_deleted,
                                     msg=msg,
                                     messagetype=messagetype )
     @web.expose
@@ -196,6 +200,7 @@ class LibraryCommon( BaseController ):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
+        show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
         folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( trans.security.decode_id( parent_id ) )
         if not folder:
             msg = "Invalid parent folder id (%s) specified" % str( parent_id )
@@ -203,6 +208,7 @@ class LibraryCommon( BaseController ):
                                                               action='browse_library',
                                                               cntrller=cntrller,
                                                               id=library_id,
+                                                              show_deleted=show_deleted,
                                                               msg=util.sanitize_text( msg ),
                                                               messagetype='error' ) )
         if params.new == 'submitted':
@@ -222,12 +228,14 @@ class LibraryCommon( BaseController ):
                                                               action='browse_library',
                                                               cntrller=cntrller,
                                                               id=library_id,
+                                                              show_deleted=show_deleted,
                                                               msg=util.sanitize_text( msg ),
                                                               messagetype='done' ) )
         return trans.fill_template( '/library/common/new_folder.mako',
                                     cntrller=cntrller,
                                     library_id=library_id,
                                     folder=folder,
+                                    show_deleted=show_deleted,
                                     msg=msg,
                                     messagetype=messagetype )
     @web.expose
@@ -235,6 +243,7 @@ class LibraryCommon( BaseController ):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
+        show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
         folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( trans.security.decode_id( id ) )
         current_user_roles = trans.get_current_user_roles()
         # See if we have any associated templates
@@ -263,13 +272,15 @@ class LibraryCommon( BaseController ):
                                     library_id=library_id,
                                     widgets=widgets,
                                     current_user_roles=current_user_roles,
-                                    msg=util.sanitize_text( msg ),
+                                    show_deleted=show_deleted,
+                                    msg=msg,
                                     messagetype=messagetype )
     @web.expose
     def folder_permissions( self, trans, cntrller, id, library_id, **kwd ):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
+        show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
         folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( trans.security.decode_id( id ) )
         if not folder:
             msg = "Invalid folder specified, id: %s" % str( id )
@@ -277,6 +288,7 @@ class LibraryCommon( BaseController ):
                                                               action='browse_library',
                                                               cntrller=cntrller,
                                                               id=library_id,
+                                                              show_deleted=show_deleted,
                                                               msg=util.sanitize_text( msg ),
                                                               messagetype='error' ) )
         current_user_roles = trans.get_current_user_roles()
@@ -302,6 +314,7 @@ class LibraryCommon( BaseController ):
                                                               cntrller=cntrller,
                                                               id=trans.security.encode_id( folder.id ),
                                                               library_id=library_id,
+                                                              show_deleted=show_deleted,
                                                               msg=util.sanitize_text( msg ),
                                                               messagetype=messagetype ) )
         # If the library is public all roles are legitimate, but if the library is restricted, only those
@@ -314,6 +327,7 @@ class LibraryCommon( BaseController ):
                                     library_id=library_id,
                                     current_user_roles=current_user_roles,
                                     roles=roles,
+                                    show_deleted=show_deleted,
                                     msg=msg,
                                     messagetype=messagetype )
     @web.expose
@@ -321,6 +335,7 @@ class LibraryCommon( BaseController ):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
+        show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
         ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( id ) )
         if not ldda:
             msg = "Invalid LibraryDatasetDatasetAssociation specified, id: %s" % str( id )
@@ -328,6 +343,7 @@ class LibraryCommon( BaseController ):
                                                               action='browse_library',
                                                               cntrller=cntrller,
                                                               id=library_id,
+                                                              show_deleted=show_deleted,
                                                               msg=util.sanitize_text( msg ),
                                                               messagetype='error' ) )
         dbkey = params.get( 'dbkey', '?' )
@@ -359,6 +375,7 @@ class LibraryCommon( BaseController ):
                                         file_formats=file_formats,
                                         widgets=widgets,
                                         current_user_roles=current_user_roles,
+                                        show_deleted=show_deleted,
                                         msg=msg,
                                         messagetype=messagetype )
         elif params.get( 'save', False ):
@@ -400,6 +417,7 @@ class LibraryCommon( BaseController ):
                                         file_formats=file_formats,
                                         widgets=widgets,
                                         current_user_roles=current_user_roles,
+                                        show_deleted=show_deleted,
                                         msg=msg,
                                         messagetype=messagetype )
         elif params.get( 'detect', False ):
@@ -425,6 +443,7 @@ class LibraryCommon( BaseController ):
                                         file_formats=file_formats,
                                         widgets=widgets,
                                         current_user_roles=current_user_roles,
+                                        show_deleted=show_deleted,
                                         msg=msg,
                                         messagetype=messagetype )
         if cntrller=='library_admin' or trans.app.security_agent.can_modify_library_item( current_user_roles, ldda ):
@@ -442,6 +461,7 @@ class LibraryCommon( BaseController ):
                                     file_formats=file_formats,
                                     widgets=widgets,
                                     current_user_roles=current_user_roles,
+                                    show_deleted=show_deleted,
                                     msg=msg,
                                     messagetype=messagetype )
     @web.expose
@@ -457,6 +477,7 @@ class LibraryCommon( BaseController ):
                                                               action='browse_library',
                                                               cntrller=cntrller,
                                                               id=library_id,
+                                                              show_deleted=show_deleted,
                                                               msg=util.sanitize_text( msg ),
                                                               messagetype='error' ) )
         library = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( library_id ) )
@@ -470,6 +491,7 @@ class LibraryCommon( BaseController ):
                                     show_deleted=show_deleted,
                                     widgets=widgets,
                                     current_user_roles=current_user_roles,
+                                    show_deleted=show_deleted,
                                     msg=msg,
                                     messagetype=messagetype )
     @web.expose
@@ -477,6 +499,7 @@ class LibraryCommon( BaseController ):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
+        show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
         ids = util.listify( id )
         lddas = []
         for id in [ trans.security.decode_id( id ) for id in ids ]:
@@ -487,6 +510,7 @@ class LibraryCommon( BaseController ):
                                                            action='browse_library',
                                                            cntrller=cntrller,
                                                            id=library_id,
+                                                           show_deleted=show_deleted,
                                                            msg=util.sanitize_text( msg ),
                                                            messagetype='error' ) )
             lddas.append( ldda )
@@ -544,6 +568,7 @@ class LibraryCommon( BaseController ):
                                         lddas=lddas,
                                         library_id=library_id,
                                         roles=roles,
+                                        show_deleted=show_deleted,
                                         msg=msg,
                                         messagetype=messagetype )
         if len( ids ) > 1:
@@ -568,6 +593,7 @@ class LibraryCommon( BaseController ):
                                                                action='browse_library',
                                                                cntrller=cntrller,
                                                                id=library_id,
+                                                               show_deleted=show_deleted,
                                                                msg=util.sanitize_text( msg ),
                                                                messagetype='error' ) )
         # Display permission form, permissions will be updated for all lddas simultaneously.
@@ -576,6 +602,7 @@ class LibraryCommon( BaseController ):
                                     lddas=lddas,
                                     library_id=library_id,
                                     roles=roles,
+                                    show_deleted=show_deleted,
                                     msg=msg,
                                     messagetype=messagetype )
     @web.expose
@@ -674,7 +701,8 @@ class LibraryCommon( BaseController ):
                                                                            cntrller=cntrller,
                                                                            id=library_id,
                                                                            default_action=default_action,
-                                                                           created_ldda_ids=",".join( ldda_id_list ), 
+                                                                           created_ldda_ids=",".join( ldda_id_list ),
+                                                                           show_deleted=show_deleted,
                                                                            msg=util.sanitize_text( msg ), 
                                                                            messagetype='done' ) )
                         
@@ -686,6 +714,7 @@ class LibraryCommon( BaseController ):
                                                                cntrller=cntrller,
                                                                id=library_id,
                                                                created_ldda_ids=",".join( [ str( v.id ) for v in created_outputs.values() ] ),
+                                                               show_deleted=show_deleted,
                                                                msg=util.sanitize_text( msg ),
                                                                messagetype=messagetype ) )
         # See if we have any inherited templates, but do not inherit contents.
@@ -708,7 +737,7 @@ class LibraryCommon( BaseController ):
         history = trans.get_history()
         trans.sa_session.refresh( history )
         # If we're using nginx upload, override the form action
-        action = web.url_for( controller='library_common', action='upload_library_dataset', cntrller=cntrller )
+        action = web.url_for( controller='library_common', action='upload_library_dataset', cntrller=cntrller, show_deleted=show_deleted )
         if upload_option == 'upload_file' and trans.app.config.nginx_upload_path:
             # url_for is intentionally not used on the base URL here -
             # nginx_upload_path is expected to include the proxy prefix if the
@@ -731,6 +760,7 @@ class LibraryCommon( BaseController ):
                                     roles=roles,
                                     history=history,
                                     widgets=widgets,
+                                    show_deleted=show_deleted,
                                     msg=msg,
                                     messagetype=messagetype )
     def upload_dataset( self, trans, cntrller, library_id, folder_id, replace_dataset=None, **kwd ):
@@ -884,18 +914,10 @@ class LibraryCommon( BaseController ):
     @web.expose
     def add_history_datasets_to_library( self, trans, cntrller, library_id, folder_id, hda_ids='', **kwd ):
         params = util.Params( kwd )
+        show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
-        try:
-            folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( trans.security.decode_id( folder_id ) )
-        except:
-            msg = "Invalid folder id: %s" % str( folder_id )
-            return trans.response.send_redirect( web.url_for( controller='library_common',
-                                                              action='browse_library',
-                                                              cntrller=cntrller,
-                                                              id=library_id,
-                                                              msg=util.sanitize_text( msg ),
-                                                              messagetype='error' ) )
+        folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( trans.security.decode_id( folder_id ) )
         replace_id = params.get( 'replace_id', None )
         if replace_id:
             replace_dataset = trans.sa_session.query( trans.app.model.LibraryDataset ).get( trans.security.decode_id( replace_id ) )
@@ -910,6 +932,7 @@ class LibraryCommon( BaseController ):
                                                               action='browse_library',
                                                               cntrller=cntrller,
                                                               id=library_id,
+                                                              show_deleted=show_deleted,
                                                               msg=util.sanitize_text( msg ),
                                                               messagetype='error' ) )
         if params.get( 'add_history_datasets_to_library_button', False ):
@@ -936,6 +959,7 @@ class LibraryCommon( BaseController ):
                                                                           action='browse_library',
                                                                           cntrller=cntrller,
                                                                           id=library_id,
+                                                                          show_deleted=show_deleted,
                                                                           msg=util.sanitize_text( msg ),
                                                                           messagetype='error' ) )
                 if created_ldda_ids:
@@ -970,6 +994,7 @@ class LibraryCommon( BaseController ):
                                                                       cntrller=cntrller,
                                                                       id=library_id,
                                                                       created_ldda_ids=created_ldda_ids,
+                                                                      show_deleted=show_deleted,
                                                                       msg=util.sanitize_text( msg ),
                                                                       messagetype='done' ) )
             else:
@@ -998,44 +1023,43 @@ class LibraryCommon( BaseController ):
                                             roles=roles,
                                             history=history,
                                             widgets=[],
+                                            show_deleted=show_deleted,
                                             msg=msg,
                                             messagetype=messagetype )
     @web.expose
     def download_dataset_from_folder( self, trans, cntrller, id, library_id=None, **kwd ):
         """Catches the dataset id and displays file contents as directed"""
-        # id must refer to a LibraryDatasetDatasetAssociation object
-        ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( id )
+        show_deleted = util.string_as_bool( kwd.get( 'show_deleted', False ) )
+        ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( id ) )
         if not ldda.dataset:
             msg = 'Invalid LibraryDatasetDatasetAssociation id %s received for file downlaod' % str( id )
-            return trans.response.send_redirect( web.url_for( controller='library_common',
-                                                              action='browse_library',
-                                                              cntrller=cntrller,
-                                                              id=library_id,
-                                                              msg=util.sanitize_text( msg ),
-                                                              messagetype='error' ) )
-        mime = trans.app.datatypes_registry.get_mimetype_by_extension( ldda.extension.lower() )
-        trans.response.set_content_type( mime )
-        fStat = os.stat( ldda.file_name )
-        trans.response.headers[ 'Content-Length' ] = int( fStat.st_size )
-        valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-        fname = ldda.name
-        fname = ''.join( c in valid_chars and c or '_' for c in fname )[ 0:150 ]
-        trans.response.headers[ "Content-Disposition" ] = "attachment; filename=GalaxyLibraryDataset-%s-[%s]" % ( str( id ), fname )
-        try:
-            return open( ldda.file_name )
-        except: 
-            msg = 'This dataset contains no content'
-            return trans.response.send_redirect( web.url_for( controller='library_common',
-                                                              action='browse_library',
-                                                              cntrller=cntrller,
-                                                              id=library_id,
-                                                              msg=util.sanitize_text( msg ),
-                                                              messagetype='error' ) )
+            messagetype = 'error'
+        else:
+            mime = trans.app.datatypes_registry.get_mimetype_by_extension( ldda.extension.lower() )
+            trans.response.set_content_type( mime )
+            fStat = os.stat( ldda.file_name )
+            trans.response.headers[ 'Content-Length' ] = int( fStat.st_size )
+            valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+            fname = ldda.name
+            fname = ''.join( c in valid_chars and c or '_' for c in fname )[ 0:150 ]
+            trans.response.headers[ "Content-Disposition" ] = "attachment; filename=GalaxyLibraryDataset-%s-[%s]" % ( str( id ), fname )
+            try:
+                return open( ldda.file_name )
+            except: 
+                msg = 'This dataset contains no content'
+        return trans.response.send_redirect( web.url_for( controller='library_common',
+                                                          action='browse_library',
+                                                          cntrller=cntrller,
+                                                          id=library_id,
+                                                          show_deleted=show_deleted,
+                                                          msg=util.sanitize_text( msg ),
+                                                          messagetype='error' ) )
     @web.expose
     def library_dataset_info( self, trans, cntrller, id, library_id, **kwd ):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
+        show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
         library_dataset = trans.sa_session.query( trans.app.model.LibraryDataset ).get( trans.security.decode_id( id ) )
         if not library_dataset:
             msg = "Invalid library dataset specified, id: %s" %str( id )
@@ -1043,6 +1067,7 @@ class LibraryCommon( BaseController ):
                                                               action='browse_library',
                                                               cntrller=cntrller,
                                                               id=library_id,
+                                                              show_deleted=show_deleted,
                                                               msg=util.sanitize_text( msg ),
                                                               messagetype='error' ) )
         current_user_roles = trans.get_current_user_roles()
@@ -1070,6 +1095,7 @@ class LibraryCommon( BaseController ):
                                     library_dataset=library_dataset,
                                     library_id=library_id,
                                     current_user_roles=current_user_roles,
+                                    show_deleted=show_deleted,
                                     msg=msg,
                                     messagetype=messagetype )
     @web.expose
@@ -1077,6 +1103,7 @@ class LibraryCommon( BaseController ):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
+        show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
         library_dataset = trans.sa_session.query( trans.app.model.LibraryDataset ).get( id )
         if not library_dataset:
             msg = "Invalid library dataset specified, id: %s" %str( id )
@@ -1084,6 +1111,7 @@ class LibraryCommon( BaseController ):
                                                               action='browse_library',
                                                               cntrller=cntrller,
                                                               id=library_id,
+                                                              show_deleted=show_deleted,
                                                               msg=util.sanitize_text( msg ),
                                                               messagetype='error' ) )
         current_user_roles = trans.get_current_user_roles()
@@ -1117,6 +1145,7 @@ class LibraryCommon( BaseController ):
                                     library_id=library_id,
                                     roles=roles,
                                     current_user_roles=current_user_roles,
+                                    show_deleted=show_deleted,
                                     msg=msg,
                                     messagetype=messagetype )
     @web.expose
@@ -1126,176 +1155,135 @@ class LibraryCommon( BaseController ):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
+        show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
         if not ldda_ids:
             msg = "You must select at least one dataset"
-            return trans.response.send_redirect( web.url_for( controller='library_common',
-                                                              action='browse_library',
-                                                              cntrller=cntrller,
-                                                              id=library_id,
-                                                              msg=util.sanitize_text( msg ),
-                                                              messagetype='error' ) )
-        if not params.do_action:
+            messagetype = 'error'
+        elif not params.do_action:
             msg = "You must select an action to perform on selected datasets"
-            return trans.response.send_redirect( web.url_for( controller='library_common',
-                                                              action='browse_library',
-                                                              cntrller=cntrller,
-                                                              id=library_id,
-                                                              msg=util.sanitize_text( msg ),
-                                                              messagetype='error' ) )
-        ldda_ids = util.listify( ldda_ids )
-        if params.do_action == 'add':
-            history = trans.get_history()
-            total_imported_lddas = 0
-            msg = ''
-            messagetype = 'done'
-            for ldda_id in ldda_ids:
-                ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( ldda_id ) )
-                if ldda.dataset.state in [ 'new', 'upload', 'queued', 'running', 'empty', 'discarded' ]:
-                    msg += "Cannot import dataset (%s) since it's state is (%s).  " % ( ldda.name, ldda.dataset.state )
-                    messagetype = 'error'
-                elif ldda.dataset.state in [ 'ok', 'error' ]:
-                    hda = ldda.to_history_dataset_association( target_history=history, add_to_history=True )
-                    total_imported_lddas += 1
-            if total_imported_lddas:
-                trans.sa_session.add( history )
-                trans.sa_session.flush()
-                msg += "%i dataset(s) have been imported into your history.  " % total_imported_lddas
-            return trans.response.send_redirect( web.url_for( controller='library_common',
-                                                              action='browse_library',
-                                                              cntrller=cntrller,
-                                                              id=library_id,
-                                                              msg=util.sanitize_text( msg ),
-                                                              messagetype=messagetype ) )
-        elif params.do_action == 'manage_permissions':
-            # We need the folder containing the LibraryDatasetDatasetAssociation(s)
-            ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( ldda_ids[0] ) )
-            trans.response.send_redirect( web.url_for( controller='library_common',
-                                                       action='ldda_permissions',
-                                                       cntrller=cntrller,
-                                                       library_id=library_id,
-                                                       folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ),
-                                                       id=",".join( ldda_ids ),
-                                                       msg=util.sanitize_text( msg ),
-                                                       messagetype=messagetype ) )
-        elif params.do_action == 'delete':
-            for ldda_id in ldda_ids:
-                ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( ldda_id ) )
-                ldda.deleted = True
-                trans.sa_session.add( ldda )
-                trans.sa_session.flush()
-            msg = "The selected datasets have been removed from this data library"
-            trans.response.send_redirect( web.url_for( controller='library_common',
-                                                       action='browse_library',
-                                                       cntrller=cntrller,
-                                                       id=library_id,
-                                                       show_deleted=False,
-                                                       msg=util.sanitize_text( msg ),
-                                                       messagetype='done' ) )
+            messagetype = 'error'
         else:
-            try:
-                if params.do_action == 'zip':
-                    # Can't use mkstemp - the file must not exist first
-                    tmpd = tempfile.mkdtemp()
-                    tmpf = os.path.join( tmpd, 'library_download.' + params.do_action )
-                    if ziptype == '64':
-                        archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED, True )
-                    else:
-                        archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED )
-                    archive.add = lambda x, y: archive.write( x, y.encode('CP437') )
-                elif params.do_action == 'tgz':
-                    archive = util.streamball.StreamBall( 'w|gz' )
-                elif params.do_action == 'tbz':
-                    archive = util.streamball.StreamBall( 'w|bz2' )
-            except (OSError, zipfile.BadZipFile):
-                log.exception( "Unable to create archive for download" )
-                msg = "Unable to create archive for download, please report this error"
-                return trans.response.send_redirect( web.url_for( controller='library_common',
-                                                                  action='browse_library',
-                                                                  cntrller=cntrller,
-                                                                  id=library_id,
-                                                                  msg=util.sanitize_text( msg ),
-                                                                  messagetype='error' ) )
-            seen = []
-            current_user_roles = trans.get_current_user_roles()
-            for ldda_id in ldda_ids:
-                ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( ldda_id ) )
-                if not ldda \
-                    or not trans.app.security_agent.can_access_dataset( current_user_roles, ldda.dataset ) \
-                    or ldda.dataset.state in [ 'new', 'upload', 'queued', 'running', 'empty', 'discarded' ]:
-                    continue
-                path = ""
-                parent_folder = ldda.library_dataset.folder
-                while parent_folder is not None:
-                    # Exclude the now-hidden "root folder"
-                    if parent_folder.parent is None:
-                        path = os.path.join( parent_folder.library_root[0].name, path )
-                        break
-                    path = os.path.join( parent_folder.name, path )
-                    parent_folder = parent_folder.parent
-                path += ldda.name
-                while path in seen:
-                    path += '_'
-                seen.append( path )
-                try:
-                    archive.add( ldda.dataset.file_name, path )
-                except IOError:
-                    log.exception( "Unable to write to temporary library download archive" )
-                    msg = "Unable to create archive for download, please report this error"
-                    return trans.response.send_redirect( web.url_for( controller='library_common',
-                                                                      action='browse_library',
-                                                                      cntrller=cntrller,
-                                                                      id=library_id,
-                                                                      msg=util.sanitize_text( msg ),
-                                                                      messagetype='error' ) )
-            if params.do_action == 'zip':
-                archive.close()
-                tmpfh = open( tmpf )
-                # clean up now
-                try:
-                    os.unlink( tmpf )
-                    os.rmdir( tmpd )
-                except OSError:
-                    log.exception( "Unable to remove temporary library download archive and directory" )
-                    msg = "Unable to create archive for download, please report this error"
-                    return trans.response.send_redirect( web.url_for( controller='library_common',
-                                                                      action='browse_library',
-                                                                      cntrller=cntrller,
-                                                                      id=library_id,
-                                                                      msg=util.sanitize_text( msg ),
-                                                                      messagetype='error' ) )
-                trans.response.set_content_type( "application/x-zip-compressed" )
-                trans.response.headers[ "Content-Disposition" ] = "attachment; filename=GalaxyLibraryFiles.%s" % params.do_action
-                return tmpfh
+            ldda_ids = util.listify( ldda_ids )
+            if params.do_action == 'add':
+                history = trans.get_history()
+                total_imported_lddas = 0
+                msg = ''
+                messagetype = 'done'
+                for ldda_id in ldda_ids:
+                    ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( ldda_id ) )
+                    if ldda.dataset.state in [ 'new', 'upload', 'queued', 'running', 'empty', 'discarded' ]:
+                        msg += "Cannot import dataset (%s) since it's state is (%s).  " % ( ldda.name, ldda.dataset.state )
+                        messagetype = 'error'
+                    elif ldda.dataset.state in [ 'ok', 'error' ]:
+                        hda = ldda.to_history_dataset_association( target_history=history, add_to_history=True )
+                        total_imported_lddas += 1
+                if total_imported_lddas:
+                    trans.sa_session.add( history )
+                    trans.sa_session.flush()
+                    msg += "%i dataset(s) have been imported into your history.  " % total_imported_lddas
+            elif params.do_action == 'manage_permissions':
+                # We need the folder containing the LibraryDatasetDatasetAssociation(s)
+                ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( ldda_ids[0] ) )
+                trans.response.send_redirect( web.url_for( controller='library_common',
+                                                           action='ldda_permissions',
+                                                           cntrller=cntrller,
+                                                           library_id=library_id,
+                                                           folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ),
+                                                           id=",".join( ldda_ids ),
+                                                           show_deleted=show_deleted,
+                                                           msg=util.sanitize_text( msg ),
+                                                           messagetype=messagetype ) )
+            elif params.do_action == 'delete':
+                for ldda_id in ldda_ids:
+                    ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( ldda_id ) )
+                    ldda.deleted = True
+                    trans.sa_session.add( ldda )
+                    trans.sa_session.flush()
+                msg = "The selected datasets have been removed from this data library"
             else:
-                trans.response.set_content_type( "application/x-tar" )
-                trans.response.headers[ "Content-Disposition" ] = "attachment; filename=GalaxyLibraryFiles.%s" % params.do_action
-                archive.wsgi_status = trans.response.wsgi_status()
-                archive.wsgi_headeritems = trans.response.wsgi_headeritems()
-                return archive.stream
+                error = False
+                try:
+                    if params.do_action == 'zip':
+                        # Can't use mkstemp - the file must not exist first
+                        tmpd = tempfile.mkdtemp()
+                        tmpf = os.path.join( tmpd, 'library_download.' + params.do_action )
+                        if ziptype == '64':
+                            archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED, True )
+                        else:
+                            archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED )
+                        archive.add = lambda x, y: archive.write( x, y.encode('CP437') )
+                    elif params.do_action == 'tgz':
+                        archive = util.streamball.StreamBall( 'w|gz' )
+                    elif params.do_action == 'tbz':
+                        archive = util.streamball.StreamBall( 'w|bz2' )
+                except (OSError, zipfile.BadZipFile):
+                    error = True
+                    log.exception( "Unable to create archive for download" )
+                    msg = "Unable to create archive for download, please report this error"
+                    messagetype = 'error'
+                if not error:
+                    seen = []
+                    current_user_roles = trans.get_current_user_roles()
+                    for ldda_id in ldda_ids:
+                        ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( ldda_id ) )
+                        if not ldda \
+                            or not trans.app.security_agent.can_access_dataset( current_user_roles, ldda.dataset ) \
+                            or ldda.dataset.state in [ 'new', 'upload', 'queued', 'running', 'empty', 'discarded' ]:
+                            continue
+                        path = ""
+                        parent_folder = ldda.library_dataset.folder
+                        while parent_folder is not None:
+                            # Exclude the now-hidden "root folder"
+                            if parent_folder.parent is None:
+                                path = os.path.join( parent_folder.library_root[0].name, path )
+                                break
+                            path = os.path.join( parent_folder.name, path )
+                            parent_folder = parent_folder.parent
+                        path += ldda.name
+                        while path in seen:
+                            path += '_'
+                        seen.append( path )
+                        try:
+                            archive.add( ldda.dataset.file_name, path )
+                        except IOError:
+                            error = True
+                            log.exception( "Unable to write to temporary library download archive" )
+                            msg = "Unable to create archive for download, please report this error"
+                            messagetype = 'error'
+                    if not error:    
+                        if params.do_action == 'zip':
+                            archive.close()
+                            tmpfh = open( tmpf )
+                            # clean up now
+                            try:
+                                os.unlink( tmpf )
+                                os.rmdir( tmpd )
+                            except OSError:
+                                error = True
+                                log.exception( "Unable to remove temporary library download archive and directory" )
+                                msg = "Unable to create archive for download, please report this error"
+                                messagetype = 'error'
+                            if not error:
+                                trans.response.set_content_type( "application/x-zip-compressed" )
+                                trans.response.headers[ "Content-Disposition" ] = "attachment; filename=GalaxyLibraryFiles.%s" % params.do_action
+                                return tmpfh
+                        else:
+                            trans.response.set_content_type( "application/x-tar" )
+                            trans.response.headers[ "Content-Disposition" ] = "attachment; filename=GalaxyLibraryFiles.%s" % params.do_action
+                            archive.wsgi_status = trans.response.wsgi_status()
+                            archive.wsgi_headeritems = trans.response.wsgi_headeritems()
+                            return archive.stream
+        return trans.response.send_redirect( web.url_for( controller='library_common',
+                                                          action='browse_library',
+                                                          cntrller=cntrller,
+                                                          id=library_id,
+                                                          show_deleted=show_deleted,
+                                                          msg=util.sanitize_text( msg ),
+                                                          messagetype=messagetype ) )
     @web.expose
-    def info_template( self, trans, cntrller, library_id, response_action='library_info', id=None, folder_id=None, ldda_id=None, **kwd ):
-        # Only adding a new template to a library or folder is currently allowed.  Editing an existing template is
-        # a future enhancement.  The response_action param is the name of the method to which this method will redirect
-        # if a new template is being added to a library or folder.
-        params = util.Params( kwd )
-        msg = util.restore_text( params.get( 'msg', ''  ) )
-        messagetype = params.get( 'messagetype', 'done' )
-        if id:
-            library_item = trans.sa_session.query( trans.app.model.FormDefinition ).get( int( id ) )
-            library_item_desc = 'information template'
-            response_id = id
-        elif folder_id:
-            library_item = trans.sa_session.query( trans.app.model.LibraryFolder ).get( trans.security.decode_id( folder_id ) )
-            library_item_desc = 'folder'
-            response_id = folder_id
-        elif ldda_id:
-            library_item = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( ldda_id ) )
-            library_item_desc = 'library dataset'
-            response_id = ldda_id
-        else:
-            library_item = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( library_id ) )
-            library_item_desc = 'library'
-            response_id = library_id
+    def add_info_template( self, trans, cntrller, item_type, library_id, folder_id=None, ldda_id=None, **kwd ):
+        # Only adding a new template to a Library, Folder or LibraryDatasetDatasetAssociation is currently allowed.  Editing an existing
+        # template is a future enhancement.
         forms = get_all_forms( trans,
                                filter=dict( deleted=False ),
                                form_type=trans.app.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE )
@@ -1307,65 +1295,88 @@ class LibraryCommon( BaseController ):
                                                        msg=msg,
                                                        messagetype='done',
                                                        form_type=trans.app.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE ) )
+        params = util.Params( kwd )
+        show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
+        msg = util.restore_text( params.get( 'msg', ''  ) )
+        action = ''
+        messagetype = params.get( 'messagetype', 'done' )
+        if item_type == 'library':
+            item = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( library_id ) )
+            library_item_desc = 'data library'
+            action = 'library_info'
+            id = library_id
+        elif item_type == 'folder':
+            item = trans.sa_session.query( trans.app.model.LibraryFolder ).get( trans.security.decode_id( folder_id ) )
+            library_item_desc = 'folder'
+            action = 'folder_info'
+            id = folder_id
+        elif item_type == 'ldda':
+            item = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( ldda_id ) )
+            library_item_desc = 'dataset'
+            action = 'ldda_edit_info'
+            id = ldda_id
         if params.get( 'add_info_template_button', False ):
-            form_id = params.get( 'form_id', None )
-            # TODO: add error handling here
-            form = trans.sa_session.query( trans.app.model.FormDefinition ).get( int( form_id ) )
-            #fields = list( copy.deepcopy( form.fields ) )
+            form = trans.sa_session.query( trans.app.model.FormDefinition ).get( int( params.form_id ) )
             form_values = trans.app.model.FormValues( form, [] )
             trans.sa_session.add( form_values )
             trans.sa_session.flush()
-            if folder_id:
-                assoc = trans.app.model.LibraryFolderInfoAssociation( library_item, form, form_values )
-            elif ldda_id:
-                assoc = trans.app.model.LibraryDatasetDatasetInfoAssociation( library_item, form, form_values )
-            else:
-                assoc = trans.app.model.LibraryInfoAssociation( library_item, form, form_values )
+            if item_type == 'library':
+                assoc = trans.app.model.LibraryInfoAssociation( item, form, form_values )
+            elif item_type == 'folder':
+                assoc = trans.app.model.LibraryFolderInfoAssociation( item, form, form_values )
+            elif item_type == 'ldda':
+                assoc = trans.app.model.LibraryDatasetDatasetInfoAssociation( item, form, form_values )
             trans.sa_session.add( assoc )
             trans.sa_session.flush()
             msg = 'An information template based on the form "%s" has been added to this %s.' % ( form.name, library_item_desc )
             trans.response.send_redirect( web.url_for( controller='library_common',
-                                                       action=response_action,
+                                                       action=action,
                                                        cntrller=cntrller,
-                                                       id=response_id,
                                                        library_id=library_id,
+                                                       folder_id=folder_id,
+                                                       id=id,
+                                                       show_deleted=show_deleted,
                                                        msg=msg,
                                                        messagetype='done' ) )
         return trans.fill_template( '/library/common/select_info_template.mako',
                                     cntrller=cntrller,
-                                    library_item_name=library_item.name,
+                                    library_item_name=item.name,
                                     library_item_desc=library_item_desc,
+                                    library_id=library_id,
+                                    item_type=item_type,
                                     library_id=library_id,
                                     folder_id=folder_id,
                                     ldda_id=ldda_id,
-                                    id=response_id,
                                     forms=forms,
+                                    show_deleted=show_deleted,
                                     msg=msg,
                                     messagetype=messagetype )
     @web.expose
-    def edit_template_info( self, trans, cntrller, library_id, response_action, num_widgets, library_item_id=None, library_item_type=None, **kwd ):
+    def edit_template_info( self, trans, cntrller, item_type, library_id, num_widgets, folder_id=None, ldda_id=None, **kwd ):
         params = util.Params( kwd )
+        show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
-        folder_id = None
-        if library_item_type == 'library':
-            library_item = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( library_id ) )
-            # Make sure library_item_id is encoded if we have a library
-            library_item_id = library_id
-        elif library_item_type == 'library_dataset':
-            library_item = trans.sa_session.query( trans.app.model.LibraryDataset ).get( trans.security.decode_id( library_item_id ) )
-        elif library_item_type == 'folder':
-            library_item = trans.sa_session.query( trans.app.model.LibraryFolder ).get( trans.security.decode_id( library_item_id ) )
-        elif library_item_type == 'library_dataset_dataset_association':
-            library_item = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( library_item_id ) )
-            # This response_action method requires a folder_id
-            folder_id = trans.security.encode_id( library_item.library_dataset.folder.id )
+        if item_type == 'library':
+            item = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( library_id ) )
+            action = 'library_info'
+            id = library_id
+        elif item_type == 'folder':
+            item = trans.sa_session.query( trans.app.model.LibraryFolder ).get( trans.security.decode_id( folder_id ) )
+            action = 'folder_info'
+            id = folder_id
+        elif item_type == 'ldda':
+            item = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( ldda_id ) )
+            action = 'ldda_edit_info'
+            folder_id = trans.security.encode_id( item.library_dataset.folder.id )
+            id = ldda_id
         else:
-            msg = "Invalid library item type ( %s ) specified, id ( %s )" % ( str( library_item_type ), str( trans.security.decode_id( library_item_id ) ) )
+            msg = "Invalid library item type ( %s ) sent to edit_template_info()" % str( item_type )
             return trans.response.send_redirect( web.url_for( controller='library_common',
                                                               action='browse_library',
                                                               cntrller=cntrller,
                                                               id=library_id,
+                                                              show_deleted=show_deleted,
                                                               msg=util.sanitize_text( msg ),
                                                               messagetype='error' ) )
         # Save updated template field contents
@@ -1374,11 +1385,11 @@ class LibraryCommon( BaseController ):
             field_contents.append( util.restore_text( params.get( 'field_%i' % ( index ), ''  ) ) )
         if field_contents:
             # Since information templates are inherited, the template fields can be displayed on the information
-            # page for a folder or library dataset when it has no info_association object.  If the user has added
+            # page for a folder or ldda when it has no info_association object.  If the user has added
             # field contents on an inherited template via a parent's info_association, we'll need to create a new
             # form_values and info_association for the current object.  The value for the returned inherited variable
             # is not applicable at this level.
-            info_association, inherited = library_item.get_info_association( restrict=True )
+            info_association, inherited = item.get_info_association( restrict=True )
             if info_association:
                 template = info_association.template
                 info = info_association.info
@@ -1390,30 +1401,80 @@ class LibraryCommon( BaseController ):
                     trans.sa_session.flush()
             else:
                 # Inherit the next available info_association so we can get the template
-                info_association, inherited = library_item.get_info_association()
+                info_association, inherited = item.get_info_association()
                 template = info_association.template
                 # Create a new FormValues object
                 form_values = trans.app.model.FormValues( template, field_contents )
                 trans.sa_session.add( form_values )
                 trans.sa_session.flush()
                 # Create a new info_association between the current library item and form_values
-                if library_item_type == 'folder':
-                    info_association = trans.app.model.LibraryFolderInfoAssociation( library_item, template, form_values )
+                if item_type == 'folder':
+                    info_association = trans.app.model.LibraryFolderInfoAssociation( item, template, form_values )
                     trans.sa_session.add( info_association )
                     trans.sa_session.flush()
-                elif library_item_type == 'library_dataset_dataset_association':
-                    info_association = trans.app.model.LibraryDatasetDatasetInfoAssociation( library_item, template, form_values )
+                elif item_type == 'ldda':
+                    info_association = trans.app.model.LibraryDatasetDatasetInfoAssociation( item, template, form_values )
                     trans.sa_session.add( info_association )
                     trans.sa_session.flush()
         msg = 'The information has been updated.'
         return trans.response.send_redirect( web.url_for( controller='library_common',
-                                                          action=response_action,
+                                                          action=action,
                                                           cntrller=cntrller,
                                                           library_id=library_id,
                                                           folder_id=folder_id,
-                                                          id=library_item_id,
+                                                          id=id,
+                                                          show_deleted=show_deleted,
                                                           msg=util.sanitize_text( msg ),
                                                           messagetype='done' ) )
+    @web.expose
+    def delete_info_template( self, trans, cntrller, item_type, library_id, id=None, folder_id=None, ldda_id=None, **kwd ):
+        # Only adding a new template to a library or folder is currently allowed.  Editing an existing template is
+        # a future enhancement.
+        params = util.Params( kwd )
+        show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
+        msg = util.restore_text( params.get( 'msg', ''  ) )
+        messagetype = params.get( 'messagetype', 'done' )
+        if item_type == 'library':
+            item = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( library_id ) )
+            action = 'library_info'
+            id = library_id
+        elif item_type == 'folder':
+            item = trans.sa_session.query( trans.app.model.LibraryFolder ).get( trans.security.decode_id( folder_id ) )
+            action = 'folder_info'
+            id = folder_id
+        elif item_type == 'ldda':
+            item = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( ldda_id ) )
+            action = 'ldda_edit_info'
+            folder_id = trans.security.encode_id( item.library_dataset.folder.id )
+            id = ldda_id
+        else:
+            msg = "Invalid library item type ( %s ) sent to edit_template_info()" % str( item_type )
+            return trans.response.send_redirect( web.url_for( controller='library_common',
+                                                              action='browse_library',
+                                                              cntrller=cntrller,
+                                                              id=library_id,
+                                                              show_deleted=show_deleted,
+                                                              msg=util.sanitize_text( msg ),
+                                                              messagetype='error' ) )
+        info_association, inherited = item.get_info_association()
+        if not info_association:
+            msg = "There is no template for this %s" % item_type
+            messagetype = 'error'
+        else:
+            info_association.deleted = True
+            trans.sa_session.add( info_association )
+            trans.sa_session.flush()
+            msg = 'The template for this %s has been deleted.' % item_type
+            messagetype = 'done'
+        return trans.response.send_redirect( web.url_for( controller='library_common',
+                                                          action=action,
+                                                          cntrller=cntrller,
+                                                          library_id=library_id,
+                                                          folder_id=folder_id,
+                                                          id=id,
+                                                          show_deleted=show_deleted,
+                                                          msg=util.sanitize_text( msg ),
+                                                          messagetype=messagetype ) )
 
 # ---- Utility methods -------------------------------------------------------
 
@@ -1452,3 +1513,10 @@ def activatable_folders_and_lddas( trans, folder ):
                             .order_by( trans.app.model.LibraryDatasetDatasetAssociation.table.c.name ) \
                             .all()
     return folders, lddas
+def branch_deleted( folder ):
+    # Return True if a folder belongs to a branc that has been deleted
+    if folder.deleted:
+        return True
+    if folder.parent:
+        return branch_deleted( folder.parent )
+    return False

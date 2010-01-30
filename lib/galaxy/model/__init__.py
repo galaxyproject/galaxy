@@ -954,10 +954,10 @@ class LibraryDatasetDatasetAssociation( DatasetInstance ):
         return self.dataset.get_access_roles( trans )
     def get_info_association( self, restrict=False, inherited=False ):
         # If restrict is True, we will return this ldda's info_association whether it
-        # exists or not.  If restrict is False, we'll return the next available info_association
-        # in the inheritable hierarchy.   True is also returned if the info_association was inherited,
-        # and False if not.  This enables us to eliminate displaying the any contents of the inherited
-        # template.
+        # exists or not ( in which case None will be returned ).  If restrict is False,
+        # we'll return the next available info_association in the inheritable hierarchy.
+        # True is also returned if the info_association was inherited, and False if not.
+        # This enables us to eliminate displaying any contents of the inherited template.
         if self.info_association:
             return self.info_association[0], inherited
         if restrict:

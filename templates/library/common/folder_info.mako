@@ -5,7 +5,7 @@
 <br/><br/>
 <ul class="manage-table-actions">
     <li>
-        <a class="action-button" href="${h.url_for( controller='library_common', action='browse_library', cntrller=cntrller, id=library_id )}"><span>Browse this data library</span></a>
+        <a class="action-button" href="${h.url_for( controller='library_common', action='browse_library', cntrller=cntrller, id=library_id, show_deleted=show_deleted )}"><span>Browse this data library</span></a>
     </li>
 </ul>
 
@@ -17,7 +17,7 @@
     <div class="toolFormTitle">Edit folder name and description</div>
     <div class="toolFormBody">
         %if cntrller=='library_admin' or trans.app.security_agent.can_modify_library_item( current_user_roles, folder ):
-            <form name="folder" action="${h.url_for( controller='library_common', action='folder_info', cntrller=cntrller, id=trans.security.encode_id( folder.id ), library_id=library_id )}" method="post" >
+            <form name="folder" action="${h.url_for( controller='library_common', action='folder_info', cntrller=cntrller, id=trans.security.encode_id( folder.id ), library_id=library_id, show_deleted=show_deleted )}" method="post" >
                 <div class="form-row">
                     <label>Name:</label>
                     <input type="text" name="name" value="${folder.name}" size="40"/>
@@ -47,5 +47,5 @@
     </div>
 </div>
 %if widgets:
-    ${render_template_info( cntrller, folder, library_id, 'folder_info', widgets )}
+    ${render_template_info( cntrller=cntrller, item_type='folder', library_id=library_id, widgets=widgets, folder_id=trans.security.encode_id( folder.id ) )}
 %endif
