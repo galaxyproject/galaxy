@@ -157,10 +157,13 @@ class Grid( object ):
             if sort_key.startswith( "-" ):
                 sort_key = sort_key[1:]
                 sort_order = 'desc'
-                query = query.order_by( func.lower( self.model_class.table.c.get( sort_key ) ).desc() )
+                query = query.order_by( self.model_class.table.c.get( sort_key ).desc() ) 
+                # Can't use lower() on timestamp objects.
+                #query = query.order_by( func.lower( self.model_class.table.c.get( sort_key ) ).desc() )
             else:
                 sort_order = 'asc'
-                query = query.order_by( func.lower( self.model_class.table.c.get( sort_key ) ).asc() )
+                # See reason for not using lower() to do case-insensitive search.
+                query = query.order_by( self.model_class.table.c.get( sort_key ).asc() )
         extra_url_args['sort'] = encoded_sort_key
         
         # There might be a current row
