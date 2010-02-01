@@ -118,7 +118,10 @@ class TestSecurityAndLibraries( TwillTestCase ):
         dp = sa_session.query( galaxy.model.DatasetPermissions ) \
                        .filter( galaxy.model.DatasetPermissions.table.c.dataset_id==latest_dataset.id ) \
                        .first()
-        if not dp.action == galaxy.model.Dataset.permitted_actions.DATASET_MANAGE_PERMISSIONS.action:
+        if not dp.action:
+            raise AssertionError( 'The Dataset id %d has no associated DatasetPermissions when is should have "manage permissions".' \
+                                  % latest_dataset.id )
+        elif not dp.action == galaxy.model.Dataset.permitted_actions.DATASET_MANAGE_PERMISSIONS.action:
             raise AssertionError( 'The DatasetPermissions.action for dataset id %d is "%s", but it should be "manage permissions"' \
                                   % ( latest_dataset.id, dp.action ) )
         # Change DefaultHistoryPermissions for regular_user1

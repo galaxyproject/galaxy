@@ -1287,8 +1287,7 @@ class LibraryCommon( BaseController ):
                                filter=dict( deleted=False ),
                                form_type=trans.app.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE )
         if not forms:
-            msg = "There are no forms on which to base the template, so create a form and "
-            msg += "try again to add the information template to the %s." % library_item_desc
+            msg = "There are no forms on which to base the template, so create a form and try to add the template again."
             trans.response.send_redirect( web.url_for( controller='forms',
                                                        action='new',
                                                        msg=msg,

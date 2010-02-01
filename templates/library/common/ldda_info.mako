@@ -1,13 +1,19 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
 <%namespace file="/library/common/common.mako" import="render_template_info" />
-<% from galaxy import util %>
-
 <%
+    from galaxy import util
+    from galaxy.web.controllers.library_common import branch_deleted
+
     if ldda == ldda.library_dataset.library_dataset_dataset_association:
         current_version = True
     else:
         current_version = False
+    if ldda.user:
+        uploaded_by = ldda.user.email
+    else:
+        uploaded_by = 'anonymous'
+    info_association, inherited = ldda.get_info_association( restrict=True )
 %>
 
 %if current_version:
@@ -27,24 +33,22 @@
     ${render_msg( msg, messagetype )}
 %endif
 
-<%
-    if ldda.user:
-        uploaded_by = ldda.user.email
-    else:
-        uploaded_by = 'anonymous'
-%>
-
 <div class="toolForm">
     <div class="toolFormTitle">
         Information about ${ldda.name}
-        %if not library.deleted and not ldda.library_dataset.folder.deleted and not ldda.deleted:
+        %if not library.deleted and not branch_deleted( ldda.library_dataset.folder ) and not ldda.library_dataset.deleted:
             <a id="dataset-${ldda.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
             <div popupmenu="dataset-${ldda.id}-popup">
                 %if cntrller=='library_admin' or trans.app.security_agent.can_modify_library_item( current_user_roles, ldda.library_dataset ):
                     <a class="action-button" href="${h.url_for( controller='library_common', action='ldda_edit_info', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ), id=trans.security.encode_id( ldda.id ), show_deleted=show_deleted )}">Edit this dataset's information</a>
+                    %if not info_association:
+                        <a class="action-button" href="${h.url_for( controller='library_common', action='add_info_template', cntrller=cntrller, item_type='ldda', library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ), ldda_id=trans.security.encode_id( ldda.id ), show_deleted=show_deleted )}">Add a template to this dataset</a>
+                    %else:
+                        <a class="action-button" href="${h.url_for( controller='library_common', action='delete_info_template', cntrller=cntrller, item_type='ldda', library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ), ldda_id=trans.security.encode_id( ldda.id ), show_deleted=show_deleted )}">Delete this dataset's template</a>
+                    %endif
                 %endif
                 %if cntrller=='library_admin' or trans.app.security_agent.can_manage_dataset( current_user_roles, ldda.dataset ) and trans.app.security_agent.can_manage_library_item( current_user_roles, ldda.library_dataset ):
-                    <a class="action-button" href="${h.url_for( controller='library_common', action='ldda_permissions', library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ), id=trans.security.encode_id( ldda.id ), show_deleted=show_deleted )}">Edit this dataset's permissions</a>
+                    <a class="action-button" href="${h.url_for( controller='library_common', action='ldda_permissions', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ), id=trans.security.encode_id( ldda.id ), show_deleted=show_deleted )}">Edit this dataset's permissions</a>
                 %endif
                 %if current_version and ( cntrller=='library_admin' or trans.app.security_agent.can_modify_library_item( current_user_roles, ldda.library_dataset ) ):
                     <a class="action-button" href="${h.url_for( controller='library_common', action='upload_library_dataset', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ), replace_id=trans.security.encode_id( ldda.library_dataset.id ), show_deleted=show_deleted )}">Upload a new version of this dataset</a>
