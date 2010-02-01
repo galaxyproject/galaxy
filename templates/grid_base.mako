@@ -844,7 +844,7 @@
                 ## Item selection column
                 %if show_item_checkboxes:
                     <td style="width: 1.5em;">
-                        <input type="checkbox" id="${encoded_id}" name="id" value="${encoded_id}" class="grid-row-select-checkbox" />
+                        <input type="checkbox" name="id" value="${encoded_id}" id="${encoded_id}" class="grid-row-select-checkbox" />
                     </td>
                 %endif
                 ## Data columns
