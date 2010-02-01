@@ -491,7 +491,6 @@ class LibraryCommon( BaseController ):
                                     show_deleted=show_deleted,
                                     widgets=widgets,
                                     current_user_roles=current_user_roles,
-                                    show_deleted=show_deleted,
                                     msg=msg,
                                     messagetype=messagetype )
     @web.expose
@@ -1342,7 +1341,6 @@ class LibraryCommon( BaseController ):
                                     cntrller=cntrller,
                                     library_item_name=item.name,
                                     library_item_desc=library_item_desc,
-                                    library_id=library_id,
                                     item_type=item_type,
                                     library_id=library_id,
                                     folder_id=folder_id,
