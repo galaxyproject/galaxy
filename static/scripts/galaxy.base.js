@@ -207,3 +207,47 @@ var replace_dbkey_select = function()
         });
     }
 } // end replace_dbkey_select()
+
+//
+// Edit and save text asynchronously.
+// 
+function async_save_text(click_to_edit_elt, text_elt_id, save_url, text_parm_name, use_textarea, num_rows)
+{
+    $("#" + click_to_edit_elt).click( function() {
+        var old_text = $("#" + text_elt_id).text()
+        if (use_textarea)
+            var t = $("<textarea rows='" + num_rows + "'>" + old_text + "</textarea>" );
+        else
+            var t = $("<input type='text' value='" + old_text + "'></input>" );
+        t.blur( function() {
+            $(this).remove();
+            $("#" + text_elt_id).show();
+        });
+        t.keyup( function( e ) {
+            if ( e.keyCode == 27 ) {
+                // Escape key
+                $(this).trigger( "blur" );
+            } else if ( e.keyCode == 13 ) {
+                // Enter key
+                new_text = this.value;
+                $(this).trigger( "blur" );
+                var ajax_data = new Object();
+                ajax_data[text_parm_name] = new_text;
+                $.ajax({
+                    url: save_url,
+                    data: ajax_data,
+                    error: function() { alert( "Text editing for elt " + text_elt_id + " failed" ) },
+                    success: function() {
+                        $("#" + text_elt_id).text( new_text );
+                    }
+                });
+            }
+        });
+        $("#" + text_elt_id).hide();
+        t.insertAfter( $("#" + text_elt_id) );
+        t.focus();
+        t.select();
+        return false;
+    });
+    
+}

@@ -303,6 +303,28 @@ class WorkflowController( BaseController, Sharable ):
             session.flush()
             # Redirect to load galaxy frames.
             return trans.response.send_redirect( url_for( controller='workflow' ) )
+            
+    @web.expose
+    @web.require_login( "use Galaxy workflows" )
+    def edit_attributes( self, trans, id, **kwargs ):
+        # Get workflow and do error checking.
+        stored = get_stored_workflow( trans, id )
+        if not stored:
+            error( "You do not own this workflow or workflow ID is invalid." )
+            
+        # Update workflow attributes if new values submitted.
+        if 'name' in kwargs:
+            # Rename workflow.
+            stored.name = kwargs[ 'name' ]
+        if 'annotation' in kwargs:
+            # Set workflow annotation.
+            self.add_item_annotation( trans, stored, kwargs[ 'annotation' ] )
+        trans.sa_session.flush()
+        
+        return trans.fill_template( 'workflow/edit_attributes.mako', 
+                                    stored=stored, 
+                                    annotation=self.get_item_annotation_str( trans.sa_session, trans.get_user(), stored ) 
+                                    )
     
     @web.expose
     @web.require_login( "use Galaxy workflows" )
@@ -320,7 +342,29 @@ class WorkflowController( BaseController, Sharable ):
         else:
             return form( url_for( action='rename', id=trans.security.encode_id(stored.id) ), "Rename workflow", submit_text="Rename" ) \
                 .add_text( "new_name", "Workflow Name", value=stored.name )
-    
+                
+    @web.expose
+    @web.require_login( "use Galaxy workflows" )
+    def rename_async( self, trans, id, new_name=None, **kwargs ):
+        stored = get_stored_workflow( trans, id )
+        if new_name:
+            stored.name = new_name
+            trans.sa_session.flush()
+            return
+        else:
+            return "failed"
+            
+    @web.expose
+    @web.require_login( "use Galaxy workflows" )
+    def annotate_async( self, trans, id, new_annotation=None, **kwargs ):
+        stored = get_stored_workflow( trans, id )
+        if new_annotation:
+            self.add_item_annotation( trans, stored, new_annotation )
+            trans.sa_session.flush()
+            return
+        else:
+            return "failed"
+            
     @web.expose
     @web.require_login( "use Galaxy workflows" )
     def clone( self, trans, id ):
@@ -400,11 +444,11 @@ class WorkflowController( BaseController, Sharable ):
         """
         if not id:
             error( "Invalid workflow id" )
-        id = trans.security.decode_id( id )
-        return trans.fill_template( "workflow/editor.mako", workflow_id=id )
+        stored = get_stored_workflow( trans, id )
+        return trans.fill_template( "workflow/editor.mako", stored=stored, annotation=self.get_item_annotation_str( trans.sa_session, trans.get_user(), stored ) )
         
     @web.json
-    def editor_form_post( self, trans, type='tool', tool_id=None, **incoming ):
+    def editor_form_post( self, trans, type='tool', tool_id=None, annotation=None, **incoming ):
         """
         Accepts a tool state and incoming values, and generates a new tool
         form and some additional information, packed into a json dictionary.
@@ -423,7 +467,8 @@ class WorkflowController( BaseController, Sharable ):
             'data_inputs': module.get_data_inputs(),
             'data_outputs': module.get_data_outputs(),
             'tool_errors': module.get_errors(),
-            'form_html': module.get_config_form()
+            'form_html': module.get_config_form(),
+            'annotation': annotation
         }
         
     @web.json
@@ -445,7 +490,8 @@ class WorkflowController( BaseController, Sharable ):
             'tooltip': module.get_tooltip(),
             'data_inputs': module.get_data_inputs(),
             'data_outputs': module.get_data_outputs(),
-            'form_html': module.get_config_form()
+            'form_html': module.get_config_form(),
+            'annotation': ""
         }
                 
     @web.json
@@ -477,6 +523,11 @@ class WorkflowController( BaseController, Sharable ):
                 # FIXME: Frontend should be able to handle workflow messages
                 #        as a dictionary not just the values
                 data['upgrade_messages'][step.order_index] = upgrade_message.values()
+            # Get user annotation.
+            step_annotation = self.get_item_annotation_obj ( trans.sa_session, trans.get_user(), step )
+            annotation_str = ""
+            if step_annotation:
+                annotation_str = step_annotation.annotation
             # Pack attributes into plain dictionary
             step_dict = {
                 'id': step.order_index,
@@ -489,6 +540,7 @@ class WorkflowController( BaseController, Sharable ):
                 'data_inputs': module.get_data_inputs(),
                 'data_outputs': module.get_data_outputs(),
                 'form_html': module.get_config_form(),
+                'annotation' : annotation_str
             }
             # Connections
             input_connections = step.input_connections
@@ -551,6 +603,9 @@ class WorkflowController( BaseController, Sharable ):
                 workflow.has_errors = True
             # Stick this in the step temporarily
             step.temp_input_connections = step_dict['input_connections']
+            
+            # Save step annotation.
+            self.add_item_annotation( trans, step, step_dict[ 'annotation' ] )
         # Second pass to deal with connections between steps
         for step in steps:
             # Input connections

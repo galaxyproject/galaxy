@@ -78,6 +78,7 @@ class RootController( BaseController ):
                 query = query.filter( model.HistoryDatasetAssociation.deleted == False )
             return trans.stream_template_mako( "root/history.mako",
                                                history = history,
+                                               annotation = self.get_item_annotation_str( trans.sa_session, trans.get_user(), history ),
                                                datasets = query.all(),
                                                hda_id = hda_id,
                                                show_deleted = show_deleted )
@@ -304,6 +305,8 @@ class RootController( BaseController ):
                             else:
                                 setattr( data.metadata, name, spec.unwrap( params.get (name, None) ) )
                     data.datatype.after_setting_metadata( data )
+                    self.add_item_annotation( trans, data, params.annotation )
+                    
                 else:
                     msg = ' (Metadata could not be changed because this dataset is currently being used as input or output. You must cancel or wait for these jobs to complete before changing metadata.)'
                 trans.sa_session.flush()
@@ -383,6 +386,7 @@ class RootController( BaseController ):
                 messagetype = 'done'
             return trans.fill_template( "/dataset/edit_attributes.mako",
                                         data=data,
+                                        data_annotation=self.get_item_annotation_str( trans.sa_session, trans.get_user(), data ),
                                         datatypes=ldatatypes,
                                         current_user_roles=current_user_roles,
                                         all_roles=all_roles,

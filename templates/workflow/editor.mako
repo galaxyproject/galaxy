@@ -34,7 +34,9 @@
             "jquery.jstore-all", 
             "json2",
             "galaxy.base",
-            "galaxy.workflow_editor.canvas" )}
+            "galaxy.workflow_editor.canvas",
+			"jquery.autocomplete",
+ 			"autocomplete_tagging")}
 
     <!--[if lt IE 7]>
     <script type='text/javascript'>
@@ -77,7 +79,7 @@
                 // Load workflow definition
                 $.ajax( {
                     url: "${h.url_for( action='load_workflow' )}",
-                    data: { id: "${trans.security.encode_id( workflow_id )}", "_": "true" },
+                    data: { id: "${trans.security.encode_id( stored.id )}", "_": "true" },
                     dataType: 'json',
                     cache: false,
                     success: function( data ) {
@@ -140,6 +142,12 @@
             workflow.fit_canvas_to_nodes();
             scroll_to_nodes();
             canvas_manager.draw_overview();
+        });
+        
+        $('#edit-attributes-button').click( function() {
+            workflow.clear_active_node();
+            $('#edit-attributes').show();
+            $('#right-content').hide();
         });
         
         $.jStore.ready(function(engine) {
@@ -209,6 +217,19 @@
                }
            });
         });
+
+		// Rename async.
+		async_save_text("workflow-rename", "workflow-name", "${h.url_for( action="rename_async", id=trans.security.encode_id(stored.id) )}", "new_name");
+		
+		// Tag async. Simply have the workflow tag element generate a click on the tag element to activate tagging.
+		$('#workflow-tag').click( function() 
+		{
+		    $('.tag-area').click();
+		    return false;
+		});
+						
+		// Annotate async.
+		async_save_text("workflow-annotate", "workflow-annotation", "${h.url_for( action="annotate_async", id=trans.security.encode_id(stored.id) )}", "new_annotation", true, 4);
     });
 
     // Global state for the whole workflow
@@ -285,7 +306,8 @@
     };
 
     function show_form_for_tool( text, node ) {
-        $("#right-content").html( text );    
+        $("#edit-attributes").hide();
+		$("#right-content").show().html( text );    
         $("#right-content").find( "form" ).ajaxForm( {
             type: 'POST',
             dataType: 'json',
@@ -316,6 +338,17 @@
                 $(this).remove();
                 make_popupmenu( b, options );
             });
+			// Add annotation field to form.
+			// TODO: need to set the annotation for this tool.
+			var annotation_div = 
+				$( "<div class='form-row'> \
+						<label>Annotation / Notes:</label> \
+						<div style='margin-right: 10px;'> \
+							<textarea name='annotation' rows='3' style='width: 100%'>" + node.annotation + "</textarea> \
+							<div class='toolParamHelp'>Add an annotation or notes to this step; annotations are available when a workflow is viewed.</div> \
+						</div> \
+					</div>");
+			$(this).append( annotation_div );
             // Implements auto-saving based on whether the inputs change. We consider
             // "changed" to be when a field is accessed and not necessarily modified
             // because of an issue where "onchange" is not triggered when activating
@@ -366,7 +399,7 @@
                 url: "${h.url_for( action='save_workflow' )}",
                 type: "POST",
                 data: {
-                    id: "${trans.security.encode_id( workflow_id )}",
+                    id: "${trans.security.encode_id( stored.id )}",
                     workflow_data: function() { return JSON.stringify( workflow.to_simple() ) },
                     "_": "true"
                 },
@@ -421,10 +454,10 @@
 <%def name="stylesheets()">
 
     ## Include "base.css" for styling tool menu and forms (details)
-    <link href="${h.url_for('/static/style/base.css')}" rel="stylesheet" type="text/css" />
+	${h.css( "base", "autocomplete_tagging")}
 
     ## But make sure styles for the layout take precedence
-    ${parent.stylesheets()}    
+    ${parent.stylesheets()}
 
     <style type="text/css">
     body { margin: 0; padding: 0; overflow: hidden; }
@@ -508,9 +541,8 @@
     div.toolFormRow {
         position: relative;
     }
-    
-    
-    #right-content {
+
+    .right-content {
         margin: 5px;
     }
     
@@ -575,7 +607,6 @@
     }
     
     .form-row {
-        
     }
     div.toolFormInCanvas div.toolFormBody {
         padding: 0;
@@ -740,9 +771,52 @@
     <div class="unified-panel-header" unselectable="on">
         <div class="unified-panel-header-inner">
             Details
+            <div style="float: right">
+                <a id="edit-attributes-button" class="panel-header-button">Edit Workflow Attributes</a>
+            </div>
         </div>
     </div>
     <div class="unified-panel-body" style="overflow: auto;">
-        <div id="right-content"></div>
+		## Div for elements to modify workflow attributes.
+		<div id="edit-attributes" class="toolForm right-content">
+    	    <div class="toolFormTitle">Edit Workflow Attributes</div>
+    	    <div class="toolFormBody">
+    	        ## Workflow name.
+    	        <div id="workflow-name-area" class="form-row">
+           	        <label>Name:</label>
+        		    <div style="float: right"><a id="workflow-rename" title="Rename" class="icon-button edit" target="galaxy_main" href="${h.url_for( controller='workflow', action='rename_sync' )}"></a></div>
+        		    <div id="workflow-name">${stored.name}</div>
+                    <div style="clear: both"></div>
+        		</div>
+        		## Workflow tags.
+        		<%namespace file="/tagging_common.mako" import="render_individual_tagging_element" />
+        		<div class="form-row">
+                    <label>
+                        Tags:
+                    </label>
+                    <div style="float: right"><a id="workflow-tag" title="Tag" class="icon-button edit" target="galaxy_main" href="${h.url_for( controller='workflow', action='annotate_async' )}"></a></div>
+                    <div style="float: left; width: 225px; margin-right: 10px; border-style: inset; border-width: 1px; margin-left: 2px">
+                        <style>
+                            .tag-area {
+                                border: none;
+                            }
+                        </style>
+                        ${render_individual_tagging_element(user=trans.get_user(), tagged_item=stored, elt_context="edit_attributes.mako", use_toggle_link=False, input_size="20", render_add_tag_button=False)}
+                    </div>
+                    <div style="clear: both"></div>
+                    <div class="toolParamHelp">Apply tags to make it easy to search for and find items with the same tag.</div>
+                </div>
+        		## Workflow annotation.
+    	        <div id="workflow-annotation-area" class="form-row">
+           	        <label>Annotation / Notes:</label>
+        		    <div style="float: right"><a id="workflow-annotate" title="Annotate" class="icon-button edit" target="galaxy_main" href="${h.url_for( controller='workflow', action='annotate_async' )}"></a></div>
+        		    <div id="workflow-annotation">${annotation}</div>
+                    <div style="clear: both"></div>
+        		    <div class="toolParamHelp">Add an annotation or notes to a workflow; annotations are available when a workflow is viewed.</div>
+        		</div>
+    	    </div>
+    	</div>
+		## Div where tool details are loaded and modified.
+		<div id="right-content" class="right-content"></div>
     </div>
 </%def>

@@ -15,7 +15,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 
 ${h.css( "base", "history", "autocomplete_tagging" )}
-${h.js( "jquery", "json2", "jquery.jstore-all", "jquery.autocomplete", "autocomplete_tagging" )}
+${h.js( "galaxy.base", "jquery", "json2", "jquery.jstore-all", "jquery.autocomplete", "autocomplete_tagging" )}
 
 <script type="text/javascript">
 $(function() {
@@ -42,36 +42,20 @@ $(function() {
         $.jStore.remove("history_expand_state");
     }));
     
-    $("#history-rename").click( function() {
-        var old_name = $("#history-name").text()
-        var t = $("<input type='text' value='" + old_name + "'></input>" );
-        t.blur( function() {
-            $(this).remove();
-            $("#history-name").show();
-        });
-        t.keyup( function( e ) {
-            if ( e.keyCode == 27 ) {
-                // Escape key
-                $(this).trigger( "blur" );
-            } else if ( e.keyCode == 13 ) {
-                // Enter key
-                new_value = this.value;
-                $(this).trigger( "blur" );
-                $.ajax({
-                    url: "${h.url_for( controller='history', action='rename_async', id=history.id )}",
-                    data: { "_": true, new_name: new_value },
-                    error: function() { alert( "Rename failed" ) },
-                    success: function() {
-                        $("#history-name").text( new_value );
-                    }
-                });
-            }
-        });
-        $("#history-name").hide();
-        $("#history-name-area").append( t );
-        t.focus();
-        return false;
-    });
+    // Rename async.
+    async_save_text("history-rename", "history-name", "${h.url_for( controller="/history", action="rename_async", id=trans.security.encode_id(history.id) )}", "new_name");
+    
+    // Annotation async.
+    // Tag async. Simply have the workflow tag element generate a click on the tag element to activate tagging.
+	$('#workflow-tag').click( function() 
+	{
+	    $('.tag-area').click();
+	    return false;
+	});
+					
+	// Annotate async.
+	async_save_text("history-annotate", "history-annotation", "${h.url_for( controller="/history", action="annotate_async", id=trans.security.encode_id(history.id) )}", "new_annotation", true, 4);
+    
     // Updater
     updater({
         <% updateable = [data for data in reversed( datasets ) if data.visible and data.state not in [ "deleted", "empty", "error", "ok" ]] %>
@@ -266,6 +250,9 @@ var updater_callback = function ( tracked_datasets ) {
 .historyItemBody {
     display: none;
 }
+div.form-row {
+    padding: 5px 5px 5px 0px;
+}
 </style>
 
 <noscript>
@@ -303,12 +290,31 @@ var updater_callback = function ( tracked_datasets ) {
 <%namespace file="history_common.mako" import="render_dataset" />
 
 %if trans.get_user() is not None:
-    <style>
-        .tag-element {
-            margin-bottom: 0.5em;
-        }
-    </style>
-    ${render_individual_tagging_element( user=trans.get_user(), tagged_item=history, elt_context='history.mako' )}
+    <div style="margin: 0px 0px 5px 10px">
+        <a href="#" onclick="$('#tags-and-annotation').toggle('fast')">Edit Tags and Annotation/Notes</a>
+        <div id="tags-and-annotation" style="display: none">    
+            ## Tagging elt.
+            <div class="form-row">
+                <label>Tags:</label>
+                <div style="float: right"><a id="workflow-tag" title="Tag" class="icon-button edit" target="galaxy_main" href="${h.url_for( controller='workflow', action='annotate_async' )}"></a></div>
+                <style>
+                    .tag-area {
+                        border: none;
+                    }
+                </style>
+                ${render_individual_tagging_element(user=trans.get_user(), tagged_item=history, elt_context="history.mako", use_toggle_link=False, input_size="20", render_add_tag_button=False)}
+                <div style="clear: both"></div>
+            </div>
+        
+            ## Annotation elt.
+            <div id="history-annotation-area" class="form-row">
+       	        <label>Annotation / Notes:</label>
+    		    <div style="float: right"><a id="history-annotate" title="Annotate" class="icon-button edit" target="galaxy_main" href="${h.url_for( controller='history', action='annotate_async' )}"></a></div>
+    		    <div id="history-annotation">${annotation}</div>
+                <div style="clear: both"></div>
+    		</div>
+        </div>
+    </div>
 %endif
 
 %if not datasets:

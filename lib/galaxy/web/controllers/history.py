@@ -353,7 +353,7 @@ class HistoryController( BaseController, Sharable ):
         return trans.show_ok_message( "History deleted, a new history is active", refresh_frames=['history'] )
     @web.expose
     def rename_async( self, trans, id=None, new_name=None ):
-        history = trans.sa_session.query( model.History ).get( id )
+        history = self.get_history( trans, id )
         # Check that the history exists, and is either owned by the current
         # user (if logged in) or the current history
         assert history is not None
@@ -365,6 +365,17 @@ class HistoryController( BaseController, Sharable ):
         history.name = new_name
         trans.sa_session.add( history )
         trans.sa_session.flush()
+        
+    @web.expose
+    @web.require_login( "use Galaxy histories" )
+    def annotate_async( self, trans, id, new_annotation=None, **kwargs ):
+        history = self.get_history( trans, id )
+        if new_annotation:
+            self.add_item_annotation( trans, history, new_annotation )
+            trans.sa_session.flush()
+            return
+        else:
+            return "failed"
     
     @web.expose
     @web.json

@@ -67,7 +67,7 @@
 		<div class="indent" style="margin-top: 2em">
 		<h3>Making ${item_class_name} Accessible via Link and Publishing It</h3>
     
-		    <div class="indent">
+		    <div>
 		        %if item.importable:
 					<% 
 						item_status = "accessible via link" 
@@ -75,7 +75,7 @@
 							item_status = item_status + " and published"	
 					%>
 					This ${item_class_name_lc} <strong>${item_status}</strong>. 
-					<div class="indent">
+					<div>
 						<p>Anyone can view and import this ${item_class_name_lc} by visiting the following URL:
 			            <% url = h.url_for( action='display_by_username_and_slug', username=trans.get_user().username, slug=item.slug, qualified=True ) %>
 						<blockquote>
@@ -88,7 +88,7 @@
 					</div>
 		
 					<p>You can:
-					<div class="indent">
+					<div>
 		           	<form action="${h.url_for( action='sharing', id=trans.security.encode_id( item.id ) )}" 
 							method="POST">
 							%if not item.published:
@@ -130,7 +130,7 @@
 
 		<h3>Sharing ${item_class_name} with Specific Users</h3>
 
-		    <div class="indent">
+		    <div>
 		        %if item.users_shared_with:
 
 		            <p>

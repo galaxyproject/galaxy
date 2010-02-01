@@ -20,7 +20,7 @@
 %endif
 
 ## Render HTML for a list of tags.
-<%def name="render_tagging_element_html(elt_id=None, tags=None, editable=True, use_toggle_link=True, input_size='15', in_form=False, tag_type='individual')">
+<%def name="render_tagging_element_html(elt_id=None, tags=None, editable=True, use_toggle_link=True, input_size='15', in_form=False, tag_type='individual', render_add_tag_button=True)">
     ## Useful attributes.
     <% 
         num_tags = len( tags )
@@ -79,7 +79,9 @@
                     <input class="tag-input" type='text' size='${input_size}'/>
                 %endif
                 ## Add "add tag" button.
-                <img src='${h.url_for('/static/images/add_icon.png')}' rollover='${h.url_for('/static/images/add_icon_dark.png')}' class="add-tag-button"/>
+                %if render_add_tag_button:
+                    <img src='${h.url_for('/static/images/add_icon.png')}' rollover='${h.url_for('/static/images/add_icon_dark.png')}' class="add-tag-button"/>
+                %endif
             %endif
         </div>
     </div>
@@ -102,7 +104,7 @@
 
 
 ## Render individual tagging element.
-<%def name="render_individual_tagging_element(user=None, tagged_item=None, elt_context=None, use_toggle_link=True, in_form=False, input_size='15', tag_click_fn='default_tag_click_fn', get_toggle_link_text_fn='default_get_toggle_link_text_fn', editable=True)">
+<%def name="render_individual_tagging_element(user=None, tagged_item=None, elt_context=None, use_toggle_link=True, in_form=False, input_size='15', tag_click_fn='default_tag_click_fn', get_toggle_link_text_fn='default_get_toggle_link_text_fn', editable=True, render_add_tag_button=True)">
     ## Useful attributes.
     <%
         # Useful ids.
@@ -114,7 +116,7 @@
     %>
     
     ## Build HTML.
-    ${self.render_tagging_element_html(elt_id, item_tags, editable, use_toggle_link, input_size, in_form)}
+    ${self.render_tagging_element_html(elt_id=elt_id, tags=item_tags, editable=editable, use_toggle_link=use_toggle_link, input_size=input_size, in_form=in_form, render_add_tag_button=render_add_tag_button)}
     
     ## Build script that augments tags using progressive javascript.
     <script type="text/javascript">

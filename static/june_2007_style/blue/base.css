@@ -110,3 +110,10 @@ div.permissionContainer{padding-left:20px;}
 .text-content fieldset{border-color:#ccc;border:1px solid #ccc;}
 .text-content th,.text-content td{border-bottom:1px solid #ddd;border-right:1px solid #ccc;}
 .text-content th,.text-content td{padding:.8em;}
+.icon-button{width:16px;height:16px;display:block;float:left;margin-left:2px;text-indent:20px;}
+.icon-button.edit{background:url(history-buttons.png) no-repeat 0px -52px;}
+.icon-button.edit:hover{background:url(history-buttons.png) no-repeat 0px -78px;}
+.icon-button.display{background:url(history-buttons.png) no-repeat 0px -0px;}
+.icon-button.display:hover{background:url(history-buttons.png) no-repeat 0px -26px;}
+.icon-button.delete{background:url(history-buttons.png) no-repeat 0px -104px;}
+.icon-button.delete:hover{background:url(history-buttons.png) no-repeat 0px -130px;}

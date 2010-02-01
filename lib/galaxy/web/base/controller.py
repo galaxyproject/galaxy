@@ -25,9 +25,13 @@ class OwnerColumn( grids.TextColumn ):
 # Item's public URL based on username and slug.
 class PublicURLColumn( grids.TextColumn ):
     def get_link( self, trans, grid, item ):
-        if item.user.username:
+        if item.user.username and item.slug:
             return dict( action='display_by_username_and_slug', username=item.user.username, slug=item.slug )
-        else:
+        elif not item.user.username:
+            # TODO: provide link to set username.
+            return None
+        elif not item.user.slug:
+            # TODO: provide link to set slg
             return None
         
 class BaseController( object ):
@@ -72,6 +76,55 @@ class BaseController( object ):
         else:
             item_class = None
         return item_class
+        
+    def get_item_annotation_str( self, db_session, user, item ):
+        """ Returns a user's annotation string for an item. """
+        annotation_obj = self.get_item_annotation_obj( db_session, user, item )
+        if annotation_obj:
+            return annotation_obj.annotation
+        return None
+        
+    def get_item_annotation_obj( self, db_session, user, item ):
+        """ Returns a user's annotation object for an item. """
+        # Get annotation association. TODO: we could replace this eval() with a long if/else stmt, but this is more general without sacrificing
+        try:
+            annotation_assoc_class = eval( "model.%sAnnotationAssociation" % item.__class__.__name__ )
+        except:
+            # Item doesn't have an annotation association class and cannot be annotated.
+            return False
+        
+        # Get annotation association object.
+        annotation_assoc = db_session.query( annotation_assoc_class ).filter_by( user=user )
+        if item.__class__ == model.History:
+            annotation_assoc = annotation_assoc.filter_by( history=item )
+        elif item.__class__ == model.HistoryDatasetAssociation:
+            annotation_assoc = annotation_assoc.filter_by( hda=item )
+        elif item.__class__ == model.StoredWorkflow:
+            annotation_assoc = annotation_assoc.filter_by( stored_workflow=item )
+        elif item.__class__ == model.WorkflowStep:
+            annotation_assoc = annotation_assoc.filter_by( workflow_step=item )
+        return annotation_assoc.first()
+        
+    def add_item_annotation( self, trans, item, annotation ):
+        """ Add or update an item's annotation; a user can only have a single annotation for an item. """
+
+        # Get/create annotation association object.
+        annotation_assoc = self.get_item_annotation_obj( trans.sa_session, trans.get_user(), item )
+        if not annotation_assoc:
+            # Create association.
+            # TODO: we could replace this eval() with a long if/else stmt, but this is more general without sacrificing
+            try:
+                annotation_assoc_class = eval( "model.%sAnnotationAssociation" % item.__class__.__name__ )
+            except:
+                # Item doesn't have an annotation association class and cannot be annotated.
+                return False
+            annotation_assoc = annotation_assoc_class()
+            item.annotations.append( annotation_assoc )
+            annotation_assoc.user = trans.get_user()
+
+        # Set annotation.
+        annotation_assoc.annotation = annotation
+        return True
         
 Root = BaseController
 

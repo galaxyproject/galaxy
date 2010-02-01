@@ -272,6 +272,7 @@ $.extend( Node.prototype, {
         this.tool_state = data.tool_state;
         this.tool_errors = data.tool_errors;
         this.tooltip = data.tooltip ? data.tooltip : ""
+        this.annotation = data.annotation;
         
         if ( this.tool_errors ) {
             f.addClass( "tool-node-error" );
@@ -306,6 +307,7 @@ $.extend( Node.prototype, {
             node = this;
         this.tool_state = data.tool_state;
         this.form_html = data.form_html;
+        this.annotation = data.annotation;
         this.tool_errors = data.tool_errors;
         if ( this.tool_errors ) {
                 el.addClass( "tool-node-error" );
@@ -405,7 +407,8 @@ $.extend( Workflow.prototype, {
                 tool_state : node.tool_state,
                 tool_errors : node.tool_errors,
                 input_connections : input_connections,
-                position : $(node.element).position()
+                position : $(node.element).position(),
+                annotation: node.annotation
             };
             nodes[ node.id ] = node_data;
         });
