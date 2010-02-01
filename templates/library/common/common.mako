@@ -265,7 +265,7 @@
                                     ${field[ 'widget' ].get_html()}
                                 </div>
                                 <div class="toolParamHelp" style="clear: both;">
-                                    ${field[ 'helptext' ]}
+                                    ${field[ 'helptext' ]}, leave blank to add a different template to this dataset after upload.
                                 </div>
                                 <div style="clear: both"></div>
                             </div>

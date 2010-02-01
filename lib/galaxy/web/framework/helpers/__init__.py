@@ -4,8 +4,8 @@ pkg_resources.require( "WebHelpers" )
 from webhelpers import *
 
 from galaxy.util.json import to_json_string
+from galaxy.util import hash_util
 from datetime import datetime, timedelta
-import hashlib
 
 # If the date is more than one week ago, then display the actual date instead of in words
 def time_ago( x ):
@@ -50,6 +50,6 @@ def md5( s ):
     """
     Return hex encoded md5 hash of string s
     """
-    m = hashlib.md5()
+    m = hash_util.md5()
     m.update( s )
     return m.hexdigest()

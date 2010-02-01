@@ -196,7 +196,7 @@
                         <a class="action-button" href="${h.url_for( controller='library_common', action='ldda_display_info', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), id=trans.security.encode_id( ldda.id ), show_deleted=show_deleted )}">View this dataset's information</a>
                     %endif
                     %if not branch_deleted( folder ) and not ldda.library_dataset.deleted and ( ( cntrller in [ 'library_admin', 'requests_admin' ] or can_add ) and not info_association ):
-                        <a class="action-button" href="${h.url_for( controller='library_common', action='add_info_template', cntrller=cntrller, item_type='ldda', library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), ldda_id=trans.security.encode_id( ldda.id ), show_deleted=show_deleted )}">Add template to this dataset</a>
+                        <a class="action-button" href="${h.url_for( controller='library_common', action='add_info_template', cntrller=cntrller, item_type='ldda', library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), ldda_id=trans.security.encode_id( ldda.id ), show_deleted=show_deleted )}">Add a template to this dataset</a>
                     %endif
                     %if not branch_deleted( folder ) and not ldda.library_dataset.deleted and cntrller == 'library_admin' and info_association:
                         <a class="action-button" href="${h.url_for( controller='library_common', action='delete_info_template', cntrller=cntrller, item_type='ldda', library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), ldda_id=trans.security.encode_id( ldda.id ), show_deleted=show_deleted )}">Delete this dataset's template</a>
@@ -294,7 +294,7 @@
                         <a class="action-button" href="${h.url_for( controller='library_common', action='folder_info', cntrller=cntrller, id=trans.security.encode_id( folder.id ), library_id=library_id, show_deleted=show_deleted )}">Edit this folder's information</a>
                     %endif
                     %if not branch_deleted( folder ) and ( ( cntrller in [ 'library_admin', 'requests_admin' ] or can_add ) and not info_association ):
-                        <a class="action-button" href="${h.url_for( controller='library_common', action='add_info_template', cntrller=cntrller, item_type='folder', library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), show_deleted=show_deleted )}">Add template to this folder</a>
+                        <a class="action-button" href="${h.url_for( controller='library_common', action='add_info_template', cntrller=cntrller, item_type='folder', library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), show_deleted=show_deleted )}">Add a template to this folder</a>
                     %endif
                     %if not branch_deleted( folder ) and cntrller == 'library_admin' and info_association:
                         <a class="action-button" href="${h.url_for( controller='library_common', action='delete_info_template', cntrller=cntrller, item_type='folder', library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), show_deleted=show_deleted )}">Delete this folder's template</a>
