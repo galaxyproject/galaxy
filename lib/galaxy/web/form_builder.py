@@ -104,12 +104,13 @@ class CheckboxField(BaseField):
     """
     def __init__( self, name, checked=None ):
         self.name = name
-        self.checked = (checked == True) or (type(checked) == type('a') and (checked.lower() in (  "yes", "true", "on" ))) 
+        self.checked = ( checked == True ) or ( type( checked ) == type( 'a' ) and ( checked.lower() in ( "yes", "true", "on" ) ) ) 
     def get_html( self, prefix="" ):
-        if self.checked: checked_text = "checked"
+        if self.checked:
+            checked_text = "checked"
         else: checked_text = ""
-        return '<input type="checkbox" name="%s%s" value="true" %s><input type="hidden" name="%s" value="true">' \
-            % ( prefix, self.name, checked_text, self.name )
+        return '<input type="checkbox" name="%s%s" value="true" %s><input type="hidden" name="%s%s" value="true">' \
+            % ( prefix, self.name, checked_text, prefix, self.name )
     @staticmethod
     def is_checked( value ):
         if value == True: # wierd behaviour caused by following check for 2 valued list - wtf? ross august 22
