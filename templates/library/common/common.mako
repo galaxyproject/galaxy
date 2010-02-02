@@ -36,9 +36,22 @@
                 %else:
                     %for i, field in enumerate( widgets ):
                         %if field[ 'widget' ].value:
+                            <%
+                                val = field[ 'widget' ].value
+                                # Change new line chars to html
+                                if val.find( '\r\n' ) >= 0:
+                                    val = val.replace( '\r\n', '<br/>' )
+                                if val.find( '\r' ) >= 0:
+                                    val = val.replace( '\r', '<br/>' )
+                                if val.find( '\n' ) >= 0:
+                                    val = val.replace( '\n', '<br/>' )
+                                # Convert to unicode to display non-ascii characters.
+                                if type( val ) is not unicode:
+                                    val = unicode( val, 'utf-8' )
+                            %>
                             <div class="form-row">
                                 <label>${field[ 'label' ]}</label>
-                                ${field[ 'widget' ].value}
+                                ${val}
                                 <div class="toolParamHelp" style="clear: both;">
                                     ${field[ 'helptext' ]}
                                 </div>
