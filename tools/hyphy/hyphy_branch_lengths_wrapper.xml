@@ -1,4 +1,4 @@
-<?xml version="1.2.0"?>
+<?xml version="1.2.1"?>
 <tool name="Branch Lengths" id="hyphy_branch_lengths_wrapper1">
 	
 	<description>Estimation</description>
@@ -31,11 +31,11 @@
 	</outputs>
     <tests>
       <test>
-        <param name="input1" value="branchlength_fasta_in.dat"/>
+        <param name="input1" value="branchlength_in.fasta"/>
         <param name="tree" value="((hg17,panTro1),(mm5,rn3),canFam1)"/>
         <param name="model" value="012345"/>
         <param name="base_freq" value="Observed"/>
-        <output name="out_file1" file="branchlength_out.dat"/>
+        <output name="out_file1" file="branchlength_out.tabular"/>
       </test>
     </tests>
 	<help>
