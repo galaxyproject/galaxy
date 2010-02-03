@@ -308,11 +308,6 @@ div.form-row {
         
             ## Annotation elt.
             <div id="history-annotation-area" class="form-row">
-<<<<<<< local
-                <label>Annotation / Notes:</label>
-                <div style="float: right"><a id="history-annotate" title="Annotate" class="icon-button edit" target="galaxy_main" href="${h.url_for( controller='history', action='annotate_async' )}"></a></div>
-                <div id="history-annotation">${annotation}</div>
-=======
        	        <label>Annotation / Notes:</label>
     		    <div style="float: right"><a id="history-annotate" title="Annotate" class="icon-button edit" target="galaxy_main" href="${h.url_for( controller='history', action='annotate_async' )}"></a></div>
     		    %if annotation:
@@ -320,7 +315,6 @@ div.form-row {
                     %else:
                         <div id="history-annotation"></div>
                     %endif
->>>>>>> other
                 <div style="clear: both"></div>
             </div>
         </div>
