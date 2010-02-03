@@ -3,7 +3,7 @@
   <description> - creates a visualization from a bed file</description>
 
   <command interpreter="python">
-    genetrack_indexer.py -i $input -o $output -s $shift -v 0 -f BED -x -w $output.files_path
+    genetrack_indexer.py -i $input -o $output -s $shift -v 0 -f BED -x
   </command>
     
   <inputs>
