@@ -1273,9 +1273,13 @@ class FormDefinition( object ):
                 req = 'Required'
             else:
                 req = 'Optional'
+            if field[ 'helptext' ]:
+                helptext='%s (%s)' % ( field[ 'helptext' ], req )
+            else:
+                helptext = ''
             widgets.append( dict( label=field[ 'label' ],
                                   widget=field_widget,
-                                  helptext='%s (%s)' % ( field[ 'helptext' ], req ) ) )
+                                  helptext=helptext ) )
         return widgets
         
 class FormDefinitionCurrent( object ):

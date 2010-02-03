@@ -63,7 +63,7 @@
     <div class="toolFormBody">
         <div class="form-row">
             <label>Message:</label>
-            ${ldda.message}
+            <pre>${ldda.message}</pre>
             <div style="clear: both"></div>
         </div>
         <div class="form-row">
