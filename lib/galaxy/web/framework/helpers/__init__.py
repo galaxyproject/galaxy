@@ -7,6 +7,8 @@ from galaxy.util.json import to_json_string
 from galaxy.util import hash_util
 from datetime import datetime, timedelta
 
+from cgi import escape
+
 # If the date is more than one week ago, then display the actual date instead of in words
 def time_ago( x ):
     delta = timedelta(weeks=1)
