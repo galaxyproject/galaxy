@@ -24,8 +24,13 @@
     <requirement type="python-module">rpy</requirement>
   </requirements>
   <tests>
-  	<!-- Testing this tool will not be possible because this tool produces a pdf output file.
-    -->
+    <test>
+        <param name="input1" value="regr_inp.tabular"/>
+        <param name="response_col" value="3"/>
+        <param name="predictor_cols" value="1,2"/>
+        <output name="out_file1" file="regr_out.tabular"/>
+        <output name="out_file2" file="regr_out.pdf"/>
+    </test>
   </tests>
   <help>
 
