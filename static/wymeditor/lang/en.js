@@ -45,6 +45,8 @@ WYMeditor.STRINGS['en'] = {
     // Galaxy replacements.
     Galaxy_History_Link:     'Insert Link to History',
     Galaxy_Dataset_Link:     'Insert Link to Dataset',
+    Galaxy_Workflow_Link:    'Insert Link to Workflow',
+    Galaxy_Page_Link:        'Insert Link to Page',
     Annotate_Galaxy_History: 'Annotate History',
 };
 

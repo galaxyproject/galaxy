@@ -148,45 +148,40 @@
     </div>
     
     <div class="unified-panel-body">
-        <div style="overflow: auto; height: 100%;">        
-
-            %if item.published:
-                <div style="padding: 10px;">
-                    <h4>Author</h4>
-                    
-                    <p>${item.user.username}</p>
-                    
-                    <div><img src="http://www.gravatar.com/avatar/${h.md5(item.user.email)}?s=150"></div>
-                    
-                    
-                    
-                    ## Page meta.
-                    <h4>Related ${item_plural}</h4>
-                    <p>
-                        <a href="${href_to_all_items}">All published ${item_plural.lower()}</a><br>
-                        <a href="${href_to_user_items}">${item_plural} owned by ${item.user.username}</a>
-            
-                    ## Tags.
-                    <h4>Tags</strong></h4>
-                    <p>
-                    ## Community tags.
-                    <div>
-                        Community:
-                        ${render_community_tagging_element( tagged_item=item, tag_click_fn='community_tag_click', use_toggle_link=False )}
-                        %if len ( item.tags ) == 0:
-                            none
-                        %endif
-                    </div>
-                    ## Individual tags.
-                    <p>
-                    <div>
-                        Yours:
-                        ${render_individual_tagging_element( user=trans.get_user(), tagged_item=item, elt_context='view.mako', use_toggle_link=False, tag_click_fn='community_tag_click' )}
-                    </div>
+        <div style="overflow: auto; height: 100%;">
+            <div style="padding: 10px;">
+                <h4>Author</h4>
+                
+                <p>${item.user.username}</p>
+                
+                <div><img src="http://www.gravatar.com/avatar/${h.md5(item.user.email)}?s=150"></div>
+                
+                
+                
+                ## Page meta.
+                <h4>Related ${item_plural}</h4>
+                <p>
+                    <a href="${href_to_all_items}">All published ${item_plural.lower()}</a><br>
+                    <a href="${href_to_user_items}">${item_plural} owned by ${item.user.username}</a>
+        
+                ## Tags.
+                <h4>Tags</strong></h4>
+                <p>
+                ## Community tags.
+                <div>
+                    Community:
+                    ${render_community_tagging_element( tagged_item=item, tag_click_fn='community_tag_click', use_toggle_link=False )}
+                    %if len ( item.tags ) == 0:
+                        none
+                    %endif
                 </div>
-            %endif
-    
-    
+                ## Individual tags.
+                <p>
+                <div>
+                    Yours:
+                    ${render_individual_tagging_element( user=trans.get_user(), tagged_item=item, elt_context='view.mako', use_toggle_link=False, tag_click_fn='community_tag_click' )}
+                </div>
+            </div>    
         </div>
     </div>
 

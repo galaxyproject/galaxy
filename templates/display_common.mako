@@ -39,6 +39,8 @@
     ## Start with exceptions, end with default.
     if a_class is model.StoredWorkflow:
         return "Workflow"
+    elif a_class is model.HistoryDatasetAssociation:
+        return "Dataset"
     else:
         return a_class.__name__
 %>

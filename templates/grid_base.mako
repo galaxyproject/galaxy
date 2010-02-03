@@ -15,12 +15,12 @@
 ##
 
 <%def name="center_panel()">
-	${make_grid( grid )}
+    ${make_grid( grid )}
 </%def>
 
 ## Render the grid's basic elements. Each of these elements can be subclassed.
 <%def name="body()">
-	${make_grid( grid )}
+    ${make_grid( grid )}
 </%def>
 
 <%def name="title()">${grid.title}</%def>
@@ -718,15 +718,15 @@
 <%namespace file="./grid_common.mako" import="*" />
 
 <%def name="make_grid( grid )">
-	<table>
-	    <tr>
-	        <td width="75%">${self.render_grid_header( grid )}</td>
-	        <td></td>
-	        <td width="25%" id="grid-message" valign="top">${self.render_grid_message( grid )}</td>
-	    </tr>
-	</table>
+    <table>
+        <tr>
+            <td width="75%">${self.render_grid_header( grid )}</td>
+            <td></td>
+            <td width="25%" id="grid-message" valign="top">${self.render_grid_message( grid )}</td>
+        </tr>
+    </table>
 
-	${self.render_grid_table( grid )}
+    ${self.render_grid_table( grid )}
 </%def>
 
 ## Render grid message.
@@ -920,13 +920,13 @@
 ## Render grid table footer contents.
 <%def name="render_grid_table_footer_contents(grid, show_item_checkboxes=False)">
     ## Row for navigating among pages.
-	<%namespace file="/display_common.mako" import="get_class_plural" />
-	<% items_plural = get_class_plural( grid.model_class ).lower() %>
+    <%namespace file="/display_common.mako" import="get_class_plural" />
+    <% items_plural = get_class_plural( grid.model_class ).lower() %>
     %if grid.use_paging and num_pages > 1:
         <tr id="page-links-row">
-		    %if show_item_checkboxes:
-		        <td></td>
-		    %endif
+            %if show_item_checkboxes:
+                <td></td>
+            %endif
             <td colspan="100">
                 <span id='page-link-container'>
                     ## Page links.

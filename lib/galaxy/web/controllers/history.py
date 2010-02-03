@@ -31,16 +31,6 @@ class HistoryListGrid( grids.Grid ):
                 else:
                     rval.append( '' )
             return rval
-                
-    class DeletedColumn( grids.GridColumn ):
-       def get_accepted_filters( self ):
-           """ Returns a list of accepted filters for this column. """
-           accepted_filter_labels_and_vals = { "active" : "False", "deleted" : "True", "all": "All" }
-           accepted_filters = []
-           for label, val in accepted_filter_labels_and_vals.items():
-               args = { self.key: val }
-               accepted_filters.append( grids.GridColumnFilter( label, args) )
-           return accepted_filters
 
     # Grid definition
     title = "Saved Histories"
@@ -384,18 +374,15 @@ class HistoryController( BaseController, Sharable ):
         """ Returns history's name and link. """
         history = self.get_history( trans, id, False )
         
-        # To get info: user must own history.
-        if history.user == trans.get_user():
-            if self.set_item_slug( trans.sa_session, history ):
-                trans.sa_session.flush()
-            return_dict = { "name" : history.name, "link" : "/u/%s/h/%s" % ( history.user.username, history.slug ) }
-            return return_dict
-        return
+        if self.set_item_slug( trans.sa_session, history ):
+            trans.sa_session.flush()
+        return_dict = { "name" : history.name, "link" : url_for( action="display_by_username_and_slug", username=history.user.username, slug=history.slug ) }
+        return return_dict
         
     @web.expose
     @web.require_login( "set history's accessible flag" )
     def set_accessible_async( self, trans, id=None, accessible=False ):
-        """ Set history's importable attribute and sets history's slug. """
+        """ Set history's importable attribute and slug. """
         history = self.get_history( trans, id, True )
             
         # Only set if importable value would change; this prevents a change in the update_time unless attribute really changed.

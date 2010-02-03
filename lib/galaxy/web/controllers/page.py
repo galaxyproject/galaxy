@@ -84,44 +84,7 @@ class HistorySelectionGrid( grids.Grid ):
     class NameColumn( grids.TextColumn ):
         def get_value(self, trans, grid, history):
             return history.get_display_name()
-            
-    class DeletedColumn( grids.GridColumn ):
-       def get_accepted_filters( self ):
-           """ Returns a list of accepted filters for this column. """
-           accepted_filter_labels_and_vals = { "active" : "False", "deleted" : "True", "all": "All" }
-           accepted_filters = []
-           for label, val in accepted_filter_labels_and_vals.items():
-               args = { self.key: val }
-               accepted_filters.append( grids.GridColumnFilter( label, args) )
-           return accepted_filters
-           
-    class SharingColumn( grids.GridColumn ):
-        def filter( self, db_session, user, query, column_filter ):
-            """ Modify query to filter histories by sharing status. """
-            if column_filter == "All":
-                pass
-            elif column_filter:
-                if column_filter == "private":
-                    query = query.filter( model.History.users_shared_with == None )
-                    query = query.filter( model.History.importable == False )
-                elif column_filter == "shared":
-                    query = query.filter( model.History.users_shared_with != None )
-                elif column_filter == "importable":
-                    query = query.filter( model.History.importable == True )
-            return query
-        def get_accepted_filters( self ):
-            """ Returns a list of accepted filters for this column. """
-            accepted_filter_labels_and_vals = odict()
-            accepted_filter_labels_and_vals["private"] = "private"
-            accepted_filter_labels_and_vals["shared"] = "shared"
-            accepted_filter_labels_and_vals["importable"] = "importable"
-            accepted_filter_labels_and_vals["all"] = "All"
-            accepted_filters = []
-            for label, val in accepted_filter_labels_and_vals.items():
-                args = { self.key: val }
-                accepted_filters.append( grids.GridColumnFilter( label, args) )
-            return accepted_filters
-    
+               
     # Grid definition.
     title = "Saved Histories"
     template = "/page/select_histories_grid.mako"
@@ -138,9 +101,9 @@ class HistorySelectionGrid( grids.Grid ):
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
         # Columns that are valid for filtering but are not visible.
         DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" ),
-        SharingColumn( "Shared", key="shared", visible=False, filterable="advanced" ),
+        SharingStatusColumn( "Sharing", key="sharing", model_class=model.History, filterable="advanced", sortable=False, visible=False ),
     ]
-    columns.append( 
+    columns.append(     
         grids.MulticolFilterColumn(  
         "Search", 
         cols_to_filter=[ columns[0], columns[1] ], 
@@ -148,12 +111,125 @@ class HistorySelectionGrid( grids.Grid ):
                 )
     def apply_default_filter( self, trans, query, **kwargs ):
         return query.filter_by( user=trans.user, purged=False )
+        
+class ItemSelectionGrid( grids.Grid ):
+    """ Base class for pages' item selection grids. """
+    # Custom columns.
+    class NameColumn( grids.TextColumn ):
+        def get_value(self, trans, grid, item):
+            if hasattr( item, "get_display_name" ):
+                return item.get_display_name()
+            else:
+                return item.name
 
+    # Grid definition.
+    template = "/page/select_items_grid.mako"
+    async_template = "/page/select_items_grid_async.mako" 
+    default_filter = { "deleted" : "False" , "sharing" : "All" }
+    default_sort_key = "-update_time"
+    use_async = True
+    use_paging = True
+    num_rows_per_page = 10
+    
+    def apply_default_filter( self, trans, query, **kwargs ):
+        return query.filter_by( user=trans.user )
+                
+class HistorySelectionGrid( ItemSelectionGrid ):
+    """ Grid for selecting histories. """
+    # Grid definition.
+    title = "Saved Histories"
+    model_class = model.History
+    columns = [
+        ItemSelectionGrid.NameColumn( "Name", key="name", model_class=model.History, filterable="advanced" ),
+        grids.IndividualTagsColumn( "Tags", "tags", model.History, model.HistoryTagAssociation, filterable="advanced"),
+        grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
+        # Columns that are valid for filtering but are not visible.
+        DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" ),
+        SharingStatusColumn( "Sharing", key="sharing", model_class=model.History, filterable="advanced", sortable=False, visible=False ),
+    ]
+    columns.append(     
+        grids.MulticolFilterColumn(  
+        "Search", 
+        cols_to_filter=[ columns[0], columns[1] ], 
+        key="free-text-search", visible=False, filterable="standard" )
+                )
+                
+    def apply_default_filter( self, trans, query, **kwargs ):
+        return query.filter_by( user=trans.user, purged=False )
+        
+class HistoryDatasetAssociationSelectionGrid( ItemSelectionGrid ):
+    """ Grid for selecting HDAs. """
+    # Grid definition.
+    title = "Saved Datasets"
+    model_class = model.HistoryDatasetAssociation
+    columns = [
+        ItemSelectionGrid.NameColumn( "Name", key="name", model_class=model.HistoryDatasetAssociation, filterable="advanced" ),
+        grids.IndividualTagsColumn( "Tags", "tags", model.StoredWorkflow, model.HistoryDatasetAssociationTagAssociation, filterable="advanced"),
+        grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
+        # Columns that are valid for filtering but are not visible.
+        DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" ),
+        SharingStatusColumn( "Sharing", key="sharing", model_class=model.HistoryDatasetAssociation, filterable="advanced", sortable=False, visible=False ),
+    ]
+    columns.append(     
+        grids.MulticolFilterColumn(  
+        "Search", 
+        cols_to_filter=[ columns[0], columns[1] ], 
+        key="free-text-search", visible=False, filterable="standard" )
+                )
+    def apply_default_filter( self, trans, query, **kwargs ):
+        # To filter HDAs by user, need to join HDA and History table and then filter histories by user. This is necessary because HDAs do not have
+        # a user relation.
+        return query.select_from( model.HistoryDatasetAssociation.table.join( model.History.table ) ).filter( model.History.user == trans.user )
+    
+                
+class WorkflowSelectionGrid( ItemSelectionGrid ):
+    """ Grid for selecting workflows. """
+    # Grid definition.
+    title = "Saved Workflows"
+    model_class = model.StoredWorkflow
+    columns = [
+        ItemSelectionGrid.NameColumn( "Name", key="name", model_class=model.StoredWorkflow, filterable="advanced" ),
+        grids.IndividualTagsColumn( "Tags", "tags", model.StoredWorkflow, model.StoredWorkflowTagAssociation, filterable="advanced"),
+        grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
+        # Columns that are valid for filtering but are not visible.
+        DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" ),
+        SharingStatusColumn( "Sharing", key="sharing", model_class=model.StoredWorkflow, filterable="advanced", sortable=False, visible=False ),
+    ]
+    columns.append(     
+        grids.MulticolFilterColumn(  
+        "Search", 
+        cols_to_filter=[ columns[0], columns[1] ], 
+        key="free-text-search", visible=False, filterable="standard" )
+                )
+
+class PageSelectionGrid( ItemSelectionGrid ):
+    """ Grid for selecting pages. """
+    # Grid definition.
+    title = "Saved Pages"
+    model_class = model.Page
+    columns = [
+        grids.TextColumn( "Title", key="title", model_class=model.Page, filterable="advanced" ),
+        grids.IndividualTagsColumn( "Tags", "tags", model.Page, model.PageTagAssociation, filterable="advanced"),
+        grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
+        # Columns that are valid for filtering but are not visible.
+        DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" ),
+        SharingStatusColumn( "Sharing", key="sharing", model_class=model.Page, filterable="advanced", sortable=False, visible=False ),
+    ]
+    columns.append(     
+        grids.MulticolFilterColumn(  
+        "Search",
+        cols_to_filter=[ columns[0], columns[1] ], 
+        key="free-text-search", visible=False, filterable="standard" )
+                )
+                
 class PageController( BaseController, Sharable ):
     
     _page_list = PageListGrid()
     _all_published_list = PageAllPublishedGrid()
     _history_selection_grid = HistorySelectionGrid()
+    _workflow_selection_grid = WorkflowSelectionGrid()
+    _datasets_selection_grid = HistoryDatasetAssociationSelectionGrid()
+    _page_selection_grid = PageSelectionGrid()
     
     @web.expose
     @web.require_login()  
@@ -447,7 +523,34 @@ class PageController( BaseController, Sharable ):
            raise web.httpexceptions.HTTPNotFound()
 
         return trans.fill_template_mako( "page/display.mako", item=page)
-    
+        
+    @web.expose
+    @web.require_login( "use Galaxy pages" )
+    def set_accessible_async( self, trans, id=None, accessible=False ):
+        """ Set page's importable attribute and slug. """
+        page = self.get_page( trans, id )
+
+        # Only set if importable value would change; this prevents a change in the update_time unless attribute really changed.
+        importable = accessible in ['True', 'true', 't', 'T'];
+        if page.importable != importable:
+            if importable:
+                self._make_item_accessible( trans.sa_session, page )
+            else:
+                page.importable = importable
+            trans.sa_session.flush()
+        return
+
+    @web.expose
+    @web.json
+    @web.require_login( "use Galaxy pages" )
+    def get_name_and_link_async( self, trans, id=None ):
+        """ Returns page's name and link. """
+        page = self.get_page( trans, id )
+
+        if self.set_item_slug( trans.sa_session, page ):
+            trans.sa_session.flush()
+        return_dict = { "name" : page.title, "link" : url_for( action="display_by_username_and_slug", username=page.user.username, slug=page.slug ) }
+        return return_dict
         
     @web.expose
     @web.require_login("select a history from saved histories")
@@ -455,6 +558,27 @@ class PageController( BaseController, Sharable ):
         """ Returns HTML that enables a user to select one or more histories. """
         # Render the list view
         return self._history_selection_grid( trans, **kwargs )
+        
+    @web.expose
+    @web.require_login("select a workflow from saved workflows")
+    def list_workflows_for_selection( self, trans, **kwargs ):
+        """ Returns HTML that enables a user to select one or more workflows. """
+        # Render the list view
+        return self._workflow_selection_grid( trans, **kwargs )
+        
+    @web.expose
+    @web.require_login("select a page from saved pages")
+    def list_pages_for_selection( self, trans, **kwargs ):
+        """ Returns HTML that enables a user to select one or more pages. """
+        # Render the list view
+        return self._page_selection_grid( trans, **kwargs )
+        
+    @web.expose
+    @web.require_login("select a dataset from saved datasets")
+    def list_datasets_for_selection( self, trans, **kwargs ):
+        """ Returns HTML that enables a user to select one or more datasets. """
+        # Render the list view
+        return self._datasets_selection_grid( trans, **kwargs )
         
     @web.expose
     @web.require_login("get annotation table for history")
@@ -484,3 +608,19 @@ class PageController( BaseController, Sharable ):
     def get_editor_iframe( self, trans ):
         """ Returns the document for the page editor's iframe. """
         return trans.fill_template( "page/wymiframe.mako" )
+        
+    def get_page( self, trans, id, check_ownership=True ):
+        """Get a page from the database by id, verifying ownership."""
+        # Load history from database
+        id = trans.security.decode_id( id )
+        page = trans.sa_session.query( model.Page ).get( id )
+        if not page:
+            err+msg( "History not found" )
+        if check_ownership:
+            # Verify ownership
+            user = trans.get_user()
+            if not user:
+                error( "Must be logged in to work with Pages" )
+            if page.user != user:
+                error( "History is not owned by current user" )
+        return page

@@ -71,15 +71,6 @@ class RequestsGrid( grids.Grid ):
                 args = { self.key: val }
                 accepted_filters.append( grids.GridColumnFilter( label, args) )
             return accepted_filters
-    class DeletedColumn( grids.GridColumn ):
-       def get_accepted_filters( self ):
-           """ Returns a list of accepted filters for this column. """
-           accepted_filter_labels_and_vals = { "active" : "False", "deleted" : "True", "all": "All" }
-           accepted_filters = []
-           for label, val in accepted_filter_labels_and_vals.items():
-               args = { self.key: val }
-               accepted_filters.append( grids.GridColumnFilter( label, args) )
-           return accepted_filters
     # Grid definition
     title = "Sequencing Requests"
     template = 'requests/grid.mako'

@@ -47,15 +47,6 @@ class UserListGrid( grids.Grid ):
             if user.galaxy_sessions:
                 return self.format( user.galaxy_sessions[ 0 ].update_time )
             return 'never'
-    class DeletedColumn( grids.GridColumn ):
-       def get_accepted_filters( self ):
-           """ Returns a list of accepted filters for this column. """
-           accepted_filter_labels_and_vals = { "active" : "False", "deleted" : "True", "all": "All" }
-           accepted_filters = []
-           for label, val in accepted_filter_labels_and_vals.items():
-               args = { self.key: val }
-               accepted_filters.append( grids.GridColumnFilter( label, args) )
-           return accepted_filters
 
     # Grid definition
     title = "Users"
@@ -131,15 +122,6 @@ class RoleListGrid( grids.Grid ):
             if role.deleted:
                 return "deleted"
             return ""
-    class DeletedColumn( grids.GridColumn ):
-       def get_accepted_filters( self ):
-           """ Returns a list of accepted filters for this column. """
-           accepted_filter_labels_and_vals = { "active" : "False", "deleted" : "True", "all": "All" }
-           accepted_filters = []
-           for label, val in accepted_filter_labels_and_vals.items():
-               args = { self.key: val }
-               accepted_filters.append( grids.GridColumnFilter( label, args) )
-           return accepted_filters
     class GroupsColumn( grids.GridColumn ):
         def get_value( self, trans, grid, role ):
             if role.groups:
@@ -216,15 +198,6 @@ class GroupListGrid( grids.Grid ):
             if group.deleted:
                 return "deleted"
             return ""
-    class DeletedColumn( grids.GridColumn ):
-       def get_accepted_filters( self ):
-           """ Returns a list of accepted filters for this column. """
-           accepted_filter_labels_and_vals = { "active" : "False", "deleted" : "True", "all": "All" }
-           accepted_filters = []
-           for label, val in accepted_filter_labels_and_vals.items():
-               args = { self.key: val }
-               accepted_filters.append( grids.GridColumnFilter( label, args) )
-           return accepted_filters
     class RolesColumn( grids.GridColumn ):
         def get_value( self, trans, grid, group ):
             if group.roles:

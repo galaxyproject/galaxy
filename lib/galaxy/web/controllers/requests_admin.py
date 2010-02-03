@@ -80,15 +80,6 @@ class RequestsGrid( grids.Grid ):
     class UserColumn( grids.TextColumn ):
         def get_value(self, trans, grid, request):
             return request.user.email
-    class DeletedColumn( grids.GridColumn ):
-       def get_accepted_filters( self ):
-           """ Returns a list of accepted filters for this column. """
-           accepted_filter_labels_and_vals = { "active" : "False", "deleted" : "True", "all": "All" }
-           accepted_filters = []
-           for label, val in accepted_filter_labels_and_vals.items():
-               args = { self.key: val }
-               accepted_filters.append( grids.GridColumnFilter( label, args) )
-           return accepted_filters
     # Grid definition
     title = "Sequencing Requests"
     template = "admin/requests/grid.mako"
@@ -167,15 +158,6 @@ class RequestTypeGrid( grids.Grid ):
     class SampleFormColumn( grids.TextColumn ):
         def get_value(self, trans, grid, request_type):
             return request_type.sample_form.name
-    class DeletedColumn( grids.GridColumn ):
-       def get_accepted_filters( self ):
-           """ Returns a list of accepted filters for this column. """
-           accepted_filter_labels_and_vals = { "active" : "False", "deleted" : "True", "all": "All" }
-           accepted_filters = []
-           for label, val in accepted_filter_labels_and_vals.items():
-               args = { self.key: val }
-               accepted_filters.append( grids.GridColumnFilter( label, args) )
-           return accepted_filters
     # Grid definition
     title = "Requests Types"
     template = "admin/requests/manage_request_types.mako"

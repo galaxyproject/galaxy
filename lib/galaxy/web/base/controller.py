@@ -17,13 +17,13 @@ log = logging.getLogger( __name__ )
 
 # Useful columns in many grids used by controllers.
 
-# Item's user/owner.
 class OwnerColumn( grids.TextColumn ):
+    """ Column that lists item's owner. """
     def get_value( self, trans, grid, item ):
         return item.user.username
 
-# Item's public URL based on username and slug.
 class PublicURLColumn( grids.TextColumn ):
+    """ Column displays item's public URL based on username and slug. """
     def get_link( self, trans, grid, item ):
         if item.user.username and item.slug:
             return dict( action='display_by_username_and_slug', username=item.user.username, slug=item.slug )
@@ -33,7 +33,18 @@ class PublicURLColumn( grids.TextColumn ):
         elif not item.user.slug:
             # TODO: provide link to set slg
             return None
-        
+            
+class DeletedColumn( grids.GridColumn ):
+    """ Column that tracks and filters for items with deleted attribute. """
+    def get_accepted_filters( self ):
+        """ Returns a list of accepted filters for this column. """
+        accepted_filter_labels_and_vals = { "active" : "False", "deleted" : "True", "all": "All" }
+        accepted_filters = []
+        for label, val in accepted_filter_labels_and_vals.items():
+           args = { self.key: val }
+           accepted_filters.append( grids.GridColumnFilter( label, args) )
+        return accepted_filters
+    
 class BaseController( object ):
     """
     Base class for Galaxy web application controllers.
@@ -203,6 +214,13 @@ class Sharable:
     @web.expose
     def display_by_username_and_slug( self, trans, username, slug ):
         """ Display item by username and slug. """
+        pass
+        
+    @web.expose
+    @web.json
+    @web.require_login( "get item name and link" )
+    def get_name_and_link_async( self, trans, id=None ):
+        """ Returns item's name and link. """
         pass
         
     # Helper methods.

@@ -30,6 +30,9 @@
     var Galaxy = 
     {
         DIALOG_HISTORY_LINK : "history_link",
+        DIALOG_DATASET_LINK : "dataset_link",
+        DIALOG_WORKFLOW_LINK : "workflow_link",
+        DIALOG_PAGE_LINK : "page_link",
         DIALOG_HISTORY_ANNOTATE : "history_annotate",
     };
     
@@ -199,25 +202,59 @@
             );
         }
         
-        // INSERT HISTORY LINK DIALOG
-        if ( dialogType == Galaxy.DIALOG_HISTORY_LINK ) {
+        // INSERT "GALAXY ITEM" (HISTORY, DATASET, WORKFLOW, PAGE) LINK DIALOG
+        if ( dialogType == Galaxy.DIALOG_HISTORY_LINK || dialogType == Galaxy.DIALOG_DATASET_LINK || 
+             dialogType == Galaxy.DIALOG_WORKFLOW_LINK || dialogType == Galaxy.DIALOG_PAGE_LINK ) {
+            // Based on item type, set useful vars.
+            var 
+                item_singular, 
+                item_plural, 
+                item_controller,
+                item_list_action;
+            switch( dialogType ) {
+                case( Galaxy.DIALOG_HISTORY_LINK ):
+                    item_singular = "History";
+                    item_plural = "Histories";
+                    item_controller = "history"
+                    break;
+                case( Galaxy.DIALOG_DATASET_LINK ):
+                    item_singular = "Dataset";
+                    item_plural = "Datasets";
+                    item_controller = "dataset"
+                    break;
+                case( Galaxy.DIALOG_WORKFLOW_LINK ):
+                    item_singular = "Workflow";
+                    item_plural = "Workflows";
+                    item_controller = "workflow"
+                    break;
+                case( Galaxy.DIALOG_PAGE_LINK ):
+                    item_singular = "Page";
+                    item_plural = "Pages";
+                    item_controller = "page"
+                break;
+            }
+            item_list_action = "list_" + item_plural.toLowerCase() + "_for_selection";
+            
+            // Show grid that enables user to select items.
+            var url_template = "${h.url_for( action='LIST_ACTION' )}";
+            var ajax_url = url_template.replace( "LIST_ACTION", item_list_action );
             $.ajax(
             {
-                url: "${h.url_for( action='list_histories_for_selection' )}",
+                url: ajax_url,
                 data: {},
-                error: function() { alert( "Grid refresh failed" ) },
+                error: function() { alert( "Failed to list "  + item_plural.toLowerCase() + " for selection"); },
                 success: function(table_html) 
                 {
                     show_modal(
-                        "Insert Link to History",
+                        "Insert Link to " + item_singular,
                         table_html +
                         "<div><input id='make-importable' type='checkbox' checked/>" +
-                        "Make the selected histories accessible so that they can viewed by everyone.</div>"
+                        "Make the selected " + item_plural.toLowerCase() + " accessible so that they can viewed by everyone.</div>"
                         ,
                         {
                             "Insert": function() 
                             {
-                                // Make histories public/importable?
+                                // Make items accessible (importable) ?
                                 var make_importable = false;
                                 if ( $('#make-importable:checked').val() !== null )
                                     make_importable = true;
@@ -229,15 +266,21 @@
                                     
                                     // Make history importable?
                                     if (make_importable)
+                                    {
+                                        url_template = "${h.url_for( controller='ITEM_CONTROLLER', action='set_accessible_async' )}";
+                                        ajax_url = url_template.replace( "ITEM_CONTROLLER", item_controller);
                                         $.ajax({
                                           type: "POST",
-                                          url: '${h.url_for( controller='history', action='set_accessible_async' )}',
+                                          url: ajax_url,
                                           data: { id: item_id, accessible: 'True' },
-                                          error: function() { alert('Make history accessible failed; id=' + item_id) }
+                                          error: function() { alert("Making " + item_plural.toLowerCase() + " accessible failed"); }
                                         });
-                                        
-                                    // Insert link. This is done by getting history info and then manipulating wym.
-                                    $.getJSON( '${h.url_for( controller='history', action='get_name_and_link_async' )}?id=' + item_id, function( history_info ) {
+                                    }
+                                    
+                                    // Insert link(s) to item(s). This is done by getting item info and then manipulating wym.
+                                    url_template = "${h.url_for( controller='ITEM_CONTROLLER', action='get_name_and_link_async' )}?id=" + item_id;
+                                    ajax_url = url_template.replace( "ITEM_CONTROLLER", item_controller);
+                                    $.getJSON( ajax_url, function( item_info ) {
                                         // Get link text.
                                         wym._exec(WYMeditor.CREATE_LINK, sStamp);
                                         var link_text = $("a[href=" + sStamp + "]", wym._doc.body).text();
@@ -250,12 +293,12 @@
                                             )
                                         {
                                             // User selected no text; create link from scratch and use default text.
-                                            wym.insert("<a href='" + history_info.link + "'>History '" + history_info.name + "'</a>");
+                                            wym.insert("<a href='" + item_info.link + "'> '" + item_singular + " " + item_info.name + "'</a>");
                                         }
                                         else
                                         {
                                             // Link created from selected text; add href and title.
-                                            $("a[href=" + sStamp + "]", wym._doc.body).attr(WYMeditor.HREF, history_info.link).attr(WYMeditor.TITLE, "History" + item_id);
+                                            $("a[href=" + sStamp + "]", wym._doc.body).attr(WYMeditor.HREF, item_info.link).attr(WYMeditor.TITLE, item_singular + item_id);
                                         }
                                     });                                    
                                 });
@@ -365,6 +408,9 @@
                     {'name': 'InsertImage', 'title': 'Image', 'css': 'wym_tools_image'},
                     {'name': 'InsertTable', 'title': 'Table', 'css': 'wym_tools_table'},
                     {'name': 'Insert Galaxy History Link', 'title' : 'Galaxy_History_Link', 'css' : 'galaxy_tools_insert_history_link'},
+                    {'name': 'Insert Galaxy Dataset Link', 'title' : 'Galaxy_Dataset_Link', 'css' : 'galaxy_tools_insert_dataset_link'},
+                    {'name': 'Insert Galaxy Workflow Link', 'title' : 'Galaxy_Workflow_Link', 'css' : 'galaxy_tools_insert_workflow_link'},
+                    {'name': 'Insert Galaxy Page Link', 'title' : 'Galaxy_Page_Link', 'css' : 'galaxy_tools_insert_page_link'},
                     {'name': 'Annonate Galaxy History', 'title' : 'Annotate_Galaxy_History', 'css' : 'galaxy_tools_annotate_history'},
                 ]
             });
@@ -372,29 +418,29 @@
             var editor = $.wymeditors(0);
             var save = function ( callback ) {
                 show_modal( "Saving page", "progress" );
-				// Gather annotations.
-				var annotations = new Array();
-				
-				$('.annotation', editor._doc.body).each( function() {
-					var item_class = $(this).attr( 'item_class' );
-					var item_id = $(this).attr( 'item_id' );
-					var text = $(this).text();
-					annotation = {
-						"item_class" : item_class,
-						"item_id" : item_id,
-						"text" : text
-					};
-					annotations[ annotations.length ] = annotation;
-				});
-				
-				// Do save.
-                $.ajax( {	
+                // Gather annotations.
+                var annotations = new Array();
+                
+                $('.annotation', editor._doc.body).each( function() {
+                    var item_class = $(this).attr( 'item_class' );
+                    var item_id = $(this).attr( 'item_id' );
+                    var text = $(this).text();
+                    annotation = {
+                        "item_class" : item_class,
+                        "item_id" : item_id,
+                        "text" : text
+                    };
+                    annotations[ annotations.length ] = annotation;
+                });
+                
+                // Do save.
+                $.ajax( {   
                     url: "${h.url_for( action='save' )}",
                     type: "POST",
                     data: {
                         id: "${trans.security.encode_id(page.id)}",
                         content: editor.xhtml(),
-						annotations: JSON.stringify(annotations),
+                        annotations: JSON.stringify(annotations),
                         "_": "true"
                     },
                     success: function() {
@@ -436,9 +482,21 @@
             $('.galaxy_tools_insert_history_link').children().click( function() {
                 editor.dialog(Galaxy.DIALOG_HISTORY_LINK); 
             });
+            // Initialize 'Insert dataset link' button.
+            $('.galaxy_tools_insert_dataset_link').children().click( function() {
+                editor.dialog(Galaxy.DIALOG_DATASET_LINK); 
+            });
+            // Initialize 'Insert workflow link' button.
+            $('.galaxy_tools_insert_workflow_link').children().click( function() {
+                editor.dialog(Galaxy.DIALOG_WORKFLOW_LINK); 
+            });
+            // Initialize 'Insert page link' button.
+            $('.galaxy_tools_insert_page_link').children().click( function() {
+                editor.dialog(Galaxy.DIALOG_PAGE_LINK); 
+            });
             // Initialize 'Annotate history' button.
             $('.galaxy_tools_annotate_history').children().click( function() {
-                editor.dialog(Galaxy.ANNOTATE_HISTORY); 
+                editor.dialog(Galaxy.DIALOG_ANNOTATE_HISTORY); 
             });
             // Initialize galaxy elements.
             //init_galaxy_elts(editor);

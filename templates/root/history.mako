@@ -47,14 +47,14 @@ $(function() {
     
     // Annotation async.
     // Tag async. Simply have the workflow tag element generate a click on the tag element to activate tagging.
-	$('#workflow-tag').click( function() 
-	{
-	    $('.tag-area').click();
-	    return false;
-	});
-					
-	// Annotate async.
-	async_save_text("history-annotate", "history-annotation", "${h.url_for( controller="/history", action="annotate_async", id=trans.security.encode_id(history.id) )}", "new_annotation", true, 4);
+    $('#workflow-tag').click( function() 
+    {
+        $('.tag-area').click();
+        return false;
+    });
+                    
+    // Annotate async.
+    async_save_text("history-annotate", "history-annotation", "${h.url_for( controller="/history", action="annotate_async", id=trans.security.encode_id(history.id) )}", "new_annotation", true, 4);
     
     // Updater
     updater({
@@ -308,6 +308,11 @@ div.form-row {
         
             ## Annotation elt.
             <div id="history-annotation-area" class="form-row">
+<<<<<<< local
+                <label>Annotation / Notes:</label>
+                <div style="float: right"><a id="history-annotate" title="Annotate" class="icon-button edit" target="galaxy_main" href="${h.url_for( controller='history', action='annotate_async' )}"></a></div>
+                <div id="history-annotation">${annotation}</div>
+=======
        	        <label>Annotation / Notes:</label>
     		    <div style="float: right"><a id="history-annotate" title="Annotate" class="icon-button edit" target="galaxy_main" href="${h.url_for( controller='history', action='annotate_async' )}"></a></div>
     		    %if annotation:
@@ -315,8 +320,9 @@ div.form-row {
                     %else:
                         <div id="history-annotation"></div>
                     %endif
+>>>>>>> other
                 <div style="clear: both"></div>
-    		</div>
+            </div>
         </div>
     </div>
 %endif

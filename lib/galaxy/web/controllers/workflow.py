@@ -367,6 +367,35 @@ class WorkflowController( BaseController, Sharable ):
             
     @web.expose
     @web.require_login( "use Galaxy workflows" )
+    def set_accessible_async( self, trans, id=None, accessible=False ):
+        """ Set workflow's importable attribute and slug. """
+        stored = get_stored_workflow( trans, id )
+
+        # Only set if importable value would change; this prevents a change in the update_time unless attribute really changed.
+        importable = accessible in ['True', 'true', 't', 'T'];
+        if stored and stored.importable != importable:
+            if importable:
+                self._make_item_accessible( trans.sa_session, stored )
+            else:
+                stored.importable = importable
+            trans.sa_session.flush()
+
+        return
+        
+    @web.expose
+    @web.json
+    @web.require_login( "use Galaxy workflows" )
+    def get_name_and_link_async( self, trans, id=None ):
+        """ Returns workflow's name and link. """
+        stored = get_stored_workflow( trans, id )
+
+        if self.set_item_slug( trans.sa_session, stored ):
+            trans.sa_session.flush()
+        return_dict = { "name" : stored.name, "link" : url_for( action="display_by_username_and_slug", username=stored.user.username, slug=stored.slug ) }
+        return return_dict
+    
+    @web.expose
+    @web.require_login( "use Galaxy workflows" )
     def clone( self, trans, id ):
         stored = get_stored_workflow( trans, id, check_ownership=False )
         user = trans.get_user()
