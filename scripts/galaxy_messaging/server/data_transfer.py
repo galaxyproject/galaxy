@@ -44,6 +44,13 @@ logfile = os.path.join(curr_dir, 'data_transfer.log')
 logging.basicConfig(filename=logfile, level=logging.DEBUG, 
         format="%(asctime)s [%(levelname)s] %(message)s")
 
+class DataTransferException(Exception):
+    def __init__(self, value):
+        self.msg = value
+    def __str__(self):
+        return repr(self.msg)
+
+
 class DataTransfer(object):
     
     def __init__(self, host, username, password, remote_file, sample_id, 
@@ -102,14 +109,14 @@ class DataTransfer(object):
             self.error_and_exit()
 
             
-    def error_and_exit(self):
+    def error_and_exit(self, msg=''):
         '''
         This method is called any exception is raised. This prints the traceback 
         and terminates this script
         '''
         logging.error(traceback.format_exc())
-        logging.error('FATAL ERROR')
-        self.update_status('Error')
+        logging.error('FATAL ERROR.'+msg)
+        self.update_status('Error.'+msg)
         sys.exit(1)
         
     def transfer_file(self):
@@ -159,7 +166,7 @@ class DataTransfer(object):
                 url = "%s/user/create?email=%s&username=%s&password=%s&confirm=%s&create_user_button=Submit" % ( base_url, email, email, password, password )
                 f = opener.open(url)
                 if f.read().find("Now logged in as "+email) == -1:
-                    raise Exception
+                    raise DataTransferException("The "+email+" user could not login to Galaxy")
             # after login, add dataset to the library
             params = urllib.urlencode(dict( cntrller='library_admin',
                                             tool_id='upload1',
@@ -177,9 +184,14 @@ class DataTransfer(object):
             logging.debug(url)
             logging.debug(params)
             f = opener.open(url, params)
-            #print f.read()
-        except:
-            self.error_and_exit()
+            if f.read().find("Data Library") == -1:
+                raise DataTransferException("Dataset could not be uploaded to the data library")
+            # finally logout
+            f = opener.open(base_url+'/user/logout')
+            if f.read().find("You are no longer logged in.") == -1:
+                raise DataTransferException("The "+email+" user could not logout of Galaxy")
+        except DataTransferException, (e):
+            self.error_and_exit(e.msg)
 
     def update_status(self, status):
         '''

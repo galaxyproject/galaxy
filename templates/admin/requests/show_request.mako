@@ -43,7 +43,7 @@ $(document).ready(function(){
 </script>
 <style type="text/css">
 .msg_head {
-    padding: 15px 0px;
+    padding: 10px 0px;
     cursor: pointer;
 }
 

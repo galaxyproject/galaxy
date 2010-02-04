@@ -1449,8 +1449,14 @@ class RequestsAdmin( BaseController ):
                                         dataset_files=sample.dataset_files)
         elif params.get( 'start_transfer_button', False ):
             for f in files_list:
-                sample.dataset_files.append([os.path.join(folder_path, f),
-                                             sample.transfer_status.NOT_STARTED])
+                if f[-1] == os.sep:
+                    # the selected item is a folder so transfer all the 
+                    # folder contents 
+                    sample.dataset_files.append([os.path.join(folder_path, f),
+                                                 sample.transfer_status.NOT_STARTED])
+                else:
+                    sample.dataset_files.append([os.path.join(folder_path, f),
+                                                 sample.transfer_status.NOT_STARTED])
             trans.sa_session.add( sample )
             trans.sa_session.flush()
             return self.__start_datatx(trans, sample)
@@ -1547,7 +1553,8 @@ class RequestsAdmin( BaseController ):
             trans.sa_session.flush()
         return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                           action='show_datatx_page', 
-                                                          sample_id=trans.security.encode_id(sample.id)))
+                                                          sample_id=trans.security.encode_id(sample.id),
+                                                          folder_path=os.path.dirname(dfile)))
 
     
         
