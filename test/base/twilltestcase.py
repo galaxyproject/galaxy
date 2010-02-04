@@ -53,21 +53,35 @@ class TwillTestCase( unittest.TestCase ):
                 files_differ = True
             if files_differ:
                 diff = difflib.unified_diff( local_file, history_data, "local_file", "history_data" )
-                diff_slice = list( islice( diff, 40 ) )
+                diff_slice = list( islice( diff, 40 ) )        
                 if file1.endswith( '.pdf' ) or file2.endswith( '.pdf' ):
-                    # PDF files contain both a creation and modification date, so we need to
-                    # handle these differences.  As long as the rest of the PDF file does not differ,
-                    # we're ok.
-                    if len( diff_slice ) == 13 and \
-                    diff_slice[6].startswith( '-/CreationDate' ) and diff_slice[7].startswith( '-/ModDate' ) \
-                    and diff_slice[8].startswith( '+/CreationDate' ) and diff_slice[9].startswith( '+/ModDate' ):
-                        return True
-                for line in diff_slice:
-                    for char in line:
-                        if ord( char ) > 128:
-                            raise AssertionError( "Binary data detected, not displaying diff" )
-                raise AssertionError( "".join( diff_slice ) )
-        return True
+                    # PDF files contain creation dates, modification dates, ids and descriptions that change with each
+                    # new file, so we need to handle these differences.  As long as the rest of the PDF file does
+                    # not differ we're ok.
+                    valid_diff_strs = [ 'description', 'createdate', 'creationdate', 'moddate', 'id' ]
+                    valid_diff = False
+                    for line in diff_slice:
+                        # Make sure to lower case strings before checking.
+                        line = line.lower()
+                        # Diff lines will always start with a + or - character, but handle special cases: '--- local_file \n', '+++ history_data \n'
+                        if ( line.startswith( '+' ) or line.startswith( '-' ) ) and line.find( 'local_file' ) < 0 and line.find( 'history_data' ) < 0:
+                            for vdf in valid_diff_strs:
+                                if line.find( vdf ) < 0:
+                                    valid_diff = False
+                                else:
+                                    valid_diff = True
+                                    # Stop checking as soon as we know we have a valid difference
+                                    break
+                            if not valid_diff:
+                                # Print out diff_slice so we can see what failed
+                                print "###### diff_slice ######"
+                                raise AssertionError( "".join( diff_slice ) )
+                                break
+                else:
+                    for line in diff_slice:
+                        for char in line:
+                            if ord( char ) > 128:
+                                raise AssertionError( "Binary data detected, not displaying diff" )
 
     def get_filename( self, filename ):
         full = os.path.join( self.file_dir, filename)

@@ -88,7 +88,7 @@ class TextArea(BaseField):
         self.value = value or ""
     def get_html( self, prefix="" ):
         return '<textarea name="%s%s" rows="%d" cols="%d">%s</textarea>' \
-            % ( prefix, self.name, self.rows, self.cols, escape(str(self.value), quote=True) )
+            % ( prefix, self.name, self.rows, self.cols, escape( str( self.value ), quote=True ) )
     def set_size(self, rows, cols):
         self.rows = rows
         self.cols = cols
@@ -104,27 +104,31 @@ class CheckboxField(BaseField):
     """
     def __init__( self, name, checked=None ):
         self.name = name
-        self.checked = ( checked == True ) or ( type( checked ) == type( 'a' ) and ( checked.lower() in ( "yes", "true", "on" ) ) ) 
+        self.checked = ( checked == True ) or ( isinstance( checked, basestring ) and ( checked.lower() in ( "yes", "true", "on" ) ) )
     def get_html( self, prefix="" ):
         if self.checked:
             checked_text = "checked"
-        else: checked_text = ""
+        else:
+            checked_text = ""
+        # The hidden field is necessary because if the check box is not checked on the form, it will
+        # not be included in the request params.  The hidden field ensure that this will happen.  When
+        # parsing the request, the value 'true' in the hidden field actually means it is NOT checked.
+        # See the is_checked() method below.  The prefix is necessary in each case to ensure functional
+        # correctness when the param is inside a conditional.
         return '<input type="checkbox" name="%s%s" value="true" %s><input type="hidden" name="%s%s" value="true">' \
             % ( prefix, self.name, checked_text, prefix, self.name )
     @staticmethod
     def is_checked( value ):
-        if value == True: # wierd behaviour caused by following check for 2 valued list - wtf? ross august 22
-           return value
-        if type( value ) == list and len( value ) == 2:
-            return True
-        else:
-            return False
+        if value == True:
+            return value
+        # This may look strange upon initial inspection, but see the comments in the get_html() method
+        # above for clarification.  Basically, if value is not True, then it will always be a list with
+        # 2 input fields ( a checkbox and a hidden field ) if the checkbox is checked.  If it is not
+        # checked, then value will be only the hidden field.
+        return isinstance( value, list ) and len( value ) == 2
     def set_checked(self, value):
-        if type(value) == type('a'):
-            if value.lower() in [ "yes", "true", "on" ]:
-                self.checked = True
-            else:
-                self.checked = False
+        if isinstance( value, basestring ):
+            self.checked = value.lower() in [ "yes", "true", "on" ]
         else:
             self.checked = value
 
@@ -335,8 +339,8 @@ class DrillDownField( BaseField ):
         self.name = name
         self.multiple = multiple or False
         self.options = options
-        if value is not None:
-            if not isinstance( value, list ): value = [ value ]
+        if value and not isinstance( value, list ):
+            value = [ value ]
         else:
             value = []
         self.value = value
