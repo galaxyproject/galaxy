@@ -1,0 +1,5 @@
+# Galaxy LIMS Transfer Datasets Configuration File
+
+[data_transfer_user_login_info]
+#email = user@example.com
+#password = 
