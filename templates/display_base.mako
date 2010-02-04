@@ -13,13 +13,13 @@
 <%namespace file="/display_common.mako" import="*" />
 
 <%def name="title()">
-    Galaxy | ${iff( item.published, "Published ", iff( item.importable , "Accessible ", iff( item.users_shared_with, "Shared ", "Private " ) ) ) + get_class_display_name( item.__class__ )} | ${get_item_name( item )}
+    Galaxy | ${iff( item.published, "Published ", iff( item.importable , "Accessible ", iff( item.users_shared_with, "Shared ", "Private " ) ) ) + get_class_display_name( item.__class__ )} | ${get_item_name( item ) | h}
 </%def>
 
 <%def name="init()">
 <%
 	self.has_left_panel=False
-	self.has_right_panel=item.published
+	self.has_right_panel=True
 	self.message_box_visible=False
 	self.active_view="user"
 	self.overlay_visible=False
@@ -152,7 +152,7 @@
             <div style="padding: 10px;">
                 <h4>Author</h4>
                 
-                <p>${item.user.username}</p>
+                <p>${item.user.username | h}</p>
                 
                 <div><img src="http://www.gravatar.com/avatar/${h.md5(item.user.email)}?s=150"></div>
                 
@@ -162,7 +162,7 @@
                 <h4>Related ${item_plural}</h4>
                 <p>
                     <a href="${href_to_all_items}">All published ${item_plural.lower()}</a><br>
-                    <a href="${href_to_user_items}">${item_plural} owned by ${item.user.username}</a>
+                    <a href="${href_to_user_items}">Published ${item_plural.lower()} by ${item.user.username | h}</a>
         
                 ## Tags.
                 <h4>Tags</strong></h4>

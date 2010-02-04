@@ -18,7 +18,7 @@
 </%def>
 
 <%def name="title()">
-    Galaxy | ${get_class_display_name( item.__class__ )} | ${get_item_name( item )}
+    Galaxy | ${get_class_display_name( item.__class__ )} | ${get_item_name( item ) | h}
 </%def>
 
 <%def name="render_item_links( data )">
@@ -43,7 +43,7 @@
     <div class="unified-panel-header" unselectable="on">
 		<div class="unified-panel-header-inner">
 				${get_class_display_name( item.__class__ )}
-			| ${get_item_name( item )}
+			| ${get_item_name( item ) | h}
 	    </div>
     </div>
     
@@ -72,11 +72,13 @@
             <div style="padding: 10px;">
                 <h4>Author</h4>
                 
-                <p>${item.history.user.username}</p>
+                <p>${item.history.user.username | h}</p>
                 
                 <div><img src="http://www.gravatar.com/avatar/${h.md5(item.history.user.email)}?s=150"></div>
 
-                ## Page meta. No page meta for datasets for now.
+                ## Page meta. 
+                
+                ## No links for datasets right now.
         
                 ## Tags.
                 <p>

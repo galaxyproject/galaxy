@@ -241,7 +241,7 @@
 
 <%def name="render_item( history, datasets )">
         <div id="history-name-area" class="historyLinks" style="color: gray; font-weight: bold; padding: 0px 0px 5px 0px">
-            <div id="history-name">${history.get_display_name()}</div>
+            <div id="history-name">${history.get_display_name() | h}</div>
         </div>
 
         %if history.deleted:

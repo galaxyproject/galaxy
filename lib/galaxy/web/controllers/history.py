@@ -395,7 +395,16 @@ class HistoryController( BaseController, Sharable ):
             trans.sa_session.flush()
     
         return
-                    
+
+    @web.expose
+    @web.require_login( "modify Galaxy items" )
+    def set_slug_async( self, trans, id, new_slug ):
+        history = self.get_history( trans, id )
+        if history:
+            history.slug = new_slug
+            trans.sa_session.flush()
+        return
+                       
     @web.expose
     def name_autocomplete_data( self, trans, q=None, limit=None, timestamp=None ):
         """Return autocomplete data for history names"""

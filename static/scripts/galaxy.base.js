@@ -211,7 +211,7 @@ var replace_dbkey_select = function()
 //
 // Edit and save text asynchronously.
 // 
-function async_save_text(click_to_edit_elt, text_elt_id, save_url, text_parm_name, use_textarea, num_rows)
+function async_save_text(click_to_edit_elt, text_elt_id, save_url, text_parm_name, use_textarea, num_rows, on_start, on_finish)
 {
     $("#" + click_to_edit_elt).click( function() {
         var old_text = $("#" + text_elt_id).text()
@@ -236,13 +236,25 @@ function async_save_text(click_to_edit_elt, text_elt_id, save_url, text_parm_nam
                 $.ajax({
                     url: save_url,
                     data: ajax_data,
-                    error: function() { alert( "Text editing for elt " + text_elt_id + " failed" ) },
+                    error: function() { 
+                        alert( "Text editing for elt " + text_elt_id + " failed" );
+                        // TODO: call finish or no? For now, let's not because error occurred.
+                    },
                     success: function() {
+                        // Set new text and call finish method.
                         $("#" + text_elt_id).text( new_text );
+                        if (on_finish != null)
+                            on_finish(t);
                     }
                 });
             }
         });
+        
+        // Call onstart method if it exists.
+        if (on_start != null)
+            on_start(t);
+            
+        // Replace text with input object and focus & select.
         $("#" + text_elt_id).hide();
         t.insertAfter( $("#" + text_elt_id) );
         t.focus();

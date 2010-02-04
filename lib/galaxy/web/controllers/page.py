@@ -541,6 +541,15 @@ class PageController( BaseController, Sharable ):
         return
 
     @web.expose
+    @web.require_login( "modify Galaxy items" )
+    def set_slug_async( self, trans, id, new_slug ):
+        page = self.get_page( trans, id )
+        if page:
+            page.slug = new_slug
+            trans.sa_session.flush()
+        return
+
+    @web.expose
     @web.json
     @web.require_login( "use Galaxy pages" )
     def get_name_and_link_async( self, trans, id=None ):

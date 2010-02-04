@@ -15,6 +15,40 @@
     Sharing and Publishing ${get_class_display_name( item.__class__ )} '${get_item_name( item )}'
 </%def>
 
+<%def name="javascripts()">
+    ${parent.javascripts()}
+    <script type="text/javascript">
+    $(document).ready( function() 
+    {
+        //
+        // Set up slug-editing functionality.
+        //
+        var on_start = function( text_elt ) 
+        {
+            // Because text element is inside a URL, need to disable click so that clicking on element does not trigger URL.
+            $( text_elt ).click( function() {
+               return false; 
+            });
+            
+            // Allow only lowercase alphanumeric and '-' characters in slug.
+            text_elt.keyup(function(){
+                text_elt.val( $(this).val().replace(/\s+/g,'-').replace(/[^a-zA-Z0-9\-]/g,'').toLowerCase() )
+            });
+        };
+        
+        var on_finish = function( text_elt ) 
+        {
+            // Set URL to new value.
+            var item_url_obj = $('#item-url');
+            item_url_obj.attr( "href", item_url_obj.text() );
+        };
+        
+        <% controller_name = get_controller_name( item ) %>
+        async_save_text("edit-identifier", "item-identifier", "${h.url_for( controller=controller_name, action='set_slug_async', id=trans.security.encode_id( item.id ) )}", "new_slug", false, 0, on_start, on_finish); 
+    });
+    </script>
+</%def>
+
 <%def name="stylesheets()">
     ${parent.stylesheets()}
     <style>
@@ -77,9 +111,14 @@
                     This ${item_class_name_lc} <strong>${item_status}</strong>. 
                     <div>
                         <p>Anyone can view and import this ${item_class_name_lc} by visiting the following URL:
-                        <% url = h.url_for( action='display_by_username_and_slug', username=trans.get_user().username, slug=item.slug, qualified=True ) %>
+
                         <blockquote>
-                            <a href="${url}" target="_top">${url}</a>
+                            <% 
+                                url = h.url_for( action='display_by_username_and_slug', username=trans.get_user().username, slug=item.slug, qualified=True ) 
+                                url_parts = url.split("/")
+                            %>
+                            <a id="item-url" href="${url}" target="_top">${"/".join( url_parts[:-1] )}/<span id='item-identifier'>${url_parts[-1]}</span></a>
+                            <a href="#" id="edit-identifier"><img src="${h.url_for('/static/images/pencil.png')}"/></a>
                         </blockquote>
         
                         %if item.published:

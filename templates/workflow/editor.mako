@@ -784,7 +784,7 @@
             <div id="workflow-name-area" class="form-row">
                 <label>Name:</label>
                 <div style="float: right"><a id="workflow-rename" title="Rename" class="icon-button edit" target="galaxy_main" href="${h.url_for( controller='workflow', action='rename_sync' )}"></a></div>
-                <div id="workflow-name">${h.escape( stored.name )}</div>
+                <div id="workflow-name">${stored.name | h}</div>
                 <div style="clear: both"></div>
             </div>
             ## Workflow tags.
@@ -809,7 +809,7 @@
                 <div id="workflow-annotation-area" class="form-row">
                     <label>Annotation / Notes:</label>
                     <div style="float: right"><a id="workflow-annotate" title="Annotate" class="icon-button edit" target="galaxy_main" href="${h.url_for( controller='workflow', action='annotate_async' )}"></a></div>
-                    <div id="workflow-annotation">${h.escape( annotation )}</div>
+                    <div id="workflow-annotation">${annotation | h}</div>
                     <div style="clear: both"></div>
                     <div class="toolParamHelp">Add an annotation or notes to a workflow; annotations are available when a workflow is viewed.</div>
                 </div>

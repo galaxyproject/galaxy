@@ -38,7 +38,7 @@
             <tr>
                 <td>
                     <div class="menubutton" style="float: left;" id="wf-${i}-popup">
-                    ${workflow.name}
+                    ${workflow.name | h}
                     </div>
                 </td>
                 <td>${len(workflow.latest_workflow.steps)}</td>
@@ -76,7 +76,7 @@
             <% workflow = association.stored_workflow %>
             <tr>
                 <td>
-                    <a class="menubutton" id="shared-${i}-popup" href="${h.url_for( action='run', id=trans.security.encode_id(workflow.id) )}">${workflow.name}</a>
+                    <a class="menubutton" id="shared-${i}-popup" href="${h.url_for( action='run', id=trans.security.encode_id(workflow.id) )}">${workflow.name | h}</a>
                 </td>
                 <td>${workflow.user.email}</td>
                 <td>${len(workflow.latest_workflow.steps)}</td>

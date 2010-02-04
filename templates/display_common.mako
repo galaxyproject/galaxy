@@ -1,6 +1,8 @@
 ##
 ## Utilities for sharing items and displaying shared items.
+## HACK: these should probably go in the web helper object.
 ##
+
 <%! from galaxy import model %>
 
 ## Get display name for a class.

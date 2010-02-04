@@ -276,7 +276,7 @@ div.form-row {
     
 <div id="history-name-area" class="historyLinks" style="color: gray; font-weight: bold;">
     <div style="float: right"><a id="history-rename" title="Rename" class="icon-button edit" target="galaxy_main" href="${h.url_for( controller='history', action='rename' )}"></a></div>
-    <div id="history-name">${h.escape( history.get_display_name() )}</div>
+    <div id="history-name">${history.get_display_name() | h}</div>
 </div>
 
 %if history.deleted:
@@ -311,7 +311,7 @@ div.form-row {
        	        <label>Annotation / Notes:</label>
     		    <div style="float: right"><a id="history-annotate" title="Annotate" class="icon-button edit" target="galaxy_main" href="${h.url_for( controller='history', action='annotate_async' )}"></a></div>
     		    %if annotation:
-                        <div id="history-annotation">${h.escape(annotation)}</div>
+                        <div id="history-annotation">${annotation | h}</div>
                     %else:
                         <div id="history-annotation"></div>
                     %endif

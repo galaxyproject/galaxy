@@ -78,7 +78,7 @@
 </%def>
 
 <%def name="render_item( workflow, steps )">
-     <h2>${workflow.name}</h2>
+     <h2>${workflow.name | h}</h2>
         %for i, step in enumerate( steps ):    
             %if step.type == 'tool' or step.type is None:
               <% tool = app.toolbox.tools_by_id[step.tool_id] %>

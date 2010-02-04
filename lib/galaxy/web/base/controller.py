@@ -204,6 +204,12 @@ class Sharable:
         return self.sharing( trans, id, **kwargs )
             
     # Abstract methods.
+    
+    @web.expose
+    @web.require_login( "modify Galaxy items" )
+    def set_slug_async( self, trans, id, new_slug ):
+        """ Set item slug asynchronously. """
+        pass
             
     @web.expose
     @web.require_login( "share Galaxy items" )
