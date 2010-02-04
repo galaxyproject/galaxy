@@ -327,6 +327,19 @@ class User( BaseController ):
         elif trans.sa_session.query( trans.app.model.User ).filter_by(email=email).all():
             error = "User with that email already exists"
         return error
+    def __validate_username(self, trans, params, username, user=None):
+        error = None
+        if user:
+            if user.username == username:
+                return None 
+        if len( username ) < 3:
+            error = "Username must be at least 3 characters long"
+        elif len( username ) > 255:
+            error = "Username cannot be more than 255 characters"
+        elif trans.sa_session.query( trans.app.model.User ).filter_by( username=username ).all():
+            error = "User with that username already exists"
+        return error
+        
     def __validate_password(self, trans, params, password, confirm):
         error = None
         if len(password) < 6:
@@ -482,10 +495,16 @@ class User( BaseController ):
         # Editing login info (email & username)
         #
         if params.get('login_info_button', None) == 'Save':
-            email = util.restore_text( params.get('email', '') )
-            username = util.restore_text( params.get('username', '') )
+            email = util.restore_text( params.get('email', '') ).lower()
+            username = util.restore_text( params.get('username', '') ).lower()
             # validate the new values
             error = self.__validate_email(trans, params, email, user)
+            if error:
+                return trans.response.send_redirect( web.url_for( controller='user',
+                                                                  action='show_info',
+                                                                  msg=error,
+                                                                  messagetype='error') )
+            error = self.__validate_username( trans, params, username, user )
             if error:
                 return trans.response.send_redirect( web.url_for( controller='user',
                                                                   action='show_info',
