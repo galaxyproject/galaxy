@@ -55,9 +55,8 @@ def __main__():
             if not first_skipped_line:
                 first_skipped_line = count + 1
     out.close()
-    info_msg = "%i regions converted to BED." % ( count - skipped_lines )
+    print "%i regions converted to BED." % ( count + 1 - skipped_lines )
     if skipped_lines > 0:
-        info_msg += "Skipped %d blank or invalid lines starting with line # %d." %( skipped_lines, first_skipped_line )
-    print info_msg
+        print "Skipped %d blank or invalid lines starting with line # %d." % ( skipped_lines, first_skipped_line )
 
 if __name__ == "__main__": __main__()
