@@ -222,6 +222,8 @@ function async_save_text(click_to_edit_elt, text_elt_id, save_url, text_parm_nam
         t.blur( function() {
             $(this).remove();
             $("#" + text_elt_id).show();
+            if (on_finish != null)
+                on_finish(t);
         });
         t.keyup( function( e ) {
             if ( e.keyCode == 27 ) {

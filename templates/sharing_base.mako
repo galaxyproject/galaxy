@@ -25,10 +25,9 @@
         //
         var on_start = function( text_elt ) 
         {
-            // Because text element is inside a URL, need to disable click so that clicking on element does not trigger URL.
-            $( text_elt ).click( function() {
-               return false; 
-            });
+            // Replace URL with URL text.
+            $('#item-url').hide();
+            $('#item-url-text').show();
             
             // Allow only lowercase alphanumeric and '-' characters in slug.
             text_elt.keyup(function(){
@@ -38,9 +37,15 @@
         
         var on_finish = function( text_elt ) 
         {
+            // Replace URL text with URL.
+            $('#item-url-text').hide();
+            $('#item-url').show();
+            
             // Set URL to new value.
+            var new_url = $('#item-url-text').text();
             var item_url_obj = $('#item-url');
-            item_url_obj.attr( "href", item_url_obj.text() );
+            item_url_obj.attr( "href", new_url );
+            item_url_obj.text( new_url );
         };
         
         <% controller_name = get_controller_name( item ) %>
@@ -117,7 +122,11 @@
                                 url = h.url_for( action='display_by_username_and_slug', username=trans.get_user().username, slug=item.slug, qualified=True ) 
                                 url_parts = url.split("/")
                             %>
-                            <a id="item-url" href="${url}" target="_top">${"/".join( url_parts[:-1] )}/<span id='item-identifier'>${url_parts[-1]}</span></a>
+                            <a id="item-url" href="${url}" target="_top">${url}</a>
+                            <span id="item-url-text" style="display: none">
+                                ${"/".join( url_parts[:-1] )}/<span id='item-identifier'>${url_parts[-1]}</span>
+                            </span>
+                            
                             <a href="#" id="edit-identifier"><img src="${h.url_for('/static/images/pencil.png')}"/></a>
                         </blockquote>
         
