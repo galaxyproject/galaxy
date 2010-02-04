@@ -6,6 +6,51 @@
     ${render_msg( msg, messagetype )}
 %endif
 
+<script type="text/javascript">
+$( function() {
+    $( "select[refresh_on_change='true']").change( function() {
+        var refresh = false;
+        var refresh_on_change_values = $( this )[0].attributes.getNamedItem( 'refresh_on_change_values' )
+        if ( refresh_on_change_values ) {
+            refresh_on_change_values = refresh_on_change_values.value.split( ',' );
+            var last_selected_value = $( this )[0].attributes.getNamedItem( 'last_selected_value' );
+            for( i= 0; i < refresh_on_change_values.length; i++ ) {
+                if ( $( this )[0].value == refresh_on_change_values[i] || ( last_selected_value && last_selected_value.value == refresh_on_change_values[i] ) ){
+                    refresh = true;
+                    break;
+                }
+            }
+        }
+        else {
+            refresh = true;
+        }
+        if ( refresh ){
+            $( "#show_request" ).submit();
+        }
+    });
+});
+</script>
+
+
+<script type="text/javascript">
+$(document).ready(function(){
+    //hide the all of the element with class msg_body
+    $(".msg_body").hide();
+    //toggle the componenet with class msg_body
+    $(".msg_head").click(function(){
+        $(this).next(".msg_body").slideToggle(450);
+    });
+});
+</script>
+<style type="text/css">
+.msg_head {
+    padding: 15px 0px;
+    cursor: pointer;
+}
+
+}
+</style>
+
 %if request.rejected():
     ${render_msg( "Reason for rejection: "+request.last_comment(), "warning" )}
 %endif
@@ -31,23 +76,128 @@
     </li>
 </ul>
 
-
-
-<%def name="render_sample_form( index, sample_name, sample_values, grid_index, fields_dict )">
-    %if grid_index == 0:
-        <td>
-            <input type="text" name=sample_${index}_name value="${sample_name}" size="10"/>
-            <div class="toolParamHelp" style="clear: both;">
-                <i>${' (required)' }</i>
-            </div>
-        </td>
-        <td>
-        </td>
+<%def name="show_basic_info_form( sample_index, sample, info )">
+    <td>
+        <input type="text" name=sample_${sample_index}_name value="${info['name']}" size="10"/>
+        <div class="toolParamHelp" style="clear: both;">
+            <i>${' (required)' }</i>
+        </div>
+    </td>
+    %if sample:
+        %if sample.request.unsubmitted():
+            <td></td>
+        %else:
+            <td><input type="text" name=sample_${sample_index}_barcode value="${info['barcode']}" size="10"/></td>
+        %endif
     %else:
-        <td>
-            ${sample_name}
-        </td>
+        <td></td>
     %endif
+    %if sample:
+        %if not sample.current_state():
+            <td>Unsubmitted</td>
+        %else:
+            <td><a href="${h.url_for( controller='requests_admin', action='show_events', sample_id=sample.id)}">${sample.current_state().name}</a></td>
+        %endif    
+    %else:
+        <td></td>
+    %endif
+    <td>${info['lib_widget'].get_html()}</td>
+    <td>${info['folder_widget'].get_html()}</td>
+    %if request.submitted() or request.complete(): 
+        %if sample:
+            <td><a href="${h.url_for( controller='requests_admin', action='show_datatx_page', sample_id=trans.security.encode_id(sample.id) )}">${len(sample.dataset_files)}</a></td> 
+        %else:
+            <td><a href="${h.url_for( controller='requests_admin', action='show_datatx_page', sample_id=trans.security.encode_id(sample.id) )}">Add</a></td>
+        %endif 
+    %endif 
+</%def>
+
+## This function displays the "Basic Information" grid
+<%def name="render_basic_info_grid()">
+    <h4>Sample Information</h4>
+    <table class="grid">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Barcode</th>
+                <th>State</th>
+                <th>Data Library</th>
+                <th>Folder</th>
+                %if request.submitted() or request.complete(): 
+                    <th>Dataset(s)</th>
+                %endif
+                <th></th>
+            </tr>
+        <thead>
+        <tbody>
+            <%
+            trans.sa_session.refresh( request )
+            %>
+            %for sample_index, info in enumerate(current_samples):
+                <% 
+                    if sample_index in range(len(request.samples)):
+                        sample = request.samples[sample_index]
+                    else:
+                        sample = None 
+                %>
+                %if edit_mode == 'True':
+                    <tr>
+                        ${show_basic_info_form( sample_index, sample, info )}
+                    </tr>      
+                %else:
+                    <tr>
+                        %if sample_index in range(len(request.samples)):
+                            <td>${info['name']}</td>
+                            <td>${info['barcode']}</td>
+                            <td>
+                                %if sample.current_state():
+                                    <a href="${h.url_for( controller='requests', action='show_events', sample_id=sample.id)}">${sample.current_state().name}</a>
+                                %else:
+                                    Unsubmitted
+                                %endif
+                            </td>
+                            %if info['library']:
+                                <td><a href="${h.url_for( controller='library_common', action='browse_library', cntrller='library', id=trans.security.encode_id( info['library'].id ) )}">${info['library'].name}</a></td>
+                            %else:
+                                <td></td>
+                            %endif
+                            %if info['folder']:
+                                <td>${info['folder'].name}</td>
+                            %else:
+                                <td></td>
+                            %endif
+                            %if request.submitted() or request.complete(): 
+                                <td>
+                                    <a href="${h.url_for( controller='requests', action='show_datatx_page', sample_id=trans.security.encode_id(sample.id) )}">${len(sample.dataset_files)}</a>
+                                </td>
+                            %endif
+                            
+                            
+                        %else:                                                            
+                            ${show_basic_info_form( sample_index, sample, info )}
+                        %endif
+                        %if request.unsubmitted() or request.rejected(): 
+                            <td>
+                                %if sample:
+                                    %if sample.request.unsubmitted():
+                                        <a class="action-button" href="${h.url_for( controller='requests_admin', action='delete_sample', request_id=request.id, sample_id=sample_index )}">
+                                        <img src="${h.url_for('/static/images/delete_icon.png')}" />
+                                        <span></span></a>
+                                    %endif
+                                %endif
+                            </td>
+                        %endif
+                    </tr>  
+                %endif
+            %endfor
+        </tbody>
+    </table>
+</%def>
+
+<%def name="render_sample_form( index, sample_name, sample_values, fields_dict )">
+    <td>
+        ${sample_name}
+    </td>
     %for field_index, field in fields_dict.items():
         <td>
             %if field['type'] == 'TextField':
@@ -65,7 +215,7 @@
             %elif field['type'] == 'CheckboxField':
                 <input type="checkbox" name="sample_${index}_field_${field_index}" value="Yes"/>
             %elif field['type'] == 'NumberField':
-                <input type=int name="sample_${index}_field_${field_index}" value="${sample_values[field_index]}" size="7"/>
+                <input type="int" name="sample_${index}_field_${field_index}" value="${sample_values[field_index]}" size="7"/>
             %endif
             <div class="toolParamHelp" style="clear: both;">
                 <i>${'('+field['required']+')' }</i>
@@ -74,23 +224,14 @@
     %endfor   
 </%def>
 
-<%def name="render_sample( index, sample, grid_index, fields_dict )">
+<%def name="render_sample( index, sample_name, sample_values, fields_dict )">
     <td>
-        ${sample.name}
+        ${sample_name}
     </td>
-    %if grid_index == 0:
-        <td>
-            %if sample.request.new():
-                Unsubmitted
-            %else:    
-                <a href="${h.url_for( controller='requests', action='show_events', sample_id=sample.id)}">${sample.current_state().name}</a>
-            %endif    
-        </td>
-    %endif
     %for field_index, field in fields_dict.items():
         <td>
-            %if sample.values.content[field_index]:
-                ${sample.values.content[field_index]}
+            %if sample_values[field_index]:
+                ${sample_values[field_index]}
             %else:
                 <i>None</i>
             %endif
@@ -100,58 +241,53 @@
 
 <div class="toolForm">
     <div class="form-row">
-        %if details == "show":
-            <a href="${h.url_for( controller='requests', action='toggle_request_details', request_id=request.id, details="hide"  )}">Hide request details</a>
-            </div>
+        <div class="msg_list">
+            <h4 class="msg_head">Request Information</h4>
+            <div class="msg_body">
                 %for index, rd in enumerate(request_details):
                     <div class="form-row">
                         <label>${rd['label']}</label>
                         %if not rd['value']:
                             <i>None</i>
                         %else:                      
-                            %if rd['label'] == 'Data library':
-                                %if rd['value']:
-                                    <a href="${h.url_for( controller='library_common', action='browse_library', cntrller='requests', id=trans.security.encode_id( request.library.id ) )}">${rd['value']}</a>
-                                %endif
-                            %elif rd['label'] == 'State':
-                                <a href="${h.url_for( controller='requests', action='list', operation='events', id=trans.security.encode_id(request.id) )}">${rd['value']}</a>                                
+                            %if rd['label'] == 'State':
+                                <a href="${h.url_for( controller='requests_admin', action='list', operation='events', id=trans.security.encode_id(request.id) )}">${rd['value']}</a>
                             %else:
-                                <i>None</i>
+                                ${rd['value']}     
                             %endif
-                            ${rd['value']}     
                         %endif
                     </div>
                     <div style="clear: both"></div>
                 %endfor
-                %if request.unsubmitted():
-                    <div class="form-row">
-                    <ul class="manage-table-actions">
-                        <li>
-                            <a class="action-button"  href="${h.url_for( controller='requests', action='list', operation='Edit', id=trans.security.encode_id(request.id) )}">
-                            <span>Edit request details</span></a>
-                        </li>
-                    </ul>
-                    </div>
-                %endif
+                <div class="form-row">
+                <ul class="manage-table-actions">
+                    <li>
+                        <a class="action-button"  href="${h.url_for( controller='requests_admin', action='list', operation='Edit', id=trans.security.encode_id(request.id))}">
+                        <span>Edit request details</span></a>
+                    </li>
+                </ul>
+                </div>
             </div>
-        %else:
-            <a href="${h.url_for( controller='requests', action='toggle_request_details', request_id=request.id, details="show"  )}">Show request details</a>        
-        %endif
+        </div>
+    </div>
 </div>
 
 <%def name="render_grid( grid_index, grid_name, fields_dict )">
+    <div class="msg_list">
     %if grid_name:
-        <div class="toolFormTitle">${grid_name}</div>
+        <h4 class="msg_head">${grid_name}</h4>
+    %else:
+        <h4>Grid ${grid_index}</h4>
     %endif
-    <div style="clear: both"></div>
+    %if edit_mode == 'False' or len(current_samples) <= len(request.samples):
+        <div class="msg_body">
+    %else:
+        <div class="msg_body2">
+    %endif
     <table class="grid">
         <thead>
             <tr>
-                <th>No.</th>
-                <th>Sample Name</th>
-                %if grid_index == 0:
-                    <th>State</th>
-                %endif
+                <th>Name</th>
                 %for index, field in fields_dict.items():
                     <th>
                         ${field['label']}
@@ -170,36 +306,22 @@
             %for sample_index, sample in enumerate(current_samples):
                 %if edit_mode == 'True':
                     <tr>
-                        <td>${sample_index+1}</td>
-                        ${render_sample_form( sample_index, sample[0], sample[1], grid_index, fields_dict)}
-                        <td>
-                            %if request.unsubmitted() and grid_index == 0:
-                                <a class="action-button" href="${h.url_for( controller='requests', action='delete_sample', request_id=request.id, sample_id=sample_index)}">
-                                <img src="${h.url_for('/static/images/delete_icon.png')}" />
-                                <span></span></a>
-                            %endif
-                        </td>
+                        ${render_sample_form( sample_index, sample['name'], sample['field_values'], fields_dict)}
                     </tr>      
                 %else:
                     <tr>
-                        <td>${sample_index+1}</td>
                         %if sample_index in range(len(request.samples)):
-                            ${render_sample( sample_index, request.samples[sample_index], grid_index, fields_dict )}
+                            ${render_sample( sample_index, sample['name'], sample['field_values'], fields_dict )}
                         %else:                                                            
-                            ${render_sample_form( sample_index, sample[0], sample[1], grid_index, fields_dict)}
+                            ${render_sample_form( sample_index, sample['name'], sample['field_values'], fields_dict)}
                         %endif
-                        <td>
-                            %if request.unsubmitted() and grid_index == 0:
-                                <a class="action-button" href="${h.url_for( controller='requests', action='delete_sample', request_id=request.id, sample_id=sample_index)}">
-                                <img src="${h.url_for('/static/images/delete_icon.png')}" />
-                                <span></span></a>
-                            %endif
-                        </td>
                     </tr>  
                 %endif
             %endfor
         </tbody>
     </table>
+    </div>
+    </div>
 </%def>
 
 <div class="toolForm">
@@ -207,19 +329,16 @@
     <form id="show_request" name="show_request" action="${h.url_for( controller='requests', action='show_request', edit_mode=edit_mode )}" enctype="multipart/form-data" method="post" >
         <div class="form-row">
             %if current_samples:
-                %if not request.type.sample_form.layout:
-                    ${render_grid( 0, "", request.type.sample_form.fields_of_grid( None ) )}
-                %else:
-                    %for grid_index, grid_name in enumerate(request.type.sample_form.layout):
-                        ${render_grid( grid_index, grid_name, request.type.sample_form.fields_of_grid( grid_name ) )}
-                    %endfor
-                %endif
+                ## first render the basic info grid 
+                ${render_basic_info_grid()}
+                ## then render the other grid(s)
+                <% trans.sa_session.refresh( request.type.sample_form ) %>
+                %for grid_index, grid_name in enumerate(request.type.sample_form.layout):
+                    ${render_grid( grid_index, grid_name, request.type.sample_form.fields_of_grid( grid_index ) )}
+                %endfor
             %else:
-                <div class="form-row">
-                    <label>There are no samples.</label>
-                </div>
+                <label>There are no samples.</label>
             %endif
-            
         </div>
         %if request.unsubmitted() and edit_mode == 'False':
         <table class="grid">

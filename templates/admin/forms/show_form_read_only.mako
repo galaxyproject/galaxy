@@ -8,7 +8,9 @@
 
 <%def name="render_grid( grid_index, grid_name, fields_dict )">
     %if grid_name:
-        <div class="toolFormTitle">${grid_name}</div>
+        <div class="form-row">
+        <h4>${grid_name}</h4>
+        </div>
     %endif
     <div style="clear: both"></div>
     <table class="grid">
@@ -83,7 +85,7 @@
                 ${render_grid( 0, '', form.fields_of_grid( None ) )}
             %else:
                 %for grid_index, grid_name in enumerate(form.layout):
-                    ${render_grid( grid_index, grid_name, form.fields_of_grid( grid_name ) )}
+                    ${render_grid( grid_index, grid_name, form.fields_of_grid( grid_index ) )}
                 %endfor
             %endif
         %else:

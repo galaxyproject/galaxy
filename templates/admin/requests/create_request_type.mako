@@ -49,6 +49,22 @@
             <div class="form-row">
                 <input type="submit" name="add_state_button" value="Add state"/>
             </div>
+            <div class="toolFormTitle">Sequencer information</div>
+            <div class="form-row">
+                This information is only needed for transferring data from sequencer to Galaxy
+            </div>
+            <div class="form-row">
+                <label>Hostname or IP Address:</label>
+                <input type="text" name="host" value="" size="40"/>
+            </div>
+            <div class="form-row">
+                <label>Username:</label>
+                <input type="text" name="username" value="" size="40"/>
+            </div>
+            <div class="form-row">
+                <label>Password:</label>
+                <input type="password" name="password" value="" size="40"/>
+            </div>
             <div class="form-row">
                 <div style="float: left; width: 250px; margin-right: 10px;">
                     <input type="hidden" name="new" value="submitted" size="40"/>

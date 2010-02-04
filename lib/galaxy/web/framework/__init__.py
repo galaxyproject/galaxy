@@ -30,7 +30,9 @@ from babel.support import Translations
 
 pkg_resources.require( "SQLAlchemy >= 0.4" )
 from sqlalchemy import and_
-            
+
+pkg_resources.require( "pexpect" )
+
 import logging
 log = logging.getLogger( __name__ )
 

@@ -12,6 +12,7 @@ new_path = [ os.path.join( os.getcwd(), "lib" ) ]
 new_path.extend( sys.path[1:] ) # remove scripts/ from the path
 sys.path = new_path
 from galaxy import eggs
+from galaxy.model.custom_types import *
 import pkg_resources
 pkg_resources.require( "psycopg2" )
 import psycopg2
@@ -126,6 +127,16 @@ class GalaxyDbInterface(object):
                       request_id=self.request_id, 
                       state=request_state, 
                       comment='All samples of this request have finished processing.')
+     
+    def get_sample_dataset_files(self, sample_id):
+        subsubquery = select(columns=[self.sample_table.c.dataset_files], 
+                             whereclause=self.sample_table.c.id==sample_id)
+        return subsubquery.execute().fetchall()[0][0]
+               
+    def set_sample_dataset_files(self, sample_id, value):
+        u = self.sample_table.update(whereclause=self.sample_table.c.id==sample_id)
+        u.execute(dataset_files=value)
+        
 
 
 

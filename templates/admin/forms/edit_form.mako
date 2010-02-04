@@ -30,6 +30,25 @@ $( function() {
 });
 </script>
 
+<script type="text/javascript">
+$(document).ready(function(){
+    //hide the all of the element with class msg_body
+    $(".msg_body").hide();
+    //toggle the componenet with class msg_body
+    $(".msg_head").click(function(){
+        $(this).next(".msg_body").slideToggle(450);
+    });
+});
+</script>
+<style type="text/css">
+.msg_head {
+    padding: 0px 0px;
+    cursor: pointer;
+}
+
+}
+</style>
+
 <%def name="render_selectbox_options( index, field_attr )">
     %if field_attr[0] == 'Type':
         %if field_attr[1].get_selected()[0] == 'SelectField':
@@ -55,11 +74,16 @@ $( function() {
     %endif
 </%def>
 
-<%def name="render_field( index, field )">
+<%def name="render_field( index, field, saved )">
+    %if saved:        
+        <h4 class="msg_head"> 
+            <div class="form-row">${index+1}. ${field[0][1].value} (${field[2][1].get_selected()[1]})</div>
+        </h4>
+        <div class="msg_body">
+    %else:
+        <div class="msg_body2">
+    %endif
     <div class="repeat-group-item">
-        <div class="form-row">
-            <label>Field ${1+index}</label>
-        </div>
         %for field_attr in field:
             <div class="form-row">
                 <label>${field_attr[0]}</label>
@@ -70,7 +94,9 @@ $( function() {
         <div class="form-row">
             <input type="submit" name="remove_button" value="Remove field ${index+1}"/>
         </div>
-   </div>
+    </div>
+    </div>
+    
 </%def>
 
 <%def name="render_layout( index, widget )">
@@ -109,7 +135,11 @@ $( function() {
         %endif
         <div class="toolFormTitle">Fields (${len(form.fields)})</div>
         %for ctr, field in enumerate(field_details):
-            ${render_field( ctr, field )}
+            %if ctr < len(form.fields):
+                ${render_field( ctr, field, True )}
+            %else:
+                ${render_field( ctr, field, False )}
+            %endif
         %endfor
         <div class="form-row">
             <input type="submit" name="add_field_button" value="Add field"/>

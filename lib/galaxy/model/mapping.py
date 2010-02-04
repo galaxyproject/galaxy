@@ -606,6 +606,7 @@ RequestType.table = Table('request_type', metadata,
     Column( "desc", TEXT ),
     Column( "request_form_id", Integer, ForeignKey( "form_definition.id" ), index=True ),
     Column( "sample_form_id", Integer, ForeignKey( "form_definition.id" ), index=True ),
+    Column( "datatx_info", JSONType() ),
     Column( "deleted", Boolean, index=True, default=False ) )
 
 FormValues.table = Table('form_values', metadata,
@@ -624,8 +625,6 @@ Request.table = Table('request', metadata,
     Column( "form_values_id", Integer, ForeignKey( "form_values.id" ), index=True ),
     Column( "request_type_id", Integer, ForeignKey( "request_type.id" ), index=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
-    Column( "library_id", Integer, ForeignKey( "library.id" ), index=True ),
-    Column( "folder_id", Integer, ForeignKey( "library_folder.id" ), index=True ),
     Column( "deleted", Boolean, index=True, default=False ) )
 
 RequestEvent.table = Table('request_event', metadata,
@@ -645,6 +644,9 @@ Sample.table = Table('sample', metadata,
     Column( "form_values_id", Integer, ForeignKey( "form_values.id" ), index=True ),
     Column( "request_id", Integer, ForeignKey( "request.id" ), index=True ),
     Column( "bar_code", TrimmedString( 255 ), index=True ),
+    Column( "library_id", Integer, ForeignKey( "library.id" ), index=True ),
+    Column( "folder_id", Integer, ForeignKey( "library_folder.id" ), index=True ),
+    Column( "dataset_files", JSONType() ),
     Column( "deleted", Boolean, index=True, default=False ) )
 
 SampleState.table = Table('sample_state', metadata,
@@ -838,6 +840,10 @@ assign_mapper( context, Sample, Sample.table,
                         primaryjoin=( Sample.table.c.form_values_id == FormValues.table.c.id ) ),
                     request=relation( Request,
                         primaryjoin=( Sample.table.c.request_id == Request.table.c.id ) ),
+                    folder=relation( LibraryFolder,
+                        primaryjoin=( Sample.table.c.folder_id == LibraryFolder.table.c.id ) ),                 
+                    library=relation( Library,
+                        primaryjoin=( Sample.table.c.library_id == Library.table.c.id ) ),
             ) )
 
 assign_mapper( context, FormValues, FormValues.table,
@@ -856,11 +862,7 @@ assign_mapper( context, Request, Request.table,
                                                backref="requests" ),
                                 samples=relation( Sample,
                                                   primaryjoin=( Request.table.c.id == Sample.table.c.request_id ),
-                                                  order_by=asc(Sample.table.c.update_time) ),
-                                folder=relation( LibraryFolder,
-                                                 primaryjoin=( Request.table.c.folder_id == LibraryFolder.table.c.id ) ),                 
-                                library=relation( Library,
-                                                  primaryjoin=( Request.table.c.library_id == Library.table.c.id ) ),
+                                                  order_by=asc(Sample.table.c.id) ),
                                 events=relation( RequestEvent, backref="request",
                                                  order_by=desc(RequestEvent.table.c.update_time) )
                               ) )

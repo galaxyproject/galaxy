@@ -10,6 +10,8 @@ from datetime import datetime, timedelta
 from galaxy.web.controllers.forms import get_all_forms
 from sqlalchemy.sql.expression import func, and_
 from sqlalchemy.sql import select
+import pexpect
+import ConfigParser
 
 log = logging.getLogger( __name__ )
 
@@ -110,9 +112,9 @@ class RequestsGrid( grids.Grid ):
                        visible=False, 
                        filterable="advanced" ),
         StateColumn( "State", 
+                     key='state',
                      model_class=model.Request,
                      event_class=model.RequestEvent,
-                     key='state',
                      filterable="advanced",
                      link=( lambda item: iff( item.deleted, None, dict( operation="events", id=item.id ) ) ),
                      ),
@@ -201,6 +203,8 @@ class RequestTypeGrid( grids.Grid ):
         grids.GridAction( "Create new request type", dict( controller='requests_admin', 
                                                            action='create_request_type' ) )
     ]
+    
+
 #
 # ---- Request Controller ------------------------------------------------------ 
 #
@@ -208,6 +212,7 @@ class RequestTypeGrid( grids.Grid ):
 class RequestsAdmin( BaseController ):
     request_grid = RequestsGrid()
     requesttype_grid = RequestTypeGrid()
+
     
     @web.expose
     @web.require_admin
@@ -243,33 +248,10 @@ class RequestsAdmin( BaseController ):
                 return self.__request_events( trans, **kwd )
             elif operation == "view_type":
                 return self.__view_request_type( trans, **kwd )
-
+            elif operation == "upload_datasets":
+                return self.__upload_datasets( trans, **kwd )
         # Render the grid view
         return self.request_grid( trans, **kwd )
-    def __show_request(self, trans, **kwd):
-        params = util.Params( kwd )
-        msg = util.restore_text( params.get( 'msg', ''  ) )
-        messagetype = params.get( 'messagetype', 'done' )
-        add_sample = params.get('add_sample', False)
-        try:
-            request = trans.sa_session.query( trans.app.model.Request ).get( trans.security.decode_id(kwd['id']) )
-        except:
-            return trans.response.send_redirect( web.url_for( controller='requests_admin',
-                                                              action='list',
-                                                              status='error',
-                                                              message="Invalid request ID") )
-        current_samples = []
-        for s in request.samples:
-            current_samples.append([s.name, s.values.content])
-        if add_sample:
-            current_samples.append(['Sample_%i' % (len(current_samples)+1),['' for field in request.type.sample_form.fields]])
-        return trans.fill_template( '/admin/requests/show_request.mako',
-                                    request=request,
-                                    request_details=self.request_details(trans, request.id),
-                                    current_samples = current_samples,
-                                    sample_copy=self.__copy_sample(current_samples), 
-                                    details='hide', edit_mode='False',
-                                    msg=msg, messagetype=messagetype )
     @web.expose
     @web.require_admin
     def edit(self, trans, **kwd):
@@ -346,9 +328,6 @@ class RequestsAdmin( BaseController ):
         widgets.append(dict(label='Description', 
                             widget=TextField('desc', 40, desc), 
                             helptext='(Optional)'))
-        # libraries selectbox
-        libui = self.__library_ui(trans, request.user, request, **kwd)
-        widgets = widgets + libui
         widgets = widgets + request.type.request_form.get_widgets( request.user, request.values.content, **kwd )
         return trans.fill_template( '/admin/requests/edit_request.mako',
                                     select_request_type=select_request_type,
@@ -504,6 +483,9 @@ class RequestsAdmin( BaseController ):
             events_list.append((event.state, time_ago(event.update_time), event.comment))
         return trans.fill_template( '/admin/requests/events.mako', 
                                     events_list=events_list, request=request)
+        
+    def __upload_datasets(self, trans, **kwd):
+        return trans.fill_template( '/admin/requests/upload_datasets.mako' )
 #
 #---- Request Creation ----------------------------------------------------------
 #    
@@ -609,9 +591,6 @@ class RequestsAdmin( BaseController ):
                             widget=TextField('desc', 40,
                                              util.restore_text( params.get( 'desc', ''  ) )), 
                             helptext='(Optional)'))
-        # libraries selectbox
-        libui = self.__library_ui(trans, user, **kwd)
-        widgets = widgets + libui
         widgets = widgets + request_type.request_form.get_widgets( user, **kwd )
         return trans.fill_template( '/admin/requests/new_request.mako',
                                     select_request_type=select_request_type,
@@ -640,119 +619,6 @@ class RequestsAdmin( BaseController ):
                 else:
                     select_user.add_option(user.email, user.id)
         return select_user
-    def __library_ui(self, trans, user, request=None, **kwd):
-        '''
-        This method creates the data library & folder selectbox for new &
-        editing requests. First we get a list of all the libraries accessible to
-        the current user and display it in a selectbox. If the user has select an
-        existing library then display all the accessible sub folders of the selected 
-        data library. 
-        '''
-        params = util.Params( kwd )
-        lib_id = params.get( 'library_id', 'none'  )
-        # if editing a request and the user has already associated a library to
-        # this request, then set the selected_lib to the request.library
-        selected_lib = None
-        if request and lib_id == 'none':
-            if request.library:
-                lib_id = str(request.library.id)
-                selected_lib = request.library
-        # if new request no user is selected initially, none of the libraries are 
-        # listed in the selectfield
-        if not user:
-            libraries = {}
-        else:
-            # get all permitted libraries for this user
-            all_libraries = trans.sa_session.query( trans.app.model.Library ) \
-                                            .filter( trans.app.model.Library.table.c.deleted == False ) \
-                                            .order_by( trans.app.model.Library.name )
-            roles = user.all_roles()
-            actions_to_check = [ trans.app.security_agent.permitted_actions.LIBRARY_ADD ]
-            # The libraries dictionary looks like: { library : '1,2' }, library : '3' }
-            # Its keys are the libraries that should be displayed for the current user and whose values are a
-            # string of comma-separated folder ids, of the associated folders the should NOT be displayed.
-            # The folders that should not be displayed may not be a complete list, but it is ultimately passed
-            # to the calling method to keep from re-checking the same folders when the library / folder
-            # select lists are rendered.
-            libraries = {}
-            for library in all_libraries:
-                can_show, hidden_folder_ids = trans.app.security_agent.show_library_item( user, roles, library, actions_to_check )
-                if can_show:
-                    libraries[ library ] = hidden_folder_ids
-        # create data library selectbox with refresh on change enabled
-        lib_id_list = ['new'] + [str(lib.id) for lib in libraries.keys()]
-        lib_list = SelectField( 'library_id', refresh_on_change=True, refresh_on_change_values=lib_id_list )
-        # fill up the options in the Library selectbox
-        # first option 'none' is the value for "Select one" option
-        if lib_id == 'none':
-            lib_list.add_option('Select one', 'none', selected=True)
-        else:
-            lib_list.add_option('Select one', 'none')
-        # all the libraries available to the selected user
-        for lib, hidden_folder_ids in libraries.items():
-            if str(lib.id) == lib_id:
-                lib_list.add_option(lib.name, lib.id, selected=True)
-                selected_lib, selected_hidden_folder_ids = lib, hidden_folder_ids.split(',')
-            else:
-                lib_list.add_option(lib.name, lib.id)
-            lib_list.refresh_on_change_values.append(lib.id)
-        # new data library option
-        if lib_id == 'new':
-            lib_list.add_option('Create a new data library', 'new', selected=True)
-        else:
-            lib_list.add_option('Create a new data library', 'new')
-        # widget
-        lib_widget = dict(label='Data library', 
-                          widget=lib_list, 
-                          helptext='Data library where the resultant dataset will be stored.')
-        # show the folder widget only if the user has selected a valid library above
-        if selected_lib:
-            # when editing a request, either the user has already selected a subfolder or not
-            if request:
-                if request.folder:
-                    current_fid = request.folder.id
-                else: 
-                    # when a folder not yet associated with the request then the 
-                    # the current folder is set to the root_folder of the 
-                    # parent data library if present. 
-                    if request.library:
-                        current_fid = request.library.root_folder.id
-                    else:
-                        current_fid = params.get( 'folder_id', 'none'  )
-            else:
-                current_fid = params.get( 'folder_id', 'none'  )
-            # create the folder selectbox
-            folder_list = SelectField( 'folder_id')
-            # first option
-            if lib_id == 'none':
-                folder_list.add_option('Select one', 'none', selected=True)
-            else:
-                folder_list.add_option('Select one', 'none')
-            # get all show-able folders for the selected library
-            showable_folders = trans.app.security_agent.get_showable_folders( user, roles, 
-                                                                              selected_lib, 
-                                                                              actions_to_check, 
-                                                                              selected_hidden_folder_ids )
-            for f in showable_folders:
-                if str(f.id) == str(current_fid):
-                    folder_list.add_option(f.name, f.id, selected=True)
-                else:
-                    folder_list.add_option(f.name, f.id)
-            # folder widget
-            folder_widget = dict(label='Folder', 
-                                 widget=folder_list, 
-                                 helptext='Folder of the selected data library where the resultant dataset will be stored.')
-        if lib_id == 'new':
-            new_lib = dict(label='Create a new data library', 
-                           widget=TextField('new_library_name', 40,
-                                     util.restore_text( params.get( 'new_library_name', ''  ) )), 
-                           helptext='Enter a name here to request a new data library')
-            return [lib_widget, new_lib]
-        else:
-            if selected_lib:
-                return [lib_widget, folder_widget]
-            else:
-                return [lib_widget]
     def __validate(self, trans, request):
         '''
         Validates the request entered by the user 
@@ -787,18 +653,6 @@ class RequestsAdmin( BaseController ):
             user = trans.sa_session.query( trans.app.model.User ).get( int( params.get( 'select_user', '' ) ) )
         name = util.restore_text(params.get('name', ''))
         desc = util.restore_text(params.get('desc', ''))
-        # library
-        try:
-            library = trans.sa_session.query( trans.app.model.Library ).get( int( params.get( 'library_id', None ) ) )
-        except:
-            library = None
-        try:
-            folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( int( params.get( 'folder_id', None ) ) )
-        except:
-            if library:
-                folder = library.root_folder
-            else:
-                folder = None
         # fields
         values = []
         for index, field in enumerate(request_type.request_form.fields):
@@ -833,8 +687,7 @@ class RequestsAdmin( BaseController ):
         trans.sa_session.flush()
         if not request:
             request = trans.app.model.Request(name, desc, request_type, 
-                                              user, form_values,
-                                              library=library, folder=folder)
+                                              user, form_values)
             trans.sa_session.add( request )
             trans.sa_session.flush()
             trans.sa_session.refresh( request )
@@ -852,46 +705,195 @@ class RequestsAdmin( BaseController ):
             request.type = request_type
             request.user = user
             request.values = form_values
-            request.library = library
-            request.folder = folder
             trans.sa_session.add( request )
             trans.sa_session.flush()
-        
         return request
-
-
 #
 #---- Request Page ----------------------------------------------------------
 #    
-    def __update_samples(self, request, **kwd):
+    def __show_request(self, trans, **kwd):
+        params = util.Params( kwd )
+        msg = util.restore_text( params.get( 'msg', ''  ) )
+        messagetype = params.get( 'messagetype', 'done' )
+        add_sample = params.get('add_sample', False)
+        try:
+            request = trans.sa_session.query( trans.app.model.Request ).get( trans.security.decode_id(kwd['id']) )
+        except:
+            return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                              action='list',
+                                                              status='error',
+                                                              message="Invalid request ID") )
+        # get all data libraries accessible to this user
+        libraries = request.user.accessible_libraries( trans, [ trans.app.security_agent.permitted_actions.LIBRARY_ADD ] )
+        current_samples = []
+        for i, s in enumerate(request.samples):
+            lib_widget, folder_widget = self.__library_widgets(trans, request.user, i, libraries, s, **kwd)
+            current_samples.append(dict(name=s.name,
+                                        barcode=s.bar_code,
+                                        library=s.library,
+                                        folder=s.folder,
+                                        dataset_files=s.dataset_files,
+                                        field_values=s.values.content,
+                                        lib_widget=lib_widget,
+                                        folder_widget=folder_widget))
+        if add_sample:
+            lib_widget, folder_widget = self.__library_widgets(trans, request.user, 
+                                                               len(current_samples)+1, 
+                                                               libraries, None, **kwd)
+            current_samples.append(dict(name='Sample_%i' % (len(current_samples)+1),
+                                        barcode='',
+                                        library=None,
+                                        folder=None,
+                                        dataset_files=[],
+                                        field_values=['' for field in request.type.sample_form.fields],
+                                        lib_widget=lib_widget,
+                                        folder_widget=folder_widget))
+        return trans.fill_template( '/admin/requests/show_request.mako',
+                                    request=request,
+                                    request_details=self.request_details(trans, request.id),
+                                    current_samples=current_samples,
+                                    sample_copy=self.__copy_sample(current_samples), 
+                                    details='hide', edit_mode=util.restore_text( params.get( 'edit_mode', 'False'  ) ),
+                                    msg=msg, messagetype=messagetype )
+    def __library_widgets(self, trans, user, sample_index, libraries, sample=None, **kwd):
+        '''
+        This method creates the data library & folder selectbox for creating &
+        editing samples. First we get a list of all the libraries accessible to
+        the current user and display it in a selectbox. If the user has selected an
+        existing library then display all the accessible sub folders of the selected 
+        data library. 
+        '''
+        params = util.Params( kwd )
+        # data library selectbox
+        lib_id = params.get( "sample_%i_library_id" % sample_index, 'none'  )
+        selected_lib = None
+        if sample and lib_id == 'none':
+            if sample.library:
+                lib_id = str(sample.library.id)
+                selected_lib = sample.library
+        # create data library selectbox with refresh on change enabled
+        lib_id_list = ['new'] + [str(lib.id) for lib in libraries.keys()]
+        lib_widget = SelectField( "sample_%i_library_id" % sample_index, 
+                                refresh_on_change=True, 
+                                refresh_on_change_values=lib_id_list )
+        # fill up the options in the Library selectbox
+        # first option 'none' is the value for "Select one" option
+        if lib_id == 'none':
+            lib_widget.add_option('Select one', 'none', selected=True)
+        else:
+            lib_widget.add_option('Select one', 'none')
+        # all the libraries available to the selected user
+        for lib, hidden_folder_ids in libraries.items():
+            if str(lib.id) == lib_id:
+                lib_widget.add_option(lib.name, lib.id, selected=True)
+                selected_lib, selected_hidden_folder_ids = lib, hidden_folder_ids.split(',')
+            else:
+                lib_widget.add_option(lib.name, lib.id)
+            lib_widget.refresh_on_change_values.append(lib.id)
+        # create the folder selectbox
+        folder_widget = SelectField( "sample_%i_folder_id" % sample_index )
+        # when editing a request, either the user has already selected a subfolder or not
+        if sample:
+            if sample.folder:
+                current_fid = sample.folder.id
+            else: 
+                # when a folder not yet associated with the request then the 
+                # the current folder is set to the root_folder of the 
+                # parent data library if present. 
+                if sample.library:
+                    current_fid = sample.library.root_folder.id
+                else:
+                    current_fid = params.get( "sample_%i_folder_id" % sample_index, 'none'  )
+        else:
+            current_fid = 'none'
+        # first option
+        if lib_id == 'none':
+            folder_widget.add_option('Select one', 'none', selected=True)
+        else:
+            folder_widget.add_option('Select one', 'none')
+        if selected_lib:
+            # get all show-able folders for the selected library
+            showable_folders = trans.app.security_agent.get_showable_folders( user, user.all_roles(), 
+                                                                              selected_lib, 
+                                                                              [ trans.app.security_agent.permitted_actions.LIBRARY_ADD ], 
+                                                                              selected_hidden_folder_ids )
+            for f in showable_folders:
+                if str(f.id) == str(current_fid):
+                    folder_widget.add_option(f.name, f.id, selected=True)
+                else:
+                    folder_widget.add_option(f.name, f.id)
+        return lib_widget, folder_widget
+    def __update_samples(self, trans, request, **kwd):
         '''
         This method retrieves all the user entered sample information and
         returns an list of all the samples and their field values
         '''
         params = util.Params( kwd )
-        current_samples = []
-        for s in request.samples:
-            current_samples.append([s.name, s.values.content])
-        index = len(request.samples) 
-        while True:
-            if params.get( 'sample_%i_name' % index, ''  ):
-                sample_index = index
-                sample_name = util.restore_text( params.get( 'sample_%i_name' % sample_index, ''  ) )
-                sample_values = []
-                for field_index in range(len(request.type.sample_form.fields)):
-                    sample_values.append(util.restore_text( params.get( 'sample_%i_field_%i' % (sample_index, field_index), ''  ) ))
-                current_samples.append([sample_name, sample_values])
-                index = index + 1
-            else:
-                break
         details = params.get( 'details', 'hide' )
         edit_mode = params.get( 'edit_mode', 'False' )
-        return current_samples, details, edit_mode
+        # get all data libraries accessible to this user
+        libraries = request.user.accessible_libraries( trans, [ trans.app.security_agent.permitted_actions.LIBRARY_ADD ] )
+        
+        current_samples = []
+        for i, s in enumerate(request.samples):
+            lib_widget, folder_widget = self.__library_widgets(trans, request.user, i, libraries, s, **kwd)
+            current_samples.append(dict(name=s.name,
+                                        barcode=s.bar_code,
+                                        library=s.library,
+                                        folder=s.folder,
+                                        field_values=s.values.content,
+                                        lib_widget=lib_widget,
+                                        folder_widget=folder_widget))
+        if edit_mode == 'False':
+            sample_index = len(request.samples) 
+        else:
+            sample_index = 0
+        while True:
+            if params.get( 'sample_%i_name' % sample_index, ''  ):
+                # data library
+                try:
+                    library = trans.sa_session.query( trans.app.model.Library ).get( int( params.get( 'sample_%i_library_id' % sample_index, None ) ) )
+                except:
+                    library = None
+                # folder
+                try:
+                    folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( int( params.get( 'sample_%i_folder_id' % sample_index, None ) ) )
+                except:
+                    if library:
+                        folder = library.root_folder
+                    else:
+                        folder = None
+                sample_info = dict( name=util.restore_text( params.get( 'sample_%i_name' % sample_index, ''  ) ),
+                                    barcode=util.restore_text( params.get( 'sample_%i_barcode' % sample_index, ''  ) ),
+                                    library=library,
+                                    folder=folder)
+                sample_info['field_values'] = []
+                for field_index in range(len(request.type.sample_form.fields)):
+                    sample_info['field_values'].append(util.restore_text( params.get( 'sample_%i_field_%i' % (sample_index, field_index), ''  ) ))
+                if edit_mode == 'False':
+                    sample_info['lib_widget'], sample_info['folder_widget'] = self.__library_widgets(trans, 
+                                                                                                     request.user, 
+                                                                                                     sample_index, 
+                                                                                                     libraries, 
+                                                                                                     None, **kwd)
+                    current_samples.append(sample_info)
+                else:
+                    sample_info['lib_widget'], sample_info['folder_widget'] = self.__library_widgets(trans, 
+                                                                                                     request.user, 
+                                                                                                     sample_index, 
+                                                                                                     libraries, 
+                                                                                                     request.samples[sample_index], 
+                                                                                                     **kwd)
+                    current_samples[sample_index] =  sample_info
+                sample_index = sample_index + 1
+            else:
+                break
+        return current_samples, details, edit_mode, libraries
     def __copy_sample(self, current_samples):
         copy_list = SelectField('copy_sample')
         copy_list.add_option('None', -1, selected=True)  
         for i, s in enumerate(current_samples):
-            copy_list.add_option(s[0], i)
+            copy_list.add_option(s['name'], i)
         return copy_list   
     @web.expose
     @web.require_login( "create/submit sequencing requests" )
@@ -908,7 +910,7 @@ class RequestsAdmin( BaseController ):
                                                               message="Invalid request ID",
                                                               **kwd) )
         # get the user entered sample details
-        current_samples, details, edit_mode = self.__update_samples( request, **kwd )
+        current_samples, details, edit_mode, libraries = self.__update_samples( trans, request, **kwd )
         if params.get('import_samples_button', False) == 'Import samples':
             try:
                 file_obj = params.get('file_data', '')
@@ -936,10 +938,27 @@ class RequestsAdmin( BaseController ):
             src_sample_index = int(params.get( 'copy_sample', -1  ))
             if src_sample_index == -1:
                 # empty sample
-                current_samples.append(['Sample_%i' % (len(current_samples)+1),['' for field in request.type.sample_form.fields]])
+                lib_widget, folder_widget = self.__library_widgets(trans, request.user, 
+                                                                   len(current_samples), 
+                                                                   libraries, None, **kwd)
+                current_samples.append(dict(name='Sample_%i' % (len(current_samples)+1),
+                                            barcode='',
+                                            library=None,
+                                            folder=None,
+                                            field_values=['' for field in request.type.sample_form.fields],
+                                            lib_widget=lib_widget,
+                                            folder_widget=folder_widget))
             else:
-                current_samples.append([current_samples[src_sample_index][0]+'_%i' % (len(current_samples)+1),
-                                                                  [val for val in current_samples[src_sample_index][1]]])
+                lib_widget, folder_widget = self.__library_widgets(trans, request.user, 
+                                                                   len(current_samples), 
+                                                                   libraries, None, **kwd)
+                current_samples.append(dict(name=current_samples[src_sample_index]['name']+'_%i' % (len(current_samples)+1),
+                                            barcode='',
+                                            library_id='none',
+                                            folder_id='none',
+                                            field_values=[val for val in current_samples[src_sample_index]['field_values']],
+                                            lib_widget=lib_widget,
+                                            folder_widget=folder_widget))
             return trans.fill_template( '/admin/requests/show_request.mako',
                                         request=request,
                                         request_details=self.request_details(trans, request.id),
@@ -952,13 +971,13 @@ class RequestsAdmin( BaseController ):
             msg = ''
             for index in range(len(current_samples)-len(request.samples)):
                 sample_index = index + len(request.samples)
-                sample_name = current_samples[sample_index][0]
+                sample_name = current_samples[sample_index]['name']
                 if not sample_name.strip():
                     msg = 'Please enter the name of sample number %i' % sample_index
                     break
                 count = 0
                 for i in range(len(current_samples)):
-                    if sample_name == current_samples[i][0]:
+                    if sample_name == current_samples[i]['name']:
                         count = count + 1
                 if count > 1: 
                     msg = "This request has <b>%i</b> samples with the name <b>%s</b>.\nSamples belonging to a request must have unique names." % (count, sample_name)
@@ -975,37 +994,45 @@ class RequestsAdmin( BaseController ):
             if edit_mode == 'False':
                 for index in range(len(current_samples)-len(request.samples)):
                     sample_index = len(request.samples)
-                    sample_name = util.restore_text( params.get( 'sample_%i_name' % sample_index, ''  ) )
-                    sample_values = []
-                    for field_index in range(len(request.type.sample_form.fields)):
-                        sample_values.append(util.restore_text( params.get( 'sample_%i_field_%i' % (sample_index, field_index), ''  ) ))
-                    form_values = trans.app.model.FormValues(request.type.sample_form, sample_values)
+                    form_values = trans.app.model.FormValues(request.type.sample_form, 
+                                                             current_samples[sample_index]['field_values'])
                     trans.sa_session.add( form_values )
                     trans.sa_session.flush()                    
-                    s = trans.app.model.Sample(sample_name, '', request, form_values)
+                    s = trans.app.model.Sample(current_samples[sample_index]['name'], '', 
+                                               request, form_values, 
+                                               current_samples[sample_index]['barcode'],
+                                               current_samples[sample_index]['library'],
+                                               current_samples[sample_index]['folder'], 
+                                               dataset_files=[])
                     trans.sa_session.add( s )
                     trans.sa_session.flush()
             else:
-                for index in range(len(current_samples)):
-                    sample_index = index
-                    sample_name = current_samples[sample_index][0]
-                    new_sample_name = util.restore_text( params.get( 'sample_%i_name' % sample_index, ''  ) )
-                    sample_values = []
-                    for field_index in range(len(request.type.sample_form.fields)):
-                        sample_values.append(util.restore_text( params.get( 'sample_%i_field_%i' % (sample_index, field_index), ''  ) ))
-                    sample = request.has_sample(sample_name)
-                    if sample:
-                        form_values = trans.sa_session.query( trans.app.model.FormValues ).get( sample.values.id )
-                        form_values.content = sample_values
-                        trans.sa_session.add( form_values )
-                        trans.sa_session.flush()
-                        sample.name = new_sample_name
-                        trans.sa_session.add( sample )
-                        trans.sa_session.flush()
+                messagetype = 'done'
+                msg = 'Changes made to the sample(s) are saved. '
+                for sample_index in range(len(current_samples)):
+                    sample = request.samples[sample_index]
+                    sample.name = current_samples[sample_index]['name'] 
+                    sample.library = current_samples[sample_index]['library']
+                    sample.folder = current_samples[sample_index]['folder']
+                    if request.submitted():
+                        bc_msg = self.__validate_barcode(trans, sample, current_samples[sample_index]['barcode'])
+                        if bc_msg:
+                            messagetype = 'error'
+                            msg += bc_msg
+                        else:
+                            sample.bar_code = current_samples[sample_index]['barcode']
+                    trans.sa_session.add( sample )
+                    trans.sa_session.flush()
+                    form_values = trans.sa_session.query( trans.app.model.FormValues ).get( sample.values.id )
+                    form_values.content = current_samples[sample_index]['field_values']
+                    trans.sa_session.add( form_values )
+                    trans.sa_session.flush()
             return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                           action='list',
                                                           operation='show_request',
-                                                          id=trans.security.encode_id(request.id)) )
+                                                          id=trans.security.encode_id(request.id),
+                                                          messagetype=messagetype,
+                                                          msg=msg ))
         elif params.get('edit_samples_button', False) == 'Edit samples':
             edit_mode = 'True'
             return trans.fill_template( '/admin/requests/show_request.mako',
@@ -1013,13 +1040,21 @@ class RequestsAdmin( BaseController ):
                                         request_details=self.request_details(trans, request.id),
                                         current_samples=current_samples,
                                         sample_copy=self.__copy_sample(current_samples), 
-                                        details=details,
+                                        details=details, libraries=libraries,
                                         edit_mode=edit_mode)
         elif params.get('cancel_changes_button', False) == 'Cancel':
             return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                           action='list',
                                                           operation='show_request',
                                                           id=trans.security.encode_id(request.id)) )
+        else:
+            return trans.fill_template( '/admin/requests/show_request.mako',
+                                        request=request,
+                                        request_details=self.request_details(trans, request.id),
+                                        current_samples=current_samples,
+                                        sample_copy=self.__copy_sample(current_samples), 
+                                        details=details, libraries=libraries,
+                                        edit_mode=edit_mode, messagetype=messagetype, msg=msg)
 
             
     @web.expose
@@ -1029,30 +1064,14 @@ class RequestsAdmin( BaseController ):
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
         request = trans.sa_session.query( trans.app.model.Request ).get( int( params.get( 'request_id', 0 ) ) )
-        current_samples, details, edit_mode = self.__update_samples( request, **kwd )
+        current_samples, details, edit_mode, libraries = self.__update_samples( trans, request, **kwd )
         sample_index = int(params.get('sample_id', 0))
-        sample_name = current_samples[sample_index][0]
+        sample_name = current_samples[sample_index]['name']
         s = request.has_sample(sample_name)
         if s:
             trans.sa_session.delete( s )
             trans.sa_session.flush()
         del current_samples[sample_index]  
-        return trans.fill_template( '/admin/requests/show_request.mako',
-                                    request=request,
-                                    request_details=self.request_details(trans, request.id),
-                                    current_samples = current_samples,
-                                    sample_copy=self.__copy_sample(current_samples), 
-                                    details=details,
-                                    edit_mode=edit_mode)
-        
-    @web.expose
-    @web.require_login( "create/submit sequencing requests" )
-    def toggle_request_details(self, trans, **kwd):
-        params = util.Params( kwd )
-        msg = util.restore_text( params.get( 'msg', ''  ) )
-        messagetype = params.get( 'messagetype', 'done' )
-        request = trans.sa_session.query( trans.app.model.Request ).get( int( params.get( 'request_id', 0 ) ) )
-        current_samples, details, edit_mode = self.__update_samples( request, **kwd )
         return trans.fill_template( '/admin/requests/show_request.mako',
                                     request=request,
                                     request_details=self.request_details(trans, request.id),
@@ -1085,23 +1104,6 @@ class RequestsAdmin( BaseController ):
         request_details.append(dict(label='Date created', 
                                     value=request.create_time, 
                                     helptext=''))
-        # library associated
-        if request.library:
-			value=request.library.name
-        else:
-			value = None
-        request_details.append(dict(label='Data library', 
-                                    value=value, 
-                                    helptext='Data library where the resultant dataset will be stored'))
-        # folder associated
-        if request.folder:
-            value = request.folder.name
-        else:
-            value = None
-        request_details.append( dict( label='Data library folder', 
-                                      value=value, 
-                                      helptext='Data library folder where the resultant dataset will be stored' ) )
-
         # form fields
         for index, field in enumerate(request.type.request_form.fields):
             if field['required']:
@@ -1122,6 +1124,33 @@ class RequestsAdmin( BaseController ):
                                             value=request.values.content[index],
                                             helptext=field['helptext']+' ('+req+')'))
         return request_details
+    def __validate_barcode(self, trans, sample, barcode):
+        '''
+        This method makes sure that the given barcode about to be assigned to 
+        the given sample is gobally unique. That is, barcodes must be unique 
+        across requests in Galaxy LIMS 
+        '''
+        msg = ''
+        for index in range(len(sample.request.samples)):
+            # check for empty bar code
+            if not barcode.strip():
+                msg = 'Please fill the barcode for sample <b>%s</b>.' % samples[index].name
+                break
+            # check all the saved bar codes
+            all_samples = trans.sa_session.query( trans.app.model.Sample )
+            for s in all_samples:
+                if barcode == s.bar_code:
+                    if sample.id == s.id:
+                        continue
+                    else:
+                        msg = '''The bar code <b>%s</b> of sample <b>%s</b>  
+                                 belongs another sample. The sample bar codes must be 
+                                 unique throughout the system''' % \
+                                 (barcode, sample.name)
+                        break
+            if msg:
+                break
+        return msg
     @web.expose
     @web.require_admin
     def bar_codes(self, trans, **kwd):
@@ -1233,7 +1262,12 @@ class RequestsAdmin( BaseController ):
         for s in request.samples:
             if s.current_state().id != request.type.states[-1].id:
                 complete = False
-        if complete:
+        if request.complete() and not complete:
+            comments = "Sample(s) " % request.type.states[-1].name
+            event = trans.app.model.RequestEvent(request, request.states.COMPLETE, comments)
+            trans.sa_session.add( event )
+            trans.sa_session.flush()
+        elif complete:
             # change the request state to 'Complete'
             comments = "All samples of this request are in the last sample state (%s)." % request.type.states[-1].name
             event = trans.app.model.RequestEvent(request, request.states.COMPLETE, comments)
@@ -1279,7 +1313,7 @@ class RequestsAdmin( BaseController ):
         event = trans.app.model.SampleEvent(sample, new_state, comments)
         trans.sa_session.add( event )
         trans.sa_session.flush()
-        self.__set_request_state( trans, sample.request )
+        #self.__set_request_state( trans, sample.request )
         return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                           action='show_events',
                                                           sample_id=sample.id))
@@ -1306,7 +1340,217 @@ class RequestsAdmin( BaseController ):
         return trans.fill_template( '/admin/samples/events.mako', 
                                     events_list=events_list,
                                     sample=sample, widgets=widgets, title=title)
+
+    #
+    # Data transfer from sequencer
+    #
+    @web.expose
+    @web.require_admin
+    def show_datatx_page( self, trans, **kwd ):
+        params = util.Params( kwd )
+        msg = util.restore_text( params.get( 'msg', ''  ) )
+        messagetype = params.get( 'messagetype', 'done' ) 
+        try:
+            sample = trans.sa_session.query( trans.app.model.Sample ).get( trans.security.decode_id( kwd['sample_id'] ) )
+        except:
+            return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                              action='list',
+                                                              status='error',
+                                                              message="Invalid sample ID",
+                                                              **kwd) )
+        return trans.fill_template( '/admin/requests/get_data.mako', 
+                                    sample=sample, dataset_files=sample.dataset_files,
+                                    msg=msg, messagetype=messagetype, files=[],
+                                    folder_path=util.restore_text( params.get( 'folder_path', ''  ) ))
+    def __get_files(self, trans, sample, folder_path):
+        '''
+        This method retrieves the filenames to be transfer from the remote host.
+        '''
+        datatx_info = sample.request.type.datatx_info
+        if not datatx_info['host'] or not datatx_info['username'] or not datatx_info['password']:
+            msg = "Error in sequencer login information." 
+            return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                              action='show_datatx_page', 
+                                                              sample_id=trans.security.encode_id(sample.id),
+                                                              messagetype='error',
+                                                              msg=msg))
+        def print_ticks(d):
+            pass
+        cmd  = 'ssh %s@%s "ls -F %s"' % ( datatx_info['username'],
+                                          datatx_info['host'],
+                                          folder_path)
+        output = pexpect.run(cmd, events={'.ssword:*': datatx_info['password']+'\r\n', 
+                                          pexpect.TIMEOUT:print_ticks}, 
+                                          timeout=10)
+        if 'No such file or directory' in output:
+            msg = "No such folder (%s) exists on the sequencer." % folder_path
+            return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                              action='show_datatx_page',
+                                                              sample_id=trans.security.encode_id(sample.id),
+                                                              msg=msg, messagetype='error',
+                                                              folder_path=folder_path )) 
+        files = output.split()[2:]
+        return files
+
+    @web.expose
+    @web.require_admin
+    def get_data(self, trans, **kwd):
+        try:
+            sample = trans.sa_session.query( trans.app.model.Sample ).get( kwd['sample_id']  )
+        except:
+            return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                              action='list',
+                                                              status='error',
+                                                              message="Invalid sample ID" ) )
+        params = util.Params( kwd )
+        msg = util.restore_text( params.get( 'msg', ''  ) )
+        messagetype = params.get( 'messagetype', 'done' ) 
+        folder_path = util.restore_text( params.get( 'folder_path', ''  ) )
+        files_list = util.listify( params.get( 'files_list', ''  ) ) 
+        if not folder_path:
+            return trans.fill_template( '/admin/requests/get_data.mako',
+                                        sample=sample, files=[], 
+                                        dataset_files=sample.dataset_files,
+                                        folder_path=folder_path )
+        if folder_path[-1] != os.sep:
+            folder_path = folder_path+os.sep
+        if params.get( 'browse_button', False ):
+            # get the filenames from the remote host
+            files = self.__get_files(trans, sample, folder_path)
+            return trans.fill_template( '/admin/requests/get_data.mako',
+                                        sample=sample, files=files, 
+                                        dataset_files=sample.dataset_files,
+                                        folder_path=folder_path )
+        elif params.get( 'folder_up', False ):
+            if folder_path[-1] == os.sep:
+                folder_path = os.path.dirname(folder_path[:-1])
+            # get the filenames from the remote host
+            files = self.__get_files(trans, sample, folder_path)
+            return trans.fill_template( '/admin/requests/get_data.mako',
+                                        sample=sample, files=files, 
+                                        dataset_files=sample.dataset_files,
+                                        folder_path=folder_path )
+        elif params.get( 'open_folder', False ):
+            if len(files_list) == 1:
+                folder_path = os.path.join(folder_path, files_list[0])
+            # get the filenames from the remote host
+            files = self.__get_files(trans, sample, folder_path)
+            return trans.fill_template( '/admin/requests/get_data.mako',
+                                        sample=sample, files=files, 
+                                        dataset_files=sample.dataset_files,
+                                        folder_path=folder_path )
+        elif params.get( 'remove_dataset_button', False ):
+            dataset_index = int(params.get( 'dataset_index', 0 ))
+            del sample.dataset_files[dataset_index]
+            trans.sa_session.add( sample )
+            trans.sa_session.flush()
+            return trans.fill_template( '/admin/requests/get_data.mako', 
+                                        sample=sample, 
+                                        dataset_files=sample.dataset_files)
+        elif params.get( 'start_transfer_button', False ):
+            for f in files_list:
+                sample.dataset_files.append([os.path.join(folder_path, f),
+                                             sample.transfer_status.NOT_STARTED])
+            trans.sa_session.add( sample )
+            trans.sa_session.flush()
+            return self.__start_datatx(trans, sample)
+            
+    def __setup_datatx_user(self, trans, library, folder):
+        '''
+        This method sets up the datatx user:
+        - Checks if the user exists already, if not creates the user
+        - Checks if the user had ADD_LIBRARY permission on the target library
+          and the target folder, if not sets up the permissions.
+        '''
+        # Retrieve the upload user login information from the config file
+        config = ConfigParser.ConfigParser()
+        config.read('transfer_datasets.ini')
+        email = config.get("data_transfer_user_login_info", "email")
+        password = config.get("data_transfer_user_login_info", "password")
+        # check if the user already exists
+        datatx_user = trans.sa_session.query( trans.app.model.User ) \
+                                      .filter( trans.app.model.User.table.c.email==email ) \
+                                      .first()
+        if not datatx_user:
+            # if not create the user
+            datatx_user = trans.app.model.User( email=email )
+            datatx_user.set_password_cleartext( password )
+            if trans.app.config.use_remote_user:
+                datatx_user.external = True
+            trans.sa_session.add( datatx_user )
+            trans.sa_session.flush()
+            trans.app.security_agent.create_private_user_role( datatx_user )
+            trans.app.security_agent.user_set_default_permissions( datatx_user, history=False, dataset=False )
+        for role in datatx_user.all_roles():
+            if role.name == datatx_user.email and role.description == 'Private Role for %s' % datatx_user.email:
+                datatx_user_private_role = role
+                break
+        def check_permission(item_actions, role):
+            for item_permission in item_actions:
+                if item_permission.action == trans.app.security_agent.permitted_actions.LIBRARY_ADD.action \
+                    and item_permission.role.id == role.id:
+                    return True
+            return False
+        # check if this user has 'add' permissions on the target library & folder
+        # if not, set 'ADD' permission
+        if not check_permission(library.actions, datatx_user_private_role):
+            lp = trans.app.model.LibraryPermissions( trans.app.security_agent.permitted_actions.LIBRARY_ADD.action,
+                                                     library, 
+                                                     datatx_user_private_role )
+            trans.sa_session.add( lp )
+        if not check_permission(folder.actions, datatx_user_private_role):
+            dp = trans.app.model.LibraryFolderPermissions( trans.app.security_agent.permitted_actions.LIBRARY_ADD.action,
+                                                           folder, 
+                                                           datatx_user_private_role )
+            trans.sa_session.add( dp )
+            trans.sa_session.flush()
+        return datatx_user
+
+    def __start_datatx(self, trans, sample):
+        # data transfer user
+        datatx_user = self.__setup_datatx_user(trans, sample.library, sample.folder)
+        # validate sequecer information
+        datatx_info = sample.request.type.datatx_info
+        if not datatx_info['host'] or \
+           not datatx_info['username'] or \
+           not datatx_info['password']:
+            msg = "Error in sequencer login information." 
+            return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                              action='show_datatx_page', 
+                                                              sample_id=trans.security.encode_id(sample.id),
+                                                              messagetype='error',
+                                                              msg=msg))
+        transfer_script = "scripts/galaxy_messaging/server/daemon.py"
+        for index, dataset in enumerate(sample.dataset_files):
+            dfile = dataset[0]
+            status = dataset[1]
+            if status == sample.transfer_status.NOT_STARTED:
+                cmd = "python %s %s %s %s %s %s %s %s %s" % ( transfer_script,
+                                                              datatx_info['host'],
+                                                              datatx_info['username'],
+                                                              datatx_info['password'],
+                                                              dfile,
+                                                              sample.id,
+                                                              index,
+                                                              trans.security.encode_id(sample.library.id), 
+                                                              trans.security.encode_id(sample.folder.id))   
+                # set the transfer status
+                sample.dataset_files[index][1] = sample.transfer_status.IN_PROGRESS
+                trans.sa_session.add( sample )
+                trans.sa_session.flush()
+                os.system(cmd)
+        # set the sample state to the last state
+        if sample.current_state().id != sample.request.type.states[-1].id:
+            event = trans.app.model.SampleEvent(sample, sample.request.type.states[-1], 
+                                                'The dataset are ready & are being transfered to Galaxy')
+            trans.sa_session.add( event )
+            trans.sa_session.flush()
+        return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                          action='show_datatx_page', 
+                                                          sample_id=trans.security.encode_id(sample.id)))
+
     
+        
 ##
 #### Request Type Stuff ###################################################
 ##
@@ -1379,16 +1623,36 @@ class RequestsAdmin( BaseController ):
                                         msg=msg,
                                         messagetype=messagetype)
         elif params.get( 'save_request_type', False ):
-            st, msg = self.__save_request_type(trans, **kwd)
-            if not st:
+            rt, msg = self.__save_request_type(trans, **kwd)
+            if not rt:
                 return trans.fill_template( '/admin/requests/create_request_type.mako', 
                                             forms=get_all_forms( trans ),
                                             msg=msg,
                                             messagetype='error')
             return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                               action='manage_request_types',
-                                                              message='Request type <b>%s</b> has been created' % st.name,
+                                                              message='Request type <b>%s</b> has been created' % rt.name,
                                                               status='done') )
+        elif params.get( 'save_changes', False ):
+            try:
+                rt = trans.sa_session.query( trans.app.model.RequestType ).get( int(kwd['rt_id']) )
+            except:
+                return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                                  action='manage_request_types',
+                                                                  msg='Invalid request type ID',
+                                                                  messagetype='error') )
+            # data transfer info
+            rt.datatx_info = dict(host=util.restore_text( params.get( 'host', ''  ) ),
+                                  username=util.restore_text( params.get( 'username', ''  ) ),
+                                  password=util.restore_text( params.get( 'password', ''  ) )) 
+            trans.sa_session.add( rt )
+            trans.sa_session.flush()
+            return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                              action='manage_request_types',
+                                                              operation='view',
+                                                              id=trans.security.encode_id(rt.id),
+                                                              msg='Changes made to request type <b>%s</b> has been saved' % rt.name,
+                                                              messagetype='done') )
         else:
             rt_info, rt_states = self.__create_request_type_form(trans, **kwd)
             return trans.fill_template( '/admin/requests/create_request_type.mako',
@@ -1448,6 +1712,10 @@ class RequestsAdmin( BaseController ):
         rt.desc = util.restore_text( params.get( 'desc', '' ) )
         rt.request_form = trans.sa_session.query( trans.app.model.FormDefinition ).get( int( params.request_form_id ) )
         rt.sample_form = trans.sa_session.query( trans.app.model.FormDefinition ).get( int( params.sample_form_id ) )
+        # data transfer info
+        rt.datatx_info = dict(host=util.restore_text( params.get( 'host', ''  ) ),
+                              username=util.restore_text( params.get( 'username', ''  ) ),
+                              password=util.restore_text( params.get( 'password', ''  ) )) 
         trans.sa_session.add( rt )
         trans.sa_session.flush()
         # set sample states

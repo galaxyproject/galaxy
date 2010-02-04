@@ -47,7 +47,7 @@ def upgrade():
         try:
             LibraryFolder_table = Table( "library_folder", metadata, autoload=True )
         except NoSuchTableError:
-            Request_table = None
+            LibraryFolder_table = None
             log.debug( "Failed loading table library_folder" )
         # Add 1 foreign key constraint to the library_folder table
         if Request_table and LibraryFolder_table:

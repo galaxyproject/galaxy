@@ -53,6 +53,25 @@ class User( object ):
                 if role not in roles:
                     roles.append( role )
         return roles
+    def accessible_libraries(self, trans, actions):
+        # get all permitted libraries for this user
+        all_libraries = trans.sa_session.query( trans.app.model.Library ) \
+                                        .filter( trans.app.model.Library.table.c.deleted == False ) \
+                                        .order_by( trans.app.model.Library.name )
+        roles = self.all_roles()
+        actions_to_check = actions
+        # The libraries dictionary looks like: { library : '1,2' }, library : '3' }
+        # Its keys are the libraries that should be displayed for the current user and whose values are a
+        # string of comma-separated folder ids, of the associated folders the should NOT be displayed.
+        # The folders that should not be displayed may not be a complete list, but it is ultimately passed
+        # to the calling method to keep from re-checking the same folders when the library / folder
+        # select lists are rendered.
+        libraries = {}
+        for library in all_libraries:
+            can_show, hidden_folder_ids = trans.app.security_agent.show_library_item( self, roles, library, actions_to_check )
+            if can_show:
+                libraries[ library ] = hidden_folder_ids
+        return libraries
     
 class Job( object ):
     """
@@ -1206,21 +1225,15 @@ class FormDefinition( object ):
         self.form_definition_current = form_definition_current
         self.type = form_type
         self.layout = layout
-    def fields_of_grid(self, layout_grid_name):
-        fields_dict = {}
-        if not layout_grid_name:
-            for i, f in enumerate(self.fields):
-                fields_dict[i] = f
-        else:
-            layout_index = -1
-            for index, lg_name in enumerate(self.layout):
-                if lg_name == layout_grid_name:
-                    layout_index = index
-                    break
-            for i, f in enumerate(self.fields):
-                if f['layout'] == str(layout_index):
-                    fields_dict[i] = f
-        return fields_dict
+    def fields_of_grid(self, grid_index):
+        '''
+        This method returns the list of fields belonging to the given grid.
+        '''
+        gridfields = {}
+        for i, f in enumerate(self.fields):
+            if str(f['layout']) == str(grid_index):
+                gridfields[i] = f
+        return gridfields
     def get_widgets( self, user, contents=[], **kwd ):
         '''
         Return the list of widgets that comprise a form definition,
@@ -1252,6 +1265,9 @@ class FormDefinition( object ):
             # create the field widget
             field_widget = eval( field[ 'type' ] )( field_name )
             if field[ 'type' ] == 'TextField':
+                field_widget.set_size( 40 )
+                field_widget.value = value
+            if field[ 'type' ] == 'NumberField':
                 field_widget.set_size( 40 )
                 field_widget.value = value
             elif field[ 'type' ] == 'TextArea':
@@ -1297,14 +1313,12 @@ class Request( object ):
                     REJECTED = 'Rejected',
                     COMPLETE = 'Complete')
     def __init__(self, name=None, desc=None, request_type=None, user=None, 
-                 form_values=None, library=None, folder=None):
+                 form_values=None):
         self.name = name
         self.desc = desc
         self.type = request_type
         self.values = form_values
         self.user = user
-        self.library = library
-        self.folder = folder
         self.samples_list = []
     def state(self):
         if self.events:
@@ -1340,23 +1354,45 @@ class RequestEvent( object ):
         self.comment = comment
         
 class RequestType( object ):
-    def __init__(self, name=None, desc=None, request_form=None, sample_form=None):
+    def __init__(self, name=None, desc=None, request_form=None, sample_form=None,
+                 datatx_info=None):
         self.name = name
         self.desc = desc
         self.request_form = request_form
         self.sample_form = sample_form
+        self.datatx_info = datatx_info
     
 class Sample( object ):
-    def __init__(self, name=None, desc=None, request=None, form_values=None, bar_code=None):
+    transfer_status = Bunch( NOT_STARTED = 'Not started',
+                             IN_PROGRESS = 'In progress',
+                             COMPLETE = 'Complete',
+                             ERROR = 'Error')
+    def __init__(self, name=None, desc=None, request=None, form_values=None, 
+                 bar_code=None, library=None, folder=None, dataset_files=None):
         self.name = name
         self.desc = desc
         self.request = request
         self.values = form_values
         self.bar_code = bar_code
+        self.library = library
+        self.folder = folder
+        self.dataset_files = dataset_files
     def current_state(self):
         if self.events:
             return self.events[0].state
         return None
+    def untransfered_dataset_files(self):
+        count = 0
+        for df, status in self.dataset_files:
+            if status == self.transfer_status.NOT_STARTED:
+                count = count + 1
+        return count
+    def inprogress_dataset_files(self):
+        count = 0
+        for df, status in self.dataset_files:
+            if status == self.transfer_status.IN_PROGRESS:
+                count = count + 1
+        return count
 
 class SampleState( object ):
     def __init__(self, name=None, desc=None, request_type=None):
