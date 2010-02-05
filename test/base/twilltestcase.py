@@ -82,6 +82,7 @@ class TwillTestCase( unittest.TestCase ):
                         for char in line:
                             if ord( char ) > 128:
                                 raise AssertionError( "Binary data detected, not displaying diff" )
+                    raise AssertionError( "".join( diff_slice ) )
 
     def get_filename( self, filename ):
         full = os.path.join( self.file_dir, filename)
