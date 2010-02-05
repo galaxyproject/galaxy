@@ -6,7 +6,7 @@
     <requirement type="binary">macs</requirement>
   </requirements>
   <inputs>
-    <param name="experiment_name" type="text" value="MACS in Galaxy" size="50"/>
+    <param name="experiment_name" type="text" value="MACS in Galaxy" size="50" label="Experiment Name"/>
     <conditional name="input_type">
       <param name="input_type_selector" type="select" label="Paired End Sequencing">
         <option value="paired_end">Paired End (requires elandmultipet format)</option>
