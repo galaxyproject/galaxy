@@ -1,6 +1,31 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
 
+<script type="text/javascript">
+$( function() {
+    $( "select[refresh_on_change='true']").change( function() {
+        var refresh = false;
+        var refresh_on_change_values = $( this )[0].attributes.getNamedItem( 'refresh_on_change_values' )
+        if ( refresh_on_change_values ) {
+            refresh_on_change_values = refresh_on_change_values.value.split( ',' );
+            var last_selected_value = $( this )[0].attributes.getNamedItem( 'last_selected_value' );
+            for( i= 0; i < refresh_on_change_values.length; i++ ) {
+                if ( $( this )[0].value == refresh_on_change_values[i] || ( last_selected_value && last_selected_value.value == refresh_on_change_values[i] ) ){
+                    refresh = true;
+                    break;
+                }
+            }
+        }
+        else {
+            refresh = true;
+        }
+        if ( refresh ){
+            $( "#select_info_template" ).submit();
+        }
+    });
+});
+</script>
+
 <br/><br/>
 <ul class="manage-table-actions">
     <li>
@@ -13,21 +38,38 @@
 %endif
 
 <div class="toolForm">
-    <div class="toolFormTitle">Select a form on which to base the template for the ${library_item_desc} '${library_item_name}'</div>
-    <form name="new_info_template" action="${h.url_for( controller='library_common', action='add_info_template', cntrller=cntrller, item_type=item_type, library_id=library_id, folder_id=folder_id, ldda_id=ldda_id, show_deleted=show_deleted )}" method="post" >
+    <div class="toolFormTitle">Select a template for the ${library_item_desc} '${library_item_name}'</div>
+    <form id="select_info_template" name="select_info_template" action="${h.url_for( controller='library_common', action='add_info_template', cntrller=cntrller, item_type=item_type, library_id=library_id, folder_id=folder_id, ldda_id=ldda_id, show_deleted=show_deleted )}" method="post" >
         <div class="toolFormBody">
-            <div class="form-row">
-                <label>Template:</label>
-                <select name="form_id">
-                    %for form in forms:
-                        <option value="${form.id}">${form.name}</option>
-                    %endfor
-                </select>
-            </div>
-            <div style="clear: both"></div>
-            <div class="form-row">
-                <input type="submit" name="add_info_template_button" value="Add template to ${library_item_desc}"/>
-            </div>
+            <table class="grid">
+                <tr>
+                    <div class="form-row">
+                        <td>
+                            <input type="hidden" name="refresh" value="true" size="40"/>
+                            <label>Template:</label>
+                            ${template_select_list.get_html()}
+                        </td>
+                        <td>
+                            <input type="submit" name="add_info_template_button" value="Add template to ${library_item_desc}"/>
+                        </td>
+                    </div>
+                </tr>
+            </table>
+            %if template_select_list.get_selected() != ('Select one', 'none'):
+                <div style="clear: both"></div>
+                <div class="form-row">
+                    %for i, field in enumerate( widgets ):
+                        <div class="form-row">
+                            <label>${field[ 'label' ]}</label>
+                            ${field[ 'widget' ].get_html()}
+                            <div class="toolParamHelp" style="clear: both;">
+                                ${field[ 'helptext' ]}
+                            </div>
+                            <div style="clear: both"></div>
+                        </div>
+                    %endfor 
+                </div>
+            %endif
         </div>
     </form>
 </div>

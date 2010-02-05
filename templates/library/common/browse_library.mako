@@ -17,8 +17,6 @@
 <%
     if cntrller in [ 'library', 'requests' ]:
         can_add = trans.app.security_agent.can_add_library_item( current_user_roles, library )
-        if can_add:
-            info_association, inherited = library.get_info_association()
         can_modify = trans.app.security_agent.can_modify_library_item( current_user_roles, library )
         can_manage = trans.app.security_agent.can_manage_library_item( current_user_roles, library )
     info_association, inherited = library.get_info_association()
@@ -277,7 +275,7 @@
                 %if folder.deleted:
                     <span class="libraryItem-error">
                 %endif
-                ${folder.name}
+                <a href="${h.url_for( controller='library_common', action='folder_info', cntrller=cntrller, id=trans.security.encode_id( folder.id ), library_id=library_id, show_deleted=show_deleted )}">${folder.name}</a>
                 %if folder.description:
                     <i>- ${folder.description}</i>
                 %endif
@@ -372,7 +370,7 @@
             <tr class="libraryTitle">
                 %if cntrller == 'library_admin' or can_add or can_modify or can_manage:
                     <th style="padding-left: 42px;">
-                        ${library.name}
+                        <a href="${h.url_for( controller='library_common', action='library_info', cntrller=cntrller, id=trans.security.encode_id( library.id ), show_deleted=show_deleted )}"><b>${library.name[:50]}</b></a>
                         <a id="library-${library.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
                         <div popupmenu="library-${library.id}-popup">
                             %if not library.deleted:
@@ -406,7 +404,9 @@
                         </div>
                     </th>
                 %else:
-                    <th style="padding-left: 42px;">${library.name}</th>
+                    <th style="padding-left: 42px;">
+                        <a href="${h.url_for( controller='library_common', action='library_info', cntrller=cntrller, id=trans.security.encode_id( library.id ), show_deleted=show_deleted )}"><b>${library.name[:50]}</b></a>
+                    </th>
                 %endif
                 <th>Information</th>
                 <th>Uploaded By</th>

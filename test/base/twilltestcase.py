@@ -1403,9 +1403,10 @@ class TwillTestCase( unittest.TestCase ):
         elif item_type == 'ldda':
             url = "%s/library_common/add_info_template?cntrller=%s&item_type=%s&library_id=%s&folder_id=%s&ldda_id=%s" % ( self.url, cntrller, item_type, library_id, folder_id, ldda_id )
         self.visit_url( url )
-        self.check_page_for_string ( "Select a form on which to base the template" )
+        self.check_page_for_string ( "Select a template for the" )
+        tc.fv( '1', 'form_id', form_id )
         tc.submit( 'add_info_template_button' )
-        self.check_page_for_string = 'An information template based on the form "%s" has been added to this' % form_name
+        self.check_page_for_string = 'A template based on the form "%s" has been added to this' % form_name
         self.home()
     def library_info( self, library_id, library_name, ele_1_field_name, ele_1_contents, ele_2_field_name, ele_2_contents, controller='library_admin' ):
         """Add information to a library using an existing template with 2 elements"""

@@ -1,4 +1,4 @@
-import os, os.path, shutil, urllib, StringIO, re, gzip, tempfile, shutil, zipfile
+import os, os.path, shutil, urllib, StringIO, re, gzip, tempfile, shutil, zipfile, copy
 from galaxy.web.base.controller import *
 from galaxy import util, jobs
 from galaxy.datatypes import sniff
@@ -6,6 +6,7 @@ from galaxy.security import RBACAgent
 from galaxy.util.json import to_json_string
 from galaxy.tools.actions import upload_common
 from galaxy.web.controllers.forms import get_all_forms
+from galaxy.web.form_builder import SelectField
 from galaxy.model.orm import *
 from galaxy.util.streamball import StreamBall
 import logging, tempfile, zipfile, tarfile, os, sys
@@ -1314,7 +1315,7 @@ class LibraryCommon( BaseController ):
             action = 'ldda_edit_info'
             id = ldda_id
         if params.get( 'add_info_template_button', False ):
-            form = trans.sa_session.query( trans.app.model.FormDefinition ).get( int( params.form_id ) )
+            form = trans.sa_session.query( trans.app.model.FormDefinition ).get( trans.security.decode_id( params.form_id ) )
             form_values = trans.app.model.FormValues( form, [] )
             trans.sa_session.add( form_values )
             trans.sa_session.flush()
@@ -1326,7 +1327,7 @@ class LibraryCommon( BaseController ):
                 assoc = trans.app.model.LibraryDatasetDatasetInfoAssociation( item, form, form_values )
             trans.sa_session.add( assoc )
             trans.sa_session.flush()
-            msg = 'An information template based on the form "%s" has been added to this %s.' % ( form.name, library_item_desc )
+            msg = 'A template based on the form "%s" has been added to this %s.' % ( form.name, library_item_desc )
             trans.response.send_redirect( web.url_for( controller='library_common',
                                                        action=action,
                                                        cntrller=cntrller,
@@ -1336,6 +1337,36 @@ class LibraryCommon( BaseController ):
                                                        show_deleted=show_deleted,
                                                        msg=msg,
                                                        messagetype='done' ) )
+        def generate_template_stuff( trans, forms, form_id ):
+            # Returns the following:
+            # - a list of template ids
+            # - a list of dictionaries whose keys are template ids and whose values are templates widgets.
+            #   The dictionary built using the received forms param
+            # - a select list whose options are templates
+            template_ids = [ 'none' ]
+            widgets = []
+            for form in forms:
+                template_ids.append( trans.security.encode_id( form.id ) )
+            template_select_list = SelectField( 'form_id', 
+                                    refresh_on_change=True, 
+                                    refresh_on_change_values=template_ids[1:] )
+            if form_id == 'none':
+                template_select_list.add_option( 'Select one', 'none', selected=True )
+                decoded_form_id = None
+            else:
+                template_select_list.add_option( 'Select one', 'none' )
+                decoded_form_id = trans.security.decode_id( form_id )
+            for form in forms:
+                if decoded_form_id and decoded_form_id == form.id:
+                    template_select_list.add_option( form.name, trans.security.encode_id( form.id ), selected=True )
+                    widgets = form.get_widgets( trans.user )
+                else:
+                    template_select_list.add_option( form.name, trans.security.encode_id( form.id ) )
+            return template_ids, widgets, template_select_list
+        if params.get( 'refresh', False ):
+            template_ids, widgets, template_select_list = generate_template_stuff( trans, forms, kwd.get( 'form_id' ) )
+        else:
+            template_ids, widgets, template_select_list = generate_template_stuff( trans, forms, 'none' )
         return trans.fill_template( '/library/common/select_info_template.mako',
                                     cntrller=cntrller,
                                     library_item_name=item.name,
@@ -1344,7 +1375,9 @@ class LibraryCommon( BaseController ):
                                     library_id=library_id,
                                     folder_id=folder_id,
                                     ldda_id=ldda_id,
-                                    forms=forms,
+                                    template_ids=template_ids,
+                                    widgets=widgets,
+                                    template_select_list=template_select_list,
                                     show_deleted=show_deleted,
                                     msg=msg,
                                     messagetype=messagetype )

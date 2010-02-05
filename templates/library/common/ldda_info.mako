@@ -98,18 +98,18 @@
             </div>
         %endif
     </div>
-    %if widgets:
-        ${render_template_info( cntrller=cntrller, item_type='ldda', library_id=library_id, widgets=widgets, folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ), ldda_id=trans.security.encode_id( ldda.id ), editable=False )}
-    %endif
-    %if current_version:
-        <% expired_lddas = [ e_ldda for e_ldda in ldda.library_dataset.expired_datasets ] %>
-        %if expired_lddas:
-            <div class="toolFormTitle">Expired versions of ${ldda.name}</div>
-            %for expired_ldda in expired_lddas:
-                <div class="form-row">
-                    <a href="${h.url_for( controller='library_common', action='ldda_display_info', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( expired_ldda.library_dataset.folder.id ), id=trans.security.encode_id( expired_ldda.id ), show_deleted=show_deleted )}">${expired_ldda.name}</a>
-                </div>
-            %endfor
-        %endif
-    %endif
 </div>
+%if widgets:
+    ${render_template_info( cntrller=cntrller, item_type='ldda', library_id=library_id, widgets=widgets, folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ), ldda_id=trans.security.encode_id( ldda.id ), editable=False )}
+%endif
+%if current_version:
+    <% expired_lddas = [ e_ldda for e_ldda in ldda.library_dataset.expired_datasets ] %>
+    %if expired_lddas:
+        <div class="toolFormTitle">Expired versions of ${ldda.name}</div>
+        %for expired_ldda in expired_lddas:
+            <div class="form-row">
+                <a href="${h.url_for( controller='library_common', action='ldda_display_info', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( expired_ldda.library_dataset.folder.id ), id=trans.security.encode_id( expired_ldda.id ), show_deleted=show_deleted )}">${expired_ldda.name}</a>
+            </div>
+        %endfor
+    %endif
+%endif

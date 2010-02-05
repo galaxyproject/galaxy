@@ -1,23 +1,20 @@
 <%def name="render_template_info( cntrller, item_type, library_id, widgets, folder_id=None, ldda_id=None, editable=True )">
     <%
         if item_type == 'library':
-            item_desc = 'library'
             item = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( library_id ) )
         elif item_type == 'folder':
-            item_desc = 'folder'
             item = trans.sa_session.query( trans.app.model.LibraryFolder ).get( trans.security.decode_id( folder_id ) )
         elif item_type == 'ldda':
-            item_desc = 'dataset'
             item = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( ldda_id ) )
         if cntrller == 'library':
             current_user_roles = trans.get_current_user_roles()
     %>
     %if widgets:
-        <p/>
-        <div class="toolForm">
-            <div class="toolFormTitle">Other information about ${item_desc} ${item.name}</div>
-            <div class="toolFormBody">
-                %if editable and ( cntrller=='library_admin' or trans.app.security_agent.can_modify_library_item( current_user_roles, item ) ):
+        %if editable and ( cntrller=='library_admin' or trans.app.security_agent.can_modify_library_item( current_user_roles, item ) ):
+            <p/>
+            <div class="toolForm">
+                <div class="toolFormTitle">Other information about ${item.name}</div>
+                <div class="toolFormBody">
                     <form name="edit_info" action="${h.url_for( controller='library_common', action='edit_template_info', cntrller=cntrller, item_type=item_type, library_id=library_id, num_widgets=len( widgets ), folder_id=folder_id, ldda_id=ldda_id, show_deleted=show_deleted )}" method="post">
                         %for i, field in enumerate( widgets ):
                             <div class="form-row">
@@ -33,7 +30,22 @@
                             <input type="submit" name="edit_info_button" value="Save"/>
                         </div>
                     </form>
-                %else:
+                </div>
+            </div>
+        %else:
+            <% contents = False %>
+            %for i, field in enumerate( widgets ):
+                %if field[ 'widget' ].value:
+                    <%
+                        contents = True
+                        break
+                    %>
+                %endif
+            %endfor
+            %if contents:
+                <div class="toolForm">
+                    <div class="toolFormTitle">Other information about ${item.name}</div>
+                    <div class="toolFormBody">
                     %for i, field in enumerate( widgets ):
                         %if field[ 'widget' ].value:
                             <div class="form-row">
@@ -46,9 +58,9 @@
                             </div>
                         %endif
                     %endfor
-                %endif
-            </div>
-        </div>
+                </div>
+            %endif
+        %endif
     %endif
 </%def>
 

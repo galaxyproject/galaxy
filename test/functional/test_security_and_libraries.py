@@ -582,7 +582,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.add_info_template( 'library_admin',
                                 'library',
                                 self.security.encode_id( library_one.id ),
-                                str( form_one.id ),
+                                self.security.encode_id( form_one.id ),
                                 form_one.name )
         # Make sure the template fields are displayed on the library information page
         field_dict = form_one.fields[ 0 ]
