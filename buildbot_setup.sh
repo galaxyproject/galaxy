@@ -10,6 +10,15 @@ case "$OSTYPE" in
         kernel=`uname -r | cut -f1,2 -d.`
         HYPHY="/galaxy/software/linux$kernel-$HOSTTYPE/hyphy"
         ;;
+    darwin*)
+        this_minor=`uname -r | awk -F. '{print ($1-4)}'`
+        machine=`machine`
+        for minor in `jot - 3 $this_minor 1`; do
+            HYPHY="/galaxy/software/macosx10.$minor-$machine/hyphy"
+            [ -d "$HYPHY" ] && break
+        done
+        [ ! -d "$HYPHY" ] && unset HYPHY
+        ;;
 esac
 
 LINKS="
