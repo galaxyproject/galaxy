@@ -72,17 +72,20 @@
             %endfor
             
             ## Add tag input field. If element is in form, tag input is a textarea; otherwise element is a input type=text.
-            %if editable:
-                %if in_form:
-                    <textarea class="tag-input" rows='1' cols='${input_size}'></textarea>
-                %else:
-                    <input class="tag-input" type='text' size='${input_size}'/>
+            <div class="tooltip">
+                %if editable:
+                    %if in_form:
+                        <textarea class="tag-input" rows='1' cols='${input_size}'></textarea>
+                    %else:
+                        <input class="tag-input" type='text' size='${input_size}'/>
+                    %endif
+                    ## Add "add tag" button.
+                    %if render_add_tag_button:
+                        <img src='${h.url_for('/static/images/add_icon.png')}' rollover='${h.url_for('/static/images/add_icon_dark.png')}' class="add-tag-button"/>
+                    %endif
                 %endif
-                ## Add "add tag" button.
-                %if render_add_tag_button:
-                    <img src='${h.url_for('/static/images/add_icon.png')}' rollover='${h.url_for('/static/images/add_icon_dark.png')}' class="add-tag-button"/>
-                %endif
-            %endif
+                <span class="tip">Click to add tags</span>
+            </div>
         </div>
     </div>
 </%def>

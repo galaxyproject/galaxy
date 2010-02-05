@@ -42,19 +42,22 @@ $(function() {
         $.jStore.remove("history_expand_state");
     }));
     
-    // Rename async.
-    async_save_text("history-rename", "history-name", "${h.url_for( controller="/history", action="rename_async", id=trans.security.encode_id(history.id) )}", "new_name");
+    // Rename management.
+    async_save_text("history-name", "history-name", "${h.url_for( controller="/history", action="rename_async", id=trans.security.encode_id(history.id) )}", "new_name", 18);
     
-    // Annotation async.
-    // Tag async. Simply have the workflow tag element generate a click on the tag element to activate tagging.
-    $('#workflow-tag').click( function() 
+    // Tag management.
+    $('#history-tag').click( function() 
     {
-        $('.tag-area').click();
+        $('#history-tag-area').toggle("fast");
         return false;
     });
-                    
-    // Annotate async.
-    async_save_text("history-annotate", "history-annotation", "${h.url_for( controller="/history", action="annotate_async", id=trans.security.encode_id(history.id) )}", "new_annotation", true, 4);
+    
+    // Annotation management. 
+    $('#history-annotate').click( function() {
+        $('#history-annotation-area').toggle("fast");
+        return false;
+    });
+    async_save_text("history-annotation", "history-annotation", "${h.url_for( controller="/history", action="annotate_async", id=trans.security.encode_id(history.id) )}", "new_annotation", 18, true, 4);
     
     // Updater
     updater({
@@ -273,10 +276,24 @@ div.form-row {
     | <a href="${h.url_for('history', show_deleted=False)}">${_('hide deleted')}</a> 
     %endif
 </div>
-    
+
 <div id="history-name-area" class="historyLinks" style="color: gray; font-weight: bold;">
-    <div style="float: right"><a id="history-rename" title="Rename" class="icon-button edit" target="galaxy_main" href="${h.url_for( controller='history', action='rename' )}"></a></div>
-    <div id="history-name">${history.get_display_name() | h}</div>
+    <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+            <td align="left">
+                <div id="history-name-container" class="editable-text tooltip">
+                    <span id="history-name">${history.get_display_name() | h}</span>
+                    <span class="tip">Click to edit</span></a>
+                </div>
+            </td>
+            <td align="right">
+                <div style="float: right">
+                    <a id="history-tag" title="Tag" class="icon-button tag tooltip" target="galaxy_main" href="${h.url_for( controller='history', action='tag' )}"></a>
+                    <a id="history-annotate" title="Annotate" class="icon-button annotate" target="galaxy_main" href="${h.url_for( controller='history', action='annotate' )}"></a>
+                </div>
+            </td>
+        </tr>
+    </table>
 </div>
 
 %if history.deleted:
@@ -291,33 +308,30 @@ div.form-row {
 
 %if trans.get_user() is not None:
     <div style="margin: 0px 0px 5px 10px">
-        <a href="#" onclick="$('#tags-and-annotation').toggle('fast')">Edit Tags and Annotation/Notes</a>
-        <div id="tags-and-annotation" style="display: none">    
-            ## Tagging elt.
-            <div class="form-row">
-                <label>Tags:</label>
-                <div style="float: right"><a id="workflow-tag" title="Tag" class="icon-button edit" target="galaxy_main" href="${h.url_for( controller='workflow', action='annotate_async' )}"></a></div>
-                <style>
-                    .tag-area {
-                        border: none;
-                    }
-                </style>
-                ${render_individual_tagging_element(user=trans.get_user(), tagged_item=history, elt_context="history.mako", use_toggle_link=False, input_size="20", render_add_tag_button=False)}
-                <div style="clear: both"></div>
-            </div>
-        
-            ## Annotation elt.
-            <div id="history-annotation-area" class="form-row">
-       	        <label>Annotation / Notes:</label>
-    		    <div style="float: right"><a id="history-annotate" title="Annotate" class="icon-button edit" target="galaxy_main" href="${h.url_for( controller='history', action='annotate_async' )}"></a></div>
-    		    %if annotation:
-                        <div id="history-annotation">${annotation | h}</div>
-                    %else:
-                        <div id="history-annotation"></div>
-                    %endif
-                <div style="clear: both"></div>
+        ## Tagging elt.
+        <div id="history-tag-area" class="form-row" style="display: none">
+            <label>Tags:</label>
+            <style>
+                .tag-area {
+                    border: none;
+                }
+            </style>
+            ${render_individual_tagging_element(user=trans.get_user(), tagged_item=history, elt_context="history.mako", use_toggle_link=False, input_size="20")}
+        </div>
+    
+        ## Annotation elt.
+        <div id="history-annotation-area" class="form-row" style="display: none">
+   	        <label>Annotation / Notes:</label>
+   	        <div class="tooltip">
+   	            %if annotation:
+       	            <span id="history-annotation">${annotation | h}</span>
+       	        %else:
+       	            <span id="history-annotation">None</span>
+       	        %endif
+   	            <span class="tip">Click to edit annotation</span>
             </div>
         </div>
+        
     </div>
 %endif
 

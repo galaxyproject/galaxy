@@ -211,14 +211,21 @@ var replace_dbkey_select = function()
 //
 // Edit and save text asynchronously.
 // 
-function async_save_text(click_to_edit_elt, text_elt_id, save_url, text_parm_name, use_textarea, num_rows, on_start, on_finish)
+function async_save_text(click_to_edit_elt, text_elt_id, save_url, text_parm_name, num_cols, use_textarea, num_rows, on_start, on_finish)
 {
+    // Set defaults if necessary.
+    if (num_cols == null)
+        num_cols = 30;
+    if (num_rows == null)
+        num_rows = 4
+    
+    // Set up input element.
     $("#" + click_to_edit_elt).click( function() {
         var old_text = $("#" + text_elt_id).text()
         if (use_textarea)
-            var t = $("<textarea rows='" + num_rows + "'>" + old_text + "</textarea>" );
+            var t = $("<textarea rows='" + num_rows + "' cols='" + num_cols + "'>" + old_text + "</textarea>" );
         else
-            var t = $("<input type='text' value='" + old_text + "'></input>" );
+            var t = $("<input type='text' value='" + old_text + "' size='" + num_cols + "'></input>" );
         t.blur( function() {
             $(this).remove();
             $("#" + text_elt_id).show();
