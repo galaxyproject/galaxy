@@ -94,12 +94,24 @@ class SGEJobRunner( object ):
 
     def determine_sge_queue( self, url ):
         """Determine what SGE queue we are submitting to"""
-        url_split = url.split("/")
-        queue = url_split[3]
-        if queue == "":
-            # None == server's default queue
-            queue = None
-        return queue
+        try:
+            return url.split('/')[3] or None
+        except:
+            return None
+
+    def determine_sge_project( self, url ):
+        """Determine what SGE project we are submitting to"""
+        try:
+            return url.split('/')[4] or None
+        except:
+            return None
+
+    def determine_sge_tool_parameters( self, url ):
+        """Determine what are the tool's specific paramters"""
+        try:
+            return url.split('/')[5] or None
+        except:
+            return None
 
     def queue_job( self, job_wrapper ):
         """Create SGE script for a job and submit it to the SGE queue"""
@@ -132,6 +144,8 @@ class SGEJobRunner( object ):
             # TODO: support multiple cells
             log.warning( "(%s) Using multiple SGE cells is not supported.  This job will be submitted to the default cell." % job_wrapper.job_id )
         sge_queue_name = self.determine_sge_queue( runner_url )
+        sge_project_name = self.determine_sge_project( runner_url )
+        sge_extra_params = self.determine_sge_tool_parameters ( runner_url )
 
         # define job attributes
         ofile = "%s/database/pbs/%s.o" % (os.getcwd(), job_wrapper.job_id)
@@ -140,8 +154,15 @@ class SGEJobRunner( object ):
         jt.remoteCommand = "%s/database/pbs/galaxy_%s.sh" % (os.getcwd(), job_wrapper.job_id)
         jt.outputPath = ":%s" % ofile
         jt.errorPath = ":%s" % efile
+        nativeSpec = []
         if sge_queue_name is not None:
-            jt.setNativeSpecification( "-q %s" % sge_queue_name )
+            nativeSpec.append( "-q '%s'" % sge_queue_name )
+        if sge_project_name is not None:
+            nativeSpec.append( "-P '%s'" % sge_project_name)
+        if sge_extra_params is not None:
+            nativeSpec.append( sge_extra_params ) 
+        if len(nativeSpec)>0:
+            jt.nativeSpecification = ' '.join(nativeSpec)
 
         script = sge_template % (job_wrapper.galaxy_lib_dir, os.path.abspath( job_wrapper.working_directory ), command_line)
         fh = file( jt.remoteCommand, "w" )

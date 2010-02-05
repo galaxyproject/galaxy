@@ -124,12 +124,27 @@ class PBSJobRunner( object ):
 
     def determine_pbs_queue( self, url ):
         """Determine what PBS queue we are submitting to"""
-        url_split = url.split("/")
-        queue = url_split[3]
-        if queue == "":
-            # None == server's default queue
-            queue = None
-        return queue
+        try:
+            return url.split('/')[3] or None
+        except:
+            return None
+
+    def determine_pbs_options( self, url ):
+        try:
+            opts = url.split('/')[4].strip().lstrip('-').split(' -')
+            assert opts != ['']
+        except:
+            return []
+        rval = []
+        for opt in opts:
+            name, value = opt.split( None, 1 )
+            if name == 'l':
+                resource_attrs = value.split(',')
+                for j, ( res, val ) in enumerate( [ a.split('=', 1) for a in resource_attrs ] ):
+                    rval.append( dict( name = pbs.ATTR_l, value = val, resource = res ) )
+            else:
+                rval.append( dict( name = getattr( pbs, 'ATTR_' + name ), value = value ) )
+        return rval
 
     def run_next( self ):
         """
@@ -175,6 +190,7 @@ class PBSJobRunner( object ):
 
         ( pbs_server_name, runner_url ) = self.determine_pbs_server( runner_url, rewrite = True )
         pbs_queue_name = self.determine_pbs_queue( runner_url )
+        pbs_options = self.determine_pbs_options( runner_url )
         c = pbs.pbs_connect( pbs_server_name )
         if c <= 0:
             job_wrapper.fail( "Unable to queue job for execution.  Resubmitting the job may succeed." )
@@ -185,7 +201,6 @@ class PBSJobRunner( object ):
         ofile = "%s/%s.o" % (self.app.config.cluster_files_directory, job_wrapper.job_id)
         efile = "%s/%s.e" % (self.app.config.cluster_files_directory, job_wrapper.job_id)
 
-        
         output_fnames = job_wrapper.get_output_fnames()
         
         # If an application server is set, we're staging
@@ -195,28 +210,28 @@ class PBSJobRunner( object ):
             output_files = [ str( o ) for o in output_fnames ]
             stagein = self.get_stage_in_out( job_wrapper.get_input_fnames() + output_files, symlink=True )
             stageout = self.get_stage_in_out( output_files )
-            job_attrs = pbs.new_attropl(5)
-            job_attrs[0].name = pbs.ATTR_o
-            job_attrs[0].value = pbs_ofile
-            job_attrs[1].name = pbs.ATTR_e
-            job_attrs[1].value = pbs_efile
-            job_attrs[2].name = pbs.ATTR_stagein
-            job_attrs[2].value = stagein
-            job_attrs[3].name = pbs.ATTR_stageout
-            job_attrs[3].value = stageout
-            job_attrs[4].name = pbs.ATTR_N
-            job_attrs[4].value = "%s_%s" % ( job_wrapper.job_id, job_wrapper.tool.id )
-            exec_dir = os.path.abspath( job_wrapper.working_directory )
+            attrs = [
+                dict( name = pbs.ATTR_o, value = pbs_ofile ),
+                dict( name = pbs.ATTR_e, value = pbs_efile ),
+                dict( name = pbs.ATTR_stagein, value = stagein ),
+                dict( name = pbs.ATTR_stageout, value = stageout ),
+            ]
         # If not, we're using NFS
         else:
-            job_attrs = pbs.new_attropl(3)
-            job_attrs[0].name = pbs.ATTR_o
-            job_attrs[0].value = ofile
-            job_attrs[1].name = pbs.ATTR_e
-            job_attrs[1].value = efile
-            job_attrs[2].name = pbs.ATTR_N
-            job_attrs[2].value = "%s_%s" % ( job_wrapper.job_id, job_wrapper.tool.id )
-            exec_dir = os.path.abspath( job_wrapper.working_directory )
+            attrs = [
+                dict( name = pbs.ATTR_o, value = ofile ),
+                dict( name = pbs.ATTR_e, value = efile ),
+            ]
+
+        # define PBS job options
+        attrs.append( dict( name = pbs.ATTR_N, value = str( "%s_%s_%s" % ( job_wrapper.job_id, job_wrapper.tool.id, job_wrapper.user ) ) ) )
+        job_attrs = pbs.new_attropl( len( attrs ) + len( pbs_options ) )
+        for i, attr in enumerate( attrs + pbs_options ):
+            job_attrs[i].name = attr['name']
+            job_attrs[i].value = attr['value']
+            if 'resource' in attr:
+                job_attrs[i].resource = attr['resource']
+        exec_dir = os.path.abspath( job_wrapper.working_directory )
 
         # write the job script
         if self.app.config.pbs_stage_path != '':

@@ -719,6 +719,7 @@ class JobWrapper( object ):
         for outfile in [ str( o ) for o in output_paths ]:
             sizes.append( ( outfile, os.stat( outfile ).st_size ) )
         return sizes
+
     def setup_external_metadata( self, exec_dir = None, tmp_dir = None, dataset_files_path = None, config_root = None, datatypes_config = None, set_extension = True, **kwds ):
         # extension could still be 'auto' if this is the upload tool.
         job = self.sa_session.query( model.Job ).get( self.job_id )
@@ -746,6 +747,14 @@ class JobWrapper( object ):
                                                                       datatypes_config = datatypes_config,
                                                                       job_metadata = os.path.join( self.working_directory, TOOL_PROVIDED_JOB_METADATA_FILE ),
                                                                       **kwds )
+
+    @property
+    def user( self ):
+        job = self.sa_session.query( model.Job ).get( self.job_id )
+        if job.history.user is None:
+            return 'anonymous@' + job.galaxy_session.remote_addr.split()[-1]
+        else:
+            return job.history.user.email
 
 class DefaultJobDispatcher( object ):
     def __init__( self, app ):
