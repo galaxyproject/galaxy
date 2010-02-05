@@ -30,6 +30,8 @@
     ## Start with exceptions, end with default.
     if a_class is model.History:
         return "Histories"
+    elif a_class is model.FormDefinitionCurrent:
+        return "Forms"
     else:
         return get_class_display_name( a_class ) + "s"
 %>
@@ -55,21 +57,23 @@
 
 ## Get plural term for class.
 <%def name="get_class_plural( a_class )">
-    <%
-		if a_class == model.History:
-			class_plural = "Histories"
-		elif a_class == model.StoredWorkflow:
-			class_plural = "Workflows"
-		elif a_class == model.Page:
-			class_plural = "Pages"
-		elif a_class == model.Library:
-			class_plural = "Libraries"
-		elif a_class == model.HistoryDatasetAssociation:
-			class_plural = "Datasets"
-		else:
-			class_plural = a_class.__name__ + "s"
-		return class_plural
-    %>
+<%
+    if a_class == model.History:
+        class_plural = "Histories"
+    elif a_class == model.StoredWorkflow:
+        class_plural = "Workflows"
+    elif a_class == model.Page:
+        class_plural = "Pages"
+    elif a_class == model.Library:
+        class_plural = "Libraries"
+    elif a_class == model.HistoryDatasetAssociation:
+        class_plural = "Datasets"
+    elif a_class == model.FormDefinitionCurrent:
+        class_plural = "Forms"
+    else:
+        class_plural = a_class.__name__ + "s"
+    return class_plural
+%>
 </%def>
 
 ## Returns the controller name for an item based on its class.

@@ -135,7 +135,9 @@ class Forms( BaseController ):
                 return trans.response.send_redirect( web.url_for( controller='forms',
                                                                   action='new',
                                                                   msg=msg,
-                                                                  messagetype='error' ) )  
+                                                                  messagetype='error',
+                                                                  name=util.restore_text( params.get( 'name', '' ) ),
+                                                                  description=util.restore_text( params.get( 'description', '' ) ) ) )  
             self.__get_saved_form( fd )
             if self.__imported_from_file:
                 return trans.response.send_redirect( web.url_for( controller='forms',
@@ -151,8 +153,8 @@ class Forms( BaseController ):
                                                                   name=fd.name,
                                                                   description=fd.desc,
                                                                   form_type_selectbox=fd.type ) )  
-        inputs = [ ( 'Name', TextField( 'name', 40, 'New Form' ) ),
-                   ( 'Description', TextField( 'description', 40, '' ) ),
+        inputs = [ ( 'Name', TextField( 'name', 40, util.restore_text( params.get( 'name', '' ) ) ) ),
+                   ( 'Description', TextField( 'description', 40, util.restore_text( params.get( 'description', '' ) ) ) ),
                    ( 'Type', self.__form_types_widget(trans, selected=params.get( 'form_type', 'none' )) ),
                    ( 'Import from csv file (Optional)', FileField( 'file_data', 40, '' ) ) ]
         return trans.fill_template( '/admin/forms/create_form.mako', 
