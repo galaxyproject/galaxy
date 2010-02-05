@@ -11,6 +11,7 @@ from galaxy.tools.parameters.grouping import Repeat, Conditional
 from galaxy.datatypes.data import Data
 from galaxy.util.odict import odict
 from galaxy.util.bunch import Bunch
+from galaxy.util.sanitize_html import sanitize_html
 from galaxy.util.topsort import topsort, topsort_levels, CycleError
 from galaxy.workflow.modules import *
 from galaxy.model.mapping import desc
@@ -317,8 +318,9 @@ class WorkflowController( BaseController, Sharable ):
             # Rename workflow.
             stored.name = kwargs[ 'name' ]
         if 'annotation' in kwargs:
-            # Set workflow annotation.
-            self.add_item_annotation( trans, stored, kwargs[ 'annotation' ] )
+            # Set workflow annotation; sanitize annotation before adding it.
+            annotation = sanitize_html( kwargs[ 'annotation' ], 'utf-8', 'text/html' )
+            self.add_item_annotation( trans, stored,  annotation )
         trans.sa_session.flush()
         
         return trans.fill_template( 'workflow/edit_attributes.mako', 
@@ -350,20 +352,18 @@ class WorkflowController( BaseController, Sharable ):
         if new_name:
             stored.name = new_name
             trans.sa_session.flush()
-            return
-        else:
-            return "failed"
+            return stored.name
             
     @web.expose
     @web.require_login( "use Galaxy workflows" )
     def annotate_async( self, trans, id, new_annotation=None, **kwargs ):
         stored = get_stored_workflow( trans, id )
         if new_annotation:
+            # Sanitize annotation before adding it.
+            new_annotation = sanitize_html( new_annotation, 'utf-8', 'text/html' )
             self.add_item_annotation( trans, stored, new_annotation )
             trans.sa_session.flush()
-            return
-        else:
-            return "failed"
+            return new_annotation
             
     @web.expose
     @web.require_login( "use Galaxy workflows" )
@@ -643,7 +643,8 @@ class WorkflowController( BaseController, Sharable ):
             step.temp_input_connections = step_dict['input_connections']
             
             # Save step annotation.
-            self.add_item_annotation( trans, step, step_dict[ 'annotation' ] )
+            annotation = sanitize_html( step_dict[ 'annotation' ], 'utf-8', 'text/html' )
+            self.add_item_annotation( trans, step, annotation  )
         # Second pass to deal with connections between steps
         for step in steps:
             # Input connections

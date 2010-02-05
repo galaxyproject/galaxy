@@ -4,6 +4,7 @@ from galaxy import util
 from galaxy.model.mapping import desc
 from galaxy.model.orm import *
 from galaxy.util.json import *
+from galaxy.util.sanitize_html import sanitize_html
 from galaxy.tags.tag_handler import TagHandler
 from sqlalchemy.sql.expression import ClauseElement
 import webhelpers, logging, operator
@@ -355,17 +356,18 @@ class HistoryController( BaseController, Sharable ):
         history.name = new_name
         trans.sa_session.add( history )
         trans.sa_session.flush()
+        return history.name
         
     @web.expose
     @web.require_login( "use Galaxy histories" )
     def annotate_async( self, trans, id, new_annotation=None, **kwargs ):
         history = self.get_history( trans, id )
         if new_annotation:
+            # Sanitize annotation before adding it.
+            new_annotation = sanitize_html( new_annotation, 'utf-8', 'text/html' )
             self.add_item_annotation( trans, history, new_annotation )
             trans.sa_session.flush()
-            return
-        else:
-            return "failed"
+            return new_annotation
     
     @web.expose
     @web.json

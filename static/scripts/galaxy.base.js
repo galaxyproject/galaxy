@@ -249,9 +249,9 @@ function async_save_text(click_to_edit_elt, text_elt_id, save_url, text_parm_nam
                         alert( "Text editing for elt " + text_elt_id + " failed" );
                         // TODO: call finish or no? For now, let's not because error occurred.
                     },
-                    success: function() {
+                    success: function(processed_text) {
                         // Set new text and call finish method.
-                        $("#" + text_elt_id).text( new_text );
+                        $("#" + text_elt_id).text( processed_text );
                         if (on_finish != null)
                             on_finish(t);
                     }

@@ -5,6 +5,7 @@ import logging, os, string, shutil, urllib, re, socket
 from cgi import escape, FieldStorage
 from galaxy import util, datatypes, jobs, web, util
 from galaxy.web.base.controller import *
+from galaxy.util.sanitize_html import sanitize_html
 from galaxy.model.orm import *
 
 log = logging.getLogger( __name__ )
@@ -305,7 +306,9 @@ class RootController( BaseController ):
                             else:
                                 setattr( data.metadata, name, spec.unwrap( params.get (name, None) ) )
                     data.datatype.after_setting_metadata( data )
-                    self.add_item_annotation( trans, data, params.annotation )
+                    # Sanitize annotation before adding it.
+                    annotation = sanitize_html( params.annotation, 'utf-8', 'text/html' )
+                    self.add_item_annotation( trans, data, annotation )
                 else:
                     msg = ' (Metadata could not be changed because this dataset is currently being used as input or output. You must cancel or wait for these jobs to complete before changing metadata.)'
                 trans.sa_session.flush()
