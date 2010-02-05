@@ -286,8 +286,8 @@ div.form-row {
                     <span class="tip">Click to edit</span></a>
                 </div>
             </td>
-            <td align="right">
-                <div style="float: right">
+            <td align="right" style="width: 40px">
+                <div style="float: right; white-space: nowrap">
                     <a id="history-tag" title="Tag" class="icon-button tag tooltip" target="galaxy_main" href="${h.url_for( controller='history', action='tag' )}"></a>
                     <a id="history-annotate" title="Annotate" class="icon-button annotate" target="galaxy_main" href="${h.url_for( controller='history', action='annotate' )}"></a>
                 </div>
