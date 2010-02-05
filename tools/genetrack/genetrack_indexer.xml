@@ -1,6 +1,6 @@
-<tool id="bed2genetrack" name="Visualize BED file">
+<tool id="bed2genetrack" name="GeneTrack indexer">
   
-  <description> - creates a visualization from a bed file</description>
+  <description>on a BED file</description>
 
   <command interpreter="python">
     genetrack_indexer.py -i $input -o $output -s $shift -v 0 -f BED -x

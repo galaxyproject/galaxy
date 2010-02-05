@@ -1,0 +1,213 @@
+<tool id="peakcalling_macs" name="MACS" version="1.0.0">
+  <description>Model-based Analysis of ChIP-Seq</description>
+  <command interpreter="python">macs_wrapper.py $options_file $output_bed_file $output_extra_files $output_extra_files.files_path</command>
+  <requirements>
+    <requirement type="python-module">macs</requirement>
+    <requirement type="binary">macs</requirement>
+  </requirements>
+  <inputs>
+    <param name="experiment_name" type="text" value="MACS in Galaxy" size="50"/>
+    <conditional name="input_type">
+      <param name="input_type_selector" type="select" label="Paired End Sequencing">
+        <option value="paired_end">Paired End (requires elandmultipet format)</option>
+        <option value="single_end" selected="true">Single End</option>
+      </param>
+      <when value="paired_end">
+        <param name="input_chipseq_file1" type="data" format="elandmultipet" label="ChIP-Seq Tag File 1" />
+        <param name="input_chipseq_file2" type="data" format="elandmultipet" label="ChIP-Seq Tag File 2" />
+        <param name="input_control_file1" type="data" format="elandmultipet" optional="True" label="ChIP-Seq Control File 1" />
+        <param name="input_control_file2" type="data" format="elandmultipet" optional="True" label="ChIP-Seq Control File 2" />
+        <param name="petdist" type="integer" label="Best distance between Pair-End Tags" value="200"/>
+      </when>
+      <when value="single_end">
+        <param name="input_chipseq_file1" type="data" format="bed,sam,bam" label="ChIP-Seq Tag File" />
+        <param name="input_control_file1" type="data" format="bed,sam,bam" optional="True" label="ChIP-Seq Control File" />
+      </when>
+    </conditional>
+    <param name="gsize" type="float" label="Effective genome size" value="2.7e+9" help="default: 2.7e+9"/>
+    <param name="tsize" type="integer" label="Tag size" value="25"/>
+    <param name="bw" type="integer" label="Band width" value="300"/>
+    <param name="pvalue" type="float" label="Pvalue cutoff for peak detection" value="1e-5" help="default: 1e-5"/>
+    <param name="mfold" type="integer" label="Select the regions with MFOLD high-confidence enrichment ratio against background to build model" value="32"/>
+    <param name="xls_to_interval" label="Parse xls files into into distinct interval files" type="boolean" truevalue="create" falsevalue="do_not_create" checked="False"/>
+    <conditional name="wig_type">
+      <param name="wig_type_selector" type="select" label="Save shifted raw tag count at every bp into a wiggle file">
+        <option value="wig">Save</option>
+        <option value="no_wig" selected="true">Do not create wig file (faster)</option>
+      </param>
+      <when value="wig">
+        <param name="wigextend" type="integer" label="Extend tag from its middle point to a wigextend size fragment." value="-1" help="Use value less than 0 for default (modeled d)"/>
+        <param name="space" type="integer" label="Resolution for saving wiggle files" value="10"/>
+      </when>
+      <when value="no_wig">
+        <!-- do nothing here -->
+      </when>
+    </conditional>
+    <param name="nolambda" label="Use fixed background lambda as local lambda for every peak region" type="boolean" truevalue="--nolambda" falsevalue="" checked="False" help="up to 9X more time consuming"/>
+    <param name="lambdaset" type="text" label="3 levels of regions around the peak region to calculate the maximum lambda as local lambda" value="1000,5000,10000" size="50"/>
+    <conditional name="nomodel_type">
+      <param name="nomodel_type_selector" type="select" label="Build Model">
+        <option value="nomodel">Do not build the shifting model</option>
+        <option value="create_model" selected="true">Build the shifting model</option>
+      </param>
+      <when value="nomodel">
+        <param name="shiftsize" type="integer" label="Arbitrary shift size in bp" value="100"/>
+      </when>
+      <when value="create_model">
+        <!-- do nothing here -->
+      </when>
+    </conditional>
+    <conditional name="diag_type">
+      <param name="diag_type_selector" type="select" label="Diagnosis report" help="up to 9X more time consuming">
+        <option value="diag">Produce a diagnosis report</option>
+        <option value="no_diag" selected="true">Do not produce report (faster)</option>
+      </param>
+      <when value="diag">
+        <param name="fe-min" type="integer" label="Min fold enrichment to consider" value="0"/>
+        <param name="fe-max" type="integer" label="Max fold enrichment to consider" value="32"/>
+        <param name="fe-step" type="integer" label="Fold enrichment step" value="20"/>
+      </when>
+      <when value="no_diag">
+        <!-- do nothing here -->
+      </when>
+    </conditional>
+    <param name="futurefdr" label="Perform the new peak detection method (futurefdr)" type="boolean" truevalue="--futurefdr" falsevalue="" checked="False" help="The default method only consider the peak location, 1k, 5k, and 10k regions in the control data; whereas the new future method also consider the 5k, 10k regions in treatment data to calculate local bias."/>
+  </inputs>
+  <outputs>
+    <data name="output_bed_file" format="bed"/>
+    <data name="output_xls_to_interval_peaks_file" format="interval">
+      <filter>xls_to_interval is True</filter>
+    </data>
+    <data name="output_xls_to_interval_negative_peaks_file" format="interval">
+      <filter>xls_to_interval is True</filter>
+      <filter>input_type['input_control_file1'] is not None</filter>
+    </data>
+    <data name="output_treatment_wig_file" format="wig">
+      <filter>wig_type['wig_type_selector']=='wig'</filter>
+    </data>
+    <data name="output_control_wig_file" format="wig">
+      <filter>wig_type['wig_type_selector'] == 'wig'</filter>
+      <filter>input_type['input_control_file1'] is not None</filter>
+    </data>
+    <data name="output_extra_files" format="html"/>
+  </outputs>
+  <configfiles>
+    <configfile name="options_file">&lt;%
+import simplejson
+%&gt;
+#set $__options = { 'experiment_name':str( $experiment_name ), 'gsize':int( float( str( $gsize ) ) ), 'tsize':str( $tsize ), 'bw':str( $bw ), 'pvalue':str( $pvalue ), 'mfold':str( $mfold ), 'nolambda':str( $nolambda ), 'lambdaset': str( $lambdaset ), 'futurefdr':str( $futurefdr ) }
+#if str( $xls_to_interval ) == 'create':
+#set $__options['xls_to_interval'] = { 'peaks_file': str( $output_xls_to_interval_peaks_file ), 'negative_peaks_file': str( $output_xls_to_interval_negative_peaks_file ) }
+#else:
+#set $__options['xls_to_interval'] = False
+#end if
+#set $__options['format'] = $input_type['input_chipseq_file1'].extension.upper()
+##treatment/tag input files
+#set $__options['input_chipseq'] = [ str( $input_type['input_chipseq_file1'] ) ]
+#if  $input_type['input_type_selector'] == 'paired_end':
+#set $_hole = __options['input_chipseq'].append( str( $input_type['input_chipseq_file2'] ) )
+#end if
+##control/input files
+#set $__options['input_control'] = []
+#if str( $input_type['input_control_file1'] ) != 'None':
+#set $_hole = __options['input_control'].append( str( $input_type['input_control_file1'] ) )
+#end if
+#if $input_type['input_type_selector'] == 'paired_end' and str( $input_type['input_control_file2'] ) != 'None':
+#set $_hole = __options['input_control'].append( str( $input_type['input_control_file2'] ) )
+#end if
+##wig options
+#if $wig_type['wig_type_selector'] == 'wig':
+#set $__options['wig'] = {}
+#set $__options['wig']['wigextend'] = str( $wig_type['wigextend'] )
+#set $__options['wig']['space'] = str( $wig_type['space'] )
+#set  $__options['wig']['output_treatment_file'] = str( $output_treatment_wig_file )
+#if $input_type['input_control_file1'] is not None:
+#set  $__options['wig']['output_control_file'] = str( $output_control_wig_file )
+#end if
+#end if
+##model options
+#if $nomodel_type['nomodel_type_selector'] == 'nomodel':
+#set $__options['nomodel'] = str( $nomodel_type['shiftsize'] )
+#end if
+##diag options
+#if $diag_type['diag_type_selector'] == 'diag':
+#set $__options['diag'] = { 'fe-min':str( $diag_type['fe-min'] ), 'fe-max':str( $diag_type['fe-max'] ), 'fe-step':str( $diag_type['fe-step'] ) }
+#end if
+${ simplejson.dumps( __options ) }
+    </configfile>
+  </configfiles>
+  <tests>
+    <test>
+      <param name="input_chipseq_file1" value="chipseq_enriched.bed.gz" ftype="bed" />
+      <param name="input_control_file1" value="chipseq_input.bed.gz" ftype="bed" />
+      <param name="experiment_name" value="Galaxy Test Run" />
+      <param name="input_type_selector" value="single_end" />
+      <param name="tsize" value="36" />
+      <param name="mfold" value="13" />
+      <param name="gsize" value="2.7e+9" />
+      <param name="bw" value="300" />
+      <param name="pvalue" value="1e-5" />
+      <param name="xls_to_interval" />
+      <param name="wig_type_selector" value="no_wig" />
+      <param name="nolambda"/>
+      <param name="lambdaset" value="1000,5000,10000"/>
+      <param name="nomodel_type_selector" value="create_model" />
+      <param name="diag_type_selector" value="no_diag" />
+      <param name="futurefdr"/>
+      <output name="output_bed_file" file="macs_test_1_out.bed" />
+    </test>
+    <test>
+      <param name="input_chipseq_file1" value="chipseq_enriched.bed.gz" ftype="bed" />
+      <param name="input_control_file1" value="chipseq_input.bed.gz" ftype="bed" />
+      <param name="experiment_name" value="Galaxy Test Run" />
+      <param name="input_type_selector" value="single_end" />
+      <param name="tsize" value="36" />
+      <param name="mfold" value="13" />
+      <param name="gsize" value="2.7e+9" />
+      <param name="bw" value="300" />
+      <param name="pvalue" value="1e-5" />
+      <param name="xls_to_interval" value="true" />
+      <param name="wig_type_selector" value="no_wig" />
+      <param name="nolambda"/>
+      <param name="lambdaset" value="1000,5000,10000"/>
+      <param name="nomodel_type_selector" value="create_model" />
+      <param name="diag_type_selector" value="no_diag" />
+      <param name="futurefdr"/>
+      <output name="output_bed_file" file="macs_test_1_out.bed" />
+      <output name="output_xls_to_interval_peaks_file" file="macs_test_2_peaks_out.interval" />
+      <output name="output_xls_to_interval_negative_peaks_file" file="macs_test_2_neg_peaks_out.interval" />
+    </test>
+    <!-- <test>
+      <param name="input_chipseq_file1" value="chipseq_enriched.bed.gz" ftype="bed" />
+      <param name="input_control_file1" value="chipseq_input.bed.gz" ftype="bed" />
+      <param name="experiment_name" value="Galaxy Test Run" />
+      <param name="input_type_selector" value="single_end" />
+      <param name="tsize" value="36" />
+      <param name="mfold" value="13" />
+      <param name="gsize" value="2.7e+9" />
+      <param name="bw" value="300" />
+      <param name="pvalue" value="1e-5" />
+      <param name="xls_to_interval" value="true" />
+      <param name="wig_type_selector" value="wig" />
+      <param name="wigextend" value="-1" />
+      <param name="space" value="10" />
+      <param name="nolambda"/>
+      <param name="lambdaset" value="1000,5000,10000"/>
+      <param name="nomodel_type_selector" value="create_model" />
+      <param name="diag_type_selector" value="no_diag" />
+      <param name="futurefdr"/>
+      <output name="output_bed_file" file="macs_test_1_out.bed" />
+      <output name="output_treatment_wig_file" file="macs_test_3_treatment_out.wig" />
+      <output name="output_control_wig_file" file="macs_test_3_control_out.wig" />
+    </test> -->
+  </tests>
+  <help>
+**What it does**
+
+This tool allows ChIP-seq peak calling using MACS.
+
+Depending upon selected options, 2 to 6 history items will be created; the first output will be a standard BED file and the last will be an HTML report containing links to download additional files generated by MACS. Up to two each of wig and interval files can be optionally created; the interval files are parsed from the xls output.
+
+View the original MACS documentation: http://liulab.dfci.harvard.edu/MACS/00README.html.
+  </help>
+</tool>

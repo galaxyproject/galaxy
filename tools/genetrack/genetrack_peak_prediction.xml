@@ -1,6 +1,6 @@
 <tool id="predict2genetrack" name="Peak predictor">
   
-  <description> - generates peak predictions from an index file</description>
+  <description>on GeneTrack index</description>
 
   <command interpreter="python">
       genetrack_peak_prediction.py -i $input -o $output --level=$level --sigma=$sigma --mode=$mode --exclusion=$exclusion --strand=$strand -v 0 -x

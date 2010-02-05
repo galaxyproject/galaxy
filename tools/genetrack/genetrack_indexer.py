@@ -15,7 +15,10 @@ from genetrack.scripts import tabs2genetrack
 from genetrack import logger
 
 if __name__ == "__main__":
-
+    import os
+    os.environ[ 'LC_ALL' ] = 'C' 
+    #os.system( 'export' )
+    
     parser = tabs2genetrack.option_parser()
 
     options, args = parser.parse_args()

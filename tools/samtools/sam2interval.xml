@@ -1,4 +1,4 @@
-<tool id="sam2interval" name="Convert SAM" version="1.0.0">
+<tool id="sam2interval" name="Convert SAM" version="1.0.1">
   <description>to interval</description>
   <command interpreter="python">sam2interval.py --input_sam_file=$input1 $print_all > $out_file1
   </command>
