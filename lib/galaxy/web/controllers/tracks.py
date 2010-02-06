@@ -121,7 +121,11 @@ class TracksController( BaseController ):
         latest_revision = vis.latest_revision
         tracks = []
         
-        dbkey = latest_revision.config['dbkey']
+        try:
+            dbkey = latest_revision.config['dbkey']
+        except KeyError:
+            dbkey = None
+        
         hda_query = session.query( model.HistoryDatasetAssociation )
         for t in vis.latest_revision.config['tracks']:
             dataset_id = t['dataset_id']
