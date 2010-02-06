@@ -57,10 +57,7 @@ class DatasetSelectionGrid( grids.Grid ):
     use_paging = False
     columns = [
         grids.TextColumn( "Name", key="name", model_class=model.HistoryDatasetAssociation ),
-        # grids.IndividualTagsColumn( "Tags", "tags", model.History, model.HistoryTagAssociation, filterable="advanced"),
         grids.GridColumn( "Filetype", key="extension" ),
-        # Columns that are valid for filtering but are not visible.
-        # SharingColumn( "Shared", key="shared", visible=False, filterable="advanced" )
     ]
     def apply_default_filter( self, trans, query, **kwargs ):
         if self.available_tracks is None:
@@ -80,62 +77,40 @@ class TracksController( BaseController ):
     
     @web.expose
     def index( self, trans ):
-        return trans.fill_template( "tracks/index.mako" )
-
+        config = {}
+        
+        return trans.fill_template( "tracks/browser.mako", config=config )
+    
     @web.expose
     @web.require_login()
-    def new_browser( self, trans, dbkey=None, dataset_ids=None, browse=None, title=None ):
-        """
-        Build a new browser from datasets in the current history. Redirects
-        to 'browser' once datasets to browse have been selected.
-        """
-        session = trans.sa_session
-        # If the user clicked the submit button explicitly, try to build the browser
-        if title and browse and dataset_ids:
-            if not isinstance( dataset_ids, list ):
-                dataset_ids = [ dataset_ids ]
-            # Build config
-            tracks = []
-            for dataset_id in dataset_ids:
-                tracks.append( { "dataset_id": str( dataset_id ) } )
-            config = { "tracks": tracks }
-            # Build visualization object
-            vis = model.Visualization()
-            vis.user = trans.user
-            vis.title = title
-            vis.type = "trackster"
-            vis_rev = model.VisualizationRevision()
-            vis_rev.visualization = vis
-            vis_rev.title = title
-            vis_rev.config = config
-            vis.latest_revision = vis_rev
-            session.add( vis )
-            session.add( vis_rev )
-            session.flush()
-            trans.response.send_redirect( web.url_for( controller='tracks', action='browser', id=trans.security.encode_id( vis.id ) ) )
+    def new_browser( self, trans ):
+        dbkeys = [ d.metadata.dbkey for d in trans.get_history().datasets if not d.deleted ]
+        dbkey_set = set( dbkeys )
+        if not dbkey_set:
+            return trans.show_error_message( "Current history has no valid datasets to visualize." )
         else:
-            # Determine the set of all dbkeys that are used in the current history
-            dbkeys = [ d.metadata.dbkey for d in trans.get_history().datasets if not d.deleted ]
-            dbkey_set = set( dbkeys )
-            if not dbkey_set:
-                return trans.show_error_message( "Current history has no valid datasets to visualize." )
-
-            # If a dbkey argument was not provided, or is no longer valid, default
-            # to the first one
-            if dbkey is None or dbkey not in dbkey_set:
-                dbkey = dbkeys[0]
-            # Find all datasets in the current history that are of that dbkey
-            # and can be displayed
-            datasets = {}
-            if self.available_tracks is None:
-                 self.available_tracks = trans.app.datatypes_registry.get_available_tracks()
-            for dataset in session.query( model.HistoryDatasetAssociation ).filter_by( deleted=False, history_id=trans.history.id ):
-                if dataset.metadata.dbkey == dbkey and dataset.extension in self.available_tracks:
-                    datasets[dataset.id] = (dataset.extension, dataset.name)
-            # Render the template
-            return trans.fill_template( "tracks/new_browser.mako", available_tracks=self.available_tracks, dbkey=dbkey, dbkey_set=dbkey_set, datasets=datasets )
-
+            return trans.fill_template( "tracks/new_browser.mako", dbkey_set=dbkey_set )
+            
+    @web.json
+    @web.require_login()
+    def add_track_async(self, trans, id):
+        dataset_id = trans.security.decode_id( id )
+        
+        hda_query = trans.sa_session.query( model.HistoryDatasetAssociation )
+        dataset = hda_query.get( dataset_id )
+        track_type, indexer = dataset.datatype.get_track_type()
+        
+        track = {
+            "track_type": track_type,
+            "indexer": indexer,
+            "name": dataset.name,
+            "dataset_id": dataset.id,
+            "prefs": {},
+        }
+        return track
+        
     @web.expose
+    @web.require_login()
     def browser(self, trans, id, chrom=""):
         """
         Display browser for the datasets listed in `dataset_ids`.
@@ -143,8 +118,10 @@ class TracksController( BaseController ):
         decoded_id = trans.security.decode_id( id )
         session = trans.sa_session
         vis = session.query( model.Visualization ).get( decoded_id )
+        latest_revision = vis.latest_revision
         tracks = []
-        dbkey = ""
+        
+        dbkey = latest_revision.config['dbkey']
         hda_query = session.query( model.HistoryDatasetAssociation )
         for t in vis.latest_revision.config['tracks']:
             dataset_id = t['dataset_id']
@@ -161,18 +138,10 @@ class TracksController( BaseController ):
                 "dataset_id": dataset.id,
                 "prefs": simplejson.dumps(prefs),
             } )
-            dbkey = dataset.dbkey
-        chrom_lengths = self._chroms( trans, dbkey )
-        if chrom_lengths is None:
-            error( "No chromosome lengths file found for '%s'" % dataset.name )
-        return trans.fill_template( 'tracks/browser.mako',
-                                    #dataset_ids=dataset_ids,
-                                    title = vis.title,
-                                    id=id,
-                                    tracks=tracks,
-                                    chrom=chrom,
-                                    dbkey=dbkey,
-                                    LEN=chrom_lengths.get(chrom, 0) )
+            if dbkey is None: dbkey = dataset.dbkey # Hack for backward compat
+                
+        config = { "title": vis.title, "vis_id": id, "tracks": tracks, "chrom": chrom, "dbkey": dbkey }
+        return trans.fill_template( 'tracks/browser.mako', config=config )
 
     @web.json
     def chroms(self, trans, dbkey=None ):
@@ -288,9 +257,19 @@ class TracksController( BaseController ):
     
     @web.json
     def save( self, trans, **kwargs ):
-        decoded_id = trans.security.decode_id( kwargs['id'] )
         session = trans.sa_session
-        vis = session.query( model.Visualization ).get( decoded_id )
+        vis_id = kwargs['vis_id'].strip('"')
+        dbkey = kwargs['dbkey']
+        
+        if vis_id == "undefined": # new vis
+            vis = model.Visualization()
+            vis.user = trans.user
+            vis.title = kwargs['vis_title']
+            vis.type = "trackster"
+            session.add( vis )
+        else:
+            decoded_id = trans.security.decode_id( vis_id )
+            vis = session.query( model.Visualization ).get( decoded_id )
         
         decoded_payload = simplejson.loads( kwargs['payload'] )
         vis_rev = model.VisualizationRevision()
@@ -304,10 +283,11 @@ class TracksController( BaseController ):
                                 "track_type": track['track_type'],
                                 "prefs": track['prefs']
             } )
-        vis_rev.config = { "tracks": tracks }
+        vis_rev.config = { "dbkey": dbkey, "tracks": tracks }
         vis.latest_revision = vis_rev
         session.add( vis_rev )
         session.flush()
+        return trans.security.encode_id(vis.id)
     
     data_grid = DatasetSelectionGrid()
     
@@ -316,11 +296,5 @@ class TracksController( BaseController ):
     def list_datasets( self, trans, **kwargs ):
         """List all datasets that can be added as tracks"""
         
-        
         # Render the list view
-        # return trans.fill_template( 'tracks/add_tracks.mako', grid=data_grid( trans, status=status, message=message, **kwargs ) )
         return self.data_grid( trans, **kwargs )
-        
-        # 
-        
-        

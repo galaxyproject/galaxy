@@ -45,7 +45,7 @@ ${h.css( "history" )}
     </div>
     
 </div>
-<div id="nav-container">
+<div id="nav-container" style="width:100%;">
     <div id="nav-labeltrack"></div>
     <div id="nav">
         <div id="overview">
@@ -59,8 +59,7 @@ ${h.css( "history" )}
                     <option value="">Loading</option>
                 </select>
             <input id="low" size="12" />:<input id="high" size="12" />
-                ## <input type="hidden" name="dataset_ids" value="${dataset_ids}" />
-            <input type="hidden" name="id" value="${id}" />
+            <input type="hidden" name="id" value="${config.get('vis_id', '')}" />
                 <a href="#" onclick="javascript:view.zoom_in();view.redraw();">+</a>
                 <a href="#" onclick="javascript:view.zoom_out();view.redraw();">-</a>
             </form>
@@ -75,11 +74,10 @@ ${h.css( "history" )}
         <div class="unified-panel-header-inner">Configuration</div>
     </div>
     <form action="${h.url_for( action='update_config' )}">
-##        <input name="title" id="title" value="${title}" />
+##        <input name="title" id="title" value="${config.title}" />
         <div id="show-hide-move">
             <ul id="sortable-ul"></ul>
         </div>
-##      <input type="submit" id="update-config" value="Save settings" />
         <input type="button" id="refresh-button" value="Refresh" />
         <input type="button" id="save-button" value="Save" />
         <input id="add-track" type="button" value="Add Track" />
@@ -89,154 +87,227 @@ ${h.css( "history" )}
 
 <%def name="javascripts()">
 ${parent.javascripts()}
-${h.js( "json2", "jquery", "jquery.event.drag", "jquery.mousewheel", "trackster", "ui.core", "ui.sortable" )}
+${h.js( 'galaxy.base', 'galaxy.panels', "json2", "jquery", "jquery.event.drag", "jquery.mousewheel", "trackster", "ui.core", "ui.sortable" )}
 
 <script type="text/javascript">
 
     var data_url = "${h.url_for( action='data' )}";
-    var view = new View( "${chrom}", ${LEN} );
+    var view;
     
     $(function() {
         
-        view.add_track( new LabelTrack( $("#top-labeltrack" ) ) );
-        view.add_track( new LabelTrack( $("#nav-labeltrack" ) ) );
-   
-        %for track in tracks:
-            view.add_track( 
-                new ${track["track_type"]}( "${track['name']}", ${track['dataset_id']}, "${track['indexer']}", ${track['prefs']} ) 
-            );
-        %endfor
-        
-        $(document).bind( "redraw", function( e ) {
-            view.redraw();
-        });
-        
-        $("#content").bind("mousewheel", function( e, delta ) {
-            if (delta > 0) {
-                view.zoom_in(e.pageX);
-            } else {
-                view.zoom_out();
-            }
-            e.preventDefault();
-        });
-        
-        $("#content").bind("dblclick", function( e ) {
-            view.zoom_in(e.pageX);
-        });
-        
-        // To let the overview box be draggable
-        $("#overview-box").bind("dragstart", function( e ) {
-            this.current_x = e.offsetX;
-        }).bind("drag", function( e ) {
-            var delta = e.offsetX - this.current_x;
-            this.current_x = e.offsetX;
-            
-            var delta_chrom = Math.round(delta / $(document).width() * view.span);
-            view.center += delta_chrom;
-            view.redraw();
-        });
-
-        // To adjust the size of the viewport to fit the fixed-height footer
-        var refresh = function( e ) {
-            $("#content").height( $(window).height() - $("#nav-container").height() - $("#masthead").height());
-            $("#viewport-container").height( $("#content").height() - $("#top-labeltrack").height() - $("#nav-labeltrack").height() );
-            $("#nav-container").width( $("#center").width() );
-            view.redraw();
-        };
-        $(window).bind( "resize", function(e) { refresh(e); } );
-        $("#right-border").bind( "click", function(e) { refresh(e); } );
-        $("#right-border").bind( "dragend", function(e) { refresh(e); } );
-        $(window).trigger( "resize" );
-
-        $("#viewport").bind( "dragstart", function( e ) {
-            this.original_low = view.low;
-            this.current_height = e.clientY;
-            this.current_x = e.offsetX;
-        }).bind( "drag", function( e ) {
-            var container = $(this).parent();
-            var delta = e.offsetX - this.current_x;
-            var new_scroll = container.scrollTop() - (e.clientY - this.current_height);
-            if ( new_scroll < container.get(0).scrollHeight - container.height() ) {
-                container.scrollTop(new_scroll);
-            }
-            this.current_height = e.clientY;
-            this.current_x = e.offsetX;
-
-            var delta_chrom = Math.round(delta / $(document).width() * (view.high - view.low));
-            view.center -= delta_chrom;
-            view.redraw();
-        });
-        
-        $("#refresh-button").bind( "click", function(e) {
-            view.update_options();
-        });
-        
-        // Use a popup grid to add more tracks
-        $("#add-track").bind( "click", function(e) {
+        %if config:
+            view = new View( "${config.get('chrom')}", "${config.get('title') | h}", "${config.get('vis_id')}", "${config.get('dbkey')}" );
+            %for track in config.get('tracks'):
+                view.add_track( 
+                    new ${track["track_type"]}( "${track['name'] | h}", ${track['dataset_id']}, "${track['indexer']}", ${track['prefs']} ) 
+                );
+            %endfor
+            init();
+        %else:
             $.ajax({
-                url: "${h.url_for( action='list_datasets' )}",
+                url: "${h.url_for( action='new_browser' )}",
                 data: {},
-                error: function() { alert( "Grid refresh failed" ) },
-                success: function(table_html) {
-                    show_modal("Add Track &mdash; Select Dataset(s)", table_html, {
-                        "Insert": function() {
-                            hide_modal();
-                        },
-                        "Cancel": function() {
+                error: function() { alert( "Couldn't create new browser" ) },
+                success: function(form_html) {
+                    show_modal("New Track Browser", form_html, {
+                        "Continue": function() {
+                            view = new View( undefined, $("#new-title").val(), undefined, $("#new-dbkey").val() );
+                            init();
                             hide_modal();
                         }
                     });
                 }
             });
-        });
+        %endif
         
-        $("#save-button").bind("click", function(e) {
-            view.update_options();
-            var sorted = $("ul#sortable-ul").sortable('toArray');
-            var payload = [];
-            for (var i in sorted) {
-                var track_id = parseInt(sorted[i].split("track_")[1]),
-                    track = view.tracks[track_id];
-                
-                payload.push( {
-                    "track_type": track.track_type,
-                    "indexer": track.indexer,
-                    "name": track.name,
-                    "dataset_id": track.dataset_id,
-                    "prefs": track.prefs
-                });
-            }
-            $.ajax({
-                url: "${h.url_for( action='save' )}",
-                data: {
-                    'id': '${id}',
-                    'payload': JSON.stringify(payload)
-                }
-            });
-        });
-        
-        // Execute this on page load
-        (function () {
-            $.getJSON( "${h.url_for( action='chroms' )}", { dbkey: "${dbkey}" }, function ( data ) {
-                var chrom_options = '<option value="">Select Chrom/Contig</option>';
-                for (i in data) {
-                    chrom = data[i]['chrom']
-                    if( chrom == view.chrom ) {
-                        chrom_options += '<option value="' + chrom + '" selected="true">' + chrom + '</option>';                  
-                    } else {
-                        chrom_options += '<option value="' + chrom + '">' + chrom + '</option>';
+        // Execute this when everything is ready
+        function init() {
+            $("ul#sortable-ul").sortable({
+                update: function(event, ui) {
+                    for (var track_id in view.tracks) {
+                        var track = view.tracks[track_id];
                     }
                 }
-                $("#chrom").html(chrom_options);
-                $("#chrom").bind( "change", function () {
-                    $("#chr").submit();
+            });
+            
+            $(document).bind( "redraw", function( e ) {
+                view.redraw();
+            });
+
+            $("#content").bind("mousewheel", function( e, delta ) {
+                if (delta > 0) {
+                    view.zoom_in(e.pageX);
+                } else {
+                    view.zoom_out();
+                }
+                e.preventDefault();
+            });
+
+            $("#content").bind("dblclick", function( e ) {
+                view.zoom_in(e.pageX);
+            });
+
+            // To let the overview box be draggable
+            $("#overview-box").bind("dragstart", function( e ) {
+                this.current_x = e.offsetX;
+            }).bind("drag", function( e ) {
+                var delta = e.offsetX - this.current_x;
+                this.current_x = e.offsetX;
+
+                var delta_chrom = Math.round(delta / $(document).width() * view.span);
+                view.center += delta_chrom;
+                view.redraw();
+            });
+
+            // To adjust the size of the viewport to fit the fixed-height footer
+            var refresh = function( e ) {
+                $("#content").height( $(window).height() - $("#nav-container").height() - $("#masthead").height());
+                $("#viewport-container").height( $("#content").height() - $("#top-labeltrack").height() - $("#nav-labeltrack").height() );
+                $("#nav-container").width( $("#center").width() );
+                view.redraw();
+            };
+            $(window).bind( "resize", function(e) { refresh(e); } );
+            $("#right-border").bind( "click", function(e) { refresh(e); } );
+            $("#right-border").bind( "dragend", function(e) { refresh(e); } );
+            $(window).trigger( "resize" );
+
+            $("#viewport").bind( "dragstart", function( e ) {
+                this.original_low = view.low;
+                this.current_height = e.clientY;
+                this.current_x = e.offsetX;
+            }).bind( "drag", function( e ) {
+                var container = $(this).parent();
+                var delta = e.offsetX - this.current_x;
+                var new_scroll = container.scrollTop() - (e.clientY - this.current_height);
+                if ( new_scroll < container.get(0).scrollHeight - container.height() ) {
+                    container.scrollTop(new_scroll);
+                }
+                this.current_height = e.clientY;
+                this.current_x = e.offsetX;
+
+                var delta_chrom = Math.round(delta / $(document).width() * (view.high - view.low));
+                view.center -= delta_chrom;
+                view.redraw();
+            });
+
+            $("#refresh-button").bind( "click", function(e) {
+                view.update_options();
+            });
+
+            // Use a popup grid to add more tracks
+            $("#add-track").bind( "click", function(e) {
+                $.ajax({
+                    url: "${h.url_for( action='list_datasets' )}",
+                    data: {},
+                    error: function() { alert( "Grid refresh failed" ) },
+                    success: function(table_html) {
+                        show_modal("Add Track &mdash; Select Dataset(s)", table_html, {
+                            "Insert": function() {
+                                $('input[name=id]:checked').each(function() {
+                                    var item_id = $(this).val();
+                                    $.ajax( {
+                                        url: "${h.url_for( action='add_track_async' )}",
+                                        data: { id: item_id },
+                                        dataType: "json",
+                                        error: function() {},
+                                        success: function(track_data) {
+                                            var new_track;
+                                            var td = track_data;
+                                            switch(track_data.track_type) {
+                                                case "LineTrack":
+                                                    new_track = new LineTrack( track_data.name, track_data.dataset_id, track_data.indexer, track_data.prefs );
+                                                    break;
+                                                case "FeatureTrack":
+                                                    new_track = new FeatureTrack( track_data.name, track_data.dataset_id, track_data.indexer, track_data.prefs );
+                                                    break;
+                                                case "ReadTrack":
+                                                    new_track = new ReadTrack( track_data.name, track_data.dataset_id, track_data.indexer, track_data.prefs );
+                                                    break;
+                                            }
+                                            view.add_track(new_track);
+                                            sidebar_box(new_track);
+                                        }
+                                    });
+
+                                });
+                                
+                                hide_modal();
+                            },
+                            "Cancel": function() {
+                                hide_modal();
+                            }
+                        });
+                    }
+                });
+            });
+
+            $("#save-button").bind("click", function(e) {
+                view.update_options();
+                var sorted = $("ul#sortable-ul").sortable('toArray');
+                var payload = [];
+                for (var i in sorted) {
+                    var track_id = parseInt(sorted[i].split("track_")[1]),
+                        track = view.tracks[track_id];
+                    
+                    payload.push( {
+                        "track_type": track.track_type,
+                        "indexer": track.indexer,
+                        "name": track.name,
+                        "dataset_id": track.dataset_id,
+                        "prefs": track.prefs
+                    });
+                }
+                // Show saving dialog box
+                show_modal("Saving...", "<img src='${h.url_for('/static/images/yui/rel_interstitial_loading.gif')}'/>");
+                
+                $.ajax({
+                    url: "${h.url_for( action='save' )}",
+                    data: {
+                        'vis_id': view.vis_id,
+                        'vis_title': view.title,
+                        'dbkey': view.dbkey,
+                        'payload': JSON.stringify(payload)
+                    },
+                    success: function(vis_id) {
+                        view.vis_id = vis_id;
+                        hide_modal();
+                    }
                 });
             });
             
-            // Populate sort/move ul
-            for (var track_id in view.tracks) {
-                var track = view.tracks[track_id];
+            view.add_label_track( new LabelTrack( $("#top-labeltrack" ) ) );
+            view.add_label_track( new LabelTrack( $("#nav-labeltrack" ) ) );
+            
+            $.getJSON( "${h.url_for( action='chroms' )}", { dbkey: view.dbkey }, function ( data ) {
+                view.chrom_data = data;
+                var chrom_options = '<option value="">Select Chrom/Contig</option>';
+                for (i in data) {
+                    var chrom = data[i]['chrom']
+                    chrom_options += '<option value="' + chrom + '">' + chrom + '</option>';
+                }
+                $("#chrom").html(chrom_options);
+                $("#chrom").bind( "change", function () {
+                    view.chrom = $("#chrom").val();
+                    var found = $.grep(view.chrom_data, function(v, i) {
+                        return v.chrom === view.chrom;
+                    })[0];
+                    view.max_high = found.len;
+                    view.redraw(true);
+                    
+                    for (var track_id in view.tracks) {
+                        var track = view.tracks[track_id];
+                        if (track.init) {
+                            track.init();
+                        }
+                    }
+                    // view.redraw();
+                });
+            });
+            
+            function sidebar_box(track) {
                 if (!track.hidden) {
+                    var track_id = view.tracks.length -1; // Track was just added to view, so index is current length -1
                     var label = $('<label for="track_' + track_id + 'title">' + track.name + '</label>');
                     var title = $('<div class="historyItemTitle"></div>');
                     var del_icon = $('<a style="display:block; float:right" href="#" class="icon-button delete" />');
@@ -255,18 +326,17 @@ ${h.js( "json2", "jquery", "jquery.event.drag", "jquery.mousewheel", "trackster"
                     li.append(div);
                     $("ul#sortable-ul").append(li);
                 }
+            };
+            
+            // Populate sort/move ul
+            for (var track_id in view.tracks) {
+                var track = view.tracks[track_id];
+                sidebar_box(track);
             }
             
-            $("ul#sortable-ul").sortable({
-                update: function(event, ui) {
-                    for (var track_id in view.tracks) {
-                        var track = view.tracks[track_id];
-                    }
-                }
-            });
-            
-        })();
-        $(window).trigger("resize");
+            $(window).trigger("resize");
+        };
+        
     });
 
 </script>

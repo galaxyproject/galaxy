@@ -27,6 +27,10 @@
 
 <%def name="javascripts()">
    ${parent.javascripts()}
+   ${self.grid_javascripts()}
+</%def>
+
+<%def name="grid_javascripts()">
    ${h.js("jquery.autocomplete", "autocomplete_tagging" )}
    <script type="text/javascript">        
        ## TODO: generalize and move into galaxy.base.js

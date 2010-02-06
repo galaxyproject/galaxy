@@ -7,7 +7,7 @@ class VisualizationListGrid( grids.Grid ):
     # Grid definition
     title = "Visualizations"
     model_class = model.Visualization
-    default_sort_key = "-create_time"
+    default_sort_key = "-update_time"
     columns = [
         grids.GridColumn( "Title", key="title", attach_popup=True,
                          link=( lambda item: dict( controller="tracks", action="browser", id=item.id ) ) ),
