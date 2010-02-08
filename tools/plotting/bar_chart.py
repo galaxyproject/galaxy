@@ -23,7 +23,6 @@ anton nekrutenko | anton@bx.psu.edu
 
 """
 
-from Numeric import *
 import Gnuplot, Gnuplot.funcutils
 import sys, string, tempfile, os
 
