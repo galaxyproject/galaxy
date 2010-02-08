@@ -120,7 +120,7 @@ div.permissionContainer{padding-left:20px;}
 .icon-button.tag{background-image:url(/static/images/tag-label.png);background-repeat:no-repeat;background-position:center;padding: 0px 0px 0px 0px;}
 .icon-button.annotate{background-image:url(/static/images/sticky-note-text.png);background-repeat:no-repeat;background-position:center;padding: 0px 0px 0px 0px;}
 .tooltip {position: relative; cursor: pointer}
-.tooltip span.tip{display: none;}
-.tooltip:hover span.tip{font-size: 90%; display: block;position: absolute;right:2em;top:-1.75em; width: inherit; background-color: black;color: white;text-align: center;padding: 0.25em 0.5em;}
+span.tip{display: none;}
+.tooltip:hover span.tip{font-size: 90%; display: block;position: absolute;left:3em;bottom:1.75em; background-color: black;color: white;text-align: center;padding: 0.25em 0.5em;}
 .editable-text{cursor:pointer}
 .editable-text:hover{background-image:url();background-repeat:no-repeat;background-position:right}

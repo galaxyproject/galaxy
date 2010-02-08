@@ -43,7 +43,7 @@ $(function() {
     }));
     
     // Rename management.
-    async_save_text("history-name", "history-name", "${h.url_for( controller="/history", action="rename_async", id=trans.security.encode_id(history.id) )}", "new_name", 18);
+    async_save_text("history-name-container", "history-name", "${h.url_for( controller="/history", action="rename_async", id=trans.security.encode_id(history.id) )}", "new_name", 18);
     
     // Tag management.
     $('#history-tag').click( function() 
@@ -57,7 +57,7 @@ $(function() {
         $('#history-annotation-area').toggle("fast");
         return false;
     });
-    async_save_text("history-annotation", "history-annotation", "${h.url_for( controller="/history", action="annotate_async", id=trans.security.encode_id(history.id) )}", "new_annotation", 18, true, 4);
+    async_save_text("history-annotation-container", "history-annotation", "${h.url_for( controller="/history", action="annotate_async", id=trans.security.encode_id(history.id) )}", "new_annotation", 18, true, 4);
     
     // Updater
     updater({
@@ -322,7 +322,7 @@ div.form-row {
         ## Annotation elt.
         <div id="history-annotation-area" class="form-row" style="display: none">
    	        <label>Annotation / Notes:</label>
-   	        <div class="tooltip">
+   	        <div id="history-annotation-container" class="tooltip">
    	            %if annotation:
        	            <span id="history-annotation">${annotation | h}</span>
        	        %else:

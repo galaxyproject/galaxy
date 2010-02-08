@@ -405,7 +405,7 @@ class HistoryController( BaseController, Sharable ):
         if history:
             history.slug = new_slug
             trans.sa_session.flush()
-        return
+            return history.slug
                        
     @web.expose
     def name_autocomplete_data( self, trans, q=None, limit=None, timestamp=None ):

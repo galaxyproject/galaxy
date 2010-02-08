@@ -389,7 +389,7 @@ class WorkflowController( BaseController, Sharable ):
         if stored:
             stored.slug = new_slug
             trans.sa_session.flush()
-        return
+            return stored.slug
         
     @web.expose
     @web.json

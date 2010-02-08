@@ -229,9 +229,13 @@ function async_save_text(click_to_edit_elt, text_elt_id, save_url, text_parm_nam
         t.blur( function() {
             $(this).remove();
             $("#" + text_elt_id).show();
+            if (has_tooltip)
+                tooltip_elt.addClass("tooltip");
             if (on_finish != null)
                 on_finish(t);
         });
+        var has_tooltip = $(this).hasClass("tooltip");
+        var tooltip_elt = $(this);
         t.keyup( function( e ) {
             if ( e.keyCode == 27 ) {
                 // Escape key
@@ -268,6 +272,9 @@ function async_save_text(click_to_edit_elt, text_elt_id, save_url, text_parm_nam
         t.insertAfter( $("#" + text_elt_id) );
         t.focus();
         t.select();
+        
+        // Remove tooltip so that it doesn't show during editing.
+        $(this).removeClass("tooltip");
         return false;
     });
     

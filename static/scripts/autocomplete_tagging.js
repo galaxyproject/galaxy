@@ -259,6 +259,7 @@ jQuery.fn.autocomplete_tagging = function(options)
                 add_tag_button.show();
                 tag_input_field.hide();
                 tag_area.removeClass("active-tag-area");
+                tag_area.addClass("tooltip");
             }
             else
             {
@@ -273,11 +274,14 @@ jQuery.fn.autocomplete_tagging = function(options)
 
             // If a "delete image" object was pressed and area is inactive, do nothing.
             if ($(e.target).hasClass("delete-tag-img") && !is_active)
-            return false;
+                return false;
 
             // If a "tag name" object was pressed and area is inactive, do nothing.
             if ($(e.target).hasClass("tag-name") && !is_active)
-            return false;    
+                return false;
+                
+            // Remove tooltip.
+            $(this).removeClass("tooltip");
 
             // Hide add tag button, show tag_input field. Change background to show 
             // area is active.
@@ -299,6 +303,7 @@ jQuery.fn.autocomplete_tagging = function(options)
                 {
                     tag_area.blur();
                     $(document).unbind("click", handle_document_click);
+                    $(this).addClass("tooltip");
                 }    
             };
             // TODO: we should attach the click handler to all frames in order to capture

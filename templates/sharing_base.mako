@@ -49,7 +49,7 @@
         };
         
         <% controller_name = get_controller_name( item ) %>
-        async_save_text("edit-identifier", "item-identifier", "${h.url_for( controller=controller_name, action='set_slug_async', id=trans.security.encode_id( item.id ) )}", "new_slug", false, 0, on_start, on_finish); 
+        async_save_text("edit-identifier", "item-identifier", "${h.url_for( controller=controller_name, action='set_slug_async', id=trans.security.encode_id( item.id ) )}", "new_slug", null, false, 0, on_start, on_finish); 
     });
     </script>
 </%def>

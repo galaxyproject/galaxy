@@ -547,7 +547,7 @@ class PageController( BaseController, Sharable ):
         if page:
             page.slug = new_slug
             trans.sa_session.flush()
-        return
+            return page.slug
 
     @web.expose
     @web.json

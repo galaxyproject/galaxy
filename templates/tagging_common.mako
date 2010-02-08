@@ -37,7 +37,7 @@
         %if use_toggle_link:
             <a class="toggle-link" href="#">${num_tags} Tag${iff( num_tags == 1, "", "s")}</a>
         %endif
-        <div class="tag-area
+        <div class="tag-area tooltip 
             %if tag_type == 'individual':
                 individual-tag-area
             %endif
@@ -72,20 +72,18 @@
             %endfor
             
             ## Add tag input field. If element is in form, tag input is a textarea; otherwise element is a input type=text.
-            <div class="tooltip">
-                %if editable:
-                    %if in_form:
-                        <textarea class="tag-input" rows='1' cols='${input_size}'></textarea>
-                    %else:
-                        <input class="tag-input" type='text' size='${input_size}'/>
-                    %endif
-                    ## Add "add tag" button.
-                    %if render_add_tag_button:
-                        <img src='${h.url_for('/static/images/add_icon.png')}' rollover='${h.url_for('/static/images/add_icon_dark.png')}' class="add-tag-button"/>
-                    %endif
+            %if editable:
+                %if in_form:
+                    <textarea class="tag-input" rows='1' cols='${input_size}'></textarea>
+                %else:
+                    <input class="tag-input" type='text' size='${input_size}'/>
                 %endif
-                <span class="tip">Click to add tags</span>
-            </div>
+                ## Add "add tag" button.
+                %if render_add_tag_button:
+                    <img src='${h.url_for('/static/images/add_icon.png')}' rollover='${h.url_for('/static/images/add_icon_dark.png')}' class="add-tag-button"/>
+                %endif
+                <span class="tip">Click to edit tags</span>
+            %endif
         </div>
     </div>
 </%def>
