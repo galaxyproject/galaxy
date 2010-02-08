@@ -44,11 +44,11 @@ class HistoryListGrid( grids.Grid ):
                           attach_popup=True, filterable="advanced" ),
         DatasetsByStateColumn( "Datasets (by state)", ncells=4 ),
         grids.IndividualTagsColumn( "Tags", "tags", model.History, model.HistoryTagAssociation, filterable="advanced", grid_name="HistoryListGrid" ),
-        SharingStatusColumn( "Sharing", key="sharing", model_class=model.History, filterable="advanced", sortable=False ),
+        grids.SharingStatusColumn( "Sharing", key="sharing", model_class=model.History, filterable="advanced", sortable=False ),
         grids.GridColumn( "Created", key="create_time", format=time_ago ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
         # Columns that are valid for filtering but are not visible.
-        DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" )
+        grids.DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" )
     ]
     columns.append( 
         grids.MulticolFilterColumn(  
@@ -118,7 +118,7 @@ class SharedHistoryListGrid( grids.Grid ):
         return query.filter( model.HistoryUserShareAssociation.user == trans.user )
         
 class HistoryAllPublishedGrid( grids.Grid ):
-    class NameURLColumn( PublicURLColumn, NameColumn ):
+    class NameURLColumn( grids.PublicURLColumn, NameColumn ):
         pass
         
     title = "Published Histories"
@@ -128,7 +128,7 @@ class HistoryAllPublishedGrid( grids.Grid ):
     use_async = True
     columns = [
         NameURLColumn( "Name", key="name", model_class=model.History, filterable="advanced" ),
-        OwnerColumn( "Owner", key="username", model_class=model.User, filterable="advanced", sortable=False ), 
+        grids.OwnerColumn( "Owner", key="username", model_class=model.User, filterable="advanced", sortable=False ), 
         grids.CommunityTagsColumn( "Community Tags", "tags", model.History, model.HistoryTagAssociation, filterable="advanced", grid_name="PublicHistoryListGrid" ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago )
     ]

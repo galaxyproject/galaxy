@@ -95,7 +95,7 @@ class RequestsGrid( grids.Grid ):
                        link=( lambda item: iff( item.deleted, None, dict( operation="show_request", id=item.id ) ) ), ),
         TypeColumn( "Type" ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
-        DeletedColumn( "Deleted", 
+        grids.DeletedColumn( "Deleted", 
                        key="deleted", 
                        visible=False, 
                        filterable="advanced" ),

@@ -5,6 +5,7 @@ from galaxy.web.framework.helpers import iff
 from galaxy.tags.tag_handler import TagHandler
 from galaxy.web import url_for
 from galaxy.util.json import from_json_string, to_json_string
+from galaxy.util.odict import odict
 
 import sys, logging, math
 
@@ -329,8 +330,8 @@ class GridColumn( object ):
             accepted_filters.append( GridColumnFilter( val, args) )
         return accepted_filters
         
-# Generic column that employs freetext and, hence, supports freetext, case-independent filtering.
 class TextColumn( GridColumn ):
+    """ Generic column that employs freetext and, hence, supports freetext, case-independent filtering. """
     def filter( self, db_session, user, query, column_filter ):
         """ Modify query to filter using free text, case independence. """
         if column_filter == "All":
@@ -350,8 +351,8 @@ class TextColumn( GridColumn ):
                 clause_list.append( func.lower( model_class_key_field ).like( "%" + filter.lower() + "%" ) )
             return and_( *clause_list )
 
-# Column that supports community tags.
 class CommunityTagsColumn( TextColumn ):
+    """ Column that supports community tags. """
     def __init__( self, col_name, key, model_class, model_tag_association_class, filterable, grid_name=None ):
         GridColumn.__init__(self, col_name, key=key, model_class=model_class, filterable=filterable)
         self.model_tag_association_class = model_tag_association_class
@@ -386,8 +387,8 @@ class CommunityTagsColumn( TextColumn ):
                         clause_list.append( self.model_class.tags.any( func.lower( self.model_tag_association_class.user_value ).like( "%" + value.lower() + "%" ) ) )
             return and_( *clause_list )
             
-# Column that supports individual tags.
 class IndividualTagsColumn( CommunityTagsColumn ):
+    """ Column that supports individual tags. """
     def get_value( self, trans, grid, item ):
         return trans.fill_template( "/tagging_common.mako", tag_type="individual", trans=trans, user=trans.get_user(), tagged_item=item, elt_context=self.grid_name,
                                     in_form=True, input_size="20", tag_click_fn="add_tag_to_grid_filter" )
@@ -408,8 +409,8 @@ class IndividualTagsColumn( CommunityTagsColumn ):
                         clause_list.append( self.model_class.tags.any( and_( func.lower( self.model_tag_association_class.user_value ).like( "%" + value.lower() + "%" ), self.model_tag_association_class.user == user ) ) )
             return and_( *clause_list )
             
-# Column that performs multicolumn filtering.
 class MulticolFilterColumn( TextColumn ):
+    """ Column that performs multicolumn filtering. """
     def __init__( self, col_name, cols_to_filter, key, visible, filterable="default" ):
         GridColumn.__init__( self, col_name, key=key, visible=visible, filterable=filterable)
         self.cols_to_filter = cols_to_filter
@@ -432,6 +433,86 @@ class MulticolFilterColumn( TextColumn ):
             complete_filter = or_( *clause_list )
         
         return query.filter( complete_filter )
+                
+class OwnerColumn( TextColumn ):
+    """ Column that lists item's owner. """
+    def get_value( self, trans, grid, item ):
+        return item.user.username
+
+class PublicURLColumn( TextColumn ):
+    """ Column displays item's public URL based on username and slug. """
+    def get_link( self, trans, grid, item ):
+        if item.user.username and item.slug:
+            return dict( action='display_by_username_and_slug', username=item.user.username, slug=item.slug )
+        elif not item.user.username:
+            # TODO: provide link to set username.
+            return None
+        elif not item.user.slug:
+            # TODO: provide link to set slg
+            return None
+
+class DeletedColumn( GridColumn ):
+    """ Column that tracks and filters for items with deleted attribute. """
+    def get_accepted_filters( self ):
+        """ Returns a list of accepted filters for this column. """
+        accepted_filter_labels_and_vals = { "active" : "False", "deleted" : "True", "all": "All" }
+        accepted_filters = []
+        for label, val in accepted_filter_labels_and_vals.items():
+           args = { self.key: val }
+           accepted_filters.append( GridColumnFilter( label, args) )
+        return accepted_filters
+        
+class SharingStatusColumn( GridColumn ):
+    """ Grid column to indicate sharing status. """
+    def get_value( self, trans, grid, item ):
+        # Delete items cannot be shared.
+        if item.deleted:
+            return ""
+
+        # Build a list of sharing for this item.
+        sharing_statuses = []
+        if item.users_shared_with:
+            sharing_statuses.append( "Shared" )
+        if item.importable:
+            sharing_statuses.append( "Accessible" )
+        if item.published:
+            sharing_statuses.append( "Published" )
+        return ", ".join( sharing_statuses )
+
+    def get_link( self, trans, grid, item ):
+        if not item.deleted and ( item.users_shared_with or item.importable or item.published ):
+            return dict( operation="share or publish", id=item.id )
+        return None
+
+    def filter( self, db_session, user, query, column_filter ):
+        """ Modify query to filter histories by sharing status. """
+        if column_filter == "All":
+            pass
+        elif column_filter:
+            if column_filter == "private":
+                query = query.filter( self.model_class.users_shared_with == None )
+                query = query.filter( self.model_class.importable == False )
+            elif column_filter == "shared":
+                query = query.filter( self.model_class.users_shared_with != None )
+            elif column_filter == "accessible":
+                query = query.filter( self.model_class.importable == True )
+            elif column_filter == "published":
+                query = query.filter( self.model_class.published == True )
+        return query
+
+    def get_accepted_filters( self ):
+        """ Returns a list of accepted filters for this column. """
+        accepted_filter_labels_and_vals = odict()
+        accepted_filter_labels_and_vals["private"] = "private"
+        accepted_filter_labels_and_vals["shared"] = "shared"
+        accepted_filter_labels_and_vals["accessible"] = "accessible"
+        accepted_filter_labels_and_vals["published"] = "published"
+        accepted_filter_labels_and_vals["all"] = "All"
+        accepted_filters = []
+        for label, val in accepted_filter_labels_and_vals.items():
+            args = { self.key: val }
+            accepted_filters.append( GridColumnFilter( label, args) )
+        return accepted_filters
 
 class GridOperation( object ):
     def __init__( self, label, key=None, condition=None, allow_multiple=True, allow_popup=True, target=None, url_args=None, async_compatible=False, confirm=None ):

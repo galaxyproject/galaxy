@@ -52,7 +52,7 @@ class LibraryListGrid( grids.Grid ):
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
         StatusColumn( "Status", attach_popup=False ),
         # Columns that are valid for filtering but are not visible.
-        DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" )
+        grids.DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" )
     ]
     columns.append( grids.MulticolFilterColumn( "Search", 
                                                 cols_to_filter=[ columns[0], columns[1] ], 

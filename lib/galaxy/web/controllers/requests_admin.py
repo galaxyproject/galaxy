@@ -107,7 +107,7 @@ class RequestsGrid( grids.Grid ):
         TypeColumn( "Type",
                     link=( lambda item: iff( item.deleted, None, dict( operation="view_type", id=item.type.id ) ) ), ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
-        DeletedColumn( "Deleted", 
+        grids.DeletedColumn( "Deleted", 
                        key="deleted", 
                        visible=False, 
                        filterable="advanced" ),
@@ -184,7 +184,7 @@ class RequestTypeGrid( grids.Grid ):
                            link=( lambda item: iff( item.deleted, None, dict( operation="view_form", id=item.request_form.id ) ) ), ),
         SampleFormColumn( "Sample Form", 
                            link=( lambda item: iff( item.deleted, None, dict( operation="view_form", id=item.sample_form.id ) ) ), ),
-        DeletedColumn( "Deleted", 
+        grids.DeletedColumn( "Deleted", 
                        key="deleted", 
                        visible=False, 
                        filterable="advanced" )

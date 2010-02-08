@@ -44,7 +44,7 @@ class FormsGrid( grids.Grid ):
                            model_class=model.FormDefinition,
                            filterable="advanced" ),
         TypeColumn( "Type" ),
-        DeletedColumn( "Deleted", 
+        grids.DeletedColumn( "Deleted", 
                        key="deleted", 
                        visible=False, 
                        filterable="advanced" )

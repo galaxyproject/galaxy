@@ -71,7 +71,7 @@ class UserListGrid( grids.Grid ):
         LastLoginColumn( "Last Login", format=time_ago ),
         StatusColumn( "Status", attach_popup=False ),
         # Columns that are valid for filtering but are not visible.
-        DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" )
+        grids.DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" )
     ]
     columns.append( grids.MulticolFilterColumn( "Search", 
                                                 cols_to_filter=[ columns[0], columns[1] ], 
@@ -159,7 +159,7 @@ class RoleListGrid( grids.Grid ):
         UsersColumn( "Users", attach_popup=False ),
         StatusColumn( "Status", attach_popup=False ),
         # Columns that are valid for filtering but are not visible.
-        DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" )
+        grids.DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" )
     ]
     columns.append( grids.MulticolFilterColumn( "Search", 
                                                 cols_to_filter=[ columns[0], columns[1], columns[2] ], 
@@ -225,7 +225,7 @@ class GroupListGrid( grids.Grid ):
         RolesColumn( "Roles", attach_popup=False ),
         StatusColumn( "Status", attach_popup=False ),
         # Columns that are valid for filtering but are not visible.
-        DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" )
+        grids.DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" )
     ]
     columns.append( grids.MulticolFilterColumn( "Search", 
                                                 cols_to_filter=[ columns[0], columns[1], columns[2] ], 

@@ -59,8 +59,8 @@ class StoredWorkflowAllPublishedGrid( grids.Grid ):
     default_filter = dict( public_url="All", username="All", tags="All" )
     use_async = True
     columns = [
-        PublicURLColumn( "Name", key="name", model_class=model.StoredWorkflow, filterable="advanced" ),
-        OwnerColumn( "Owner", key="username", model_class=model.User, filterable="advanced", sortable=False ), 
+        grids.PublicURLColumn( "Name", key="name", model_class=model.StoredWorkflow, filterable="advanced" ),
+        grids.OwnerColumn( "Owner", key="username", model_class=model.User, filterable="advanced", sortable=False ), 
         grids.CommunityTagsColumn( "Community Tags", "tags", model.StoredWorkflow, model.StoredWorkflowTagAssociation, filterable="advanced", grid_name="PublicWorkflowListGrid" ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago )
     ]
