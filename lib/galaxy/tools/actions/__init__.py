@@ -31,11 +31,13 @@ class DefaultToolAction( object ):
         """
         input_datasets = dict()
         def visitor( prefix, input, value, parent = None ):
-            def process_dataset( data ):
-                if data and not isinstance( data.datatype, input.formats ):
+            def process_dataset( data, formats = None ):
+                if formats is None:
+                    formats = input.formats
+                if data and not isinstance( data.datatype, formats ):
                     # Need to refresh in case this conversion just took place, i.e. input above in tool performed the same conversion
                     trans.sa_session.refresh( data )
-                    target_ext, converted_dataset = data.find_conversion_destination( input.formats, converter_safe = input.converter_safe( param_values, trans ) )
+                    target_ext, converted_dataset = data.find_conversion_destination( formats, converter_safe = input.converter_safe( param_values, trans ) )
                     if target_ext:
                         if converted_dataset:
                             data = converted_dataset
@@ -61,16 +63,41 @@ class DefaultToolAction( object ):
                     # are stored as name1, name2, ...
                     for i, v in enumerate( value ):
                         input_datasets[ prefix + input.name + str( i + 1 ) ] = process_dataset( v )
+                        converters = []
+                        for converter_name, converter_extensions, converter_datatypes in input.converters:
+                            new_data = process_dataset( input_datasets[ prefix + input.name + str( i + 1 ) ], converter_datatypes )
+                            if not new_data or isinstance( new_data.datatype, converter_datatypes ):
+                                input_datasets[ prefix + converter_name + str( i + 1 ) ] = new_data
+                                converters.append( ( converter_name, new_data ) )
+                            else:
+                                raise Exception, 'A path for explicit datatype conversion has not been found: %s --/--> %s' % ( input_datasets[ prefix + input.name + str( i + 1 ) ].extension, converter_extensions )
                         if parent:
                             parent[input.name] = input_datasets[ prefix + input.name + str( i + 1 ) ]
+                            for converter_name, converter_data in converters:
+                                #allow explicit conversion to be stored in job_parameter table
+                                parent[ converter_name ] = converter_data.id #a more robust way to determine JSONable value is desired
                         else:
                             param_values[input.name][i] = input_datasets[ prefix + input.name + str( i + 1 ) ]
+                            for converter_name, converter_data in converters:
+                                #allow explicit conversion to be stored in job_parameter table
+                                param_values[ converter_name ][i] = converter_data.id #a more robust way to determine JSONable value is desired
                 else:
                     input_datasets[ prefix + input.name ] = process_dataset( value )
-                    if parent:
-                        parent[input.name] = input_datasets[ prefix + input.name ]
-                    else:
-                        param_values[input.name] = input_datasets[ prefix + input.name ]
+                    converters = []
+                    for converter_name, converter_extensions, converter_datatypes in input.converters:
+                        new_data = process_dataset( input_datasets[ prefix + input.name ], converter_datatypes )
+                        if not new_data or isinstance( new_data.datatype, converter_datatypes ):
+                            input_datasets[ prefix + converter_name ] = new_data
+                            converters.append( ( converter_name, new_data ) )
+                        else:
+                            raise Exception, 'A path for explicit datatype conversion has not been found: %s --/--> %s' % ( input_datasets[ prefix + input.name ].extension, converter_extensions )
+                    target_dict = parent
+                    if not target_dict:
+                        target_dict = param_values
+                    target_dict[ input.name ] = input_datasets[ prefix + input.name ]
+                    for converter_name, converter_data in converters:
+                        #allow explicit conversion to be stored in job_parameter table
+                        target_dict[ converter_name ] = converter_data.id #a more robust way to determine JSONable value is desired
         tool.visit_inputs( param_values, visitor )
         return input_datasets
 

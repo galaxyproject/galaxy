@@ -1198,6 +1198,28 @@ class Tool:
                     current = values["__current_case__"]
                     wrap_values( input.cases[current].inputs, values )
                 elif isinstance( input, DataToolParameter ):
+                    ##FIXME: We're populating param_dict with converters when wrapping values, 
+                    ##this should happen as a separate step before wrapping (or call this wrapping step something more generic)
+                    ##(but iterating this same list twice would be wasteful)
+                    #add explicit converters by name to current parent
+                    for converter_name, converter_extensions, converter_datatypes in input.converters:
+                        #if we are at building cmdline step, then converters have already executed
+                        conv_ext, converted_dataset = input_values[ input.name ].find_conversion_destination( converter_datatypes )
+                        #when dealing with optional inputs, we'll provide a valid extension to be used for None converted dataset
+                        if not conv_ext:
+                            conv_ext = converter_extensions[0]
+                        #input_values[ input.name ] is None when optional dataset, 
+                        #'conversion' of optional dataset should create wrapper around NoneDataset for converter output
+                        if input_values[ input.name ] and not converted_dataset: 
+                            #input that converter is based from has a value, but converted dataset does not exist
+                            raise Exception, 'A path for explicit datatype conversion has not been found: %s --/--> %s' % ( input_values[ input.name ].extension, converter_extensions )
+                        else:
+                            input_values[ converter_name ] = \
+                                DatasetFilenameWrapper( converted_dataset,
+                                                        datatypes_registry = self.app.datatypes_registry,
+                                                        tool = Bunch( converter_name = Bunch( extensions = conv_ext ) ), #trick wrapper into using target conv ext (when None) without actually being a tool parameter
+                                                        name = converter_name )
+                    #wrap actual input dataset
                     input_values[ input.name ] = \
                         DatasetFilenameWrapper( input_values[ input.name ],
                                                 datatypes_registry = self.app.datatypes_registry,
@@ -1212,6 +1234,12 @@ class Tool:
         #       tools (e.g. UCSC) should really be handled in a special way.
         if self.check_values:
             wrap_values( self.inputs, param_dict )
+        ###FIXME: when self.check_values==True, input datasets are being wrapped twice 
+        ###    (above and below, creating 2 separate DatasetFilenameWrapper objects - first is overwritten by second),
+        ###is this necessary? - if we get rid of this way to access children, can we stop this redundancy, or is there another reason for this?
+        ###Only necessary when self.check_values is False (==external dataset tool?: can this be abstracted out as part of being a datasouce tool?) 
+        ###    but we still want (ALWAYS) to wrap input datasets 
+        ###    (this should be checked to prevent overhead of creating a new object?)
         # Additionally, datasets go in the param dict. We wrap them such that
         # if the bare variable name is used it returns the filename (for
         # backwards compatibility). We also add any child datasets to the

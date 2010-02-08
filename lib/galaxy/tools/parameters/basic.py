@@ -50,14 +50,14 @@ class ToolParameter( object ):
 
     def get_html( self, trans=None, value=None, other_values={}):
         """
-        Returns the html widget corresponding to the paramter. 
+        Returns the html widget corresponding to the parameter. 
         Optionally attempt to retain the current value specific by 'value'
         """
         return self.get_html_field( trans, value, other_values ).get_html()
         
     def from_html( self, value, trans=None, other_values={} ):
         """
-        Convert a value from an HTML POST into the parameters prefered value 
+        Convert a value from an HTML POST into the parameters preferred value 
         format. 
         """
         return value
@@ -1168,6 +1168,15 @@ class DataToolParameter( ToolParameter ):
         else:
             self.options = dynamic_options.DynamicOptions( options, self )
         self.is_dynamic = self.options is not None
+        # Load converters required for the dataset input
+        self.converters = []
+        for conv_elem in elem.findall( "converter" ):
+            name = conv_elem.get( "name" ) #name for commandline substitution
+            conv_extensions = conv_elem.get( "type" ) #target datatype extension
+            # FIXME: conv_extensions should be able to be an ordered list
+            assert None not in [ name, type ], 'A name (%s) and type (%s) are required for explicit conversion' % ( name, type )
+            conv_types = tool.app.datatypes_registry.get_datatype_by_extension( conv_extensions.lower() ).__class__
+            self.converters.append( ( name, conv_extensions, conv_types ) )
 
     def get_html_field( self, trans=None, value=None, other_values={} ):
         filter_value = None
