@@ -307,8 +307,9 @@ class RootController( BaseController ):
                                 setattr( data.metadata, name, spec.unwrap( params.get (name, None) ) )
                     data.datatype.after_setting_metadata( data )
                     # Sanitize annotation before adding it.
-                    annotation = sanitize_html( params.annotation, 'utf-8', 'text/html' )
-                    self.add_item_annotation( trans, data, annotation )
+                    if params.annotation:
+                        annotation = sanitize_html( params.annotation, 'utf-8', 'text/html' )
+                        self.add_item_annotation( trans, data, annotation )
                 else:
                     msg = ' (Metadata could not be changed because this dataset is currently being used as input or output. You must cancel or wait for these jobs to complete before changing metadata.)'
                 trans.sa_session.flush()
