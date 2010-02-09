@@ -1198,27 +1198,27 @@ class Tool:
                     current = values["__current_case__"]
                     wrap_values( input.cases[current].inputs, values )
                 elif isinstance( input, DataToolParameter ):
-                    ##FIXME: We're populating param_dict with converters when wrapping values, 
+                    ##FIXME: We're populating param_dict with conversions when wrapping values, 
                     ##this should happen as a separate step before wrapping (or call this wrapping step something more generic)
                     ##(but iterating this same list twice would be wasteful)
-                    #add explicit converters by name to current parent
-                    for converter_name, converter_extensions, converter_datatypes in input.converters:
+                    #add explicit conversions by name to current parent
+                    for conversion_name, conversion_extensions, conversion_datatypes in input.conversions:
                         #if we are at building cmdline step, then converters have already executed
-                        conv_ext, converted_dataset = input_values[ input.name ].find_conversion_destination( converter_datatypes )
+                        conv_ext, converted_dataset = input_values[ input.name ].find_conversion_destination( conversion_datatypes )
                         #when dealing with optional inputs, we'll provide a valid extension to be used for None converted dataset
                         if not conv_ext:
-                            conv_ext = converter_extensions[0]
+                            conv_ext = conversion_extensions[0]
                         #input_values[ input.name ] is None when optional dataset, 
                         #'conversion' of optional dataset should create wrapper around NoneDataset for converter output
                         if input_values[ input.name ] and not converted_dataset: 
                             #input that converter is based from has a value, but converted dataset does not exist
-                            raise Exception, 'A path for explicit datatype conversion has not been found: %s --/--> %s' % ( input_values[ input.name ].extension, converter_extensions )
+                            raise Exception, 'A path for explicit datatype conversion has not been found: %s --/--> %s' % ( input_values[ input.name ].extension, conversion_extensions )
                         else:
-                            input_values[ converter_name ] = \
+                            input_values[ conversion_name ] = \
                                 DatasetFilenameWrapper( converted_dataset,
                                                         datatypes_registry = self.app.datatypes_registry,
-                                                        tool = Bunch( converter_name = Bunch( extensions = conv_ext ) ), #trick wrapper into using target conv ext (when None) without actually being a tool parameter
-                                                        name = converter_name )
+                                                        tool = Bunch( conversion_name = Bunch( extensions = conv_ext ) ), #trick wrapper into using target conv ext (when None) without actually being a tool parameter
+                                                        name = conversion_name )
                     #wrap actual input dataset
                     input_values[ input.name ] = \
                         DatasetFilenameWrapper( input_values[ input.name ],

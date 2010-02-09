@@ -63,41 +63,41 @@ class DefaultToolAction( object ):
                     # are stored as name1, name2, ...
                     for i, v in enumerate( value ):
                         input_datasets[ prefix + input.name + str( i + 1 ) ] = process_dataset( v )
-                        converters = []
-                        for converter_name, converter_extensions, converter_datatypes in input.converters:
-                            new_data = process_dataset( input_datasets[ prefix + input.name + str( i + 1 ) ], converter_datatypes )
-                            if not new_data or isinstance( new_data.datatype, converter_datatypes ):
-                                input_datasets[ prefix + converter_name + str( i + 1 ) ] = new_data
-                                converters.append( ( converter_name, new_data ) )
+                        conversions = []
+                        for conversion_name, conversion_extensions, conversion_datatypes in input.conversions:
+                            new_data = process_dataset( input_datasets[ prefix + input.name + str( i + 1 ) ], conversion_datatypes )
+                            if not new_data or isinstance( new_data.datatype, conversion_datatypes ):
+                                input_datasets[ prefix + conversion_name + str( i + 1 ) ] = new_data
+                                conversions.append( ( conversion_name, new_data ) )
                             else:
-                                raise Exception, 'A path for explicit datatype conversion has not been found: %s --/--> %s' % ( input_datasets[ prefix + input.name + str( i + 1 ) ].extension, converter_extensions )
+                                raise Exception, 'A path for explicit datatype conversion has not been found: %s --/--> %s' % ( input_datasets[ prefix + input.name + str( i + 1 ) ].extension, conversion_extensions )
                         if parent:
                             parent[input.name] = input_datasets[ prefix + input.name + str( i + 1 ) ]
-                            for converter_name, converter_data in converters:
+                            for conversion_name, conversion_data in conversions:
                                 #allow explicit conversion to be stored in job_parameter table
-                                parent[ converter_name ] = converter_data.id #a more robust way to determine JSONable value is desired
+                                parent[ conversion_name ] = conversion_data.id #a more robust way to determine JSONable value is desired
                         else:
                             param_values[input.name][i] = input_datasets[ prefix + input.name + str( i + 1 ) ]
-                            for converter_name, converter_data in converters:
+                            for conversion_name, conversion_data in conversions:
                                 #allow explicit conversion to be stored in job_parameter table
-                                param_values[ converter_name ][i] = converter_data.id #a more robust way to determine JSONable value is desired
+                                param_values[ conversion_name ][i] = conversion_data.id #a more robust way to determine JSONable value is desired
                 else:
                     input_datasets[ prefix + input.name ] = process_dataset( value )
-                    converters = []
-                    for converter_name, converter_extensions, converter_datatypes in input.converters:
-                        new_data = process_dataset( input_datasets[ prefix + input.name ], converter_datatypes )
-                        if not new_data or isinstance( new_data.datatype, converter_datatypes ):
-                            input_datasets[ prefix + converter_name ] = new_data
-                            converters.append( ( converter_name, new_data ) )
+                    conversions = []
+                    for conversion_name, conversion_extensions, conversion_datatypes in input.conversions:
+                        new_data = process_dataset( input_datasets[ prefix + input.name ], conversion_datatypes )
+                        if not new_data or isinstance( new_data.datatype, conversion_datatypes ):
+                            input_datasets[ prefix + conversion_name ] = new_data
+                            conversions.append( ( conversion_name, new_data ) )
                         else:
-                            raise Exception, 'A path for explicit datatype conversion has not been found: %s --/--> %s' % ( input_datasets[ prefix + input.name ].extension, converter_extensions )
+                            raise Exception, 'A path for explicit datatype conversion has not been found: %s --/--> %s' % ( input_datasets[ prefix + input.name ].extension, conversion_extensions )
                     target_dict = parent
                     if not target_dict:
                         target_dict = param_values
                     target_dict[ input.name ] = input_datasets[ prefix + input.name ]
-                    for converter_name, converter_data in converters:
+                    for conversion_name, conversion_data in conversions:
                         #allow explicit conversion to be stored in job_parameter table
-                        target_dict[ converter_name ] = converter_data.id #a more robust way to determine JSONable value is desired
+                        target_dict[ conversion_name ] = conversion_data.id #a more robust way to determine JSONable value is desired
         tool.visit_inputs( param_values, visitor )
         return input_datasets
 
