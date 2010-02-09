@@ -49,6 +49,7 @@
     <tool file="filters/headWrapper.xml" />
     <tool file="filters/tailWrapper.xml" />
     <tool file="filters/trimmer.xml" />
+    <tool file="stats/dna_filtering.xml" />
   </section>
   <section name="Filter and Sort" id="filter">
     <tool file="stats/filtering.xml" />
