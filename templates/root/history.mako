@@ -15,7 +15,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 
 ${h.css( "base", "history", "autocomplete_tagging" )}
-${h.js( "galaxy.base", "jquery", "json2", "jquery.jstore-all", "jquery.autocomplete", "autocomplete_tagging" )}
+${h.js( "jquery", "jquery.tipsy", "galaxy.base", "json2", "jquery.jstore-all", "jquery.autocomplete", "autocomplete_tagging" )}
 
 <script type="text/javascript">
 $(function() {
@@ -46,15 +46,25 @@ $(function() {
     async_save_text("history-name-container", "history-name", "${h.url_for( controller="/history", action="rename_async", id=trans.security.encode_id(history.id) )}", "new_name", 18);
     
     // Tag management.
+    var historyTagArea = $('#history-tag-area');
     $('#history-tag').click( function() 
     {
-        $('#history-tag-area').toggle("fast");
+	if ( historyTagArea.is( ":hidden" ) ) {
+            historyTagArea.slideDown("fast");
+	} else {
+	    historyTagArea.slideUp("fast");
+	}
         return false;
     });
     
-    // Annotation management. 
+    // Annotation management.
+    var historyAnnotationArea = $('#history-annotation-area');
     $('#history-annotate').click( function() {
-        $('#history-annotation-area').toggle("fast");
+	if ( historyAnnotationArea.is( ":hidden" ) ) {
+            historyAnnotationArea.slideDown("fast");
+	} else {
+	    historyAnnotationArea.slideUp("fast");
+	}
         return false;
     });
     async_save_text("history-annotation-container", "history-annotation", "${h.url_for( controller="/history", action="annotate_async", id=trans.security.encode_id(history.id) )}", "new_annotation", 18, true, 4);
@@ -281,15 +291,14 @@ div.form-row {
     <table width="100%" cellpadding="0" cellspacing="0">
         <tr>
             <td align="left">
-                <div id="history-name-container" class="editable-text tooltip">
-                    <span id="history-name">${history.get_display_name() | h}</span>
-                    <span class="tip">Click to edit</span></a>
+                <div id="history-name-container" class="editable-text">
+                    <span id="history-name" class="tooltip" title="Click to rename history">${history.get_display_name() | h}</span>
                 </div>
             </td>
             <td align="right" style="width: 40px">
                 <div style="float: right; white-space: nowrap">
-                    <a id="history-tag" title="Tag" class="icon-button tag tooltip" target="galaxy_main" href="${h.url_for( controller='history', action='tag' )}"></a>
-                    <a id="history-annotate" title="Annotate" class="icon-button annotate" target="galaxy_main" href="${h.url_for( controller='history', action='annotate' )}"></a>
+                    <a id="history-tag" title="Edit history tags" class="icon-button tags tooltip" target="galaxy_main" href="${h.url_for( controller='history', action='tag' )}"></a>
+                    <a id="history-annotate" title="Edit history annotation" class="icon-button annotate tooltip" target="galaxy_main" href="${h.url_for( controller='history', action='annotate' )}"></a>
                 </div>
             </td>
         </tr>
@@ -309,8 +318,8 @@ div.form-row {
 %if trans.get_user() is not None:
     <div style="margin: 0px 0px 5px 10px">
         ## Tagging elt.
-        <div id="history-tag-area" class="form-row" style="display: none">
-            <label>Tags:</label>
+        <div id="history-tag-area" style="display: none">
+            <b>Tags:</b>
             <style>
                 .tag-area {
                     border: none;
@@ -320,15 +329,10 @@ div.form-row {
         </div>
     
         ## Annotation elt.
-        <div id="history-annotation-area" class="form-row" style="display: none">
-   	        <label>Annotation / Notes:</label>
-   	        <div id="history-annotation-container" class="tooltip">
-   	            %if annotation:
-       	            <span id="history-annotation">${annotation | h}</span>
-       	        %else:
-       	            <span id="history-annotation">None</span>
-       	        %endif
-   	            <span class="tip">Click to edit annotation</span>
+        <div id="history-annotation-area" style="display: none">
+   	    <b>Annotation / Notes:</b>
+   	    <div id="history-annotation-container">
+		<span id="history-annotation" class="tooltip" title="Click to edit annotation">${annotation or 'None' | h}</span>
             </div>
         </div>
         

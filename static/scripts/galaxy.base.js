@@ -14,11 +14,15 @@ $.fn.makeAbsolute = function(rebase) {
     });
 }
 
-jQuery(document).ready( function() {
+$(document).ready( function() {
     // Links with confirmation
-    jQuery( "a[confirm]" ).click( function() {
-        return confirm( jQuery(this).attr( "confirm"  ) )
+    $( "a[confirm]" ).click( function() {
+        return confirm( $(this).attr( "confirm"  ) )
     });
+    // Tooltips
+    if ( $.fn.tipsy ) {
+        $(".tooltip").tipsy( { gravity: 's' } );
+    }
     // Make popup menus.
     make_popup_menus();
 });

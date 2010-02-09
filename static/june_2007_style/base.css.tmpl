@@ -667,6 +667,9 @@ div.permissionContainer {
     margin-left: 2px;
     ## Allow alt text for screen readers
     text-indent: 20px;
+    background-repeat:no-repeat;
+    background-position: 0px 0px;
+    padding: 0;
 }
 
 .icon-button.display {
@@ -700,38 +703,53 @@ div.permissionContainer {
 }
 
 .icon-button.tag {
-    background-image:url(/static/images/tag-label.png);
-    background-repeat:no-repeat;
-    background-position:center;
-    padding: 0px 0px 0px 0px;
+    background-image: url(/static/images/tag-label.png);
+}
+
+.icon-button.tags {
+    background-image: url(/static/images/fugue/tags.png);
+}
+
+.icon-button.tag--plus {
+    background-image: url(/static/images/fugue/tag--plus.png);
 }
     
 .icon-button.annotate {
     background-image:url(/static/images/sticky-note-text.png);
     background-repeat:no-repeat;
     background-position:center;
-    padding: 0px 0px 0px 0px;
+    padding: 0;
 }
 
-.tooltip {
-    position: relative;
-    cursor: pointer;
+.tipsy {
+    padding: 5px;
+    font-size: 10px;
+    filter: alpha(opacity=80);
+    background-repeat: no-repeat;
+    background-image: url(../images/tipsy.gif);
 }
-
-span.tip {
-    display: none
-}
-
-.tooltip:hover span.tip { 
-    font-size: 90%; 
-    display: block;
-    position: absolute;
-    left:2em;
-    bottom:1.75em; 
+.tipsy-inner {
+    padding: 5px 8px 4px 8px;
     background-color: black;
     color: white;
+    max-width: 200px;
     text-align: center;
-    padding: 0.25em 0.5em;
+}
+
+.tipsy-north {
+    background-position: top center;
+}
+
+.tipsy-south {
+    background-position: bottom center;
+}
+
+.tipsy-east {
+    background-position: right center;
+}
+
+.tipsy-west {
+    background-position: left center;
 }
 
 .editable-text {

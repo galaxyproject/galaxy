@@ -10,9 +10,9 @@
 .individual-tag-area{border:solid 1px #eee;cursor:pointer;}
 .active-tag-area{background-color:white;}
 .toggle-link{font-weight:normal;padding:0.3em;margin-bottom:1em;width:100%;padding:0.2em 0em 0.2em 0em;}
-.tag-button{width:auto;color:#444;text-decoration:none;display:inline-block;cursor:pointer;margin:0.2em;border:0;padding:0.1em 0.5em 0.1em 0.5em;-moz-border-radius:.5em;-webkit-border-radius:.5em;border-radius:.5em;background:#bbb;}
+.tag-button{width:auto;color:#444;text-decoration:none;display:inline-block;cursor:pointer;margin:0.2em;border:solid #bbb 1px;padding:0.1em 0.5em 0.1em 0.5em;-moz-border-radius:.5em;-webkit-border-radius:.5em;border-radius:.5em;background:#eee;}
 .tag-button img{padding-left:0.4em;}
-.tag-button .tag-name:hover{color:white;}
+.tag-button .tag-name:hover{color:black;}
 .add-tag-button{margin-bottom:0.3em;vertical-align:middle;padding:0.3em;}
 .add-tag-button:hover{cursor:pointer;}
 .tag-input{vertical-align:bottom;border:none;outline:none;resize:none;}

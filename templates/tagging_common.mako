@@ -37,7 +37,7 @@
         %if use_toggle_link:
             <a class="toggle-link" href="#">${num_tags} Tag${iff( num_tags == 1, "", "s")}</a>
         %endif
-        <div class="tag-area tooltip 
+        <div class="tag-area 
             %if tag_type == 'individual':
                 individual-tag-area
             %endif
@@ -80,9 +80,8 @@
                 %endif
                 ## Add "add tag" button.
                 %if render_add_tag_button:
-                    <img src='${h.url_for('/static/images/add_icon.png')}' rollover='${h.url_for('/static/images/add_icon_dark.png')}' class="add-tag-button"/>
+                    <img src='${h.url_for('/static/images/fugue/tag--plus.png')}' class="add-tag-button tooltip" title="Add tags"/>
                 %endif
-                <span class="tip">Click to edit tags</span>
             %endif
         </div>
     </div>
