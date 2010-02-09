@@ -226,8 +226,6 @@ $(document).ready(function(){
                 </select>
             %elif field['type'] == 'CheckboxField':
                 <input type="checkbox" name="sample_${index}_field_${field_index}" value="Yes"/>
-            %elif field['type'] == 'NumberField':
-                <input type="int" name="sample_${index}_field_${field_index}" value="${sample_values[field_index]}" size="7"/>
             %endif
             <div class="toolParamHelp" style="clear: both;">
                 <i>${'('+field['required']+')' }</i>

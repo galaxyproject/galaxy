@@ -12,7 +12,7 @@ class BaseField(object):
         raise TypeError( "Abstract Method" )
     @staticmethod
     def form_field_types():
-        return ['TextField', 'NumberField', 'TextArea', 'SelectField', 'CheckboxField', 'AddressField']
+        return ['TextField', 'TextArea', 'SelectField', 'CheckboxField', 'AddressField']
 
 class TextField(BaseField):
     """
@@ -48,25 +48,6 @@ class PasswordField(BaseField):
         self.value = value or ""
     def get_html( self, prefix="" ):
         return '<input type="password" name="%s%s" size="%d" value="%s">' \
-            % ( prefix, self.name, self.size, escape(str(self.value), quote=True) )
-    def set_size(self, size):
-        self.size = int( size )
-        
-class NumberField(BaseField):
-    """
-    A number input box.
-    
-    >>> print NumberField( "foo" ).get_html()
-    <input type="int" name="foo" size="10" value="">
-    >>> print NumberField( "bins", size=4, value="12345" ).get_html()
-    <input type="int" name="bins" size="4" value="12345">
-    """
-    def __init__( self, name, size=None, value=None ):
-        self.name = name
-        self.size = int( size or 10 )
-        self.value = value or ""
-    def get_html( self, prefix="" ):
-        return '<input type="int" name="%s%s" size="%d" value="%s">' \
             % ( prefix, self.name, self.size, escape(str(self.value), quote=True) )
     def set_size(self, size):
         self.size = int( size )

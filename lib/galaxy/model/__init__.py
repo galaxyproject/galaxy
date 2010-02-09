@@ -1267,9 +1267,6 @@ class FormDefinition( object ):
             if field[ 'type' ] == 'TextField':
                 field_widget.set_size( 40 )
                 field_widget.value = value
-            if field[ 'type' ] == 'NumberField':
-                field_widget.set_size( 40 )
-                field_widget.value = value
             elif field[ 'type' ] == 'TextArea':
                 field_widget.set_size( 3, 40 )
                 field_widget.value = value
