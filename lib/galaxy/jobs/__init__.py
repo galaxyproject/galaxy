@@ -751,7 +751,9 @@ class JobWrapper( object ):
     @property
     def user( self ):
         job = self.sa_session.query( model.Job ).get( self.job_id )
-        if job.history.user is None:
+        if not job.history:
+            return 'non_history_job'
+        elif job.history.user is None:
             return 'anonymous@' + job.galaxy_session.remote_addr.split()[-1]
         else:
             return job.history.user.email
