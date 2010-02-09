@@ -137,7 +137,7 @@ class Forms( BaseController ):
                                                                   msg=msg,
                                                                   messagetype='error',
                                                                   name=util.restore_text( params.get( 'name', '' ) ),
-                                                                  description=util.restore_text( params.get( 'description', '' ) ) ) )  
+                                                                  description=util.restore_text( params.get( 'description', '' ) ) ))
             self.__get_saved_form( fd )
             if self.__imported_from_file:
                 return trans.response.send_redirect( web.url_for( controller='forms',

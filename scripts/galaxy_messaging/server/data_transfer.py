@@ -41,8 +41,8 @@ import simplejson
 
 curr_dir = os.getcwd()
 logfile = os.path.join(curr_dir, 'data_transfer.log')
-logging.basicConfig(filename=logfile, level=logging.DEBUG, 
-        format="%(asctime)s [%(levelname)s] %(message)s")
+logging.basicConfig(filename=sys.stdout, level=logging.DEBUG, 
+                    format="%(asctime)s [%(levelname)s] %(message)s")
 
 class DataTransferException(Exception):
     def __init__(self, value):
@@ -137,7 +137,9 @@ class DataTransfer(object):
                                               timeout=10)
             logging.debug(output)
             if not os.path.exists(os.path.join(self.server_dir, os.path.basename(self.remote_file))):
-                raise Exception
+                raise DataTransferException('Could not find the local file after transfer (%s)' % os.path.join(self.server_dir, os.path.basename(self.remote_file)))
+        except DataTransferException, (e):
+            self.error_and_exit(e.msg)
         except:
             self.error_and_exit()
 
@@ -192,6 +194,8 @@ class DataTransfer(object):
                 raise DataTransferException("The "+email+" user could not logout of Galaxy")
         except DataTransferException, (e):
             self.error_and_exit(e.msg)
+        except:
+            self.error_and_exit()
 
     def update_status(self, status):
         '''
@@ -202,7 +206,6 @@ class DataTransfer(object):
             df = from_json_string(galaxy.get_sample_dataset_files(self.sample_id))
             logging.debug(df)
             df[self.dataset_index][1] = status
-        
             galaxy.set_sample_dataset_files(self.sample_id, to_json_string(df))
             logging.debug("######################\n"+str(from_json_string(galaxy.get_sample_dataset_files(self.sample_id))[self.dataset_index]))
         except:
@@ -219,5 +222,5 @@ if __name__ == '__main__':
     dt = DataTransfer(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4],
                       int(sys.argv[5]), int(sys.argv[6]), sys.argv[7], sys.argv[8])
     dt.start()
-
+    sys.exit(0)
 

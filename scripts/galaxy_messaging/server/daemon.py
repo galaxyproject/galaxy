@@ -29,6 +29,6 @@ try:
         sys.exit(0) # Exit first parent.
 except OSError, e:
     sys.stderr.write("fork #1 failed: (%d) %sn" % (e.errno, e.strerror))
-    sys.exit(1)
+    sys.exit(2)
 os.execv(os.path.join( os.getcwd(), "scripts/galaxy_messaging/server/data_transfer.py"), sys.argv)
 

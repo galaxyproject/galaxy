@@ -4,7 +4,7 @@ from galaxy.model.orm import *
 from galaxy.datatypes import sniff
 from galaxy import util
 from galaxy.util.streamball import StreamBall
-import logging, tempfile, zipfile, tarfile, os, sys
+import logging, tempfile, zipfile, tarfile, os, sys, subprocess
 from galaxy.web.form_builder import * 
 from datetime import datetime, timedelta
 from galaxy.web.controllers.forms import get_all_forms
@@ -1526,31 +1526,49 @@ class RequestsAdmin( BaseController ):
                                                               sample_id=trans.security.encode_id(sample.id),
                                                               messagetype='error',
                                                               msg=msg))
+        error_msg = ''
         transfer_script = "scripts/galaxy_messaging/server/daemon.py"
         for index, dataset in enumerate(sample.dataset_files):
             dfile = dataset[0]
             status = dataset[1]
             if status == sample.transfer_status.NOT_STARTED:
-                cmd = "python %s %s %s %s %s %s %s %s %s" % ( transfer_script,
-                                                              datatx_info['host'],
-                                                              datatx_info['username'],
-                                                              datatx_info['password'],
-                                                              dfile,
-                                                              sample.id,
-                                                              index,
-                                                              trans.security.encode_id(sample.library.id), 
-                                                              trans.security.encode_id(sample.folder.id))   
+                cmd = (   "python",
+                          transfer_script,
+                          datatx_info['host'],
+                          datatx_info['username'],
+                          datatx_info['password'],
+                          dfile,
+                          str(sample.id),
+                          str(index),
+                          trans.security.encode_id(sample.library.id), 
+                          trans.security.encode_id(sample.folder.id)  )
                 # set the transfer status
                 sample.dataset_files[index][1] = sample.transfer_status.IN_PROGRESS
                 trans.sa_session.add( sample )
                 trans.sa_session.flush()
-                os.system(cmd)
+                try:
+                    retcode = subprocess.call(cmd)
+                except Exception, e:
+                    error_msg = dfile.split('/')[-1] + ": Data transfer failed. " + str(e) + "<br/>"
+                    return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                                      action='show_datatx_page', 
+                                                                      sample_id=trans.security.encode_id(sample.id),
+                                                                      folder_path=os.path.dirname(dfile),
+                                                                      messagetype='error',
+                                                                      msg=error_msg))
         # set the sample state to the last state
         if sample.current_state().id != sample.request.type.states[-1].id:
             event = trans.app.model.SampleEvent(sample, sample.request.type.states[-1], 
-                                                'The dataset are ready & are being transfered to Galaxy')
+                                                'The dataset is ready and are being transfered to Galaxy')
             trans.sa_session.add( event )
             trans.sa_session.flush()
+        if error_msg:
+            return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                              action='show_datatx_page', 
+                                                              sample_id=trans.security.encode_id(sample.id),
+                                                              folder_path=os.path.dirname(dfile),
+                                                              messagetype='error',
+                                                              msg=error_msg))
         return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                           action='show_datatx_page', 
                                                           sample_id=trans.security.encode_id(sample.id),
