@@ -1,4 +1,3 @@
-<% _=n_ %>
 <%inherit file="/base.mako"/>
 <%def name="title()">${_('Rename History')}</%def>
 
@@ -19,10 +18,10 @@
                     <tr>
                         <td>
                             <input type="hidden" name="id" value="${trans.security.encode_id( history.id )}">
-                            ${history.get_display_name()}
+                            ${history.get_display_name() | h}
                         </td>
                         <td>
-                            <input type="text" name="name" value="${history.get_display_name()}" size="40">
+                            <input type="text" name="name" value="${history.get_display_name() | h}" size="40">
                         </td>
                     </tr>
                 %endfor

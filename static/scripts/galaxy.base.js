@@ -12,53 +12,11 @@ $.fn.makeAbsolute = function(rebase) {
             el.remove().appendTo("body");
         }
     });
-}
-
-$(document).ready( function() {
-    // Links with confirmation
-    $( "a[confirm]" ).click( function() {
-        return confirm( $(this).attr( "confirm"  ) )
-    });
-    // Tooltips
-    if ( $.fn.tipsy ) {
-        $(".tooltip").tipsy( { gravity: 's' } );
-    }
-    // Make popup menus.
-    make_popup_menus();
-});
-
-function make_popup_menus() 
-{
-    jQuery( "div[popupmenu]" ).each( function() {
-        var options = {};
-        $(this).find( "a" ).each( function() {
-            var confirmtext = $(this).attr( "confirm" ),
-                href = $(this).attr( "href" ),
-                target = $(this).attr( "target" );
-            options[ $(this).text() ] = function() {
-                if ( !confirmtext || confirm( confirmtext ) ) {
-                    var f = window;
-                    if ( target == "_parent" ) {
-                        f = window.parent;
-                    }
-                    else if 
-                    ( target == "_top" ) {
-                        f = window.top;
-                    }
-                    f.location = href;
-                }
-            };
-        });
-        var b = $( "#" + $(this).attr( 'popupmenu' ) );
-        make_popupmenu( b, options );
-        $(this).remove();
-        b.addClass( "popup" ).show();
-    });
-}
+};
 
 function ensure_popup_helper() {
     // And the helper below the popup menus
-    if ( $( "#popup-helper" ).length == 0 ) {
+    if ( $( "#popup-helper" ).length === 0 ) {
         $( "<div id='popup-helper'/>" ).css( {
             background: 'white', opacity: 0, zIndex: 15000,
             position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' 
@@ -66,13 +24,41 @@ function ensure_popup_helper() {
     }
 }
 
+function attach_popupmenu( button_element, wrapper ) {
+    var clean = function() {
+        wrapper.unbind().hide();
+        $("#popup-helper").unbind( "click.popupmenu" ).hide();
+        // $(document).unbind( "click.popupmenu" ); 
+    };
+    var click = function( e ) {
+        // var o = $(button_element).offset();
+        $("#popup-helper").bind( "click.popupmenu", clean ).show();
+        // $(document).bind( "click.popupmenu", clean );
+        // Show off screen to get size right
+        wrapper.click( clean ).css( { left: 0, top: -1000 } ).show();
+        // console.log( e.pageX, $(document).scrollLeft() + $(window).width(), $(menu_element).width() );
+        var x = e.pageX - wrapper.width() / 2 ;
+        x = Math.min( x, $(document).scrollLeft() + $(window).width() - $(wrapper).width() - 20 );
+        x = Math.max( x, $(document).scrollLeft() + 20 );
+        // console.log( e.pageX, $(document).scrollLeft() + $(window).width(), $(menu_element).width() );
+        
+        
+        wrapper.css( {
+            top: e.pageY - 5,
+            left: x
+        } );
+        return false;
+    };
+    $( button_element ).click( click );
+}
+
 function make_popupmenu( button_element, options ) {
     ensure_popup_helper();
-    var container_element = $(button_element);
+    // var container_element = $(button_element);
     // if ( container_element.parent().hasClass( "combo-button" ) ) {
     //    container_element = container_element.parent();
     // }
-    // ontainer_element).css( "position", "relative" );
+    // container_element).css( "position", "relative" );
     var menu_element = $( "<ul id='" + button_element.attr('id') + "-menu'></ul>" );
     $.each( options, function( k, v ) {
         if ( v ) {
@@ -88,96 +74,90 @@ function make_popupmenu( button_element, options ) {
            .appendTo( "body" )
            .hide();
     attach_popupmenu( button_element, wrapper );
-};
+}
 
-function attach_popupmenu( button_element, wrapper ) {
-    var clean = function() {
-        wrapper.unbind().hide();
-        $("#popup-helper").unbind( "click.popupmenu" ).hide();
-        // $(document).unbind( "click.popupmenu" ); 
-    };
-    var click = function( e ) {
-        var o = $(button_element).offset();
-        $("#popup-helper").bind( "click.popupmenu", clean ).show();
-        // $(document).bind( "click.popupmenu", clean );
-        // Show off screen to get size right
-        wrapper.click( clean ).css( { left: 0, top: -1000 } ).show();
-        // console.log( e.pageX, $(document).scrollLeft() + $(window).width(), $(menu_element).width() );
-        var x = e.pageX - wrapper.width() / 2 
-        x = Math.min( x, $(document).scrollLeft() + $(window).width() - $(wrapper).width() - 20 );
-        x = Math.max( x, $(document).scrollLeft() + 20 );
-        // console.log( e.pageX, $(document).scrollLeft() + $(window).width(), $(menu_element).width() );
-        
-        
-        wrapper.css( {
-            top: e.pageY - 5,
-            left: x
-        } );
-        return false;
-    };
-    $( button_element ).click( click );
-};
+function make_popup_menus() {
+    jQuery( "div[popupmenu]" ).each( function() {
+        var options = {};
+        $(this).find( "a" ).each( function() {
+            var confirmtext = $(this).attr( "confirm" ),
+                href = $(this).attr( "href" ),
+                target = $(this).attr( "target" );
+            options[ $(this).text() ] = function() {
+                if ( !confirmtext || confirm( confirmtext ) ) {
+                    var f = window;
+                    if ( target == "_parent" ) {
+                        f = window.parent;
+                    } else if ( target == "_top" ) {
+                        f = window.top;
+                    }
+                    f.location = href;
+                }
+            };
+        });
+        var b = $( "#" + $(this).attr( 'popupmenu' ) );
+        make_popupmenu( b, options );
+        $(this).remove();
+        b.addClass( "popup" ).show();
+    });
+}
 
 // Returns the number of keys (elements) in an array/dictionary.
-var array_length = function(an_array)
-{
-    if (an_array.length)
+function array_length(an_array) {
+    if (an_array.length) {
         return an_array.length;
+    }
 
     var count = 0;
-    for (element in an_array)   
+    for (var element in an_array) {
         count++;
+    }
     return count;
-};
+}
 
-//
 // Replace dbkey select box with text input box & autocomplete.
-//
-var replace_dbkey_select = function() 
-{
+function replace_dbkey_select() {
     var select_elt = $('select[name=dbkey]');
     var start_value = select_elt.attr('value');
-    if (select_elt.length != 0)
-    {
-        //
+    if (select_elt.length !== 0) {
         // Set up text input + autocomplete element.
-        //
         var text_input_elt = $("<input id='dbkey-input' type='text'></input>");
         text_input_elt.attr('size', 40);
         text_input_elt.attr('name', select_elt.attr('name'));
-        text_input_elt.click( function()
-        {
-                // Show all. Also provide note that load is happening since this can be slow.
-                var cur_value = $(this).attr('value');
-                $(this).attr('value', 'Loading...');
-                $(this).showAllInCache();
-                $(this).attr('value', cur_value);
-                $(this).select();
+        text_input_elt.click( function() {
+            // Show all. Also provide note that load is happening since this can be slow.
+            var cur_value = $(this).attr('value');
+            $(this).attr('value', 'Loading...');
+            $(this).showAllInCache();
+            $(this).attr('value', cur_value);
+            $(this).select();
         });
 
         // Get options for dbkey for autocomplete.
-        var dbkey_options = new Array();
-        var dbkey_mapping = new Object();
-        select_elt.children('option').each( function() 
-        {
+        var dbkey_options = [];
+        var dbkey_mapping = {};
+        select_elt.children('option').each( function() {
             // Get text, value for option.
             var text = $(this).text();    
             var value = $(this).attr('value');
     
             // Ignore values that are '?'
-            if (value == '?')
+            if (value == '?') {
                 return;
+            }
     
             // Set options and mapping.
             dbkey_options.push( text );
             dbkey_mapping[ text ] = value;
     
             // If this is the start value, set value of input element.
-            if ( value == start_value )
+            if ( value == start_value ) {
                 text_input_elt.attr('value', text);
+            }
         });
-        if ( text_input_elt.attr('value') == '' ) 
+        if ( text_input_elt.attr('value') == '' ) {
             text_input_elt.attr('value', 'Click to Search or Select Build');
+        }
 
         // Do autocomplete.
         var autocomplete_options = { selectFirst: false, autoFill: false, mustMatch: false, matchContains: true, max: 1000, minChars : 0, hideForLessThanMinChars : false };
@@ -186,70 +166,70 @@ var replace_dbkey_select = function()
         // Replace select with text input.
         select_elt.replaceWith(text_input_elt);   
         
-        //
         // When form is submitted, change the text entered into the input to the corresponding value. If text doesn't correspond to value, remove it.
-        //
-        $('form').submit( function() 
-        {
+        $('form').submit( function() {
             var dbkey_text_input = $('#dbkey-input');
-            if (dbkey_text_input.length != 0)
-            {
+            if (dbkey_text_input.length !== 0) {
                 // Try to convert text to value.
                 var cur_value = dbkey_text_input.attr('value');
                 var new_value = dbkey_mapping[cur_value];
-                if (new_value != null && new_value != undefined)
+                if (new_value !== null && new_value !== undefined) {
                     dbkey_text_input.attr('value', new_value);
-                else
-                {
+                } else {
                     // If there is a non-empty start value, use that; otherwise unknown.
-                    if (start_value != "")
+                    if (start_value != "") {
                         dbkey_text_input.attr('value', start_value);
-                    else
+                    } else {
                         dbkey_text_input.attr('value', '?');
+                    }
                 }
             }
         });
     }
-} // end replace_dbkey_select()
+}
 
-//
 // Edit and save text asynchronously.
-// 
-function async_save_text(click_to_edit_elt, text_elt_id, save_url, text_parm_name, num_cols, use_textarea, num_rows, on_start, on_finish)
-{
+function async_save_text(click_to_edit_elt, text_elt_id, save_url, text_parm_name, num_cols, use_textarea, num_rows, on_start, on_finish) {
     // Set defaults if necessary.
-    if (num_cols == null)
+    if (num_cols === undefined) {
         num_cols = 30;
-    if (num_rows == null)
-        num_rows = 4
+    }
+    if (num_rows === undefined) {
+        num_rows = 4;
+    }
     
     // Set up input element.
-    $("#" + click_to_edit_elt).click( function() {
-        var old_text = $("#" + text_elt_id).text()
-        if (use_textarea)
-            var t = $("<textarea rows='" + num_rows + "' cols='" + num_cols + "'>" + old_text + "</textarea>" );
-        else
-            var t = $("<input type='text' value='" + old_text + "' size='" + num_cols + "'></input>" );
+    $("#" + click_to_edit_elt).live( "click", function() {
+        // Check if this is already active
+        if ( $("#renaming-active").length > 0) {
+            return;
+        }
+        var text_elt = $("#" + text_elt_id),
+            old_text = text_elt.text(),
+            t;
+            
+        if (use_textarea) {
+            t = $("<textarea></textarea>").attr({ rows: num_rows, cols: num_cols }).text( old_text );
+        } else {
+            t = $("<input type='text'></input>").attr({ value: old_text, size: num_cols });
+        }
+        t.attr("id", "renaming-active");
         t.blur( function() {
             $(this).remove();
-            $("#" + text_elt_id).show();
-            if (has_tooltip)
-                tooltip_elt.addClass("tooltip");
-            if (on_finish != null)
+            text_elt.show();
+            if (on_finish) {
                 on_finish(t);
+            }
         });
-        var has_tooltip = $(this).hasClass("tooltip");
-        var tooltip_elt = $(this);
         t.keyup( function( e ) {
-            if ( e.keyCode == 27 ) {
+            if ( e.keyCode === 27 ) {
                 // Escape key
                 $(this).trigger( "blur" );
-            } else if ( e.keyCode == 13 ) {
-                // Enter key
-                new_text = this.value;
+            } else if ( e.keyCode === 13 ) {
+                // Enter key submits
+                var ajax_data = {};
+                ajax_data[text_parm_name] = $(this).val();
                 $(this).trigger( "blur" );
-                var ajax_data = new Object();
-                ajax_data[text_parm_name] = new_text;
                 $.ajax({
                     url: save_url,
                     data: ajax_data,
@@ -259,27 +239,37 @@ function async_save_text(click_to_edit_elt, text_elt_id, save_url, text_parm_nam
                     },
                     success: function(processed_text) {
                         // Set new text and call finish method.
-                        $("#" + text_elt_id).text( processed_text );
-                        if (on_finish != null)
+                        text_elt.text( processed_text );
+                        if (on_finish) {
                             on_finish(t);
+                        }
                     }
                 });
             }
         });
         
-        // Call onstart method if it exists.
-        if (on_start != null)
+        if (on_start) {
             on_start(t);
-            
+        }
         // Replace text with input object and focus & select.
-        $("#" + text_elt_id).hide();
-        t.insertAfter( $("#" + text_elt_id) );
+        text_elt.hide();
+        t.insertAfter( text_elt );
         t.focus();
         t.select();
         
-        // Remove tooltip so that it doesn't show during editing.
-        $(this).removeClass("tooltip");
-        return false;
+        return;
     });
-    
 }
+
+$(document).ready( function() {
+    // Links with confirmation
+    $( "a[confirm]" ).click( function() {
+        return confirm( $(this).attr("confirm") );
+    });
+    // Tooltips
+    if ( $.fn.tipsy ) {
+        $(".tooltip").tipsy( { gravity: 's' } );
+    }
+    // Make popup menus.
+    make_popup_menus();
+});
