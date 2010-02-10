@@ -25,15 +25,6 @@ ${h.css( "history" )}
         margin: 5px 0;
         background: #eee;
     }
-    .delete-button {
-        background: transparent url(history-buttons.png) no-repeat scroll 0 -104px;
-        height: 20px;
-        width: 20px;
-    }
-    .delete-button:hover {
-        background-position: 0 -130px;
-    }
-
 </style>
 </%def>
 
@@ -231,7 +222,6 @@ ${h.js( 'galaxy.base', 'galaxy.panels', "json2", "jquery", "jquery.event.drag", 
                                     });
 
                                 });
-                                
                                 hide_modal();
                             },
                             "Cancel": function() {
@@ -307,23 +297,32 @@ ${h.js( 'galaxy.base', 'galaxy.panels', "json2", "jquery", "jquery.event.drag", 
             
             function sidebar_box(track) {
                 if (!track.hidden) {
-                    var track_id = view.tracks.length -1; // Track was just added to view, so index is current length -1
-                    var label = $('<label for="track_' + track_id + 'title">' + track.name + '</label>');
-                    var title = $('<div class="historyItemTitle"></div>');
-                    var del_icon = $('<a style="display:block; float:right" href="#" class="icon-button delete" />');
-                    var body = $('<div class="historyItemBody"></div>');
-                    // var checkbox = $('<input type="checkbox" checked="checked"></input>').attr("id", "track_" + track_id + "title");
-                    var li = $('<li class="sortable"></li>').attr("id", "track_" + track_id);
-                    var div = $('<div class="historyItemContainer historyItem"></div>');
-                    del_icon.prependTo(title);
-                    label.appendTo(title);
-                    // checkbox.prependTo(title);
+                    var track_id = track.track_id,
+                        label = $('<label for="track_' + track_id + 'title">' + track.name + '</label>'),
+                        title = $('<div class="historyItemTitle"></div>'),
+                        del_icon = $('<a style="display:block; float:right" href="#" class="icon-button delete" />'),
+                        edit_icon = $('<a style="display:block; float:right" href="#" class="icon-button edit" />'),
+                        body = $('<div class="historyItemBody"></div>'),
+                        checkbox = $('<input type="checkbox" checked="checked"></input>').attr("id", "track_" + track_id + "title"),
+                        li = $('<li class="sortable"></li>').attr("id", "track_" + track_id),
+                        div = $('<div class="historyItemContainer historyItem"></div>'),
+                        editable = $('<div style="display:none"></div>');
+                    
+                    edit_icon.bind("click", function() {
+                        editable.toggle();
+                    });
+                    
+                    del_icon.bind("click", function() {
+                        li.fadeOut('slow', function() { $(this).remove(); });
+                        view.remove_track(track);
+                        view.update_options();
+                    });
+                    
+                    title.append(label).append(del_icon).append(edit_icon);
                     if (track.gen_options) {
-                        body.append(track.gen_options(track_id));
+                        editable.append(track.gen_options(track_id)).appendTo(body);
                     }
-                    title.prependTo(div);
-                    body.appendTo(div);
-                    li.append(div);
+                    div.append(title).append(body).appendTo(li)
                     $("ul#sortable-ul").append(li);
                 }
             };

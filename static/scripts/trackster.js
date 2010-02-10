@@ -89,21 +89,34 @@ var View = function( chrom, title, vis_id, dbkey ) {
     this.center = (this.max_high - this.max_low) / 2;
     this.zoom_factor = 3;
     this.zoom_level = 0;
+    this.track_id_counter = 0;
 };
 $.extend( View.prototype, {
     add_track: function ( track ) {
         track.view = this;
+        track.track_id = this.track_id_counter;
         this.tracks.push( track );
         if (track.init) { track.init(); }
+        track.container_div.attr('id', 'track_' + track.track_id);
+        this.track_id_counter += 1;
     },
     add_label_track: function ( label_track ) {
         label_track.view = this;
         this.label_tracks.push( label_track );
     },
     remove_track: function( track ) {
+        track.container_div.fadeOut('slow', function() { $(this).remove(); });
         delete this.tracks[track];        
     },
     update_options: function() {
+        var sorted = $("ul#sortable-ul").sortable('toArray');
+        var payload = [];
+        
+        var divs = $("#viewport > div").sort(function (a, b) {
+            return sorted.indexOf( $(a).attr('id') ) > sorted.indexOf( $(b).attr('id') );
+        });
+        $("#viewport > div").remove();
+        $("#viewport").html(divs);
         for (var track_id in view.tracks) {
             var track = view.tracks[track_id];
             if (track.update_options) {
@@ -177,13 +190,13 @@ $.extend( View.prototype, {
 var Track = function ( name, parent_element ) {
     this.name = name;
     this.parent_element = parent_element;
-    this.make_container();
+    this.init_global();
 };
 $.extend( Track.prototype, {
-    make_container: function () {
+    init_global: function () {
         this.header_div = $("<div class='track-header'>").text( this.name );
         this.content_div = $("<div class='track-content'>");
-        this.container_div = $("<div class='track'></div>").append( this.header_div ).append( this.content_div );
+        this.container_div = $("<div></div>").addClass('track').append( this.header_div ).append( this.content_div );
         this.parent_element.append( this.container_div );
     }
 });
