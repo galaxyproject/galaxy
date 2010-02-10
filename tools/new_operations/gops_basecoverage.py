@@ -8,7 +8,6 @@ usage: %prog in_file out_file
 from galaxy import eggs
 import pkg_resources
 pkg_resources.require( "bx-python" )
-
 import sys, traceback, fileinput
 from warnings import warn
 from bx.intervals import *
@@ -29,15 +28,14 @@ def main():
         in_fname, out_fname = args
     except:
         doc_optparse.exception()
-
+        
     g1 = NiceReaderWrapper( fileinput.FileInput( in_fname ),
                             chrom_col=chr_col_1,
                             start_col=start_col_1,
                             end_col=end_col_1,
+                            strand_col = strand_col_1,
                             fix_strand=True )
-
-    if strand_col_1 >= 0:
-        g1.strand_col=strand_col_1
+    
     try:
         bases = base_coverage(g1)
     except ParseError, exc:
