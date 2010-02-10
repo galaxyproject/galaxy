@@ -160,7 +160,7 @@ class ToolRunner( BaseController ):
             if nonfile_params.get( 'folder_id', False ):
                 replace_id = nonfile_params.get( 'replace_id', None )
                 if replace_id not in [ None, 'None' ]:
-                    replace_dataset = trans.sa_session.query( l.LibraryDataset ).get( trans.security.decode_id( replace_id ) )
+                    replace_dataset = trans.sa_session.query( trans.app.model.LibraryDataset ).get( trans.security.decode_id( replace_id ) )
                 else:
                     replace_dataset = None
                 library_bunch = upload_common.handle_library_params( trans, nonfile_params, nonfile_params.folder_id, replace_dataset )
