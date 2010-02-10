@@ -14,7 +14,7 @@ usage: %prog [options]
 """
 
 #from __future__ import division
-import os.path, re, string, sys
+import os.path, re, string, string, sys
 from galaxy import eggs
 import pkg_resources; pkg_resources.require( "bx-python" )
 from bx.cookbook import doc_optparse
@@ -62,28 +62,29 @@ def __main__():
     orig_cond_text = cond_text
     # Expand to allow for DNA codes
     dot_letters = [ letter for letter in string.uppercase if letter not in \
-                   [ 'A', 'T', 'U', 'G', 'C', 'K', 'M', 'R', 'Y', 'S', 'W', 'B', 'V', 'H', 'D', 'N', 'X' ] ]
-    codes = {'A': [ 'A', 'M', 'R', 'W', 'V', 'H', 'D' ],
-             'T': [ 'T', 'U', 'K', 'Y', 'W', 'B', 'H', 'D' ],
-             'G': [ 'G', 'K', 'R', 'S', 'B', 'V', 'D' ],
-             'C': [ 'C', 'M', 'Y', 'S', 'B', 'V', 'H' ],
-             'U': [ 'T', 'U', 'K', 'Y', 'W', 'B', 'H', 'D' ],
-             'K': [ 'K', 'G', 'T' ],
-             'M': [ 'M', 'A', 'C' ],
-             'R': [ 'R', 'A', 'G' ],
-             'Y': [ 'Y', 'C', 'T' ],
-             'S': [ 'S', 'C', 'G' ],
-             'W': [ 'W', 'A', 'T' ],
-             'B': [ 'B', 'C', 'G', 'T' ],
-             'V': [ 'V', 'A', 'C', 'G' ],
-             'H': [ 'H', 'A', 'C', 'T' ],
-             'D': [ 'D', 'A', 'G', 'T' ],
+                   [ 'A', 'C', 'G', 'T', 'U', 'B', 'D', 'H', 'K', 'M', 'N', 'R', 'S', 'V', 'W', 'X', 'Y' ] ]
+    dot_letters.append( '.' )
+    codes = {'A': [ 'A', 'D', 'H', 'M', 'R', 'V', 'W' ],
+             'C': [ 'C', 'B', 'H', 'M', 'S', 'V', 'Y' ],
+             'G': [ 'G', 'B', 'D', 'K', 'R', 'S', 'V' ],
+             'T': [ 'T', 'U', 'B', 'D', 'H', 'K', 'W', 'Y' ],
+             'U': [ 'T', 'U', 'B', 'D', 'H', 'K', 'W', 'Y' ],
+             'K': [ 'G', 'T', 'U', 'B', 'D', 'H', 'K', 'R', 'S', 'V', 'W', 'Y' ],
+             'M': [ 'A', 'C', 'B', 'D', 'H', 'M', 'R', 'S', 'V', 'W', 'Y' ],
+             'R': [ 'A', 'G', 'B', 'D', 'H', 'K', 'M', 'R', 'S', 'V', 'W' ],
+             'Y': [ 'C', 'T', 'U', 'B', 'D', 'H', 'K', 'M', 'S', 'V', 'W', 'Y' ],
+             'S': [ 'C', 'G', 'B', 'D', 'H', 'K', 'M', 'R', 'S', 'V', 'Y' ],
+             'W': [ 'A', 'T', 'U', 'B', 'D', 'H', 'K', 'M', 'R', 'V', 'W', 'Y' ],
+             'B': [ 'C', 'G', 'T', 'U', 'B', 'D', 'H', 'K', 'M', 'R', 'S', 'V', 'W', 'Y' ],
+             'V': [ 'A', 'C', 'G', 'B', 'D', 'H', 'K', 'M', 'R', 'S', 'V', 'W' ],
+             'H': [ 'A', 'C', 'T', 'U', 'B', 'D', 'H', 'K', 'M', 'R', 'S', 'V', 'W', 'Y' ],
+             'D': [ 'A', 'G', 'T', 'U', 'B', 'D', 'H', 'K', 'M', 'R', 'S', 'V', 'W', 'Y' ],
              '.': dot_letters,
              '-': [ '-' ]}
     # Add handling for N and X
     if n_handling == "all":
-        codes[ 'N' ] = [ 'G', 'A', 'T', 'C', 'U', 'K', 'M', 'R', 'Y', 'S', 'W', 'B', 'V', 'H', 'D', 'N', 'X' ]
-        codes[ 'X' ] = [ 'G', 'A', 'T', 'C', 'U', 'K', 'M', 'R', 'Y', 'S', 'W', 'B', 'V', 'H', 'D', 'N', 'X' ]
+        codes[ 'N' ] = [ 'A', 'C', 'G', 'T', 'U', 'B', 'D', 'H', 'K', 'M', 'N', 'R', 'S', 'V', 'W', 'X', 'Y' ]
+        codes[ 'X' ] = [ 'A', 'C', 'G', 'T', 'U', 'B', 'D', 'H', 'K', 'M', 'N', 'R', 'S', 'V', 'W', 'X', 'Y' ]
         for code in codes.keys():
             if code != '.' and code != '-':
                 codes[code].append( 'N' )
@@ -91,31 +92,51 @@ def __main__():
     else:
         codes[ 'N' ] = dot_letters
         codes[ 'X' ] = dot_letters
+        codes[ '.' ].extend( [ 'N', 'X' ] )
     # Expand conditions to allow for DNA codes
     try:
         match_replace = {}
-        pat = re.compile( "c\d+\s*[!=]=\s*[\w']+" )
+        pat = re.compile( 'c\d+\s*[!=]=\s*[\w\d"\'+-.]+' )
         matches = pat.findall( cond_text )
         for match in matches:
-            if match.find( '==' ) > 0:
+            if match.find( 'chr' ) >= 0 or match.find( 'scaffold' ) >= 0 or match.find( '+' ) >= 0:
+                if match.find( '==' ) >= 0:
+                    match_parts = match.split( '==' )
+                elif match.find( '!=' ) >= 0:
+                    match_parts = match.split( '!=' )
+                else:
+                    raise Exception, "The operators '==' and '!=' were not found."
+                left = match_parts[0].strip()
+                right = match_parts[1].strip()
+                new_match = "(%s)" % ( match )
+            elif match.find( '==' ) > 0:
                 match_parts = match.split( '==' )
-                new_match = '(%s in codes[%s] and %s in codes[%s])' % ( match_parts[0], match_parts[1], match_parts[1], match_parts[0] ) 
+                left = match_parts[0].strip()
+                right = match_parts[1].strip()
+                new_match = '(%s in codes[%s] and %s in codes[%s])' % ( left, right, right, left )
             elif match.find( '!=' ) > 0 :
                 match_parts = match.split( '!=' )
-                new_match = '(%s not in codes[%s] or %s not in codes[%s])' % ( match_parts[0], match_parts[1], match_parts[1], match_parts[0] )
+                left = match_parts[0].strip()
+                right = match_parts[1].strip()
+                new_match = '(%s not in codes[%s] or %s not in codes[%s])' % ( left, right, right, left )
             else:
-                raise Exception
-            if match_parts[1].find( "'" ) >= 0:
-                assert match_parts[1].replace( "'", '' ) in [ 'G', 'A', 'T', 'C', 'U', 'K', 'M', 'R', 'Y', 'S', 'W', 'B', 'V', 'H', 'D', 'N', 'X', '-', '.' ]
+                raise Exception, "The operators '==' and '!=' were not found." 
+            assert left.startswith( 'c' ), 'The column names should start with c (lowercase)'
+            if right.find( "'" ) >= 0 or right.find( '"' ) >= 0:
+                test = right.replace( "'", '' ).replace( '"', '' )
+                assert test in string.uppercase or test.find( '+' ) >= 0 or test.find( '.' ) >= 0 or test.find( '-' ) >= 0\
+                        or test.startswith( 'chr' ) or test.startswith( 'scaffold' ), \
+                        'The value to search for should be a valid base, code, plus sign, chromosome (like "chr1") or scaffold (like "scaffold5"). ' \
+                        'Use the general filter tool to filter on anything else first'
             else:
-                assert match_parts[1].startswith( 'c' )
+                assert right.startswith( 'c' ), 'The column names should start with c (lowercase)'
             match_replace[match] = new_match
+        if len( match_replace.keys() ) == 0:
+            raise Exception, 'There do not appear to be any valid conditions'
         for match in match_replace.keys():
-            cond_text = cond_text.replace(match, match_replace[match])
-        if len( match_replace ) == 0:
-            raise Exception
-    except:
-        stop_err( "One of your conditions is invalid. Make sure to use only '!=' or '==', valid column numbers, and valid base values." )
+            cond_text = cond_text.replace( match, match_replace[match] )
+    except Exception, e:
+        stop_err( "At least one of your conditions is invalid. Make sure to use only '!=' or '==', valid column numbers, and valid base values.\n" + str(e) )
 
     # Attempt to determine if the condition includes executable stuff and, if so, exit
     secured = dir()
@@ -177,7 +198,7 @@ for i, line in enumerate( file( input ) ):
         out.close()
         if str( e ).startswith( 'invalid syntax' ):
             valid_filter = False
-            stop_err( 'Filter condition "%s" likely invalid. See tool tips, syntax and examples.' % orig_cond_text )
+            stop_err( 'Filter condition "%s" likely invalid. See tool tips, syntax and examples.' % orig_cond_text + ' '+str(e))
         else:
             stop_err( str( e ) )
 
