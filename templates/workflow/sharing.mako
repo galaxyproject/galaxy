@@ -82,7 +82,7 @@
 						<input class="action-button" type="submit" name="unpublish" value="Unpublish Workflow">
 						<div class="toolParamHelp">Removes workflow from Galaxy's <a href='${h.url_for( action='list_published' )}'>Published Workflows</a> section so that it is not publicly listed or searchable.</div>
 						<br>
-						<input class="action-button" type="submit" name="disable_link_access_and_unpubish" value="Disable Access to Workflow via Link and Unpublish">
+						<input class="action-button" type="submit" name="disable_link_access_and_unpublish" value="Disable Access to Workflow via Link and Unpublish">
 						<div class="toolParamHelp">Disables workflow's link so that it is not accessible and removes workflow from Galaxy's <a href='${h.url_for( action='list_published' )}' target='_top'>Published Workflows</a> section so that it is not publicly listed or searchable.</div>
 					%endif
 					

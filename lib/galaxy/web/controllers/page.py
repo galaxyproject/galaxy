@@ -394,7 +394,7 @@ class PageController( BaseController, Sharable ):
             page.importable = False
         elif 'unpublish' in kwargs:
             page.published = False
-        elif 'disable_link_access_and_unpubish' in kwargs:
+        elif 'disable_link_access_and_unpublish' in kwargs:
             page.importable = page.published = False
         elif 'unshare_user' in kwargs:
             user = session.query( model.User ).get( trans.security.decode_id( kwargs['unshare_user' ] ) )

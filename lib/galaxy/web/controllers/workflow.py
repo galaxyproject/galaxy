@@ -262,7 +262,7 @@ class WorkflowController( BaseController, Sharable ):
             stored.importable = False
         elif 'unpublish' in kwargs:
             stored.published = False
-        elif 'disable_link_access_and_unpubish' in kwargs:
+        elif 'disable_link_access_and_unpublish' in kwargs:
             stored.importable = stored.published = False
         elif 'unshare_user' in kwargs:
             user = session.query( model.User ).get( trans.security.decode_id( kwargs['unshare_user' ] ) )
@@ -477,7 +477,7 @@ class WorkflowController( BaseController, Sharable ):
     def editor( self, trans, id=None ):
         """
         Render the main workflow editor interface. The canvas is embedded as
-        an iframe (neccesary for scrolling to work properly), which is
+        an iframe (necessary for scrolling to work properly), which is
         rendered by `editor_canvas`.
         """
         if not id:

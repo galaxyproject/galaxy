@@ -153,7 +153,7 @@
                                 <input class="action-button" type="submit" name="unpublish" value="Unpublish ${item_class_name}">
                                 <div class="toolParamHelp">Removes ${item_class_name_lc} from Galaxy's <a href='${h.url_for( action='list_published' )}' target="_top">Published ${item_class_plural_name}</a> section so that it is not publicly listed or searchable.</div>
                                 <br>
-                                <input class="action-button" type="submit" name="disable_link_access_and_unpubish" value="Disable Access to ${item_class_name} via Link and Unpublish">
+                                <input class="action-button" type="submit" name="disable_link_access_and_unpublish" value="Disable Access to ${item_class_name} via Link and Unpublish">
                                 <div class="toolParamHelp">Disables ${item_class_name_lc}'s link so that it is not accessible and removes ${item_class_name_lc} from Galaxy's <a href='${h.url_for( action='list_published' )}' target='_top'>Published ${item_class_plural_name}</a> section so that it is not publicly listed or searchable.</div>
                             %endif
                 
