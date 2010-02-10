@@ -1,5 +1,5 @@
-<tool id="dna_filter" name="DNA Filter" version="1.0.0">
-  <description>filter column data on DNA ambiguity codes using simple expressions</description>
+<tool id="dna_filter" name="Filter on ambiguities" version="1.0.0">
+  <description>in polymorphism datasets</description>
   <command interpreter="python">
     dna_filtering.py
       --input=$input 
@@ -14,9 +14,9 @@
     <param name="cond" size="40" type="text" value="c4 == 'G'" label="With following condition" help="Double equal signs, ==, must be used as shown above. To filter for an arbitrary string, use the Select tool.">
       <validator type="empty_field" message="Enter a valid filtering condition, see syntax and examples below."/>
     </param>
-    <param name="n_handling" type="select" label="Do you want N (and X) to match A or C or G or T OR nothing?">
-      <option value="all">N = A or C or G or T</option>
-      <option value="none">N = nothing</option>
+    <param name="n_handling" type="select" label="What is the meaning of N" help="Everything matches everything, Unknown matches nothing">
+      <option value="all">Everything (A, T, C, G)</option>
+      <option value="none">Unknown</option>
     </param>
   </inputs>
   <outputs>
@@ -50,30 +50,51 @@
   </tests>
   <help>
 
-.. class:: warningmark
-
-Double equal signs, ==, must be used as *"equal to"* (e.g., **c1 == 'G'**)
-
 .. class:: infomark
 
 **TIP:** If your data is not TAB delimited, use *Text Manipulation-&gt;Convert*
 
-.. class:: infomark
+.. class:: warningmark
 
-**TIP:** This tool is intended primarily for comparing column values (such as "c5==c12"), although it is also possible to filter on specific values (like "c6!='G'"). Be aware that when searching for specific values, any possible match is considered. So if you search on "c6!='G'", rows will be excluded when c6 is G, K, R, S, B, V, or D (plus N or X if you set that to equal "all"), because it is possible those values could be G. 
+**TIP:** This tool is intended primarily for comparing column values (such as "c5==c12"), although it is also possible to filter on specific values (like "c6!='G'"). Be aware that when searching for specific values, any possible match is considered. So if you search on "c6!='G'", rows will be excluded when c6 is G, K, R, S, B, V, or D (plus N or X if you set that to equal "Everything"), because it is possible those values could be G. 
+
+-----
+
+**What it does**
+
+This tool is written for a very specific case related to an analysis of polymorphism data. Suppose you have a table of SNP data that looks like this::
+
+  chromosome start end patient1 parient2 patient3 patient4
+  --------------------------------------------------------
+  chr1       100   101 A        M        C        R 
+  chr1       200   201 T        K        C        C 
+  
+and your want to select all rows where patient1 has the same base as patient2. Unfortunately you cannot do this with the *Filter and Sort -> Filter* tool because it does not understant DNA ambiguity codes (see below). For example, at postion 100 patient1 is the same as patient2 because M is a mix of As and Cs. This tool is designed to make filtering on ambiguities possible.
 
 -----
 
 **Syntax**
 
-The filter tool allows you to restrict the dataset using simple conditional statements.
+The filter tool allows you to restrict the dataset using simple conditional statements:
 
-- Columns are referenced with **c** and a **number**. For example, **c1** refers to the first column of a tab-delimited file
-- Make sure that multi-character operators contain no white space ( e.g., **!=** is valid while **! =** is not valid )
+- Columns are referenced with **c** and a **number**. For example, **c1** refers to the first column of a tab-delimited file (e.g., **c4 == c5**)
 - When using 'equal-to' operator **double equal sign '==' must be used** ( e.g., **c1=='chr1'** )
 - Non-numerical values must be included in single or double quotes ( e.g., **c6=='C'** )
 - Filtering condition can include logical operators, but **make sure operators are all lower case** ( e.g., **(c1!='chrX' and c1!='chrY') or c6=='+'** )
-- You can use spaces between the arguments and equality sign or not (e.g. both **c9 == c10** and **c9==c10** are valid)  
+
+------
+
+**Allowed types of filtering**
+
+The following types of filtering are allowed:
+
+- Testing colums for eqality (e.g., c2 == c4 or c2 != c4)
+- Testing that a column contains a particular base (e.g., c4 == 'C'). Only bases listed in *DNA Codes* below are allowed.
+- Testing that a column represents a plus or a minus strand (e.g., c3 == '+' or c3 != '-')
+- Testing that a column is a chromsomes (c1 == 'chrX') or a scaffold (c1 == 'scafford87976')
+
+All other types of filtering should be done with *Filter and Sort -> Filter* tool.
+
 
 -----
 
@@ -81,25 +102,25 @@ The filter tool allows you to restrict the dataset using simple conditional stat
 
 The following are the DNA codes used for filtering::
 
-  Code        Meaning
-  ----   ---------------------------
-   A            A
-   T            T
-   U            T
-   G            G
-   C            C
-   K          G or T
-   M          A or C
-   R          A or G
-   Y          C or T
-   S          C or G
-   W          A or T
-   B         C, G or T
-   V         A, C or G
-   H         A, C or T
-   D         A, G or T
-   X        A, C, G or T
-   N        A, C, G or T
+  Code   Meaning
+  ----   --------------------------
+   A     A
+   T     T
+   U     T
+   G     G
+   C     C
+   K     G or T
+   M     A or C
+   R     A or G
+   Y     C or T
+   S     C or G
+   W     A or T
+   B     C, G or T
+   V     A, C or G
+   H     A, C or T
+   D     A, G or T
+   X     A, C, G or T
+   N     A, C, G or T
    .     not (A, C, G or T)
    -     gap of indeterminate length
 
