@@ -56,7 +56,7 @@
 
 .. class:: warningmark
 
-**TIP:** This tool is intended primarily for comparing column values (such as "c5==c12"), although it is also possible to filter on specific values (like "c6!='G'"). Be aware that when searching for specific values, any possible match is considered. So if you search on "c6!='G'", rows will be excluded when c6 is G, K, R, S, B, V, or D (plus N or X if you set that to equal "Everything"), because it is possible those values could be G. 
+**TIP:** This tool is intended primarily for comparing column values (such as "c5==c12"), although it is also possible to filter on specific values (like "c6!='G'"). Be aware that when searching for specific values, any possible match is considered. So if you search on "c6!='G'", rows will be excluded when c6 is G, K, R, S, B, V, or D (plus N or X if you set that to equal "Everything"), because it is possible those values could indicate G. 
 
 -----
 
@@ -69,7 +69,7 @@ This tool is written for a very specific case related to an analysis of polymorp
   chr1       100   101 A        M        C        R 
   chr1       200   201 T        K        C        C 
   
-and your want to select all rows where patient1 has the same base as patient2. Unfortunately you cannot do this with the *Filter and Sort -> Filter* tool because it does not understant DNA ambiguity codes (see below). For example, at postion 100 patient1 is the same as patient2 because M is a mix of As and Cs. This tool is designed to make filtering on ambiguities possible.
+and your want to select all rows where patient1 has the same base as patient2. Unfortunately you cannot do this with the *Filter and Sort -> Filter* tool because it does not understand DNA ambiguity codes (see below). For example, at position 100 patient1 is the same as patient2 because M is a mix of As and Cs. This tool is designed to make filtering on ambiguities possible.
 
 -----
 
@@ -88,13 +88,12 @@ The filter tool allows you to restrict the dataset using simple conditional stat
 
 The following types of filtering are allowed:
 
-- Testing colums for eqality (e.g., c2 == c4 or c2 != c4)
+- Testing columns for equality (e.g., c2 == c4 or c2 != c4)
 - Testing that a column contains a particular base (e.g., c4 == 'C'). Only bases listed in *DNA Codes* below are allowed.
 - Testing that a column represents a plus or a minus strand (e.g., c3 == '+' or c3 != '-')
-- Testing that a column is a chromsomes (c1 == 'chrX') or a scaffold (c1 == 'scafford87976')
+- Testing that a column is a chromosomes (c1 == 'chrX') or a scaffold (c1 == 'scaffold87976')
 
 All other types of filtering should be done with *Filter and Sort -> Filter* tool.
-
 
 -----
 
@@ -128,10 +127,10 @@ The following are the DNA codes used for filtering::
 
 **Example**
 
-- **c8=='A'** selects lines in which the eighth column is A, M, R, W, V, H, D and N or X if appropriate
+- **c8=='A'** selects lines in which the eighth column is A, M, R, W, V, H, or D, or N or X if appropriate
 - **c12==c15** selects lines where the value in the twelfth column could be the same as the fifteenth and the fifteenth column could be the same as the twelfth column (based on appropriate codes)
-- **c9!=c19** selects lines where column nine could not be the same as column nineteen and column nineteen could not be the same as column nine (using appropriate codes)
-- **c4 == 'A' and c4 == c5** selects lines where column 4 and 5 are both A, M, R, W, V, H, D and N or X if appropriate
+- **c9!=c19** selects lines where column nine could not be the same as column nineteen or column nineteen could not be the same as column nine (using appropriate codes)
+- **c4 == 'A' and c4 == c5** selects lines where column 4 and 5 are both A, M, R, W, V, H, D or N, or X if appropriate
 
 </help>
 </tool>
