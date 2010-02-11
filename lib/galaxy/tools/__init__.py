@@ -789,7 +789,7 @@ class Tool:
                 return "tool_form.mako", dict( errors=errors, tool_state=state, incoming=incoming, error_message=error_message )
             # If we've completed the last page we can execute the tool
             elif state.page == self.last_page:
-                out_data = self.execute( trans, incoming=params )
+                _, out_data = self.execute( trans, incoming=params )
                 try:
                     assert isinstance( out_data, odict )
                     return 'tool_executed.mako', dict( out_data=out_data )

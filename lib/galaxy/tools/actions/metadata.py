@@ -60,4 +60,4 @@ class SetMetadataToolAction( ToolAction ):
         # Queue the job for execution
         trans.app.job_queue.put( job.id, tool )
         trans.log_event( "Added set external metadata job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id )
-        return odict()
+        return job, odict()

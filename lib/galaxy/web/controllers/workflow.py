@@ -865,8 +865,12 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
                     errors[step.id] = state.inputs["__errors__"] = step_errors   
             if 'run_workflow' in kwargs and not errors:
                 # Run each step, connecting outputs to inputs
+                workflow_invocation = model.WorkflowInvocation()
+                workflow_invocation.workflow = workflow
                 outputs = odict()
                 for i, step in enumerate( workflow.steps ):
+                    # Execute module
+                    job = None
                     if step.type == 'tool' or step.type is None:
                         tool = trans.app.toolbox.tools_by_id[ step.tool_id ]
                         input_values = step.state.inputs
@@ -878,10 +882,19 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
                                     return outputs[ conn.output_step.id ][ conn.output_name ]
                         visit_input_values( tool.inputs, step.state.inputs, callback )
                         # Execute it
-                        outputs[ step.id ] = tool.execute( trans, step.state.inputs )
+                        job, out_data = tool.execute( trans, step.state.inputs )
+                        outputs[ step.id ] = out_data
                     else:
-                        outputs[ step.id ] = step.module.execute( trans, step.state )
-                        
+                        job, out_data = step.module.execute( trans, step.state )
+                        outputs[ step.id ] = out_data
+                    # Record invocation
+                    workflow_invocation_step = model.WorkflowInvocationStep()
+                    workflow_invocation_step.workflow_invocation = workflow_invocation
+                    workflow_invocation_step.workflow_step = step
+                    workflow_invocation_step.job = job
+                # All jobs ran sucessfully, so we can save now
+                trans.sa_session.add( workflow_invocation )
+                trans.sa_session.flush()
                 return trans.fill_template( "workflow/run_complete.mako",
                                             workflow=stored,
                                             outputs=outputs )

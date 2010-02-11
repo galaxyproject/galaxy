@@ -17,7 +17,7 @@ class ToolAction( object ):
     The actions to be taken when a tool is run (after parameters have
     been converted and validated).
     """
-    def execute( self, tool, trans, incoming={} ):
+    def execute( self, tool, trans, incoming={}, set_output_hid=True ):
         raise TypeError("Abstract method")
     
 class DefaultToolAction( object ):
@@ -101,7 +101,7 @@ class DefaultToolAction( object ):
         tool.visit_inputs( param_values, visitor )
         return input_datasets
 
-    def execute(self, tool, trans, incoming={}, set_output_hid=True ):
+    def execute(self, tool, trans, incoming={}, return_job=False, set_output_hid=True ):
         def make_dict_copy( from_dict ):
             """
             Makes a copy of input dictionary from_dict such that all values that are dictionaries
@@ -332,4 +332,4 @@ class DefaultToolAction( object ):
             # Queue the job for execution
             trans.app.job_queue.put( job.id, tool )
             trans.log_event( "Added job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id )
-            return out_data
+            return job, out_data

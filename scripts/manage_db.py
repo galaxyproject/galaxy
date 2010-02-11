@@ -12,6 +12,7 @@ pkg_resources.require( "sqlalchemy-migrate" )
 from migrate.versioning.shell import main
 from ConfigParser import SafeConfigParser
 
+
 log = logging.getLogger( __name__ )
 
 cp = SafeConfigParser()

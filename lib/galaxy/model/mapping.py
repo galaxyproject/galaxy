@@ -558,6 +558,22 @@ WorkflowStepConnection.table = Table( "workflow_step_connection", metadata,
     Column( "input_name", TEXT)
     )
 
+WorkflowInvocation.table = Table( "workflow_invocation", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "workflow_id", Integer, ForeignKey( "workflow.id" ), index=True, nullable=False )
+    )
+
+WorkflowInvocationStep.table = Table( "workflow_invocation_step", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "workflow_invocation_id", Integer, ForeignKey( "workflow_invocation.id" ), index=True, nullable=False ),
+    Column( "workflow_step_id",  Integer, ForeignKey( "workflow_step.id" ), index=True, nullable=False ),
+    Column( "job_id",  Integer, ForeignKey( "job.id" ), index=True, nullable=False )
+    )
+
 StoredWorkflowUserShareAssociation.table = Table( "stored_workflow_user_share_connection", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "stored_workflow_id", Integer, ForeignKey( "stored_workflow.id" ), index=True ),
@@ -1215,27 +1231,6 @@ assign_mapper( context, GalaxySessionToHistoryAssociation, GalaxySessionToHistor
 
 HistoryDatasetAssociation.mapper.add_property( "creating_job_associations", relation( JobToOutputDatasetAssociation ) )
 
-assign_mapper( context, Workflow, Workflow.table,
-    properties=dict( steps=relation( WorkflowStep, backref='workflow',
-                                     order_by=asc(WorkflowStep.table.c.order_index),
-                                     cascade="all, delete-orphan",
-                                     lazy=False ),
-                     tags=relation(WorkflowTagAssociation, order_by=WorkflowTagAssociation.table.c.id, backref="workflows") 
-                                      ) )
-
-    
-assign_mapper( context, WorkflowStep, WorkflowStep.table,
-                properties=dict(
-                    tags=relation(WorkflowStepTagAssociation, order_by=WorkflowStepTagAssociation.table.c.id, backref="workflow_steps"), 
-                    annotations=relation( WorkflowStepAnnotationAssociation, order_by=WorkflowStepAnnotationAssociation.table.c.id, backref="workflow_steps" ) ) 
-                )
-
-assign_mapper( context, WorkflowStepConnection, WorkflowStepConnection.table,
-    properties=dict( input_step=relation( WorkflowStep, backref="input_connections", cascade="all",
-                                          primaryjoin=( WorkflowStepConnection.table.c.input_step_id == WorkflowStep.table.c.id ) ),
-                     output_step=relation( WorkflowStep, backref="output_connections", cascade="all",
-                                           primaryjoin=( WorkflowStepConnection.table.c.output_step_id == WorkflowStep.table.c.id ) ) ) )
-
 # vvvvvvvvvvvvvvvv Start cloud table mappings vvvvvvvvvvvvvvvv
 assign_mapper( context, CloudImage, CloudImage.table )
 
@@ -1272,6 +1267,27 @@ assign_mapper( context, CloudUserCredentials, CloudUserCredentials.table,
                     ) )
 # ^^^^^^^^^^^^^^^ End cloud table mappings ^^^^^^^^^^^^^^^^^^
 
+assign_mapper( context, Workflow, Workflow.table,
+    properties=dict( steps=relation( WorkflowStep, backref='workflow',
+                                     order_by=asc(WorkflowStep.table.c.order_index),
+                                     cascade="all, delete-orphan",
+                                     lazy=False ),
+                     tags=relation(WorkflowTagAssociation, order_by=WorkflowTagAssociation.table.c.id, backref="workflows") 
+                                      ) )
+
+assign_mapper( context, WorkflowStep, WorkflowStep.table,
+                properties=dict(
+                    tags=relation(WorkflowStepTagAssociation, order_by=WorkflowStepTagAssociation.table.c.id, backref="workflow_steps"), 
+                    annotations=relation( WorkflowStepAnnotationAssociation, order_by=WorkflowStepAnnotationAssociation.table.c.id, backref="workflow_steps" ) ) 
+                )
+
+assign_mapper( context, WorkflowStepConnection, WorkflowStepConnection.table,
+    properties=dict( input_step=relation( WorkflowStep, backref="input_connections", cascade="all",
+                                          primaryjoin=( WorkflowStepConnection.table.c.input_step_id == WorkflowStep.table.c.id ) ),
+                     output_step=relation( WorkflowStep, backref="output_connections", cascade="all",
+                                           primaryjoin=( WorkflowStepConnection.table.c.output_step_id == WorkflowStep.table.c.id ) ) ) )
+
+
 assign_mapper( context, StoredWorkflow, StoredWorkflow.table,
     properties=dict( user=relation( User ),
                      workflows=relation( Workflow, backref='stored_workflow',
@@ -1296,6 +1312,16 @@ assign_mapper( context, StoredWorkflowUserShareAssociation, StoredWorkflowUserSh
 
 assign_mapper( context, StoredWorkflowMenuEntry, StoredWorkflowMenuEntry.table,
     properties=dict( stored_workflow=relation( StoredWorkflow ) ) )
+
+assign_mapper( context, WorkflowInvocation, WorkflowInvocation.table,
+    properties=dict(
+        steps=relation( WorkflowInvocationStep, backref='workflow_invocation', lazy=False ),
+        workflow=relation( Workflow ) ) )
+
+assign_mapper( context, WorkflowInvocationStep, WorkflowInvocationStep.table,
+    properties=dict(
+        workflow_step = relation( WorkflowStep ),
+        job = relation( Job, backref=backref( 'workflow_invocation_step', uselist=False ) ) ) )
 
 assign_mapper( context, MetadataFile, MetadataFile.table,
     properties=dict( history_dataset=relation( HistoryDatasetAssociation ), library_dataset=relation( LibraryDatasetDatasetAssociation ) ) )

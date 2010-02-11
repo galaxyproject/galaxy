@@ -153,7 +153,7 @@ class InputDataModule( WorkflowModule ):
         return errors
     
     def execute( self, trans, state ):
-        return dict( output=state.inputs['input'])
+        return None, dict( output=state.inputs['input'])
     
 class ToolModule( WorkflowModule ):
     

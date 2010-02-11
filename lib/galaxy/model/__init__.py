@@ -1217,6 +1217,12 @@ class StoredWorkflowMenuEntry( object ):
         self.user = None
         self.order_index = None
 
+class WorkflowInvocation( object ):
+    pass
+
+class WorkflowInvocationStep( object ):
+    pass
+
 class MetadataFile( object ):
     def __init__( self, dataset = None, name = None ):
         if isinstance( dataset, HistoryDatasetAssociation ):

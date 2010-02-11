@@ -23,4 +23,4 @@ class UploadToolAction( ToolAction ):
         
         json_file_path = upload_common.create_paramfile( trans, uploaded_datasets )
         data_list = [ ud.data for ud in uploaded_datasets ]
-        return upload_common.create_job( trans, incoming, tool, json_file_path, data_list )
+        return upload_common.create_job( trans, incoming, tool, json_file_path, data_list, return_job=True )

@@ -295,6 +295,7 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesHistory 
         trans.set_history( new_history )
         # No message
         return None, None
+    
     @web.expose
     @web.require_login( "work with shared histories" )
     def list_shared( self, trans, **kwargs ):
@@ -329,6 +330,70 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesHistory 
                 status = 'done'
         # Render the list view
         return self.shared_list_grid( trans, status=status, message=message, **kwargs )
+        
+    @web.expose
+    def display_structured( self, trans, id=None ):
+        """
+        Display a history as a nested structure showing the jobs and workflow
+        invocations that created each dataset (if any).
+        """
+        # Get history
+        if id is None:
+            history = trans.history
+        else:
+            id = trans.security.decode_id( id )
+            history = trans.sa_session.query( model.History ).get( id )
+            assert history
+            assert history.user and ( history.user == trans.user ) or ( history == trans.history )
+        # Resolve jobs and workflow invocations for the datasets in the history
+        # items is filled with items (hdas, jobs, or workflows) that go at the
+        # top level
+        items = []
+        # First go through and group hdas by job, if there is no job they get
+        # added directly to items
+        jobs = dict()
+        for hda in history.active_datasets:
+            # Follow "copied from ..." association until we get to the original
+            # instance of the dataset
+            original_hda = hda
+            while original_hda.copied_from_history_dataset_association:
+                original_hda = original_hda.copied_from_history_dataset_association
+            # Check if the job has a creating job, most should, datasets from
+            # before jobs were tracked, or from the upload tool before it
+            # created a job, may not
+            if not original_hda.creating_job_associations:
+                items.append( ( hda, None ) )
+            # Attach hda to correct job
+            # -- there should only be one creating_job_association, so this
+            #    loop body should only be hit once
+            for assoc in original_hda.creating_job_associations:
+                job = assoc.job
+                if job in jobs:
+                    jobs[ job ].append( ( hda, None ) )
+                else:
+                    jobs[ job ] = [ ( hda, None ) ]
+        # Second, go through the jobs and connect to workflows
+        wf_invocations = dict()
+        for job, hdas in jobs.iteritems():
+            # Job is attached to a workflow step, follow it to the
+            # workflow_invocation and group
+            if job.workflow_invocation_step:
+                wf_invocation = job.workflow_invocation_step.workflow_invocation
+                if wf_invocation in wf_invocations:
+                    wf_invocations[ wf_invocation ].append( ( job, hdas ) )
+                else:
+                    wf_invocations[ wf_invocation ] = [ ( job, hdas ) ]
+            # Not attached to a workflow, add to items
+            else:
+                items.append( ( job, hdas ) )
+        # Finally, add workflow invocations to items, which should now
+        # contain all hdas with some level of grouping
+        items.extend( wf_invocations.items() )
+        # Sort items by age
+        items.sort( key=( lambda x: x[0].create_time ), reverse=True )
+        #
+        return trans.fill_template( "history/display_structured.mako", items=items )
+        
     @web.expose
     def delete_current( self, trans ):
         """Delete just the active history -- this does not require a logged in user."""
@@ -343,6 +408,7 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesHistory 
         # Regardless of whether it was previously deleted, we make a new history active 
         trans.new_history()
         return trans.show_ok_message( "History deleted, a new history is active", refresh_frames=['history'] )
+        
     @web.expose
     def rename_async( self, trans, id=None, new_name=None ):
         history = self.get_history( trans, id )
@@ -493,6 +559,7 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesHistory 
             Warning! If you import this history, you will lose your current
             history. Click <a href="%s">here</a> to confirm.
             """ % web.url_for( id=id, confirm=True ) )
+        
     @web.expose
     def view( self, trans, id=None ):
         """View a history. If a history is importable, then it is viewable by any user."""

@@ -35,6 +35,9 @@
             "Show Deleted Datasets": function() {
                 galaxy_history.location = "${h.url_for( controller='root', action='history', show_deleted=True)}";
             },
+            "Show structure": function() {
+                galaxy_main.location = "${h.url_for( controller='history', action='display_structured' )}";
+            },
             "Delete": function()
             {
                 if ( confirm( "Really delete the current history?" ) )
