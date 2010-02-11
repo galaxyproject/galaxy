@@ -755,14 +755,17 @@ class Library( object ):
         self.root_folder = root_folder
     def get_info_association( self, restrict=False, inherited=False ):
         if self.info_association:
-            return self.info_association[0], inherited
+            if not inherited or self.info_association[0].inheritable:
+                return self.info_association[0], inherited
+            else:
+                return None, inherited
         return None, inherited
     def get_template_widgets( self, trans, get_contents=True ):
         # See if we have any associated templates - the returned value for
         # inherited is not applicable at the library level.  The get_contents
         # param is passed by callers that are inheriting a template - these
         # are usually new library datsets for which we want to include template
-        # fields on the upload form.
+        # fields on the upload form, but not the contents of the inherited template.
         info_association, inherited = self.get_info_association()
         if info_association:
             template = info_association.template
@@ -807,11 +810,14 @@ class LibraryFolder( object ):
     def get_info_association( self, restrict=False, inherited=False ):
         # If restrict is True, we will return this folder's info_association, not inheriting.
         # If restrict is False, we'll return the next available info_association in the
-        # inheritable hierarchy.  True is also returned if the info_association was inherited,
-        # and False if not.  This enables us to eliminate displaying the any contents of the inherited
-        # template.
+        # inheritable hierarchy if it is "inheritable".  True is also returned if the
+        # info_association was inherited and False if not.  This enables us to eliminate
+        # displaying any contents of the inherited template.
         if self.info_association:
-            return self.info_association[0], inherited
+            if not inherited or self.info_association[0].inheritable:
+                return self.info_association[0], inherited
+            else:
+                return None, inherited
         if restrict:
             return None, inherited
         if self.parent:
@@ -1004,19 +1010,22 @@ class LibraryDatasetDatasetAssociation( DatasetInstance ):
         return []
 
 class LibraryInfoAssociation( object ):
-    def __init__( self, library, form_definition, info ):
+    def __init__( self, library, form_definition, info, inheritable=False ):
         self.library = library
         self.template = form_definition
         self.info = info
+        self.inheritable = inheritable
 
 class LibraryFolderInfoAssociation( object ):
-    def __init__( self, folder, form_definition, info ):
+    def __init__( self, folder, form_definition, info, inheritable=False ):
         self.folder = folder
         self.template = form_definition
         self.info = info
+        self.inheritable = inheritable
 
 class LibraryDatasetDatasetInfoAssociation( object ):
     def __init__( self, library_dataset_dataset_association, form_definition, info ):
+        # TODO: need to figure out if this should be inheritable to the associated LibraryDataset
         self.library_dataset_dataset_association = library_dataset_dataset_association
         self.template = form_definition
         self.info = info
@@ -1252,8 +1261,18 @@ class FormDefinition( object ):
                 else:
                     value = util.restore_text( params.get( field_name, '' ) )
             elif contents:
-                # this field has a saved value
-                value = str( contents[ index ] )
+                try:
+                    # This field has a saved value.
+                    value = str( contents[ index ] )
+                except:
+                    # If there was an error getting the saved value, we'll still
+                    # display the widget, but it will be empty.
+                    if field[ 'type' ] == 'CheckboxField':
+                        # Since we do not have contents, set checkbox value to False
+                        value = False
+                    else:
+                        # Set other field types to empty string
+                        value = '' 
             else:
                 # if none of the above, then leave the field empty
                 if field[ 'type' ] == 'CheckboxField':

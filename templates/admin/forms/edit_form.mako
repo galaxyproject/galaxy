@@ -96,7 +96,6 @@ $(document).ready(function(){
         </div>
     </div>
     </div>
-    
 </%def>
 
 <%def name="render_layout( index, widget )">
@@ -111,10 +110,18 @@ $(document).ready(function(){
 
 <div class="toolForm">
     <div class="toolFormTitle">Edit form definition "${form.name}"</div>
-    <form id="edit_form" name="edit_form" action="${h.url_for( controller='forms', action='manage', operation="Edit", id=trans.security.encode_id(form.current.id)  )}" method="post" >
+    <form id="edit_form" name="edit_form" action="${h.url_for( controller='forms', action='edit', id=trans.security.encode_id(form.current.id)  )}" method="post" >
+        %if response_redirect:
+            <input type="hidden" name="response_redirect" value="${response_redirect}" size="40" />
+        %endif
         %for label, input in form_details:
             <div class="form-row">
-                <label>${label}</label>
+                ## TODO: RC, this will keep the form type select list label
+                ## from being displayed here.  At this point, the select list is a hidden field.
+                ## Make sure this is the best solution to this problem.
+                %if label != 'Type':
+                    <label>${label}</label>
+                %endif
                 <div style="float: left; width: 250px; margin-right: 10px;">
                     ${input.get_html()}
                 </div>

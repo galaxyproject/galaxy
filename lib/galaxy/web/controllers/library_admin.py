@@ -162,7 +162,7 @@ class LibraryAdmin( BaseController ):
                                                               status='done' ) )   
     @web.expose
     @web.require_admin
-    def delete_library_item( self, trans, library_id, library_item_id, library_item_type, **kwd ):
+    def delete_library_item( self, trans, library_id, item_id, item_type, **kwd ):
         # This action will handle deleting all types of library items.  State is saved for libraries and
         # folders ( i.e., if undeleted, the state of contents of the library or folder will remain, so previously
         # deleted / purged contents will have the same state ).  When a library or folder has been deleted for
@@ -171,24 +171,24 @@ class LibraryAdmin( BaseController ):
         # enables clean maintenance of libraries and library dataset disk files.  This is also why the following
         # 3 objects, and not any of the associations ( the cleanup_datasets.py scipot handles everything else ).
         show_deleted = util.string_as_bool( kwd.get( 'show_deleted', False ) )
-        library_item_types = { 'library': trans.app.model.Library,
-                               'folder': trans.app.model.LibraryFolder,
-                               'library_dataset': trans.app.model.LibraryDataset }
-        if library_item_type not in library_item_types:
-            msg = 'Bad library_item_type specified: %s' % str( library_item_type )
+        item_types = { 'library': trans.app.model.Library,
+                       'folder': trans.app.model.LibraryFolder,
+                       'library_dataset': trans.app.model.LibraryDataset }
+        if item_type not in item_types:
+            msg = 'Bad item_type specified: %s' % str( item_type )
             messagetype = 'error'
         else:
-            if library_item_type == 'library_dataset':
-                library_item_desc = 'Dataset'
+            if item_type == 'library_dataset':
+                item_desc = 'Dataset'
             else:
-                library_item_desc = library_item_type.capitalize()
-            library_item = trans.sa_session.query( library_item_types[ library_item_type ] ).get( trans.security.decode_id( library_item_id ) )
+                item_desc = item_type.capitalize()
+            library_item = trans.sa_session.query( item_types[ item_type ] ).get( trans.security.decode_id( item_id ) )
             library_item.deleted = True
             trans.sa_session.add( library_item )
             trans.sa_session.flush()
-            msg = util.sanitize_text( "%s '%s' has been marked deleted" % ( library_item_desc, library_item.name ) )
+            msg = util.sanitize_text( "%s '%s' has been marked deleted" % ( item_desc, library_item.name ) )
             messagetype = 'done'
-        if library_item_type == 'library':
+        if item_type == 'library':
             return self.browse_libraries( trans, message=msg, status=messagetype )
         else:
             return trans.response.send_redirect( web.url_for( controller='library_common',
@@ -200,31 +200,31 @@ class LibraryAdmin( BaseController ):
                                                               messagetype=messagetype ) )
     @web.expose
     @web.require_admin
-    def undelete_library_item( self, trans, library_id, library_item_id, library_item_type, **kwd ):
+    def undelete_library_item( self, trans, library_id, item_id, item_type, **kwd ):
         # This action will handle undeleting all types of library items
         show_deleted = util.string_as_bool( kwd.get( 'show_deleted', False ) )
-        library_item_types = { 'library': trans.app.model.Library,
-                               'folder': trans.app.model.LibraryFolder,
-                               'library_dataset': trans.app.model.LibraryDataset }
-        if library_item_type not in library_item_types:
-            msg = 'Bad library_item_type specified: %s' % str( library_item_type )
+        item_types = { 'library': trans.app.model.Library,
+                       'folder': trans.app.model.LibraryFolder,
+                       'library_dataset': trans.app.model.LibraryDataset }
+        if item_type not in item_types:
+            msg = 'Bad item_type specified: %s' % str( item_type )
             status = ERROR
         else:
-            if library_item_type == 'library_dataset':
-                library_item_desc = 'Dataset'
+            if item_type == 'library_dataset':
+                item_desc = 'Dataset'
             else:
-                library_item_desc = library_item_type.capitalize()
-            library_item = trans.sa_session.query( library_item_types[ library_item_type ] ).get( trans.security.decode_id( library_item_id ) )
+                item_desc = item_type.capitalize()
+            library_item = trans.sa_session.query( item_types[ item_type ] ).get( trans.security.decode_id( item_id ) )
             if library_item.purged:
-                msg = '%s %s has been purged, so it cannot be undeleted' % ( library_item_desc, library_item.name )
+                msg = '%s %s has been purged, so it cannot be undeleted' % ( item_desc, library_item.name )
                 status = ERROR
             else:
                 library_item.deleted = False
                 trans.sa_session.add( library_item )
                 trans.sa_session.flush()
-                msg = util.sanitize_text( "%s '%s' has been marked undeleted" % ( library_item_desc, library_item.name ) )
+                msg = util.sanitize_text( "%s '%s' has been marked undeleted" % ( item_desc, library_item.name ) )
                 status = SUCCESS
-        if library_item_type == 'library':
+        if item_type == 'library':
             return self.browse_libraries( trans, message=msg, status=status )
         else:
             return trans.response.send_redirect( web.url_for( controller='library_common',

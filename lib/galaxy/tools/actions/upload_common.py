@@ -191,6 +191,8 @@ def new_library_upload( trans, uploaded_dataset, library_bunch, state=None ):
         trans.sa_session.add( form_values )
         trans.sa_session.flush()
         # Create a new info_association between the current ldda and form_values
+        # TODO: Currently info_associations at the ldda level are not inheritable to the associated LibraryDataset,
+        # we need to figure out if this is optimal
         info_association = trans.app.model.LibraryDatasetDatasetInfoAssociation( ldda, library_bunch.template, form_values )
         trans.sa_session.add( info_association )
         trans.sa_session.flush()
@@ -235,6 +237,8 @@ def get_uploaded_datasets( trans, params, precreated_datasets, dataset_upload_in
                     trans.sa_session.add( form_values )
                     trans.sa_session.flush()
                     # Create a new info_association between the current ldda and form_values
+                    # TODO: Currently info_associations at the ldda level are not inheritable to the associated LibraryDataset,
+                    # we need to figure out if this is optimal
                     info_association = trans.app.model.LibraryDatasetDatasetInfoAssociation( data, library_bunch.template, form_values )
                     trans.sa_session.add( info_association )
                 trans.sa_session.flush()

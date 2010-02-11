@@ -1,4 +1,4 @@
-<%def name="render_template_info( cntrller, item_type, library_id, widgets, folder_id=None, ldda_id=None, editable=True )">
+<%def name="render_template_info( cntrller, item_type, library_id, widgets, info_association, inherited, folder_id=None, ldda_id=None, editable=True )">
     <%
         if item_type == 'library':
             item = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( library_id ) )
@@ -8,12 +8,35 @@
             item = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( ldda_id ) )
         if cntrller == 'library':
             current_user_roles = trans.get_current_user_roles()
+            can_modify = trans.app.security_agent.can_modify_library_item( current_user_roles, item )
     %>
     %if widgets:
-        %if editable and ( cntrller=='library_admin' or trans.app.security_agent.can_modify_library_item( current_user_roles, item ) ):
-            <p/>
-            <div class="toolForm">
-                <div class="toolFormTitle">Other information about ${item.name}</div>
+        <p/>
+        <div class="toolForm">
+            %if editable and ( cntrller=='library_admin' or trans.app.security_agent.can_modify_library_item( current_user_roles, item ) ):
+                <div class="toolFormTitle">
+                    %if inherited:
+                        Other information <i>- this is an inherited template and is not required to be used with this ${item_type}</i>
+                    %else:
+                        Other information
+                    %endif
+                    %if info_association and not inherited and ( cntrller == 'library_admin' or can_modify ):
+                        ## "inherited" will be true only if the info_association is not associated with the current item,
+                        ## in which case we do not want to render the following popup menu.
+                        <a id="item-${item.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
+                        <div popupmenu="item-${item.id}-popup">
+                            <a class="action-button" href="${h.url_for( controller='library_common', action='edit_template', cntrller=cntrller, item_type=item_type, library_id=library_id, folder_id=folder_id, ldda_id=ldda_id, show_deleted=show_deleted )}">Edit template</a>
+                            <a class="action-button" href="${h.url_for( controller='library_common', action='delete_template', cntrller=cntrller, item_type=item_type, library_id=library_id, folder_id=folder_id, ldda_id=ldda_id, show_deleted=show_deleted )}">Delete template</a>
+                            %if item_type not in [ 'ldda', 'library_dataset' ]:
+                                %if info_association.inheritable:
+                                    <a class="action-button" href="${h.url_for( controller='library_common', action='manage_template_inheritance', cntrller=cntrller, item_type=item_type, library_id=library_id, folder_id=folder_id, ldda_id=ldda_id, show_deleted=show_deleted )}">Dis-inherit template</a>
+                                %else:
+                                    <a class="action-button" href="${h.url_for( controller='library_common', action='manage_template_inheritance', cntrller=cntrller, item_type=item_type, library_id=library_id, folder_id=folder_id, ldda_id=ldda_id, show_deleted=show_deleted )}">Inherit template</a>
+                                %endif
+                            %endif
+                        </div>
+                    %endif
+                </div>
                 <div class="toolFormBody">
                     <form name="edit_info" action="${h.url_for( controller='library_common', action='edit_template_info', cntrller=cntrller, item_type=item_type, library_id=library_id, num_widgets=len( widgets ), folder_id=folder_id, ldda_id=ldda_id, show_deleted=show_deleted )}" method="post">
                         %for i, field in enumerate( widgets ):
@@ -31,36 +54,36 @@
                         </div>
                     </form>
                 </div>
-            </div>
-        %else:
-            <% contents = False %>
-            %for i, field in enumerate( widgets ):
-                %if field[ 'widget' ].value:
-                    <%
-                        contents = True
-                        break
-                    %>
-                %endif
-            %endfor
-            %if contents:
-                <div class="toolForm">
-                    <div class="toolFormTitle">Other information about ${item.name}</div>
-                    <div class="toolFormBody">
-                    %for i, field in enumerate( widgets ):
-                        %if field[ 'widget' ].value:
-                            <div class="form-row">
-                                <label>${field[ 'label' ]}</label>
-                                <pre>${field[ 'widget' ].value}</pre>
-                                <div class="toolParamHelp" style="clear: both;">
-                                    ${field[ 'helptext' ]}
+            %else:
+                <% contents = False %>
+                %for i, field in enumerate( widgets ):
+                    %if field[ 'widget' ].value:
+                        <%
+                            contents = True
+                            break
+                        %>
+                    %endif
+                %endfor
+                %if contents:
+                    <div class="toolForm">
+                        <div class="toolFormTitle">Other information about ${item.name}</div>
+                        <div class="toolFormBody">
+                        %for i, field in enumerate( widgets ):
+                            %if field[ 'widget' ].value:
+                                <div class="form-row">
+                                    <label>${field[ 'label' ]}</label>
+                                    <pre>${field[ 'widget' ].value}</pre>
+                                    <div class="toolParamHelp" style="clear: both;">
+                                        ${field[ 'helptext' ]}
+                                    </div>
+                                    <div style="clear: both"></div>
                                 </div>
-                                <div style="clear: both"></div>
-                            </div>
-                        %endif
-                    %endfor
-                </div>
+                            %endif
+                        %endfor
+                    </div>
+                %endif
             %endif
-        %endif
+        </div>
     %endif
 </%def>
 
@@ -85,7 +108,7 @@
                     %if replace_dataset not in [ None, 'None' ]:
                         <input type="hidden" name="replace_id" value="${trans.security.encode_id( replace_dataset.id )}"/>
                         <div class="form-row">
-                            You are currently selecting a new file to replace '<a href="${h.url_for( controller='library_common', action='ldda_display_info', cntrller=cntrller, library_id=library_id, folder_id=folder_id, id=trans.security.encode_id( replace_dataset.library_dataset_dataset_association.id ) )}">${replace_dataset.name}</a>'.
+                            You are currently selecting a new file to replace '<a href="${h.url_for( controller='library_common', action='ldda_info', cntrller=cntrller, library_id=library_id, folder_id=folder_id, id=trans.security.encode_id( replace_dataset.library_dataset_dataset_association.id ) )}">${replace_dataset.name}</a>'.
                             <div style="clear: both"></div>
                         </div>
                     %endif
@@ -277,7 +300,10 @@
                                     ${field[ 'widget' ].get_html()}
                                 </div>
                                 <div class="toolParamHelp" style="clear: both;">
-                                    ${field[ 'helptext' ]}, leave blank to add a different template to this dataset after upload.
+                                    %if field[ 'helptext' ]:
+                                        ${field[ 'helptext' ]}<br/>
+                                    %endif
+                                    *Inherited template field
                                 </div>
                                 <div style="clear: both"></div>
                             </div>
@@ -307,7 +333,7 @@
                         %if replace_dataset not in [ None, 'None' ]:
                             <input type="hidden" name="replace_id" value="${trans.security.encode_id( replace_dataset.id )}"/>
                             <div class="form-row">
-                                You are currently selecting a new file to replace '<a href="${h.url_for( controller='library_common', action='ldda_display_info', cntrller=cntrller, library_id=library_id, folder_id=folder_id, id=trans.security.encode_id( replace_dataset.library_dataset_dataset_association.id ) )}">${replace_dataset.name}</a>'.
+                                You are currently selecting a new file to replace '<a href="${h.url_for( controller='library_common', action='ldda_info', cntrller=cntrller, library_id=library_id, folder_id=folder_id, id=trans.security.encode_id( replace_dataset.library_dataset_dataset_association.id ) )}">${replace_dataset.name}</a>'.
                                 <div style="clear: both"></div>
                             </div>
                         %endif

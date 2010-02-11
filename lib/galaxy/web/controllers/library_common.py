@@ -6,7 +6,7 @@ from galaxy.security import RBACAgent
 from galaxy.util.json import to_json_string
 from galaxy.tools.actions import upload_common
 from galaxy.web.controllers.forms import get_all_forms
-from galaxy.web.form_builder import SelectField
+from galaxy.web.form_builder import SelectField, CheckboxField
 from galaxy.model.orm import *
 from galaxy.util.streamball import StreamBall
 import logging, tempfile, zipfile, tarfile, os, sys
@@ -126,6 +126,7 @@ class LibraryCommon( BaseController ):
         library_id = params.get( 'id', None )
         library = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( library_id ) )
         # See if we have any associated templates
+        info_association, inherited = library.get_info_association()
         widgets = library.get_template_widgets( trans )
         current_user_roles = trans.get_current_user_roles()
         show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
@@ -158,6 +159,8 @@ class LibraryCommon( BaseController ):
                                     widgets=widgets,
                                     current_user_roles=current_user_roles,
                                     show_deleted=show_deleted,
+                                    info_association=info_association,
+                                    inherited=inherited,
                                     msg=msg,
                                     messagetype=messagetype )
     @web.expose
@@ -202,8 +205,8 @@ class LibraryCommon( BaseController ):
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
         show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
-        folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( trans.security.decode_id( parent_id ) )
-        if not folder:
+        parent_folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( trans.security.decode_id( parent_id ) )
+        if not parent_folder:
             msg = "Invalid parent folder id (%s) specified" % str( parent_id )
             return trans.response.send_redirect( web.url_for( controller='library_common',
                                                               action='browse_library',
@@ -212,19 +215,41 @@ class LibraryCommon( BaseController ):
                                                               show_deleted=show_deleted,
                                                               msg=util.sanitize_text( msg ),
                                                               messagetype='error' ) )
-        if params.new == 'submitted':
+        if params.get( 'new_folder_button', False ):
             new_folder = trans.app.model.LibraryFolder( name=util.restore_text( params.name ),
                                                         description=util.restore_text( params.description ) )
             # We are associating the last used genome build with folders, so we will always
             # initialize a new folder with the first dbkey in util.dbnames which is currently
             # ?    unspecified (?)
             new_folder.genome_build = util.dbnames.default_value
-            folder.add_folder( new_folder )
+            parent_folder.add_folder( new_folder )
             trans.sa_session.add( new_folder )
             trans.sa_session.flush()
             # New folders default to having the same permissions as their parent folder
-            trans.app.security_agent.copy_library_permissions( folder, new_folder )
-            msg = "New folder named '%s' has been added to the library" % new_folder.name
+            trans.app.security_agent.copy_library_permissions( parent_folder, new_folder )
+            # If we have an inheritable template, redirect to the folder_info page so information
+            # can be filled in immediately.
+            widgets = []
+            info_association, inherited = new_folder.get_info_association()
+            if info_association and ( not( inherited ) or info_association.inheritable ):
+                widgets = new_folder.get_template_widgets( trans )
+            if info_association:
+                current_user_roles = trans.get_current_user_roles()
+                msg = "The new folder named '%s' has been added to the data library.  " % new_folder.name
+                msg += "Additional information about this folder may be added using the inherited template."
+                return trans.fill_template( '/library/common/folder_info.mako',
+                                            cntrller=cntrller,
+                                            folder=new_folder,
+                                            library_id=library_id,
+                                            widgets=widgets,
+                                            current_user_roles=current_user_roles,
+                                            show_deleted=show_deleted,
+                                            info_association=info_association,
+                                            inherited=inherited,
+                                            msg=msg,
+                                            messagetype='done' )
+            # If not inheritable info_association, redirect to the library.
+            msg = "The new folder named '%s' has been added to the library" % new_folder.name
             return trans.response.send_redirect( web.url_for( controller='library_common',
                                                               action='browse_library',
                                                               cntrller=cntrller,
@@ -232,10 +257,12 @@ class LibraryCommon( BaseController ):
                                                               show_deleted=show_deleted,
                                                               msg=util.sanitize_text( msg ),
                                                               messagetype='done' ) )
+        # We do not render any template widgets on creation pages since saving the info_association
+        # cannot occur before the associated item is saved.
         return trans.fill_template( '/library/common/new_folder.mako',
                                     cntrller=cntrller,
                                     library_id=library_id,
-                                    folder=folder,
+                                    folder=parent_folder,
                                     show_deleted=show_deleted,
                                     msg=msg,
                                     messagetype=messagetype )
@@ -248,7 +275,10 @@ class LibraryCommon( BaseController ):
         folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( trans.security.decode_id( id ) )
         current_user_roles = trans.get_current_user_roles()
         # See if we have any associated templates
-        widgets = folder.get_template_widgets( trans )
+        widgets = []
+        info_association, inherited = folder.get_info_association()
+        if info_association and ( not( inherited ) or info_association.inheritable ):
+            widgets = folder.get_template_widgets( trans )
         if params.get( 'rename_folder_button', False ):
             if cntrller=='library_admin' or trans.app.security_agent.can_modify_library_item( current_user_roles, folder ):
                 old_name = folder.name
@@ -274,6 +304,8 @@ class LibraryCommon( BaseController ):
                                     widgets=widgets,
                                     current_user_roles=current_user_roles,
                                     show_deleted=show_deleted,
+                                    info_association=info_association,
+                                    inherited=inherited,
                                     msg=msg,
                                     messagetype=messagetype )
     @web.expose
@@ -354,7 +386,10 @@ class LibraryCommon( BaseController ):
         file_formats = [ dtype_name for dtype_name, dtype_value in trans.app.datatypes_registry.datatypes_by_extension.iteritems() if dtype_value.allow_datatype_change ]
         file_formats.sort()
         # See if we have any associated templates
-        widgets = ldda.get_template_widgets( trans )
+        widgets = []
+        info_association, inherited = ldda.get_info_association()
+        if info_association and ( not( inherited ) or info_association.inheritable ):
+            widgets = ldda.get_template_widgets( trans )
         if params.get( 'change', False ):
             # The user clicked the Save button on the 'Change data type' form
             if cntrller=='library_admin' or trans.app.security_agent.can_modify_library_item( current_user_roles, ldda ):
@@ -369,16 +404,6 @@ class LibraryCommon( BaseController ):
             else:
                 msg = "You are not authorized to change the data type of dataset '%s'" % ldda.name
                 messagetype = 'error'
-            return trans.fill_template( "/library/common/ldda_edit_info.mako",
-                                        cntrller=cntrller,
-                                        ldda=ldda,
-                                        library_id=library_id,
-                                        file_formats=file_formats,
-                                        widgets=widgets,
-                                        current_user_roles=current_user_roles,
-                                        show_deleted=show_deleted,
-                                        msg=msg,
-                                        messagetype=messagetype )
         elif params.get( 'save', False ):
             # The user clicked the Save button on the 'Edit Attributes' form
             if cntrller=='library_admin' or trans.app.security_agent.can_modify_library_item( current_user_roles, ldda ):
@@ -411,16 +436,6 @@ class LibraryCommon( BaseController ):
             else:
                 msg = "You are not authorized to edit the attributes of dataset '%s'" % ldda.name
                 messagetype = 'error'
-            return trans.fill_template( "/library/common/ldda_edit_info.mako",
-                                        cntrller=cntrller,
-                                        ldda=ldda,
-                                        library_id=library_id,
-                                        file_formats=file_formats,
-                                        widgets=widgets,
-                                        current_user_roles=current_user_roles,
-                                        show_deleted=show_deleted,
-                                        msg=msg,
-                                        messagetype=messagetype )
         elif params.get( 'detect', False ):
             # The user clicked the Auto-detect button on the 'Edit Attributes' form
             if cntrller=='library_admin' or trans.app.security_agent.can_modify_library_item( current_user_roles, ldda ):
@@ -437,16 +452,6 @@ class LibraryCommon( BaseController ):
             else:
                 msg = "You are not authorized to edit the attributes of dataset '%s'" % ldda.name
                 messagetype = 'error'
-            return trans.fill_template( "/library/common/ldda_edit_info.mako",
-                                        cntrller=cntrller,
-                                        ldda=ldda,
-                                        library_id=library_id,
-                                        file_formats=file_formats,
-                                        widgets=widgets,
-                                        current_user_roles=current_user_roles,
-                                        show_deleted=show_deleted,
-                                        msg=msg,
-                                        messagetype=messagetype )
         if cntrller=='library_admin' or trans.app.security_agent.can_modify_library_item( current_user_roles, ldda ):
             if "dbkey" in ldda.datatype.metadata_spec and not ldda.metadata.dbkey:
                 # Copy dbkey into metadata, for backwards compatability
@@ -463,10 +468,12 @@ class LibraryCommon( BaseController ):
                                     widgets=widgets,
                                     current_user_roles=current_user_roles,
                                     show_deleted=show_deleted,
+                                    info_association=info_association,
+                                    inherited=inherited,
                                     msg=msg,
                                     messagetype=messagetype )
     @web.expose
-    def ldda_display_info( self, trans, cntrller, library_id, folder_id, id, **kwd ):
+    def ldda_info( self, trans, cntrller, library_id, folder_id, id, **kwd ):
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
@@ -483,7 +490,10 @@ class LibraryCommon( BaseController ):
                                                               messagetype='error' ) )
         library = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( library_id ) )
         # See if we have any associated templates
-        widgets = ldda.get_template_widgets( trans )
+        widgets = []
+        info_association, inherited = ldda.get_info_association()
+        if info_association and ( not( inherited ) or info_association.inheritable ):
+            widgets = ldda.get_template_widgets( trans )
         current_user_roles = trans.get_current_user_roles()
         return trans.fill_template( '/library/common/ldda_info.mako',
                                     cntrller=cntrller,
@@ -492,6 +502,8 @@ class LibraryCommon( BaseController ):
                                     show_deleted=show_deleted,
                                     widgets=widgets,
                                     current_user_roles=current_user_roles,
+                                    info_association=info_association,
+                                    inherited=inherited,
                                     msg=msg,
                                     messagetype=messagetype )
     @web.expose
@@ -656,7 +668,7 @@ class LibraryCommon( BaseController ):
                 if not error:
                     # See if we have any inherited templates, but do not inherit contents.
                     info_association, inherited = folder.get_info_association( inherited=True )
-                    if info_association:
+                    if info_association and info_association.inheritable:
                         template_id = str( info_association.template.id )
                         widgets = folder.get_template_widgets( trans, get_contents=False )
                     else:
@@ -718,7 +730,11 @@ class LibraryCommon( BaseController ):
                                                                msg=util.sanitize_text( msg ),
                                                                messagetype=messagetype ) )
         # See if we have any inherited templates, but do not inherit contents.
-        widgets = folder.get_template_widgets( trans, get_contents=False )
+        info_association, inherited = folder.get_info_association( inherited=True )
+        if info_association and info_association.inheritable:
+            widgets = folder.get_template_widgets( trans, get_contents=False )
+        else:
+            widgets = []
         upload_option = params.get( 'upload_option', 'upload_file' )
         # No dataset(s) specified, so display the upload form.  Send list of data formats to the form
         # so the "extension" select list can be populated dynamically
@@ -1071,6 +1087,11 @@ class LibraryCommon( BaseController ):
                                                               msg=util.sanitize_text( msg ),
                                                               messagetype='error' ) )
         current_user_roles = trans.get_current_user_roles()
+        # See if we have any associated templates
+        widgets = []
+        info_association, inherited = library_dataset.library_dataset_dataset_association.get_info_association()
+        if info_association and ( not( inherited ) or info_association.inheritable ):
+            widgets = library_dataset.library_dataset_dataset_association.get_template_widgets( trans )
         if params.get( 'edit_attributes_button', False ):
             if cntrller=='library_admin' or trans.app.security_agent.can_modify_library_item( current_user_roles, library_dataset ):
                 if params.get( 'edit_attributes_button', False ):
@@ -1095,6 +1116,9 @@ class LibraryCommon( BaseController ):
                                     library_dataset=library_dataset,
                                     library_id=library_id,
                                     current_user_roles=current_user_roles,
+                                    info_association=info_association,
+                                    inherited=inherited,
+                                    widgets=widgets,
                                     show_deleted=show_deleted,
                                     msg=msg,
                                     messagetype=messagetype )
@@ -1280,63 +1304,83 @@ class LibraryCommon( BaseController ):
                                                           show_deleted=show_deleted,
                                                           msg=util.sanitize_text( msg ),
                                                           messagetype=messagetype ) )
+    def get_item_and_stuff( self, trans, item_type, library_id, folder_id, ldda_id ):
+        # Return an item, description, action and an id based on the item_type.
+        if item_type == 'library':
+            item = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( library_id ) )
+            item_desc = 'data library'
+            action = 'library_info'
+            id = library_id
+        elif item_type == 'folder':
+            item = trans.sa_session.query( trans.app.model.LibraryFolder ).get( trans.security.decode_id( folder_id ) )
+            item_desc = 'folder'
+            action = 'folder_info'
+            id = folder_id
+        elif item_type == 'ldda':
+            item = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( ldda_id ) )
+            item_desc = 'dataset'
+            action = 'ldda_edit_info'
+            id = ldda_id
+        else:
+            msg = "Invalid library item type ( %s )" % str( item_type )
+            return trans.response.send_redirect( web.url_for( controller='library_common',
+                                                              action='browse_library',
+                                                              cntrller=cntrller,
+                                                              id=library_id,
+                                                              show_deleted=show_deleted,
+                                                              msg=util.sanitize_text( msg ),
+                                                              messagetype='error' ) )
+        return item, item_desc, action, id
     @web.expose
-    def add_info_template( self, trans, cntrller, item_type, library_id, folder_id=None, ldda_id=None, **kwd ):
-        # Only adding a new template to a Library, Folder or LibraryDatasetDatasetAssociation is currently allowed.  Editing an existing
-        # template is a future enhancement.
+    def add_template( self, trans, cntrller, item_type, library_id, folder_id=None, ldda_id=None, **kwd ):
+        # Template can only be added to a Library, Folder or LibraryDatasetDatasetAssociation.
         forms = get_all_forms( trans,
                                filter=dict( deleted=False ),
                                form_type=trans.app.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE )
         if not forms:
-            msg = "There are no forms on which to base the template, so create a form and try to add the template again."
+            msg = "There are no forms on which to base the template, so create a form and then add the template."
             trans.response.send_redirect( web.url_for( controller='forms',
                                                        action='new',
                                                        msg=msg,
                                                        messagetype='done',
                                                        form_type=trans.app.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE ) )
-        params = util.Params( kwd )
-        show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
-        msg = util.restore_text( params.get( 'msg', ''  ) )
-        action = ''
-        messagetype = params.get( 'messagetype', 'done' )
-        if item_type == 'library':
-            item = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( library_id ) )
-            library_item_desc = 'data library'
-            action = 'library_info'
-            id = library_id
-        elif item_type == 'folder':
-            item = trans.sa_session.query( trans.app.model.LibraryFolder ).get( trans.security.decode_id( folder_id ) )
-            library_item_desc = 'folder'
-            action = 'folder_info'
-            id = folder_id
-        elif item_type == 'ldda':
-            item = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( ldda_id ) )
-            library_item_desc = 'dataset'
-            action = 'ldda_edit_info'
-            id = ldda_id
-        if params.get( 'add_info_template_button', False ):
-            form = trans.sa_session.query( trans.app.model.FormDefinition ).get( trans.security.decode_id( params.form_id ) )
-            form_values = trans.app.model.FormValues( form, [] )
-            trans.sa_session.add( form_values )
-            trans.sa_session.flush()
-            if item_type == 'library':
-                assoc = trans.app.model.LibraryInfoAssociation( item, form, form_values )
-            elif item_type == 'folder':
-                assoc = trans.app.model.LibraryFolderInfoAssociation( item, form, form_values )
-            elif item_type == 'ldda':
-                assoc = trans.app.model.LibraryDatasetDatasetInfoAssociation( item, form, form_values )
-            trans.sa_session.add( assoc )
-            trans.sa_session.flush()
-            msg = 'A template based on the form "%s" has been added to this %s.' % ( form.name, library_item_desc )
-            trans.response.send_redirect( web.url_for( controller='library_common',
-                                                       action=action,
-                                                       cntrller=cntrller,
-                                                       library_id=library_id,
-                                                       folder_id=folder_id,
-                                                       id=id,
-                                                       show_deleted=show_deleted,
-                                                       msg=msg,
-                                                       messagetype='done' ) )
+        else:
+            params = util.Params( kwd )
+            show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
+            msg = util.restore_text( params.get( 'msg', ''  ) )
+            action = ''
+            messagetype = params.get( 'messagetype', 'done' )
+            item, item_desc, action, id = self.get_item_and_stuff( trans, item_type, library_id, folder_id, ldda_id )
+            # If the inheritable checkbox is checked, the param will be in the request
+            inheritable = CheckboxField.is_checked( params.get( 'inheritable', '' ) )
+            if params.get( 'add_template_button', False ):
+                form_id = params.get( 'form_id', 'none' )
+                if form_id not in [ None, 'None', 'none' ]:
+                    form = trans.sa_session.query( trans.app.model.FormDefinition ).get( trans.security.decode_id( form_id ) )
+                    form_values = trans.app.model.FormValues( form, [] )
+                    trans.sa_session.add( form_values )
+                    trans.sa_session.flush()
+                    if item_type == 'library':
+                        assoc = trans.app.model.LibraryInfoAssociation( item, form, form_values, inheritable=inheritable )
+                    elif item_type == 'folder':
+                        assoc = trans.app.model.LibraryFolderInfoAssociation( item, form, form_values, inheritable=inheritable )
+                    elif item_type == 'ldda':
+                        assoc = trans.app.model.LibraryDatasetDatasetInfoAssociation( item, form, form_values )
+                    trans.sa_session.add( assoc )
+                    trans.sa_session.flush()
+                    msg = 'A template based on the form "%s" has been added to this %s.' % ( form.name, item_desc )
+                    trans.response.send_redirect( web.url_for( controller='library_common',
+                                                               action=action,
+                                                               cntrller=cntrller,
+                                                               library_id=library_id,
+                                                               folder_id=folder_id,
+                                                               id=id,
+                                                               show_deleted=show_deleted,
+                                                               msg=msg,
+                                                               messagetype='done' ) )
+                else:
+                    msg = "Select a form on which to base the template."
+                    messagetype = "error"
         def generate_template_stuff( trans, forms, form_id ):
             # Returns the following:
             # - a list of template ids
@@ -1367,10 +1411,10 @@ class LibraryCommon( BaseController ):
             template_ids, widgets, template_select_list = generate_template_stuff( trans, forms, kwd.get( 'form_id' ) )
         else:
             template_ids, widgets, template_select_list = generate_template_stuff( trans, forms, 'none' )
-        return trans.fill_template( '/library/common/select_info_template.mako',
+        return trans.fill_template( '/library/common/select_template.mako',
                                     cntrller=cntrller,
-                                    library_item_name=item.name,
-                                    library_item_desc=library_item_desc,
+                                    item_name=item.name,
+                                    item_desc=item_desc,
                                     item_type=item_type,
                                     library_id=library_id,
                                     folder_id=folder_id,
@@ -1378,37 +1422,85 @@ class LibraryCommon( BaseController ):
                                     template_ids=template_ids,
                                     widgets=widgets,
                                     template_select_list=template_select_list,
+                                    inheritable_checked=inheritable,
                                     show_deleted=show_deleted,
                                     msg=msg,
                                     messagetype=messagetype )
     @web.expose
-    def edit_template_info( self, trans, cntrller, item_type, library_id, num_widgets, folder_id=None, ldda_id=None, **kwd ):
+    def manage_template_inheritance( self, trans, cntrller, item_type, library_id, folder_id=None, ldda_id=None, **kwd ):
         params = util.Params( kwd )
         show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
-        if item_type == 'library':
-            item = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( library_id ) )
-            action = 'library_info'
-            id = library_id
-        elif item_type == 'folder':
-            item = trans.sa_session.query( trans.app.model.LibraryFolder ).get( trans.security.decode_id( folder_id ) )
-            action = 'folder_info'
-            id = folder_id
-        elif item_type == 'ldda':
-            item = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( ldda_id ) )
-            action = 'ldda_edit_info'
-            folder_id = trans.security.encode_id( item.library_dataset.folder.id )
-            id = ldda_id
-        else:
-            msg = "Invalid library item type ( %s ) sent to edit_template_info()" % str( item_type )
+        item, item_desc, action, id = self.get_item_and_stuff( trans, item_type, library_id, folder_id, ldda_id )
+        info_association, inherited = item.get_info_association( restrict=True )
+        if info_association:
+            if info_association.inheritable:
+                msg = "The template for this %s will no longer be inherited to contained folders and datasets." % item_desc
+            else:
+                msg = "The template for this %s will now be inherited to contained folders and datasets." % item_desc
+            info_association.inheritable = not( info_association.inheritable )
+            trans.sa_session.add( info_association )
+            trans.sa_session.flush()
+        return trans.response.send_redirect( web.url_for( controller='library_common',
+                                                          action=action,
+                                                          cntrller=cntrller,
+                                                          library_id=library_id,
+                                                          folder_id=folder_id,
+                                                          id=id,
+                                                          show_deleted=show_deleted,
+                                                          msg=util.sanitize_text( msg ),
+                                                          messagetype='done' ) )
+    @web.expose
+    def edit_template( self, trans, cntrller, item_type, library_id, folder_id=None, ldda_id=None, edited=False, **kwd ):
+        # Edit the template itself, keeping existing field contents, if any.
+        params = util.Params( kwd )
+        show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
+        msg = util.restore_text( params.get( 'msg', ''  ) )
+        messagetype = params.get( 'messagetype', 'done' )
+        item, item_desc, action, id = self.get_item_and_stuff( trans, item_type, library_id, folder_id, ldda_id )
+        # An info_association must exist at this point
+        info_association, inherited = item.get_info_association( restrict=True )
+        template = info_association.template
+        info = info_association.info
+        form_values = trans.sa_session.query( trans.app.model.FormValues ).get( info.id )
+        if edited:
+            # The form on which the template is based has been edited, so we need to update the
+            # info_association with the current form
+            fdc = trans.sa_session.query( trans.app.model.FormDefinitionCurrent ).get( template.form_definition_current_id )
+            info_association.template = fdc.latest_form
+            trans.sa_session.add( info_association )
+            trans.sa_session.flush()
+            msg = "The template for this %s has been updated with your changes." % item_desc
             return trans.response.send_redirect( web.url_for( controller='library_common',
-                                                              action='browse_library',
+                                                              action=action,
                                                               cntrller=cntrller,
-                                                              id=library_id,
+                                                              library_id=library_id,
+                                                              folder_id=folder_id,
+                                                              id=id,
                                                               show_deleted=show_deleted,
                                                               msg=util.sanitize_text( msg ),
-                                                              messagetype='error' ) )
+                                                              messagetype='done' ) )
+        # "template" is a FormDefinition, so since we're changing it, we need to use the latest version of it.
+        vars = dict( id=trans.security.encode_id( template.form_definition_current_id ),
+                     response_redirect=web.url_for( controller='library_common',
+                                                    action='edit_template',
+                                                    cntrller=cntrller,
+                                                    item_type=item_type,
+                                                    library_id=library_id,
+                                                    folder_id=folder_id,
+                                                    ldda_id=ldda_id,
+                                                    edited=True,
+                                                    **kwd ) )
+        return trans.response.send_redirect( web.url_for( controller='forms', action='edit', **vars ) )
+    @web.expose
+    def edit_template_info( self, trans, cntrller, item_type, library_id, num_widgets, folder_id=None, ldda_id=None, **kwd ):
+        # Edit the contents of the template fields without altering the template itself.
+        params = util.Params( kwd )
+        show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
+        msg = util.restore_text( params.get( 'msg', ''  ) )
+        messagetype = params.get( 'messagetype', 'done' )
+        item, item_desc, action, id = self.get_item_and_stuff( trans, item_type, library_id, folder_id, ldda_id )
         # Save updated template field contents
         field_contents = []
         for index in range( int( num_widgets ) ):
@@ -1439,10 +1531,17 @@ class LibraryCommon( BaseController ):
                 trans.sa_session.flush()
                 # Create a new info_association between the current library item and form_values
                 if item_type == 'folder':
-                    info_association = trans.app.model.LibraryFolderInfoAssociation( item, template, form_values )
+                    # A LibraryFolder is a special case because if it inherited the template from it's parent,
+                    # we want to set inheritable to True for it's info_association.  This allows for the default
+                    # inheritance to be False for each level in the Library hierarchy unless we're creating a new
+                    # level in the hierarchy, in which case we'll inherit the "inheritable" setting from the parent
+                    # level.
+                    info_association = trans.app.model.LibraryFolderInfoAssociation( item, template, form_values, inheritable=inherited )
                     trans.sa_session.add( info_association )
                     trans.sa_session.flush()
                 elif item_type == 'ldda':
+                    # TODO: Currently info_associations at teh ldda level are not inheritable to the associated LibraryDataset.
+                    # We need to figure out if this is optimal.
                     info_association = trans.app.model.LibraryDatasetDatasetInfoAssociation( item, template, form_values )
                     trans.sa_session.add( info_association )
                     trans.sa_session.flush()
@@ -1457,35 +1556,14 @@ class LibraryCommon( BaseController ):
                                                           msg=util.sanitize_text( msg ),
                                                           messagetype='done' ) )
     @web.expose
-    def delete_info_template( self, trans, cntrller, item_type, library_id, id=None, folder_id=None, ldda_id=None, **kwd ):
+    def delete_template( self, trans, cntrller, item_type, library_id, id=None, folder_id=None, ldda_id=None, **kwd ):
         # Only adding a new template to a library or folder is currently allowed.  Editing an existing template is
         # a future enhancement.
         params = util.Params( kwd )
         show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
-        if item_type == 'library':
-            item = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( library_id ) )
-            action = 'library_info'
-            id = library_id
-        elif item_type == 'folder':
-            item = trans.sa_session.query( trans.app.model.LibraryFolder ).get( trans.security.decode_id( folder_id ) )
-            action = 'folder_info'
-            id = folder_id
-        elif item_type == 'ldda':
-            item = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( ldda_id ) )
-            action = 'ldda_edit_info'
-            folder_id = trans.security.encode_id( item.library_dataset.folder.id )
-            id = ldda_id
-        else:
-            msg = "Invalid library item type ( %s ) sent to edit_template_info()" % str( item_type )
-            return trans.response.send_redirect( web.url_for( controller='library_common',
-                                                              action='browse_library',
-                                                              cntrller=cntrller,
-                                                              id=library_id,
-                                                              show_deleted=show_deleted,
-                                                              msg=util.sanitize_text( msg ),
-                                                              messagetype='error' ) )
+        item, item_desc, action, id = self.get_item_and_stuff( trans, item_type, library_id, folder_id, ldda_id )
         info_association, inherited = item.get_info_association()
         if not info_association:
             msg = "There is no template for this %s" % item_type

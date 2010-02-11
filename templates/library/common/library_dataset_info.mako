@@ -62,5 +62,6 @@
 %endif
 
 %if widgets:
-    ${render_template_info( cntrller, library_dataset, library_id, '', widgets )}
+    ## Templates are not currently supported for library_datasets, only the associated ldda.
+    ${render_template_info( cntrller, 'library_dataset', library_id, widgets, info_association=None, inherited=False, editable=False )}
 %endif

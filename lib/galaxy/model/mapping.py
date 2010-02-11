@@ -294,6 +294,7 @@ LibraryInfoAssociation.table = Table( 'library_info_association', metadata,
     Column( "library_id", Integer, ForeignKey( "library.id" ), index=True ),
     Column( "form_definition_id", Integer, ForeignKey( "form_definition.id" ), index=True ),
     Column( "form_values_id", Integer, ForeignKey( "form_values.id" ), index=True ),
+    Column( "inheritable", Boolean, index=True, default=False ),
     Column( "deleted", Boolean, index=True, default=False ) )
 
 LibraryFolderInfoAssociation.table = Table( 'library_folder_info_association', metadata,
@@ -301,6 +302,7 @@ LibraryFolderInfoAssociation.table = Table( 'library_folder_info_association', m
     Column( "library_folder_id", Integer, ForeignKey( "library_folder.id" ), nullable=True, index=True ),
     Column( "form_definition_id", Integer, ForeignKey( "form_definition.id" ), index=True ),
     Column( "form_values_id", Integer, ForeignKey( "form_values.id" ), index=True ),
+    Column( "inheritable", Boolean, index=True, default=False ),
     Column( "deleted", Boolean, index=True, default=False ) )
 
 LibraryDatasetDatasetInfoAssociation.table = Table( 'library_dataset_dataset_info_association', metadata,

@@ -579,11 +579,11 @@ class TestSecurityAndLibraries( TwillTestCase ):
         assert form_one is not None, 'Problem retrieving form named (%s) from the database' % form_name
         # Add a new information template to the library
         template_name = 'Library Template 1'
-        self.add_info_template( 'library_admin',
-                                'library',
-                                self.security.encode_id( library_one.id ),
-                                self.security.encode_id( form_one.id ),
-                                form_one.name )
+        self.add_template( 'library_admin',
+                           'library',
+                            self.security.encode_id( library_one.id ),
+                            self.security.encode_id( form_one.id ),
+                            form_one.name )
         # Make sure the template fields are displayed on the library information page
         field_dict = form_one.fields[ 0 ]
         global form_one_field_label
@@ -1327,7 +1327,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
             raise AssertionError( 'ldda.dataset "%s" actions "%s" != ldda.dataset "%s" actions "%s"' \
                 % ( ldda_six.name, str( ldda_six.dataset.actions ), ldda_six_version_two.name, str( ldda_six_version_two.dataset.actions ) ) )
         # Check the previous version
-        self.visit_url( "%s/library_common/ldda_display_info?cntrller=library_admin&library_id=%s&folder_id=%s&id=%s" % \
+        self.visit_url( "%s/library_common/ldda_info?cntrller=library_admin&library_id=%s&folder_id=%s&id=%s" % \
             ( self.url, self.security.encode_id( library_one.id ), self.security.encode_id( subfolder_one.id ), self.security.encode_id( ldda_six.id ) ) )
         self.check_page_for_string( 'This is an expired version of this library dataset' )
         self.home()
@@ -1378,7 +1378,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         tc.submit( 'edit_info_button' )
         self.check_page_for_string( 'The information has been updated.' )
         self.check_page_for_string( template_contents )
-        self.visit_url( "%s/library_common/ldda_display_info?cntrller=library_admin&library_id=%s&folder_id=%s&id=%s" % \
+        self.visit_url( "%s/library_common/ldda_info?cntrller=library_admin&library_id=%s&folder_id=%s&id=%s" % \
             ( self.url, self.security.encode_id( library_one.id ), self.security.encode_id( subfolder_one.id ), self.security.encode_id( ldda_six_version_five.id ) ) )
         check_str = 'Expired versions of %s' % ldda_six_version_five.name
         self.check_page_for_string( check_str )
@@ -1396,7 +1396,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
             raise AssertionError( 'ldda.dataset "%s" actions "%s" != ldda.dataset "%s" actions "%s"' \
                 % ( ldda_six.name, str( ldda_six.dataset.actions ), ldda_six_version_five.name, str( ldda_six_version_five.dataset.actions ) ) )
         # Check the previous version
-        self.visit_url( "%s/library_common/ldda_display_info?cntrller=library_admin&library_id=%s&folder_id=%s&id=%s" % \
+        self.visit_url( "%s/library_common/ldda_info?cntrller=library_admin&library_id=%s&folder_id=%s&id=%s" % \
             ( self.url, self.security.encode_id( library_one.id ), self.security.encode_id( subfolder_one.id ), self.security.encode_id( ldda_six_version_two.id ) ) )
         self.check_page_for_string( 'This is an expired version of this library dataset' )
         self.home()
@@ -1631,7 +1631,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.delete_library_item( self.security.encode_id( library_one.id ),
                                   self.security.encode_id( ldda_two.library_dataset.id ),
                                   ldda_two.name,
-                                  library_item_type='library_dataset' )
+                                  item_type='library_dataset' )
         self.home()
         self.visit_page( 'library_common/browse_library?cntrller=library_admin&id=%s' % ( self.security.encode_id( library_one.id ) ) )
         try:
@@ -1668,7 +1668,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.delete_library_item( self.security.encode_id( library_one.id ),
                                   self.security.encode_id( folder_two.id ),
                                   folder_two.name,
-                                  library_item_type='folder' )
+                                  item_type='folder' )
         self.home()
         self.visit_page( 'library_common/browse_library?cntrller=library_admin&id=%s' % ( self.security.encode_id( library_one.id ) ) )
         try:
@@ -1684,7 +1684,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.undelete_library_item( self.security.encode_id( library_one.id ),
                                     self.security.encode_id( folder_two.id ),
                                     folder_two.name,
-                                    library_item_type='folder' )
+                                    item_type='folder' )
         self.home()
         self.visit_page( 'library_common/browse_library?cntrller=library_admin&id=%s' % ( self.security.encode_id( library_one.id ) ) )
         self.check_page_for_string( folder_two.name )
@@ -1704,11 +1704,11 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.delete_library_item( self.security.encode_id( library_one.id ),
                                   self.security.encode_id( folder_two.id ),
                                   folder_two.name,
-                                  library_item_type='folder' )
+                                  item_type='folder' )
         self.delete_library_item( self.security.encode_id( library_one.id ),
                                   self.security.encode_id( library_one.id ),
                                   library_one.name,
-                                  library_item_type='library' )
+                                  item_type='library' )
         self.home()
         self.visit_page( 'library_admin/browse_libraries?sort=name&f-description=All&f-name=All&f-deleted=False' )
         try:
@@ -1727,7 +1727,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.undelete_library_item( self.security.encode_id( library_one.id ),
                                     self.security.encode_id( library_one.id ),
                                     library_one.name,
-                                    library_item_type='library' )
+                                    item_type='library' )
         self.home()
         self.visit_page( 'library_admin/browse_libraries?sort=name&f-description=All&f-name=All&f-deleted=False' )
         self.check_page_for_string( library_one.name )
@@ -1854,7 +1854,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.delete_library_item( self.security.encode_id( library_one.id ),
                                   self.security.encode_id( library_one.id ),
                                   library_one.name,
-                                  library_item_type='library' )
+                                  item_type='library' )
         self.purge_library( self.security.encode_id( library_one.id ), library_one.name )
         # Make sure the library was purged
         sa_session.refresh( library_one )
@@ -1928,7 +1928,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.delete_library_item( self.security.encode_id( library_two.id ),
                                   self.security.encode_id( library_two.id ),
                                   library_two.name,
-                                  library_item_type='library' )
+                                  item_type='library' )
         self.purge_library( self.security.encode_id( library_two.id ), library_two.name )
         self.home()
     def test_260_library_permissions( self ):
@@ -1995,12 +1995,12 @@ class TestSecurityAndLibraries( TwillTestCase ):
                              .first()
         # Add an information template to the folder
         template_name = 'Folder Template 1'
-        self.add_info_template( 'library',
-                                'folder',
-                                self.security.encode_id( library_one.id ),
-                                self.security.encode_id( form_one.id ),
-                                form_one.name,
-                                folder_id=self.security.encode_id( folder_x.id ) )
+        self.add_template( 'library',
+                           'folder',
+                            self.security.encode_id( library_one.id ),
+                            self.security.encode_id( form_one.id ),
+                            form_one.name,
+                            folder_id=self.security.encode_id( folder_x.id ) )
         # Modify the folder's information
         contents = '%s folder contents' % form_one_field_label
         new_name = "Root Folder's Folder Y"
@@ -2038,11 +2038,11 @@ class TestSecurityAndLibraries( TwillTestCase ):
         assert ldda_x is not None, 'Problem retrieving ldda_x from the database'
         # Add an information template to the library
         template_name = 'Library Template 3'
-        self.add_info_template( 'library',
-                                'library',
-                                self.security.encode_id( library_three.id ),
-                                self.security.encode_id( form_one.id ),
-                                form_one.name )
+        self.add_template( 'library',
+                           'library',
+                            self.security.encode_id( library_three.id ),
+                            self.security.encode_id( form_one.id ),
+                            form_one.name )
         # Add information to the library using the template
         contents = '%s library contents' % form_one_field_label
         self.visit_url( '%s/library_common/library_info?cntrller=library&id=%s' % ( self.url, self.security.encode_id( library_three.id ) ) )
@@ -2069,7 +2069,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.delete_library_item( self.security.encode_id( library_three.id ),
                                   self.security.encode_id( library_three.id ),
                                   library_three.name,
-                                  library_item_type='library' )
+                                  item_type='library' )
         self.purge_library( self.security.encode_id( library_three.id ), library_three.name )
         ##################
         # Eliminate all non-private roles

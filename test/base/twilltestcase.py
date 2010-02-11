@@ -1384,7 +1384,7 @@ class TwillTestCase( unittest.TestCase ):
         """Rename a library"""
         self.home()
         self.visit_url( "%s/library_common/library_info?id=%s&cntrller=%s" % ( self.url, library_id, controller ) )
-        self.check_page_for_string( 'Change library name and description' )
+        self.check_page_for_string( old_name )
         # Since twill barfs on the form submisson, we ar forced to simulate it
         url = "%s/library_common/library_info?id=%s&cntrller=%s&rename_library_button=Save&description=%s&name=%s" % \
         ( self.url, library_id, controller, description.replace( ' ', '+' ), name.replace( ' ', '+' ) )
@@ -1393,19 +1393,20 @@ class TwillTestCase( unittest.TestCase ):
         check_str = "Library '%s' has been renamed to '%s'" % ( old_name, name )
         self.check_page_for_string( check_str )
         self.home()
-    def add_info_template( self, cntrller, item_type, library_id, form_id, form_name, folder_id=None, ldda_id=None ):
+    def add_template( self, cntrller, item_type, library_id, form_id, form_name, folder_id=None, ldda_id=None ):
         """Add a new info template to a library item"""
         self.home()
         if item_type == 'library':
-            url = "%s/library_common/add_info_template?cntrller=%s&item_type=%s&library_id=%s" % ( self.url, cntrller, item_type, library_id )
+            url = "%s/library_common/add_template?cntrller=%s&item_type=%s&library_id=%s" % ( self.url, cntrller, item_type, library_id )
         elif item_type == 'folder':
-            url = "%s/library_common/add_info_template?cntrller=%s&item_type=%s&library_id=%s&folder_id=%s" % ( self.url, cntrller, item_type, library_id, folder_id )
+            url = "%s/library_common/add_template?cntrller=%s&item_type=%s&library_id=%s&folder_id=%s" % ( self.url, cntrller, item_type, library_id, folder_id )
         elif item_type == 'ldda':
-            url = "%s/library_common/add_info_template?cntrller=%s&item_type=%s&library_id=%s&folder_id=%s&ldda_id=%s" % ( self.url, cntrller, item_type, library_id, folder_id, ldda_id )
+            url = "%s/library_common/add_template?cntrller=%s&item_type=%s&library_id=%s&folder_id=%s&ldda_id=%s" % ( self.url, cntrller, item_type, library_id, folder_id, ldda_id )
         self.visit_url( url )
         self.check_page_for_string ( "Select a template for the" )
         tc.fv( '1', 'form_id', form_id )
-        tc.submit( 'add_info_template_button' )
+        tc.fv( '1', 'inherit', '1' )
+        tc.submit( 'add_template_button' )
         self.check_page_for_string = 'A template based on the form "%s" has been added to this' % form_name
         self.home()
     def library_info( self, library_id, library_name, ele_1_field_name, ele_1_contents, ele_2_field_name, ele_2_contents, controller='library_admin' ):
@@ -1670,28 +1671,28 @@ class TwillTestCase( unittest.TestCase ):
                 errmsg += 'Unpacked archive remains in: %s\n' % tmpd
                 raise AssertionError( errmsg )
         shutil.rmtree( tmpd )
-    def delete_library_item( self, library_id, library_item_id, library_item_name, library_item_type='library_dataset' ):
+    def delete_library_item( self, library_id, item_id, item_name, item_type='library_dataset' ):
         """Mark a library item as deleted"""
         self.home()
-        self.visit_url( "%s/library_admin/delete_library_item?library_id=%s&library_item_id=%s&library_item_type=%s" \
-                        % ( self.url, library_id, library_item_id, library_item_type ) )
-        if library_item_type == 'library_dataset':
-            library_item_desc = 'Dataset'
+        self.visit_url( "%s/library_admin/delete_library_item?library_id=%s&item_id=%s&item_type=%s" \
+                        % ( self.url, library_id, item_id, item_type ) )
+        if item_type == 'library_dataset':
+            item_desc = 'Dataset'
         else:
-            library_item_desc = library_item_type.capitalize()
-        check_str = "%s '%s' has been marked deleted" % ( library_item_desc, library_item_name )
+            item_desc = item_type.capitalize()
+        check_str = "%s '%s' has been marked deleted" % ( item_desc, item_name )
         self.check_page_for_string( check_str )
         self.home()
-    def undelete_library_item( self, library_id, library_item_id, library_item_name, library_item_type='library_dataset' ):
+    def undelete_library_item( self, library_id, item_id, item_name, item_type='library_dataset' ):
         """Mark a library item as deleted"""
         self.home()
-        self.visit_url( "%s/library_admin/undelete_library_item?library_id=%s&library_item_id=%s&library_item_type=%s" \
-                        % ( self.url, library_id, library_item_id, library_item_type ) )
-        if library_item_type == 'library_dataset':
-            library_item_desc = 'Dataset'
+        self.visit_url( "%s/library_admin/undelete_library_item?library_id=%s&item_id=%s&item_type=%s" \
+                        % ( self.url, library_id, item_id, item_type ) )
+        if item_type == 'library_dataset':
+            item_desc = 'Dataset'
         else:
-            library_item_desc = library_item_type.capitalize()
-        check_str = "%s '%s' has been marked undeleted" % ( library_item_desc, library_item_name )
+            item_desc = item_type.capitalize()
+        check_str = "%s '%s' has been marked undeleted" % ( item_desc, item_name )
         self.check_page_for_string( check_str )
         self.home()
     def purge_library( self, library_id, library_name ):

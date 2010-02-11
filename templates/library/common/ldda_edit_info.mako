@@ -161,5 +161,5 @@
     </div>
 %endif
 %if widgets:
-    ${render_template_info( cntrller=cntrller, item_type='ldda', library_id=library_id, widgets=widgets, folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ), ldda_id=trans.security.encode_id( ldda.id ) )}
+    ${render_template_info( cntrller=cntrller, item_type='ldda', library_id=library_id, widgets=widgets, info_association=info_association, inherited=inherited, folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ), ldda_id=trans.security.encode_id( ldda.id ) )}
 %endif

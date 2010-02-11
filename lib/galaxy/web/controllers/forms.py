@@ -92,7 +92,7 @@ class Forms( BaseController ):
             elif operation == "undelete":
                 return self.__undelete( trans, **kwd )
             elif operation == "edit":
-                return self.__edit( trans, **kwd )
+                return self.edit( trans, **kwd )
         return self.forms_grid( trans, **kwd )
     def __view(self, trans, **kwd):
         try:
@@ -141,13 +141,11 @@ class Forms( BaseController ):
             self.__get_saved_form( fd )
             if self.__imported_from_file:
                 return trans.response.send_redirect( web.url_for( controller='forms',
-                                                                  action='manage',
-                                                                  operation='edit',
+                                                                  action='edit',
                                                                   id=trans.security.encode_id(fd.current.id)) )                  
             else:
                 return trans.response.send_redirect( web.url_for( controller='forms',
-                                                                  action='manage',
-                                                                  operation='edit',
+                                                                  action='edit',
                                                                   id=trans.security.encode_id(fd.current.id),
                                                                   add_field_button='Add field',
                                                                   name=fd.name,
@@ -197,10 +195,13 @@ class Forms( BaseController ):
                                                           action='manage',
                                                           message='%i form(s) is undeleted.' % len(id_list), 
                                                           status='done') )
-    def __edit( self, trans, **kwd ):
+    @web.expose
+    def edit( self, trans, response_redirect=None, **kwd ):
         '''
-        This callback method is for handling all the editing functions like
-        renaming fields, adding/deleting fields, changing fields attributes.
+        This callback method is for handling form editing.  The value of response_redirect
+        should be an URL that is defined by the caller.  This allows for redirecting as desired
+        when the form changes have been saved.  For an example of how this works, see the 
+        edit_template() method in the library_common controller.
         '''
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
@@ -223,13 +224,16 @@ class Forms( BaseController ):
             if not fd_new:
                 current_form = self.__get_form( trans, **kwd )
                 return self.__show( trans=trans, form=fd, current_form=current_form, 
-                                    msg=msg, messagetype='error', **kwd )
-            # everything went fine. form saved successfully. Show the saved form
+                                    msg=msg, messagetype='error', response_redirect=response_redirect, **kwd )
+            # everything went fine. form saved successfully. Show the saved form or redirect
+            # to response_redirect if appropriate.
+            if response_redirect:
+                return trans.response.send_redirect( response_redirect )
             fd = fd_new
             current_form = self.__get_saved_form( fd )
             msg = "The form '%s' has been updated with the changes." % fd.name
             return self.__show( trans=trans, form=fd, current_form=current_form, 
-                                msg=msg, messagetype=messagetype, **kwd )
+                                msg=msg, messagetype=messagetype, response_redirect=response_redirect, **kwd )
         #
         # Add a layout grid
         #
@@ -238,7 +242,7 @@ class Forms( BaseController ):
             current_form['layout'].append('')
             # show the form again
             return self.__show( trans=trans, form=fd, current_form=current_form, 
-                                msg=msg, messagetype=messagetype, **kwd )
+                                msg=msg, messagetype=messagetype, response_redirect=response_redirect, **kwd )
         #
         # Delete a layout grid
         #
@@ -247,7 +251,7 @@ class Forms( BaseController ):
             index = int( kwd[ 'remove_layout_grid_button' ].split( ' ' )[2] ) - 1
             del current_form['layout'][index]
             return self.__show( trans=trans, form=fd, current_form=current_form, 
-                                msg=msg, messagetype=messagetype, **kwd )
+                                msg=msg, messagetype=messagetype, response_redirect=response_redirect, **kwd )
         #
         # Add a field
         #
@@ -256,7 +260,7 @@ class Forms( BaseController ):
             current_form['fields'].append( self.empty_field )
             # show the form again with one empty field
             return self.__show( trans=trans, form=fd, current_form=current_form, 
-                                msg=msg, messagetype=messagetype, **kwd )
+                                msg=msg, messagetype=messagetype, response_redirect=response_redirect, **kwd )
         #
         # Delete a field
         #
@@ -266,33 +270,33 @@ class Forms( BaseController ):
             index = int( kwd[ 'remove_button' ].split( ' ' )[2] ) - 1
             del current_form['fields'][index]
             return self.__show( trans=trans, form=fd, current_form=current_form, 
-                                msg=msg, messagetype=messagetype, **kwd )
+                                msg=msg, messagetype=messagetype, response_redirect=response_redirect, **kwd )
         #
         # Add SelectField option
         #
         elif 'Add' in kwd.values():
-            return self.__add_selectbox_option(trans, fd, msg, messagetype, **kwd)
+            return self.__add_selectbox_option(trans, fd, msg, messagetype, response_redirect=response_redirect, **kwd)
         #
         # Remove SelectField option
         #
         elif 'Remove' in kwd.values():
-            return self.__remove_selectbox_option(trans, fd, msg, messagetype, **kwd)
+            return self.__remove_selectbox_option(trans, fd, msg, messagetype, response_redirect=response_redirect, **kwd)
         #
         # Refresh page
         #
         elif params.get( 'refresh', False ):
             current_form = self.__get_form( trans, **kwd )
             return self.__show( trans=trans, form=fd, current_form=current_form, 
-                                msg=msg, messagetype=messagetype, **kwd )
+                                msg=msg, messagetype=messagetype, response_redirect=response_redirect, **kwd )
         #
         # Show the form for editing
         #
         else:
             current_form = self.__get_saved_form( fd )
             return self.__show( trans=trans, form=fd, current_form=current_form, 
-                                msg=msg, messagetype=messagetype, **kwd )
+                                msg=msg, messagetype=messagetype, response_redirect=response_redirect, **kwd )
             
-    def __add_selectbox_option( self, trans, fd, msg, messagetype, **kwd ):
+    def __add_selectbox_option( self, trans, fd, msg, messagetype, response_redirect=None, **kwd ):
         '''
         This method adds a selectbox option. The kwd dict searched for
         the field index which needs to be removed
@@ -309,12 +313,12 @@ class Forms( BaseController ):
             # something wrong happened
             return self.__show( trans=trans, form=fd, current_form=current_form, 
                                 msg='Error in adding selectfield option', 
-                                messagetype='error', **kwd )
+                                messagetype='error', response_redirect=response_redirect, **kwd )
         # add an empty option
         current_form[ 'fields' ][ index ][ 'selectlist' ].append( '' )
         return self.__show( trans=trans, form=fd, current_form=current_form, 
-                            msg=msg, messagetype=messagetype, **kwd )
-    def __remove_selectbox_option( self, trans, fd, msg, messagetype, **kwd ):
+                            msg=msg, messagetype=messagetype, response_redirect=response_redirect, **kwd )
+    def __remove_selectbox_option( self, trans, fd, msg, messagetype, response_redirect=None, **kwd ):
         '''
         This method removes a selectbox option. The kwd dict searched for
         the field index and option index which needs to be removed
@@ -332,11 +336,11 @@ class Forms( BaseController ):
             # something wrong happened
             return self.__show( trans=trans, form=fd, current_form=current_form, 
                                 msg='Error in removing selectfield option', 
-                                messagetype='error', **kwd )
+                                messagetype='error', response_redirect=response_redirect, **kwd )
         # remove the option
         del current_form[ 'fields' ][ index ][ 'selectlist' ][ option ]
         return self.__show( trans=trans, form=fd, current_form=current_form, 
-                            msg=msg, messagetype=messagetype, **kwd )
+                            msg=msg, messagetype=messagetype, response_redirect=response_redirect, **kwd )
 
     
     def __get_field(self, index, **kwd):
@@ -597,7 +601,7 @@ class Forms( BaseController ):
         def label(self):
             return str(self.index)+'.'+self.label 
         
-    def __show( self, trans, form, current_form, msg='', messagetype='done', **kwd ):
+    def __show( self, trans, form, current_form, msg='', messagetype='done', response_redirect=None, **kwd ):
         '''
         This method displays the form and any of the changes made to it,
         The empty_form param allows for this method to simulate clicking
@@ -606,9 +610,11 @@ class Forms( BaseController ):
         '''
         params = util.Params( kwd )
         # name & description
+        # TODO: RC, I've changed Type to be a hidden field since it should not be displayed on the edit_form.mako
+        # template.  Make sure this is the optimal solution for this problem.  See my additional TODO in edit_form.mako.
         form_details = [ ( 'Name', TextField( 'name', 40, current_form[ 'name' ] ) ),
                          ( 'Description', TextField( 'description', 40, current_form[ 'desc' ] ) ),
-                         ( 'Type', self.__form_types_widget(trans, selected=current_form[ 'type' ]) ) ]
+                         ( 'Type', HiddenField( 'form_type_selectbox', current_form['type']) ) ]
         form_layout = []
         if current_form[ 'type' ] == trans.app.model.FormDefinition.types.SAMPLE:
             for index, lg in enumerate(current_form[ 'layout' ]):
@@ -629,7 +635,8 @@ class Forms( BaseController ):
                                     msg=msg,
                                     messagetype=messagetype,
                                     current_form_type=current_form[ 'type' ],
-                                    layout_grids=form_layout )
+                                    layout_grids=form_layout,
+                                    response_redirect=response_redirect )
 
 # Common methods for all components that use forms
 def get_all_forms( trans, all_versions=False, filter=None, form_type='All' ):
