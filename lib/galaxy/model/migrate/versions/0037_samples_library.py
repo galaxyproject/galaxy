@@ -11,6 +11,8 @@ from migrate.changeset import *
 import sys, logging
 from galaxy.model.custom_types import *
 from sqlalchemy.exc import *
+import datetime
+now = datetime.datetime.utcnow
 
 log = logging.getLogger( __name__ )
 log.setLevel(logging.DEBUG)
@@ -21,7 +23,7 @@ handler.setFormatter( formatter )
 log.addHandler( handler )
 
 metadata = MetaData( migrate_engine )
-
+db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
 
 def upgrade():
     print __doc__
@@ -48,16 +50,58 @@ def upgrade():
         Request_table = None
         log.debug( "Failed loading table request" )
     if Request_table:
-        # Delete the library_id column in 'request' table
-        try:
-            Request_table.c.library_id.drop()
-        except Exception, e:
-            log.debug( "Deleting column 'library_id' to request table failed: %s" % ( str( e ) ) )   
-        # Delete the folder_id column in 'request' table
-        try:
-            Request_table.c.folder_id.drop()
-        except Exception, e:
-            log.debug( "Deleting column 'folder_id' to request table failed: %s" % ( str( e ) ) )   
+        # Delete library_id & folder_id columns in the table 'request'.
+        # if Galaxy is running on sqlite, the delete/recreate the table
+        # otherwise remove the specific columns
+        if migrate_engine.name == 'sqlite':
+            # create a temporary table
+            RequestTemp_table = Table( 'request_temp', metadata,
+                                        Column( "id", Integer, primary_key=True),
+                                        Column( "create_time", DateTime, default=now ),
+                                        Column( "update_time", DateTime, default=now, onupdate=now ),
+                                        Column( "name", TrimmedString( 255 ), nullable=False ),
+                                        Column( "desc", TEXT ),
+                                        Column( "form_values_id", Integer, ForeignKey( "form_values.id" ), index=True ),
+                                        Column( "request_type_id", Integer, ForeignKey( "request_type.id" ), index=True ),
+                                        Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+                                        Column( "deleted", Boolean, index=True, default=False ) )
+            try:
+                RequestTemp_table.create()
+            except Exception, e:
+                log.debug( "Creating request_temp table failed: %s" % str( e ) )  
+            # insert all the rows from the request table to the request_temp table
+            cmd = \
+                "INSERT INTO request_temp " + \
+                "SELECT id," + \
+                    "create_time," + \
+                    "update_time," + \
+                    "name," + \
+                    "desc," + \
+                    "form_values_id," + \
+                    "request_type_id," + \
+                    "user_id," + \
+                    "deleted " + \
+                "FROM request;" 
+            db_session.execute( cmd )
+            # delete the 'request' table
+            try:
+                Request_table.drop()
+            except Exception, e:
+                log.debug( "Dropping request table failed: %s" % str( e ) )
+            # rename table request_temp to request
+            cmd = "ALTER TABLE request_temp RENAME TO request" 
+            db_session.execute( cmd )
+        else:
+            # Delete the library_id column in 'request' table
+            try:
+                Request_table.c.library_id.drop()
+            except Exception, e:
+                log.debug( "Deleting column 'library_id' to request table failed: %s" % ( str( e ) ) )   
+            # Delete the folder_id column in 'request' table
+            try:
+                Request_table.c.folder_id.drop()
+            except Exception, e:
+                log.debug( "Deleting column 'folder_id' to request table failed: %s" % ( str( e ) ) )   
     # sample table
     try:
         Sample_table = Table( "sample", metadata, autoload=True )
@@ -81,20 +125,11 @@ def upgrade():
         if Library_table:
             # Add the library_id column in 'sample' table
             try:
-                col = Column( "library_id", Integer, index=True )
+                col = Column( "library_id", Integer, ForeignKey( "library.id" ), index=True )
                 col.create( Sample_table )
                 assert col is Sample_table.c.library_id
             except Exception, e:
                 log.debug( "Adding column 'library_id' to sample table failed: %s" % ( str( e ) ) )
-            # add the foreign key constraint
-            try:
-                cons = ForeignKeyConstraint( [Sample_table.c.library_id],
-                                             [Library_table.c.id],
-                                             name='sample_library_id_fk' )
-                # Create the constraint
-                cons.create()
-            except Exception, e:
-                log.debug( "Adding foreign key constraint 'sample_library_id_fk' to table 'library' failed: %s" % ( str( e ) ) )
         # library_folder table
         try:
             LibraryFolder_table = Table( "library_folder", metadata, autoload=True )
@@ -104,21 +139,11 @@ def upgrade():
         if LibraryFolder_table:
             # Add the library_id column in 'sample' table
             try:
-                col = Column( "folder_id", Integer, index=True )
+                col = Column( "folder_id", Integer, ForeignKey( "library_folder.id" ), index=True )
                 col.create( Sample_table )
                 assert col is Sample_table.c.folder_id
             except Exception, e:
                 log.debug( "Adding column 'folder_id' to sample table failed: %s" % ( str( e ) ) )
-            # add the foreign key constraint
-            try:
-                cons = ForeignKeyConstraint( [Sample_table.c.folder_id],
-                                             [LibraryFolder_table.c.id],
-                                             name='sample_folder_id_fk' )
-                # Create the constraint
-                cons.create()
-            except Exception, e:
-                log.debug( "Adding foreign key constraint 'sample_folder_id_fk' to table 'library_folder' failed: %s" % ( str( e ) ) )
-
 
 def downgrade():
     pass

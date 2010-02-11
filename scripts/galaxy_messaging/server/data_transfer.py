@@ -40,8 +40,8 @@ pkg_resources.require( "simplejson" )
 import simplejson
 
 curr_dir = os.getcwd()
-logfile = os.path.join(curr_dir, 'data_transfer.log')
-logging.basicConfig(filename=sys.stdout, level=logging.DEBUG, 
+logfile = os.path.join('/Users/rc/tmp', 'data_transfer.log')
+logging.basicConfig(filename=logfile, level=logging.DEBUG, 
                     format="%(asctime)s [%(levelname)s] %(message)s")
 
 class DataTransferException(Exception):
