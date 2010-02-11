@@ -37,6 +37,7 @@
     <tool file="filters/headWrapper.xml" />
     <tool file="filters/tailWrapper.xml" />
      <tool file="filters/trimmer.xml" />
+     <tool file="stats/dna_filtering.xml" />
   </section>
   <section name="Convert Formats" id="convert">
     <tool file="filters/bed2gff.xml" />

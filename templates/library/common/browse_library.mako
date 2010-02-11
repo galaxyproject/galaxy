@@ -366,6 +366,11 @@
     ${render_msg( msg, messagetype )}
 %endif
 
+%if library.description:
+    <div class="libraryItemBody">${library.description}</div>
+    <br/>
+%endif
+
 <form name="act_on_multiple_datasets" action="${h.url_for( controller='library_common', action='act_on_multiple_datasets', cntrller=cntrller, library_id=trans.security.encode_id( library.id ) )}" onSubmit="javascript:return checkForm();" method="post">
     <table cellspacing="0" cellpadding="0" border="0" width="100%" class="grid" id="library-grid">
         <thead>

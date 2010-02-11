@@ -23,7 +23,7 @@
             %for library in libraries:    
                 <tr class="libraryRow libraryOrFolderRow" id="libraryRow">
                     <td><a href="${h.url_for( controller='library_common', action='browse_library', cntrller='library', id=trans.security.encode_id( library.id ), hidden_folder_ids='' )}">${library.name}</a></td>
-                    <td><i>${library.description}</i></td>
+                    <td>${library.description}</td>
                 </tr>             
             %endfor
         </tbody>
