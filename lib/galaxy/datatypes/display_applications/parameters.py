@@ -140,7 +140,7 @@ class DisplayParameterValueWrapper( object ):
         self.parameter = parameter
         self.other_values = other_values
         self.trans = trans
-        self._dataset_hash, self._user_hash = encode_dataset_user( trans, self.other_values[ DEFAULT_DATASET_NAME ], trans.user )
+        self._dataset_hash, self._user_hash = encode_dataset_user( trans, self.other_values[ DEFAULT_DATASET_NAME ], self.other_values[ DEFAULT_DATASET_NAME ].history.user )
     def __str__( self ):
         return str( self.value )
     def mime_type( self ):
