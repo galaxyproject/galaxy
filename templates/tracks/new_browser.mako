@@ -1,4 +1,4 @@
-<form id="form" method="POST">
+<form id="new-browser-form" method="post" onsubmit="continue_fn(); return false;">
     <div class="form-row">
         <label for="title">Browser name:</label>
         <div class="form-row-input">

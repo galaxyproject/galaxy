@@ -96,17 +96,18 @@ ${h.js( 'galaxy.base', 'galaxy.panels', "json2", "jquery", "jquery.event.drag", 
             %endfor
             init();
         %else:
+            continue_fn = function() {
+                view = new View( undefined, $("#new-title").val(), undefined, $("#new-dbkey").val() );
+                init();
+                hide_modal();
+            };
             $.ajax({
                 url: "${h.url_for( action='new_browser' )}",
                 data: {},
                 error: function() { alert( "Couldn't create new browser" ) },
                 success: function(form_html) {
                     show_modal("New Track Browser", form_html, {
-                        "Continue": function() {
-                            view = new View( undefined, $("#new-title").val(), undefined, $("#new-dbkey").val() );
-                            init();
-                            hide_modal();
-                        }
+                        "Continue": continue_fn
                     });
                 }
             });
