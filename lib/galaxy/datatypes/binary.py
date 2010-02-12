@@ -108,7 +108,7 @@ class Bam( Binary ):
         if stderr:
             if exit_code != 0:
                 os.unlink( stderr_name ) #clean up 
-                raise Exception, "Error Grooming BAM file contents: %s" % stderr
+                raise Exception, "Error Setting BAM Metadata: %s" % stderr
             else:
                 print stderr
         
