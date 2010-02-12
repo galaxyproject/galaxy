@@ -10,6 +10,16 @@
 %>
 <%inherit file="${inherit(context)}"/>
 
+<%def name="init()">
+<%
+    self.has_left_panel=False
+    self.has_right_panel=False
+    self.message_box_visible=False
+    self.active_view="user"
+    self.overlay_visible=False
+%>
+</%def>
+
 ##
 ## Override methods from base.mako and base_panels.mako
 ##
@@ -666,7 +676,8 @@
 </%def>
 
 <%def name="stylesheets()">
-    ${h.css( "base", "autocomplete_tagging" )}
+    ${parent.stylesheets()}
+    ${h.css( "autocomplete_tagging" )}
     <style>
        ## Not generic to all grids -- move to base?
        .count-box {

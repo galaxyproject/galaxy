@@ -234,7 +234,8 @@ class Grid( object ):
                 else:
                     new_kwargs[ 'id' ] = trans.security.encode_id( id )
             return url_for( **new_kwargs )
-
+            
+        use_panels = ( 'use_panels' in kwargs ) and ( kwargs['use_panels'] == True )
         async_request = ( ( self.use_async ) and ( 'async' in kwargs ) and ( kwargs['async'] in [ 'True', 'true'] ) )
         return trans.fill_template( iff( async_request, self.async_template, self.template),
                                     grid=self,
@@ -251,6 +252,7 @@ class Grid( object ):
                                     url = url,
                                     message_type = status,
                                     message = message,
+                                    use_panels=use_panels,
                                     # Pass back kwargs so that grid template can set and use args without grid explicitly having to pass them.
                                     kwargs=kwargs
                                      )
