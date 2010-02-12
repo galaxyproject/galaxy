@@ -70,12 +70,16 @@ class Bam( Binary ):
         samtools_created_sorted_file_name = "%s.bam" % tmp_sorted_dataset_file_name_prefix #samtools accepts a prefix, not a filename, it always adds .bam to the prefix
         command = "samtools sort %s %s" % ( file_name, tmp_sorted_dataset_file_name_prefix )
         proc = subprocess.Popen( args=command, shell=True, cwd=tmp_dir, stderr=open( stderr_name, 'wb' ) )
-        proc.wait()
+        exit_code = proc.wait()
         
         #Did sort succeed?
         stderr = open( stderr_name ).read().strip()
         if stderr:
-            raise Exception, "Error Grooming BAM file contents: %s" % stderr
+            if exit_code != 0:
+                shutil.rmtree( tmp_dir) #clean up 
+                raise Exception, "Error Grooming BAM file contents: %s" % stderr
+            else:
+                print stderr
         
         # Move samtools_created_sorted_file_name to our output dataset location
         shutil.move( samtools_created_sorted_file_name, file_name )
@@ -98,11 +102,15 @@ class Bam( Binary ):
         stderr_name = tempfile.NamedTemporaryFile( prefix = "bam_index_stderr" ).name
         command = 'samtools index %s %s' % ( dataset.file_name, index_file.file_name )
         proc = subprocess.Popen( args=command, shell=True, stderr=open( stderr_name, 'wb' ) )
-        proc.wait()
+        exit_code = proc.wait()
         #Did index succeed?
         stderr = open( stderr_name ).read().strip()
         if stderr:
-            raise Exception, "Error Setting BAM Metadata: %s" % stderr
+            if exit_code != 0:
+                os.unlink( stderr_name ) #clean up 
+                raise Exception, "Error Grooming BAM file contents: %s" % stderr
+            else:
+                print stderr
         
         dataset.metadata.bam_index = index_file
         
