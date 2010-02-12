@@ -1,4 +1,4 @@
-import os, os.path, shutil, urllib, StringIO, re, gzip, tempfile, shutil, zipfile, copy
+import os, os.path, shutil, urllib, StringIO, re, gzip, tempfile, shutil, zipfile, copy, glob
 from galaxy.web.base.controller import *
 from galaxy import util, jobs
 from galaxy.datatypes import sniff
@@ -1048,21 +1048,30 @@ class LibraryCommon( BaseController ):
         show_deleted = util.string_as_bool( kwd.get( 'show_deleted', False ) )
         ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( id ) )
         if not ldda.dataset:
-            msg = 'Invalid LibraryDatasetDatasetAssociation id %s received for file downlaod' % str( id )
+            msg = 'Invalid LibraryDatasetDatasetAssociation id %s received for file download' % str( id )
             messagetype = 'error'
         else:
-            mime = trans.app.datatypes_registry.get_mimetype_by_extension( ldda.extension.lower() )
-            trans.response.set_content_type( mime )
-            fStat = os.stat( ldda.file_name )
-            trans.response.headers[ 'Content-Length' ] = int( fStat.st_size )
-            valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-            fname = ldda.name
-            fname = ''.join( c in valid_chars and c or '_' for c in fname )[ 0:150 ]
-            trans.response.headers[ "Content-Disposition" ] = "attachment; filename=GalaxyLibraryDataset-%s-[%s]" % ( str( id ), fname )
-            try:
-                return open( ldda.file_name )
-            except: 
-                msg = 'This dataset contains no content'
+            composite_extensions = trans.app.datatypes_registry.get_composite_extensions( )
+            ext = ldda.extension
+            if ext in composite_extensions: 
+                # is composite - must return a zip of contents and the html file itself - ugh - should be reversible at upload!
+                # use act_on_multiple_datasets( self, trans, cntrller, library_id, ldda_ids='', **kwd ) since it does what we need
+                kwd['do_action'] = 'zip'
+                return self.act_on_multiple_datasets( trans, cntrller, library_id, ldda_ids=id, **kwd )
+                
+            else:
+                mime = trans.app.datatypes_registry.get_mimetype_by_extension( ldda.extension.lower() )
+                trans.response.set_content_type( mime )
+                fStat = os.stat( ldda.file_name )
+                trans.response.headers[ 'Content-Length' ] = int( fStat.st_size )
+                valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+                fname = ldda.name
+                fname = ''.join( c in valid_chars and c or '_' for c in fname )[ 0:150 ]
+                trans.response.headers[ "Content-Disposition" ] = "attachment; filename=GalaxyLibraryDataset-%s-[%s]" % ( str( id ), fname )
+                try:
+                    return open( ldda.file_name )
+                except: 
+                    msg = 'This dataset contains no content'
         return trans.response.send_redirect( web.url_for( controller='library_common',
                                                           action='browse_library',
                                                           cntrller=cntrller,
@@ -1246,6 +1255,7 @@ class LibraryCommon( BaseController ):
                     msg = "Unable to create archive for download, please report this error"
                     messagetype = 'error'
                 if not error:
+                    composite_extensions = trans.app.datatypes_registry.get_composite_extensions( )
                     seen = []
                     current_user_roles = trans.get_current_user_roles()
                     for ldda_id in ldda_ids:
@@ -1254,6 +1264,9 @@ class LibraryCommon( BaseController ):
                             or not trans.app.security_agent.can_access_dataset( current_user_roles, ldda.dataset ) \
                             or ldda.dataset.state in [ 'new', 'upload', 'queued', 'running', 'empty', 'discarded' ]:
                             continue
+                        ext = ldda.extension
+                        if ext in composite_extensions: 
+                            is_composite = True
                         path = ""
                         parent_folder = ldda.library_dataset.folder
                         while parent_folder is not None:
@@ -1267,13 +1280,38 @@ class LibraryCommon( BaseController ):
                         while path in seen:
                             path += '_'
                         seen.append( path )
-                        try:
-                            archive.add( ldda.dataset.file_name, path )
-                        except IOError:
-                            error = True
-                            log.exception( "Unable to write to temporary library download archive" )
-                            msg = "Unable to create archive for download, please report this error"
-                            messagetype = 'error'
+                        if is_composite: # need to add all the components from the extra_files_path to the zip
+                            zpath = os.path.split(path)[-1] # comes as base_name/fname
+                            zpathext = os.path.splitext(zpath)[-1]
+                            if zpathext == '':
+                                zpath = '%s.html' % zpath # fake the real nature of the html file 
+                            try:
+                                archive.add(ldda.dataset.file_name,zpath)
+                            except IOError:
+                                error = True
+                                log.exception( "Unable to add composite parent %s to temporary library download archive" % ldda.dataset.file_name)
+                                msg = "Unable to create archive for download, please report this error"
+                                messagetype = 'error'
+                                continue                                
+                            flist = glob.glob(os.path.join(ldda.dataset.extra_files_path,'*.*')) # glob returns full paths
+                            for fpath in flist:
+                                efp,fname = os.path.split(fpath)
+                                try:
+                                    archive.add( fpath,fname )
+                                except IOError:
+                                    error = True
+                                    log.exception( "Unable to add %s to temporary library download archive" % fname)
+                                    msg = "Unable to create archive for download, please report this error"
+                                    messagetype = 'error'
+                                    continue
+                        else: # simple case
+                            try:
+                                archive.add( ldda.dataset.file_name, path )
+                            except IOError:
+                                error = True
+                                log.exception( "Unable to write %s to temporary library download archive" % ldda.dataset.file_name)
+                                msg = "Unable to create archive for download, please report this error"
+                                messagetype = 'error'                            
                     if not error:    
                         if params.do_action == 'zip':
                             archive.close()
