@@ -25,6 +25,54 @@
 
             });
         });
+        
+        // Setup embedded content:
+        //  (a) toggles for showing/hiding embedded content;
+        //  (b) ...
+        $('.embedded-item').each( function() 
+        {
+            // Setup toggle expand.
+            var container = $(this);
+            var toggle_expand = $(this).find('.toggle-expand');
+            toggle_expand.click( function() 
+            {
+                var ajax_url = container.find("input[type=hidden]").val();
+                // Only get item content if it's not already there.
+                var item_content = $.trim(container.find(".item-content").text());
+                if (item_content == "")
+                    $.ajax({
+                        type: "GET",
+                        url: ajax_url,
+                        error: function() { alert("Getting item content failed."); },
+                        success: function( item_content ) {
+                            container.find(".summary-content").hide("fast");
+                            container.find(".item-content").html(item_content).show("fast");
+                            container.find(".toggle-expand").hide();
+                            container.find(".toggle-contract").show();
+                        }
+                    });
+                else
+                {
+                    container.find(".summary-content").hide("fast");
+                    container.find(".item-content").show("fast");
+                    container.find(".toggle-expand").hide();
+                    container.find(".toggle-contract").show();
+                }
+                return false;
+            });
+            // Setup toggle contract.
+            var toggle_contract = $(this).find('.toggle-contract');
+            toggle_contract.click( function() 
+            {
+                container.find(".item-content").hide("fast");
+                container.find(".summary-content").show("fast");
+                container.find(".toggle-contract").hide();
+                container.find(".toggle-expand").show();
+                return false;
+            });
+            
+            
+        });
     });
     // Functionized so AJAX'd datasets can call them
     function initShowHide() {
@@ -148,15 +196,15 @@
 <%def name="stylesheets()">
     ${parent.stylesheets()}
     ${h.css( "base", "history", "autocomplete_tagging" )}
-</%def>
-
-<%def name="get_item_name( page )">
-    <% return page.title %>
+    <style type="text/css">
+        .toggle-contract { display: none; }
+        .item-content { overflow: auto; }
+    </style>
 </%def>
 
 <%def name="render_item_links( page )">
 </%def>
 
 <%def name="render_item( page, page_data=None )">
-    ${page.latest_revision.content.decode( "utf-8" )}
+    ${page_data}
 </%def>

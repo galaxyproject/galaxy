@@ -980,6 +980,11 @@ assign_mapper( context, History, History.table,
                      tags=relation( HistoryTagAssociation, order_by=HistoryTagAssociation.table.c.id, backref="histories" ),
                      annotations=relation( HistoryAnnotationAssociation, order_by=HistoryAnnotationAssociation.table.c.id, backref="histories" ) )  
                       )
+                                            
+# Set up proxy so that 
+#   History.users_shared_with_dot_users
+# returns a list of User objects.
+History.users_shared_with_dot_users = association_proxy( 'users_shared_with', 'user' )
 
 assign_mapper( context, HistoryUserShareAssociation, HistoryUserShareAssociation.table,
     properties=dict( user=relation( User, backref='histories_shared_by_others' ),
@@ -1271,6 +1276,11 @@ assign_mapper( context, StoredWorkflow, StoredWorkflow.table,
                      tags=relation( StoredWorkflowTagAssociation, order_by=StoredWorkflowTagAssociation.table.c.id, backref="stored_workflows" ),
                      annotations=relation( StoredWorkflowAnnotationAssociation, order_by=StoredWorkflowAnnotationAssociation.table.c.id, backref="stored_workflows" ) ) 
                    )
+                   
+# Set up proxy so that 
+#   StoredWorkflow.users_shared_with_dot_users
+# returns a list of User objects.
+StoredWorkflow.users_shared_with_dot_users = association_proxy( 'users_shared_with', 'user' )
 
 assign_mapper( context, StoredWorkflowUserShareAssociation, StoredWorkflowUserShareAssociation.table,
     properties=dict( user=relation( User, backref='workflows_shared_by_others' ),
@@ -1295,6 +1305,11 @@ assign_mapper( context, Page, Page.table,
                                                lazy=False ),
                      tags=relation(PageTagAssociation, order_by=PageTagAssociation.table.c.id, backref="pages") 
                    ) )
+                   
+# Set up proxy so that 
+#   Page.users_shared_with_dot_users
+# returns a list of User objects.
+Page.users_shared_with_dot_users = association_proxy( 'users_shared_with', 'user' )
                    
 assign_mapper( context, PageUserShareAssociation, PageUserShareAssociation.table,
    properties=dict( user=relation( User, backref='pages_shared_by_others' ),

@@ -11,7 +11,7 @@ from galaxy.web.controllers.forms import get_all_forms
 from sqlalchemy.sql.expression import func, and_
 from sqlalchemy.sql import select
 import pexpect
-import ConfigParser
+import ConfigParser, threading, time
 
 log = logging.getLogger( __name__ )
 
@@ -203,6 +203,18 @@ class RequestTypeGrid( grids.Grid ):
         grids.GridAction( "Create new request type", dict( controller='requests_admin', 
                                                            action='create_request_type' ) )
     ]
+    
+class DataTransferThread(threading.Thread):
+    def __init__(self, **kwargs):
+        threading.Thread.__init__(self, name=kwargs['name'])
+        self.dataset_index = kwargs['dataset_index']
+        self.cmd = kwargs['cmd']
+    def run(self):
+        try:
+            retcode = subprocess.call(self.cmd)
+        except Exception, e:
+            error_msg = "Data transfer failed. " + str(e) + "<br/>"
+            log.debug(error_msg)
     
 
 #
@@ -1511,7 +1523,7 @@ class RequestsAdmin( BaseController ):
             trans.sa_session.add( dp )
             trans.sa_session.flush()
         return datatx_user
-
+    
     def __start_datatx(self, trans, sample):
         # data transfer user
         datatx_user = self.__setup_datatx_user(trans, sample.library, sample.folder)
@@ -1542,20 +1554,28 @@ class RequestsAdmin( BaseController ):
                           str(index),
                           trans.security.encode_id(sample.library.id), 
                           trans.security.encode_id(sample.folder.id)  )
-                # set the transfer status
+#                # set the transfer status
                 sample.dataset_files[index][1] = sample.transfer_status.IN_PROGRESS
                 trans.sa_session.add( sample )
                 trans.sa_session.flush()
-                try:
-                    retcode = subprocess.call(cmd)
-                except Exception, e:
-                    error_msg = dfile.split('/')[-1] + ": Data transfer failed. " + str(e) + "<br/>"
-                    return trans.response.send_redirect( web.url_for( controller='requests_admin',
-                                                                      action='show_datatx_page', 
-                                                                      sample_id=trans.security.encode_id(sample.id),
-                                                                      folder_path=os.path.dirname(dfile),
-                                                                      messagetype='error',
-                                                                      msg=error_msg))
+                dtt = DataTransferThread(name='thread_'+str(index),
+                                         dataset_index=index, 
+                                         cmd=cmd)
+                dtt.start()
+#                # set the transfer status
+#                sample.dataset_files[index][1] = sample.transfer_status.IN_PROGRESS
+#                trans.sa_session.add( sample )
+#                trans.sa_session.flush()
+#                try:
+#                    retcode = subprocess.call(cmd)
+#                except Exception, e:
+#                    error_msg = dfile.split('/')[-1] + ": Data transfer failed. " + str(e) + "<br/>"
+#                    return trans.response.send_redirect( web.url_for( controller='requests_admin',
+#                                                                      action='show_datatx_page', 
+#                                                                      sample_id=trans.security.encode_id(sample.id),
+#                                                                      folder_path=os.path.dirname(dfile),
+#                                                                      messagetype='error',
+#                                                                      msg=error_msg))
         # set the sample state to the last state
         if sample.current_state().id != sample.request.type.states[-1].id:
             event = trans.app.model.SampleEvent(sample, sample.request.type.states[-1], 

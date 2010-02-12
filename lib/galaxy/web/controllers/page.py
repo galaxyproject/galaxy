@@ -1,6 +1,6 @@
 from galaxy.web.base.controller import *
 from galaxy.web.framework.helpers import time_ago, grids
-from galaxy.util.sanitize_html import sanitize_html
+from galaxy.util.sanitize_html import sanitize_html, _BaseHTMLProcessor
 from galaxy.util.odict import odict
 from galaxy.util.json import from_json_string
 
@@ -222,7 +222,70 @@ class PageSelectionGrid( ItemSelectionGrid ):
         key="free-text-search", visible=False, filterable="standard" )
                 )
                 
-class PageController( BaseController, Sharable ):
+class _PageContentProcessor( _BaseHTMLProcessor ):
+    """ Processes page content to produce HTML that is suitable for display. For now, processor renders embedded objects. """
+    
+    def __init__( self, trans, encoding, type, render_embed_html_fn ):
+        _BaseHTMLProcessor.__init__( self, encoding, type)
+        self.trans = trans
+        self.ignore_content = False
+        self.num_open_tags_for_ignore = 0
+        self.render_embed_html_fn = render_embed_html_fn
+        
+    def unknown_starttag( self, tag, attrs ):
+        """ Called for each start tag; attrs is a list of (attr, value) tuples. """
+    
+        # If ignoring content, just increment tag count and ignore.
+        if self.ignore_content:
+            self.num_open_tags_for_ignore += 1
+            return
+        
+        # Not ignoring tag; look for embedded content.
+        embedded_item = False
+        for attribute in attrs:
+            if ( attribute[0] == "class" ) and ( "embedded-item" in attribute[1].split(" ") ): 
+                embedded_item = True
+                break
+        # For embedded content, set ignore flag to ignore current content and add new content for embedded item.
+        if embedded_item:
+            # Set processing attributes to ignore content.
+            self.ignore_content = True
+            self.num_open_tags_for_ignore = 1
+            
+            # Insert content for embedded element.
+            for attribute in attrs:
+                name = attribute[0]
+                if name == "id":
+                    # ID has form '<class_name>-<encoded_item_id>'
+                    item_class, item_id = attribute[1].split("-")
+                    embed_html = self.render_embed_html_fn( self.trans, item_class, item_id )
+                    self.pieces.append( embed_html )
+            return
+        
+        # Default behavior: not ignoring and no embedded content.
+        _BaseHTMLProcessor.unknown_starttag( self, tag, attrs )
+        
+    def handle_data( self, text ):
+        """ Called for each block of plain text. """
+        if self.ignore_content:
+            return
+        _BaseHTMLProcessor.handle_data( self, text )
+        
+    def unknown_endtag( self, tag ):
+        """ Called for each end tag. """
+        
+        # If ignoring content, see if current tag is the end of content to ignore.
+        if self.ignore_content:
+            self.num_open_tags_for_ignore -= 1        
+            if self.num_open_tags_for_ignore == 0:
+                # Done ignoring content.
+                self.ignore_content = False
+            return
+        
+        # Default behavior: 
+        _BaseHTMLProcessor.unknown_endtag( self, tag )
+                
+class PageController( BaseController, Sharable, UsesHistory, UsesStoredWorkflow, UsesHistoryDatasetAssociation ):
     
     _page_list = PageListGrid()
     _all_published_list = PageAllPublishedGrid()
@@ -520,9 +583,13 @@ class PageController( BaseController, Sharable ):
             # User not logged in, so only way to view page is if it's importable.
             page = page_query_base.filter_by( importable=True ).first()
         if page is None:
-           raise web.httpexceptions.HTTPNotFound()
-
-        return trans.fill_template_mako( "page/display.mako", item=page)
+            raise web.httpexceptions.HTTPNotFound()
+            
+        # Process page content.
+        processor = _PageContentProcessor( trans, 'utf-8', 'text/html', self._get_embed_html )
+        processor.feed( page.latest_revision.content )
+        page_content = processor.output()
+        return trans.fill_template_mako( "page/display.mako", item=page, item_data=page_content, content_only=True )
         
     @web.expose
     @web.require_login( "use Galaxy pages" )
@@ -548,6 +615,15 @@ class PageController( BaseController, Sharable ):
             page.slug = new_slug
             trans.sa_session.flush()
             return page.slug
+            
+    @web.expose
+    def get_embed_html_async( self, trans, id ):
+        """ Returns HTML for embedding a workflow in a page. """
+
+        # TODO: user should be able to embed any item he has access to. see display_by_username_and_slug for security code.
+        page = self.get_page( trans, id )
+        if page:
+            return "Embedded Page '%s'" % page.title
 
     @web.expose
     @web.json
@@ -593,43 +669,50 @@ class PageController( BaseController, Sharable ):
     @web.require_login("get annotation table for history")
     def get_history_annotation_table( self, trans, id ):
         """ Returns HTML for an annotation table for a history. """
-        
-        # TODO: users should be able to annotate a history if they own it, it is importable, or it is shared with them. This only
-        # returns a history if a user owns it.
-        history = self.get_history( trans, id, True )
+        history = self.get_history( trans, id, False, True )
         
         if history:
-            # TODO: Query taken from root/history; it should be moved either into history or trans object
-            # so that it can reused.
-            query = trans.sa_session.query( model.HistoryDatasetAssociation ) \
-                .filter( model.HistoryDatasetAssociation.history == history ) \
-                .options( eagerload( "children" ) ) \
-                .join( "dataset" ).filter( model.Dataset.purged == False ) \
-                .options( eagerload_all( "dataset.actions" ) ) \
-                .order_by( model.HistoryDatasetAssociation.hid )
-            # For now, do not show deleted datasets.
-            show_deleted = False
-            if not show_deleted:
-                query = query.filter( model.HistoryDatasetAssociation.deleted == False )
-            return trans.fill_template( "page/history_annotation_table.mako", history=history, datasets=query.all(), show_deleted=False )
+            datasets = self.get_history_datasets( trans, history )
+            return trans.fill_template( "page/history_annotation_table.mako", history=history, datasets=datasets, show_deleted=False )
             
     @web.expose
     def get_editor_iframe( self, trans ):
         """ Returns the document for the page editor's iframe. """
         return trans.fill_template( "page/wymiframe.mako" )
         
-    def get_page( self, trans, id, check_ownership=True ):
+    def get_page( self, trans, id, check_ownership=True, check_accessible=False ):
         """Get a page from the database by id, verifying ownership."""
         # Load history from database
         id = trans.security.decode_id( id )
         page = trans.sa_session.query( model.Page ).get( id )
         if not page:
-            err+msg( "History not found" )
-        if check_ownership:
-            # Verify ownership
-            user = trans.get_user()
-            if not user:
-                error( "Must be logged in to work with Pages" )
-            if page.user != user:
-                error( "History is not owned by current user" )
-        return page
+            err+msg( "Page not found" )
+        else:
+            return self.security_check( trans.get_user(), page, check_ownership, check_accessible )
+        
+    def _get_embed_html( self, trans, item_class, item_id ):
+        """ Returns HTML for embedding an item in a page. """
+        item_class = self.get_class( item_class )
+        if item_class == model.History:
+            history = self.get_history( trans, item_id, False, True )
+            if history:
+                datasets = self.get_history_datasets( trans, history )
+                annotation = self.get_item_annotation_str( trans.sa_session, history.user, history )
+                return trans.fill_template( "history/embed.mako", item=history, item_data=datasets, annotation=annotation )
+        elif item_class == model.HistoryDatasetAssociation:
+            dataset = self.get_dataset( trans, item_id )
+            if dataset:
+                data = self.get_data( dataset )
+                annotation = self.get_item_annotation_str( trans.sa_session, dataset.history.user, dataset )
+                return trans.fill_template( "dataset/embed.mako", item=dataset, item_data=data, annotation=annotation )
+        elif item_class == model.StoredWorkflow:
+            workflow = self.get_stored_workflow( trans, item_id, False, True )
+            if workflow:
+                self.get_stored_workflow_steps( trans, workflow )
+                annotation = self.get_item_annotation_str( trans.sa_session, workflow.user, workflow )
+                return trans.fill_template( "workflow/embed.mako", item=workflow, item_data=workflow.latest_workflow.steps, annotation=annotation )
+        elif item_class == model.Page:
+            pass
+        
+        
+        

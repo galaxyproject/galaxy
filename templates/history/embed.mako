@@ -1,0 +1,15 @@
+<%inherit file="/embed_base.mako"/>
+<%!
+	from galaxy.web.framework.helpers import iff
+%>
+
+<%def name="content( history, datasets )">
+    %if annotation:
+        <div class='annotation'>${annotation}</div>
+    %endif
+    <ul>
+        <% num_datasets = len ( datasets ) %>
+        <li>${num_datasets} dataset${iff( num_datasets != 1, "s", "" )}
+        <li>Operations: ...
+    </ul>
+</%def>

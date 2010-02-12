@@ -58,7 +58,6 @@
                         other_values = {}
                         value = other_values[ param.name ] = param.get_initial_value( t, other_values )
                     %>
-                    <% print param.__class__ %>
                     ${param.get_html_field( t, value, other_values ).get_html( str(step.id) + "|" + prefix )}
                 %endif
             %else:

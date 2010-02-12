@@ -110,7 +110,7 @@ class HistoryDatasetAssociationListGrid( grids.Grid ):
         # a user relation.
         return query.select_from( model.HistoryDatasetAssociation.table.join( model.History.table ) ).filter( model.History.user == trans.user )
 
-class DatasetInterface( BaseController ):
+class DatasetInterface( BaseController, UsesHistoryDatasetAssociation ):
         
     stored_list_grid = HistoryDatasetAssociationListGrid()
 
@@ -293,9 +293,18 @@ class DatasetInterface( BaseController ):
     @web.require_login( "use Galaxy datasets" )
     def get_name_and_link_async( self, trans, id=None ):
         """ Returns dataset's name and link. """
-        dataset = self.get_data( trans, id )
+        dataset = self.get_dataset( trans, id )
         return_dict = { "name" : dataset.name, "link" : url_for( action="display_by_username_and_slug", username=dataset.history.user.username, slug=trans.security.encode_id( dataset.id ) ) }
         return return_dict
+                
+    @web.expose
+    def get_embed_html_async( self, trans, id ):
+        """ Returns HTML for embedding a dataset in a page. """
+
+        # TODO: user should be able to embed any item he has access to. see display_by_username_and_slug for security code.
+        dataset = self.get_dataset( trans, id )
+        if dataset:
+            return "Embedded Dataset '%s'" % dataset.name
 
     @web.expose
     @web.require_login( "use Galaxy datasets" )
@@ -306,20 +315,26 @@ class DatasetInterface( BaseController ):
     @web.expose
     def display_by_username_and_slug( self, trans, username, slug, preview=True ):
         """ Display dataset by username and slug; because datasets do not yet have slugs, the slug is the dataset's id. """
-        data = self.get_data( trans, slug )
-        if data:
-            # Get data from file, truncating if necessary.
-            if os.path.exists( data.file_name ):
-                max_peek_size = 1000000 # 1 MB
-                if preview and os.stat( data.file_name ).st_size > max_peek_size:
-                    dataset_data = open( data.file_name ).read(max_peek_size)
-                    truncated = True
-                else:
-                    dataset_data = open( data.file_name ).read(max_peek_size)
-                    truncated = False
-            return trans.fill_template_mako( "dataset/display.mako", item=data, item_data=dataset_data, truncated=truncated )
+        dataset = self.get_dataset( trans, slug )
+        if dataset:
+            truncated, dataset_data = self.get_data( dataset, preview )
+            return trans.fill_template_mako( "/dataset/display.mako", item=dataset, item_data=dataset_data, truncated=truncated )
         else:
             raise web.httpexceptions.HTTPNotFound()
+            
+    @web.expose
+    @web.require_login("get item content asynchronously")
+    def get_item_content_async( self, trans, id ):
+        """ Returns item content in HTML format. """
+
+        dataset = self.get_dataset( trans, id )
+        if dataset is None:
+            raise web.httpexceptions.HTTPNotFound()
+        truncated, dataset_data = self.get_data( dataset, preview=True )
+        # Get annotation.
+        annotation = self.get_item_annotation_str( trans.sa_session, trans.get_user(), dataset )
+        return trans.stream_template_mako( "/dataset/item_content.mako", item=dataset, item_data=dataset_data, truncated=truncated )
+        
 
     @web.expose
     def display_at( self, trans, dataset_id, filename=None, **kwd ):
@@ -514,22 +529,3 @@ class DatasetInterface( BaseController ):
                                     done_msg = done_msg,
                                     error_msg = error_msg,
                                     refresh_frames = refresh_frames )
-
-    def get_data( self, trans, dataset_id, check_user_can_access=True ):
-        """ Get an HDA from the database by id, verifying that user can access dataset."""
-        # DEPRECATION: We still support unencoded ids for backward compatibility
-        try:
-            dataset_id = int( dataset_id )
-        except ValueError:
-            dataset_id = trans.security.decode_id( dataset_id )
-        data = trans.sa_session.query( model.HistoryDatasetAssociation ).get( dataset_id )
-        if not data:
-            raise paste.httpexceptions.HTTPRequestRangeNotSatisfiable( "Invalid dataset id: %s." % str( dataset_id ) )
-        if check_user_can_access:
-            current_user_roles = trans.get_current_user_roles()
-            if trans.app.security_agent.can_access_dataset( current_user_roles, data.dataset ):
-                if data.state == trans.model.Dataset.states.UPLOAD:
-                    return trans.show_error_message( "Please wait until this dataset finishes uploading before attempting to view it." )
-            else:
-                error( "You are not allowed to access this dataset" )
-        return data

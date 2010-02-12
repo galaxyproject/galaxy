@@ -10,7 +10,7 @@ from galaxy.model.orm import *
 
 log = logging.getLogger( __name__ )
 
-class RootController( BaseController ):
+class RootController( BaseController, UsesHistory ):
     
     @web.expose
     def default(self, trans, target1=None, target2=None, **kwd):
@@ -69,18 +69,11 @@ class RootController( BaseController ):
             return trans.fill_template_mako( "root/history_as_xml.mako", history=history, show_deleted=util.string_as_bool( show_deleted ) )
         else:
             show_deleted = util.string_as_bool( show_deleted )
-            query = trans.sa_session.query( model.HistoryDatasetAssociation ) \
-                .filter( model.HistoryDatasetAssociation.history == history ) \
-                .options( eagerload( "children" ) ) \
-                .join( "dataset" ).filter( model.Dataset.purged == False ) \
-                .options( eagerload_all( "dataset.actions" ) ) \
-                .order_by( model.HistoryDatasetAssociation.hid )
-            if not show_deleted:
-                query = query.filter( model.HistoryDatasetAssociation.deleted == False )
+            datasets = self.get_history_datasets( trans, history, show_deleted )
             return trans.stream_template_mako( "root/history.mako",
                                                history = history,
                                                annotation = self.get_item_annotation_str( trans.sa_session, trans.get_user(), history ),
-                                               datasets = query.all(),
+                                               datasets = datasets,
                                                hda_id = hda_id,
                                                show_deleted = show_deleted )
 

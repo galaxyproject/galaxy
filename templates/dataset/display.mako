@@ -27,7 +27,6 @@
 </%def>
 
 <%def name="render_item( data, data_to_render )">
-    <hr/>
     %if truncated:
         <div class="warningmessagelarge">
             This dataset is large and only the first megabyte is shown below. | 
@@ -82,7 +81,7 @@
         
                 ## Tags.
                 <p>
-                <h4>Tags</strong></h4>
+                <h4>Tags</h4>
                 <p>
                 ## Community tags.
                 <div>
