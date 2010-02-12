@@ -17,12 +17,11 @@ python data_transfer.py <sequencer_host>
                         <library_id>
                         <folder_id>
 """
- 
 import ConfigParser
 import sys, os, time, traceback
 import optparse
 import urllib,urllib2, cookielib, shutil
-import logging
+import logging, time
 from galaxydb_interface import GalaxyDbInterface
 
 assert sys.version_info[:2] >= ( 2, 4 )
@@ -40,7 +39,7 @@ pkg_resources.require( "simplejson" )
 import simplejson
 
 curr_dir = os.getcwd()
-logfile = os.path.join('/Users/rc/tmp', 'data_transfer.log')
+logfile = os.path.join(os.getcwd(), 'data_transfer.log')
 logging.basicConfig(filename=logfile, level=logging.DEBUG, 
                     format="%(asctime)s [%(levelname)s] %(message)s")
 
@@ -66,11 +65,13 @@ class DataTransfer(object):
         try:
             # Retrieve the upload user login information from the config file
             config = ConfigParser.ConfigParser()
-            config.read('universe_wsgi.ini')
-            self.server_host = config.get("server:main", "host")
-            self.server_port = config.get("server:main", "port")
-            self.database_connection = config.get("app:main", "database_connection")
-            self.import_dir = config.get("app:main", "library_import_dir")
+            config.read('transfer_datasets.ini')
+            self.datatx_email = config.get("data_transfer_user_login_info", "email")
+            self.datatx_password = config.get("data_transfer_user_login_info", "password")
+            self.server_host = config.get("universe_wsgi_config", "host")
+            self.server_port = config.get("universe_wsgi_config", "port")
+            self.database_connection = config.get("universe_wsgi_config", "database_connection")
+            self.import_dir = config.get("universe_wsgi_config", "library_import_dir")
             # create the destination directory within the import directory
             self.server_dir = os.path.join( self.import_dir, 'datatx_'+str(os.getpid()) )
             os.mkdir(self.server_dir)
@@ -90,7 +91,7 @@ class DataTransfer(object):
         '''
         # datatx
         self.transfer_file()
-        # add the dataset to the given library 
+        # add the dataset to the given library
         self.add_to_library()
         # update the data transfer status in the db
         self.update_status('Complete')
@@ -104,6 +105,7 @@ class DataTransfer(object):
         before adding the same to the data library
         '''
         try:
+            time.sleep(60)
             shutil.rmtree( self.server_dir )
         except:
             self.error_and_exit()
@@ -151,24 +153,19 @@ class DataTransfer(object):
         '''
         try:
             logging.debug('Adding %s to library...' % os.path.basename(self.remote_file))
-            # Retrieve the upload user login information from the config file
-            config = ConfigParser.ConfigParser()
-            config.read('transfer_datasets.ini')
-            email = config.get("data_transfer_user_login_info", "email")
-            password = config.get("data_transfer_user_login_info", "password")
             # create url
             base_url =  "http://%s:%s" % (self.server_host, self.server_port)
             # login 
-            url = "%s/user/login?email=%s&password=%s" % (base_url, email, password)
+            url = "%s/user/login?email=%s&password=%s" % (base_url, self.datatx_email, self.datatx_password)
             cj = cookielib.CookieJar()
             opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
             f = opener.open(url)
-            if f.read().find("Now logged in as "+email) == -1:
+            if f.read().find("Now logged in as "+self.datatx_email) == -1:
                 # if the user doesnt exist, create the user
-                url = "%s/user/create?email=%s&username=%s&password=%s&confirm=%s&create_user_button=Submit" % ( base_url, email, email, password, password )
+                url = "%s/user/create?email=%s&username=%s&password=%s&confirm=%s&create_user_button=Submit" % ( base_url, self.datatx_email, self.datatx_email, self.datatx_password, self.datatx_password )
                 f = opener.open(url)
-                if f.read().find("Now logged in as "+email) == -1:
-                    raise DataTransferException("The "+email+" user could not login to Galaxy")
+                if f.read().find("Now logged in as "+self.datatx_email) == -1:
+                    raise DataTransferException("The "+self.datatx_email+" user could not login to Galaxy")
             # after login, add dataset to the library
             params = urllib.urlencode(dict( cntrller='library_admin',
                                             tool_id='upload1',
@@ -191,7 +188,7 @@ class DataTransfer(object):
             # finally logout
             f = opener.open(base_url+'/user/logout')
             if f.read().find("You are no longer logged in.") == -1:
-                raise DataTransferException("The "+email+" user could not logout of Galaxy")
+                raise DataTransferException("The "+self.datatx_email+" user could not logout of Galaxy")
         except DataTransferException, (e):
             self.error_and_exit(e.msg)
         except:
@@ -199,7 +196,7 @@ class DataTransfer(object):
 
     def update_status(self, status):
         '''
-        
+        Update the data transfer status for this dataset in the database
         '''
         try:
             galaxy = GalaxyDbInterface(self.database_connection)

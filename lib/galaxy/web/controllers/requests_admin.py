@@ -1527,7 +1527,7 @@ class RequestsAdmin( BaseController ):
                                                               messagetype='error',
                                                               msg=msg))
         error_msg = ''
-        transfer_script = "scripts/galaxy_messaging/server/daemon.py"
+        transfer_script = "scripts/galaxy_messaging/server/data_transfer.py"
         for index, dataset in enumerate(sample.dataset_files):
             dfile = dataset[0]
             status = dataset[1]
@@ -1573,9 +1573,6 @@ class RequestsAdmin( BaseController ):
                                                           action='show_datatx_page', 
                                                           sample_id=trans.security.encode_id(sample.id),
                                                           folder_path=os.path.dirname(dfile)))
-
-    
-        
 ##
 #### Request Type Stuff ###################################################
 ##
