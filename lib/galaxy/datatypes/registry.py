@@ -6,6 +6,7 @@ import logging
 import data, tabular, interval, images, sequence, qualityscore, genetics, xml, coverage, tracks, chrominfo, binary
 import galaxy.util
 from galaxy.util.odict import odict
+from display_applications.application import DisplayApplication
 
 class ConfigurationError( Exception ):
     pass
@@ -23,6 +24,7 @@ class Registry( object ):
         self.indexers = []
         self.sniff_order = []
         self.upload_file_formats = []
+        self.display_applications = odict() #map a display application id to a display application
         if root_dir and config:
             # Parse datatypes_conf.xml
             tree = galaxy.util.parse_xml( config )
@@ -32,6 +34,7 @@ class Registry( object ):
             registration = root.find( 'registration' )
             self.datatype_converters_path = os.path.join( root_dir, registration.get( 'converters_path', 'lib/galaxy/datatypes/converters' ) )
             self.datatype_indexers_path = os.path.join( root_dir, registration.get( 'indexers_path', 'lib/galaxy/datatypes/indexers' ) )
+            self.display_applications_path = os.path.join( root_dir, registration.get( 'display_path', 'display_applications' ) )
             if not os.path.isdir( self.datatype_converters_path ):
                 raise ConfigurationError( "Directory does not exist: %s" % self.datatype_converters_path )
             if not os.path.isdir( self.datatype_indexers_path ):
@@ -79,6 +82,17 @@ class Registry( object ):
                             optional = composite_file.get( 'optional', False )
                             mimetype = composite_file.get( 'mimetype', None )
                             self.datatypes_by_extension[extension].add_composite_file( name, optional=optional, mimetype=mimetype )
+                        for display_app in elem.findall( 'display' ):
+                            display_file = display_app.get( 'file', None )
+                            assert display_file is not None, "A file must be specified for a datatype display tag."
+                            display_app = DisplayApplication.from_file( os.path.join( self.display_applications_path, display_file ), self )
+                            if display_app:
+                                if display_app.id in self.display_applications:
+                                    #if we already loaded this display application, we'll use the first one again
+                                    display_app = self.display_applications[ display_app.id ]
+                                self.log.debug( "Loaded display application '%s' for datatype '%s'" % ( display_app.id, extension ) )
+                                self.display_applications[ display_app.id ] = display_app #Display app by id
+                                self.datatypes_by_extension[ extension ].add_display_application( display_app )
                             
                 except Exception, e:
                     self.log.warning( 'Error loading datatype "%s", problem: %s' % ( extension, str( e ) ) )
@@ -213,13 +227,13 @@ class Registry( object ):
     def get_available_tracks(self):
         return self.available_tracks
         
-    def get_mimetype_by_extension(self, ext ):
+    def get_mimetype_by_extension(self, ext, default = 'application/octet-stream' ):
         """Returns a mimetype based on an extension"""
         try:
             mimetype = self.mimetypes_by_extension[ext]
         except KeyError:
             #datatype was never declared
-            mimetype = 'application/octet-stream'
+            mimetype = default
             self.log.warning('unknown mimetype in data factory %s' % ext)
         return mimetype
     

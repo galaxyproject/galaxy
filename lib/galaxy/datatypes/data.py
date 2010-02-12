@@ -63,6 +63,7 @@ class Data( object ):
         object.__init__(self, **kwd)
         self.supported_display_apps = self.supported_display_apps.copy()
         self.composite_files = self.composite_files.copy()
+        self.display_applications = odict()
     def write_from_stream(self, dataset, stream):
         """Writes data from a stream"""
         fd = open(dataset.file_name, 'wb')
@@ -198,6 +199,12 @@ class Data( object ):
             del self.supported_display_apps[app_id]
         except:
             log.exception('Tried to remove display app %s from datatype %s, but this display app is not declared.' % ( type, self.__class__.__name__ ) )
+    def clear_display_apps( self ):
+        self.supported_display_apps = {}
+    def add_display_application( self, display_application ):
+        """New style display applications"""
+        assert display_application.id not in self.display_applications, 'Attempted to add a display application twice'
+        self.display_applications[ display_application.id ] = display_application
     def get_display_types(self):
         """Returns display types available"""
         return self.supported_display_apps.keys()
@@ -239,7 +246,7 @@ class Data( object ):
         """This function adds a job to the queue to convert a dataset to another type. Returns a message about success/failure."""
         converter = trans.app.datatypes_registry.get_converter_by_target_type( original_dataset.ext, target_type )
         if converter is None:
-            raise "A converter does not exist for %s to %s." % ( original_dataset.ext, target_type )
+            raise Exception( "A converter does not exist for %s to %s." % ( original_dataset.ext, target_type ) )
         #Generate parameter dictionary
         params = {}
         #determine input parameter name and add to params

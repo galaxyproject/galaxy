@@ -74,6 +74,7 @@ def app_factory( global_conf, **kwargs ):
     webapp.add_route( '/:controller/:action', action='index' )
     webapp.add_route( '/:action', controller='root', action='index' )
     webapp.add_route( '/datasets/:dataset_id/:action/:filename', controller='dataset', action='index', dataset_id=None, filename=None)
+    webapp.add_route( '/display_application/:dataset_id/:user_id/:app_name/:link_name/:app_action/:action_param', controller='dataset', action='display_application', dataset_id=None, user_id=None, app_name = None, link_name = None, app_action = None, action_param = None )
     webapp.add_route( '/u/:username/d/:slug', controller='dataset', action='display_by_username_and_slug' )
     webapp.add_route( '/u/:username/p/:slug', controller='page', action='display_by_username_and_slug' )
     webapp.add_route( '/u/:username/h/:slug', controller='history', action='display_by_username_and_slug' )

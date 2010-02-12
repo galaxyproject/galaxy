@@ -4,6 +4,7 @@ from galaxy.web.base.controller import *
 from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy import util, datatypes, jobs, web, model
 from cgi import escape, FieldStorage
+from galaxy.datatypes.display_applications.helpers import decode_dataset_user
 
 from email.MIMEText import MIMEText
 
@@ -188,7 +189,7 @@ class DatasetInterface( BaseController ):
             dataset_id = int( dataset_id )
         except ValueError:
             dataset_id = trans.security.decode_id( dataset_id )
-        data = data = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( dataset_id )
+        data = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( dataset_id )
         if not data:
             raise paste.httpexceptions.HTTPRequestRangeNotSatisfiable( "Invalid reference dataset id: %s." % str( dataset_id ) )
         current_user_roles = trans.get_current_user_roles()
@@ -338,6 +339,74 @@ class DatasetInterface( BaseController ):
             return trans.response.send_redirect( redirect_url )
         else:
             return trans.show_error_message( "You are not allowed to view this dataset at external sites.  Please contact your Galaxy administrator to acquire management permissions for this dataset." )
+
+    @web.expose
+    def display_application( self, trans, dataset_id=None, user_id=None, app_name = None, link_name = None, app_action = None, action_param = None ):
+        """Access to external display applications"""
+        #decode ids
+        data, user = decode_dataset_user( trans, dataset_id, user_id )
+        if not data:
+            raise paste.httpexceptions.HTTPRequestRangeNotSatisfiable( "Invalid reference dataset id: %s." % str( dataset_id ) )
+        if user:
+            user_roles = user.all_roles()
+        else:
+            user_roles = []
+        if None in [ app_name, link_name ]:
+            return trans.show_error_message( "A display application name and link name must be provided." )
+        
+        if app_action is None:
+            app_action = "display" # default action is display
+        
+        if trans.app.security_agent.can_access_dataset( user_roles, data.dataset ):
+            msg = []
+            refresh = False
+            display_app = trans.app.datatypes_registry.display_applications.get( app_name )
+            assert display_app, "Unknown display application has been requested: %s" % app_name
+            display_link = display_app.get_link( link_name, data, trans )
+            assert display_link, "Unknown display link has been requested: %s" % link_name
+            if data.state == data.states.ERROR:
+                msg.append( ( 'This dataset is in an error state, you cannot view it at an external display application.', 'error' ) )
+            elif data.deleted:
+                msg.append( ( 'This dataset has been deleted, you cannot view it at an external display application.', 'error' ) )
+            elif data.state != data.states.OK:
+                msg.append( ( 'You must wait for this dataset to be created before you can view it at an external display application.', 'info' ) )
+                refresh = True
+            else:
+                #We have permissions, dataset is not deleted and is in OK state, allow access
+                if display_link.display_ready():
+                    if app_action in [ 'data', 'param' ]:
+                        assert action_param, "An action param must be provided for a data or param action"
+                        #data is used for things with filenames that could be passed off to a proxy
+                        #in case some display app wants all files to be in the same 'directory', 
+                        #data can be forced to param, but not the other way (no filename for other direction)
+                        #get param name from url param name
+                        action_param = display_link.get_param_name_by_url( action_param )
+                        value = display_link.get_param_value( action_param )
+                        assert value, "An invalid parameter name was provided: %s" % action_param
+                        assert value.parameter.viewable, "This parameter is not viewable."
+                        if value.parameter.type == 'data':
+                            content_length = os.path.getsize( value.file_name )
+                            rval = open( value.file_name )
+                        else:
+                            rval = str( value )
+                            content_length = len( rval )
+                        trans.response.set_content_type( value.mime_type() )
+                        trans.response.headers[ 'Content-Length' ] = content_length
+                        return rval
+                    elif app_action == "display":
+                        return trans.fill_template_mako( "dataset/display_application/launch_display.mako", display_link = display_link )
+                    else:
+                        msg.append( ( 'Invalid action provided: %s' % app_action, 'error' ) )
+                else:
+                    msg.append( ( 'This display application is being prepared.', 'info' ) )
+                    if app_action == "display":
+                        refresh = True
+                        if not display_link.preparing_display():
+                            display_link.prepare_display()
+                    else:
+                        raise Exception( 'Attempted a view action (%s) on a non-ready display application' % app_action )
+            return trans.fill_template_mako( "dataset/display_application/display.mako", msg = msg, display_app = display_app, display_link = display_link, refresh = refresh )
+        return trans.show_error_message( 'You do not have permission to view this dataset at an external display application.' )
 
     def _undelete( self, trans, id ):
         try:

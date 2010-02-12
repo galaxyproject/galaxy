@@ -5,11 +5,19 @@
         <datatype extension="axt" type="galaxy.datatypes.sequence:Axt" display_in_upload="true"/>
         <datatype extension="bam" type="galaxy.datatypes.binary:Bam" mimetype="application/octet-stream" display_in_upload="true">
             <converter file="bam_to_bai.xml" target_datatype="bai"/>
+            <display file="ucsc/bam.xml" />
         </datatype>
         <datatype extension="bed" type="galaxy.datatypes.interval:Bed" display_in_upload="true">
             <converter file="bed_to_gff_converter.xml" target_datatype="gff"/>
             <converter file="interval_to_coverage.xml" target_datatype="coverage"/>
             <converter file="bed_to_interval_index_converter.xml" target_datatype="interval_index"/>
+            <converter file="bed_to_genetrack_converter.xml" target_datatype="genetrack"/>
+            <!-- <display file="ucsc/interval_as_bed.xml" /> -->
+            <display file="genetrack.xml" />
+        </datatype>
+        <datatype extension="bedstrict" type="galaxy.datatypes.interval:BedStrict">
+            <display file="ucsc/interval_as_bed.xml" />
+            <display file="genetrack.xml" />
         </datatype>
         <datatype extension="binseq.zip" type="galaxy.datatypes.binary:Binseq" mimetype="application/zip" display_in_upload="true"/>
         <datatype extension="len" type="galaxy.datatypes.chrominfo:ChromInfo" display_in_upload="true">
@@ -26,7 +34,9 @@
         </datatype>
         <datatype extension="fastq" type="galaxy.datatypes.sequence:Fastq" display_in_upload="true"/>
         <datatype extension="fastqsanger" type="galaxy.datatypes.sequence:FastqSanger" display_in_upload="true"/>
-        <datatype extension="genetrack" type="galaxy.datatypes.tracks:GeneTrack"/>
+        <datatype extension="genetrack" type="galaxy.datatypes.tracks:GeneTrack">
+            <!-- <display file="genetrack.xml" /> -->
+        </datatype>
         <datatype extension="gff" type="galaxy.datatypes.interval:Gff" display_in_upload="true">
             <converter file="gff_to_bed_converter.xml" target_datatype="bed"/>
         </datatype>
@@ -36,7 +46,10 @@
         <datatype extension="html" type="galaxy.datatypes.images:Html" mimetype="text/html"/>
         <datatype extension="interval" type="galaxy.datatypes.interval:Interval" display_in_upload="true">
             <converter file="interval_to_bed_converter.xml" target_datatype="bed"/>
+            <converter file="interval_to_bedstrict_converter.xml" target_datatype="bedstrict"/>
             <indexer file="interval_awk.xml" />
+            <!-- <display file="ucsc/interval_as_bed.xml" /> -->
+            <display file="genetrack.xml" />
         </datatype>
         <datatype extension="jpg" type="galaxy.datatypes.images:Image" mimetype="image/jpeg"/>
         <datatype extension="laj" type="galaxy.datatypes.images:Laj"/>

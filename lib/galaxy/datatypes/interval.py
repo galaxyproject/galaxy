@@ -486,6 +486,36 @@ class Bed( Interval ):
     def get_track_type( self ):
         return "FeatureTrack", "interval_index"
 
+class BedStrict( Bed ):
+    """Tab delimited data in strict BED format - no non-standard columns allowed"""
+
+    file_ext = "bedstrict"
+    
+    #no user change of datatype allowed
+    allow_datatype_change = False
+
+    #Read only metadata elements
+    MetadataElement( name="chromCol", default=1, desc="Chrom column", readonly=True, param=metadata.MetadataParameter )
+    MetadataElement( name="startCol", default=2, desc="Start column", readonly=True, param=metadata.MetadataParameter ) #TODO: start and end should be able to be set to these or the proper thick[start/end]?
+    MetadataElement( name="endCol", default=3, desc="End column", readonly=True, param=metadata.MetadataParameter )
+    MetadataElement( name="strandCol", desc="Strand column (click box & select)", readonly=True, param=metadata.MetadataParameter, no_value=0, optional=True )
+    MetadataElement( name="nameCol", desc="Name/Identifier column (click box & select)", readonly=True, param=metadata.MetadataParameter, no_value=0, optional=True )
+    MetadataElement( name="columns", default=3, desc="Number of columns", readonly=True, visible=False )
+    
+    def __init__( self, **kwd ):
+        Tabular.__init__( self, **kwd )
+        self.clear_display_apps() #only new style display applications for this datatype
+    
+    def set_meta( self, dataset, overwrite = True, **kwd ):
+        Tabular.set_meta( self, dataset, overwrite = overwrite, **kwd) #need column count first
+        if dataset.metadata.columns >= 4:
+            dataset.metadata.nameCol = 4
+            if dataset.metadata.columns >= 6:
+                dataset.metadata.strandCol = 6
+    
+    def sniff( self, filename ):
+        return False #NOTE: This would require aggressively validating the entire file
+
 class _RemoteCallMixin:
     def _get_remote_call_url( self, redirect_url, site_name, dataset, type, app, base_url ):
         """Retrieve the URL to call out to an external site and retrieve data.

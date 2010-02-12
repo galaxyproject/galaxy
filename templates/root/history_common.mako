@@ -101,6 +101,12 @@
                             %endif
                         %endfor
                     %endif
+                %for display_app in data.datatype.display_applications.itervalues():
+                    | ${display_app.name} 
+                    %for link_app in display_app.links.itervalues():
+                    <a target="${link_app.url.get( 'target_frame', '_blank' )}" href="${link_app.get_display_url( data, trans )}">${_(link_app.name)}</a> 
+                    %endfor
+                %endfor
                 </div>
                 %if data.peek != "no peek":
                     <div><pre id="peek${data.id}" class="peek">${_(data.display_peek())}</pre></div>

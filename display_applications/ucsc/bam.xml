@@ -1,0 +1,8 @@
+<display id="ucsc_bam" version="1.0.0" name="display at UCSC">
+    <link id="main" name="main">
+        <url>http://genome.ucsc.edu/cgi-bin/hgTracks?db=${qp($bam_file.dbkey)}&amp;hgt.customText=${qp($track.url)}</url>
+        <param type="data" name="bam_file" url="galaxy.bam" strip_https="True" />
+        <param type="data" name="bai_file" url="galaxy.bam.bai" metadata="bam_index" strip_https="True" /><!-- UCSC expects index file to exist as bam_file_name.bai -->
+        <param type="template" name="track" viewable="True" strip_https="True">track type=bam name="${bam_file.name}" bigDataUrl=${bam_file.url} db=${bam_file.dbkey}</param>
+    </link>
+</display>
