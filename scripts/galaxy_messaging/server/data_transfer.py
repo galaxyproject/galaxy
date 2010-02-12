@@ -38,9 +38,7 @@ import pexpect
 pkg_resources.require( "simplejson" )
 import simplejson
 
-curr_dir = os.getcwd()
-logfile = os.path.join(os.getcwd(), 'data_transfer.log')
-logging.basicConfig(filename=logfile, level=logging.DEBUG, 
+logging.basicConfig(filename=sys.stderr, level=logging.DEBUG, 
                     format="%(asctime)s [%(levelname)s] %(message)s")
 
 class DataTransferException(Exception):
