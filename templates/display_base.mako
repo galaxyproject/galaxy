@@ -12,6 +12,10 @@
 <%namespace file="/tagging_common.mako" import="render_individual_tagging_element, render_community_tagging_element" />
 <%namespace file="/display_common.mako" import="*" />
 
+##
+## Functions used by base.mako and base_panels.mako to display content.
+##
+
 <%def name="title()">
     Galaxy | ${iff( item.published, "Published ", iff( item.importable , "Accessible ", iff( item.users_shared_with, "Shared ", "Private " ) ) ) + get_class_display_name( item.__class__ )} | ${get_item_name( item ) | h}
 </%def>
@@ -48,7 +52,7 @@
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}
-    ${h.css( "autocomplete_tagging" )}
+    ${h.css( "autocomplete_tagging", "embed_item" )}
     <style type="text/css">
         .page-body
         {
@@ -70,24 +74,28 @@
 </%def>
 
 <%def name="render_item_links( item )">
-    Item Links
+    ## Override.
 </%def>
 
 <%def name="render_item( item, item_data=None )">
-    Item
+    ## Override.
 </%def>
 
-##
-## When page has no panels, center panel is body.
-##
+## For base.mako
 <%def name="body()">
-	${self.center_panel()}
+	${self.render_content()}
 </%def>
 
-##
-## Page content. Pages that inherit this page should override render_item_links() and render_item()
-##
+## For base_panels.mako
 <%def name="center_panel()">
+	${self.render_content()}
+</%def>
+
+
+##
+## Render page content. Pages that inherit this page should override render_item_links() and render_item()
+##
+<%def name="render_content()">
     
     ## Get URL to other published items owned by user that owns this item.
     <%
@@ -165,7 +173,7 @@
                     <a href="${href_to_user_items}">Published ${item_plural.lower()} by ${item.user.username | h}</a>
         
                 ## Tags.
-                <h4>Tags</strong></h4>
+                <h4>Tags</h4>
                 <p>
                 ## Community tags.
                 <div>

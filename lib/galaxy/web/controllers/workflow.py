@@ -78,7 +78,7 @@ class StoredWorkflowAllPublishedGrid( grids.Grid ):
         # A public workflow is published, has a slug, and is not deleted.
         return query.filter( self.model_class.published==True ).filter( self.model_class.slug != None ).filter( self.model_class.deleted == False )
 
-class WorkflowController( BaseController, Sharable ):
+class WorkflowController( BaseController, Sharable, UsesStoredWorkflow ):
     stored_list_grid = StoredWorkflowListGrid()
     published_list_grid = StoredWorkflowAllPublishedGrid()
     
@@ -93,7 +93,6 @@ class WorkflowController( BaseController, Sharable ):
         status = message = None
         if 'operation' in kwargs:
             operation = kwargs['operation'].lower()
-            print operation
             if operation == "rename":
                 return self.rename( trans, **kwargs )
             history_ids = util.listify( kwargs.get( 'id', [] ) )
@@ -165,7 +164,6 @@ class WorkflowController( BaseController, Sharable ):
     @web.expose
     def display_by_username_and_slug( self, trans, username, slug ):
         """ Display workflow based on a username and slug. """ 
-        session = trans.sa_session
         
         # Get workflow.
         session = trans.sa_session
@@ -181,34 +179,31 @@ class WorkflowController( BaseController, Sharable ):
            raise web.httpexceptions.HTTPNotFound()
         
         # Get data for workflow's steps.
-        for step in stored_workflow.latest_workflow.steps:
-            if step.type == 'tool' or step.type is None:
-                # Restore the tool state for the step
-                module = module_factory.from_workflow_step( trans, step )
-                # Any connected input needs to have value DummyDataset (these
-                # are not persisted so we need to do it every time)
-                module.add_dummy_datasets( connections=step.input_connections )                  
-                # Store state with the step
-                step.module = module
-                step.state = module.state
-                # Error dict
-                if step.tool_errors:
-                    errors[step.id] = step.tool_errors
-            else:
-                ## Non-tool specific stuff?
-                step.module = module_factory.from_workflow_step( trans, step )
-                step.state = step.module.get_runtime_state()
-            # Connections by input name
-            step.input_connections_by_name = dict( ( conn.input_name, conn ) for conn in step.input_connections )
+        self.get_stored_workflow_steps( trans, stored_workflow )
             
         return trans.fill_template_mako( "workflow/display.mako", item=stored_workflow, item_data=stored_workflow.latest_workflow.steps )
+
+    @web.expose
+    @web.require_login("get item content asynchronously")
+    def get_item_content_async( self, trans, id ):
+        """ Returns item content in HTML format. """
+        
+        stored = self.get_stored_workflow( trans, id, False, True )
+        if stored is None:
+            raise web.httpexceptions.HTTPNotFound()
+            
+        # Get data for workflow's steps.
+        self.get_stored_workflow_steps( trans, stored )
+        # Get annotation.
+        annotation = self.get_item_annotation_str( trans.sa_session, trans.get_user(), stored )
+        return trans.stream_template_mako( "/workflow/item_content.mako", item = stored, item_data = stored.latest_workflow.steps )
                               
     @web.expose
     @web.require_login( "use Galaxy workflows" )
     def share( self, trans, id, email="" ):
         msg = mtype = None
         # Load workflow from database
-        stored = get_stored_workflow( trans, id )
+        stored = self.get_stored_workflow( trans, id )
         if email:
             other = trans.sa_session.query( model.User ) \
                                     .filter( and_( model.User.table.c.email==email,
@@ -247,7 +242,7 @@ class WorkflowController( BaseController, Sharable ):
         
         # Get session and workflow.
         session = trans.sa_session
-        stored = get_stored_workflow( trans, id )
+        stored = self.get_stored_workflow( trans, id )
         session.add( stored )
         
         # Do operation on workflow.
@@ -285,7 +280,7 @@ class WorkflowController( BaseController, Sharable ):
     @web.require_login( "use Galaxy workflows" )
     def imp( self, trans, id, **kwargs ):
         session = trans.sa_session
-        stored = get_stored_workflow( trans, id, check_ownership=False )
+        stored = self.get_stored_workflow( trans, id, check_ownership=False )
         if stored.importable == False:
             error( "The owner of this workflow has disabled imports via this link" )
         elif stored.user == trans.user:
@@ -309,7 +304,7 @@ class WorkflowController( BaseController, Sharable ):
     @web.require_login( "use Galaxy workflows" )
     def edit_attributes( self, trans, id, **kwargs ):
         # Get workflow and do error checking.
-        stored = get_stored_workflow( trans, id )
+        stored = self.get_stored_workflow( trans, id )
         if not stored:
             error( "You do not own this workflow or workflow ID is invalid." )
             
@@ -331,7 +326,7 @@ class WorkflowController( BaseController, Sharable ):
     @web.expose
     @web.require_login( "use Galaxy workflows" )
     def rename( self, trans, id, new_name=None, **kwargs ):
-        stored = get_stored_workflow( trans, id )
+        stored = self.get_stored_workflow( trans, id )
         if new_name is not None:
             stored.name = new_name
             trans.sa_session.flush()
@@ -348,7 +343,7 @@ class WorkflowController( BaseController, Sharable ):
     @web.expose
     @web.require_login( "use Galaxy workflows" )
     def rename_async( self, trans, id, new_name=None, **kwargs ):
-        stored = get_stored_workflow( trans, id )
+        stored = self.get_stored_workflow( trans, id )
         if new_name:
             stored.name = new_name
             trans.sa_session.flush()
@@ -357,7 +352,7 @@ class WorkflowController( BaseController, Sharable ):
     @web.expose
     @web.require_login( "use Galaxy workflows" )
     def annotate_async( self, trans, id, new_annotation=None, **kwargs ):
-        stored = get_stored_workflow( trans, id )
+        stored = self.get_stored_workflow( trans, id )
         if new_annotation:
             # Sanitize annotation before adding it.
             new_annotation = sanitize_html( new_annotation, 'utf-8', 'text/html' )
@@ -369,7 +364,7 @@ class WorkflowController( BaseController, Sharable ):
     @web.require_login( "use Galaxy workflows" )
     def set_accessible_async( self, trans, id=None, accessible=False ):
         """ Set workflow's importable attribute and slug. """
-        stored = get_stored_workflow( trans, id )
+        stored = self.get_stored_workflow( trans, id )
 
         # Only set if importable value would change; this prevents a change in the update_time unless attribute really changed.
         importable = accessible in ['True', 'true', 't', 'T'];
@@ -385,18 +380,27 @@ class WorkflowController( BaseController, Sharable ):
     @web.expose
     @web.require_login( "modify Galaxy items" )
     def set_slug_async( self, trans, id, new_slug ):
-        stored = get_stored_workflow( trans, id )
+        stored = self.get_stored_workflow( trans, id )
         if stored:
             stored.slug = new_slug
             trans.sa_session.flush()
             return stored.slug
+            
+    @web.expose
+    def get_embed_html_async( self, trans, id ):
+        """ Returns HTML for embedding a workflow in a page. """
+
+        # TODO: user should be able to embed any item he has access to. see display_by_username_and_slug for security code.
+        stored = self.get_stored_workflow( trans, id )
+        if stored:
+            return "Embedded Workflow '%s'" % stored.name
         
     @web.expose
     @web.json
     @web.require_login( "use Galaxy workflows" )
     def get_name_and_link_async( self, trans, id=None ):
         """ Returns workflow's name and link. """
-        stored = get_stored_workflow( trans, id )
+        stored = self.get_stored_workflow( trans, id )
 
         if self.set_item_slug( trans.sa_session, stored ):
             trans.sa_session.flush()
@@ -406,7 +410,7 @@ class WorkflowController( BaseController, Sharable ):
     @web.expose
     @web.require_login( "use Galaxy workflows" )
     def clone( self, trans, id ):
-        stored = get_stored_workflow( trans, id, check_ownership=False )
+        stored = self.get_stored_workflow( trans, id, check_ownership=False )
         user = trans.get_user()
         if stored.user == user:
             owner = True
@@ -463,7 +467,7 @@ class WorkflowController( BaseController, Sharable ):
         Mark a workflow as deleted
         """        
         # Load workflow from database
-        stored = get_stored_workflow( trans, id )
+        stored = self.get_stored_workflow( trans, id )
         # Marke as deleted and save
         stored.deleted = True
         trans.sa_session.add( stored )
@@ -482,7 +486,7 @@ class WorkflowController( BaseController, Sharable ):
         """
         if not id:
             error( "Invalid workflow id" )
-        stored = get_stored_workflow( trans, id )
+        stored = self.get_stored_workflow( trans, id )
         return trans.fill_template( "workflow/editor.mako", stored=stored, annotation=self.get_item_annotation_str( trans.sa_session, trans.get_user(), stored ) )
         
     @web.json
@@ -611,7 +615,7 @@ class WorkflowController( BaseController, Sharable ):
         Save the workflow described by `workflow_data` with id `id`.
         """
         # Get the stored workflow
-        stored = get_stored_workflow( trans, id )
+        stored = self.get_stored_workflow( trans, id )
         # Put parameters in workflow mode
         trans.workflow_building_mode = True
         # Convert incoming workflow data from json
@@ -795,7 +799,7 @@ class WorkflowController( BaseController, Sharable ):
         
     @web.expose
     def run( self, trans, id, check_user=True, **kwargs ):
-        stored = get_stored_workflow( trans, id, check_ownership=False )
+        stored = self.get_stored_workflow( trans, id, check_ownership=False )
         if check_user:
             user = trans.get_user()
             if stored.user != user:
@@ -956,24 +960,6 @@ class WorkflowController( BaseController, Sharable ):
                                         ids_in_menu=ids_in_menu )
     
 ## ---- Utility methods -------------------------------------------------------
-        
-def get_stored_workflow( trans, id, check_ownership=True ):
-    """
-    Get a StoredWorkflow from the database by id, verifying ownership. 
-    """
-    # Load workflow from database
-    id = trans.security.decode_id( id )
-    stored = trans.sa_session.query( model.StoredWorkflow ).get( id )
-    if not stored:
-        error( "Workflow not found" )
-    # Verify ownership
-    user = trans.get_user()
-    if not user:
-        error( "Must be logged in to use workflows" )
-    if check_ownership and not( stored.user == user ):
-        error( "Workflow is not owned by current user" )
-    # Looks good
-    return stored
 
 def attach_ordered_steps( workflow, steps ):
     ordered_steps = order_workflow_steps( steps )

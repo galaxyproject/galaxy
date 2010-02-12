@@ -146,7 +146,7 @@ class HistoryAllPublishedGrid( grids.Grid ):
         # A public history is published, has a slug, and is not deleted.
         return query.filter( self.model_class.published == True ).filter( self.model_class.slug != None ).filter( self.model_class.deleted == False )
     
-class HistoryController( BaseController, Sharable ):
+class HistoryController( BaseController, Sharable, UsesHistory ):
     @web.expose
     def index( self, trans ):
         return ""
@@ -406,6 +406,21 @@ class HistoryController( BaseController, Sharable ):
             history.slug = new_slug
             trans.sa_session.flush()
             return history.slug
+            
+    @web.expose
+    @web.require_login("get item content asynchronously")
+    def get_item_content_async( self, trans, id ):
+        """ Returns item content in HTML format. """
+
+        history = self.get_history( trans, id, False, True )
+        if history is None:
+            raise web.httpexceptions.HTTPNotFound()
+            
+        # Get datasets.
+        datasets = self.get_history_datasets( trans, history )
+        # Get annotation.
+        annotation = self.get_item_annotation_str( trans.sa_session, trans.get_user(), history )
+        return trans.stream_template_mako( "/history/item_content.mako", item = history, item_data = datasets )
                        
     @web.expose
     def name_autocomplete_data( self, trans, q=None, limit=None, timestamp=None ):
@@ -489,17 +504,11 @@ class HistoryController( BaseController, Sharable ):
         if not trans.user_is_admin and not history_to_view.importable:
             error( "Either you are not allowed to view this history or the owner of this history has not made it accessible." )
         # View history.
-        query = trans.sa_session.query( model.HistoryDatasetAssociation ) \
-                                .filter( model.HistoryDatasetAssociation.history == history_to_view ) \
-                                .options( eagerload( "children" ) ) \
-                                .join( "dataset" ).filter( model.Dataset.purged == False ) \
-                                .options( eagerload_all( "dataset.actions" ) )
-        # Do not show deleted datasets.
-        query = query.filter( model.HistoryDatasetAssociation.deleted == False )
+        datasets = self.get_history_datasets( trans, history_to_view )
         user_owns_history = ( trans.get_user() == history_to_view.user )
         return trans.stream_template_mako( "history/view.mako",
                                            history = history_to_view,
-                                           datasets = query.all(),
+                                           datasets = datasets,
                                            user_owns_history = user_owns_history,
                                            show_deleted = False )
                                            
@@ -521,15 +530,9 @@ class HistoryController( BaseController, Sharable ):
            raise web.httpexceptions.HTTPNotFound()
    
         # Get datasets.
-        query = trans.sa_session.query( model.HistoryDatasetAssociation ) \
-                               .filter( model.HistoryDatasetAssociation.history == history ) \
-                               .options( eagerload( "children" ) ) \
-                               .join( "dataset" ).filter( model.Dataset.purged == False ) \
-                               .options( eagerload_all( "dataset.actions" ) )
-        # Do not show deleted datasets.
-        query = query.filter( model.HistoryDatasetAssociation.deleted == False )
+        datasets = self.get_history_datasets( trans, history )
         return trans.stream_template_mako( "history/display.mako",
-                                          item = history, item_data = query.all() )
+                                          item = history, item_data = datasets )
                                           
     @web.expose
     @web.require_login( "share Galaxy histories" )

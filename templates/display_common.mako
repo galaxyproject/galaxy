@@ -83,8 +83,32 @@
             return "history"
         elif isinstance( item, model.StoredWorkflow ):
             return "workflow"
+        elif isinstance( item, model.HistoryDatasetAssociation ):
+            return "dataset"
         elif isinstance( item, model.Page ):
             return "page"
+    %>
+</%def>
+
+## Returns item user/owner.
+<%def name="get_item_user( item )">
+    <%
+        # Exceptions first, default last.
+        if isinstance( item, model.HistoryDatasetAssociation ):
+            return item.history.user
+        else:
+            return item.user
+    %>
+</%def>
+
+## Returns item slug.
+<%def name="get_item_slug( item )">
+    <%
+        # Exceptions first, default last.
+        if isinstance( item, model.HistoryDatasetAssociation ):
+            return trans.security.encode_id( item.id )
+        else:
+            return item.slug
     %>
 </%def>
 

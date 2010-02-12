@@ -29,10 +29,25 @@
     // Useful Galaxy stuff.
     var Galaxy = 
     {
-        DIALOG_HISTORY_LINK : "history_link",
-        DIALOG_DATASET_LINK : "dataset_link",
-        DIALOG_WORKFLOW_LINK : "workflow_link",
-        DIALOG_PAGE_LINK : "page_link",
+        // Item types.
+        ITEM_HISTORY : "item_history",
+        ITEM_DATASET : "item_dataset",
+        ITEM_WORKFLOW : "item_workflow",
+        ITEM_PAGE : "item_page",
+        
+        // Link dialogs.
+        DIALOG_HISTORY_LINK : "link_history",
+        DIALOG_DATASET_LINK : "link_dataset",
+        DIALOG_WORKFLOW_LINK : "link_workflow",
+        DIALOG_PAGE_LINK : "link_page",
+        
+        // Embed dialogs.
+        DIALOG_EMBED_HISTORY : "embed_history",
+        DIALOG_EMBED_DATASET : "embed_dataset",
+        DIALOG_EMBED_WORKFLOW : "embed_workflow",
+        DIALOG_EMBED_PAGE : "embed_page",
+        
+        // Annotation dialogs.
         DIALOG_HISTORY_ANNOTATE : "history_annotate",
     };
     
@@ -53,6 +68,55 @@
              });
         });
         
+    };
+    
+    // Based on the dialog type, return a dictionary of information about an item
+    function get_item_info( dialog_type )
+    {
+        var
+            item_singular, 
+            item_plural, 
+            item_controller;
+        switch( dialog_type ) {
+            case( Galaxy.ITEM_HISTORY ):
+                item_singular = "History";
+                item_plural = "Histories";
+                item_controller = "history";
+                item_class = "History";
+                break;
+            case( Galaxy.ITEM_DATASET ):
+                item_singular = "Dataset";
+                item_plural = "Datasets";
+                item_controller = "dataset";
+                item_class = "HistoryDatasetAssociation";
+                break;
+            case( Galaxy.ITEM_WORKFLOW ):
+                item_singular = "Workflow";
+                item_plural = "Workflows";
+                item_controller = "workflow";
+                item_class = "StoredWorkflow";
+                break;
+            case( Galaxy.ITEM_PAGE ):
+                item_singular = "Page";
+                item_plural = "Pages";
+                item_controller = "page";
+                item_class = "Page";
+            break;
+        }
+        
+        // Build ajax URL that lists items for selection.
+        var item_list_action = "list_" + item_plural.toLowerCase() + "_for_selection";
+        var url_template = "${h.url_for( action='LIST_ACTION' )}";
+        var ajax_url = url_template.replace( "LIST_ACTION", item_list_action );
+        
+        // Set up and return dict.
+        return {
+            singular : item_singular,
+            plural : item_plural,
+            controller : item_controller,
+            iclass : item_class,
+            list_ajax_url : ajax_url
+        };
     };
     
     ## Completely replace WYM's dialog handling
@@ -206,50 +270,35 @@
         if ( dialogType == Galaxy.DIALOG_HISTORY_LINK || dialogType == Galaxy.DIALOG_DATASET_LINK || 
              dialogType == Galaxy.DIALOG_WORKFLOW_LINK || dialogType == Galaxy.DIALOG_PAGE_LINK ) {
             // Based on item type, set useful vars.
-            var 
-                item_singular, 
-                item_plural, 
-                item_controller,
-                item_list_action;
-            switch( dialogType ) {
-                case( Galaxy.DIALOG_HISTORY_LINK ):
-                    item_singular = "History";
-                    item_plural = "Histories";
-                    item_controller = "history"
+            var item_info;
+            switch(dialogType)
+            {
+                case(Galaxy.DIALOG_HISTORY_LINK):
+                    item_info = get_item_info(Galaxy.ITEM_HISTORY);
                     break;
-                case( Galaxy.DIALOG_DATASET_LINK ):
-                    item_singular = "Dataset";
-                    item_plural = "Datasets";
-                    item_controller = "dataset"
+                case(Galaxy.DIALOG_DATASET_LINK):
+                    item_info = get_item_info(Galaxy.ITEM_DATASET);
                     break;
-                case( Galaxy.DIALOG_WORKFLOW_LINK ):
-                    item_singular = "Workflow";
-                    item_plural = "Workflows";
-                    item_controller = "workflow"
+                case(Galaxy.DIALOG_WORKFLOW_LINK):
+                    item_info = get_item_info(Galaxy.ITEM_WORKFLOW);
                     break;
-                case( Galaxy.DIALOG_PAGE_LINK ):
-                    item_singular = "Page";
-                    item_plural = "Pages";
-                    item_controller = "page"
-                break;
+                case(Galaxy.DIALOG_PAGE_LINK):
+                    item_info = get_item_info(Galaxy.ITEM_PAGE);
+                    break;
             }
-            item_list_action = "list_" + item_plural.toLowerCase() + "_for_selection";
             
-            // Show grid that enables user to select items.
-            var url_template = "${h.url_for( action='LIST_ACTION' )}";
-            var ajax_url = url_template.replace( "LIST_ACTION", item_list_action );
             $.ajax(
             {
-                url: ajax_url,
+                url: item_info.list_ajax_url,
                 data: {},
-                error: function() { alert( "Failed to list "  + item_plural.toLowerCase() + " for selection"); },
+                error: function() { alert( "Failed to list "  + item_info.plural.toLowerCase() + " for selection"); },
                 success: function(table_html) 
                 {
                     show_modal(
-                        "Insert Link to " + item_singular,
+                        "Insert Link to " + item_info.singular,
                         table_html +
                         "<div><input id='make-importable' type='checkbox' checked/>" +
-                        "Make the selected " + item_plural.toLowerCase() + " accessible so that they can viewed by everyone.</div>"
+                        "Make the selected " + item_info.plural.toLowerCase() + " accessible so that they can viewed by everyone.</div>"
                         ,
                         {
                             "Insert": function() 
@@ -264,23 +313,23 @@
                                 $('input[name=id]:checked').each(function() {
                                     var item_id = $(this).val();
                                     
-                                    // Make history importable?
+                                    // Make item importable?
                                     if (make_importable)
                                     {
                                         url_template = "${h.url_for( controller='ITEM_CONTROLLER', action='set_accessible_async' )}";
-                                        ajax_url = url_template.replace( "ITEM_CONTROLLER", item_controller);
+                                        ajax_url = url_template.replace( "ITEM_CONTROLLER", item_info.controller);
                                         $.ajax({
                                           type: "POST",
                                           url: ajax_url,
                                           data: { id: item_id, accessible: 'True' },
-                                          error: function() { alert("Making " + item_plural.toLowerCase() + " accessible failed"); }
+                                          error: function() { alert("Making " + item_info.plural.toLowerCase() + " accessible failed"); }
                                         });
                                     }
                                     
                                     // Insert link(s) to item(s). This is done by getting item info and then manipulating wym.
                                     url_template = "${h.url_for( controller='ITEM_CONTROLLER', action='get_name_and_link_async' )}?id=" + item_id;
-                                    ajax_url = url_template.replace( "ITEM_CONTROLLER", item_controller);
-                                    $.getJSON( ajax_url, function( item_info ) {
+                                    ajax_url = url_template.replace( "ITEM_CONTROLLER", item_info.controller);
+                                    $.getJSON( ajax_url, function( returned_item_info ) {
                                         // Get link text.
                                         wym._exec(WYMeditor.CREATE_LINK, sStamp);
                                         var link_text = $("a[href=" + sStamp + "]", wym._doc.body).text();
@@ -293,12 +342,12 @@
                                             )
                                         {
                                             // User selected no text; create link from scratch and use default text.
-                                            wym.insert("<a href='" + item_info.link + "'> '" + item_singular + " " + item_info.name + "'</a>");
+                                            wym.insert("<a href='" + returned_item_info.link + "'>" + item_info.singular + " '" + returned_item_info.name + "'</a>");
                                         }
                                         else
                                         {
                                             // Link created from selected text; add href and title.
-                                            $("a[href=" + sStamp + "]", wym._doc.body).attr(WYMeditor.HREF, item_info.link).attr(WYMeditor.TITLE, item_singular + item_id);
+                                            $("a[href=" + sStamp + "]", wym._doc.body).attr(WYMeditor.HREF, returned_item_info.link).attr(WYMeditor.TITLE, item_info.singular + item_id);
                                         }
                                     });                                    
                                 });
@@ -314,6 +363,72 @@
                 }
             });
         }
+        // EMBED GALAXY OBJECT DIALOGS
+        if ( dialogType == Galaxy.DIALOG_EMBED_HISTORY || dialogType == Galaxy.DIALOG_EMBED_DATASET || dialogType == Galaxy.DIALOG_EMBED_WORKFLOW || dialogType == Galaxy.DIALOG_EMBED_PAGE ) {
+            // Based on item type, set useful vars.
+            var item_info;
+            switch(dialogType)
+            {
+                case(Galaxy.DIALOG_EMBED_HISTORY):
+                    item_info = get_item_info(Galaxy.ITEM_HISTORY);
+                    break;
+                case(Galaxy.DIALOG_EMBED_DATASET):
+                    item_info = get_item_info(Galaxy.ITEM_DATASET);
+                    break;
+                case(Galaxy.DIALOG_EMBED_WORKFLOW):
+                    item_info = get_item_info(Galaxy.ITEM_WORKFLOW);
+                    break;
+                case(Galaxy.DIALOG_EMBED_PAGE):
+                    item_info = get_item_info(Galaxy.ITEM_PAGE);
+                    break;
+            }
+            
+            $.ajax(
+            {
+                url: item_info.list_ajax_url,
+                data: {},
+                error: function() { alert( "Failed to list "  + item_info.plural.toLowerCase() + " for selection"); },
+                success: function(list_html) 
+                {
+                    show_modal(
+                        "Embed " + item_info.plural,
+                        list_html,
+                        {
+                            "Embed": function() 
+                            {
+                                // Embed a Galaxy item.
+                                var item_ids = new Array();
+                                $('input[name=id]:checked').each(function() {
+                                    // Get item ID and name.
+                                    var item_id = $(this).val();
+                                    // Use ':first' because there are many labels in table; the first one is the item name.
+                                    var item_name = $("label[for='" + item_id + "']:first").text();
+                                    
+                                    // Embedded item HTML; item class is embedded in div container classes; this is necessary because the editor strips 
+                                    // all non-standard attributes when it returns its content (e.g. it will not return an element attribute of the form 
+                                    // item_class='History').
+                                    var item_embed_html =
+                                        "<p><div id='" + item_info.iclass + "-" + item_id + "' class='embedded-item placeholder'> \
+                                            <div class='title'> Embedded Galaxy " + item_info.singular + " '" + item_name + "'</div> \
+                                            <div class='content'>[Do not edit this block; Galaxy will fill it in with the annotated " + \
+                                            item_info.singular.toLowerCase() + " when it is displayed.]</div> \
+                                            </div></p><p>";
+                                    
+                                    // Insert embedded representation into document.
+                                    wym.insert(item_embed_html);
+                                });
+                                hide_modal();
+                            },
+                            "Cancel": function() 
+                            {
+                                hide_modal();
+                            }
+                        }
+                    );
+                }
+            });
+        }
+        
         // ANNOTATE HISTORY DIALOG
         if ( dialogType == Galaxy.DIALOG_ANNOTATE_HISTORY ) {
             $.ajax(
@@ -418,6 +533,9 @@
             var editor = $.wymeditors(0);
             var save = function ( callback ) {
                 show_modal( "Saving page", "progress" );
+                
+                /*
+                    Not used right now.
                 // Gather annotations.
                 var annotations = new Array();
                 
@@ -433,6 +551,8 @@
                     annotations[ annotations.length ] = annotation;
                 });
                 
+                */
+                
                 // Do save.
                 $.ajax( {   
                     url: "${h.url_for( action='save' )}",
@@ -440,7 +560,8 @@
                     data: {
                         id: "${trans.security.encode_id(page.id)}",
                         content: editor.xhtml(),
-                        annotations: JSON.stringify(annotations),
+                        annotations: JSON.stringify(new Object()), 
+                        ## annotations: JSON.stringify(annotations),
                         "_": "true"
                     },
                     success: function() {
@@ -500,13 +621,69 @@
             });
             // Initialize galaxy elements.
             //init_galaxy_elts(editor);
+            
+            //
+            // Create 'Insert Link to Galaxy Object' menu.
+            //
+            
+            // Add menu button.
+            var insert_link_menu_button = $("<div><a id='insert-galaxy-link' class='panel-header-button popup' href='#'>${_('Insert Link to Galaxy Object')}</a></div>").addClass('galaxy-page-editor-button');
+            $(".wym_area_top").append(insert_link_menu_button);
+            
+            // Add menu options.
+            make_popupmenu( insert_link_menu_button, {
+                "Insert History Link": function() {
+                    editor.dialog(Galaxy.DIALOG_HISTORY_LINK);
+                },
+                "Insert Dataset Link": function() {
+                    editor.dialog(Galaxy.DIALOG_DATASET_LINK);
+                },
+                "Insert Workflow Link": function() {
+                    editor.dialog(Galaxy.DIALOG_WORKFLOW_LINK);
+                },
+                "Insert Page Link": function() {
+                    editor.dialog(Galaxy.DIALOG_PAGE_LINK);
+                }
+            });
+            
+            //
+            // Create 'Embed Galaxy Object' menu.
+            //
+            
+            // Add menu button.
+            var embed_object_button = $("<div><a id='embed-galaxy-object' class='panel-header-button popup' href='#'>${_('Embed Galaxy Object')}</a></div>").addClass('galaxy-page-editor-button');
+            $(".wym_area_top").append(embed_object_button);
+            
+            // Add menu options.
+            make_popupmenu( embed_object_button, {
+                "Embed History": function() {
+                    editor.dialog(Galaxy.DIALOG_EMBED_HISTORY);
+                },
+                "Embed Dataset": function() {
+                    editor.dialog(Galaxy.DIALOG_EMBED_DATASET);
+                },
+                "Embed Workflow": function() {
+                    editor.dialog(Galaxy.DIALOG_EMBED_WORKFLOW);
+                },
+                ##"Embed Page": function() {
+                ##    editor.dialog(Galaxy.DIALOG_EMBED_PAGE);
+                ##}
+            });
         });
     </script>
 </%def>
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}
-    ${h.css( "base", "history", "autocomplete_tagging" )}
+    ${h.css( "base", "autocomplete_tagging", "embed_item" )}
+    <style type='text/css'>
+        .galaxy-page-editor-button
+        {
+            position: relative;
+            float: left; 
+            padding: 0.2em;
+        } 
+    </style>
 </%def>
 
 <%def name="center_panel()">
