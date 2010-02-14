@@ -38,72 +38,27 @@
 
                     tip.find('.tipsy-inner')[opts.html ? 'html' : 'text'](title || opts.fallback);
 
-
                     var pos = $.extend({}, $(self).offset(), {width: self.offsetWidth, height: self.offsetHeight});
                     tip.get(0).className = 'tipsy'; // reset classname in case of dynamic gravity
                     tip.remove().css({top: 0, left: 0, visibility: 'hidden', display: 'block'}).appendTo(document.body);
-
-                    tip.css( { width: tip.width() + 1, height: tip.height() } );
-                                        
                     var actualWidth = tip[0].offsetWidth, actualHeight = tip[0].offsetHeight;
                     var gravity = (typeof opts.gravity == 'function') ? opts.gravity.call(self) : opts.gravity;
 
-                    var top, left;
-                    switch (gravity.charAt(0)) {                      
+                    switch (gravity.charAt(0)) {
                         case 'n':
-                            top = pos.top + pos.height;
-                            left = pos.left + pos.width / 2 - actualWidth / 2;
-                            tip.addClass('tipsy-north');
+                            tip.css({top: pos.top + pos.height, left: pos.left + pos.width / 2 - actualWidth / 2}).addClass('tipsy-north');
                             break;
                         case 's':
-                            top = pos.top - actualHeight;
-                            left = pos.left + pos.width / 2 - actualWidth / 2;
-                            tip.addClass('tipsy-south');
+                            tip.css({top: pos.top - actualHeight, left: pos.left + pos.width / 2 - actualWidth / 2}).addClass('tipsy-south');
                             break;
                         case 'e':
-                            top = pos.top + pos.height / 2 - actualHeight / 2;
-                            left = pos.left - actualWidth;
-                            tip.addClass('tipsy-east');
+                            tip.css({top: pos.top + pos.height / 2 - actualHeight / 2, left: pos.left - actualWidth}).addClass('tipsy-east');
                             break;
                         case 'w':
-                            top = pos.top + pos.height / 2 - actualHeight / 2;
-                            left = pos.left + pos.width;
-                            tip.addClass('tipsy-west');
+                            tip.css({top: pos.top + pos.height / 2 - actualHeight / 2, left: pos.left + pos.width}).addClass('tipsy-west');
                             break;
                     }
-                    // Shift if off screen
-                    var window = $(window);
-                    
-                    top = Math.max( top, window.scrollTop() );
-                    top = Math.min( top, window.scrollTop() + window.height() - tip.outerHeight() );
-                    
-                    var left_shift = 0;
-                    if ( left < window.scrollLeft() ) {
-                        left_shift = left - window.scrollLeft();
-                    }
-                    var t = window.scrollLeft() + window.width() - tip.outerWidth();
-                    if ( left > t ) {
-                        left_shift = left - t;
-                    }
-                    
-                    left -= left_shift;
-                    
-                    tip.css( { left: left, top: top } );
-                    
-                    // Shift background to center over element (not implemented for east/west)
-                    switch (gravity.charAt(0)) {                      
-                        case 'n':
-                            tip.css( 'background-position', - ( 250 - tip.outerWidth() / 2 ) + left_shift + "px top" );
-                            break;
-                        case 's':
-                            tip.css( 'background-position', - ( 250 - tip.outerWidth() / 2 ) + left_shift + "px bottom" );
-                            break;
-                        case 'e':
-                            break;
-                        case 'w':
-                            break;
-                    }
-                    
+
                     if (opts.fade) {
                         tip.stop().css({opacity: 0, display: 'block', visibility: 'visible'}).animate({opacity: opts.opacity});
                     } else {
@@ -116,7 +71,7 @@
                 var self = this;
                 clearTimeout(timeout);
                 setTimeout(function() {
-                    if ($.data(this, 'cancel.tipsy')) { return; }
+                    if ($.data(this, 'cancel.tipsy')) return;
                     var tip = $.data(self, 'active.tipsy');
                     if (opts.fade) {
                         tip.stop().fadeOut(function() { $(this).remove(); });
@@ -159,3 +114,4 @@
     };
     
 })(jQuery);
+
