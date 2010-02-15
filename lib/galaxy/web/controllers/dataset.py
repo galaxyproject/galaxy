@@ -318,6 +318,7 @@ class DatasetInterface( BaseController, UsesHistoryDatasetAssociation ):
         dataset = self.get_dataset( trans, slug )
         if dataset:
             truncated, dataset_data = self.get_data( dataset, preview )
+            dataset.annotation = self.get_item_annotation_str( trans.sa_session, dataset.history.user, dataset )
             return trans.fill_template_mako( "/dataset/display.mako", item=dataset, item_data=dataset_data, truncated=truncated )
         else:
             raise web.httpexceptions.HTTPNotFound()
@@ -332,7 +333,7 @@ class DatasetInterface( BaseController, UsesHistoryDatasetAssociation ):
             raise web.httpexceptions.HTTPNotFound()
         truncated, dataset_data = self.get_data( dataset, preview=True )
         # Get annotation.
-        annotation = self.get_item_annotation_str( trans.sa_session, trans.get_user(), dataset )
+        dataset.annotation = self.get_item_annotation_str( trans.sa_session, trans.get_user(), dataset )
         return trans.stream_template_mako( "/dataset/item_content.mako", item=dataset, item_data=dataset_data, truncated=truncated )
         
 

@@ -4,9 +4,6 @@
 %>
 
 <%def name="content( history, datasets )">
-    %if annotation:
-        <div class='annotation'>${annotation}</div>
-    %endif
     <ul>
         <% num_datasets = len ( datasets ) %>
         <li>${num_datasets} dataset${iff( num_datasets != 1, "s", "" )}

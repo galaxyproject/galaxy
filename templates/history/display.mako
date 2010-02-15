@@ -209,12 +209,20 @@
     ${h.css( "history" )}
     <style type="text/css">
         .visible-right-border {
-          padding-right: 3px;
-          border-right-style: solid;
-          border-right-color: #66AA66;
+            padding-right: 3px;
+            border-right-style: solid;
+            border-right-color: #66AA66;
         }
         .historyItemBody {
             display: none;
+        }
+        .column {
+            float: left;
+        	padding: 10px;
+        	margin: 20px;
+        	background: #666;
+        	border: 5px solid #ccc;
+        	width: 300px;
         }
     </style>
 
@@ -231,7 +239,8 @@
     %if history.user != trans.get_user():
         <a href="${h.url_for( controller='/history', action='imp', id=trans.security.encode_id(history.id) )}">import and start using history</a>
     %else:
-        your history
+        ## TODO: add tooltip to indicate why this link is disabled.
+        import and start using history
     %endif
     ##<a href="${self.get_history_link( history )}">${_('refresh')}</a> 
     %if show_deleted:
@@ -240,10 +249,6 @@
 </%def>
 
 <%def name="render_item( history, datasets )">
-        <div id="history-name-area" class="historyLinks" style="color: gray; font-weight: bold; padding: 0px 0px 5px 0px">
-            <div id="history-name">${history.get_display_name() | h}</div>
-        </div>
-
         %if history.deleted:
             <div class="warningmessagesmall">
                 ${_('You are currently viewing a deleted history!')}
@@ -254,14 +259,22 @@
         %if not datasets:
             <div class="infomessagesmall" id="emptyHistoryMessage">
         %else:    
-            ## Render requested datasets, ordered from newest to oldest
-            %for data in datasets:
-                %if data.visible:
-                    <div class="historyItemContainer visible-right-border" id="historyItemContainer-${data.id}">
-                        ${render_dataset( data, data.hid, show_deleted_on_refresh = show_deleted, user_owns_dataset=user_owns_history )}
-                    </div>
-                %endif
-            %endfor
+            ## Render requested datasets, ordered from newest to oldest, including annotations.
+            <table class="annotated-item">
+                <tr><th>Dataset</th><th class="annotation">Description/Notes</th></tr>
+                %for data in datasets:
+                    <tr>
+                        %if data.visible:
+                            <td>
+                                <div class="historyItemContainer visible-right-border" id="historyItemContainer-${data.id}">
+                                    ${render_dataset( data, data.hid, show_deleted_on_refresh = show_deleted, user_owns_dataset=user_owns_history )}
+                                </div>
+                            </td>
+                            <td class="annotation">${data.annotation}</td>
+                        %endif
+                    </tr>
+                %endfor
+            </table>
             <div class="infomessagesmall" id="emptyHistoryMessage" style="display:none;">
         %endif
                 ${_("Your history is empty. Click 'Get Data' on the left pane to start")}

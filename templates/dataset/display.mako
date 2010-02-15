@@ -53,6 +53,8 @@
                     ${self.render_item_links( item )}
                 </div>
                 
+                ${self.render_item_header( item )}
+                
                 ${self.render_item( item, item_data )}
             </div>
         </div>

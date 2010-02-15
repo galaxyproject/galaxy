@@ -19,7 +19,7 @@
 </div>
 
 <%def name="title( item )">
-    Galaxy ${get_class_display_name( item.__class__ )} | ${get_item_name( item )}
+    <h4>Galaxy ${get_class_display_name( item.__class__ )} | ${get_item_name( item )}</h4>
     <%
         item_controller = "/%s" % get_controller_name( item )
         item_user = get_item_user( item )
@@ -28,6 +28,9 @@
     %>
     <a class="display_in_embed icon-button toggle-expand" item_id="${trans.security.encode_id( item.id )}" item_class="$item.__class__.__name__" href="${display_href}"></a>
     <a class="toggle-contract icon-button" href="${display_href}"></a>
+    %if hasattr( item, "annotation"):
+        <div class="annotation">Description/Notes: ${item.annotation}</div>
+    %endif
     
     ## Use a hidden var to store the ajax URL for getting an item's content.
     <input type="hidden" name="ajax-item-content-url" value="${h.url_for( controller=item_controller, action='get_item_content_async', id=trans.security.encode_id( item.id ) )}"/>

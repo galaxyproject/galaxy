@@ -1,4 +1,8 @@
-.embedded-item{background-color: #BBBBBB; margin-left: auto; margin-right: auto; width: 90%; max-height: 25em; overflow: auto; padding: 0.5em;-moz-border-radius: .5em;-webkit-border-radius: .5em;border-radius: .5em;}
+.embedded-item{background-color:#BBBBBB;margin-left:auto;margin-right:auto;width:90%;max-height:25em;overflow:auto;padding: 0.5em;-moz-border-radius:0.5em;-webkit-border-radius:0.5em;border-radius:0.5em;}
 .embedded-item.placeholder{}
-.embedded-item .title{font-weight: bold;font-size:120%;vertical-align:top;text-align:center;}
+.embedded-item .title{vertical-align:top;text-align:center;}
 .embedded-item.placeholder .content{padding: 1em 1em;font-style:italic;text-align:center;}
+table.annotated-item{width:100%;border-collapse:collapse;}
+table.annotated-item td,th{padding:0;}
+table.annotated-item .annotation{padding-left:2em;width:40%;}
+table.annotated-item td.annotation{vertical-align:text-top;padding-top:1em;}

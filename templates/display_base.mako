@@ -77,6 +77,14 @@
     ## Override.
 </%def>
 
+<%def name="render_item_header( item )">
+    <h3>Galaxy ${get_class_display_name( item.__class__ )} '${get_item_name( item )| h}'</h3>
+    %if hasattr( item, "annotation"):
+        <div class="annotation">Description/Notes: ${item.annotation}</div>
+    %endif
+    <hr/>
+</%def>
+
 <%def name="render_item( item, item_data=None )">
     ## Override.
 </%def>
@@ -129,6 +137,8 @@
                 <div style="padding: 0px 0px 5px 0px">
                     ${self.render_item_links( item )}
                 </div>
+                
+                ${self.render_item_header( item )}
                 
                 ${self.render_item( item, item_data )}
             </div>

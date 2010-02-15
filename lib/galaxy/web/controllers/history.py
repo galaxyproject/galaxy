@@ -418,8 +418,10 @@ class HistoryController( BaseController, Sharable, UsesHistory ):
             
         # Get datasets.
         datasets = self.get_history_datasets( trans, history )
-        # Get annotation.
-        annotation = self.get_item_annotation_str( trans.sa_session, trans.get_user(), history )
+        # Get annotations.
+        history.annotation = self.get_item_annotation_str( trans.sa_session, history.user, history )
+        for dataset in datasets:
+            dataset.annotation = self.get_item_annotation_str( trans.sa_session, history.user, dataset )
         return trans.stream_template_mako( "/history/item_content.mako", item = history, item_data = datasets )
                        
     @web.expose
@@ -531,6 +533,10 @@ class HistoryController( BaseController, Sharable, UsesHistory ):
    
         # Get datasets.
         datasets = self.get_history_datasets( trans, history )
+        # Get annotations.
+        history.annotation = self.get_item_annotation_str( trans.sa_session, history.user, history )
+        for dataset in datasets:
+            dataset.annotation = self.get_item_annotation_str( trans.sa_session, history.user, dataset )
         return trans.stream_template_mako( "history/display.mako",
                                           item = history, item_data = datasets )
                                           

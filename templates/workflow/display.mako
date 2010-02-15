@@ -1,6 +1,9 @@
 <%inherit file="/display_base.mako"/>
 
-<%! from galaxy.tools.parameters import DataToolParameter, RuntimeValue %>
+<%! 
+    from galaxy.tools.parameters import DataToolParameter, RuntimeValue 
+    from galaxy.web import form_builder
+%>
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}
@@ -21,10 +24,9 @@
           <% repeat_values = values[input.name] %>
           %for i in range( len( repeat_values ) ):
             <div class="repeat-group-item">
-            <% index = repeat_values[i]['__index__'] %>
-            <div class="form-title-row"><b>${input.title} ${i + 1}</b></div>
-            ${do_inputs( input.inputs, repeat_values[ i ], prefix + input.name + "_" + str(index) + "|", step, other_values )}
-            
+                <% index = repeat_values[i]['__index__'] %>
+                <div class="form-title-row"><b>${input.title} ${i + 1}</b></div>
+                ${do_inputs( input.inputs, repeat_values[ i ], prefix + input.name + "_" + str(index) + "|", step, other_values )}
             </div> 
           %endfor
       </div>
@@ -37,7 +39,7 @@
     %else:
       ${row_for_param( input, values[ input.name ], other_values, prefix, step )}
     %endif
-  %endfor  
+  %endfor
 </%def>
 
 <%def name="row_for_param( param, value, other_values, prefix, step )">
@@ -58,12 +60,18 @@
                         other_values = {}
                         value = other_values[ param.name ] = param.get_initial_value( t, other_values )
                     %>
-                    ${param.get_html_field( t, value, other_values ).get_html( str(step.id) + "|" + prefix )}
+                    ## For display, do not show input elements.
+                    <% html_field = param.get_html_field( t, value, other_values ) %>
+                    %if type( html_field ) in [ form_builder.SelectField ]:
+                        <i>select at runtime</i>
+                    %else:
+                        ${html_field.get_html( str(step.id) + "|" + prefix )}
+                    %endif
                 %endif
             %else:
                 ${param.value_to_display_text( value, app )}
             %endif
-        </div>      
+        </div>
     </div>
 </%def>
 
@@ -72,13 +80,15 @@
     %if workflow.user != trans.get_user():
         <a href="${h.url_for( controller='/workflow', action='imp', id=trans.security.encode_id(workflow.id) )}">import and start using workflow</a>
     %else:
-        your workflow
+        import and start using workflow
     %endif
 </%def>
 
 <%def name="render_item( workflow, steps )">
-     <h2>${workflow.name | h}</h2>
-        %for i, step in enumerate( steps ):    
+    <table class="annotated-item">
+        <tr><th>Step</th><th class="annotation">Description/Notes</th></tr>
+        %for i, step in enumerate( steps ):
+            <tr><td>
             %if step.type == 'tool' or step.type is None:
               <% tool = app.toolbox.tools_by_id[step.tool_id] %>
               <div class="toolForm">
@@ -88,14 +98,18 @@
                   </div>
               </div>
             %else:
+            ## TODO: always input dataset?
             <% module = step.module %>
               <div class="toolForm">
                   <div class="toolFormTitle">Step ${int(step.order_index)+1}: ${module.name}</div>
                   <div class="toolFormBody">
-                    ##Need to do more work to print only dataset label and not combo box as well.
-                    ##${do_inputs( module.get_runtime_inputs(), step.state.inputs, "", step )}
+                    ${do_inputs( module.get_runtime_inputs(), step.state.inputs, "", step )}
                   </div>
               </div>
             %endif
+            </td>
+            <td class="annotation">${step.annotation}</td>
+            </tr>
         %endfor
+    </table>
 </%def>

@@ -180,7 +180,10 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow ):
         
         # Get data for workflow's steps.
         self.get_stored_workflow_steps( trans, stored_workflow )
-            
+        # Get annotations.
+        stored_workflow.annotation = self.get_item_annotation_str( trans.sa_session, stored_workflow.user, stored_workflow )
+        for step in stored_workflow.latest_workflow.steps:
+            step.annotation = self.get_item_annotation_str( trans.sa_session, stored_workflow.user, step )
         return trans.fill_template_mako( "workflow/display.mako", item=stored_workflow, item_data=stored_workflow.latest_workflow.steps )
 
     @web.expose
@@ -194,8 +197,10 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow ):
             
         # Get data for workflow's steps.
         self.get_stored_workflow_steps( trans, stored )
-        # Get annotation.
-        annotation = self.get_item_annotation_str( trans.sa_session, trans.get_user(), stored )
+        # Get annotations.
+        stored.annotation = self.get_item_annotation_str( trans.sa_session, stored.user, stored )
+        for step in stored.latest_workflow.steps:
+            step.annotation = self.get_item_annotation_str( trans.sa_session, stored.user, step )
         return trans.stream_template_mako( "/workflow/item_content.mako", item = stored, item_data = stored.latest_workflow.steps )
                               
     @web.expose

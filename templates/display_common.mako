@@ -20,7 +20,9 @@
     <% 
 		if type( item ) is model.Page:
 			return item.title
-		return item.name 
+		if hasattr( item, 'get_display_name'):
+		    return item.get_display_name()
+		return item.name
 	%>
 </%def>
 

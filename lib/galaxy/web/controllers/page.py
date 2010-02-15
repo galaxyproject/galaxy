@@ -695,22 +695,22 @@ class PageController( BaseController, Sharable, UsesHistory, UsesStoredWorkflow,
         item_class = self.get_class( item_class )
         if item_class == model.History:
             history = self.get_history( trans, item_id, False, True )
+            history.annotation = self.get_item_annotation_str( trans.sa_session, history.user, history )
             if history:
                 datasets = self.get_history_datasets( trans, history )
-                annotation = self.get_item_annotation_str( trans.sa_session, history.user, history )
-                return trans.fill_template( "history/embed.mako", item=history, item_data=datasets, annotation=annotation )
+                return trans.fill_template( "history/embed.mako", item=history, item_data=datasets )
         elif item_class == model.HistoryDatasetAssociation:
             dataset = self.get_dataset( trans, item_id )
+            dataset.annotation = self.get_item_annotation_str( trans.sa_session, dataset.history.user, dataset )
             if dataset:
                 data = self.get_data( dataset )
-                annotation = self.get_item_annotation_str( trans.sa_session, dataset.history.user, dataset )
-                return trans.fill_template( "dataset/embed.mako", item=dataset, item_data=data, annotation=annotation )
+                return trans.fill_template( "dataset/embed.mako", item=dataset, item_data=data )
         elif item_class == model.StoredWorkflow:
             workflow = self.get_stored_workflow( trans, item_id, False, True )
+            workflow.annotation = self.get_item_annotation_str( trans.sa_session, workflow.user, workflow )
             if workflow:
                 self.get_stored_workflow_steps( trans, workflow )
-                annotation = self.get_item_annotation_str( trans.sa_session, workflow.user, workflow )
-                return trans.fill_template( "workflow/embed.mako", item=workflow, item_data=workflow.latest_workflow.steps, annotation=annotation )
+                return trans.fill_template( "workflow/embed.mako", item=workflow, item_data=workflow.latest_workflow.steps )
         elif item_class == model.Page:
             pass
         
