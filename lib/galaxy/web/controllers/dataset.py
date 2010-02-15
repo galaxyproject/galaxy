@@ -4,7 +4,7 @@ from galaxy.web.base.controller import *
 from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy import util, datatypes, jobs, web, model
 from cgi import escape, FieldStorage
-from galaxy.datatypes.display_applications.helpers import decode_dataset_user
+from galaxy.datatypes.display_applications.util import encode_dataset_user, decode_dataset_user
 
 from email.MIMEText import MIMEText
 
@@ -357,12 +357,16 @@ class DatasetInterface( BaseController, UsesHistoryDatasetAssociation ):
             return trans.show_error_message( "You are not allowed to view this dataset at external sites.  Please contact your Galaxy administrator to acquire management permissions for this dataset." )
 
     @web.expose
-    def display_application( self, trans, dataset_id=None, user_id=None, app_name = None, link_name = None, app_action = None, action_param = None ):
+    def display_application( self, trans, dataset_id=None, user_id=None, app_name = None, link_name = None, app_action = None, action_param = None, **kwds ):
         """Access to external display applications"""
+        if kwds:
+            log.debug( "Unexpected Keywords passed to display_application: %s" % kwds ) #route memory?
         #decode ids
         data, user = decode_dataset_user( trans, dataset_id, user_id )
         if not data:
             raise paste.httpexceptions.HTTPRequestRangeNotSatisfiable( "Invalid reference dataset id: %s." % str( dataset_id ) )
+        if user is None:
+            user = trans.user
         if user:
             user_roles = user.all_roles()
         else:
@@ -370,15 +374,13 @@ class DatasetInterface( BaseController, UsesHistoryDatasetAssociation ):
         if None in [ app_name, link_name ]:
             return trans.show_error_message( "A display application name and link name must be provided." )
         
-        if app_action is None:
-            app_action = "display" # default action is display
-        
         if trans.app.security_agent.can_access_dataset( user_roles, data.dataset ):
             msg = []
             refresh = False
             display_app = trans.app.datatypes_registry.display_applications.get( app_name )
             assert display_app, "Unknown display application has been requested: %s" % app_name
-            display_link = display_app.get_link( link_name, data, trans )
+            dataset_hash, user_hash = encode_dataset_user( trans, data, user )
+            display_link = display_app.get_link( link_name, data, dataset_hash, user_hash, trans )
             assert display_link, "Unknown display link has been requested: %s" % link_name
             if data.state == data.states.ERROR:
                 msg.append( ( 'This dataset is in an error state, you cannot view it at an external display application.', 'error' ) )
@@ -409,16 +411,19 @@ class DatasetInterface( BaseController, UsesHistoryDatasetAssociation ):
                         trans.response.set_content_type( value.mime_type() )
                         trans.response.headers[ 'Content-Length' ] = content_length
                         return rval
-                    elif app_action == "display":
+                    elif app_action == None:
                         return trans.fill_template_mako( "dataset/display_application/launch_display.mako", display_link = display_link )
                     else:
                         msg.append( ( 'Invalid action provided: %s' % app_action, 'error' ) )
                 else:
-                    msg.append( ( 'This display application is being prepared.', 'info' ) )
-                    if app_action == "display":
-                        refresh = True
-                        if not display_link.preparing_display():
-                            display_link.prepare_display()
+                    if app_action == None:
+                        if trans.history != data.history:
+                            msg.append( ( 'You must import this dataset into your current history before you can view it at the desired display application.', 'error' ) )
+                        else:
+                            refresh = True
+                            msg.append( ( 'This display application is being prepared.', 'info' ) )
+                            if not display_link.preparing_display():
+                                display_link.prepare_display()
                     else:
                         raise Exception( 'Attempted a view action (%s) on a non-ready display application' % app_action )
             return trans.fill_template_mako( "dataset/display_application/display.mako", msg = msg, display_app = display_app, display_link = display_link, refresh = refresh )

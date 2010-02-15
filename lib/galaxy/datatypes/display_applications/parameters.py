@@ -1,5 +1,4 @@
 #Contains parameters that are used in Display Applications
-from helpers import encode_dataset_user
 from galaxy.util import string_as_bool
 from galaxy.util.bunch import Bunch
 from galaxy.util.template import fill_template
@@ -28,10 +27,10 @@ class DisplayApplicationParameter( object ):
         self.viewable = string_as_bool( elem.get( 'viewable', 'False' ) ) #only allow these to be viewed via direct url when explicitly set to viewable
         self.strip = string_as_bool( elem.get( 'strip', 'False' ) )
         self.strip_https = string_as_bool( elem.get( 'strip_https', 'False' ) )
-    def get_value( self, other_values, trans ):
+    def get_value( self, other_values, dataset_hash, user_hash, trans ):
         raise Exception, 'Unimplemented'
-    def prepare( self, other_values, trans ):
-        return self.get_value( other_values, trans )
+    def prepare( self, other_values, dataset_hash, user_hash, trans ):
+        return self.get_value( other_values, dataset_hash, user_hash, trans )
     def ready( self, other_values ):
         return True
     def is_preparing( self, other_values ):
@@ -76,12 +75,12 @@ class DisplayApplicationDataParameter( DisplayApplicationParameter ):
             assert data.find_conversion_destination( self.formats )[0] is not None, "No conversion path found for data param: %s" % self.name
             return None
         return data
-    def get_value( self, other_values, trans ):
+    def get_value( self, other_values, dataset_hash, user_hash, trans ):
         data = self._get_dataset_like_object( other_values )
         if data:
-            return DisplayDataValueWrapper( data, self, other_values, trans )
+            return DisplayDataValueWrapper( data, self, other_values, dataset_hash, user_hash, trans )
         return None
-    def prepare( self, other_values, trans ):
+    def prepare( self, other_values, dataset_hash, user_hash, trans ):
         data = self._get_dataset_like_object( other_values )
         if not data and self.formats:
             data = other_values.get( self.dataset, None )
@@ -102,7 +101,7 @@ class DisplayApplicationDataParameter( DisplayApplicationParameter ):
                 trans.sa_session.flush()
             elif converted_dataset and converted_dataset.state == converted_dataset.states.ERROR:
                 raise Exception, "Dataset conversion failed for data parameter: %s" % self.name
-        return self.get_value( other_values, trans )
+        return self.get_value( other_values, dataset_hash, user_hash, trans )
     def is_preparing( self, other_values ):
         value = self._get_dataset_like_object( other_values )
         if value and value.state in ( value.states.NEW, value.states.UPLOAD, value.states.QUEUED, value.states.RUNNING ):
@@ -125,22 +124,23 @@ class DisplayApplicationTemplateParameter( DisplayApplicationParameter ):
     def __init__( self, elem, link ):
         DisplayApplicationParameter.__init__( self, elem, link )
         self.text = elem.text
-    def get_value( self, other_values, trans ):
+    def get_value( self, other_values, dataset_hash, user_hash, trans ):
         value = fill_template( self.text, context = other_values )
         if self.strip:
             value = value.strip()
-        return DisplayParameterValueWrapper( value, self, other_values, trans )
+        return DisplayParameterValueWrapper( value, self, other_values, dataset_hash, user_hash, trans )
 
 parameter_type_to_class = { DisplayApplicationDataParameter.type:DisplayApplicationDataParameter, DisplayApplicationTemplateParameter.type:DisplayApplicationTemplateParameter }
 
 class DisplayParameterValueWrapper( object ):
     ACTION_NAME = 'param'
-    def __init__( self, value, parameter, other_values, trans ):
+    def __init__( self, value, parameter, other_values, dataset_hash, user_hash, trans ):
         self.value = value
         self.parameter = parameter
         self.other_values = other_values
         self.trans = trans
-        self._dataset_hash, self._user_hash = encode_dataset_user( trans, self.other_values[ DEFAULT_DATASET_NAME ], self.other_values[ DEFAULT_DATASET_NAME ].history.user )
+        self._dataset_hash = dataset_hash
+        self._user_hash = user_hash
     def __str__( self ):
         return str( self.value )
     def mime_type( self ):
