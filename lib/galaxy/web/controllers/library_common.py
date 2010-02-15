@@ -137,13 +137,15 @@ class LibraryCommon( BaseController ):
         show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
         if params.get( 'rename_library_button', False ):
             old_name = library.name
-            new_name = util.restore_text( params.name )
-            new_description = util.restore_text( params.description )
-            new_synopsis = util.restore_text( params.synopsis )
+            new_name = util.restore_text( params.get( 'name', 'No name' ) )
             if not new_name:
                 msg = 'Enter a valid name'
                 messagetype='error'
             else:
+                new_description = util.restore_text( params.get( 'description', '' ) )
+                new_synopsis = util.restore_text( params.get( 'synopsis', '' ) )
+                if new_synopsis in [ None, 'None' ]:
+                    new_synopsis = ''
                 library.name = new_name
                 library.description = new_description
                 library.synopsis = new_synopsis

@@ -98,10 +98,13 @@ class LibraryAdmin( BaseController ):
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
         if params.get( 'create_library_button', False ):
-            library = trans.app.model.Library( name = util.restore_text( params.name ), 
-                                               description = util.restore_text( params.description ),
-                                               synopsis = util.restore_text( params.synopsis ) )
-            root_folder = trans.app.model.LibraryFolder( name = util.restore_text( params.name ), description = "" )
+            name = util.restore_text( params.get( 'name', 'No name' ) )
+            description = util.restore_text( params.get( 'description', '' ) )
+            synopsis = util.restore_text( params.get( 'synopsis', '' ) )
+            if synopsis in [ 'None', None ]:
+                synopsis = ''
+            library = trans.app.model.Library( name=name, description=description, synopsis=synopsis )
+            root_folder = trans.app.model.LibraryFolder( name=name, description='' )
             library.root_folder = root_folder
             trans.sa_session.add_all( ( library, root_folder ) )
             trans.sa_session.flush()

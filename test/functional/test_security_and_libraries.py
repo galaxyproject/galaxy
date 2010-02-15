@@ -113,8 +113,9 @@ class TestSecurityAndLibraries( TwillTestCase ):
                                    .first()
         # Make sure DatasetPermissions is correct - default is 'manage permissions'
         if len( latest_dataset.actions ) > 1:
-            raise AssertionError( '%d DatasetPermissions were created for dataset id %d when it was created ( should have been 1 )' \
-                                  % ( len( latest_dataset.actions ), latest_dataset.id ) )
+            actions = [ a.action for a in latest_dataset.actions ]
+            raise AssertionError( '%d DatasetPermissions (%s) were created for dataset id %d when it was created ( should have been 1 )' \
+                                  % ( len( latest_dataset.actions ), str( actions ), latest_dataset.id ) )
         dp = sa_session.query( galaxy.model.DatasetPermissions ) \
                        .filter( galaxy.model.DatasetPermissions.table.c.dataset_id==latest_dataset.id ) \
                        .first()

@@ -312,3 +312,20 @@ class TestFormsAndRequests( TwillTestCase ):
         # check if the request's state is now set to 'submitted'
         assert request_two.state is not request_two.states.REJECTED, "The state of the request '%s' should be set to '%s'" \
             % ( request_two.name, request_two.states.REJECTED )
+    def test_050_reset_data_for_later_test_runs( self ):
+        """Reseting data to enable later test runs to pass"""
+        # TODO: RC: add whatever is missing from this method that should be marked
+        # deleted or purged so that later test runs will correctly test features if the
+        # database has not be purged.
+        #
+        # Logged in as admin_user
+        ##################
+        # Eliminate all non-private roles
+        ##################
+        for role in [ role_one ]:
+            self.mark_role_deleted( self.security.encode_id( role.id ), role.name )
+            self.purge_role( self.security.encode_id( role.id ), role.name )
+            # Manually delete the role from the database
+            sa_session.refresh( role )
+            sa_session.delete( role )
+            sa_session.flush()
