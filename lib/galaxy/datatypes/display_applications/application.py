@@ -34,7 +34,7 @@ class DisplayApplicationLink( object ):
         self.name = None
     def get_display_url( self, data, trans ):
         dataset_hash, user_hash = encode_dataset_user( trans, data, None )
-        return url_for( controller = 'dataset', action = "display_application", dataset_id = dataset_hash, user_id = user_hash, app_name = self.display_application.id, link_name = self.id, app_action = None )
+        return url_for( controller = '/dataset', action = "display_application", dataset_id = dataset_hash, user_id = user_hash, app_name = self.display_application.id, link_name = self.id, app_action = None )
     def get_inital_values( self, data, trans ):
         rval = odict( { 'BASE_URL': trans.request.base, 'APP': trans.app } ) #trans automatically appears as a response, need to add properties of trans that we want here
         for key, value in  BASE_PARAMS.iteritems(): #add helper functions/variables

@@ -158,7 +158,7 @@ class DisplayParameterValueWrapper( object ):
         base_url = self.trans.request.base
         if self.parameter.strip_https and base_url[ : 5].lower() == 'https':
             base_url = "http%s" % base_url[ 5: ]
-        return "%s%s" % ( base_url, url_for( controller = 'dataset', action = "display_application", dataset_id = self._dataset_hash, user_id = self._user_hash, app_name = self.parameter.link.display_application.id, link_name = self.parameter.link.id, app_action = self.action_name, action_param = self.parameter.url ) )
+        return "%s%s" % ( base_url, url_for( controller = '/dataset', action = "display_application", dataset_id = self._dataset_hash, user_id = self._user_hash, app_name = self.parameter.link.display_application.id, link_name = self.parameter.link.id, app_action = self.action_name, action_param = self.parameter.url ) )
     @property
     def action_name( self ):
         return self.ACTION_NAME
