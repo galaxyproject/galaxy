@@ -112,17 +112,12 @@ class GalaxyRBACAgent( RBACAgent ):
     def get_legitimate_roles( self, trans, item ):
         """
         Return a sorted list of legitimate roles that can be associated with a permission on
-        item where item is a Library or a Dataset.  If item is public, all roles are legitimate.
-        If item is restricted, legitimate roles are derived from the users and groups associated
-        with each role that is associated with the access permission ( i.e., DATASET_MANAGE_PERMISSIONS
-        or LIBRARY_MANAGE ) on item.
+        item where item is a Library or a Dataset.  If item is public, all non-private roles,
+        except for the current user's private role, are legitimate.  If item is restricted,
+        legitimate roles are derived from the users and groups associated with each role that
+        is associated with the access permission ( i.e., DATASET_MANAGE_PERMISSIONS or
+        LIBRARY_MANAGE ) on item.
         """
-        if ( isinstance( item, self.model.Library ) and self.library_is_public( item ) ) or \
-            ( isinstance( item, self.model.Dataset ) and self.dataset_is_public( item ) ):
-            # If item is public, private roles will always be allowed
-            return trans.sa_session.query( trans.app.model.Role ) \
-                                   .filter( trans.app.model.Role.table.c.deleted==False ) \
-                                   .order_by( trans.app.model.Role.table.c.name )
         def sort_by_attr( seq, attr ):
             """
             Sort the sequence of objects by object's attribute
@@ -137,26 +132,55 @@ class GalaxyRBACAgent( RBACAgent ):
             # (which can be expensive or prohibited) in case of equal attribute values.
             intermed = map( None, map( getattr, seq, ( attr, ) * len( seq ) ), xrange( len( seq ) ), seq )
             intermed.sort()
-            return map( operator.getitem, intermed, ( -1, ) * len( intermed ) )        
+            return map( operator.getitem, intermed, ( -1, ) * len( intermed ) )
         roles = set()
+        if ( isinstance( item, self.model.Library ) and self.library_is_public( item ) ) or \
+            ( isinstance( item, self.model.Dataset ) and self.dataset_is_public( item ) ):
+            if not trans.user:
+                return trans.sa_session.query( trans.app.model.Role ) \
+                                       .filter( and_( self.model.Role.table.c.deleted==False,
+                                                      self.model.Role.table.c.type != self.model.Role.types.PRIVATE ) ) \
+                                       .order_by( self.model.Role.table.c.name )
+            # Add the current user's private role
+            roles.add( self.get_private_user_role( trans.user ) )
+            for role in trans.sa_session.query( trans.app.model.Role ) \
+                                        .filter( and_( self.model.Role.table.c.deleted==False,
+                                                       self.model.Role.table.c.type != self.model.Role.types.PRIVATE ) ) \
+                                        .order_by( self.model.Role.table.c.name ):
+                roles.add( role )
+            return sort_by_attr( [ role for role in roles ], 'name' )     
         # If item has roles associated with the access permission, we need to start with them.
         access_roles = item.get_access_roles( trans )
         for role in access_roles:
-            roles.add( role )
-            # Each role potentially has users.  We need to find all roles that each of those users have.
-            for ura in role.users:
-                user = ura.user
-                for ura2 in user.roles:
-                    roles.add( ura2.role )
-            # Each role also potentially has groups which, in turn, have members ( users ).  We need to 
-            # find all roles that each group's members have.
-            for gra in role.groups:
-                group = gra.group
-                for uga in group.users:
-                    user = uga.user
-                    for ura in user.roles:
-                        roles.add( ura.role )
+            if self.ok_to_display( trans, role ):
+                roles.add( role )
+                # Each role potentially has users.  We need to find all roles that each of those users have.
+                for ura in role.users:
+                    user = ura.user
+                    for ura2 in user.roles:
+                        if self.ok_to_display( trans, ura2.role ):
+                            roles.add( ura2.role )
+                # Each role also potentially has groups which, in turn, have members ( users ).  We need to 
+                # find all roles that each group's members have.
+                for gra in role.groups:
+                    group = gra.group
+                    for uga in group.users:
+                        user = uga.user
+                        for ura in user.roles:
+                            if self.ok_to_display( trans, ura.role ):
+                                roles.add( ura.role )
         return sort_by_attr( [ role for role in roles ], 'name' )
+    def ok_to_display( self, trans, role ):
+        """
+        Method for checking if a role is not private, unless it is the current user's
+        private role.  Private roles, except for the current user's private role, are
+        never displayed, no matter what.
+        """
+        if trans.user and ( role.type != self.model.Role.types.PRIVATE or role == self.get_private_user_role( trans.user ) ):
+            return True
+        if not trans.user and role.type != self.model.Role.types.PRIVATE:
+            return True
+        return False
     def allow_action( self, roles, action, item ):
         """
         Method for checking a permission for the current user ( based on roles ) to perform a

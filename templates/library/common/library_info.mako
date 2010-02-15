@@ -59,6 +59,19 @@
                     <div style="float: left; width: 250px; margin-right: 10px;">
                         <input type="text" name="description" value="${library.description}" size="40"/>
                     </div>
+                    <div class="toolParamHelp" style="clear: both;">
+                        Displayed when browsing all libraries
+                    </div>
+                    <div style="clear: both"></div>
+                </div>
+                <div class="form-row">
+                    <label>Synopsis:</label>
+                    <div style="float: left; width: 250px; margin-right: 10px;">
+                        <input type="text" name="synopsis" value="${library.synopsis}" size="40"/>
+                    </div>
+                    <div class="toolParamHelp" style="clear: both;">
+                        Displayed when browsing this library
+                    </div>
                     <div style="clear: both"></div>
                 </div>
                 <div class="form-row">
@@ -74,6 +87,11 @@
             <div class="form-row">
                 <label>Description:</label>
                 ${library.description}
+            </div>
+            <div style="clear: both"></div>
+            <div class="form-row">
+                <label>Synopsis:</label>
+                ${library.synopsis}
             </div>
             <div style="clear: both"></div>
         %endif

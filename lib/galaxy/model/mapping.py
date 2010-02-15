@@ -274,7 +274,8 @@ Library.table = Table( "library", metadata,
     Column( "name", String( 255 ), index=True ),
     Column( "deleted", Boolean, index=True, default=False ),
     Column( "purged", Boolean, index=True, default=False ),
-    Column( "description", TEXT ) )
+    Column( "description", TEXT ),
+    Column( "synopsis", TEXT ) )
 
 LibraryFolder.table = Table( "library_folder", metadata,
     Column( "id", Integer, primary_key=True ),

@@ -1357,14 +1357,17 @@ class TwillTestCase( unittest.TestCase ):
         self.check_page_for_string( 'Address <b>%s</b> has been added' % address_dict[ 'short_desc' ] )
         
     # Library stuff
-    def create_library( self, name='Library One', description='This is Library One' ):
+    def create_library( self, name='Library One', description='This is Library One', synopsis='Synopsis for Library One' ):
         """Create a new library"""
         self.home()
         self.visit_url( "%s/library_admin/create_library" % self.url )
         self.check_page_for_string( 'Create a new data library' )
-        tc.fv( "1", "1", name ) # form field 1 is the field named name...
-        tc.fv( "1", "2", description ) # form field 1 is the field named name...
+        tc.fv( "1", "name", name )
+        tc.fv( "1", "description", description )
+        tc.fv( "1", "synopsis", synopsis )
         tc.submit( "create_library_button" )
+        check_str = "The new library named '%s' has been created" % name
+        self.check_page_for_string( check_str )
         self.home()
     def library_permissions( self, library_id, library_name, role_ids_str, permissions_in, permissions_out, cntrller='library_admin' ):
         # role_ids_str must be a comma-separated string of role ids
@@ -1380,14 +1383,15 @@ class TwillTestCase( unittest.TestCase ):
         check_str = "Permissions updated for library '%s'" % library_name
         self.check_page_for_string( check_str )
         self.home()
-    def rename_library( self, library_id, old_name, name='Library One Renamed', description='This is Library One Re-described', controller='library_admin' ):
+    def rename_library( self, library_id, old_name, name='Library One Renamed', description='This is Library One Re-described',
+                        synopsis='This is the new synopsis for Library One ', controller='library_admin' ):
         """Rename a library"""
         self.home()
         self.visit_url( "%s/library_common/library_info?id=%s&cntrller=%s" % ( self.url, library_id, controller ) )
         self.check_page_for_string( old_name )
         # Since twill barfs on the form submisson, we ar forced to simulate it
-        url = "%s/library_common/library_info?id=%s&cntrller=%s&rename_library_button=Save&description=%s&name=%s" % \
-        ( self.url, library_id, controller, description.replace( ' ', '+' ), name.replace( ' ', '+' ) )
+        url = "%s/library_common/library_info?id=%s&cntrller=%s&rename_library_button=Save&description=%s&name=%s&synopsis=%s" % \
+        ( self.url, library_id, controller, description.replace( ' ', '+' ), name.replace( ' ', '+' ), synopsis.replace( ' ', '+' ) )
         self.home()
         self.visit_url( url )
         check_str = "Library '%s' has been renamed to '%s'" % ( old_name, name )
@@ -1427,6 +1431,8 @@ class TwillTestCase( unittest.TestCase ):
         tc.fv( "1", "name", name ) # form field 1 is the field named name...
         tc.fv( "1", "description", description ) # form field 2 is the field named description...
         tc.submit( "new_folder_button" )
+        check_str = "The new folder named '%s' has been added to the data library." % name
+        self.check_page_for_string( check_str )
         self.home()
     def folder_info( self, controller, folder_id, library_id, name, new_name, description, contents='', field_name='' ):
         """Add information to a library using an existing template with 2 elements"""

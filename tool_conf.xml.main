@@ -37,7 +37,6 @@
     <tool file="filters/headWrapper.xml" />
     <tool file="filters/tailWrapper.xml" />
      <tool file="filters/trimmer.xml" />
-     <tool file="stats/dna_filtering.xml" />
   </section>
   <section name="Convert Formats" id="convert">
     <tool file="filters/bed2gff.xml" />
@@ -63,6 +62,7 @@
     <tool file="stats/filtering.xml" />
     <tool file="filters/sorter.xml" />
     <tool file="filters/grep.xml" />
+    <tool file="stats/dna_filtering.xml" />
   </section>
   <section name="Join, Subtract and Group" id="group">
     <tool file="filters/joiner.xml" />
@@ -142,7 +142,7 @@
  <section name="Evolution" id="hyphy">
     <tool file="hyphy/hyphy_branch_lengths_wrapper.xml" />
     <tool file="hyphy/hyphy_nj_tree_wrapper.xml" />
-    <tool file="hyphy/hyphy_dnds_wrapper.xml" />
+    <!-- <tool file="hyphy/hyphy_dnds_wrapper.xml" />  -->
     <tool file="evolution/mutate_snp_codon.xml" />
  </section>
  <section name="Metagenomic analyses" id="tax_manipulation">

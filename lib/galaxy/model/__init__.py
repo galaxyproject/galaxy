@@ -749,9 +749,10 @@ class HistoryDatasetAssociationDisplayAtAuthorization( object ):
 
 class Library( object ):
     permitted_actions = get_permitted_actions( filter='LIBRARY' )
-    def __init__( self, name = None, description = None, root_folder = None ):
+    def __init__( self, name=None, description=None, synopsis=None, root_folder=None ):
         self.name = name or "Unnamed library"
         self.description = description
+        self.synopsis = synopsis
         self.root_folder = root_folder
     def get_info_association( self, restrict=False, inherited=False ):
         if self.info_association:

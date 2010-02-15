@@ -92,6 +92,10 @@ class LibraryCommon( BaseController ):
             msg = "Invalid library id ( %s )." % str( library_id )
             messagetype = 'error'
         else:
+            # If use_panels is True, the library is being accessed via an external link
+            # which did not originate from within the Galaxy instance, and the library will
+            # be displayed correctly with the mast head.
+            use_panels = util.string_as_bool( params.get( 'use_panels', False ) )
             show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
             created_ldda_ids = params.get( 'created_ldda_ids', '' )
             hidden_folder_ids = util.listify( params.get( 'hidden_folder_ids', '' ) )
@@ -103,6 +107,7 @@ class LibraryCommon( BaseController ):
                 msg += "message \"This job is running\" is cleared from the \"Information\" column below for each selected dataset."
                 messagetype = "info"
             return trans.fill_template( '/library/common/browse_library.mako',
+                                        use_panels=use_panels,
                                         cntrller=cntrller,
                                         library=library,
                                         created_ldda_ids=created_ldda_ids,
@@ -134,12 +139,14 @@ class LibraryCommon( BaseController ):
             old_name = library.name
             new_name = util.restore_text( params.name )
             new_description = util.restore_text( params.description )
+            new_synopsis = util.restore_text( params.synopsis )
             if not new_name:
                 msg = 'Enter a valid name'
                 messagetype='error'
             else:
                 library.name = new_name
                 library.description = new_description
+                library.synopsis = new_synopsis
                 # Rename the root_folder
                 library.root_folder.name = new_name
                 library.root_folder.description = new_description
@@ -249,7 +256,7 @@ class LibraryCommon( BaseController ):
                                             msg=msg,
                                             messagetype='done' )
             # If not inheritable info_association, redirect to the library.
-            msg = "The new folder named '%s' has been added to the library" % new_folder.name
+            msg = "The new folder named '%s' has been added to the data library." % new_folder.name
             return trans.response.send_redirect( web.url_for( controller='library_common',
                                                               action='browse_library',
                                                               cntrller=cntrller,

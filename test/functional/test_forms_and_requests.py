@@ -152,11 +152,24 @@ class TestFormsAndRequests( TwillTestCase ):
         # Set permissions on the library, sort for later testing
         permissions_in = [ k for k, v in galaxy.model.Library.permitted_actions.items() ]
         permissions_out = []
+        name = 'Role for testing forms'
+        description = "This is Role Ones description"
+        user_ids=[ str( admin_user.id ), str( regular_user1.id ) ]
+        self.create_role( name=name,
+                          description=description,
+                          in_user_ids=user_ids,
+                          in_group_ids=[],
+                          create_group_for_role='yes',
+                          private_role=admin_user.email )
+        # Get the role object for later tests
+        global role_one
+        role_one = sa_session.query( galaxy.model.Role ).filter( galaxy.model.Role.table.c.name==name ).first()
+        assert role_one is not None, 'Problem retrieving role named "Role for testing forms" from the database'
         # Role one members are: admin_user, regular_user1.  Each of these users will be permitted to
         # LIBRARY_ADD, LIBRARY_MODIFY, LIBRARY_MANAGE for library items.
         self.library_permissions( self.security.encode_id( library_one.id ),
                                   library_one.name,
-                                  str( regular_user1_private_role.id ),
+                                  str( role_one.id ),
                                   permissions_in,
                                   permissions_out )
         # create a folder in the library

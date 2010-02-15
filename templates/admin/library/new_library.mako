@@ -21,13 +21,20 @@
                 <div style="float: left; width: 250px; margin-right: 10px;">
                     <input type="text" name="description" value="" size="40"/>
                 </div>
+                <div class="toolParamHelp" style="clear: both;">
+                    Displayed when browsing all libraries
+                </div>
                 <div style="clear: both"></div>
             </div>
             <div class="form-row">
+                <label>Synopsis:</label>
                 <div style="float: left; width: 250px; margin-right: 10px;">
-                    <input type="hidden" name="new" value="submitted" size="40"/>
+                    <input type="text" name="synopsis" value="" size="40"/>
                 </div>
-              <div style="clear: both"></div>
+                <div class="toolParamHelp" style="clear: both;">
+                    Displayed when browsing this library
+                </div>
+                <div style="clear: both"></div>
             </div>
             <div class="form-row">
                 <input type="submit" name="create_library_button" value="Create"/>
