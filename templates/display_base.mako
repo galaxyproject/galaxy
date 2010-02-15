@@ -172,7 +172,7 @@
                 
                 <p>${item.user.username | h}</p>
                 
-                <div><img src="http://www.gravatar.com/avatar/${h.md5(item.user.email)}?s=150"></div>
+                <div><img src="http://www.gravatar.com/avatar/${h.md5(item.user.email)}?d=identicon&s=150"></div>
                 
                 
                 
