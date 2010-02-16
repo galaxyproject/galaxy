@@ -139,13 +139,19 @@ class GalaxyRBACAgent( RBACAgent ):
             if not trans.user:
                 return trans.sa_session.query( trans.app.model.Role ) \
                                        .filter( and_( self.model.Role.table.c.deleted==False,
-                                                      self.model.Role.table.c.type != self.model.Role.types.PRIVATE ) ) \
+                                                      self.model.Role.table.c.type != self.model.Role.types.PRIVATE,
+                                                      self.model.Role.table.c.type != self.model.Role.types.SHARING ) ) \
                                        .order_by( self.model.Role.table.c.name )
             # Add the current user's private role
             roles.add( self.get_private_user_role( trans.user ) )
+            # Add the current user's sharing roles
+            for role in self.get_sharing_roles( trans.user ):
+                roles.add( role )
+            # Add all remaining non-private, non-sharing roles
             for role in trans.sa_session.query( trans.app.model.Role ) \
                                         .filter( and_( self.model.Role.table.c.deleted==False,
-                                                       self.model.Role.table.c.type != self.model.Role.types.PRIVATE ) ) \
+                                                       self.model.Role.table.c.type != self.model.Role.types.PRIVATE,
+                                                       self.model.Role.table.c.type != self.model.Role.types.SHARING ) ) \
                                         .order_by( self.model.Role.table.c.name ):
                 roles.add( role )
             return sort_by_attr( [ role for role in roles ], 'name' )     
@@ -172,15 +178,18 @@ class GalaxyRBACAgent( RBACAgent ):
         return sort_by_attr( [ role for role in roles ], 'name' )
     def ok_to_display( self, trans, role ):
         """
-        Method for checking if a role is not private, unless it is the current user's
-        private role.  Private roles, except for the current user's private role, are
-        never displayed, no matter what.
+        Method for checking if:
+        - a role is private and is the current user's private role
+        - a role is a sharing role and belongs to the current user
         """
-        if trans.user and ( role.type != self.model.Role.types.PRIVATE or role == self.get_private_user_role( trans.user ) ):
+        if trans.user:
+            if role.type == self.model.Role.types.PRIVATE:
+                return role == self.get_private_user_role( trans.user )
+            if role.type == self.model.Role.types.SHARING:
+                return role in self.get_sharing_roles( trans.user )
+            # If role.type is neither private nor sharing, it's ok to display
             return True
-        if not trans.user and role.type != self.model.Role.types.PRIVATE:
-            return True
-        return False
+        return role.type != self.model.Role.types.PRIVATE and role.type != self.model.Role.types.SHARING
     def allow_action( self, roles, action, item ):
         """
         Method for checking a permission for the current user ( based on roles ) to perform a
@@ -287,6 +296,10 @@ class GalaxyRBACAgent( RBACAgent ):
             else:
                 return None
         return role
+    def get_sharing_roles( self, user ):
+        return self.sa_session.query( self.model.Role ) \
+                              .filter( and_( ( self.model.Role.table.c.name ).like( "Sharing role for: %" + user.email + "%" ), 
+                                             self.model.Role.table.c.type == self.model.Role.types.SHARING ) )
     def user_set_default_permissions( self, user, permissions={}, history=False, dataset=False, bypass_manage_permission=False, default_access_private = False ):
         # bypass_manage_permission is used to change permissions of datasets in a userless history when logging in
         if user is None:
