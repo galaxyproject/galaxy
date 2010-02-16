@@ -56,14 +56,14 @@
                 $(this).click( function() 
                 {
                     var href = $(this).attr('href');
-                    options = 
-                    {
-                        url: href,        
-                        width: 640,
-                        height: 480,
-                        scroll: 'no'  
-                    };
-                    show_in_overlay(options);
+                    show_in_overlay(
+                        {
+                            url: href,        
+                            width: 640,
+                            height: 480,
+                            scroll: 'no'  
+                        }
+                    );
                     return false;
                 });
             });
