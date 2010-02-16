@@ -588,7 +588,8 @@ class PageController( BaseController, Sharable, UsesHistory, UsesStoredWorkflow,
         # Process page content.
         processor = _PageContentProcessor( trans, 'utf-8', 'text/html', self._get_embed_html )
         processor.feed( page.latest_revision.content )
-        page_content = processor.output()
+        # Output is string, so convert to unicode.
+        page_content = unicode( processor.output(), 'utf-8' )
         return trans.fill_template_mako( "page/display.mako", item=page, item_data=page_content, content_only=True )
         
     @web.expose
