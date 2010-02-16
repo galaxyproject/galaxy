@@ -28,7 +28,14 @@
                     </div>
                     <div style="clear: both"></div>
                 </div>
-                <input type="submit" name="rename_library_button" value="Save"/>
+                <div class="form-row">
+                    <label>Synopsis:</label>
+                    <div style="float: left; width: 250px; margin-right: 10px;">
+                        <input type="text" name="synopsis" value="${library.synopsis}" size="40"/>
+                    </div>
+                    <div style="clear: both"></div>
+                </div>
+                <input type="submit" name="library_info_button" value="Save"/>
             </form>
         </div>
     </div>
@@ -36,14 +43,21 @@
 %else:
     <div class="toolForm">
         <div class="toolFormTitle">View information about ${library.name}</div>
-        <div class="toolFormBody">
-            <div class="form-row">
-                <b>Name:</b> ${library.name}
-                <div style="clear: both"></div>
-                <b>Info:</b> ${library.description}
-                <div style="clear: both"></div>
-            </div>
+        <div class="form-row">
+            <label>Name:</label>
+            ${library.name}
         </div>
+        <div style="clear: both"></div>
+        <div class="form-row">
+            <label>Description:</label>
+            ${library.description}
+        </div>
+        <div style="clear: both"></div>
+        <div class="form-row">
+            <label>Synopsis:</label>
+            ${library.synopsis}
+        </div>
+        <div style="clear: both"></div>
         <div class="toolForm">
             ${render_template_info( 'mobile', library, library.id, 'library' )}
         </div>

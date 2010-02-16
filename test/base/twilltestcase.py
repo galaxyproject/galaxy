@@ -1390,7 +1390,7 @@ class TwillTestCase( unittest.TestCase ):
         self.visit_url( "%s/library_common/library_info?id=%s&cntrller=%s" % ( self.url, library_id, controller ) )
         self.check_page_for_string( old_name )
         # Since twill barfs on the form submisson, we ar forced to simulate it
-        url = "%s/library_common/library_info?id=%s&cntrller=%s&rename_library_button=Save&description=%s&name=%s&synopsis=%s" % \
+        url = "%s/library_common/library_info?id=%s&cntrller=%s&library_info_button=Save&description=%s&name=%s&synopsis=%s" % \
         ( self.url, library_id, controller, description.replace( ' ', '+' ), name.replace( ' ', '+' ), synopsis.replace( ' ', '+' ) )
         self.home()
         self.visit_url( url )

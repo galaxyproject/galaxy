@@ -2,6 +2,12 @@
 <%namespace file="/message.mako" import="render_msg" />
 <%namespace file="/library/common/common.mako" import="render_template_info" />
 
+<%
+    from cgi import escape
+    folder_name = escape( str( folder.name ), quote=True )
+    folder_description = escape( str( folder.description ), quote=True )
+%>
+
 <br/><br/>
 <ul class="manage-table-actions">
     <li>
@@ -20,12 +26,12 @@
             <form name="folder" action="${h.url_for( controller='library_common', action='folder_info', cntrller=cntrller, id=trans.security.encode_id( folder.id ), library_id=library_id, show_deleted=show_deleted )}" method="post" >
                 <div class="form-row">
                     <label>Name:</label>
-                    <input type="text" name="name" value="${folder.name}" size="40"/>
+                    <input type="text" name="name" value="${folder_name}" size="40"/>
                     <div style="clear: both"></div>
                 </div>
                 <div class="form-row">
                     <label>Description:</label>
-                    <input type="text" name="description" value="${folder.description}" size="40"/>
+                    <input type="text" name="description" value="${folder_description}" size="40"/>
                     <div style="clear: both"></div>
                 </div>
                 <div class="form-row">
@@ -35,12 +41,12 @@
         %else:
             <div class="form-row">
                 <label>Name:</label>
-                ${folder.name}
+                ${folder_name}
                 <div style="clear: both"></div>
             </div>
             <div class="form-row">
                 <label>Description:</label>
-                ${folder.description}
+                ${folder_description}
                 <div style="clear: both"></div>
             </div>
         %endif

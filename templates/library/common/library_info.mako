@@ -3,10 +3,14 @@
 <%namespace file="/library/common/common.mako" import="render_template_info" />
 
 <%
+    from cgi import escape
     if cntrller in [ 'library', 'requests' ]:
         can_add = trans.app.security_agent.can_add_library_item( current_user_roles, library )
         can_modify = trans.app.security_agent.can_modify_library_item( current_user_roles, library )
         can_manage = trans.app.security_agent.can_manage_library_item( current_user_roles, library )
+    library_name = escape( str( library.name ), quote=True )
+    library_description = escape( str( library.description ), quote=True )
+    library_synopsis = escape( str( library.synopsis ), quote=True )
 %>
 
 <br/><br/>
@@ -50,14 +54,14 @@
                 <div class="form-row">
                     <label>Name:</label>
                     <div style="float: left; width: 250px; margin-right: 10px;">
-                        <input type="text" name="name" value="${library.name}" size="40"/>
+                        <input type="text" name="name" value="${library_name}" size="40"/>
                     </div>
                     <div style="clear: both"></div>
                 </div>
                 <div class="form-row">
                     <label>Description:</label>
                     <div style="float: left; width: 250px; margin-right: 10px;">
-                        <input type="text" name="description" value="${library.description}" size="40"/>
+                        <input type="text" name="description" value="${library_description}" size="40"/>
                     </div>
                     <div class="toolParamHelp" style="clear: both;">
                         Displayed when browsing all libraries
@@ -67,7 +71,7 @@
                 <div class="form-row">
                     <label>Synopsis:</label>
                     <div style="float: left; width: 250px; margin-right: 10px;">
-                        <input type="text" name="synopsis" value="${library.synopsis}" size="40"/>
+                        <input type="text" name="synopsis" value="${library_synopsis}" size="40"/>
                     </div>
                     <div class="toolParamHelp" style="clear: both;">
                         Displayed when browsing this library
@@ -75,23 +79,23 @@
                     <div style="clear: both"></div>
                 </div>
                 <div class="form-row">
-                    <input type="submit" name="rename_library_button" value="Save"/>
+                    <input type="submit" name="library_info_button" value="Save"/>
                 </div>
             </form>
         %else:
             <div class="form-row">
                 <label>Name:</label>
-                ${library.name}
+                ${library_name}
             </div>
             <div style="clear: both"></div>
             <div class="form-row">
                 <label>Description:</label>
-                ${library.description}
+                ${library_description}
             </div>
             <div style="clear: both"></div>
             <div class="form-row">
                 <label>Synopsis:</label>
-                ${library.synopsis}
+                ${library_synopsis}
             </div>
             <div style="clear: both"></div>
         %endif

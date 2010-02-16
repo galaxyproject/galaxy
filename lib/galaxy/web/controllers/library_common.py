@@ -135,7 +135,7 @@ class LibraryCommon( BaseController ):
         widgets = library.get_template_widgets( trans )
         current_user_roles = trans.get_current_user_roles()
         show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
-        if params.get( 'rename_library_button', False ):
+        if params.get( 'library_info_button', False ):
             old_name = library.name
             new_name = util.restore_text( params.get( 'name', 'No name' ) )
             if not new_name:
