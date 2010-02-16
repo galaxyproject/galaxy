@@ -202,6 +202,10 @@
     </style>
 </%def>
 
+<%def name="render_item_header( item )">
+    ## No header for pages.
+</%def>
+
 <%def name="render_item_links( page )">
 </%def>
 
