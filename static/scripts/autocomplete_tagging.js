@@ -323,12 +323,14 @@ jQuery.fn.autocomplete_tagging = function(options)
         tag_area.hide();
     else 
     {
+        /*
         var num_tags = array_length(settings.tags);
         if (num_tags == 0)
         {
             add_tag_button.hide();
             tag_input_field.show();
         }
+        */
     }
 
     // Initialize tag names.

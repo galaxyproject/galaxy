@@ -570,7 +570,6 @@ class PageController( BaseController, Sharable, UsesHistory, UsesStoredWorkflow,
     @web.expose
     def display_by_username_and_slug( self, trans, username, slug ):
         """ Display page based on a username and slug. """ 
-        session = trans.sa_session
 
         # Get page.
         session = trans.sa_session
@@ -588,7 +587,7 @@ class PageController( BaseController, Sharable, UsesHistory, UsesStoredWorkflow,
         # Process page content.
         processor = _PageContentProcessor( trans, 'utf-8', 'text/html', self._get_embed_html )
         processor.feed( page.latest_revision.content )
-        # Output is string, so convert to unicode.
+        # Output is string, so convert to unicode for display.
         page_content = unicode( processor.output(), 'utf-8' )
         return trans.fill_template_mako( "page/display.mako", item=page, item_data=page_content, content_only=True )
         

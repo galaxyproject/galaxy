@@ -26,7 +26,8 @@
     <script type='text/javascript' src="${h.url_for('/static/scripts/excanvas.js')}"> </script>
     <![endif]-->
 
-    ${h.js( "jquery", 
+    ${h.js( "jquery",
+            "jquery.tipsy",
             "jquery.event.drag", 
             "jquery.event.drop", 
             "jquery.event.hover",
@@ -128,27 +129,27 @@
             return false;
         });
         
-        ## make_popupmenu( "#optionsbutton", {
-        ##     "Create <b>new</b> workflow" : create_new_workflow_dialog,
-        ##     "<b>Save</b> current workflow" : save_current_workflow,
-        ##     "<b>Load</b> a stored workflow" : load_workflow
-        ## });
+        make_popupmenu( $("#workflow-options-button"), {
+             ##"Create New" : create_new_workflow_dialog,
+             "Edit Attributes" : edit_workflow_attributes,
+             "Layout": layout_editor,
+             "Save" : save_current_workflow,
+             ##"Load a Workflow" : load_workflow,
+             "Close": close_editor,
+        });
         
-        $("#save-button").click( function() { save_current_workflow(); } );
-        $("#close-button").click( function() { close_editor(); } );
-        
-        $("#layout-button").click( function() {
+        function layout_editor() {
             workflow.layout();
             workflow.fit_canvas_to_nodes();
             scroll_to_nodes();
             canvas_manager.draw_overview();
-        });
+        };
         
-        $('#edit-attributes-button').click( function() {
+        function edit_workflow_attributes() {
             workflow.clear_active_node();
             $('#edit-attributes').show();
-            $('#right-content').hide();
-        });
+            $('#right-content').hide();  
+        };
         
         $.jStore.ready(function(engine) {
             engine.ready(function() {
@@ -219,7 +220,7 @@
         });
 
         // Rename async.
-        async_save_text("workflow-rename", "workflow-name", "${h.url_for( action="rename_async", id=trans.security.encode_id(stored.id) )}", "new_name");
+        async_save_text("workflow-name", "workflow-name", "${h.url_for( action="rename_async", id=trans.security.encode_id(stored.id) )}", "new_name");
         
         // Tag async. Simply have the workflow edit element generate a click on the tag element to activate tagging.
         $('#workflow-tag').click( function() 
@@ -228,7 +229,7 @@
             return false;
         });
         // Annotate async.
-        async_save_text("workflow-annotate", "workflow-annotation", "${h.url_for( action="annotate_async", id=trans.security.encode_id(stored.id) )}", "new_annotation", true, 4);
+        async_save_text("workflow-annotation", "workflow-annotation", "${h.url_for( action="annotate_async", id=trans.security.encode_id(stored.id) )}", "new_annotation", 25, true, 4);
     });
 
     // Global state for the whole workflow
@@ -306,7 +307,7 @@
 
     function show_form_for_tool( text, node ) {
         $("#edit-attributes").hide();
-		$("#right-content").show().html( text );    
+		$("#right-content").show().html( text );   
         $("#right-content").find( "form" ).ajaxForm( {
             type: 'POST',
             dataType: 'json',
@@ -337,17 +338,7 @@
                 $(this).remove();
                 make_popupmenu( b, options );
             });
-            // Add annotation field to form.
-            // TODO: need to set the annotation for this tool.
-            var annotation_div = 
-            $( "<div class='form-row'> \
-                <label>Annotation / Notes:</label> \
-                        <div style='margin-right: 10px;'> \
-                        <textarea name='annotation' rows='3' style='width: 100%'>" + node.annotation + "</textarea> \
-                            <div class='toolParamHelp'>Add an annotation or notes to this step; annotations are available when a workflow is viewed.</div> \
-                            </div> \
-                        </div>");
-            $(this).append( annotation_div );
+            
             // Implements auto-saving based on whether the inputs change. We consider
             // "changed" to be when a field is accessed and not necessarily modified
             // because of an issue where "onchange" is not triggered when activating
@@ -358,6 +349,30 @@
                 });
             });
         });
+        
+            
+        // Add metadata form to tool.
+        if ( node )
+        {
+            var metadata_div = 
+            $( "<p><div class='metadataForm'> \
+                <div class='metadataFormTitle'>Edit Step Attributes</div> \
+                <div class='form-row'> \
+                <label>Annotation / Notes:</label> \
+                        <div style='margin-right: 10px;'> \
+                        <textarea name='annotation' rows='3' style='width: 100%'>" + node.annotation + "</textarea> \
+                            <div class='toolParamHelp'>Add an annotation or notes to this step; annotations are available when a workflow is viewed.</div> \
+                        </div> \
+                </div> \
+                </div>");
+            // When metadata is changed, update node and set workflow changes flag.
+            var textarea = $(metadata_div).find("textarea");
+            textarea.change( function () {
+                node.annotation = $(this).val();
+                workflow.has_changes = true;
+            });
+            $("#right-content").find(".toolForm").after( metadata_div );
+        }
     }
     
     var close_editor = function() {
@@ -373,7 +388,7 @@
                         {
                             "Cancel" : hide_modal,
                             "Save Changes" : function() {
-                                save_current_workflow( do_close );
+                                save_current_workflow( null, do_close );
                             }
                         }, {
                             "Don't Save": do_close
@@ -383,7 +398,7 @@
         }
     }
     
-    var save_current_workflow = function ( success_callback ) {
+    var save_current_workflow = function ( eventObj, success_callback ) {
         show_modal( "Saving workflow", "progress" );
         workflow.check_changes_in_active_form();
         if (!workflow.has_changes) {
@@ -739,13 +754,10 @@
 
     <div class="unified-panel-header" unselectable="on">
         <div class="unified-panel-header-inner" style="float: right">
-            <a id="layout-button" class="panel-header-button">Layout</a>
-            &nbsp;&nbsp;
-            <a id="save-button" class="panel-header-button">Save</a>
-            <a id="close-button" class="panel-header-button">Close</a>
+            <a id="workflow-options-button" class="panel-header-button popup" href="#">Options</a>
         </div>
         <div class="unified-panel-header-inner">
-            Workflow canvas
+            Workflow Canvas | ${stored.name | h}
         </div>
     </div>
 
@@ -770,22 +782,17 @@
     <div class="unified-panel-header" unselectable="on">
         <div class="unified-panel-header-inner">
             Details
-            <div style="float: right">
-                <a id="edit-attributes-button" class="panel-header-button">Edit Workflow Attributes</a>
-            </div>
         </div>
     </div>
     <div class="unified-panel-body" style="overflow: auto;">
         ## Div for elements to modify workflow attributes.
-        <div id="edit-attributes" class="toolForm right-content">
-            <div class="toolFormTitle">Edit Workflow Attributes</div>
-            <div class="toolFormBody">
+        <div id="edit-attributes" class="metadataForm right-content">
+            <div class="metadataFormTitle">Edit Workflow Attributes</div>
+            <div class="metadataFormBody">
             ## Workflow name.
             <div id="workflow-name-area" class="form-row">
                 <label>Name:</label>
-                <div style="float: right"><a id="workflow-rename" title="Rename" class="icon-button edit" target="galaxy_main" href="${h.url_for( controller='workflow', action='rename_sync' )}"></a></div>
-                <div id="workflow-name">${stored.name | h}</div>
-                <div style="clear: both"></div>
+                <span id="workflow-name" class="tooltip editable-text" original-title="Click to rename workflow">${stored.name | h}</span>
             </div>
             ## Workflow tags.
             <%namespace file="/tagging_common.mako" import="render_individual_tagging_element" />
@@ -793,24 +800,20 @@
                 <label>
                     Tags:
                 </label>
-                    <div style="float: right"><a id="workflow-tag" title="Tag" class="icon-button edit" target="galaxy_main" href="${h.url_for( controller='workflow', action='annotate_async' )}"></a></div>
                     <div style="float: left; width: 225px; margin-right: 10px; border-style: inset; border-width: 1px; margin-left: 2px">
                         <style>
                             .tag-area {
                                 border: none;
                             }
                         </style>
-                        ${render_individual_tagging_element(user=trans.get_user(), tagged_item=stored, elt_context="edit_attributes.mako", use_toggle_link=False, input_size="20", render_add_tag_button=False)}
+                        ${render_individual_tagging_element(user=trans.get_user(), tagged_item=stored, elt_context="edit_attributes.mako", use_toggle_link=False, input_size="20")}
                     </div>
-                    <div style="clear: both"></div>
                     <div class="toolParamHelp">Apply tags to make it easy to search for and find items with the same tag.</div>
                 </div>
                 ## Workflow annotation.
                 <div id="workflow-annotation-area" class="form-row">
                     <label>Annotation / Notes:</label>
-                    <div style="float: right"><a id="workflow-annotate" title="Annotate" class="icon-button edit" target="galaxy_main" href="${h.url_for( controller='workflow', action='annotate_async' )}"></a></div>
-                    <div id="workflow-annotation">${annotation | h}</div>
-                    <div style="clear: both"></div>
+                    <span id="workflow-annotation" class="tooltip editable-text" original-title="Click to edit annotation">${annotation | h}</span>
                     <div class="toolParamHelp">Add an annotation or notes to a workflow; annotations are available when a workflow is viewed.</div>
                 </div>
             </div>

@@ -307,7 +307,6 @@ $.extend( Node.prototype, {
             node = this;
         this.tool_state = data.tool_state;
         this.form_html = data.form_html;
-        this.annotation = data.annotation;
         this.tool_errors = data.tool_errors;
         if ( this.tool_errors ) {
                 el.addClass( "tool-node-error" );

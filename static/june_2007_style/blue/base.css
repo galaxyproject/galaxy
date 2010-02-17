@@ -22,6 +22,13 @@ div.toolFormDisabled div.toolFormTitle{background:#eee;border-color:#999;}
 div.toolFormDisabled{border-color:#999;}
 div.toolHelp{}
 div.toolHelpBody{width:100%;overflow:auto;}
+div.metadataForm{border:solid #aaaaaa 1px;}
+div.metadataFormTitle{font-weight:bold;padding:5px;padding-left:10px;padding-right:10px;background:#cccccc;background-repeat:repeat-x;background-position:top;border-bottom:solid #aaaaaa 1px;}
+div.metadataFormBody{background:#FFFFFF;background-image:url(form_body_bg.png);background-repeat:repeat-x;background-position:top;padding:5px 0;}
+div.metadataFormBody div.metadataFormTitle{background:transparent;border:none;font-weight:bold;border-bottom:solid #dcb790 1px;margin-bottom:5px;}
+div.metadataFormDisabled div.metadataFormTitle{background:#eee;border-color:#999;}
+div.metadataFormDisabled{border-color:#999;}
+div.metadataHelpBody{width:100%;overflow:auto;}
 div.titleRow{font-weight:bold;border-bottom:dotted gray 1px;margin-bottom:0.5em;padding-bottom:0.25em;}
 div.form{border:solid #d8b365 1px;}
 div.form-title{font-weight:bold;padding:5px 10px;background:#ebd9b2;background-image:url(form_title_bg.png);background-repeat:repeat-x;background-position:top;border-bottom:solid #d8b365 1px;}
