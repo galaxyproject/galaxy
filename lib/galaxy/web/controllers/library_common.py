@@ -1274,8 +1274,7 @@ class LibraryCommon( BaseController ):
                             or ldda.dataset.state in [ 'new', 'upload', 'queued', 'running', 'empty', 'discarded' ]:
                             continue
                         ext = ldda.extension
-                        if ext in composite_extensions: 
-                            is_composite = True
+                        is_composite = ext in composite_extensions
                         path = ""
                         parent_folder = ldda.library_dataset.folder
                         while parent_folder is not None:
