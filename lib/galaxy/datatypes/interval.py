@@ -54,6 +54,7 @@ class Interval( Tabular ):
         """Initialize interval datatype, by adding UCSC display apps"""
         Tabular.__init__(self, **kwd)
         self.add_display_app ( 'ucsc', 'display at UCSC', 'as_ucsc_display_file', 'ucsc_links' )
+        self.add_display_app ( 'main', 'BX', 'as_bx_display_file', 'bx_links' )
     
     def init_meta( self, dataset, copy_from=None ):
         Tabular.init_meta( self, dataset, copy_from=copy_from )
@@ -239,6 +240,29 @@ class Interval( Tabular ):
                         # requires additional hackery in your upstream proxy.
                         # If UCSC ever supports https, remove this hack.
                         internal_url = "%s" % url_for( controller='dataset', dataset_id=dataset.id, action='display_at', filename='ucsc_' + site_name )
+                        if base_url.startswith( 'https://' ):
+                            base_url = base_url.replace( 'https', 'http', 1 )
+                        display_url = urllib.quote_plus( "%s%s/display_as?id=%i&display_app=%s&authz_method=display_at" % (base_url, url_for( controller='root' ), dataset.id, type) )
+                        redirect_url = urllib.quote_plus( "%sdb=%s&position=%s:%s-%s&hgt.customText=%%s" % (site_url, dataset.dbkey, chrom, start, stop ) )
+                        link = '%s?redirect_url=%s&display_url=%s' % ( internal_url, redirect_url, display_url )
+                        ret_val.append( (site_name, link) )
+        return ret_val
+    def bx_links( self, dataset, type, app, base_url ):
+        # TODO: abstract these methods to eliminate duplicate code.
+        ret_val = []
+        if dataset.has_data:
+            viewport_tuple = self.get_estimated_display_viewport(dataset)
+            if viewport_tuple:
+                chrom = viewport_tuple[0]
+                start = viewport_tuple[1]
+                stop = viewport_tuple[2]
+                for site_name, site_url in util.get_bx_by_build(dataset.dbkey):
+                    if site_name in app.config.bx_display_sites:
+                        # HACK: UCSC doesn't support https, so force http even
+                        # if our URL scheme is https.  Making this work
+                        # requires additional hackery in your upstream proxy.
+                        # If UCSC ever supports https, remove this hack.
+                        internal_url = "%s" % url_for( controller='dataset', dataset_id=dataset.id, action='display_at', filename='bx_' + site_name )
                         if base_url.startswith( 'https://' ):
                             base_url = base_url.replace( 'https', 'http', 1 )
                         display_url = urllib.quote_plus( "%s%s/display_as?id=%i&display_app=%s&authz_method=display_at" % (base_url, url_for( controller='root' ), dataset.id, type) )

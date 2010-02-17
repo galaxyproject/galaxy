@@ -278,7 +278,12 @@ def object_to_string( obj ):
 def string_to_object( s ):
     return pickle.loads( binascii.unhexlify( s ) )
         
-
+def get_bx_by_build(build):
+    sites = []
+    for site in bx_build_sites:
+        if build in site['builds']:
+            sites.append((site['name'],site['url']))
+    return sites
 def get_ucsc_by_build(build):
     sites = []
     for site in ucsc_build_sites:
@@ -471,6 +476,7 @@ def umask_fix_perms( path, umask, unmasked_perms, gid=None ):
 galaxy_root_path = os.path.join(__path__[0], "..","..","..")
 # The dbnames list is used in edit attributes and the upload tool
 dbnames = read_dbnames( os.path.join( galaxy_root_path, "tool-data", "shared", "ucsc", "builds.txt" ) )
+bx_build_sites = read_build_sites( os.path.join( galaxy_root_path, "tool-data", "shared", "bx", "bx_build_sites.txt" ) )
 ucsc_build_sites = read_build_sites( os.path.join( galaxy_root_path, "tool-data", "shared", "ucsc", "ucsc_build_sites.txt" ) )
 gbrowse_build_sites = read_build_sites( os.path.join( galaxy_root_path, "tool-data", "shared", "gbrowse", "gbrowse_build_sites.txt" ) )
 genetrack_sites = read_build_sites( os.path.join( galaxy_root_path, "tool-data", "shared", "genetrack", "genetrack_sites.txt" ), check_builds=False )

@@ -214,6 +214,8 @@ class Tabular( data.Text ):
         return open( dataset.file_name )
     def as_ucsc_display_file( self, dataset, **kwd ):
         return open( dataset.file_name )
+    def as_bx_display_file( self, dataset, **kwd ):
+        return open( dataset.file_name )
 
 class Taxonomy( Tabular ):
     def __init__(self, **kwd):
