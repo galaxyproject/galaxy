@@ -872,16 +872,23 @@ class TwillTestCase( unittest.TestCase ):
                             try:
                                 checkbox = control.get()
                                 checkbox.selected = is_checked( control_value )
-                            except ClientForm.AmbiguityError:
-                                # if there's more than one checkbox, use the behaviour for
-                                # ClientForm.ListControl - see twill code..
-                                pass
+                            except Exception, e1:
+                                # if there's more than one checkbox, probably should use the behaviour for
+                                # ClientForm.ListControl ( see twill code ), but this works for now...
+                                for elem in control_value:
+                                    control.get( name=elem ).selected = True
                         else:
                             for elem in control_value:
                                 control.get( name=elem ).selected = True
                     else: # control.is_of_kind( "singlelist" )
                         for elem in control_value:
-                            tc.fv( f.name, control.name, str( elem ) )
+                            # Galaxy truncates long file names in the dataset_collector in ~/parameters/basic.py
+                            if len( elem ) > 30:
+                                elem_name = '%s..%s' % ( elem[:17], elem[-11:] )
+                            else:
+                                elem_name = elem
+                            
+                            tc.fv( f.name, control.name, str( elem_name ) )
                 except Exception, exc:
                     errmsg = "Attempting to set field '%s' to value '%s' in form '%s' threw exception: %s\n" % ( control_name, str( control_value ), f.name, str( exc ) )
                     errmsg += "control: %s\n" % str( control )
