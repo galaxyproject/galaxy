@@ -20,8 +20,14 @@
       <param name="input1" value="1.bed" />
       <param name="input2" value="2.bed" />
       <param name="sameformat" value="true" />
-      <output name="output" file="gops-concat.dat" />     
-    </test>    
+      <output name="output" file="gops_concat_out1.bed" />     
+    </test>
+    <test>
+      <param name="input1" value="1.bed" />
+      <param name="input2" value="1.interval" />
+      <param name="sameformat" value="false" />
+      <output name="output" file="gops_concat_out2.bed" />     
+    </test>   
   </tests>
   <help>
 

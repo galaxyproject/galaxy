@@ -857,8 +857,28 @@ class TwillTestCase( unittest.TestCase ):
             elif control.is_of_kind( "list" ):
                 try:
                     if control.is_of_kind( "multilist" ):
-                        for elem in control_value:
-                            control.get( name=elem ).selected = True
+                        if control.type == "checkbox":
+                            def is_checked( value ):
+                                # Copied from form_builder.CheckboxField
+                                if value == True:
+                                    return True
+                                if isinstance( value, basestring ) and value.lower() in ( "yes", "true", "on" ):
+                                    return True
+                                # This may look strange upon initial inspection, but see the comments in the get_html() method
+                                # above for clarification.  Basically, if value is not True, then it will always be a list with
+                                # 2 input fields ( a checkbox and a hidden field ) if the checkbox is checked.  If it is not
+                                # checked, then value will be only the hidden field.
+                                return isinstance( value, list ) and len( value ) == 2
+                            try:
+                                checkbox = control.get()
+                                checkbox.selected = is_checked( control_value )
+                            except ClientForm.AmbiguityError:
+                                # if there's more than one checkbox, use the behaviour for
+                                # ClientForm.ListControl - see twill code..
+                                pass
+                        else:
+                            for elem in control_value:
+                                control.get( name=elem ).selected = True
                     else: # control.is_of_kind( "singlelist" )
                         for elem in control_value:
                             tc.fv( f.name, control.name, str( elem ) )
