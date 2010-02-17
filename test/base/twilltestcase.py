@@ -882,13 +882,15 @@ class TwillTestCase( unittest.TestCase ):
                                 control.get( name=elem ).selected = True
                     else: # control.is_of_kind( "singlelist" )
                         for elem in control_value:
-                            # Galaxy truncates long file names in the dataset_collector in ~/parameters/basic.py
-                            if len( elem ) > 30:
-                                elem_name = '%s..%s' % ( elem[:17], elem[-11:] )
-                            else:
-                                elem_name = elem
-                            
-                            tc.fv( f.name, control.name, str( elem_name ) )
+                            try:
+                                tc.fv( f.name, control.name, str( elem ) )
+                            except Exception, e2:
+                                # Galaxy truncates long file names in the dataset_collector in ~/parameters/basic.py
+                                if len( elem ) > 30:
+                                    elem_name = '%s..%s' % ( elem[:17], elem[-11:] )
+                                else:
+                                    elem_name = elem
+                                tc.fv( f.name, control.name, str( elem_name ) )
                 except Exception, exc:
                     errmsg = "Attempting to set field '%s' to value '%s' in form '%s' threw exception: %s\n" % ( control_name, str( control_value ), f.name, str( exc ) )
                     errmsg += "control: %s\n" % str( control )
