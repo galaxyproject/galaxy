@@ -1,6 +1,10 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
 
+<%
+    from galaxy.web.form_builder import CheckboxField
+    inheritable_check_box = CheckboxField( 'inheritable' )
+%>
 <script type="text/javascript">
 $( function() {
     $( "select[refresh_on_change='true']").change( function() {
@@ -50,10 +54,9 @@ $( function() {
                 <div class="form-row">
                     <label>Inherit template to contained folders and datasets?</label>
                     %if inheritable_checked:
-                        <input type="checkbox" name="inheritable" value="yes" checked/>Yes
-                    %else:
-                        <input type="checkbox" name="inheritable" value="yes"/>Yes
+                        <% inheritable_check_box.checked = True %>
                     %endif
+                    ${inheritable_check_box.get_html()}
                     <div class="toolParamHelp" style="clear: both;">
                         Check if you want this template to be used by other folders and datasets contained within this ${item_desc}
                     </div>
