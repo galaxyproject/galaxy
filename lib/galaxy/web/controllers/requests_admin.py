@@ -1146,7 +1146,7 @@ class RequestsAdmin( BaseController ):
         for index in range(len(sample.request.samples)):
             # check for empty bar code
             if not barcode.strip():
-                msg = 'Please fill the barcode for sample <b>%s</b>.' % samples[index].name
+                msg = 'Please fill the barcode for sample <b>%s</b>.' % sample.name
                 break
             # check all the saved bar codes
             all_samples = trans.sa_session.query( trans.app.model.Sample )
@@ -1401,9 +1401,19 @@ class RequestsAdmin( BaseController ):
                                                               sample_id=trans.security.encode_id(sample.id),
                                                               msg=msg, messagetype='error',
                                                               folder_path=folder_path )) 
-        files = output.split()[2:]
-        return files
-
+        return output.split()[2:]
+    
+    def __get_files_in_dir(self, trans, sample, folder_path):
+        tmpfiles = self.__get_files(trans, sample, folder_path)
+        for tf in tmpfiles:
+            if tf[-1] == os.sep:
+                self.__get_files_in_dir(trans, sample, os.path.join(folder_path, tf))
+            else:
+                sample.dataset_files.append([os.path.join(folder_path, tf),
+                                             sample.transfer_status.NOT_STARTED])
+                trans.sa_session.add( sample )
+                trans.sa_session.flush()
+        return
     @web.expose
     @web.require_admin
     def get_data(self, trans, **kwd):
@@ -1460,19 +1470,24 @@ class RequestsAdmin( BaseController ):
                                         sample=sample, 
                                         dataset_files=sample.dataset_files)
         elif params.get( 'start_transfer_button', False ):
-            for f in files_list:
-                if f[-1] == os.sep:
-                    # the selected item is a folder so transfer all the 
-                    # folder contents 
-                    sample.dataset_files.append([os.path.join(folder_path, f),
-                                                 sample.transfer_status.NOT_STARTED])
-                else:
-                    sample.dataset_files.append([os.path.join(folder_path, f),
-                                                 sample.transfer_status.NOT_STARTED])
-            trans.sa_session.add( sample )
-            trans.sa_session.flush()
-            return self.__start_datatx(trans, sample)
-            
+            folder_files = []
+            if len(files_list):
+                for f in files_list:
+                    if f[-1] == os.sep:
+                        # the selected item is a folder so transfer all the 
+                        # folder contents 
+                        self.__get_files_in_dir(trans, sample, os.path.join(folder_path, f))
+                    else:
+                        sample.dataset_files.append([os.path.join(folder_path, f),
+                                                     sample.transfer_status.NOT_STARTED])
+                        trans.sa_session.add( sample )
+                        trans.sa_session.flush()
+                return self.__start_datatx(trans, sample)
+            return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                              action='show_datatx_page', 
+                                                              sample_id=trans.security.encode_id(sample.id),
+                                                              folder_path=folder_path))
+
     def __setup_datatx_user(self, trans, library, folder):
         '''
         This method sets up the datatx user:
@@ -1562,20 +1577,6 @@ class RequestsAdmin( BaseController ):
                                          dataset_index=index, 
                                          cmd=cmd)
                 dtt.start()
-#                # set the transfer status
-#                sample.dataset_files[index][1] = sample.transfer_status.IN_PROGRESS
-#                trans.sa_session.add( sample )
-#                trans.sa_session.flush()
-#                try:
-#                    retcode = subprocess.call(cmd)
-#                except Exception, e:
-#                    error_msg = dfile.split('/')[-1] + ": Data transfer failed. " + str(e) + "<br/>"
-#                    return trans.response.send_redirect( web.url_for( controller='requests_admin',
-#                                                                      action='show_datatx_page', 
-#                                                                      sample_id=trans.security.encode_id(sample.id),
-#                                                                      folder_path=os.path.dirname(dfile),
-#                                                                      messagetype='error',
-#                                                                      msg=error_msg))
         # set the sample state to the last state
         if sample.current_state().id != sample.request.type.states[-1].id:
             event = trans.app.model.SampleEvent(sample, sample.request.type.states[-1], 
