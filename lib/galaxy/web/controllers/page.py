@@ -44,7 +44,7 @@ class PageListGrid( grids.Grid ):
         grids.GridAction( "Add new page", dict( action='create' ) )
     ]
     operations = [
-        grids.GridOperation( "View", allow_multiple=False, url_args=dict( action='display') ),
+        grids.DisplayByUsernameAndSlugGridOperation( "View", allow_multiple=False ),
         grids.GridOperation( "Edit name/id", allow_multiple=False, url_args=dict( action='edit') ),
         grids.GridOperation( "Edit content", allow_multiple=False, url_args=dict( action='edit_content') ),
         grids.GridOperation( "Share or Publish", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False ),

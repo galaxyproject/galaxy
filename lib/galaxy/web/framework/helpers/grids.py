@@ -541,6 +541,11 @@ class GridOperation( object ):
             return self.condition( item )
         else:
             return True
+            
+class DisplayByUsernameAndSlugGridOperation( GridOperation ):
+    """ Operation to display an item by username and slug. """
+    def get_url_args( self, item ):
+        return { 'action' : 'display_by_username_and_slug', 'username' : item.user.username, 'slug' : item.slug }
         
 class GridAction( object ):
     def __init__( self, label=None, url_args=None ):
