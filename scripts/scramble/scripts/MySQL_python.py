@@ -80,7 +80,7 @@ if pkg_resources.get_platform() == "macosx-10.3-fat":
     CONFIGURE += "CXXFLAGS='-O -g -isysroot /Developer/SDKs/MacOSX10.4u.sdk -arch i386 -arch ppc' "
     CONFIGURE += "LDFLAGS='-arch i386 -arch ppc' "
     CONFIGURE += "LD='gcc -mmacosx-version-min=10.4 -isysroot /Developer/SDKs/MacOSX10.4u.sdk -nostartfiles -arch i386 -arch ppc' "
-    CONFIGURE += "./configure --prefix=%s/mysql --disable-dependency-tracking --without-server --without-uca --without-libwrap " %os.getcwd()
+    CONFIGURE += "./configure --prefix=%s/mysql --disable-dependency-tracking --disable-shared --without-server --without-uca --without-libwrap " %os.getcwd()
     CONFIGURE += "--without-extra-tools --without-openssl --without-yassl --without-docs --without-man --without-bench --enable-thread-safe-client"
 else:
     CONFIGURE  = "CFLAGS='-fPIC' ./configure --prefix=%s/mysql --disable-shared --without-server --without-uca --without-libwrap " %os.getcwd()
