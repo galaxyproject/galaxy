@@ -862,17 +862,14 @@ class TwillTestCase( unittest.TestCase ):
                                 # Copied from form_builder.CheckboxField
                                 if value == True:
                                     return True
-                                if isinstance( value, basestring ) and value.lower() in ( "yes", "true", "on" ):
-                                    return True
-                                # This may look strange upon initial inspection, but see the comments in the get_html() method
-                                # above for clarification.  Basically, if value is not True, then it will always be a list with
-                                # 2 input fields ( a checkbox and a hidden field ) if the checkbox is checked.  If it is not
-                                # checked, then value will be only the hidden field.
-                                return isinstance( value, list ) and len( value ) == 2
+                                if isinstance( value, list ):
+                                    value = value[0]
+                                return isinstance( value, basestring ) and value.lower() in ( "yes", "true", "on" )
                             try:
                                 checkbox = control.get()
                                 checkbox.selected = is_checked( control_value )
                             except Exception, e1:
+                                print "Attempting to set checkbox selected value threw exception: ", e1
                                 # if there's more than one checkbox, probably should use the behaviour for
                                 # ClientForm.ListControl ( see twill code ), but this works for now...
                                 for elem in control_value:
@@ -885,6 +882,7 @@ class TwillTestCase( unittest.TestCase ):
                             try:
                                 tc.fv( f.name, control.name, str( elem ) )
                             except Exception, e2:
+                                print "Attempting to set control '", control.name, "' to value '", elem, "' threw exception: ", e2
                                 # Galaxy truncates long file names in the dataset_collector in ~/parameters/basic.py
                                 if len( elem ) > 30:
                                     elem_name = '%s..%s' % ( elem[:17], elem[-11:] )
@@ -1654,11 +1652,22 @@ class TwillTestCase( unittest.TestCase ):
         self.home()
     def download_archive_of_library_files( self, cntrller, library_id, ldda_ids, format ):
         self.home()
-        self.visit_url( "%s/library_common/browse_library?cntrller=%s&id=%s" % ( self.url, cntrller, library_id ) )
+        # Here it would be ideal to have twill set form values and submit the form, but
+        # twill barfs on that due to the recently introduced page wrappers around the contents
+        # of the browse_library.mako template which enable panel layout when visiting the
+        # page from an external URL.  By "barfs", I mean that twill somehow loses hod on the 
+        # cntrller param.  We'll just simulate the form submission by building the URL manually.
+        # Here's the old, better approach...
+        #self.visit_url( "%s/library_common/browse_library?cntrller=%s&id=%s" % ( self.url, cntrller, library_id ) )
+        #for ldda_id in ldda_ids:
+        #    tc.fv( "1", "ldda_ids", ldda_id )
+        #tc.fv( "1", "do_action", format )
+        #tc.submit( "action_on_datasets_button" )
+        # Here's the new approach...
+        url = "%s/library_common/act_on_multiple_datasets?cntrller=%s&library_id=%s&do_action=%s" % ( self.url, cntrller, library_id, format )
         for ldda_id in ldda_ids:
-            tc.fv( "1", "ldda_ids", ldda_id )
-        tc.fv( "1", "do_action", format )
-        tc.submit( "action_on_datasets_button" )
+            url += "&ldda_ids=%s" % ldda_id
+        self.visit_url( url )
         tc.code( 200 )
         archive = self.write_temp_file( self.last_page(), suffix=format )
         self.home()

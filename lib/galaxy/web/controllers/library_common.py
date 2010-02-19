@@ -1067,7 +1067,6 @@ class LibraryCommon( BaseController ):
                 # use act_on_multiple_datasets( self, trans, cntrller, library_id, ldda_ids='', **kwd ) since it does what we need
                 kwd['do_action'] = 'zip'
                 return self.act_on_multiple_datasets( trans, cntrller, library_id, ldda_ids=id, **kwd )
-                
             else:
                 mime = trans.app.datatypes_registry.get_mimetype_by_extension( ldda.extension.lower() )
                 trans.response.set_content_type( mime )
@@ -1198,15 +1197,16 @@ class LibraryCommon( BaseController ):
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
         show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
+        action = params.get( 'do_action', None )
         if not ldda_ids:
             msg = "You must select at least one dataset"
             messagetype = 'error'
-        elif not params.do_action:
+        elif not action:
             msg = "You must select an action to perform on selected datasets"
             messagetype = 'error'
         else:
             ldda_ids = util.listify( ldda_ids )
-            if params.do_action == 'add':
+            if action == 'add':
                 history = trans.get_history()
                 total_imported_lddas = 0
                 msg = ''
@@ -1223,7 +1223,7 @@ class LibraryCommon( BaseController ):
                     trans.sa_session.add( history )
                     trans.sa_session.flush()
                     msg += "%i dataset(s) have been imported into your history.  " % total_imported_lddas
-            elif params.do_action == 'manage_permissions':
+            elif action == 'manage_permissions':
                 # We need the folder containing the LibraryDatasetDatasetAssociation(s)
                 ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( ldda_ids[0] ) )
                 trans.response.send_redirect( web.url_for( controller='library_common',
@@ -1235,7 +1235,7 @@ class LibraryCommon( BaseController ):
                                                            show_deleted=show_deleted,
                                                            msg=util.sanitize_text( msg ),
                                                            messagetype=messagetype ) )
-            elif params.do_action == 'delete':
+            elif action == 'delete':
                 for ldda_id in ldda_ids:
                     ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( ldda_id ) )
                     ldda.deleted = True
@@ -1245,18 +1245,18 @@ class LibraryCommon( BaseController ):
             else:
                 error = False
                 try:
-                    if params.do_action == 'zip':
+                    if action == 'zip':
                         # Can't use mkstemp - the file must not exist first
                         tmpd = tempfile.mkdtemp()
-                        tmpf = os.path.join( tmpd, 'library_download.' + params.do_action )
+                        tmpf = os.path.join( tmpd, 'library_download.' + action )
                         if ziptype == '64':
                             archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED, True )
                         else:
                             archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED )
                         archive.add = lambda x, y: archive.write( x, y.encode('CP437') )
-                    elif params.do_action == 'tgz':
+                    elif action == 'tgz':
                         archive = util.streamball.StreamBall( 'w|gz' )
-                    elif params.do_action == 'tbz':
+                    elif action == 'tbz':
                         archive = util.streamball.StreamBall( 'w|bz2' )
                 except (OSError, zipfile.BadZipFile):
                     error = True
@@ -1321,7 +1321,7 @@ class LibraryCommon( BaseController ):
                                 msg = "Unable to create archive for download, please report this error"
                                 messagetype = 'error'                            
                     if not error:    
-                        if params.do_action == 'zip':
+                        if action == 'zip':
                             archive.close()
                             tmpfh = open( tmpf )
                             # clean up now
@@ -1335,11 +1335,11 @@ class LibraryCommon( BaseController ):
                                 messagetype = 'error'
                             if not error:
                                 trans.response.set_content_type( "application/x-zip-compressed" )
-                                trans.response.headers[ "Content-Disposition" ] = "attachment; filename=GalaxyLibraryFiles.%s" % params.do_action
+                                trans.response.headers[ "Content-Disposition" ] = "attachment; filename=GalaxyLibraryFiles.%s" % action
                                 return tmpfh
                         else:
                             trans.response.set_content_type( "application/x-tar" )
-                            trans.response.headers[ "Content-Disposition" ] = "attachment; filename=GalaxyLibraryFiles.%s" % params.do_action
+                            trans.response.headers[ "Content-Disposition" ] = "attachment; filename=GalaxyLibraryFiles.%s" % action
                             archive.wsgi_status = trans.response.wsgi_status()
                             archive.wsgi_headeritems = trans.response.wsgi_headeritems()
                             return archive.stream

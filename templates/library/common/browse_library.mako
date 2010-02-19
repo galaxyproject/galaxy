@@ -472,12 +472,12 @@
            %if cntrller in [ 'library', 'requests' ]:
                ${self.render_folder( 'library', library.root_folder, 0, created_ldda_ids, trans.security.encode_id( library.id ), hidden_folder_ids, tracked_datasets, show_deleted=show_deleted, parent=None, row_counter=row_counter, root_folder=True )}
                %if not library.deleted:
-                   ${render_actions_on_multiple_items( 'library', default_action=default_action )}
+                   ${render_actions_on_multiple_items()}
                %endif
            %elif cntrller in [ 'library_admin', 'requests_admin' ]:
                ${self.render_folder( 'library_admin', library.root_folder, 0, created_ldda_ids, trans.security.encode_id( library.id ), [], tracked_datasets, show_deleted=show_deleted, parent=None, row_counter=row_counter, root_folder=True )}
                %if not library.deleted and not show_deleted:
-                   ${render_actions_on_multiple_items( 'library_admin' )}
+                   ${render_actions_on_multiple_items()}
                %endif
            %endif
        </table>

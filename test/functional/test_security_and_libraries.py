@@ -1596,18 +1596,15 @@ class TestSecurityAndLibraries( TwillTestCase ):
         self.home()
         self.logout()
         self.login( email=admin_user.email )
-    """
-    TODO: debug this, somebody recently broke it
     def test_167_download_archive_of_library_files( self ):
-        Testing downloading an archive of files from the library
+        """Testing downloading an archive of files from the library"""
         for format in ( 'tbz', 'tgz', 'zip' ):
-            archive = self.download_archive_of_library_files( 'library',
-                                                              self.security.encode_id( library_one.id ),
-                                                              ( self.security.encode_id( ldda_one.id ), self.security.encode_id( ldda_two.id ) ),
-                                                              format )
+            archive = self.download_archive_of_library_files( cntrller='library',
+                                                              library_id=self.security.encode_id( library_one.id ),
+                                                              ldda_ids=[ self.security.encode_id( ldda_one.id ), self.security.encode_id( ldda_two.id ) ],
+                                                              format=format )
             self.check_archive_contents( archive, ( ldda_one, ldda_two ) )
             os.remove( archive )
-    """
     def test_170_mark_group_deleted( self ):
         """Testing marking a group as deleted"""
         # Logged in as admin_user

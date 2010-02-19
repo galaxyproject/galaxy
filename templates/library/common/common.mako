@@ -356,7 +356,7 @@
     %endif
 </%def>
 
-<%def name="render_actions_on_multiple_items( cntrller, default_action=None )">
+<%def name="render_actions_on_multiple_items()">
     <tfoot>
         <tr>
             <td colspan="4" style="padding-left: 42px;">
