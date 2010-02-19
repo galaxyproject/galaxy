@@ -43,7 +43,7 @@ $(document).ready(function(){
 </script>
 <style type="text/css">
 .msg_head {
-    padding: 10px 0px;
+    padding: 0px 0px;
     cursor: pointer;
 }
 
@@ -134,7 +134,7 @@ $(document).ready(function(){
                 <th>Data Library</th>
                 <th>Folder</th>
                 %if request.submitted() or request.complete(): 
-                    <th>Dataset(s)</th>
+                    <th>Dataset(s) Transfered</th>
                 %endif
                 <th></th>
             </tr>
@@ -252,7 +252,7 @@ $(document).ready(function(){
 <div class="toolForm">
     <div class="form-row">
         <div class="msg_list">
-            <h4 class="msg_head">Request Information</h4>
+            <h4 class="msg_head"><u>Request Information</u></h4>
             <div class="msg_body">
                 %for index, rd in enumerate(request_details):
                     <div class="form-row">
@@ -282,11 +282,14 @@ $(document).ready(function(){
     </div>
 </div>
 
+<br/>
+
 
 <%def name="render_grid( grid_index, grid_name, fields_dict )">
+    <br/>
     <div class="msg_list">
     %if grid_name:
-        <h4 class="msg_head">${grid_name}</h4>
+        <h4 class="msg_head"><u>${grid_name}</u></h4>
     %else:
         <h4>Grid ${grid_index}</h4>
     %endif
@@ -346,6 +349,7 @@ $(document).ready(function(){
                 <% trans.sa_session.refresh( request.type.sample_form ) %>
                 %for grid_index, grid_name in enumerate(request.type.sample_form.layout):
                     ${render_grid( grid_index, grid_name, request.type.sample_form.fields_of_grid( grid_index ) )}
+                    <br/>
                 %endfor
             %else:
                 <label>There are no samples.</label>

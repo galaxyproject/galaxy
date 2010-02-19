@@ -66,6 +66,10 @@
                 <input type="password" name="password" value="" size="40"/>
             </div>
             <div class="form-row">
+                <label>Data directory:</label>
+                <input type="text" name="data_dir" value="" size="40"/>
+            </div>
+            <div class="form-row">
                 <div style="float: left; width: 250px; margin-right: 10px;">
                     <input type="hidden" name="new" value="submitted" size="40"/>
                 </div>

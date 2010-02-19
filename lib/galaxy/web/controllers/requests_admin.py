@@ -1370,10 +1370,14 @@ class RequestsAdmin( BaseController ):
                                                               status='error',
                                                               message="Invalid sample ID",
                                                               **kwd) )
+        if sample.request.type.datatx_info.get('data_dir', ''):
+            folder_path = util.restore_text( sample.request.type.datatx_info.get('data_dir', '') )
+        else:
+            folder_path = util.restore_text( params.get( 'folder_path', ''  ) )
         return trans.fill_template( '/admin/requests/get_data.mako', 
                                     sample=sample, dataset_files=sample.dataset_files,
                                     msg=msg, messagetype=messagetype, files=[],
-                                    folder_path=util.restore_text( params.get( 'folder_path', ''  ) ))
+                                    folder_path=folder_path )
     def __get_files(self, trans, sample, folder_path):
         '''
         This method retrieves the filenames to be transfer from the remote host.
@@ -1687,7 +1691,8 @@ class RequestsAdmin( BaseController ):
             # data transfer info
             rt.datatx_info = dict(host=util.restore_text( params.get( 'host', ''  ) ),
                                   username=util.restore_text( params.get( 'username', ''  ) ),
-                                  password=util.restore_text( params.get( 'password', ''  ) )) 
+                                  password=util.restore_text( params.get( 'password', ''  ) ),
+                                  data_dir=util.restore_text( params.get( 'data_dir', ''  ) )) 
             trans.sa_session.add( rt )
             trans.sa_session.flush()
             return trans.response.send_redirect( web.url_for( controller='requests_admin',

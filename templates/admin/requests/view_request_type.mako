@@ -58,6 +58,10 @@
             <input type="password" name="password" value="${request_type.datatx_info['password']}" size="40"/>
         </div>
         <div class="form-row">
+            <label>Data directory:</label>
+            <input type="text" name="data_dir" value="${request_type.datatx_info.get('data_dir', '')}" size="40"/>
+        </div>
+        <div class="form-row">
         <input type="submit" name="save_changes" value="Save changes"/>
         </div>
     </form>
