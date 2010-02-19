@@ -2,7 +2,7 @@
     <div class="form-row">
         <label for="title">Browser name:</label>
         <div class="form-row-input">
-            <input type="text" name="title" id="new-title" value="Unnamed Browser"></input>
+            <input type="text" name="title" id="new-title" value="Unnamed"></input>
         </div>
         <div style="clear: both;"></div>
     </div>

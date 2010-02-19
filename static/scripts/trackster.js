@@ -198,6 +198,39 @@ $.extend( Track.prototype, {
         this.content_div = $("<div class='track-content'>");
         this.container_div = $("<div></div>").addClass('track').append( this.header_div ).append( this.content_div );
         this.parent_element.append( this.container_div );
+    },
+    init_each: function(params, success_fn) {
+        var track = this;
+        track.data_queue = {};
+        track.tile_cache.clear();
+        track.data_cache.clear();
+        track.content_div.css( "height", "30px" );
+        track.content_div.text(DATA_LOADING);
+        track.container_div.removeClass("nodata error pending");
+
+        if (track.view.chrom) {
+            $.getJSON( data_url, params, function ( data ) {
+                if (!data || data == "error") {
+                    track.container_div.addClass("error");
+                    track.content_div.text(DATA_ERROR);
+                } else if (data.length === 0 || data == "no data") {
+                    track.container_div.addClass("nodata");
+                    track.content_div.text(DATA_NONE);
+                } else if (data == "pending") {
+                    track.container_div.addClass("pending");
+                    track.content_div.text(DATA_PENDING);
+                    setTimeout(function() { track.init(); }, 5000);
+                } else {
+                    track.content_div.text("");
+                    track.content_div.css( "height", track.height_px + "px" );
+                    success_fn(data);
+                    track.draw();
+                }
+            });
+        } else {
+            track.container_div.addClass("nodata");
+            track.content_div.text(DATA_NONE);
+        }
     }
 });
 
@@ -233,9 +266,7 @@ $.extend( TiledTrack.prototype, Track.prototype, {
                 if (this.left_offset) {
                     left -= this.left_offset;
                 }
-                cached.css( {
-                    left: left
-                });
+                cached.css({ left: left });
                 // Our responsibility to move the element to the new parent
                 parent_element.append( cached );
                 this.max_height = Math.max( this.max_height, cached.height() );
@@ -252,7 +283,7 @@ $.extend( TiledTrack.prototype, Track.prototype, {
                 if ( tile_element ) {
                     track.tile_cache.set(key, tile_element);
                     track.max_height = Math.max( track.max_height, tile_element.height() );
-                    track.content_div.css( "height", track.max_height );
+                    track.content_div.css( "height", track.max_height + "px");
                 }
             }
         }, 50);
@@ -289,7 +320,6 @@ $.extend( LabelTrack.prototype, Track.prototype, {
 
 var LineTrack = function ( name, dataset_id, indexer, prefs ) {
     this.track_type = "LineTrack";
-    this.tile_cache = new Cache(CACHED_TILES_LINE);
     Track.call( this, name, $("#viewport") );
     TiledTrack.call( this );
     
@@ -297,61 +327,42 @@ var LineTrack = function ( name, dataset_id, indexer, prefs ) {
     this.height_px = 100;
     this.container_div.addClass( "line-track" );
     this.dataset_id = dataset_id;
+    this.data_cache = new Cache(CACHED_DATA);
+    this.tile_cache = new Cache(CACHED_TILES_LINE);
     this.prefs = { 'min_value': undefined, 'max_value': undefined };
     if (prefs.min_value !== undefined) { this.prefs.min_value = prefs.min_value; }
     if (prefs.max_value !== undefined) { this.prefs.max_value = prefs.max_value; }
 };
 $.extend( LineTrack.prototype, TiledTrack.prototype, {
     init: function() {
-        this.data_queue = {};
-        this.data_cache = new Cache(CACHED_DATA); // We need to cache some data because of
-                                             // asynchronous calls
         var track = this,
             track_id = track.view.tracks.indexOf(track);
         
-        track.content_div.text(DATA_LOADING);
-        track.container_div.removeClass("nodata error pending");
-        $.getJSON( data_url, {  stats: true, indexer: track.indexer,
+        track.vertical_range = undefined;
+        this.init_each({  stats: true, indexer: track.indexer,
                                 chrom: track.view.chrom, low: null, high: null,
-                                dataset_id: track.dataset_id }, function ( data ) {
-            if (!data || data == "error") {
-                track.container_div.addClass("error");
-                track.content_div.text(DATA_ERROR);
-            } else if (data.length === 0 || data == "no data") {
-                track.container_div.addClass("nodata");
-                track.content_div.text(DATA_NONE);
-            } else if (data == "pending") {
-                track.container_div.addClass("pending");
-                track.content_div.text(DATA_PENDING);
-                setTimeout(function() { track.init(); }, 5000);
-            } else {
-                track.content_div.text("");
-                track.content_div.css( "height", track.height_px + "px" );
-                
-                if (track.prefs.min_value === undefined || track.prefs.max_value === undefined) {
-                    track.prefs.min_value = data.min;
-                    track.prefs.max_value = data.max;
-
-                    // Update the config
-                    $('#track_' + track_id + '_minval').val(track.prefs.min_value);
-                    $('#track_' + track_id + '_maxval').val(track.prefs.max_value);
-                }
-                track.vertical_range = track.prefs.max_value - track.prefs.min_value;
-                
-                // Draw y-axis labels if necessary
-                if ( $('#linetrack_' + track_id + '_minval').length === 0) {
-                    var min_label = $("<div></div>").addClass('yaxislabel').attr("id", 'linetrack_' + track_id + '_minval').text(track.prefs.min_value);
-                    var max_label = $("<div></div>").addClass('yaxislabel').attr("id", 'linetrack_' + track_id + '_maxval').text(track.prefs.max_value);
-                
-                    max_label.css({ position: "relative", top: "25px" });
-                    max_label.prependTo(track.container_div);
-                
-                    min_label.css({ position: "relative", top: track.height_px + 55 + "px" });
-                    min_label.prependTo(track.container_div);
-                }
-                
-                track.draw();
+                                dataset_id: track.dataset_id }, function(data) {
+            if ( isNaN(parseFloat(track.prefs.min_value)) || isNaN(parseFloat(track.prefs.max_value)) ) {
+                track.prefs.min_value = data.min;
+                track.prefs.max_value = data.max;
+                // Update the config
+                $('#track_' + track_id + '_minval').val(track.prefs.min_value);
+                $('#track_' + track_id + '_maxval').val(track.prefs.max_value);
             }
+            track.vertical_range = track.prefs.max_value - track.prefs.min_value;
+        
+            // Draw y-axis labels if necessary
+            $('#linetrack_' + track_id + '_minval').remove();
+            $('#linetrack_' + track_id + '_maxval').remove();
+            
+            var min_label = $("<div></div>").addClass('yaxislabel').attr("id", 'linetrack_' + track_id + '_minval').text(track.prefs.min_value);
+            var max_label = $("<div></div>").addClass('yaxislabel').attr("id", 'linetrack_' + track_id + '_maxval').text(track.prefs.max_value);
+            
+            max_label.css({ position: "relative", top: "25px" });
+            max_label.prependTo(track.container_div);
+    
+            min_label.css({ position: "relative", top: track.height_px + 55 + "px" });
+            min_label.prependTo(track.container_div);
         });
     },
     get_data: function( resolution, position ) {
@@ -362,9 +373,9 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
         
         if (!track.data_queue[key]) {
             track.data_queue[key] = true;
-            $.getJSON( data_url, {  indexer: this.indexer, chrom: this.view.chrom, 
-                                    low: low, high: high, dataset_id: this.dataset_id,
-                                    resolution: this.view.resolution }, function ( data ) {
+            $.getJSON( data_url, {  "indexer": this.indexer, "chrom": this.view.chrom, 
+                                    "low": low, "high": high, "dataset_id": this.dataset_id,
+                                    "resolution": this.view.resolution, }, function (data) {
                 track.data_cache.set(key, data);
                 delete track.data_queue[key];
                 track.draw();
@@ -392,7 +403,7 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
             top: 0,
             left: ( tile_low - this.view.low ) * w_scale
         });
-                
+        
         canvas.get(0).width = Math.ceil( tile_length * w_scale );
         canvas.get(0).height = this.height_px;
         var ctx = canvas.get(0).getContext("2d"),
@@ -462,7 +473,6 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
 
 var FeatureTrack = function ( name, dataset_id, indexer, prefs ) {
     this.track_type = "FeatureTrack";
-    this.tile_cache = new Cache(CACHED_TILES_FEATURE);
     Track.call( this, name, $("#viewport") );
     TiledTrack.call( this );
     
@@ -480,7 +490,9 @@ var FeatureTrack = function ( name, dataset_id, indexer, prefs ) {
     this.inc_slots = {};
     this.data_queue = {};
     this.s_e_by_tile = {};
+    this.tile_cache = new Cache(CACHED_TILES_FEATURE);
     this.data_cache = new Cache(20);
+    
     this.prefs = { 'block_color': 'black', 'label_color': 'black' };
     if (prefs.block_color !== undefined) { this.prefs.block_color = prefs.block_color; }
     if (prefs.label_color !== undefined) { this.prefs.label_color = prefs.label_color; }
@@ -489,33 +501,15 @@ var FeatureTrack = function ( name, dataset_id, indexer, prefs ) {
 $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
     init: function() {
         var track = this;
-        track.content_div.text(DATA_LOADING);
-        track.container_div.removeClass("nodata error pending");
-        $.getJSON( data_url, {  indexer: track.indexer, low: track.view.max_low, 
-                                high: track.view.max_high, dataset_id: track.dataset_id,
-                                chrom: track.view.chrom }, function ( data ) {
-            if (data == "error") {
-                track.container_div.addClass("error");
-                track.content_div.text(DATA_ERROR);
-            } else if (data.length === 0 || data == "no data") {
-                track.container_div.addClass("nodata");
-                track.content_div.text(DATA_NONE);
-            } else if (data == "pending") {
-                track.container_div.adClass("pending");
-                track.content_div.text(DATA_PENDING);
-                setTimeout(function() { track.init(); }, 5000);
-            } else {
-                track.content_div.text("");
-                track.content_div.css( "height", track.height_px + "px" );
-                track.values = data;
-                track.calc_slots();
-                track.slots = track.zo_slots;
-                track.draw();
-            }
+        this.init_each({  indexer: track.indexer, low: track.view.max_low, 
+                                    high: track.view.max_high, dataset_id: track.dataset_id,
+                                    chrom: track.view.chrom }, function (data) {
+            track.values = data;
+            track.calc_slots();
+            track.slots = track.zo_slots;
         });
     },
     get_data: function( low, high ) {
-        // console.log("getting: ", low, high);
         var track = this,
             key = low + '_' + high;
         
@@ -523,7 +517,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
             track.data_queue[key] = true;
             $.getJSON( data_url, {  indexer: track.indexer, chrom: track.view.chrom, 
                                     low: low, high: high, dataset_id: track.dataset_id,
-                                    include_blocks: true }, function ( data ) {
+                                    include_blocks: true }, function (data) {
                 track.data_cache.set(key, data);
                 // console.log("datacache", track.data_cache.get(key));
                 delete track.data_queue[key];

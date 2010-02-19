@@ -107,8 +107,10 @@ ${h.js( 'galaxy.base', 'galaxy.panels', "json2", "jquery", "jquery.event.drag", 
                 error: function() { alert( "Couldn't create new browser" ) },
                 success: function(form_html) {
                     show_modal("New Track Browser", form_html, {
+                        "Cancel": function() { window.location = "/"; },
                         "Continue": continue_fn
                     });
+                    $("#new-title").focus();
                 }
             });
         %endif
@@ -292,7 +294,7 @@ ${h.js( 'galaxy.base', 'galaxy.panels', "json2", "jquery", "jquery.event.drag", 
                             track.init();
                         }
                     }
-                    // view.redraw();
+                    view.redraw();
                 });
             });
             
@@ -301,8 +303,9 @@ ${h.js( 'galaxy.base', 'galaxy.panels', "json2", "jquery", "jquery.event.drag", 
                     var track_id = track.track_id,
                         label = $('<label for="track_' + track_id + 'title">' + track.name + '</label>'),
                         title = $('<div class="historyItemTitle"></div>'),
-                        del_icon = $('<a style="display:block; float:right" href="#" class="icon-button delete" />'),
-                        edit_icon = $('<a style="display:block; float:right" href="#" class="icon-button edit" />'),
+                        icon_div = $('<div class="historyItemButtons"></div>');
+                        del_icon = $('<a href="#" class="icon-button delete" />'),
+                        edit_icon = $('<a href="#" class="icon-button edit" />'),
                         body = $('<div class="historyItemBody"></div>'),
                         checkbox = $('<input type="checkbox" checked="checked"></input>').attr("id", "track_" + track_id + "title"),
                         li = $('<li class="sortable"></li>').attr("id", "track_" + track_id),
@@ -318,8 +321,8 @@ ${h.js( 'galaxy.base', 'galaxy.panels', "json2", "jquery", "jquery.event.drag", 
                         view.remove_track(track);
                         view.update_options();
                     });
-                    
-                    title.append(label).append(del_icon).append(edit_icon);
+                    icon_div.append(edit_icon).append(del_icon);
+                    title.append(label).prepend(icon_div);
                     if (track.gen_options) {
                         editable.append(track.gen_options(track_id)).appendTo(body);
                     }
