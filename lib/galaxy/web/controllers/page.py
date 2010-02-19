@@ -409,8 +409,8 @@ class PageController( BaseController, Sharable, UsesHistory, UsesStoredWorkflow,
                 page.title = page_title
                 page.slug = page_slug
                 session.flush()
-                # Display the management page
-                return trans.response.send_redirect( web.url_for( action='index' ) )
+                # Redirect to page list.
+                return trans.response.send_redirect( web.url_for( action='list' ) )
         else:
             page_title = page.title
             page_slug = page.slug
