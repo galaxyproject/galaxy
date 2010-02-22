@@ -45,7 +45,7 @@ class PageListGrid( grids.Grid ):
     ]
     operations = [
         grids.DisplayByUsernameAndSlugGridOperation( "View", allow_multiple=False ),
-        grids.GridOperation( "Edit name/id", allow_multiple=False, url_args=dict( action='edit') ),
+        grids.GridOperation( "Edit attributes", allow_multiple=False, url_args=dict( action='edit') ),
         grids.GridOperation( "Edit content", allow_multiple=False, url_args=dict( action='edit_content') ),
         grids.GridOperation( "Share or Publish", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False ),
         grids.GridOperation( "Delete" ),
@@ -63,6 +63,7 @@ class PageAllPublishedGrid( grids.Grid ):
     default_filter = dict( title="All", username="All" )
     columns = [
         grids.PublicURLColumn( "Title", key="title", model_class=model.Page, filterable="advanced"),
+        grids.OwnerAnnotationColumn( "Annotation", key="annotation", model_class=model.Page, model_annotation_association_class=model.PageAnnotationAssociation, filterable="advanced" ),
         grids.OwnerColumn( "Owner", key="username", model_class=model.User, filterable="advanced", sortable=False ), 
         grids.CommunityTagsColumn( "Community Tags", "tags", model.Page, model.PageTagAssociation, filterable="advanced", grid_name="PageAllPublishedGrid" ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago )
@@ -70,7 +71,7 @@ class PageAllPublishedGrid( grids.Grid ):
     columns.append( 
         grids.MulticolFilterColumn(  
         "Search", 
-        cols_to_filter=[ columns[0], columns[1], columns[2] ], 
+        cols_to_filter=[ columns[0], columns[1], columns[2], columns[3] ], 
         key="free-text-search", visible=False, filterable="standard" )
                 )
     def build_initial_query( self, session ):
@@ -285,7 +286,7 @@ class _PageContentProcessor( _BaseHTMLProcessor ):
         # Default behavior: 
         _BaseHTMLProcessor.unknown_endtag( self, tag )
                 
-class PageController( BaseController, Sharable, UsesHistory, UsesStoredWorkflow, UsesHistoryDatasetAssociation ):
+class PageController( BaseController, Sharable, UsesAnnotations, UsesHistory, UsesStoredWorkflow, UsesHistoryDatasetAssociation ):
     
     _page_list = PageListGrid()
     _all_published_list = PageAllPublishedGrid()
@@ -385,7 +386,7 @@ class PageController( BaseController, Sharable, UsesHistory, UsesStoredWorkflow,
         
     @web.expose
     @web.require_login( "create pages" )
-    def edit( self, trans, id, page_title="", page_slug="" ):
+    def edit( self, trans, id, page_title="", page_slug="", page_annotation="" ):
         """
         Create a new page
         """
@@ -395,7 +396,7 @@ class PageController( BaseController, Sharable, UsesHistory, UsesStoredWorkflow,
         page = session.query( model.Page ).get( id )
         user = trans.user
         assert page.user == user
-        page_title_err = page_slug_err = ""
+        page_title_err = page_slug_err = page_annotation_err = ""
         if trans.request.method == "POST":
             if not page_title:
                 page_title_err = "Page name is required"
@@ -403,17 +404,24 @@ class PageController( BaseController, Sharable, UsesHistory, UsesStoredWorkflow,
                 page_slug_err = "Page id is required"
             elif not VALID_SLUG_RE.match( page_slug ):
                 page_slug_err = "Page identifier must consist of only lowercase letters, numbers, and the '-' character"
-            elif page_slug == page.slug or trans.sa_session.query( model.Page ).filter_by( user=user, slug=page_slug, deleted=False ).first():
+            elif page_slug != page.slug and trans.sa_session.query( model.Page ).filter_by( user=user, slug=page_slug, deleted=False ).first():
                 page_slug_err = "Page id must be unique"
+            elif not page_annotation:
+                page_annotation_err = "Page annotation is required"
             else:
                 page.title = page_title
                 page.slug = page_slug
+                page_annotation = sanitize_html( page_annotation, 'utf-8', 'text/html' )
+                self.add_item_annotation( trans, page, page_annotation )
                 session.flush()
                 # Redirect to page list.
                 return trans.response.send_redirect( web.url_for( action='list' ) )
         else:
             page_title = page.title
             page_slug = page.slug
+            page_annotation = self.get_item_annotation_str( trans.sa_session, trans.get_user(), page )
+            if not page_annotation:
+                page_annotation = ""
         return trans.show_form( 
             web.FormBuilder( web.url_for( id=encoded_id ), "Edit page attributes", submit_text="Submit" )
                 .add_text( "page_title", "Page title", value=page_title, error=page_title_err )
@@ -422,7 +430,9 @@ class PageController( BaseController, Sharable, UsesHistory, UsesStoredWorkflow,
                                 public links to this page. A default is generated
                                 from the page title, but can be edited. This field
                                 must contain only lowercase letters, numbers, and
-                                the '-' character.""" ),
+                                the '-' character.""" )
+                .add_text( "page_annotation", "Page annotation", value=page_annotation, error=page_annotation_err,
+                            help="A description of or notes about the page. Annotation is shown alongside published pages."),
             template="page/create.mako" )
         
     @web.expose

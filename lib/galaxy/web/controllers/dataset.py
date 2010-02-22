@@ -110,7 +110,7 @@ class HistoryDatasetAssociationListGrid( grids.Grid ):
         # a user relation.
         return query.select_from( model.HistoryDatasetAssociation.table.join( model.History.table ) ).filter( model.History.user == trans.user )
 
-class DatasetInterface( BaseController, UsesHistoryDatasetAssociation ):
+class DatasetInterface( BaseController, UsesAnnotations, UsesHistoryDatasetAssociation ):
         
     stored_list_grid = HistoryDatasetAssociationListGrid()
 

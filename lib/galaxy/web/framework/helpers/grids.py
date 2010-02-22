@@ -1,6 +1,7 @@
 from galaxy.model import *
 from galaxy.model.orm import *
 
+from galaxy.web.base import controller
 from galaxy.web.framework.helpers import iff
 from galaxy.tags.tag_handler import TagHandler
 from galaxy.web import url_for
@@ -341,22 +342,46 @@ class TextColumn( GridColumn ):
         elif column_filter:
             query = query.filter( self.get_filter( user, column_filter ) )
         return query
-    def get_filter( self, user, column_filter ):
-        """ Returns a SQLAlchemy criterion derived from column_filter. """
-        model_class_key_field = getattr( self.model_class, self.key )
         
+    def get_filter( self, user, column_filter ):
+        """ Returns a SQLAlchemy criterion derived from column_filter. """        
         if isinstance( column_filter, basestring ):
-            return func.lower( model_class_key_field ).like( "%" + column_filter.lower() + "%" )
+            return self.get_single_filter( user, column_filter )
         elif isinstance( column_filter, list ):
             clause_list = []
             for filter in column_filter:
-                clause_list.append( func.lower( model_class_key_field ).like( "%" + filter.lower() + "%" ) )
+                clause_list.append( self.get_single_filter( user, filter ) )
             return and_( *clause_list )
-
+            
+    def get_single_filter( self, user, a_filter ):
+        """ Returns a SQLAlchemy criterion derived for a single filter. Single filter is the most basic filter--usually a string--and cannot be a list. """
+        model_class_key_field = getattr( self.model_class, self.key )
+        return func.lower( model_class_key_field ).like( "%" + a_filter.lower() + "%" )
+            
+class OwnerAnnotationColumn( TextColumn, controller.UsesAnnotations ):
+    """ Column that displays and filters item owner's annotations. """
+    def __init__( self, col_name, key, model_class, model_annotation_association_class, filterable ):
+        GridColumn.__init__( self, col_name, key=key, model_class=model_class, filterable=filterable )
+        self.sortable = False
+        self.model_annotation_association_class = model_annotation_association_class
+        
+    def get_value( self, trans, grid, item ):
+        """ Returns item annotation. """
+        annotation = self.get_item_annotation_str( trans.sa_session, item.user, item )
+        return iff( annotation, annotation, "" )
+        
+    def get_single_filter( self, user, a_filter ):
+        """ Filter by annotation and annotation owner. """
+        return self.model_class.annotations.any( 
+            and_( func.lower( self.model_annotation_association_class.annotation ).like( "%" + a_filter.lower() + "%" ), 
+                # TODO: not sure why, to filter by owner's annotations, we have to do this rather than 
+                # 'self.model_class.user==self.model_annotation_association_class.user'
+                self.model_annotation_association_class.table.c.user_id==self.model_class.table.c.user_id ) )            
+                        
 class CommunityTagsColumn( TextColumn ):
     """ Column that supports community tags. """
     def __init__( self, col_name, key, model_class, model_tag_association_class, filterable, grid_name=None ):
-        GridColumn.__init__(self, col_name, key=key, model_class=model_class, filterable=filterable)
+        GridColumn.__init__( self, col_name, key=key, model_class=model_class, filterable=filterable )
         self.model_tag_association_class = model_tag_association_class
         # Tags cannot be sorted.
         self.sortable = False

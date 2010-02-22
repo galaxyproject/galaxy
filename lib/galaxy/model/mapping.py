@@ -814,6 +814,12 @@ WorkflowStepAnnotationAssociation.table = Table( "workflow_step_annotation_assoc
     Column( "workflow_step_id", Integer, ForeignKey( "workflow_step.id" ), index=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "annotation", TEXT, index=True) )
+    
+PageAnnotationAssociation.table = Table( "page_annotation_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "page_id", Integer, ForeignKey( "page.id" ), index=True ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+    Column( "annotation", TEXT, index=True) )
 
 # User tables.
     
@@ -1304,7 +1310,8 @@ assign_mapper( context, Page, Page.table,
                      latest_revision=relation( PageRevision, post_update=True,
                                                primaryjoin=( Page.table.c.latest_revision_id == PageRevision.table.c.id ),
                                                lazy=False ),
-                     tags=relation(PageTagAssociation, order_by=PageTagAssociation.table.c.id, backref="pages") 
+                     tags=relation(PageTagAssociation, order_by=PageTagAssociation.table.c.id, backref="pages"),
+                     annotations=relation( PageAnnotationAssociation, order_by=PageAnnotationAssociation.table.c.id, backref="pages" )
                    ) )
                    
 # Set up proxy so that 
@@ -1375,6 +1382,10 @@ assign_mapper( context, StoredWorkflowAnnotationAssociation, StoredWorkflowAnnot
 
 assign_mapper( context, WorkflowStepAnnotationAssociation, WorkflowStepAnnotationAssociation.table,
     properties=dict( workflow_step=relation( WorkflowStep ), user=relation( User ) )
+                    )
+                    
+assign_mapper( context, PageAnnotationAssociation, PageAnnotationAssociation.table,
+    properties=dict( page=relation( Page ), user=relation( User ) )
                     )
                     
 assign_mapper( context, UserPreference, UserPreference.table, 

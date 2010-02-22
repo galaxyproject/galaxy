@@ -10,7 +10,7 @@ from galaxy.model.orm import *
 
 log = logging.getLogger( __name__ )
 
-class RootController( BaseController, UsesHistory ):
+class RootController( BaseController, UsesHistory, UsesAnnotations ):
     
     @web.expose
     def default(self, trans, target1=None, target2=None, **kwd):

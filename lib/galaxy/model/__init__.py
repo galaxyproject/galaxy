@@ -1567,6 +1567,9 @@ class StoredWorkflowAnnotationAssociation( object ):
 class WorkflowStepAnnotationAssociation( object ):
     pass
     
+class PageAnnotationAssociation( object ):
+    pass
+    
 class UserPreference ( object ):
     def __init__( self, name=None, value=None ):
         self.name = name

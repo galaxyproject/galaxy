@@ -128,6 +128,7 @@ class HistoryAllPublishedGrid( grids.Grid ):
     use_async = True
     columns = [
         NameURLColumn( "Name", key="name", model_class=model.History, filterable="advanced" ),
+        grids.OwnerAnnotationColumn( "Annotation", key="annotation", model_class=model.History, model_annotation_association_class=model.HistoryAnnotationAssociation, filterable="advanced" ),
         grids.OwnerColumn( "Owner", key="username", model_class=model.User, filterable="advanced", sortable=False ), 
         grids.CommunityTagsColumn( "Community Tags", "tags", model.History, model.HistoryTagAssociation, filterable="advanced", grid_name="PublicHistoryListGrid" ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago )
@@ -146,7 +147,7 @@ class HistoryAllPublishedGrid( grids.Grid ):
         # A public history is published, has a slug, and is not deleted.
         return query.filter( self.model_class.published == True ).filter( self.model_class.slug != None ).filter( self.model_class.deleted == False )
     
-class HistoryController( BaseController, Sharable, UsesHistory ):
+class HistoryController( BaseController, Sharable, UsesAnnotations, UsesHistory ):
     @web.expose
     def index( self, trans ):
         return ""

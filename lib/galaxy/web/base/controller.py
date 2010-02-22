@@ -41,6 +41,10 @@ class BaseController( object ):
             item_class = None
         return item_class
         
+Root = BaseController
+
+class UsesAnnotations:
+    """ Mixin for getting and setting item annotations. """
     def get_item_annotation_str( self, db_session, user, item ):
         """ Returns a user's annotation string for an item. """
         annotation_obj = self.get_item_annotation_obj( db_session, user, item )
@@ -67,6 +71,8 @@ class BaseController( object ):
             annotation_assoc = annotation_assoc.filter_by( stored_workflow=item )
         elif item.__class__ == model.WorkflowStep:
             annotation_assoc = annotation_assoc.filter_by( workflow_step=item )
+        elif item.__class__ == model.Page:
+            annotation_assoc = annotation_assoc.filter_by( page=item )
         return annotation_assoc.first()
         
     def add_item_annotation( self, trans, item, annotation ):
@@ -89,8 +95,6 @@ class BaseController( object ):
         # Set annotation.
         annotation_assoc.annotation = annotation
         return True
-        
-Root = BaseController
 
 class SharableItemSecurity:
     """ Mixin for handling security for sharable items. """
