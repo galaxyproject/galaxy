@@ -126,6 +126,25 @@
         var sStamp = wym.uniqueStamp();
         var selected = wym.selected();
         
+        // Swap out URL attribute for id/name attribute in link creation to enable anchor creation in page.
+        function set_link_id() 
+        {
+            // When "set link id" link clicked, update UI.
+            $('#set_link_id').click( function() 
+            {
+                // Set label.
+                $("#link_attribute_label").text("ID/Name");
+                
+                // Set input elt class, value.
+                var attribute_input = $(".wym_href");
+                attribute_input.addClass("wym_id").removeClass("wym_href");
+                attribute_input.val( attribute_input.attr('id') );
+                
+                // Remove link.
+                $(this).remove();
+            });
+        }
+        
         // LINK DIALOG
         if ( dialogType == WYMeditor.DIALOG_LINK ) {
             if(selected) {
@@ -134,28 +153,45 @@
                 jQuery(wym._options.titleSelector).val(jQuery(selected).attr(WYMeditor.TITLE));
                 jQuery(wym._options.altSelector).val(jQuery(selected).attr(WYMeditor.ALT));
             }
+            // Get current URL, title.
+            var curURL, curTitle;
+            if (selected)
+            {
+                curURL = $(selected).attr("href");
+                if (curURL == undefined)
+                    curURL = "";
+                curTitle = $(selected).attr("title");
+                if (curTitle == undefined)
+                    curTitle = "";
+            }
             show_modal(
-                "Link",
-                "<div><div><label>URL</label><br><input type='text' class='wym_href' value='' size='40' /></div>"
-                    + "<div><label>Title</label><br><input type='text' class='wym_title' value='' size='40' /></div><div>",
+                "Create Link",
+                "<div><div><label id='link_attribute_label'>URL <span style='float: right; font-size: 90%'><a href='#' id='set_link_id'>Create in-page anchor</a></span></label><br><input type='text' class='wym_href' value='" + curURL + "' size='40' /></div>"
+                    + "<div><label>Title</label><br><input type='text' class='wym_title' value='" + curTitle + "' size='40' /></div><div>",
                 {
                     "Make link": function() {
                         var sUrl = jQuery(wym._options.hrefSelector).val();
-                        if(sUrl.length > 0) {
-                  
-                          wym._exec(WYMeditor.CREATE_LINK, sStamp);
-                  
-                          jQuery("a[href=" + sStamp + "]", wym._doc.body)
-                              .attr(WYMeditor.HREF, sUrl)
-                              .attr(WYMeditor.TITLE, jQuery(wym._options.titleSelector).val());
-                  
+                        sUrl = ( sUrl ? sUrl : "" );
+                        var sName = $(".wym_id").val();
+                        sName = ( sName ? sName : "" );
+                        if ( (sUrl.length > 0) || (sName.length > 0) ) {
+                            // Create link.
+                            wym._exec(WYMeditor.CREATE_LINK, sStamp);
+                            
+                            var link = jQuery("a[href=" + sStamp + "]", wym._doc.body);
+                            link.attr(WYMeditor.HREF, sUrl);
+                            link.attr(WYMeditor.TITLE, jQuery(wym._options.titleSelector).val());
+                            if (sName.length > 0)
+                                link.attr("id", sName);
                         }
                         hide_modal();
                     },
-                    "Cancel:": function() {
+                    "Cancel": function() {
                         hide_modal();
                     }
-                }
+                },
+                {},
+                set_link_id
             );
             return;
         }
@@ -668,7 +704,7 @@
                 ##"Embed Page": function() {
                 ##    editor.dialog(Galaxy.DIALOG_EMBED_PAGE);
                 ##}
-            });
+            });                   
         });
     </script>
 </%def>

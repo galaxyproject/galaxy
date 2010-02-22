@@ -165,7 +165,7 @@ function hide_modal() {
     } );
 };
 
-function show_modal( title, body, buttons, extra_buttons ) {
+function show_modal( title, body, buttons, extra_buttons, init_fn ) {
     if ( title ) {
         $( ".dialog-box" ).find( ".title" ).html( title );
         $( ".dialog-box" ).find( ".unified-panel-header" ).show(); 
@@ -199,6 +199,9 @@ function show_modal( title, body, buttons, extra_buttons ) {
     if ( ! $(".dialog-box-container").is( ":visible" ) ) {
         $("#overlay").show();
         $(".dialog-box-container").fadeIn()
+    }
+    if ( init_fn ) {
+        init_fn();
     }
 };
     
