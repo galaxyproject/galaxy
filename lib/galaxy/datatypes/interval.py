@@ -54,7 +54,7 @@ class Interval( Tabular ):
         """Initialize interval datatype, by adding UCSC display apps"""
         Tabular.__init__(self, **kwd)
         self.add_display_app ( 'ucsc', 'display at UCSC', 'as_ucsc_display_file', 'ucsc_links' )
-        self.add_display_app ( 'main', 'BX', 'as_bx_display_file', 'bx_links' )
+        self.add_display_app ( 'main', 'BX', 'as_ucsc_display_file', 'bx_links' )
     
     def init_meta( self, dataset, copy_from=None ):
         Tabular.init_meta( self, dataset, copy_from=copy_from )
