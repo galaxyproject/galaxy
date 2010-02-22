@@ -138,7 +138,8 @@
                 // Set input elt class, value.
                 var attribute_input = $(".wym_href");
                 attribute_input.addClass("wym_id").removeClass("wym_href");
-                attribute_input.val( attribute_input.attr('id') );
+                if (selected)
+                    attribute_input.val( $(selected).attr('id') );
                 
                 // Remove link.
                 $(this).remove();
