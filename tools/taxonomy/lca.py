@@ -42,6 +42,16 @@ def main():
     except:
         stop_err("Syntax error: Use correct syntax: program infile outfile")
     
+    fin = open(sys.argv[1],'r')
+    for j, line in enumerate( fin ):
+        elems = line.strip().split('\t')
+        if len(elems) < 24:
+            stop_err("The format of the input dataset is incorrect. Taxonomy datatype should contain at least 24 columns.")
+        if j > 30:
+            break
+        cols = range(1,len(elems))
+    fin.close()
+       
     group_col = 0
     tmpfile = tempfile.NamedTemporaryFile()
 
@@ -68,11 +78,11 @@ def main():
     remaining_vals = []
     skipped_lines = 0
     fout = open(outfile, "w")
-    cols = range(1,25)
     block_valid = False
     
+    
     for ii, line in enumerate( file( tmpfile.name )):
-        if line and not line.startswith( '#' ):
+        if line and not line.startswith( '#' ) and len(line.split('\t')) >= 24: #Taxonomy datatype should have at least 24 columns
             line = line.rstrip( '\r\n' )
             try:
                 fields = line.split("\t")
@@ -95,14 +105,11 @@ def main():
                         corresponding aggregate values into the output file.  This works 
                         due to the sort on group_col we've applied to the data above.
                         """
-                        out_list = ['']*25
+                        out_list = ['']*24
                         out_list[0] = str(prev_item)
                         out_list[1] = str(prev_vals[0][0])
                         out_list[2] = str(prev_vals[1][0])
-                        try:
-                            out_list[24] = str(prev_vals[23][0])
-                        except:
-                            pass
+                        
                         for k, col in enumerate(cols):
                             if col >= 3 and col < 24:
                                 if len(set(prev_vals[k])) == 1:
@@ -113,11 +120,17 @@ def main():
                             out_list[k+1] = 'n' 
                             k += 1
                         
+                        j = 0
+                        while True:
+                            try:
+                                out_list.append(str(prev_vals[23+j][0]))
+                                j += 1
+                            except:
+                                break
+                            
                         if rank_bound == 0:     
                             print >>fout, '\t'.join(out_list).strip()
-                            #print 'n'*( 24 - rank_bound )
                         else:
-                            #print '\t'.join(out_list[rank_bound:24])
                             if ''.join(out_list[rank_bound:24]) != 'n'*( 24 - rank_bound ):
                                 print >>fout, '\t'.join(out_list).strip()
                         
@@ -144,15 +157,11 @@ def main():
             skipped_lines += 1
             
     # Handle the last grouped value
-    out_list = ['']*25
+    out_list = ['']*24
     out_list[0] = str(prev_item)
     out_list[1] = str(prev_vals[0][0])
     out_list[2] = str(prev_vals[1][0])
-    try:
-        out_list[24] = str(prev_vals[23][0])
-    except:
-        pass
-
+    
     for k, col in enumerate(cols):
         if col >= 3 and col < 24:
             if len(set(prev_vals[k])) == 1:
@@ -163,11 +172,17 @@ def main():
         out_list[k+1] = 'n' 
         k += 1
     
+    j = 0
+    while True:
+        try:
+            out_list.append(str(prev_vals[23+j][0]))
+            j += 1
+        except:
+            break
+        
     if rank_bound == 0:     
         print >>fout, '\t'.join(out_list).strip()
     else:
-        #print ''.join(out_list[rank_bound:24])
-        #print 'n'*( 24 - rank_bound )
         if ''.join(out_list[rank_bound:24]) != 'n'*( 24 - rank_bound ):
             print >>fout, '\t'.join(out_list).strip()
         
