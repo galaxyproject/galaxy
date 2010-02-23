@@ -19,31 +19,34 @@ case "$OSTYPE" in
         done
         [ ! -d "$HYPHY" ] && unset HYPHY
         ;;
+    solaris2.10)
+        HYPHY="/galaxy/software/linux2.6-x86_64/hyphy"
+        ;;
 esac
 
 LINKS="
-/depot/data2/galaxy/alignseq.loc
-/depot/data2/galaxy/annotation_profiler/annotation_profiler.loc
-/depot/data2/galaxy/annotation_profiler/annotation_profiler_options.xml
-/depot/data2/galaxy/annotation_profiler/annotation_profiler_valid_builds.txt
-/depot/data2/galaxy/binned_scores.loc
-/depot/data2/galaxy/blastdb.loc
-/depot/data2/galaxy/bowtie_indices.loc
-/depot/data2/galaxy/bowtie_indices_color.loc
-/depot/data2/galaxy/bwa_index.loc
-/depot/data2/galaxy/encode_datasets.loc
+/galaxy/data/location/alignseq.loc
+/galaxy/data/annotation_profiler/annotation_profiler.loc
+/galaxy/data/annotation_profiler/annotation_profiler_options.xml
+/galaxy/data/annotation_profiler/annotation_profiler_valid_builds.txt
+/galaxy/data/location/binned_scores.loc
+/galaxy/data/location/blastdb.loc
+/galaxy/data/location/bowtie_indices.loc
+/galaxy/data/location/bowtie_indices_color.loc
+/galaxy/data/location/bwa_index.loc
+/galaxy/data/location/encode_datasets.loc
 /galaxy/home/universe/encode_feature_partitions
-/depot/data2/galaxy/lastz_seqs.loc
-/depot/data2/galaxy/liftOver.loc
-/depot/data2/galaxy/maf_index.loc
-/depot/data2/galaxy/maf_pairwise.loc
-/depot/data2/galaxy/microbes/microbial_data.loc
-/depot/data2/galaxy/phastOdds.loc
-/depot/data2/galaxy/quality_scores.loc
-/depot/data2/galaxy/regions.loc
-/depot/data2/galaxy/sam_fa_indices.loc
-/depot/data2/galaxy/taxonomy
-/depot/data2/galaxy/twobit.loc
+/galaxy/data/location/lastz_seqs.loc
+/galaxy/data/location/liftOver.loc
+/galaxy/data/location/maf_index.loc
+/galaxy/data/location/maf_pairwise.loc
+/galaxy/data/location/microbes/microbial_data.loc
+/galaxy/data/location/phastOdds.loc
+/galaxy/data/location/quality_scores.loc
+/galaxy/data/location/regions.loc
+/galaxy/data/location/sam_fa_indices.loc
+/galaxy/data/location/taxonomy
+/galaxy/data/location/twobit.loc
 "
 
 SAMPLES="
@@ -63,11 +66,13 @@ database/pbs
 
 for link in $LINKS; do
     echo "Linking $link"
+    rm -f tool-data/`basename $link`
     ln -sf $link tool-data
 done
 
 if [ -d "$HYPHY" ]; then
     echo "Linking $HYPHY"
+    rm -f tool-data/HYPHY
     ln -sf $HYPHY tool-data/HYPHY
 fi
 
