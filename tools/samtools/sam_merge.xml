@@ -19,7 +19,48 @@
   <outputs>
     <data name="output1" format="bam" />
   </outputs>
-  <!-- bam files are binary and not sniffable so can't be uploaded without being corrupted, so no tests -->
+  <tests>
+    <!-- TODO: add ability to test framework to test without at least 
+         one repeat element value
+    <test>
+    -->
+      <!--
+      Bam merge command:
+      samtools merge test-data/sam_merge_out1.bam test-data/sam_merge_in1.bam test-data/sam_merge_in2.bam
+      -->
+    <!--
+      <param name="input1" value="sam_merge_in1.bam" ftype="bam" /> 
+      <param name="input2" value="sam_merge_in2.bam" ftype="bam" />
+      <output name="output1" file="sam_merge_out1.bam" ftype="bam" />
+    </test>
+    -->
+    <test>
+      <!--
+      Bam merge command:
+      samtools merge test-data/sam_merge_out2.bam test-data/sam_merge_in1.bam test-data/sam_merge_in2.bam test-data/sam_merge_in3.bam 
+      -->
+      <param name="input1" value="sam_merge_in1.bam" ftype="bam" /> 
+      <param name="input2" value="sam_merge_in2.bam" ftype="bam" />
+      <param name="input" value="sam_merge_in3.bam" ftype="bam" />
+      <output name="output1" file="sam_merge_out2.bam" ftype="bam" />
+    </test>
+    <!-- TODO: add ability to test code to be able to test with multiple 
+         inputs (parameters with same value)
+    <test>
+    -->
+      <!--
+      Bam merge command:
+      samtools merge test-data/sam_merge_out3.bam test-data/sam_merge_in1.bam test-data/sam_merge_in2.bam test-data/sam_merge_in3.bam test-data/sam_merge_in4.bam
+      -->
+    <!--
+      <param name="input1" value="sam_merge_in1.bam" ftype="bam" /> 
+      <param name="input2" value="sam_merge_in2.bam" ftype="bam" />
+      <param name="input" value="sam_merge_in3.bam" ftype="bam" />
+      <param name="input" value="sam_merge_in4.bam" ftype="bam" />
+      <output name="output1" file="sam_merge_out3.bam" ftype="bam" />
+    </test>
+    -->
+  </tests>
   <help>
 
 **What it does**

@@ -1,21 +1,38 @@
 #! /usr/bin/python
 
-import os, sys
+"""
+Merges any number of BAM files
+usage: %prog [options]
+    input1
+    output1
+    input2
+    [input3[,input4[,input5[,...]]]]
+"""
+
+import os, subprocess, sys
 
 def stop_err( msg ):
-    sys.stderr.write( msg )
+    sys.stderr.write( '%s\n' % msg )
     sys.exit()
 
 def __main__():
     infile =  sys.argv[1]
     outfile = sys.argv[2]
     if len( sys.argv ) < 3:
-        stop_err( 'No files to merge' )
+        stop_err( 'There are not enough files to merge' )
     filenames = sys.argv[3:]
-    cmd1 = 'samtools merge %s %s %s' % (outfile, infile, ' '.join(filenames))
+    cmd = 'samtools merge %s %s %s' % ( outfile, infile, ' '.join( filenames ) )
     try:
-        os.system(cmd1)
-    except Exception, eq:
-        stop_err('Error running SAMtools merge tool\n' + str(eq))
-            
+        proc = subprocess.Popen( args=cmd, shell=True, stderr=subprocess.PIPE )
+        returncode = proc.wait()
+        stderr = proc.stderr.read()
+        if returncode != 0:
+            raise Exception, stderr
+    except Exception, e:
+        stop_err( 'Error running SAMtools merge tool\n' + str( e ) )
+    if os.path.getsize( outfile ) > 0:
+        sys.stdout.write( '%s files merged.' % ( len( sys.argv ) - 2 ) )
+    else:
+        stop_err( 'The output file is empty, there may be an error with one of your input files.' )
+
 if __name__ == "__main__" : __main__()

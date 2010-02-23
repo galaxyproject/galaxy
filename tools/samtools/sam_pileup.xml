@@ -1,16 +1,16 @@
 <tool id="sam_pileup" name="Generate pileup" version="1.0.0">
   <description>from BAM dataset</description>
   <command interpreter="python">
-    sam_pileup.py 
-	    --input1=$input1
-	    --output=$output1
-	    --ref=$refOrHistory.reference
-	    #if $refOrHistory.reference == "history":
-	     --ownFile=$refOrHistory.ownFile
-	    #else:
-	     --ownFile="None"
-	    #end if
-	    --dbkey=${input1.metadata.dbkey}
+    sam_pileup.py
+        --input1=$input1
+        --output=$output1
+        --ref=$refOrHistory.reference
+        #if $refOrHistory.reference == "history":
+         --ownFile=$refOrHistory.ownFile
+        #else:
+         --ownFile="None"
+        #end if
+        --dbkey=${input1.metadata.dbkey}
         --indexDir=${GALAXY_DATA_INDEX_DIR}
         --bamIndex=${input1.metadata.bam_index}
         --lastCol=$lastCol
@@ -40,12 +40,12 @@
            <validator type="unspecified_build" />
            <validator type="dataset_metadata_in_file" filename="sam_fa_indices.loc" metadata_name="dbkey" metadata_column="1" message="Sequences are not currently available for the specified build." line_startswith="index" />
         </param>
-      </when>      
+      </when>
       <when value="history">
         <param name="input1" type="data" format="bam" label="Select the BAM file to generate the pileup file for" />
         <param name="ownFile" type="data" format="fasta" metadata_name="dbkey" label="Select a reference genome" />
       </when>
-    </conditional>	
+    </conditional>
     <param name="lastCol" type="select" label="Whether or not to print the mapping quality as the last column" help="Makes the output easier to parse, but is space inefficient">
       <option value="no">Do not print the mapping quality as the last column</option>
       <option value="yes">Print the mapping quality as the last column</option>
@@ -72,10 +72,45 @@
   <outputs>
     <data format="tabular" name="output1" />
   </outputs>
-  <!-- tests are not possible because bam is a non-sniffable binary format and cannot be uploaded without being corrupted -->
+  <tests>
+    <test>
+      <!--
+      Bam to pileup command:
+      samtools faidx chr_m.fasta
+      samtools pileup -M 60 -f chr_m.fasta test-data/sam_pileup_in1.bam > test-data/sam_pileup_out1.pileup
+      chr_m.fasta is the prefix of the index
+      -->
+      <param name="reference" value="history" />
+      <param name="input1" value="sam_pileup_in1.bam" ftype="bam" />
+      <param name="ownFile" value="chr_m.fasta" ftype="fasta" />
+      <param name="lastCol" value="no" />
+      <param name="indels" value="no" />
+      <param name="mapCap" value="60" />
+      <param name="consensus" value="no" />
+      <output name="output1" file="sam_pileup_out1.pileup" />
+    </test>
+    <test>
+      <!--
+      Bam to pileup command:
+      samtools pileup -M 60 -c -T 0.85 -N 2 -r 0.001 -I 40 -f chr_m.fasta test-data/sam_pileup_in1.bam > test-data/sam_pileup_out2.pileup
+      chr_m.fasta is the prefix of the index
+      -->
+      <param name="reference" value="indexed" />
+      <param name="input1" value="sam_pileup_in1.bam" ftype="bam" dbkey="chrM" />
+      <param name="lastCol" value="no" />
+      <param name="indels" value="no" />
+      <param name="mapCap" value="60" />
+      <param name="consensus" value="yes" />
+      <param name="theta" value="0.85" />
+      <param name="hapNum" value="2" />
+      <param name="fraction" value="0.001" />
+      <param name="phredProb" value="40" />
+      <output name="output1" file="sam_pileup_out2.pileup" />
+    </test>
+  </tests>
   <help>
-    	
-**What it does**   	
+
+**What it does**
 
 Uses SAMTools_' pileup command to produce a pileup dataset from a provided BAM dataset. It generates two types of pileup datasets depending on the specified options. If *Call consensus according to MAQ model?* option is set to **No**, the tool produces simple pileup. If the option is set to **Yes**, a ten column pileup dataset with consensus is generated. Both types of datasets are briefly summarized below.
 
@@ -92,7 +127,7 @@ The description of pileup format below is largely based on information that can 
 **Six column pileup**::
 
     1    2  3  4        5        6
- ---------------------------------   
+ ---------------------------------
  chrM  412  A  2       .,       II
  chrM  413  G  4     ..t,     IIIH
  chrM  414  C  4     ...a     III2
@@ -124,7 +159,7 @@ The `ten-column` (consensus_) pileup incorporates additional consensus informati
 where::
 
   Column Definition
- ------- ----------------------------
+ ------- --------------------------------------------------------
        1 Chromosome
        2 Position (1-based)
        3 Reference base at that position

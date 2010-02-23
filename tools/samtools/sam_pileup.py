@@ -22,80 +22,94 @@ usage: %prog [options]
 
 """
 
-import os, sys, tempfile
+import os, shutil, subprocess, sys, tempfile
 from galaxy import eggs
 import pkg_resources; pkg_resources.require( "bx-python" )
 from bx.cookbook import doc_optparse
 
 def stop_err( msg ):
-    sys.stderr.write( msg )
+    sys.stderr.write( '%s\n' % msg )
     sys.exit()
 
 def check_seq_file( dbkey, GALAXY_DATA_INDEX_DIR ):
-    seq_file = "%s/sam_fa_indices.loc" % GALAXY_DATA_INDEX_DIR
-    seq_path = ''
-    for line in open( seq_file ):
+    seqFile = '%s/sam_fa_indices.loc' % GALAXY_DATA_INDEX_DIR
+    seqPath = ''
+    for line in open( seqFile ):
         line = line.rstrip( '\r\n' )
-        if line and not line.startswith( "#" ) and line.startswith( 'index' ):
+        if line and not line.startswith( '#' ) and line.startswith( 'index' ):
             fields = line.split( '\t' )
             if len( fields ) < 3:
                 continue
             if fields[1] == dbkey:
-                seq_path = fields[2].strip()
+                seqPath = fields[2].strip()
                 break
-    return seq_path
- 
+    return seqPath
+
 def __main__():
     #Parse Command Line
     options, args = doc_optparse.parse( __doc__ )
-    seq_path = check_seq_file( options.dbkey, options.indexDir )
-    tmp_dir = tempfile.gettempdir()
-    os.chdir(tmp_dir)
-    tmpf0 = tempfile.NamedTemporaryFile(dir=tmp_dir)
-    tmpf0bam = '%s.bam' % tmpf0.name
-    tmpf0bambai = '%s.bam.bai' % tmpf0.name
-    tmpf1 = tempfile.NamedTemporaryFile(dir=tmp_dir)
-    tmpf1fai = '%s.fai' % tmpf1.name
-    opts = '%s %s -M %s' % (('','-s')[options.lastCol=='yes'], ('','-i')[options.indels=='yes'], options.mapCap)
-    if options.consensus == 'yes':
-        opts += ' -c -T %s -N %s -r %s -I %s' % (options.theta, options.hapNum, options.fraction, options.phredProb)
-    cmd1 = None
-    cmd2 = 'cp %s %s; cp %s %s' % (options.input1, tmpf0bam, options.bamIndex, tmpf0bambai)
-    cmd3 = 'samtools pileup %s -f %s %s > %s 2> /dev/null'
-    if options.ref =='indexed':
-        full_path = "%s.fai" % seq_path 
-        if not os.path.exists( full_path ):
-            stop_err( "No sequences are available for '%s', request them by reporting this error." % options.dbkey )
-        cmd3 = cmd3 % (opts, seq_path, tmpf0bam, options.output1)
-    elif options.ref == 'history':
-        cmd1 = 'cp %s %s; samtools faidx %s' % (options.ownFile, tmpf1.name, tmpf1.name)
-        cmd3 = cmd3 % (opts, tmpf1.name, tmpf0bam, options.output1)
-    # index reference if necessary
-    if cmd1:
-        try:
-            os.system(cmd1)
-            if options.ref == 'history' and not os.path.exists( tmpf1fai ):
-                stop_err( "Problem creating index file from history item." )
-        except Exception, eq:
-            stop_err('Error handling reference sequence\n' + str(eq))
-    # copy bam index to working directory
-    try:
-        os.system(cmd2)
-    except Exception, eq:
-        stop_err('Error moving files to temp directory\n' + str(eq))
-    # perform pileup command
-    try:
-        os.system(cmd3)
-    except Exception, eq:
-        stop_err('Error running SAMtools pileup tool\n' + str(eq))
-    # clean up temp files
-    tmpf1.close()
+    seqPath = check_seq_file( options.dbkey, options.indexDir )
+    #prepare file names 
+    tmpDir = tempfile.mkdtemp()
+    tmpf0 = tempfile.NamedTemporaryFile( dir=tmpDir )
+    tmpf0_name = tmpf0.name
     tmpf0.close()
-    if os.path.exists(tmpf0bam):
-        os.remove(tmpf0bam)
-    if os.path.exists(tmpf0bambai):
-        os.remove(tmpf0bambai)
-    if os.path.exists(tmpf1fai):
-        os.remove(tmpf1fai)
-            
+    tmpf0bam_name = '%s.bam' % tmpf0_name
+    tmpf0bambai_name = '%s.bam.bai' % tmpf0_name
+    tmpf1 = tempfile.NamedTemporaryFile( dir=tmpDir )
+    tmpf1_name = tmpf1.name
+    tmpf1.close()
+    tmpf1fai_name = '%s.fai' % tmpf1_name
+    #link bam and bam index to working directory (can't move because need to leave original)
+    os.symlink( options.input1, tmpf0bam_name )
+    os.symlink( options.bamIndex, tmpf0bambai_name )
+    #get parameters for pileup command
+    if options.lastCol == 'yes':
+        lastCol = '-s'
+    else:
+        lastCol = ''
+    if options.indels == 'yes':
+        indels = '-i'
+    else:
+        indels = ''
+    opts = '%s %s -M %s' % ( lastCol, indels, options.mapCap )
+    if options.consensus == 'yes':
+        opts += ' -c -T %s -N %s -r %s -I %s' % ( options.theta, options.hapNum, options.fraction, options.phredProb )
+    #prepare basic pileup command
+    cmd = 'samtools pileup %s -f %s %s > %s'
+    try:
+        #index reference if necessary and prepare pileup command
+        if options.ref == 'indexed':
+            if not os.path.exists( "%s.fai" % seqPath ):
+                raise Exception, "No sequences are available for '%s', request them by reporting this error." % options.dbkey
+            cmd = cmd % ( opts, seqPath, tmpf0bam_name, options.output1 )
+        elif options.ref == 'history':
+            os.symlink( options.ownFile, tmpf1_name )
+            cmdIndex = 'samtools faidx %s' % ( tmpf1_name )
+            proc = subprocess.Popen( args=cmdIndex, shell=True, cwd=tmpDir, stderr=subprocess.PIPE )
+            returncode = proc.wait()
+            stderr = proc.stderr.read()
+            #did index succeed?
+            if returncode != 0:
+                raise Exception, 'Error creating index file\n' + stderr
+            cmd = cmd % ( opts, tmpf1_name, tmpf0bam_name, options.output1 )
+        #perform pileup command
+        proc = subprocess.Popen( args=cmd, shell=True, cwd=tmpDir, stderr=subprocess.PIPE )
+        returncode = proc.wait()
+        #did it succeed?
+        stderr = proc.stderr.read()
+        if returncode != 0:
+            raise Exception, stderr
+    except Exception, e:
+        stop_err( 'Error running Samtools pileup tool\n' + str( e ) )
+    finally:
+        #clean up temp files
+        if os.path.exists( tmpDir ):
+            shutil.rmtree( tmpDir )
+    # check that there are results in the output file
+    if os.path.getsize( options.output1 ) > 0:
+        sys.stdout.write( 'Converted BAM to pileup' )
+    else:
+        stop_err( 'The output file is empty. Your input file may have had no matches, or there may be an error with your input file or settings.' )
+
 if __name__ == "__main__" : __main__()

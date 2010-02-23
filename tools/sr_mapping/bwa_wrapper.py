@@ -3,7 +3,7 @@
 """
 Runs BWA on single-end or paired-end data.
 Produces a SAM file containing the mappings.
-Works with BWA version 0.5.3.
+Works with BWA version 0.5.3-0.5.5.
 
 usage: bwa_wrapper.py [options]
     -t, --threads=t: The number of threads to use
@@ -34,12 +34,12 @@ usage: bwa_wrapper.py [options]
     -H, --suppressHeader=h: Suppress header
 """
 
-import optparse, os, shutil, sys, tempfile
+import optparse, os, shutil, subprocess, sys, tempfile
 
 def stop_err( msg ):
-    sys.stderr.write( "%s\n" % msg )
+    sys.stderr.write( '%s\n' % msg )
     sys.exit()
- 
+
 def __main__():
     #Parse Command Line
     parser = optparse.OptionParser()
@@ -70,14 +70,16 @@ def __main__():
     parser.add_option( '-D', '--dbkey', dest='dbkey', help='Dbkey for reference genome' )
     parser.add_option( '-H', '--suppressHeader', dest='suppressHeader', help='Suppress header' )
     (options, args) = parser.parse_args()
-    # make temp directory for placement of indices and copy reference file there
+    # make temp directory for placement of indices
     tmp_index_dir = tempfile.mkdtemp()
+    tmp_dir = tempfile.mkdtemp()
     # index if necessary
     if options.fileSource == 'history':
-        try:
-            shutil.copy( options.ref, tmp_index_dir )
-        except Exception, e:
-            stop_err( 'Error creating temp directory for indexing purposes\n' + str( e ) )
+        ref_file = tempfile.NamedTemporaryFile( dir=tmp_index_dir )
+        ref_file_name = ref_file.name
+        ref_file.close()
+        os.symlink( options.ref, ref_file_name )
+        # determine which indexing algorithm to use, based on size
         try:
             size = os.stat( options.ref ).st_size
             if size <= 2**30: 
@@ -87,13 +89,22 @@ def __main__():
         except:
             indexingAlg = 'is'
         indexing_cmds = '-a %s' % indexingAlg
-        options.ref = os.path.join( tmp_index_dir, os.path.split( options.ref )[1] )
-        cmd1 = 'bwa index %s %s 2> /dev/null' % ( indexing_cmds, options.ref )
+        cmd1 = 'bwa index %s %s' % ( indexing_cmds, ref_file_name )
         try:
-            os.chdir( tmp_index_dir )
-            os.system( cmd1 )
+            proc = subprocess.Popen( args=cmd1, shell=True, cwd=tmp_index_dir, stderr=subprocess.PIPE )
+            returncode = proc.wait()
+            stderr = proc.stderr.read()
+            if returncode != 0:
+                raise Exception, stderr
         except Exception, e:
-            stop_err( 'Error indexing reference sequence\n' + str( e ) )
+            # clean up temp dirs
+            if os.path.exists( tmp_index_dir ):
+                shutil.rmtree( tmp_index_dir )
+            if os.path.exists( tmp_dir ):
+                shutil.rmtree( tmp_dir )
+            stop_err( 'Error indexing reference sequence. ' + str( e ) )
+    else:
+        ref_file_name = options.ref
     # set up aligning and generate aligning command options
     if options.params == 'pre_set':
         aligning_cmds = '-t %s' % options.threads
@@ -116,60 +127,85 @@ def __main__():
         else:
             noIterSearch = ''
         aligning_cmds = '-n %s -o %s -e %s -d %s -i %s %s -k %s -t %s -M %s -O %s -E %s %s %s' % \
-                        ( editDist, options.maxGapOpens, options.maxGapExtens, options.disallowLongDel, 
-                          options.disallowIndel, seed, options.maxEditDistSeed, options.threads, 
-                          options.mismatchPenalty, options.gapOpenPenalty, options.gapExtensPenalty, 
+                        ( editDist, options.maxGapOpens, options.maxGapExtens, options.disallowLongDel,
+                          options.disallowIndel, seed, options.maxEditDistSeed, options.threads,
+                          options.mismatchPenalty, options.gapOpenPenalty, options.gapExtensPenalty,
                           suboptAlign, noIterSearch )
         if options.genAlignType == 'single':
             gen_alignment_cmds = '-n %s' % options.outputTopN
         elif options.genAlignType == 'paired':
             gen_alignment_cmds = '-a %s -o %s' % ( options.maxInsertSize, options.maxOccurPairing )
-#        print 'options.genAlignType: %s and commands: %s' % (options.genAlignType, gen_alignment_cmds)
     # set up output files
-    tmp_align_out = tempfile.NamedTemporaryFile()
-    tmp_align_out2 = tempfile.NamedTemporaryFile()
+    tmp_align_out = tempfile.NamedTemporaryFile( dir=tmp_dir )
+    tmp_align_out_name = tmp_align_out.name
+    tmp_align_out.close()
+    tmp_align_out2 = tempfile.NamedTemporaryFile( dir=tmp_dir )
+    tmp_align_out2_name = tmp_align_out2.name
+    tmp_align_out2.close()
     # prepare actual aligning and generate aligning commands
-    cmd2 = 'bwa aln %s %s %s > %s 2> /dev/null' % ( aligning_cmds, options.ref, options.fastq, tmp_align_out.name )
+    cmd2 = 'bwa aln %s %s %s > %s' % ( aligning_cmds, ref_file_name, options.fastq, tmp_align_out_name )
     cmd2b = ''
     if options.genAlignType == 'paired':
-        cmd2b = 'bwa aln %s %s %s > %s 2> /dev/null' % ( aligning_cmds, options.ref, options.rfastq, tmp_align_out2.name )
-        cmd3 = 'bwa sampe %s %s %s %s %s %s >> %s 2> /dev/null' % ( gen_alignment_cmds, options.ref, tmp_align_out.name, tmp_align_out2.name, options.fastq, options.rfastq, options.output )
+        cmd2b = 'bwa aln %s %s %s > %s' % ( aligning_cmds, ref_file_name, options.rfastq, tmp_align_out2_name )
+        cmd3 = 'bwa sampe %s %s %s %s %s %s >> %s' % ( gen_alignment_cmds, ref_file_name, tmp_align_out_name, tmp_align_out2_name, options.fastq, options.rfastq, options.output )
     else:
-        cmd3 = 'bwa samse %s %s %s %s >> %s 2> /dev/null' % ( gen_alignment_cmds, options.ref, tmp_align_out.name, options.fastq, options.output ) 
-    # align
+        cmd3 = 'bwa samse %s %s %s %s >> %s' % ( gen_alignment_cmds, ref_file_name, tmp_align_out_name, options.fastq, options.output )
+    # perform alignments
     try:
-        os.system( cmd2 )
-    except Exception, e:
-        stop_err( 'Error aligning sequence\n' + str( e ) )
-    # and again if paired data
-    try:
-        if cmd2b: 
-            os.system( cmd2b )
-    except Exception, erf:
-        stop_err( 'Error aligning second sequence\n' + str( e ) )
-    # generate align
-    try:
-        os.system( cmd3 )
-    except Exception, e:
-        stop_err( 'Error sequence aligning sequence\n' + str( e ) )
-    # clean up temp files
-    tmp_align_out.close()
-    tmp_align_out2.close()
-    # remove header if necessary
-    if options.suppressHeader == 'true':
-        tmp_out = tempfile.NamedTemporaryFile()
+        # align
         try:
-            shutil.move( options.output, tmp_out.name )
+            proc = subprocess.Popen( args=cmd2, shell=True, cwd=tmp_dir, stderr=subprocess.PIPE )
+            returncode = proc.wait()
+            stderr = proc.stderr.read()
+            if returncode != 0:
+                raise Exception, stderr
         except Exception, e:
-            stop_err( 'Error moving output file before removing headers\n' + str( e ) )
-        fout = file( options.output, 'w' )
-        for line in file( tmp_out.name, 'r' ):
-            if not ( line.startswith( '@HD' ) or line.startswith( '@SQ' ) or line.startswith( '@RG' ) or line.startswith( '@PG' ) or line.startswith( '@CO' ) ):
-                fout.write( line )
-        fout.close()
-        tmp_out.close()
-    # clean up temp dir
-    if os.path.exists( tmp_index_dir ):
-        shutil.rmtree( tmp_index_dir )
-    
+            raise Exception, 'Error aligning sequence. ' + str( e )
+        # and again if paired data
+        try:
+            if cmd2b: 
+                proc = subprocess.Popen( args=cmd2b, shell=True, cwd=tmp_dir, stderr=subprocess.PIPE )
+                returncode = proc.wait()
+                stderr = proc.stderr.read()
+                if returncode != 0:
+                    raise Exception, stderr
+        except Exception, e:
+            raise Exception, 'Error aligning second sequence. ' + str( e )
+        # generate align
+        try:
+            proc = subprocess.Popen( args=cmd3, shell=True, cwd=tmp_dir, stderr=subprocess.PIPE )
+            returncode = proc.wait()
+            stderr = proc.stderr.read()
+            if returncode != 0:
+                raise Exception, stderr
+        except Exception, e:
+            raise Exception, 'Error generating alignments. ' + str( e ) 
+        # remove header if necessary
+        if options.suppressHeader == 'true':
+            tmp_out = tempfile.NamedTemporaryFile( dir=tmp_dir)
+            tmp_out_name = tmp_out.name
+            tmp_out.close()
+            try:
+                shutil.move( options.output, tmp_out_name )
+            except Exception, e:
+                raise Exception, 'Error moving output file before removing headers. ' + str( e )
+            fout = file( options.output, 'w' )
+            for line in file( tmp_out.name, 'r' ):
+                if not ( line.startswith( '@HD' ) or line.startswith( '@SQ' ) or line.startswith( '@RG' ) or line.startswith( '@PG' ) or line.startswith( '@CO' ) ):
+                    fout.write( line )
+            fout.close()
+        # check that there are results in the output file
+        if os.path.getsize( options.output ) > 0:
+            sys.stdout.write( 'BWA run on %s-end data' % options.genAlignType )
+        else:
+            raise Exception, 'The output file is empty. You may simply have no matches, or there may be an error with your input file or settings.'
+    except Exception, e:
+        stop_err( 'The alignment failed.\n' + str( e ) )
+    finally:
+        # clean up temp dir
+        if os.path.exists( tmp_index_dir ):
+            shutil.rmtree( tmp_index_dir )
+        if os.path.exists( tmp_dir ):
+            shutil.rmtree( tmp_dir )
+
 if __name__=="__main__": __main__()
