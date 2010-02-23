@@ -1,0 +1,33 @@
+<tool id="fastq_to_fasta_python" name="FASTQ to FASTA" version="1.0.0">
+  <description>converter</description>
+  <command interpreter="python">fastq_to_fasta.py '$input_file' '$output_file' '${input_file.extension[len( 'fastq' ):]}'</command>
+  <inputs>
+    <param name="input_file" type="data" format="fastq" label="FASTQ file to convert" />
+  </inputs>
+  <outputs>
+    <data name="output_file" format="fasta" />
+  </outputs>
+  <tests>
+    <!-- basic test -->
+    <test>
+      <param name="input_file" value="sanger_full_range_original_sanger.fastqsanger" ftype="fastqsanger" />
+      <output name="output_file" file="fastq_to_fasta_python_1.out" />
+    </test>
+    <!-- color space test -->
+    <test>
+      <param name="input_file" value="sanger_full_range_as_solid.fastqsolid" ftype="fastqsolid" />
+      <output name="output_file" file="fastq_to_fasta_python_2.out" />
+    </test>
+    <!-- test of ignoring invalid score values: this input has ascii characters falling outside of illumina range, but they should not matter -->
+    <test>
+      <param name="input_file" value="sanger_full_range_original_sanger.fastqsanger" ftype="fastqillumina" />
+      <output name="output_file" file="fastq_to_fasta_python_1.out" />
+    </test>
+  </tests>
+  <help>
+**What it does**
+
+This tool converts FASTQ sequencing reads to FASTA sequences.
+
+  </help>
+</tool>

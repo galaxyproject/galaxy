@@ -1,0 +1,55 @@
+<tool id="fastq_combiner" name="Combine FASTA and QUAL" version="1.0.0">
+  <description>into FASTQ</description>
+  <command interpreter="python">fastq_combiner.py '$fasta_file' '${fasta_file.extension}' '$qual_file' '${qual_file.extension}' '$output_file' '$force_quality_encoding'</command>
+  <inputs>
+    <param name="fasta_file" type="data" format="fasta,csfasta" label="FASTA File" />
+    <param name="qual_file" type="data" format="qual" label="Quality Score File" />
+    <param name="force_quality_encoding" type="select" label="Force Quality Score encoding">
+      <option value="None">Use Source Encoding</option>
+      <option value="ascii" selected="True">ASCII</option>
+      <option value="decimal">Decimal</option>
+    </param>
+  </inputs>
+  <outputs>
+    <data name="output_file" format="fastqsanger">
+      <change_format>
+        <when input_dataset="fasta_file" attribute="extension" value="csfasta" format="fastqsolid" />
+        <when input_dataset="qual_file" attribute="extension" value="qualsolid" format="fastqsolid" />
+        <when input_dataset="qual_file" attribute="extension" value="qualsolexa" format="fastqsolexa" />
+        <when input_dataset="qual_file" attribute="extension" value="qualillumina" format="fastqillumina" />
+      </change_format>
+    </data>
+  </outputs>
+  <tests>
+    <test>
+      <param name="fasta_file" value="s2fq_phiX.csfasta" ftype="csfasta" />
+      <param name="qual_file" value="s2fq_phiX.qualsolid" ftype="qualsolid" />
+      <param name="force_quality_encoding" value="None" />
+      <output name="output_file" file="combine_phiX_out_1.fastqsolid" />
+    </test>
+    <test>
+      <param name="fasta_file" value="s2fq_phiX.csfasta" ftype="csfasta" />
+      <param name="qual_file" value="s2fq_phiX.qualsolid" ftype="qualsolid" />
+      <param name="force_quality_encoding" value="ascii" />
+      <output name="output_file" file="combine_phiX_out_2.fastqsolid" />
+    </test>
+    <test>
+      <param name="fasta_file" value="fastq_combiner_in_1.fasta" ftype="fasta" />
+      <param name="qual_file" value="fastq_combiner_in_1.qual454" ftype="qual454" />
+      <param name="force_quality_encoding" value="None" />
+      <output name="output_file" file="wrapping_as_sanger.fastqsanger" />
+    </test>
+    <test>
+      <param name="fasta_file" value="fastq_combiner_in_1.fasta" ftype="fasta" />
+      <param name="qual_file" value="fastq_combiner_in_1.qual454" ftype="qual454" />
+      <param name="force_quality_encoding" value="decimal" />
+      <output name="output_file" file="wrapping_as_sanger_decimal.fastqsanger" />
+    </test>
+  </tests>
+  <help>
+**What it does**
+
+This tool joins a FASTA file to a Quality Score file, creating a single FASTQ block for each read.
+
+  </help>
+</tool>

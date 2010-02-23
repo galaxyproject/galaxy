@@ -216,6 +216,18 @@ class FastqSanger( Fastq ):
     """Class representing a FASTQ sequence ( the Sanger variant )"""
     file_ext = "fastqsanger"
 
+class FastqSolexa( Fastq ):
+    """Class representing a FASTQ sequence ( the Solexa variant )"""
+    file_ext = "fastqsolexa"
+
+class FastqIllumina( Fastq ):
+    """Class representing a FASTQ sequence ( the Illumina 1.3+ variant )"""
+    file_ext = "fastqillumina"
+
+class FastqSolid( Fastq ):
+    """Class representing a FASTQ sequence ( the SOLiD (color space) variant )"""
+    file_ext = "fastqsolid"
+
 try:
     from galaxy import eggs
     import pkg_resources; pkg_resources.require( "bx-python" )

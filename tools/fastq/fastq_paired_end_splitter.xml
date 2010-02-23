@@ -1,0 +1,56 @@
+<tool id="fastq_paired_end_splitter" name="FASTQ splitter" version="1.0.0">
+  <description>on joined paired end reads</description>
+  <command interpreter="python">fastq_paired_end_splitter.py '$input1_file' '${input1_file.extension[len( 'fastq' ):]}' '$output1_file' '$output2_file'</command>
+  <inputs>
+    <param name="input1_file" type="data" format="fastq" label="FASTQ reads" />
+  </inputs>
+  <outputs>
+    <data name="output1_file" format="input" />
+    <data name="output2_file" format="input" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="input1_file" value="3.fastqsanger" ftype="fastqsanger" />
+      <output name="output1_file" file="split_pair_reads_1.fastqsanger" />
+      <output name="output2_file" file="split_pair_reads_2.fastqsanger" />
+    </test>
+  </tests>
+  <help>
+**What it does**
+
+Splits a single fastq dataset representing paired-end run into two datasets (one for each end). This tool works only for datasets where both ends have **the same** length.  
+
+Sequence identifiers will have /1 or /2 appended for the split left-hand and right-hand reads, respectively.
+
+-----
+
+**Input format**
+
+A multiple-fastq file, for example::
+
+    @HWI-EAS91_1_30788AAXX:7:21:1542:1758
+    GTCAATTGTACTGGTCAATACTAAAAGAATAGGATCGCTCCTAGCATCTGGAGTCTCTATCACCTGAGCCCA
+    +HWI-EAS91_1_30788AAXX:7:21:1542:1758
+    hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh`hfhhVZSWehR
+
+
+-----
+
+**Outputs**
+
+Left-hand Read::
+
+    @HWI-EAS91_1_30788AAXX:7:21:1542:1758/1
+    GTCAATTGTACTGGTCAATACTAAAAGAATAGGATC
+    +HWI-EAS91_1_30788AAXX:7:21:1542:1758/1
+    hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh
+
+Right-hand Read::
+
+    @HWI-EAS91_1_30788AAXX:7:21:1542:1758/2
+    GCTCCTAGCATCTGGAGTCTCTATCACCTGAGCCCA
+    +HWI-EAS91_1_30788AAXX:7:21:1542:1758/2
+    hhhhhhhhhhhhhhhhhhhhhhhh`hfhhVZSWehR
+
+  </help>
+</tool>

@@ -1,0 +1,311 @@
+<tool id="fastq_filter" name="Filter FASTQ" version="1.0.0">
+  <description>reads by quality score and length</description>
+  <command interpreter="python">fastq_filter.py $input_file $fastq_filter_file $output_file $output_file.files_path '${input_file.extension[len( 'fastq' ):]}'</command>
+  <inputs>
+    <page>
+      <param name="input_file" type="data" format="fastqsanger,fastqillumina,fastqsolexa,fastqsolid" label="FASTQ File" help="Requires groomed data: if your data does not appear here try using the FASTQ groomer."/>
+       <param name="min_size" label="Minimum Size" value="0" type="integer">
+        <validator type="in_range" message="Minimum size must be positive" min="0"/>
+      </param>
+      <param name="max_size" label="Maximum Size" value="0" type="integer" help="A maximum size less than 1 indicates no limit."/>
+      <param name="min_quality" label="Minimum Quality" value="0" type="float"/>
+      <param name="max_quality" label="Maximum Quality" value="0" type="float" help="A maximum quality less than 1 indicates no limit."/>
+      <param name="max_num_deviants" label="Maximum number of bases allowed outside of quality range" value="0" type="integer">
+        <validator type="in_range" message="Maximum number of deviate bases must be positive" min="0"/>
+      </param>
+     <param name="paired_end" label="This is paired end data" type="boolean" truevalue="paired_end" falsevalue="single_end" checked="False"/>
+      <repeat name="fastq_filters" title="Quality Filter on a Range of Bases" help="The above settings do not apply to these filters.">
+        <conditional name="offset_type">
+          <param name="base_offset_type" type="select" label="Define Base Offsets as">
+            <option value="offsets_absolute" selected="true">Absolute Values</option>
+            <option value="offsets_percent">Percentage of Read Length</option>
+          </param>
+          <when value="offsets_absolute">
+            <param name="left_column_offset" label="Absolute Left Base Offset" value="0" type="integer" help="Values start at 0, increasing from the left">
+              <validator type="in_range" message="Base Offsets must be positive" min="0" max="inf"/>
+              <validator type="expression" message="An integer is required.">int( float( value ) ) == float( value )</validator>
+            </param>
+            <param name="right_column_offset" label="Absolute Right Base Offset" value="0" type="integer" help="Values start at 0, increasing from the right">
+              <validator type="in_range" message="Base Offsets must be positive" min="0" max="inf"/>
+              <validator type="expression" message="An integer is required.">int( float( value ) ) == float( value )</validator>
+            </param>
+          </when>
+          <when value="offsets_percent">
+            <param name="left_column_offset" label="Percentage Left Base Offset" value="0" type="float">
+              <validator type="in_range" message="Base Offsets must be between 0 and 100" min="0" max="100"/>
+            </param>
+            <param name="right_column_offset" label="Percentage Right Base Offset" value="0" type="float">
+              <validator type="in_range" message="Base Offsets must be between 0 and 100" min="0" max="100"/>
+            </param>
+          </when>
+        </conditional>
+        <param name="score_operation" type="select" label="Aggregate read score for specified range">
+          <option value="min" selected="True">min score</option>
+          <option value="max">max score</option>
+          <option value="sum">sum of scores</option>
+          <option value="mean">mean of scores</option>
+        </param>
+        <param name="score_comparison" type="select" label="Keep read when aggregate score is">
+          <option value="&gt;">&gt;</option>
+          <option value="&gt;=" selected="true">&gt;=</option>
+          <option value="==">==</option>
+          <option value="&lt;">&lt;</option>
+          <option value="&lt;=">&lt;=</option>
+          <sanitizer sanitize="False"/>
+        </param>
+        <param name="score" label="Quality Score" value="0" type="float" />
+      </repeat>
+    </page>
+  </inputs>
+  <configfiles>
+    <configfile name="fastq_filter_file">
+def fastq_read_pass_filter( fastq_read ):
+    def mean( score_list ):
+        return float( sum( score_list ) ) / float( len( score_list ) )
+    if len( fastq_read ) &lt; $min_size:
+        return False
+    if $max_size &gt; 0 and len( fastq_read ) &gt; $max_size:
+        return False
+    num_deviates = $max_num_deviants
+    qual_scores = fastq_read.get_decimal_quality_scores()
+    for qual_score in qual_scores:
+        if qual_score &lt; $min_quality or ( $max_quality &gt; 0 and qual_score &gt; $max_quality ):
+            if num_deviates == 0:
+                return False
+            else:
+                num_deviates -= 1
+#if $paired_end.value == 'single_end':
+    qual_scores_split = [ qual_scores ]
+#else:
+    qual_scores_split = [ qual_scores[ 0:int( len( qual_scores ) / 2 ) ], qual_scores[ int( len( qual_scores ) / 2 ): ] ]
+#end if
+#for $fastq_filter in $fastq_filters:
+    for split_scores in qual_scores_split:
+        left_column_offset = $fastq_filter[ 'offset_type' ][ 'left_column_offset' ]
+        right_column_offset = $fastq_filter[ 'offset_type' ][ 'right_column_offset' ]
+#if $fastq_filter[ 'offset_type' ]['base_offset_type'] == 'offsets_percent':
+        left_column_offset = int( round( float( left_column_offset ) / 100.0 * float( len( split_scores ) ) ) )
+        right_column_offset = int( round( float( right_column_offset ) / 100.0 * float( len( split_scores ) ) ) )
+#end if
+        if right_column_offset > 0:
+            split_scores = split_scores[ left_column_offset:-right_column_offset]
+        else:
+            split_scores = split_scores[ left_column_offset:]
+        if split_scores: ##if a read doesn't have enough columns, it passes by default 
+            if not ( ${fastq_filter[ 'score_operation' ]}( split_scores ) $fastq_filter[ 'score_comparison' ] $fastq_filter[ 'score' ]  ):
+                return False
+#end for
+    return True
+ret_val = fastq_read_pass_filter( fastq_read )
+</configfile>
+  </configfiles>
+  <outputs>
+    <data format="input" name="output_file" />
+  </outputs>
+  <tests>
+    <!-- Do nothing filter -->
+    <test>
+      <param name="input_file" value="sanger_full_range_original_sanger.fastqsanger" ftype="fastqsanger"/>
+      <param name="min_size" value="0"/>
+      <param name="max_size" value="0"/>
+      <param name="min_quality" value="0"/>
+      <param name="max_quality" value="0"/>
+      <param name="max_num_deviants" value="0"/>
+      <param name="paired_end" value="single_end"/>
+      <param name="base_offset_type" value="offsets_absolute"/>
+      <param name="left_column_offset" value="0"/>
+      <param name="right_column_offset" value="0"/>
+      <param name="score_operation" value="min"/>
+      <param name="score_comparison" value="&gt;="/>
+      <param name="score" value="0"/>
+      <output name="out_file1" file="sanger_full_range_original_sanger.fastqsanger"/>
+    </test>
+    <test>
+      <param name="input_file" value="solexa_full_range_original_solexa.fastqsolexa" ftype="fastqsolexa"/>
+      <param name="min_size" value="0"/>
+      <param name="max_size" value="0"/>
+      <param name="min_quality" value="-5"/>
+      <param name="max_quality" value="0"/>
+      <param name="max_num_deviants" value="0"/>
+      <param name="paired_end" value="single_end"/>
+      <param name="base_offset_type" value="offsets_absolute"/>
+      <param name="left_column_offset" value="0"/>
+      <param name="right_column_offset" value="0"/>
+      <param name="score_operation" value="min"/>
+      <param name="score_comparison" value="&gt;="/>
+      <param name="score" value="-5"/>
+      <output name="out_file1" file="solexa_full_range_original_solexa.fastqsolexa"/>
+    </test>
+    <!-- No trim, so does not remove Adapter from solid -->
+    <test>
+      <param name="input_file" value="sanger_full_range_as_solid.fastqsolid" ftype="fastqsolid"/>
+      <param name="min_size" value="0"/>
+      <param name="max_size" value="0"/>
+      <param name="min_quality" value="0"/>
+      <param name="max_quality" value="0"/>
+      <param name="max_num_deviants" value="0"/>
+      <param name="paired_end" value="single_end"/>
+      <param name="base_offset_type" value="offsets_absolute"/>
+      <param name="left_column_offset" value="0"/>
+      <param name="right_column_offset" value="0"/>
+      <param name="score_operation" value="min"/>
+      <param name="score_comparison" value="&gt;="/>
+      <param name="score" value="0"/>
+      <output name="out_file1" file="sanger_full_range_as_solid.fastqsolid"/>
+    </test>
+    <!-- Remove all Filter -->
+    <test>
+      <param name="input_file" value="sanger_full_range_original_sanger.fastqsanger" ftype="fastqsanger"/>
+      <param name="min_size" value="0"/>
+      <param name="max_size" value="0"/>
+      <param name="min_quality" value="1"/>
+      <param name="max_quality" value="0"/>
+      <param name="max_num_deviants" value="0"/>
+      <param name="paired_end" value="single_end"/>
+      <param name="base_offset_type" value="offsets_absolute"/>
+      <param name="left_column_offset" value="0"/>
+      <param name="right_column_offset" value="0"/>
+      <param name="score_operation" value="min"/>
+      <param name="score_comparison" value="&gt;="/>
+      <param name="score" value="0"/>
+      <output name="out_file1" file="empty_file.dat"/>
+    </test>
+    <test>
+      <param name="input_file" value="solexa_full_range_original_solexa.fastqsolexa" ftype="fastqsolexa"/>
+      <param name="min_size" value="0"/>
+      <param name="max_size" value="0"/>
+      <param name="min_quality" value="-4"/>
+      <param name="max_quality" value="0"/>
+      <param name="max_num_deviants" value="0"/>
+      <param name="paired_end" value="single_end"/>
+      <param name="base_offset_type" value="offsets_absolute"/>
+      <param name="left_column_offset" value="0"/>
+      <param name="right_column_offset" value="0"/>
+      <param name="score_operation" value="min"/>
+      <param name="score_comparison" value="&gt;="/>
+      <param name="score" value="-5"/>
+      <output name="out_file1" file="empty_file.dat"/>
+    </test>
+    <!-- Keep all by allowing 1 deviant -->
+    <test>
+      <param name="input_file" value="sanger_full_range_original_sanger.fastqsanger" ftype="fastqsanger"/>
+      <param name="min_size" value="0"/>
+      <param name="max_size" value="0"/>
+      <param name="min_quality" value="1"/>
+      <param name="max_quality" value="0"/>
+      <param name="max_num_deviants" value="1"/>
+      <param name="paired_end" value="single_end"/>
+      <param name="base_offset_type" value="offsets_absolute"/>
+      <param name="left_column_offset" value="0"/>
+      <param name="right_column_offset" value="0"/>
+      <param name="score_operation" value="min"/>
+      <param name="score_comparison" value="&gt;="/>
+      <param name="score" value="0"/>
+      <output name="out_file1" file="sanger_full_range_original_sanger.fastqsanger"/>
+    </test>
+    <test>
+      <param name="input_file" value="solexa_full_range_original_solexa.fastqsolexa" ftype="fastqsolexa"/>
+      <param name="min_size" value="0"/>
+      <param name="max_size" value="0"/>
+      <param name="min_quality" value="-5"/>
+      <param name="max_quality" value="61"/>
+      <param name="max_num_deviants" value="1"/>
+      <param name="paired_end" value="single_end"/>
+      <param name="base_offset_type" value="offsets_absolute"/>
+      <param name="left_column_offset" value="0"/>
+      <param name="right_column_offset" value="0"/>
+      <param name="score_operation" value="min"/>
+      <param name="score_comparison" value="&gt;="/>
+      <param name="score" value="-5"/>
+      <output name="out_file1" file="solexa_full_range_original_solexa.fastqsolexa"/>
+    </test>
+    <!-- Filter inner range -->
+    <test>
+      <param name="input_file" value="sanger_full_range_original_sanger.fastqsanger" ftype="fastqsanger"/>
+      <param name="min_size" value="0"/>
+      <param name="max_size" value="0"/>
+      <param name="min_quality" value="0"/>
+      <param name="max_quality" value="0"/>
+      <param name="max_num_deviants" value="0"/>
+      <param name="paired_end" value="single_end"/>
+      <param name="base_offset_type" value="offsets_absolute"/>
+      <param name="left_column_offset" value="1"/>
+      <param name="right_column_offset" value="1"/>
+      <param name="score_operation" value="min"/>
+      <param name="score_comparison" value="&gt;="/>
+      <param name="score" value="1"/>
+      <output name="out_file1" file="sanger_full_range_original_sanger.fastqsanger"/>
+    </test>
+    <test>
+      <param name="input_file" value="sanger_full_range_original_sanger.fastqsanger" ftype="fastqsanger"/>
+      <param name="min_size" value="0"/>
+      <param name="max_size" value="0"/>
+      <param name="min_quality" value="0"/>
+      <param name="max_quality" value="0"/>
+      <param name="max_num_deviants" value="0"/>
+      <param name="paired_end" value="single_end"/>
+      <param name="base_offset_type" value="offsets_absolute"/>
+      <param name="left_column_offset" value="1"/>
+      <param name="right_column_offset" value="1"/>
+      <param name="score_operation" value="max"/>
+      <param name="score_comparison" value="&lt;="/>
+      <param name="score" value="92"/>
+      <output name="out_file1" file="sanger_full_range_original_sanger.fastqsanger"/>
+    </test>
+    <!-- percent based offsets -->
+    <test>
+      <param name="input_file" value="sanger_full_range_original_sanger.fastqsanger" ftype="fastqsanger"/>
+      <param name="min_size" value="0"/>
+      <param name="max_size" value="0"/>
+      <param name="min_quality" value="0"/>
+      <param name="max_quality" value="0"/>
+      <param name="max_num_deviants" value="0"/>
+      <param name="paired_end" value="single_end"/>
+      <param name="base_offset_type" value="offsets_percent"/>
+      <param name="left_column_offset" value="1.075"/>
+      <param name="right_column_offset" value="1.075"/>
+      <param name="score_operation" value="min"/>
+      <param name="score_comparison" value="&gt;="/>
+      <param name="score" value="1"/>
+      <output name="out_file1" file="sanger_full_range_original_sanger.fastqsanger"/>
+    </test>
+    <test>
+      <param name="input_file" value="sanger_full_range_original_sanger.fastqsanger" ftype="fastqsanger"/>
+      <param name="min_size" value="0"/>
+      <param name="max_size" value="0"/>
+      <param name="min_quality" value="0"/>
+      <param name="max_quality" value="0"/>
+      <param name="max_num_deviants" value="0"/>
+      <param name="paired_end" value="single_end"/>
+      <param name="base_offset_type" value="offsets_percent"/>
+      <param name="left_column_offset" value="1"/>
+      <param name="right_column_offset" value="1"/>
+      <param name="score_operation" value="min"/>
+      <param name="score_comparison" value="&gt;="/>
+      <param name="score" value="1"/>
+      <output name="out_file1" file="empty_file.dat"/>
+    </test>
+  </tests>
+<help>
+This tool allows you to build complex filters to be applied to each read in a FASTQ file.
+
+Basic Options:
+    * You can specify a minimum and maximum read lengths.
+    * You can specify minimum and maximum per base quality scores, with optionally specifying the number of bases that are allowed to deviate from this range (default of 0 deviant bases).
+
+Advance Options:
+    * You can specify any number of advanced filters. 
+    * If your data is paired-end, select the proper checkbox; this will cause each read to be internally split down the middle and filters applied to each half using the offsets specified.
+    * Offsets are defined, starting at zero, increasing from the ends of the reads. For example, a quality string of "ABCDEFG", with offsets of 1 and 1 specified will yield "BCDEF".
+    * You can specify either absolute offset values, or percentage offset values. When using the percent-based method, offsets are rounded to the nearest integer.
+    * The user specifies the aggregating action (min, max, sum, mean) to perform on the quality score values found between the specified offsets to be used with the user defined comparison operation and comparison value.
+    * If a set of offsets is specified that causes the remaining quality score list to be of length zero, then the read will **pass** the quality filter unless the size range filter is used to remove these reads.
+
+-----
+
+.. class:: warningmark
+
+Adapter bases in SOLiD reads are excluded from filtering.
+
+</help>
+</tool>

@@ -1,0 +1,349 @@
+<tool id="fastq_groomer" name="FASTQ Groomer" version="1.0.0">
+  <description>convert between various FASTQ quality formats</description>
+  <command interpreter="python">fastq_groomer.py '$input_file' '$input_type' '$output_file' '$output_type' '$force_quality_encoding' '$summarize_input'</command>
+  <inputs>
+    <param name="input_file" type="data" format="fastq" label="File to groom" />
+    <param name="input_type" type="select" label="Input FASTQ quality scores type">
+      <option value="solexa">Solexa</option>
+      <option value="illumina">Illumina 1.3+</option>
+      <option value="sanger" selected="True">Sanger</option>
+      <option value="solid">Solid (color space)</option>
+    </param>
+    <param name="output_type" type="select" label="Output FASTQ quality scores type">
+      <option value="solexa">Solexa</option>
+      <option value="illumina">Illumina 1.3+</option>
+      <option value="sanger" selected="True">Sanger (recommended)</option>
+      <option value="solid">Solid (color space)</option>
+    </param>
+    <param name="force_quality_encoding" type="select" label="Force Quality Score encoding">
+      <option value="None">Use Source Encoding</option>
+      <option value="ascii" selected="True">ASCII</option>
+      <option value="decimal">Decimal</option>
+    </param>
+    <param name="summarize_input" type="select" label="Summarize input data">
+      <option value="summarize_input" selected="True">Summarize Input</option>
+      <option value="dont_summarize_input">Do not Summarize Input (faster)</option>
+    </param>
+  </inputs>
+  <outputs>
+    <data name="output_file" format="fastq">
+      <change_format>
+        <when input="output_type" value="solexa" format="fastqsolexa" />
+        <when input="output_type" value="illumina" format="fastqillumina" />
+        <when input="output_type" value="sanger" format="fastqsanger" />
+        <when input="output_type" value="solid" format="fastqsolid" />
+      </change_format>
+    </data>
+  </outputs>
+  <tests>
+    <!-- These tests include test files adapted from supplemental material in Cock PJ, Fields CJ, Goto N, Heuer ML, Rice PM. The Sanger FASTQ file format for sequences with quality scores, and the Solexa/Illumina FASTQ variants. Nucleic Acids Res. 2009 Dec 16. -->
+    <!-- Unfortunately, cannot test for expected failures -->
+    <!-- Test grooming from illumina -->
+    <test>
+      <param name="input_file" value="illumina_full_range_original_illumina.fastqillumina" ftype="fastqillumina" />
+      <param name="input_type" value="illumina" />
+      <param name="output_type" value="illumina" />
+      <param name="force_quality_encoding" value="None" />
+      <param name="summarize_input" value="summarize_input" />
+      <output name="output_file" file="illumina_full_range_original_illumina.fastqillumina" />
+    </test>
+    <test>
+      <param name="input_file" value="illumina_full_range_original_illumina.fastqillumina" ftype="fastqillumina" />
+      <param name="input_type" value="illumina" />
+      <param name="output_type" value="sanger" />
+      <param name="force_quality_encoding" value="None" />
+      <param name="summarize_input" value="summarize_input" />
+      <output name="output_file" file="illumina_full_range_as_sanger.fastqsanger" />
+    </test>
+    <test>
+      <param name="input_file" value="illumina_full_range_original_illumina.fastqillumina" ftype="fastqillumina" />
+      <param name="input_type" value="illumina" />
+      <param name="output_type" value="solexa" />
+      <param name="force_quality_encoding" value="None" />
+      <param name="summarize_input" value="summarize_input" />
+      <output name="output_file" file="illumina_full_range_as_solexa.fastqsolexa" />
+    </test>
+    <test>
+      <param name="input_file" value="illumina_full_range_original_illumina.fastqillumina" ftype="fastqillumina" />
+      <param name="input_type" value="illumina" />
+      <param name="output_type" value="solid" />
+      <param name="force_quality_encoding" value="None" />
+      <param name="summarize_input" value="summarize_input" />
+      <output name="output_file" file="illumina_full_range_as_solid.fastqsolid" />
+    </test>
+    <!-- Test grooming from sanger -->
+    <test>
+      <param name="input_file" value="sanger_full_range_original_sanger.fastqsanger" ftype="fastqsanger" />
+      <param name="input_type" value="sanger" />
+      <param name="output_type" value="sanger" />
+      <param name="force_quality_encoding" value="None" />
+      <param name="summarize_input" value="summarize_input" />
+      <output name="output_file" file="sanger_full_range_original_sanger.fastqsanger" />
+    </test>
+    <test>
+      <param name="input_file" value="sanger_full_range_original_sanger.fastqsanger" ftype="fastqsanger" />
+      <param name="input_type" value="sanger" />
+      <param name="output_type" value="illumina" />
+      <param name="force_quality_encoding" value="None" />
+      <param name="summarize_input" value="summarize_input" />
+      <output name="output_file" file="sanger_full_range_as_illumina.fastqillumina" />
+    </test>
+    <test>
+      <param name="input_file" value="sanger_full_range_original_sanger.fastqsanger" ftype="fastqsanger" />
+      <param name="input_type" value="sanger" />
+      <param name="output_type" value="solexa" />
+      <param name="force_quality_encoding" value="None" />
+      <param name="summarize_input" value="summarize_input" />
+      <output name="output_file" file="sanger_full_range_as_solexa.fastqsolexa" />
+    </test>
+    <test>
+      <param name="input_file" value="sanger_full_range_original_sanger.fastqsanger" ftype="fastqsanger" />
+      <param name="input_type" value="sanger" />
+      <param name="output_type" value="solid" />
+      <param name="force_quality_encoding" value="None" />
+      <param name="summarize_input" value="summarize_input" />
+      <output name="output_file" file="sanger_full_range_as_solid.fastqsolid" />
+    </test>
+    <!-- Test grooming from solexa -->
+    <test>
+      <param name="input_file" value="solexa_full_range_original_solexa.fastqsolexa" ftype="fastqsolexa" />
+      <param name="input_type" value="solexa" />
+      <param name="output_type" value="solexa" />
+      <param name="force_quality_encoding" value="None" />
+      <param name="summarize_input" value="summarize_input" />
+      <output name="output_file" file="solexa_full_range_original_solexa.fastqsolexa" />
+    </test>
+    <test>
+      <param name="input_file" value="solexa_full_range_original_solexa.fastqsolexa" ftype="fastqsolexa" />
+      <param name="input_type" value="solexa" />
+      <param name="output_type" value="illumina" />
+      <param name="force_quality_encoding" value="None" />
+      <param name="summarize_input" value="summarize_input" />
+      <output name="output_file" file="solexa_full_range_as_illumina.fastqillumina" />
+    </test>
+    <test>
+      <param name="input_file" value="solexa_full_range_original_solexa.fastqsolexa" ftype="fastqsolexa" />
+      <param name="input_type" value="solexa" />
+      <param name="output_type" value="sanger" />
+      <param name="force_quality_encoding" value="None" />
+      <param name="summarize_input" value="summarize_input" />
+      <output name="output_file" file="solexa_full_range_as_sanger.fastqsanger" />
+    </test>
+    <test>
+      <param name="input_file" value="solexa_full_range_original_solexa.fastqsolexa" ftype="fastqsolexa" />
+      <param name="input_type" value="solexa" />
+      <param name="output_type" value="solid" />
+      <param name="force_quality_encoding" value="None" />
+      <param name="summarize_input" value="summarize_input" />
+      <output name="output_file" file="solexa_full_range_as_solid.fastqsolid" />
+    </test>
+    <!-- Test grooming from solid -->
+    <test>
+      <param name="input_file" value="sanger_full_range_as_solid.fastqsolid" ftype="fastqsolid" />
+      <param name="input_type" value="solid" />
+      <param name="output_type" value="solid" />
+      <param name="force_quality_encoding" value="None" />
+      <param name="summarize_input" value="summarize_input" />
+      <output name="output_file" file="sanger_full_range_as_solid.fastqsolid" />
+    </test>
+    <test>
+      <param name="input_file" value="sanger_full_range_as_solid.fastqsolid" ftype="fastqsolid" />
+      <param name="input_type" value="solid" />
+      <param name="output_type" value="sanger" />
+      <param name="force_quality_encoding" value="None" />
+      <param name="summarize_input" value="summarize_input" />
+      <output name="output_file" file="sanger_full_range_original_sanger.fastqsanger" />
+    </test>
+    <test>
+      <param name="input_file" value="sanger_full_range_as_solid.fastqsolid" ftype="fastqsolid" />
+      <param name="input_type" value="solid" />
+      <param name="output_type" value="illumina" />
+      <param name="force_quality_encoding" value="None" />
+      <param name="summarize_input" value="summarize_input" />
+      <output name="output_file" file="sanger_full_range_as_illumina.fastqillumina" />
+    </test>
+    <test>
+      <param name="input_file" value="sanger_full_range_as_solid.fastqsolid" ftype="fastqsolid" />
+      <param name="input_type" value="solid" />
+      <param name="output_type" value="solexa" />
+      <param name="force_quality_encoding" value="None" />
+      <param name="summarize_input" value="summarize_input" />
+      <output name="output_file" file="sanger_full_range_as_solexa.fastqsolexa" />
+    </test>
+    <!-- Test fastq with line wrapping -->
+    <test>
+      <param name="input_file" value="wrapping_original_sanger.fastqsanger" ftype="fastqsanger" />
+      <param name="input_type" value="sanger" />
+      <param name="output_type" value="sanger" />
+      <param name="force_quality_encoding" value="None" />
+      <param name="summarize_input" value="summarize_input" />
+      <output name="output_file" file="wrapping_as_sanger.fastqsanger" />
+    </test>
+    <test>
+      <param name="input_file" value="wrapping_original_sanger.fastqsanger" ftype="fastqsanger" />
+      <param name="input_type" value="sanger" />
+      <param name="output_type" value="illumina" />
+      <param name="force_quality_encoding" value="None" />
+      <param name="summarize_input" value="summarize_input" />
+      <output name="output_file" file="wrapping_as_illumina.fastqillumina" />
+    </test>
+    <test>
+      <param name="input_file" value="wrapping_original_sanger.fastqsanger" ftype="fastqsanger" />
+      <param name="input_type" value="sanger" />
+      <param name="output_type" value="solexa" />
+      <param name="force_quality_encoding" value="None" />
+      <param name="summarize_input" value="summarize_input" />
+      <output name="output_file" file="wrapping_as_solexa.fastqsolexa" />
+    </test>
+    <!-- Test forcing quality score encoding -->
+    <!-- Sanger, range 0 - 93 -->
+    <test>
+      <param name="input_file" value="sanger_full_range_as_decimal_sanger.fastqsanger" ftype="fastqsanger" />
+      <param name="input_type" value="sanger" />
+      <param name="output_type" value="sanger" />
+      <param name="force_quality_encoding" value="ascii" />
+      <param name="summarize_input" value="summarize_input" />
+      <output name="output_file" file="sanger_full_range_original_sanger.fastqsanger" />
+    </test>
+    <test>
+      <param name="input_file" value="sanger_full_range_original_sanger.fastqsanger" ftype="fastqsanger" />
+      <param name="input_type" value="sanger" />
+      <param name="output_type" value="sanger" />
+      <param name="force_quality_encoding" value="decimal" />
+      <param name="summarize_input" value="summarize_input" />
+      <output name="output_file" file="sanger_full_range_as_decimal_sanger.fastqsanger" />
+    </test>
+    <!-- Solexa, range -5 - 62 -->
+    <test>
+      <param name="input_file" value="solexa_full_range_as_decimal_solexa.fastqsolexa" ftype="fastqsolexa" />
+      <param name="input_type" value="solexa" />
+      <param name="output_type" value="solexa" />
+      <param name="force_quality_encoding" value="ascii" />
+      <param name="summarize_input" value="summarize_input" />
+      <output name="output_file" file="solexa_full_range_original_solexa.fastqsolexa" />
+    </test>
+    <test>
+      <param name="input_file" value="solexa_full_range_original_solexa.fastqsolexa" ftype="fastqsolexa" />
+      <param name="input_type" value="solexa" />
+      <param name="output_type" value="solexa" />
+      <param name="force_quality_encoding" value="decimal" />
+      <param name="summarize_input" value="summarize_input" />
+      <output name="output_file" file="solexa_full_range_as_decimal_solexa.fastqsolexa" />
+    </test>
+  </tests>
+  <help>
+**What it does**
+
+This tool offers several conversions options relating to the FASTQ format.
+
+When converting, if a quality score falls outside of the target score range, it will be coerced to the closest available value (i.e. the minimum or maximum). 
+
+When converting between Solexa and the other formats, quality scores are mapped between Solexa and PHRED scales using the equations found in Cock PJ, Fields CJ, Goto N, Heuer ML, Rice PM. The Sanger FASTQ file format for sequences with quality scores, and the Solexa/Illumina FASTQ variants. Nucleic Acids Res. 2009 Dec 16.
+
+When converting between color space (SOLiD) and base/sequence space (Sanger, Illumina, Solexa) formats, adapter bases are lost or gained; if gained, the base 'G' is used as the adapter. You cannot convert a color space read to base space if there is no adapter present in the color space sequence. Any masked or ambiguous nucleotides in base space will be converted to 'N's when determining color space encoding.
+
+-----
+
+**Examples**
+
+- Converting the Solexa FASTQ data::
+
+    @Solexa scores from -5 to 62 inclusive (in that order)
+    ACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGT
+    +
+    ;&lt;=&gt;?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~
+    @Solexa scores from 62 to -5 inclusive (in that order)
+    TGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCA
+    +
+    ~}|{zyxwvutsrqponmlkjihgfedcba`_^]\[ZYXWVUTSRQPONMLKJIHGFEDCBA@?&gt;=&lt;;
+
+- will produce the following Sanger FASTQ data::
+
+    @Solexa scores from -5 to 62 inclusive (in that order)
+    ACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGT
+    +
+    ""##$$%%&amp;&amp;'()*++,-./0123456789:;&lt;=&gt;?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_
+    @Solexa scores from 62 to -5 inclusive (in that order)
+    TGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCA
+    +
+    _^]\[ZYXWVUTSRQPONMLKJIHGFEDCBA@?&gt;=&lt;;:9876543210/.-,++*)('&amp;&amp;%%$$##""
+    
+- will produce the following Illumina 1.3+ FASTQ data::
+
+    @Solexa scores from -5 to 62 inclusive (in that order)
+    ACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGT
+    +
+    AABBCCDDEEFGHIJJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~
+    @Solexa scores from 62 to -5 inclusive (in that order)
+    TGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCA
+    +
+    ~}|{zyxwvutsrqponmlkjihgfedcba`_^]\[ZYXWVUTSRQPONMLKJJIHGFEEDDCCBBAA
+    
+- Converting the Illumina 1.3+ FASTQ data::
+
+    @Illumina PHRED scores from 0 to 62 inclusive (in that order)
+    ACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACG
+    +
+    @ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~
+    @Illumina PHRED scores from 62 to 0 inclusive (in that order)
+    GCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCA
+    +
+    ~}|{zyxwvutsrqponmlkjihgfedcba`_^]\[ZYXWVUTSRQPONMLKJIHGFEDCBA@
+
+- will produce the following Sanger FASTQ data::
+
+    @Illumina PHRED scores from 0 to 62 inclusive (in that order)
+    ACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACG
+    +
+    !"#$%&amp;'()*+,-./0123456789:;&lt;=&gt;?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_
+    @Illumina PHRED scores from 62 to 0 inclusive (in that order)
+    GCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCA
+    +
+    _^]\[ZYXWVUTSRQPONMLKJIHGFEDCBA@?&gt;=&lt;;:9876543210/.-,+*)('&amp;%$#"!
+    
+- will produce the following Solexa FASTQ data::
+
+    @Illumina PHRED scores from 0 to 62 inclusive (in that order)
+    ACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACG
+    +
+    ;;&gt;@BCEFGHJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~
+    @Illumina PHRED scores from 62 to 0 inclusive (in that order)
+    GCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCA
+    +
+    ~}|{zyxwvutsrqponmlkjihgfedcba`_^]\[ZYXWVUTSRQPONMLKJHGFECB@&gt;;;
+    
+- Converting standard Sanger FASTQ::
+    
+    @Sanger PHRED scores from 0 to 93 inclusive (in that order)
+    ACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTAC
+    +
+    !"#$%&amp;'()*+,-./0123456789:;&lt;=&gt;?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~
+    @Sanger PHRED scores from 93 to 0 inclusive (in that order)
+    CATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCA
+    +
+    ~}|{zyxwvutsrqponmlkjihgfedcba`_^]\[ZYXWVUTSRQPONMLKJIHGFEDCBA@?&gt;=&lt;;:9876543210/.-,+*)('&amp;%$#"!
+
+- will produce the following Solexa FASTQ data::
+
+    @Sanger PHRED scores from 0 to 93 inclusive (in that order)
+    ACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTAC
+    +
+    ;;&gt;@BCEFGHJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    @Sanger PHRED scores from 93 to 0 inclusive (in that order)
+    CATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCA
+    +
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~}|{zyxwvutsrqponmlkjihgfedcba`_^]\[ZYXWVUTSRQPONMLKJHGFECB@&gt;;;
+
+- will produce the following Illumina 1.3+ FASTQ data::
+
+    @Sanger PHRED scores from 0 to 93 inclusive (in that order)
+    ACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTAC
+    +
+    @ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    @Sanger PHRED scores from 93 to 0 inclusive (in that order)
+    CATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCA
+    +
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~}|{zyxwvutsrqponmlkjihgfedcba`_^]\[ZYXWVUTSRQPONMLKJIHGFEDCBA@
+
+  </help>
+</tool>

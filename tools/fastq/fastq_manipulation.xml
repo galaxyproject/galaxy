@@ -1,0 +1,386 @@
+<tool id="fastq_manipulation" name="Manipulate FASTQ" version="1.0.0">
+  <options sanitize="False" /> <!-- This tool uses a file to rely all parameter information (actually a dynamically generated python module), we can safely not sanitize any parameters -->
+  <description>reads on various attributes</description>
+  <command interpreter="python">fastq_manipulation.py $input_file $fastq_manipulation_file $output_file $output_file.files_path '${input_file.extension[len( 'fastq' ):]}'</command>
+  <inputs>
+    <!-- This tool is purposely over-engineered (e.g. Single option conditionals) to allow easy enhancement with workflow/rerun compatibility -->
+    <page>
+      <param name="input_file" type="data" format="fastqsanger,fastqillumina,fastqsolexa,fastqsolid" label="FASTQ File" help="Requires groomed data: if your data does not appear here try using the FASTQ groomer."/>
+      <!-- Match Reads -->
+      <repeat name="match_blocks" title="Match Reads" min="1">
+        <conditional name="match_type">
+          <param name="match_type_selector" type="select" label="Match Reads by">
+            <option value="identifier">Name/Identifier</option>
+            <option value="sequence">Sequence Content</option>
+            <option value="quality">Quality Score Content</option>
+          </param>
+          <when value="identifier">
+            <conditional name="match">
+              <param name="match_selector" type="select" label="Identifier Match Type">
+                <option value="regex">Regular Expression</option>
+              </param>
+              <when value="regex">
+                <param type="text" name="match_by" label="Match by" value=".*" />
+              </when>
+            </conditional>
+          </when>
+          <when value="sequence">
+            <conditional name="match">
+              <param name="match_selector" type="select" label="Sequence Match Type">
+                <option value="regex">Regular Expression</option>
+              </param>
+              <when value="regex">
+                <param type="text" name="match_by" label="Match by" value=".*" />
+              </when>
+            </conditional>
+          </when>
+          <when value="quality">
+            <conditional name="match">
+              <param name="match_selector" type="select" label="Quality Match Type">
+                <option value="regex">Regular Expression</option>
+              </param>
+              <when value="regex">
+                <param type="text" name="match_by" label="Match by" value=".*" />
+              </when>
+            </conditional>
+          </when>
+        </conditional>
+      </repeat>
+      <!-- Manipulate Matched Reads -->
+      <repeat name="manipulate_blocks" title="Manipulate Reads" min="1">
+        <conditional name="manipulation_type">
+          <param name="manipulation_type_selector" type="select" label="Manipulate Reads on">
+            <option value="identifier">Name/Identifier</option>
+            <option value="sequence">Sequence Content</option>
+            <option value="quality">Quality Score Content</option>
+            <option value="miscellaneous">Miscellaneous Actions</option>
+          </param>
+          <when value="identifier">
+            <conditional name="manipulation">
+              <param name="manipulation_selector" type="select" label="Identifier Manipulation Type">
+                <option value="translate">String Translate</option>
+              </param>
+              <when value="translate">
+                <param name="from" type="text" label="From" value="" />
+                <param name="to" type="text" label="To" value="" />
+              </when>
+            </conditional>
+          </when>
+          <when value="sequence">
+            <conditional name="manipulation">
+              <param name="manipulation_selector" type="select" label="Sequence Manipulation Type">
+                <option value="rev_comp">Reverse Complement</option>
+                <option value="rev_no_comp">Reverse, No Complement</option>
+                <option value="no_rev_comp">Complement, No Reverse</option>
+                <option value="trim">Trim</option>
+                <option value="dna_to_rna">DNA to RNA</option>
+                <option value="rna_to_dna">RNA to DNA</option>
+                <option value="translate">String Translate</option>
+                <option value="change_adapter">Change Adapter Base</option>
+              </param>
+              <when value="rev_comp">
+                <!-- no extra settings -->
+              </when>
+              <when value="rev_no_comp">
+                <!-- no extra settings -->
+              </when>
+              <when value="no_rev_comp">
+                <!-- no extra settings -->
+              </when>
+              <when value="trim">
+                <conditional name="offset_type">
+                  <param name="base_offset_type" type="select" label="Define Base Offsets as">
+                    <option value="offsets_absolute" selected="true">Absolute Values</option>
+                    <option value="offsets_percent">Percentage of Read Length</option>
+                  </param>
+                  <when value="offsets_absolute">
+                    <param name="left_column_offset" label="Absolute Left Base Offset" value="0" type="integer" help="Values start at 0, increasing from the left">
+                      <validator type="in_range" message="Base Offsets must be positive" min="0" max="inf"/>
+                      <validator type="expression" message="An integer is required.">int( float( value ) ) == float( value )</validator>
+                    </param>
+                    <param name="right_column_offset" label="Absolute Right Base Offset" value="0" type="integer" help="Values start at 0, increasing from the right">
+                      <validator type="in_range" message="Base Offsets must be positive" min="0" max="inf"/>
+                      <validator type="expression" message="An integer is required.">int( float( value ) ) == float( value )</validator>
+                    </param>
+                  </when>
+                  <when value="offsets_percent">
+                    <param name="left_column_offset" label="Percentage Left Base Offset" value="0" type="float">
+                      <validator type="in_range" message="Base Offsets must be between 0 and 100" min="0" max="100"/>
+                    </param>
+                    <param name="right_column_offset" label="Percentage Right Base Offset" value="0" type="float">
+                      <validator type="in_range" message="Base Offsets must be between 0 and 100" min="0" max="100"/>
+                    </param>
+                  </when>
+                </conditional>
+                <param name="keep_zero_length" label="Keep reads with zero length" type="boolean" truevalue="keep_zero_length" falsevalue="exclude_zero_length" selected="False"/>
+              </when>
+              <when value="dna_to_rna">
+                <!-- no extra settings -->
+              </when>
+              <when value="rna_to_dna">
+                <!-- no extra settings -->
+              </when>
+              <when value="translate">
+                <param name="from" type="text" label="From" value="" />
+                <param name="to" type="text" label="To" value="" />
+              </when>
+              <when value="change_adapter">
+                <param name="new_adapter" label="New Adapter" type="text" value="G" help="An empty string will remove the adapter base" />
+              </when>
+            </conditional>
+          </when>
+          <when value="quality">
+            <conditional name="manipulation">
+              <param name="manipulation_selector" type="select" label="Quality Manipulation Type">
+                <option value="translate">String Translate</option>
+                <!-- <option value="modify_each_score">Apply Transformation to each Score</option> Not enabled yet-->
+              </param>
+              <when value="translate">
+                <param name="from" type="text" label="From" value="" />
+                <param name="to" type="text" label="To" value="" />
+              </when>
+              <when value="modify_each_score">
+                <param name="map_score" type="text" label="Modify Score by" value="$score + 1" />
+              </when>
+            </conditional>
+          </when>
+          <when value="miscellaneous">
+            <conditional name="manipulation">
+              <param name="manipulation_selector" type="select" label="Miscellaneous Manipulation Type">
+                <option value="remove">Remove Read</option>
+              </param>
+              <when value="remove">
+                <!-- no extra settings -->
+              </when>
+            </conditional>
+          </when>
+        </conditional>
+      </repeat>
+    </page>
+  </inputs>
+  <configfiles>
+    <configfile name="fastq_manipulation_file">##create an importable module
+#import binascii
+import re
+import binascii
+from string import maketrans
+##does read match
+def match_read( fastq_read ):
+    #for $match_block in $match_blocks:
+        #if $match_block['match_type']['match_type_selector'] == 'identifier':
+    search_target = fastq_read.identifier
+        #elif $match_block['match_type']['match_type_selector'] == 'sequence':
+    search_target = fastq_read.sequence
+        #elif $match_block['match_type']['match_type_selector'] == 'quality':
+    search_target = fastq_read.quality
+        #else:
+        #continue
+        #end if
+    if not re.search( binascii.unhexlify( "${ binascii.hexlify( str( match_block['match_type']['match']['match_by'] ) ) }" ), search_target  ):
+        return False
+    #end for
+    return True
+##modify matched reads
+def manipulate_read( fastq_read ):
+    new_read = fastq_read.clone()
+    #for $manipulate_block in $manipulate_blocks:
+        #if $manipulate_block['manipulation_type']['manipulation_type_selector'] == 'identifier':
+            #if $manipulate_block['manipulation_type']['manipulation']['manipulation_selector'] == 'translate':
+    new_read.identifier = new_read.identifier.translate( maketrans( binascii.unhexlify( "${ binascii.hexlify( str( manipulate_block['manipulation_type']['manipulation']['from'] ) ) }" ), binascii.unhexlify( "${ binascii.hexlify( str( manipulate_block['manipulation_type']['manipulation']['to'] ) ) }" ) ) )
+            #end if
+        #elif $manipulate_block['manipulation_type']['manipulation_type_selector'] == 'sequence':
+            #if $manipulate_block['manipulation_type']['manipulation']['manipulation_selector'] == 'translate':
+    new_read.sequence = new_read.sequence.translate( maketrans( binascii.unhexlify( "${ binascii.hexlify( str( manipulate_block['manipulation_type']['manipulation']['from'] ) ) }" ), binascii.unhexlify( "${ binascii.hexlify( str( manipulate_block['manipulation_type']['manipulation']['to'] ) ) }" ) ) )
+            #elif $manipulate_block['manipulation_type']['manipulation']['manipulation_selector'] == 'rev_comp':
+    new_read = new_read.reverse_complement()
+            #elif $manipulate_block['manipulation_type']['manipulation']['manipulation_selector'] == 'rev_no_comp':
+    new_read = new_read.reverse()
+            #elif $manipulate_block['manipulation_type']['manipulation']['manipulation_selector'] == 'no_rev_comp':
+    new_read = new_read.complement()
+            #elif $manipulate_block['manipulation_type']['manipulation']['manipulation_selector'] == 'trim':
+                #if $manipulate_block['manipulation_type']['manipulation']['offset_type']['base_offset_type'] == 'offsets_percent':
+    left_column_offset = int( round( float( ${ manipulate_block['manipulation_type']['manipulation']['offset_type']['left_column_offset'] } ) / 100.0 * float( len( new_read ) ) ) )
+    right_column_offset = int( round( float( ${ manipulate_block['manipulation_type']['manipulation']['offset_type']['right_column_offset'] } ) / 100.0 * float( len( new_read ) ) ) )
+                #else
+    left_column_offset = ${ manipulate_block['manipulation_type']['manipulation']['offset_type']['left_column_offset'] }
+    right_column_offset = ${ manipulate_block['manipulation_type']['manipulation']['offset_type']['right_column_offset'] }
+                #end if
+    if right_column_offset > 0:
+        right_column_offset = -right_column_offset
+    else:
+        right_column_offset = None
+    new_read = new_read.slice( left_column_offset, right_column_offset )
+    if not ( ${str( manipulate_block['manipulation_type']['manipulation']['keep_zero_length'] ) == 'keep_zero_length'} or len( new_read ) ):
+        return None
+            #elif $manipulate_block['manipulation_type']['manipulation']['manipulation_selector'] == 'dna_to_rna':
+    new_read = new_read.sequence_as_DNA()
+            #elif $manipulate_block['manipulation_type']['manipulation']['manipulation_selector'] == 'rna_to_dna':
+    new_read = new_read.sequence_as_RNA()
+            #elif $manipulate_block['manipulation_type']['manipulation']['manipulation_selector'] == 'change_adapter':
+    if new_read.sequence_space == 'color':
+        new_read = new_read.change_adapter( binascii.unhexlify( "${ binascii.hexlify( str( manipulate_block['manipulation_type']['manipulation']['new_adapter'] ) ) }" ) )
+            #end if
+        #elif $manipulate_block['manipulation_type']['manipulation_type_selector'] == 'quality':
+            #if $manipulate_block['manipulation_type']['manipulation']['manipulation_selector'] == 'translate':
+    new_read.quality = new_read.quality.translate( maketrans( binascii.unhexlify( "${ binascii.hexlify( str( manipulate_block['manipulation_type']['manipulation']['from'] ) ) }" ), binascii.unhexlify( "${ binascii.hexlify( str( manipulate_block['manipulation_type']['manipulation']['to'] ) ) }" ) ) )
+            #elif $manipulate_block['manipulation_type']['manipulation']['manipulation_selector'] == 'map_score':
+    def score_method( score ):
+        raise Exception, "Unimplemented" ##This option is not yet available, need to abstract out e.g. column adding tool action: preventing users from using 'harmful' actions
+        new_read.quality_map( score_method )
+            #end if
+        #elif $manipulate_block['manipulation_type']['manipulation_type_selector'] == 'miscellaneous':
+            #if $manipulate_block['manipulation_type']['manipulation']['manipulation_selector'] == 'remove':
+    return None
+            #end if
+        #else:
+        #continue
+        #end if
+    #end for
+    return new_read
+def match_and_manipulate_read( fastq_read ):
+    new_read = fastq_read
+    if match_read( fastq_read ):
+        new_read = manipulate_read( fastq_read )
+    return new_read
+</configfile>
+  </configfiles>
+  <outputs>
+    <data format="input" name="output_file" />
+  </outputs>
+  <tests>
+    <!-- match all and do nothing -->
+    <test>
+      <param name="input_file" value="sanger_full_range_original_sanger.fastqsanger" ftype="fastqsanger" />
+      <param name="match_type_selector" value="identifier" />
+      <param name="match_selector" value="regex" />
+      <param name="match_by" value=".*" />
+      <param name="manipulation_type_selector" value="identifier" />
+      <param name="manipulation_selector" value="translate" />
+      <param name="from" value="" />
+      <param name="to" value="" />
+      <output name="output_file" file="sanger_full_range_original_sanger.fastqsanger" />
+    </test>
+    <!-- match None and do nothing -->
+    <test>
+      <param name="input_file" value="sanger_full_range_original_sanger.fastqsanger" ftype="fastqsanger" />
+      <param name="match_type_selector" value="identifier" />
+      <param name="match_selector" value="regex" />
+      <param name="match_by" value="STRINGDOESNOTEXIST" />
+      <param name="manipulation_type_selector" value="identifier" />
+      <param name="manipulation_selector" value="translate" />
+      <param name="from" value="" />
+      <param name="to" value="" />
+      <output name="output_file" file="sanger_full_range_original_sanger.fastqsanger" />
+    </test>
+    <!-- match all and remove -->
+    <test>
+      <param name="input_file" value="sanger_full_range_original_sanger.fastqsanger" ftype="fastqsanger" />
+      <param name="match_type_selector" value="identifier" />
+      <param name="match_selector" value="regex" />
+      <param name="match_by" value=".*" />
+      <param name="manipulation_type_selector" value="miscellaneous" />
+      <param name="manipulation_selector" value="remove" />
+      <output name="output_file" file="empty_file.dat" />
+    </test>
+    <!-- match None and remove -->
+    <test>
+      <param name="input_file" value="sanger_full_range_original_sanger.fastqsanger" ftype="fastqsanger" />
+      <param name="match_type_selector" value="identifier" />
+      <param name="match_selector" value="regex" />
+      <param name="match_by" value="STRINGDOESNOTEXIST" />
+      <param name="manipulation_type_selector" value="miscellaneous" />
+      <param name="manipulation_selector" value="remove" />
+      <output name="output_file" file="sanger_full_range_original_sanger.fastqsanger" />
+    </test>
+    <!-- match all and trim to 4 inner-most bases -->
+    <test>
+      <param name="input_file" value="sanger_full_range_original_sanger.fastqsanger" ftype="fastqsanger" />
+      <param name="match_type_selector" value="identifier" />
+      <param name="match_selector" value="regex" />
+      <param name="match_by" value=".*" />
+      <param name="manipulation_type_selector" value="sequence" />
+      <param name="manipulation_selector" value="trim" />
+      <param name="base_offset_type" value="offsets_absolute"/>
+      <param name="left_column_offset" value="45"/>
+      <param name="right_column_offset" value="45"/>
+      <param name="keep_zero_length" value="true" />
+      <output name="output_file" file="fastq_trimmer_out1.fastqsanger" />
+    </test>
+    <test>
+      <param name="input_file" value="sanger_full_range_original_sanger.fastqsanger" ftype="fastqsanger" />
+      <param name="match_type_selector" value="identifier" />
+      <param name="match_selector" value="regex" />
+      <param name="match_by" value=".*" />
+      <param name="manipulation_type_selector" value="sequence" />
+      <param name="manipulation_selector" value="trim" />
+      <param name="base_offset_type" value="offsets_percent"/>
+      <param name="left_column_offset" value="47.87"/>
+      <param name="right_column_offset" value="47.87"/>
+      <param name="keep_zero_length" value="true" />
+      <output name="output_file" file="fastq_trimmer_out1.fastqsanger" />
+    </test>
+    <!-- match all and rev comp -->
+    <test>
+      <param name="input_file" value="sanger_full_range_original_sanger.fastqsanger" ftype="fastqsanger" />
+      <param name="match_type_selector" value="identifier" />
+      <param name="match_selector" value="regex" />
+      <param name="match_by" value=".*" />
+      <param name="manipulation_type_selector" value="sequence" />
+      <param name="manipulation_selector" value="rev_comp" />
+      <output name="output_file" file="sanger_full_range_rev_comp.fastqsanger" />
+    </test>
+    <!-- match first seq and rev comp -->
+    <test>
+      <param name="input_file" value="sanger_full_range_original_sanger.fastqsanger" ftype="fastqsanger" />
+      <param name="match_type_selector" value="identifier" />
+      <param name="match_selector" value="regex" />
+      <param name="match_by" value="FAKE0001" />
+      <param name="manipulation_type_selector" value="sequence" />
+      <param name="manipulation_selector" value="rev_comp" />
+      <output name="output_file" file="sanger_full_range_rev_comp_1_seq.fastqsanger" />
+    </test>
+    <!-- match first seq and rev comp: i.e. undo above -->
+    <test>
+      <param name="input_file" value="sanger_full_range_rev_comp_1_seq.fastqsanger" ftype="fastqsanger" />
+      <param name="match_type_selector" value="identifier" />
+      <param name="match_selector" value="regex" />
+      <param name="match_by" value="FAKE0001" />
+      <param name="manipulation_type_selector" value="sequence" />
+      <param name="manipulation_selector" value="rev_comp" />
+      <output name="output_file" file="sanger_full_range_original_sanger.fastqsanger" />
+    </test>
+    <!-- match all and DNA to RNA -->
+    <test>
+      <param name="input_file" value="sanger_full_range_original_sanger.fastqsanger" ftype="fastqsanger" />
+      <param name="match_type_selector" value="identifier" />
+      <param name="match_selector" value="regex" />
+      <param name="match_by" value=".*" />
+      <param name="manipulation_type_selector" value="sequence" />
+      <param name="manipulation_selector" value="dna_to_rna" />
+      <output name="output_file" file="sanger_full_range_as_rna.fastqsanger" />
+    </test>
+    <!-- match all and RNA to DNA -->
+    <test>
+      <param name="input_file" value="sanger_full_range_as_rna.fastqsanger" ftype="fastqsanger" />
+      <param name="match_type_selector" value="identifier" />
+      <param name="match_selector" value="regex" />
+      <param name="match_by" value=".*" />
+      <param name="manipulation_type_selector" value="sequence" />
+      <param name="manipulation_selector" value="rna_to_dna" />
+      <output name="output_file" file="sanger_full_range_original_sanger.fastqsanger" />
+    </test>
+  </tests>
+<help>
+This tool allows you to build complex manipulations to be applied to each matching read in a FASTQ file. A read must match all matching directives in order for it to be manipulated; if a read does not match, it is output in a non-modified manner. All reads matching will have each of the specified manipulations performed upon them, in the order specified.
+
+Regular Expression Matches are made using re.search, see http://docs.python.org/library/re.html for more information.
+
+String translations are performed using string.translate, see http://docs.python.org/library/string.html#string.translate and http://docs.python.org/library/string.html#string.maketrans for more information.
+
+
+.. class:: warningmark
+
+Only SOLiD (color space) reads can have adapter bases substituted.
+
+</help>
+</tool>

@@ -9,7 +9,13 @@ from galaxy import util
 
 log = logging.getLogger(__name__)
 
-class QualityScoreSOLiD ( data.Text ):
+class QualityScore ( data.Text ):
+    """
+    until we know more about quality score formats
+    """
+    file_ext = "qual"
+
+class QualityScoreSOLiD ( QualityScore ):
     """
     until we know more about quality score formats
     """
@@ -58,7 +64,7 @@ class QualityScoreSOLiD ( data.Text ):
             pass
         return False
 
-class QualityScore454 ( data.Text ):
+class QualityScore454 ( QualityScore ):
     """
     until we know more about quality score formats
     """
@@ -97,9 +103,14 @@ class QualityScore454 ( data.Text ):
             pass
         return False
 
-class QualityScoreSolexa ( data.Text ):
+class QualityScoreSolexa ( QualityScore ):
     """
     until we know more about quality score formats
     """
     file_ext = "qualsolexa"
-   
+
+class QualityScoreIllumina ( QualityScore ):
+    """
+    until we know more about quality score formats
+    """
+    file_ext = "qualillumina"

@@ -1,0 +1,72 @@
+<tool id="fastq_stats" name="FASTQ Summary Statistics" version="1.0.0">
+  <description>by column</description>
+  <command interpreter="python">fastq_stats.py '$input_file' '$output_file' '${input_file.extension[len( 'fastq' ):]}'</command>
+  <inputs>
+    <param name="input_file" type="data" format="fastqsanger,fastqillumina,fastqsolexa,fastqsolid" label="FASTQ File"/>
+  </inputs>
+  <outputs>
+    <data name="output_file" format="tabular" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="input_file" value="fastq_stats1.fastq" ftype="fastqsanger" />
+      <output name="output_file" file="fastq_stats_1_out.tabular" />
+    </test>
+  </tests>
+  <help>
+This tool creates summary statistics on a FASTQ file. 
+
+.. class:: infomark
+
+**TIP:** This statistics report can be used as input for the **Boxplot** and **Nucleotides Distribution** tools.
+
+-----
+
+**The output file will contain the following fields:**
+
+* column      = column number (1 to 36 for a 36-cycles read Solexa file)
+* count       = number of bases found in this column.
+* min         = Lowest quality score value found in this column.
+* max         = Highest quality score value found in this column.
+* sum         = Sum of quality score values for this column.
+* mean        = Mean quality score value for this column.
+* Q1          = 1st quartile quality score.
+* med         = Median quality score.
+* Q3          = 3rd quartile quality score.
+* IQR         = Inter-Quartile range (Q3-Q1).
+* lW          = 'Left-Whisker' value (for boxplotting).
+* rW          = 'Right-Whisker' value (for boxplotting).
+* outliers    = Scores falling beyond the left and right whiskers (comma separated list).
+* A_Count     = Count of 'A' nucleotides found in this column.
+* C_Count     = Count of 'C' nucleotides found in this column.
+* G_Count     = Count of 'G' nucleotides found in this column.
+* T_Count     = Count of 'T' nucleotides found in this column.
+* N_Count     = Count of 'N' nucleotides found in this column.
+* Other_Nucs  = Comma separated list of other nucleotides found in this column.
+* Other_Count = Comma separated count of other nucleotides found in this column.
+
+For example::
+
+  #column   count   min max sum mean    Q1  med Q3  IQR lW  rW  outliers    A_Count C_Count G_Count T_Count N_Count other_bases other_base_count
+  1   14336356    2   33  450600675   31.4306281875   32.0    33.0    33.0    1.0 31  33  2,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30    4482314 2199633 4425957 3208745 19707       
+  2   14336356    2   34  441135033   30.7703737965   30.0    33.0    33.0    3.0 26  34  2,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25   4419184 2170537 4627987 3118567 81      
+  3   14336356    2   34  433659182   30.2489127642   29.0    32.0    33.0    4.0 23  34  2,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22    4310988 2941988 3437467 3645784 129     
+  4   14336356    2   34  433635331   30.2472490917   29.0    32.0    33.0    4.0 23  34  2,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22    4110637 3007028 3671749 3546839 103     
+  5   14336356    2   34  432498583   30.167957813    29.0    32.0    33.0    4.0 23  34  2,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22    4348275 2935903 3293025 3759029 124     
+  6   14336356    2   34  433516130   30.2389344963   29.0    32.0    33.0    4.0 23  34  2,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22    4148685 3240703 3395388 3551483 97      
+  7   14336356    2   34  433280560   30.2225028452   29.0    32.0    33.0    4.0 23  34  2,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22    4080445 3143867 3181629 3930294 121     
+  8   14336356    2   34  433253015   30.2205815062   29.0    32.0    33.0    4.0 23  34  2,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22    4021204 3164843 3257779 3892419 111     
+  9   14336356    2   34  432416621   30.1622407396   29.0    32.0    33.0    4.0 23  34  2,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22    3952703 3229316 3263002 3891205 130     
+  10  14336356    2   34  431795072   30.1188859986   29.0    32.0    33.0    4.0 23  34  2,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22    4139373 3227694 3262197 3706968 124     
+  11  14336356    2   34  430636560   30.0380766214   29.0    32.0    33.0    4.0 23  34  2,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22    4078833 3194895 3305010 3757469 149     
+  12  14336356    2   34  426265591   29.7331895916   29.0    32.0    33.0    4.0 23  34  2,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22    3980583 3224693 3288479 3842447 154     
+  13  14336356    2   34  425042610   29.6478833254   28.0    32.0    33.0    5.0 21  34  2,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20  3994385 3201916 3236851 3903054 150     
+
+-----
+
+.. class:: warningmark
+
+Adapter bases in SOLiD reads are excluded from statistics.
+
+  </help>
+</tool>

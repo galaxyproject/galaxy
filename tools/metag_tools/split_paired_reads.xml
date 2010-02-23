@@ -13,8 +13,8 @@
     <tests>
         <test>
             <param name="input" value="3.fastqsanger" ftype="fastqsanger"/>
-            <output name="output1" file="split_paired_reads_out_1.fastqsanger" ftype="fastqsanger"/>
-            <output name="output2" file="split_paired_reads_out_2.fastqsanger" ftype="fastqsanger"/>
+            <output name="output1" file="split_pair_reads_1.fastqsanger" ftype="fastqsanger"/>
+            <output name="output2" file="split_pair_reads_2.fastqsanger" ftype="fastqsanger"/>
         </test>
     </tests>
 <help>

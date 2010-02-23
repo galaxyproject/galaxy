@@ -1,0 +1,72 @@
+<tool id="qual_stats_boxplot" name="Boxplot" version="1.0.0">
+  <description>of quality statistics</description>
+  <command>gnuplot &lt; '$gnuplot_commands' &gt; '$output_file'</command>
+  <inputs>
+    <param name="input_file" type="data" format="tabular" label="Quality Statistics File"/>
+    <param name="title" type="text" value="Box plot in Galaxy" label="Title for plot" size="50"/>
+    <param name="graph_size" type="text" value="2048,768" label="Dimensions of Graph"/>
+    <param name="xlabel" type="text" value="X Axis Label" label="X axis label" size="50"/>
+    <param name="ylabel" type="text" value="Score Value" label="Y axis label" size="50"/>
+    <param name="xcol" type="data_column" data_ref="input_file" label="Column for X axis position" default_value="1" help="A unique number"/>
+    <param name="q1col" type="data_column" data_ref="input_file" label="Column for Q1" default_value="7"/>
+    <param name="medcol" type="data_column" data_ref="input_file" label="Column for Median" default_value="8"/>
+    <param name="q3col" type="data_column" data_ref="input_file" label="Column for Q3" default_value="9"/>
+    <param name="lwcol" type="data_column" data_ref="input_file" label="Column for left whisker" default_value="11"/>
+    <param name="rwcol" type="data_column" data_ref="input_file" label="Column for right whisker" default_value="12"/>
+    <conditional name="use_outliers">
+      <param name="use_outliers_type" type="select" label="Plot Outliers">
+        <option value="use_outliers" selected="true">Plot Outliers</option>
+        <option value="dont_use_outliers">Don't Plot Outliers</option>
+      </param>
+      <when value="use_outliers">
+        <param name="outliercol" type="data_column" data_ref="input_file" label="Column for Outliers" default_value="13"/>
+      </when>
+      <when value="dont_use_outliers">
+      </when>
+    </conditional>
+  </inputs>
+  <configfiles>
+    <configfile name="gnuplot_commands">
+set term png size ${graph_size}
+set boxwidth 0.8 
+set key right tmargin
+set xlabel "${xlabel}"
+set ylabel "${ylabel}"
+set title  "${title}"
+set xtics 1 
+set ytics 1
+set grid ytics
+set offsets 1, 1, 1, 1
+plot '${input_file}' using ${xcol}:${q1col}:${lwcol}:${rwcol}:${q3col} with candlesticks lt 1  lw 1 title 'Quartiles' whiskerbars, \
+      ''         using ${xcol}:${medcol}:${medcol}:${medcol}:${medcol} with candlesticks lt -1 lw 2 title 'Medians'\
+#if str( $use_outliers['use_outliers_type'] ) == 'use_outliers':
+,      "&lt; python -c \"for xval, yvals in [ ( fields[${xcol} - 1], fields[${use_outliers['outliercol']} - 1].split( ',' ) ) for fields in [ line.rstrip( '\\n\\r' ).split( '\\t' ) for line in open( '${input_file}' ) if not line.startswith( '#' ) ] if len( fields ) &gt; max( ${xcol} - 1, ${use_outliers['outliercol']} - 1 ) ]: print '\\n'.join( [ '%s\\t%s' % ( xval, yval ) for yval in yvals if yval ] )\"" using 1:2 with points pt 29 title 'Outliers'
+#end if
+    </configfile>
+  </configfiles>
+  <outputs>
+    <data name="output_file" format="png" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="input_file" value="fastq_stats_1_out.tabular" ftype="tabular" />
+      <param name="title" value="Boxplot of Summary Statistics for Sanger Reads" />
+      <param name="graph_size" value="2048,768" />
+      <param name="xlabel" value="Read Column" />
+      <param name="ylabel" value="Quality Score Value" />
+      <param name="xcol" value="1" />
+      <param name="q1col" value="7" />
+      <param name="medcol" value="8" />
+      <param name="q3col" value="9" />
+      <param name="lwcol" value="11" />
+      <param name="rwcol" value="12" />
+      <param name="use_outliers_type" value="use_outliers" />
+      <param name="outliercol" value="13" />
+      <output name="output_file" file="boxplot_summary_statistics_out.png" />
+    </test>
+  </tests>
+  <help>
+This tool creates a boxplot from a tabular file containing summary statistics. 
+Outliers are optionally defined using a comma-separated list of values.
+  </help>
+</tool>

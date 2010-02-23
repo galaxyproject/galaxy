@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <datatypes>
-    <registration converters_path="lib/galaxy/datatypes/converters">
+    <registration converters_path="lib/galaxy/datatypes/converters" display_path="display_applications">
         <datatype extension="ab1" type="galaxy.datatypes.binary:Ab1" mimetype="application/octet-stream" display_in_upload="true"/>
         <datatype extension="axt" type="galaxy.datatypes.sequence:Axt" display_in_upload="true"/>
         <datatype extension="bam" type="galaxy.datatypes.binary:Bam" mimetype="application/octet-stream" display_in_upload="true">
@@ -34,6 +34,9 @@
         </datatype>
         <datatype extension="fastq" type="galaxy.datatypes.sequence:Fastq" display_in_upload="true"/>
         <datatype extension="fastqsanger" type="galaxy.datatypes.sequence:FastqSanger" display_in_upload="true"/>
+        <datatype extension="fastqsolexa" type="galaxy.datatypes.sequence:FastqSolexa" display_in_upload="true"/>
+        <datatype extension="fastqsolid" type="galaxy.datatypes.sequence:FastqSolid" display_in_upload="true"/>
+        <datatype extension="fastqillumina" type="galaxy.datatypes.sequence:FastqIllumina" display_in_upload="true"/>
         <datatype extension="genetrack" type="galaxy.datatypes.tracks:GeneTrack">
             <!-- <display file="genetrack.xml" /> -->
         </datatype>
@@ -60,7 +63,9 @@
         </datatype>
         <datatype extension="pdf" type="galaxy.datatypes.images:Image" mimetype="application/pdf"/>
         <datatype extension="png" type="galaxy.datatypes.images:Image" mimetype="image/png"/>
+        <datatype extension="qual" type="galaxy.datatypes.qualityscore:QualityScore" />
         <datatype extension="qualsolexa" type="galaxy.datatypes.qualityscore:QualityScoreSolexa" display_in_upload="true"/>
+        <datatype extension="qualillumina" type="galaxy.datatypes.qualityscore:QualityScoreIllumina" display_in_upload="true"/>
         <datatype extension="qualsolid" type="galaxy.datatypes.qualityscore:QualityScoreSOLiD" display_in_upload="true"/>
         <datatype extension="qual454" type="galaxy.datatypes.qualityscore:QualityScore454" display_in_upload="true"/>
         <datatype extension="sam" type="galaxy.datatypes.tabular:Sam" display_in_upload="true"/>

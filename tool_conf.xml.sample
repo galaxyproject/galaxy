@@ -127,6 +127,7 @@
     <tool file="plotting/scatterplot.xml" />
     <tool file="plotting/bar_chart.xml" />
     <tool file="plotting/xy_plot.xml" />
+    <tool file="plotting/boxplot.xml" />
     <tool file="visualization/GMAJ.xml" />
     <tool file="visualization/LAJ.xml" />
     <tool file="visualization/build_ucsc_custom_track.xml" />
@@ -174,7 +175,17 @@
     <tool file="fastx_toolkit/fastx_collapser.xml" />
   </section>
   <section name="NGS: QC and manipulation" id="cshl_library_information">
-    <label text="Generic FASTQ data" id="fastq" />
+    <label text="Generic FASTQ data" id="new_fastq" />
+      <tool file="fastq/fastq_combiner.xml" />
+      <tool file="fastq/fastq_groomer.xml" />
+      <tool file="fastq/fastq_paired_end_joiner.xml" />
+      <tool file="fastq/fastq_paired_end_splitter.xml" />
+      <tool file="fastq/fastq_stats.xml" />
+      <tool file="fastq/fastq_filter.xml" />
+      <tool file="fastq/fastq_trimmer.xml" />
+      <tool file="fastq/fastq_manipulation.xml" />
+      <tool file="fastq/fastq_to_fasta.xml" />
+    <label text="Deprecated: Generic FASTQ data" id="fastq" />
         <tool file="next_gen_conversion/fastq_gen_conv.xml" />
         <tool file="fastx_toolkit/fastq_quality_converter.xml" />
         <tool file="fastx_toolkit/fastx_quality_statistics.xml" />

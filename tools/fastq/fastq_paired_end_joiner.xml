@@ -1,0 +1,55 @@
+<tool id="fastq_paired_end_joiner" name="FASTQ joiner" version="1.0.0">
+  <description>on paired end reads</description>
+  <command interpreter="python">fastq_paired_end_joiner.py '$input1_file' '${input1_file.extension[len( 'fastq' ):]}' '$input2_file' '${input2_file.extension[len( 'fastq' ):]}' '$output_file'</command>
+  <inputs>
+    <param name="input1_file" type="data" format="fastq" label="Left-hand Reads" />
+    <param name="input2_file" type="data" format="fastq" label="Right-hand Reads" />
+  </inputs>
+  <outputs>
+    <data name="output_file" format="input" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="input1_file" value="split_pair_reads_1.fastqsanger" ftype="fastqsanger" />
+      <param name="input2_file" value="split_pair_reads_2.fastqsanger" ftype="fastqsanger" />
+      <output name="output_file" file="3.fastqsanger" />
+    </test>
+  </tests>
+  <help>
+**What it does**
+
+This tool joins paired end FASTQ reads from two separate files into a single read in one file. The join is performed using sequence identifiers, allowing the two files to contain differing ordering. If a sequence identifier does not appear in both files, it is excluded from the output.
+
+Sequence identifiers with /1 and /2 appended override the left-hand and right-hand designation; i.e. if the reads end with /1 and /2, the read containing /1 will be used as the left-hand read and the read containing /2 will be used as the right-hand read. Sequences without this designation will follow the left-hand and right-hand settings set by the user.
+
+-----
+
+**Input formats**
+
+Left-hand Read::
+
+    @HWI-EAS91_1_30788AAXX:7:21:1542:1758/1
+    GTCAATTGTACTGGTCAATACTAAAAGAATAGGATC
+    +HWI-EAS91_1_30788AAXX:7:21:1542:1758/1
+    hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh
+
+Right-hand Read::
+
+    @HWI-EAS91_1_30788AAXX:7:21:1542:1758/2
+    GCTCCTAGCATCTGGAGTCTCTATCACCTGAGCCCA
+    +HWI-EAS91_1_30788AAXX:7:21:1542:1758/2
+    hhhhhhhhhhhhhhhhhhhhhhhh`hfhhVZSWehR
+
+-----
+
+**Output**
+
+A multiple-fastq file, for example::
+
+    @HWI-EAS91_1_30788AAXX:7:21:1542:1758
+    GTCAATTGTACTGGTCAATACTAAAAGAATAGGATCGCTCCTAGCATCTGGAGTCTCTATCACCTGAGCCCA
+    +HWI-EAS91_1_30788AAXX:7:21:1542:1758
+    hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh`hfhhVZSWehR
+
+  </help>
+</tool>

@@ -47,7 +47,7 @@ def __main__():
     #does file already conform to bed strict?
     #if so, we want to keep extended columns, otherwise we'll create a generic 6 column bed file
     strict_bed = True
-    if extension == 'bed' and ( chromCol, startCol, endCol, nameCol, strandCol ) == ( 0, 1, 2, 3, 5 ):
+    if extension in [ 'bed', 'bedstrict' ] and ( chromCol, startCol, endCol, nameCol, strandCol ) == ( 0, 1, 2, 3, 5 ):
         for count, line in enumerate( open( input_name ) ):
             line = line.strip()
             if line == "" or line.startswith("#"):
