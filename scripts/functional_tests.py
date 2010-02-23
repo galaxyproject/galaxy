@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import os, sys
+import os, sys, shutil
 
 # Assume we are run from the galaxy root directory, add lib to the python path
 cwd = os.getcwd()
@@ -52,32 +52,68 @@ def main():
     if not os.path.isabs( galaxy_test_file_dir ):
         galaxy_test_file_dir = os.path.join( os.getcwd(), galaxy_test_file_dir )
     start_server = 'GALAXY_TEST_EXTERNAL' not in os.environ   
+    tool_path = os.environ.get( 'GALAXY_TEST_TOOL_PATH', 'tools' )
     if start_server:
-        if 'GALAXY_TEST_DBPATH' in os.environ:
-            db_path = os.environ['GALAXY_TEST_DBPATH']
-        else: 
-            tempdir = tempfile.mkdtemp()
-            db_path = os.path.join( tempdir, 'database' )
-        file_path = os.path.join( db_path, 'files' )
-        try:
-            os.makedirs( file_path )
-        except OSError:
-            pass
-        if 'GALAXY_TEST_DBURI' in os.environ:
-            database_connection = os.environ['GALAXY_TEST_DBURI']
+        psu_production = False
+        galaxy_test_proxy_port = None
+        if 'GALAXY_TEST_PSU_PRODUCTION' in os.environ:
+            if not galaxy_test_port:
+                raise Exception( 'Please set GALAXY_TEST_PORT to the port to which the proxy server will proxy' )
+            galaxy_test_proxy_port = os.environ.get( 'GALAXY_TEST_PROXY_PORT', None )
+            if not galaxy_test_proxy_port:
+                raise Exception( 'Please set GALAXY_TEST_PROXY_PORT to the port on which the proxy server is listening' )
+            base_file_path = os.environ.get( 'GALAXY_TEST_BASE_FILE_PATH', None )
+            if not base_file_path:
+                raise Exception( 'Please set GALAXY_TEST_BASE_FILE_PATH to the directory which will contain the dataset files directory' )
+            base_new_file_path = os.environ.get( 'GALAXY_TEST_BASE_NEW_FILE_PATH', None )
+            if not base_new_file_path:
+                raise Exception( 'Please set GALAXY_TEST_BASE_NEW_FILE_PATH to the directory which will contain the temporary directory' )
+            database_connection = os.environ.get( 'GALAXY_TEST_DBURI', None )
+            if not database_connection:
+                raise Exception( 'Please set GALAXY_TEST_DBURI to the URI of the database to be used for tests' )
+            nginx_upload_store = os.environ.get( 'GALAXY_TEST_NGINX_UPLOAD_STORE', None )
+            if not nginx_upload_store:
+                raise Exception( 'Please set GALAXY_TEST_NGINX_UPLOAD_STORE to the path where the nginx upload module places uploaded files' )
+            file_path = tempfile.mkdtemp( dir=base_file_path )
+            new_file_path = tempfile.mkdtemp( dir=base_new_file_path )
+            cluster_files_directory = os.path.join( new_file_path, 'pbs' )
+            job_working_directory = os.path.join( new_file_path, 'job_working_directory' )
+            os.mkdir( cluster_files_directory )
+            os.mkdir( job_working_directory )
+            kwargs = dict( database_engine_option_pool_size = '10',
+                           database_engine_option_max_overflow = '20',
+                           database_engine_option_strategy = 'threadlocal',
+                           nginx_x_accel_redirect_base = '/_x_accel_redirect',
+                           nginx_upload_store = nginx_upload_store,
+                           nginx_upload_path = '/_upload',
+                           cluster_files_directory = cluster_files_directory,
+                           job_working_directory = job_working_directory,
+                           outputs_to_working_directory = 'True',
+                           set_metadata_externally = 'True',
+                           static_enabled = 'False',
+                           debug = 'False',
+                           track_jobs_in_database = 'True',
+                           job_scheduler_policy = 'FIFO',
+                           start_job_runners = 'pbs',
+                           default_cluster_job_runner = 'pbs:///', )
+            psu_production = True
         else:
-            database_connection = 'sqlite:///' + os.path.join( db_path, 'universe.sqlite' )
-        if 'GALAXY_TEST_RUNNERS' in os.environ:
-            start_job_runners = os.environ['GALAXY_TEST_RUNNERS']
-        else:
-            start_job_runners = None
-        if 'GALAXY_TEST_DEF_RUNNER' in os.environ:
-            default_cluster_job_runner = os.environ['GALAXY_TEST_DEF_RUNNER']
-        else:
-            default_cluster_job_runner = 'local:///'
-        set_metadata_externally = False
-        if 'GALAXY_SET_METADATA_EXTERNALLY' in os.environ:
-            set_metadata_externally = True
+            if 'GALAXY_TEST_DBPATH' in os.environ:
+                db_path = os.environ['GALAXY_TEST_DBPATH']
+            else: 
+                tempdir = tempfile.mkdtemp()
+                db_path = os.path.join( tempdir, 'database' )
+            file_path = os.path.join( db_path, 'files' )
+            new_file_path = os.path.join( db_path, 'tmp' )
+            if 'GALAXY_TEST_DBURI' in os.environ:
+                database_connection = os.environ['GALAXY_TEST_DBURI']
+            else:
+                database_connection = 'sqlite:///' + os.path.join( db_path, 'universe.sqlite' )
+            try:
+                os.makedirs( file_path )
+            except OSError:
+                pass
+            kwargs = {}
             
     print "Database connection:", database_connection
     
@@ -91,17 +127,20 @@ def main():
             
     if start_server:
         
+        global_conf = { '__file__' : 'universe_wsgi.ini.sample' }
+        if psu_production:
+            global_conf = None
+
         # Build the Universe Application
         app = UniverseApplication( job_queue_workers = 5,
-                                   start_job_runners = start_job_runners,
-                                   default_cluster_job_runner = default_cluster_job_runner,
                                    id_secret = 'changethisinproductiontoo',
                                    template_path = "templates",
                                    database_connection = database_connection,
                                    file_path = file_path,
+                                   new_file_path = new_file_path,
+                                   tool_path = tool_path,
                                    tool_config_file = "tool_conf.xml.sample",
                                    datatype_converters_config_file = "datatype_converters_conf.xml.sample",
-                                   tool_path = "tools",
                                    tool_parse_help = False,
                                    test_conf = "test.conf",
                                    log_destination = "stdout",
@@ -111,8 +150,8 @@ def main():
                                    admin_users = 'test@bx.psu.edu',
                                    library_import_dir = galaxy_test_file_dir,
                                    user_library_import_dir = os.path.join( galaxy_test_file_dir, 'users' ),
-                                   set_metadata_externally = set_metadata_externally,
-                                   global_conf = { "__file__": "universe_wsgi.ini.sample" } )
+                                   global_conf = global_conf,
+                                   **kwargs )
         
         log.info( "Embedded Universe application started" );
         
@@ -140,20 +179,30 @@ def main():
                     raise
             else:
                 raise Exception( "Unable to open a port between %s and %s to start Galaxy server" % ( default_galaxy_test_port_min, default_galaxy_test_port_max ) )
-        os.environ['GALAXY_TEST_PORT'] = galaxy_test_port
+        if galaxy_test_proxy_port:
+            os.environ['GALAXY_TEST_PORT'] = galaxy_test_proxy_port
+        else:
+            os.environ['GALAXY_TEST_PORT'] = galaxy_test_port
 
         t = threading.Thread( target=server.serve_forever )
         t.start()
 
         # Test if the server is up
         for i in range( 10 ):
-            conn = httplib.HTTPConnection( galaxy_test_host, galaxy_test_port )
+            conn = httplib.HTTPConnection( galaxy_test_host, galaxy_test_port ) # directly test the app, not the proxy
             conn.request( "GET", "/" )
             if conn.getresponse().status == 200:
                 break
             time.sleep( 0.1 )
         else:
             raise Exception( "Test HTTP server did not return '200 OK' after 10 tries" )
+            
+        # Test if the proxy server is up
+        if psu_production:
+            conn = httplib.HTTPConnection( galaxy_test_host, galaxy_test_proxy_port ) # directly test the app, not the proxy
+            conn.request( "GET", "/" )
+            if not conn.getresponse().status == 200:
+                raise Exception( "Test HTTP proxy server did not return '200 OK'" )
             
         log.info( "Embedded web server started" )
 
@@ -179,7 +228,10 @@ def main():
 
     # ---- Find tests ---------------------------------------------------------
     
-    log.info( "Functional tests will be run against %s:%s" % ( galaxy_test_host, galaxy_test_port ) )
+    if galaxy_test_proxy_port:
+        log.info( "Functional tests will be run against %s:%s" % ( galaxy_test_host, galaxy_test_proxy_port ) )
+    else:
+        log.info( "Functional tests will be run against %s:%s" % ( galaxy_test_host, galaxy_test_port ) )
     
     success = False
     
@@ -231,6 +283,20 @@ def main():
         app.shutdown()
         app = None
         log.info( "Embedded Universe application stopped" )
+    try:
+        if os.path.exists( tempdir ) and 'GALAXY_TEST_NO_CLEANUP' not in os.environ:
+            log.info( "Cleaning up temporary files in %s" % tempdir )
+            shutil.rmtree( tempdir )
+    except:
+        pass
+    if psu_production and 'GALAXY_TEST_NO_CLEANUP' not in os.environ:
+        for dir in ( file_path, new_file_path ):
+            try:
+                if os.path.exists( dir ):
+                    log.info( 'Cleaning up temporary files in %s' % dir )
+                    shutil.rmtree( dir )
+            except:
+                pass
         
     if success:
         return 0
