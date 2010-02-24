@@ -1,4 +1,4 @@
-<tool id="sam_pileup" name="Generate pileup" version="1.0.0">
+<tool id="sam_pileup" name="Generate pileup" version="1.1.0">
   <description>from BAM dataset</description>
   <command interpreter="python">
     sam_pileup.py

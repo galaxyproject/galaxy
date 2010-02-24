@@ -191,13 +191,13 @@
         <option value="history">Use one from the history</option>
       </param>
       <when value="indexed">
-    	<param name="index" type="select" label="Select a reference genome" help="if your genome of interest is not listed - contact Galaxy team">
-  	      <options from_file="bowtie_indices.loc">
-  	        <column name="value" index="1" />
-  	        <column name="name" index="0" />
-  	      </options>
-  	    </param>
-  	  </when>
+        <param name="index" type="select" label="Select a reference genome" help="if your genome of interest is not listed - contact Galaxy team">
+          <options from_file="bowtie_indices.loc">
+            <column name="value" index="1" />
+            <column name="name" index="0" />
+          </options>
+        </param>
+      </when>
       <when value="history">
         <param name="ownFile" type="data" format="fasta" metadata_name="dbkey" label="Select the reference genome" />
         <conditional name="indexParams">
@@ -246,7 +246,7 @@
           </when>  <!-- indexFull -->
         </conditional>  <!-- indexParams -->
       </when>  <!-- history -->
- 	</conditional>  <!-- refGenomeSource -->
+    </conditional>  <!-- refGenomeSource -->
     <conditional name="singlePaired">
       <param name="sPaired" type="select" label="Is this library mate-paired?">
         <option value="single">Single-end</option>
@@ -256,9 +256,9 @@
         <param name="sInput1" type="data" format="fastqsanger" label="FASTQ file" help="Must have Sanger-scaled quality values with ASCII offset 33"/>
         <conditional name="sParams">
           <param name="sSettingsType" type="select" label="Bowtie settings to use" help="For most mapping needs use Commonly used settings. If you want full control use Full parameter list">
-		    <option value="preSet">Commonly used</option>
-   		    <option value="full">Full parameter list</option>
-	      </param>
+            <option value="preSet">Commonly used</option>
+            <option value="full">Full parameter list</option>
+            </param>
           <when value="preSet" />
           <when value="full">
             <param name="sSkip" type="integer" value="0" label="Skip the first n reads (-s)" />  
@@ -315,9 +315,9 @@
         </param>
         <conditional name="pParams">
           <param name="pSettingsType" type="select" label="Bowtie settings to use" help="For most mapping needs use Commonly used settings. If you want full control use Full parameter list">
-		    <option value="preSet">Commonly used</option>
-   		    <option value="full">Full parameter list</option>
-	      </param>
+            <option value="preSet">Commonly used</option>
+            <option value="full">Full parameter list</option>
+          </param>
           <when value="preSet" />
           <when value="full">
             <param name="pSkip" type="integer" value="0" label="Skip the first n pairs (-s)" />  
@@ -505,8 +505,6 @@
 **What it does**
 
 Bowtie_ is a short read aligner designed to be ultrafast and memory-efficient. It is developed by Ben Langmead and Cole Trapnell. Please cite: Langmead B, Trapnell C, Pop M, Salzberg SL. Ultrafast and memory-efficient alignment of short DNA sequences to the human genome. Genome Biology 10:R25.
-
-This tool uses Bowtie version 0.12.1.
 
 .. _Bowtie: http://bowtie-bio.sourceforge.net/index.shtml
 

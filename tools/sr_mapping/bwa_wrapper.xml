@@ -181,8 +181,6 @@
 
 BWA is a fast light-weighted tool that aligns relatively short sequences (queries) to a sequence database (large), such as the human reference genome. It is developed by Heng Li at the Sanger Insitute. Li H. and Durbin R. (2009) Fast and accurate short read alignment with Burrows-Wheeler transform. Bioinformatics, 25, 1754-60. 
 
-This tool uses BWA version 0.5.5.
-
 ------
 
 **Know what you are doing**

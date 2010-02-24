@@ -1,4 +1,4 @@
-<tool id="sam_to_bam" name="SAM-to-BAM" version="1.0.0">
+<tool id="sam_to_bam" name="SAM-to-BAM" version="1.1.0">
   <description>converts SAM format to BAM format</description>
   <command interpreter="python">
 sam_to_bam.py --input1=$source.input1 --dbkey=${input1.metadata.dbkey} 
