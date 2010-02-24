@@ -1,6 +1,7 @@
 #Dan Blankenberg
 import sys, os, shutil
-from galaxy_utils.sequence.fastq import fastqWriter, fastaReader, fastaNamedReader, fastqSequencingRead, fastqCombiner
+from galaxy_utils.sequence.fastq import fastqWriter, fastqSequencingRead, fastqCombiner
+from galaxy_utils.sequence.fasta import fastaReader, fastaNamedReader
 
 def main():
     #Read command line arguments

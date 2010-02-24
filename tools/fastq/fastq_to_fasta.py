@@ -1,6 +1,7 @@
 #Dan Blankenberg
 import sys
-from galaxy_utils.sequence.fastq import fastqReader, fastaWriter
+from galaxy_utils.sequence.fastq import fastqReader
+from galaxy_utils.sequence.fasta import fastaWriter
 
 def main():
     input_filename = sys.argv[1]
