@@ -1589,12 +1589,6 @@ class RequestsAdmin( BaseController ):
                                          dataset_index=index, 
                                          cmd=cmd)
                 dtt.start()
-#        # set the sample state to the last state
-#        if sample.current_state().id != sample.request.type.states[-1].id:
-#            event = trans.app.model.SampleEvent(sample, sample.request.type.states[-1], 
-#                                                'The dataset is ready and are being transferred to Galaxy')
-#            trans.sa_session.add( event )
-#            trans.sa_session.flush()
         if error_msg:
             return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                               action='show_datatx_page', 

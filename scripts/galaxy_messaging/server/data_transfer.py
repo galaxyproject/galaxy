@@ -94,7 +94,7 @@ class DataTransfer(object):
         # update the data transfer status in the db
         self.update_status('Complete')
         # cleanup
-        #self.cleanup()    
+        self.cleanup()    
         sys.exit(0)
         
     def cleanup(self):
