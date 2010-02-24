@@ -53,6 +53,8 @@ class fastaNamedReader( object ):
     def close( self ):
         return self.file.close()
     def get( self, sequence_id ):
+        if not isinstance( sequence_id, basestring ):
+            sequence_id = sequence_id.identifier
         rval = None
         if sequence_id in self.offset_dict:
             initial_offset = self.file.tell()

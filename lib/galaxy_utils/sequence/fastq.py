@@ -3,6 +3,7 @@ import math
 import string
 import transform
 from sequence import SequencingRead
+from fasta import fastaSequence
 
 class fastqSequencingRead( SequencingRead ):
     format = 'sanger' #sanger is default
@@ -456,6 +457,8 @@ class fastqNamedReader( object ):
     def close( self ):
         return self.file.close()
     def get( self, sequence_id ):
+        if not isinstance( sequence_id, basestring ):
+            sequence_id = sequence_id.identifier
         rval = None
         if sequence_id in self.offset_dict:
             initial_offset = self.file.tell()
@@ -593,3 +596,25 @@ class fastqCombiner( object ):
         fastq_read.sequence = fasta_seq.sequence
         fastq_read.quality = quality_seq.sequence
         return fastq_read
+
+class fastqFakeFastaScoreReader( object ):
+    def __init__( self, format = 'sanger', quality_encoding = None ):
+        self.fastq_read = fastqSequencingRead.get_class_by_format( format )()
+        if quality_encoding != 'decimal':
+            quality_encoding = 'ascii'
+        self.quality_encoding = quality_encoding
+    def close( self ):
+        return #nothing to close
+    def get( self, sequence ):
+        assert isinstance( sequence, fastaSequence ), 'fastqFakeFastaScoreReader requires a fastaSequence object as the parameter'
+        #add sequence to fastq_read, then get_sequence(), color space adapters do not have quality score values
+        self.fastq_read.sequence = sequence.sequence
+        new_sequence = fastaSequence()
+        new_sequence.identifier = sequence.identifier
+        if self.quality_encoding == 'ascii':
+            new_sequence.sequence = chr( self.fastq_read.ascii_max ) * len( self.fastq_read.get_sequence() )
+        else:
+            new_sequence.sequence = ( "%i " % self.fastq_read.quality_max ) * len( self.fastq_read.get_sequence() )
+        return new_sequence
+    def has_data( self ):
+        return '' #No actual data exist, none can be remaining

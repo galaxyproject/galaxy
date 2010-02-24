@@ -1,6 +1,6 @@
 #Dan Blankenberg
 import sys, os, shutil
-from galaxy_utils.sequence.fastq import fastqWriter, fastqSequencingRead, fastqCombiner
+from galaxy_utils.sequence.fastq import fastqWriter, fastqSequencingRead, fastqCombiner, fastqFakeFastaScoreReader
 from galaxy_utils.sequence.fasta import fastaReader, fastaNamedReader
 
 def main():
@@ -23,15 +23,18 @@ def main():
         format = 'illumina'
     
     out = fastqWriter( open( output_filename, 'wb' ), format = format, force_quality_encoding = force_quality_encoding )
-    qual_input = fastaNamedReader( open( qual_filename, 'rb' )  )
+    if qual_filename == 'None':
+        qual_input = fastqFakeFastaScoreReader( format, quality_encoding = force_quality_encoding )
+    else:
+        qual_input = fastaNamedReader( open( qual_filename, 'rb' )  )
+    
     fastq_combiner = fastqCombiner( format )
     i = None
     skip_count = 0
     for i, sequence in enumerate( fastaReader( open( fasta_filename, 'rb' ) ) ):
-        quality = qual_input.get( sequence.identifier )
+        quality = qual_input.get( sequence )
         if quality:
             fastq_read = fastq_combiner.combine( sequence, quality )
-            #Should we check that fastq read is valid? for now, assume groomer will be used to verify
             out.write( fastq_read )
         else:
             skip_count += 1
