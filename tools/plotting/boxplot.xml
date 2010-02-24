@@ -1,6 +1,9 @@
 <tool id="qual_stats_boxplot" name="Boxplot" version="1.0.0">
   <description>of quality statistics</description>
   <command>gnuplot &lt; '$gnuplot_commands' &gt; '$output_file'</command>
+  <requirements>
+    <requirement type="binary">gnuplot</requirement>
+  </requirements>
   <inputs>
     <param name="input_file" type="data" format="tabular" label="Quality Statistics File"/>
     <param name="title" type="text" value="Box plot in Galaxy" label="Title for plot" size="50"/>
