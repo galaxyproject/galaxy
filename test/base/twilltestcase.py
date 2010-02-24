@@ -475,7 +475,12 @@ class TwillTestCase( unittest.TestCase ):
         self.check_page_for_string( 'This will inspect the dataset and attempt' )
         tc.fv( 'auto_detect', 'id', hda_id )
         tc.submit( 'detect' )
-        self.check_page_for_string( 'Attributes updated' )
+        try:
+            self.check_page_for_string( 'Attributes have been queued to be updated' )
+            self.wait()
+        except AssertionError:
+            self.check_page_for_string( 'Attributes updated' )
+        #self.check_page_for_string( 'Attributes updated' )
         self.home()
     def convert_format( self, hda_id, target_type ):
         """Convert format of history_dataset_association"""

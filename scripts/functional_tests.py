@@ -109,11 +109,12 @@ def main():
                 database_connection = os.environ['GALAXY_TEST_DBURI']
             else:
                 database_connection = 'sqlite:///' + os.path.join( db_path, 'universe.sqlite' )
+            kwargs = {}
+        for dir in file_path, new_file_path:
             try:
-                os.makedirs( file_path )
+                os.makedirs( dir )
             except OSError:
                 pass
-            kwargs = {}
             
     print "Database connection:", database_connection
     
