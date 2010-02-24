@@ -4,6 +4,9 @@ import parameters
 from parameters import basic
 from parameters import grouping
 from elementtree.ElementTree import XML
+import logging
+
+log = logging.getLogger( __name__ )
 
 class ToolTestBuilder( object ):
     """
@@ -27,8 +30,12 @@ class ToolTestBuilder( object ):
                     if isinstance( input_value, grouping.Conditional ) or isinstance( input_value, grouping.Repeat ):
                         self.__expand_grouping_for_data_input(name, value, extra, input_name, input_value)
             elif isinstance( self.tool.inputs[name], parameters.DataToolParameter ) and ( value, extra ) not in self.required_files:
-                self.required_files.append( ( value, extra ) )
-        except: pass
+                if value is None:
+                    assert self.tool.inputs[name].optional, '%s is not optional. You must provide a valid filename.' % name
+                else:
+                    self.required_files.append( ( value, extra ) )
+        except Exception, e:
+            log.debug( "Error in add_param for %s: %s" % ( name, e ) )
         self.inputs.append( ( name, value, extra ) )
     def add_output( self, name, file, sort ):
         self.outputs.append( ( name, file, sort ) )
@@ -39,7 +46,10 @@ class ToolTestBuilder( object ):
                 for case in grouping_value.cases:
                     for case_input_name, case_input_value in case.inputs.items():
                         if case_input_name == name and isinstance( case_input_value, basic.DataToolParameter ) and ( value, extra ) not in self.required_files:
-                            self.required_files.append( ( value, extra ) )
+                            if value is None:
+                                assert case_input_value.optional, '%s is not optional. You must provide a valid filename.' % name
+                            else:
+                                self.required_files.append( ( value, extra ) )
                             return True
                         elif isinstance( case_input_value, grouping.Conditional ):
                             self.__expand_grouping_for_data_input(name, value, extra, case_input_name, case_input_value)
@@ -51,5 +61,8 @@ class ToolTestBuilder( object ):
             # one used ).
             for input_name, input_value in grouping_value.inputs.items():
                 if input_name == name and isinstance( input_value, basic.DataToolParameter ) and ( value, extra ) not in self.required_files:
-                    self.required_files.append( ( value, extra ) )
+                    if value is None:
+                        assert input_value.optional, '%s is not optional. You must provide a valid filename.' % name
+                    else:
+                        self.required_files.append( ( value, extra ) )
                     return True
