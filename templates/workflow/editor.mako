@@ -163,7 +163,11 @@
                 }
                 
                 // Show viewport on load unless pref says it's off
-                $.jStore.store("overview-off") ? hide_overview() : show_overview()
+                if ($.jStore.store("overview-off")) {
+                    hide_overview();
+                } else {
+                    show_overview();
+                }
             });
         });
         
@@ -220,16 +224,15 @@
         });
 
         // Rename async.
-        async_save_text("workflow-name", "workflow-name", "${h.url_for( action="rename_async", id=trans.security.encode_id(stored.id) )}", "new_name");
+        async_save_text("workflow-name", "workflow-name", "${h.url_for( action='rename_async', id=trans.security.encode_id(stored.id) )}", "new_name");
         
         // Tag async. Simply have the workflow edit element generate a click on the tag element to activate tagging.
-        $('#workflow-tag').click( function() 
-        {
+        $('#workflow-tag').click( function() {
             $('.tag-area').click();
             return false;
         });
         // Annotate async.
-        async_save_text("workflow-annotation", "workflow-annotation", "${h.url_for( action="annotate_async", id=trans.security.encode_id(stored.id) )}", "new_annotation", 25, true, 4);
+        async_save_text("workflow-annotation", "workflow-annotation", "${h.url_for( action='annotate_async', id=trans.security.encode_id(stored.id) )}", "new_annotation", 25, true, 4);
     });
 
     // Global state for the whole workflow
@@ -241,7 +244,7 @@
     }
         
     function scroll_to_nodes() {
-        var cv = $("#canvas-vieport");
+        var cv = $("#canvas-viewport");
         var cc = $("#canvas-container")
         var top, left;
         if ( cc.width() < cv.width() ) {
@@ -352,8 +355,7 @@
         
             
         // Add metadata form to tool.
-        if ( node )
-        {
+        if (node) {
             var metadata_div = 
             $( "<p><div class='metadataForm'> \
                 <div class='metadataFormTitle'>Edit Step Attributes</div> \
@@ -408,7 +410,7 @@
             }
             return;
         }
-        var savefn = function() {
+        var savefn = function(callback) {
             $.ajax( {
                 url: "${h.url_for( action='save_workflow' )}",
                 type: "POST",
@@ -433,12 +435,12 @@
                     workflow.name = data.name;
                     workflow.has_changes = false;
                     workflow.stored = true;
-                    if ( success_callback ) {
-                        success_callback();
-                    }
                     if ( data.errors ) {
                         show_modal( "Saving workflow", body, { "Ok" : hide_modal } );
                     } else {
+                        if (callback) {
+                            callback();
+                        }
                         hide_modal();
                     }
                 }
@@ -455,10 +457,7 @@
                 active_ajax_call = false;
             });
         } else {
-            savefn();
-        }
-        if ( success_callback ) {
-            success_callback();
+            savefn(success_callback);
         }
     }
     

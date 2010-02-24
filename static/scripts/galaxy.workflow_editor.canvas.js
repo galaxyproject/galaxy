@@ -476,6 +476,7 @@ $.extend( Workflow.prototype, {
     },
     layout : function () {
         this.check_changes_in_active_form();
+        this.has_changes = true;
         // Prepare predecessor / successor tracking
         var n_pred = {};
         var successors = {};
