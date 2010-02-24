@@ -1,4 +1,4 @@
-<tool id="fastq_manipulation" name="Manipulate FASTQ" version="1.0.0">
+<tool id="fastq_manipulation" name="Manipulate FASTQ" version="1.0.1">
   <options sanitize="False" /> <!-- This tool uses a file to rely all parameter information (actually a dynamically generated python module), we can safely not sanitize any parameters -->
   <description>reads on various attributes</description>
   <command interpreter="python">fastq_manipulation.py $input_file $fastq_manipulation_file $output_file $output_file.files_path '${input_file.extension[len( 'fastq' ):]}'</command>
@@ -168,7 +168,7 @@ from string import maketrans
 def match_read( fastq_read ):
     #for $match_block in $match_blocks:
         #if $match_block['match_type']['match_type_selector'] == 'identifier':
-    search_target = fastq_read.identifier
+    search_target = fastq_read.identifier[1:] ##don't include @
         #elif $match_block['match_type']['match_type_selector'] == 'sequence':
     search_target = fastq_read.sequence
         #elif $match_block['match_type']['match_type_selector'] == 'quality':
@@ -186,7 +186,7 @@ def manipulate_read( fastq_read ):
     #for $manipulate_block in $manipulate_blocks:
         #if $manipulate_block['manipulation_type']['manipulation_type_selector'] == 'identifier':
             #if $manipulate_block['manipulation_type']['manipulation']['manipulation_selector'] == 'translate':
-    new_read.identifier = new_read.identifier.translate( maketrans( binascii.unhexlify( "${ binascii.hexlify( str( manipulate_block['manipulation_type']['manipulation']['from'] ) ) }" ), binascii.unhexlify( "${ binascii.hexlify( str( manipulate_block['manipulation_type']['manipulation']['to'] ) ) }" ) ) )
+    new_read.identifier = "@%s" % new_read.identifier[1:].translate( maketrans( binascii.unhexlify( "${ binascii.hexlify( str( manipulate_block['manipulation_type']['manipulation']['from'] ) ) }" ), binascii.unhexlify( "${ binascii.hexlify( str( manipulate_block['manipulation_type']['manipulation']['to'] ) ) }" ) ) )
             #end if
         #elif $manipulate_block['manipulation_type']['manipulation_type_selector'] == 'sequence':
             #if $manipulate_block['manipulation_type']['manipulation']['manipulation_selector'] == 'translate':
@@ -236,6 +236,8 @@ def manipulate_read( fastq_read ):
         #continue
         #end if
     #end for
+    if new_read.description != "+":
+        new_read.description = "+%s" % new_read.identifier[1:] ##ensure description is still valid
     return new_read
 def match_and_manipulate_read( fastq_read ):
     new_read = fastq_read
