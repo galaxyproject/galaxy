@@ -124,7 +124,7 @@ $(document).ready(function(){
                 <th>Data Library</th>
                 <th>Folder</th>
                 %if request.submitted() or request.complete(): 
-                    <th>Dataset(s) Transfered</th>
+                    <th>Dataset(s) Transferred</th>
                 %endif
                 <th></th>
             </tr>

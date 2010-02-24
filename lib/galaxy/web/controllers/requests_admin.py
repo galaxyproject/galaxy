@@ -1275,8 +1275,8 @@ class RequestsAdmin( BaseController ):
             if s.current_state().id != request.type.states[-1].id:
                 complete = False
         if request.complete() and not complete:
-            comments = "Sample(s) " % request.type.states[-1].name
-            event = trans.app.model.RequestEvent(request, request.states.COMPLETE, comments)
+            comments = "One or more samples moved back from the %s state" % request.type.states[-1].name
+            event = trans.app.model.RequestEvent(request, request.states.SUBMITTED, comments)
             trans.sa_session.add( event )
             trans.sa_session.flush()
         elif complete:
@@ -1325,7 +1325,7 @@ class RequestsAdmin( BaseController ):
         event = trans.app.model.SampleEvent(sample, new_state, comments)
         trans.sa_session.add( event )
         trans.sa_session.flush()
-        #self.__set_request_state( trans, sample.request )
+        self.__set_request_state( trans, sample.request )
         return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                           action='show_events',
                                                           sample_id=sample.id))
@@ -1370,6 +1370,14 @@ class RequestsAdmin( BaseController ):
                                                               status='error',
                                                               message="Invalid sample ID",
                                                               **kwd) )
+        # check if a library and folder has been set for this sample yet.
+        if not sample.library or not sample.folder:
+            return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                              action='list',
+                                                              operation='show_request',
+                                                              messagetype='error',
+                                                              msg="Set a data library and folder for <b>%s</b> to transfer dataset(s)." % sample.name,
+                                                              id=trans.security.encode_id(sample.request.id) ) )             
         if sample.request.type.datatx_info.get('data_dir', ''):
             folder_path = util.restore_text( sample.request.type.datatx_info.get('data_dir', '') )
         else:
@@ -1405,7 +1413,7 @@ class RequestsAdmin( BaseController ):
                                                               sample_id=trans.security.encode_id(sample.id),
                                                               msg=msg, messagetype='error',
                                                               folder_path=folder_path )) 
-        return output.split()[2:]
+        return output.split()
     
     def __get_files_in_dir(self, trans, sample, folder_path):
         tmpfiles = self.__get_files(trans, sample, folder_path)
@@ -1581,12 +1589,12 @@ class RequestsAdmin( BaseController ):
                                          dataset_index=index, 
                                          cmd=cmd)
                 dtt.start()
-        # set the sample state to the last state
-        if sample.current_state().id != sample.request.type.states[-1].id:
-            event = trans.app.model.SampleEvent(sample, sample.request.type.states[-1], 
-                                                'The dataset is ready and are being transfered to Galaxy')
-            trans.sa_session.add( event )
-            trans.sa_session.flush()
+#        # set the sample state to the last state
+#        if sample.current_state().id != sample.request.type.states[-1].id:
+#            event = trans.app.model.SampleEvent(sample, sample.request.type.states[-1], 
+#                                                'The dataset is ready and are being transferred to Galaxy')
+#            trans.sa_session.add( event )
+#            trans.sa_session.flush()
         if error_msg:
             return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                               action='show_datatx_page', 

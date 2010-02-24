@@ -72,12 +72,6 @@ $(document).ready(function(){
             <span>Reject request</span></a>
         </li>
     %endif
-##    %if request.submitted() and request.samples:
-##        <li>
-##            <a class="action-button" href="${h.url_for( controller='requests_admin', action='bar_codes', request_id=request.id)}">
-##            <span>Bar codes</span></a>
-##        </li>
-##    %endif
     <li>
         <a class="action-button" href="${h.url_for( controller='requests_admin', action='list', operation='events', id=trans.security.encode_id(request.id) )}">
         <span>History</span></a>
@@ -134,7 +128,7 @@ $(document).ready(function(){
                 <th>Data Library</th>
                 <th>Folder</th>
                 %if request.submitted() or request.complete(): 
-                    <th>Dataset(s) Transfered</th>
+                    <th>Dataset(s) Transferred</th>
                 %endif
                 <th></th>
             </tr>

@@ -30,7 +30,7 @@ $(document).ready(function(){
 <h3>Sample "${sample.name}" of Request "${sample.request.name}"</h3>
 
 <ul class="manage-table-actions">
-##    %if sample.request.submitted() and sample.untransfered_dataset_files():
+##    %if sample.request.submitted() and sample.untransferred_dataset_files():
 ##    <li>
 ##        <a class="action-button" href="${h.url_for( controller='requests_admin', action='start_datatx', id=trans.security.encode_id(sample.id) )}">
 ##        <span>Start data transfer</span></a>
@@ -60,7 +60,7 @@ $(document).ready(function(){
     <form name="get_data" action="${h.url_for( controller='requests_admin', action='get_data', sample_id=sample.id)}" method="post" >
         %if len(dataset_files):
             <div class="form-row">
-            <h4>Datasets Transfered</h4>
+            <h4>Datasets Transferred</h4>
             <div class="form-row">
                 <table class="grid">
                 <thead>

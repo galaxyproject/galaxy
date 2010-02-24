@@ -188,6 +188,7 @@
             <div class="submenu">
             <ul>            
                 <li><a href="${h.url_for( controller='/requests', action='index' )}">Sequencing Requests</a></li>
+                <li><a target="_blank" href="${app.config.get( "lims_doc_url", "http://main.g2.bx.psu.edu/u/rc/p/sts" )}">Help</a></li>
             </ul>
             </div>
         </td>

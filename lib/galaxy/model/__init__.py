@@ -1414,7 +1414,7 @@ class Sample( object ):
         if self.events:
             return self.events[0].state
         return None
-    def untransfered_dataset_files(self):
+    def untransferred_dataset_files(self):
         count = 0
         for df, status in self.dataset_files:
             if status == self.transfer_status.NOT_STARTED:
