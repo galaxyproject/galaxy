@@ -41,14 +41,23 @@ $(document).ready(function(){
     });
 });
 </script>
+
 <style type="text/css">
 .msg_head {
     padding: 0px 0px;
     cursor: pointer;
 }
-
-}
 </style>
+
+<script type="text/javascript">
+    function stopRKey(evt) {
+      var evt = (evt) ? evt : ((event) ? event : null);
+      var node = (evt.target) ? evt.target : ((evt.srcElement) ? evt.srcElement : null);
+      if ((evt.keyCode == 13) && (node.type=="text"))  {return false;}
+    }
+    document.onkeypress = stopRKey
+</script> 
+
 
 %if request.rejected():
     ${render_msg( "Reason for rejection: "+request.last_comment(), "warning" )}
