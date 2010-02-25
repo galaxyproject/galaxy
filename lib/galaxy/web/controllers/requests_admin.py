@@ -421,7 +421,7 @@ class RequestsAdmin( BaseController ):
         # change the state of each of the samples of thus request
         new_state = request.type.states[0]
         for s in request.samples:
-            event = trans.app.model.SampleEvent(s, new_state, 'Samples submitted to the system')
+            event = trans.app.model.SampleEvent(s, new_state, 'Samples created.')
             trans.sa_session.add( event )
         trans.sa_session.add( request )
         trans.sa_session.flush()
@@ -1018,6 +1018,7 @@ class RequestsAdmin( BaseController ):
                                                dataset_files=[])
                     trans.sa_session.add( s )
                     trans.sa_session.flush()
+
             else:
                 messagetype = 'done'
                 msg = 'Changes made to the sample(s) are saved. '
@@ -1032,6 +1033,15 @@ class RequestsAdmin( BaseController ):
                             messagetype = 'error'
                             msg += bc_msg
                         else:
+                            if not sample.bar_code:
+                                # if this is a 'new' (still in its first state) sample
+                                # change the state to the next
+                                if sample.current_state().id == request.type.states[0].id:
+                                    event = trans.app.model.SampleEvent(sample, 
+                                                                        request.type.states[1], 
+                                                                        'Sample added to the system')
+                                    trans.sa_session.add( event )
+                                    trans.sa_session.flush()
                             sample.bar_code = current_samples[sample_index]['barcode']
                     trans.sa_session.add( sample )
                     trans.sa_session.flush()
