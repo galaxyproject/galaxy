@@ -45,14 +45,14 @@ def __main__():
     cached_seqs_pointer_file = '%s/sam_fa_indices.loc' % options.index_dir
     if not os.path.exists( cached_seqs_pointer_file ):
         stop_err( 'The required file (%s) does not exist.' % cached_seqs_pointer_file )
-    # If found for the dbkey, seq_path will look something like /depot/data2/galaxy/equCab2/sam_index/equCab2.fa,
+    # If found for the dbkey, seq_path will look something like /galaxy/data/equCab2/sam_index/equCab2.fa,
     # and the equCab2.fa file will contain fasta sequences.
     seq_path = check_seq_file( options.dbkey, cached_seqs_pointer_file )
     tmp_dir = tempfile.mkdtemp()
     if options.ref_file == 'None':
-        # We're using locally cached reference sequences( e.g., /depot/data2/galaxy/equCab2/sam_index/equCab2.fa ).
-        # The indexes for /depot/data2/galaxy/equCab2/sam_index/equCab2.fa will be contained in
-        # a file named /depot/data2/galaxy/equCab2/sam_index/equCab2.fa.fai
+        # We're using locally cached reference sequences( e.g., /galaxy/data/equCab2/sam_index/equCab2.fa ).
+        # The indexes for /galaxy/data/equCab2/sam_index/equCab2.fa will be contained in
+        # a file named /galaxy/data/equCab2/sam_index/equCab2.fa.fai
         fai_index_file_base = seq_path
         fai_index_file_path = '%s.fai' % seq_path 
         if not os.path.exists( fai_index_file_path ):

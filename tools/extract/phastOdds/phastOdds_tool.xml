@@ -26,7 +26,7 @@
   <tests>
     <test>
       <param name="input" value="4.bed" dbkey="hg17" ftype="bed"/>
-      <param name="score_file" value="/depot/data2/galaxy/phastOdds_precomputed/encode_SEP-2005_tba.v2_phastOdds" />
+      <param name="score_file" value="/galaxy/data/phastOdds_precomputed/encode_SEP-2005_tba.v2_phastOdds" />
       <param name="per_col" value="true" />
       <output name="output" file="phastOdds_tool_out.interval" />
     </test>

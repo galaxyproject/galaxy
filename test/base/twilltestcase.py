@@ -1674,7 +1674,7 @@ class TwillTestCase( unittest.TestCase ):
             url += "&ldda_ids=%s" % ldda_id
         self.visit_url( url )
         tc.code( 200 )
-        archive = self.write_temp_file( self.last_page(), suffix=format )
+        archive = self.write_temp_file( self.last_page(), suffix='.' + format )
         self.home()
         return archive
     def check_archive_contents( self, archive, lddas ):

@@ -26,6 +26,7 @@ esac
 
 LINKS="
 /galaxy/data/location/alignseq.loc
+/galaxy/data/annotation_profiler
 /galaxy/data/annotation_profiler/annotation_profiler.loc
 /galaxy/data/annotation_profiler/annotation_profiler_options.xml
 /galaxy/data/annotation_profiler/annotation_profiler_valid_builds.txt
@@ -45,7 +46,7 @@ LINKS="
 /galaxy/data/location/quality_scores.loc
 /galaxy/data/location/regions.loc
 /galaxy/data/location/sam_fa_indices.loc
-/galaxy/data/location/taxonomy
+/galaxy/data/taxonomy
 /galaxy/data/location/twobit.loc
 "
 

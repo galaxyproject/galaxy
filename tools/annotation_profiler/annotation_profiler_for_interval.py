@@ -290,7 +290,7 @@ def __main__():
     parser.add_option(
         '-p','--path',
         dest='path',
-        type='str',default='/depot/data2/galaxy/annotation_profiler/hg18',
+        type='str',default='/galaxy/data/annotation_profiler/hg18',
         help='Path to profiled data for this organism'
     )
     parser.add_option(

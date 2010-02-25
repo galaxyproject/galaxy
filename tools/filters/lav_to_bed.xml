@@ -33,8 +33,8 @@ This tool converts a LAV formatted file to the BED format.
 
     #:lav
     s {
-      &quot;/depot/data2/galaxy/hg16/seq/chr19.nib&quot; 1 63811651 0 1
-      &quot;/depot/data2/galaxy/mm5/seq/chr11.nib&quot; 1 121648857 0 1
+      &quot;/galaxy/data/hg16/seq/chr19.nib&quot; 1 63811651 0 1
+      &quot;/galaxy/data/mm5/seq/chr11.nib&quot; 1 121648857 0 1
     }
     h {
       &quot;> hg16.chr19&quot;

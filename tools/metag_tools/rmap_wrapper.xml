@@ -41,7 +41,7 @@
     <!--     
     <tests>
         <test>
-            <param name="database" value="/depot/data2/galaxy/faseq/test" />
+            <param name="database" value="/galaxy/data/faseq/test" />
             <param name="input_seq" value="rmap_wrapper_test1.fasta" ftype="fasta"/>
             <param name="read_len" value="36" />
             <param name="align_len" value="36" />

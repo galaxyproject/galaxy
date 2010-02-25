@@ -42,13 +42,13 @@
     <test>
       <param name="input1" value="6.bed" dbkey="hg17" ftype="bed"/>
       <param name="score_source" value="cached"/>
-      <param name="datasets" value="/depot/data2/galaxy/binned_scores/hg17/phastcons_encode_sep2005_tba" />
+      <param name="datasets" value="/galaxy/data/binned_scores/hg17/phastcons_encode_sep2005_tba" />
       <output name="out_file1" file="aggregate_binned_scores_in_intervals.out" />
     </test>
     <test>
       <param name="input1" value="9_hg18.bed" dbkey="hg18" ftype="bed"/>
       <param name="score_source" value="cached"/>
-      <param name="datasets" value="/depot/data2/galaxy/binned_scores/hg18/phastCons17way/ba" />
+      <param name="datasets" value="/galaxy/data/binned_scores/hg18/phastCons17way/ba" />
       <output name="out_file1" file="aggregate_binned_scores_in_intervals2.interval" />
     </test>
     <test>

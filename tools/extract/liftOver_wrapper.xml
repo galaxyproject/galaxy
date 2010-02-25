@@ -27,7 +27,7 @@
   <tests>
     <test>
       <param name="input" value="5.bed" dbkey="hg18" ftype="bed" />
-      <param name="to_dbkey" value="/depot/data2/galaxy/hg18/liftOver/hg18ToPanTro2.over.chain" />
+      <param name="to_dbkey" value="/galaxy/data/hg18/liftOver/hg18ToPanTro2.over.chain" />
       <param name="minMatch" value="0.95" />
       <output name="out_file1" file="5_liftover_mapped.bed"/>
       <output name="out_file2" file="5_liftover_unmapped.bed"/>
