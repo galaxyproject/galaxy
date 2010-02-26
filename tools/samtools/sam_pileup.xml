@@ -82,7 +82,7 @@
       -->
       <param name="reference" value="history" />
       <param name="input1" value="sam_pileup_in1.bam" ftype="bam" />
-      <param name="ownFile" value="chr_m.fasta" ftype="fasta" />
+      <param name="ownFile" value="chr_m.fasta" ftype="fasta" dbkey="equCab2" />
       <param name="lastCol" value="no" />
       <param name="indels" value="no" />
       <param name="mapCap" value="60" />
@@ -96,7 +96,7 @@
       chr_m.fasta is the prefix of the index
       -->
       <param name="reference" value="indexed" />
-      <param name="input1" value="sam_pileup_in1.bam" ftype="bam" dbkey="chrM" />
+      <param name="input1" value="sam_pileup_in1.bam" ftype="bam" dbkey="equCab2" />
       <param name="lastCol" value="no" />
       <param name="indels" value="no" />
       <param name="mapCap" value="60" />

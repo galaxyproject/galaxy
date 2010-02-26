@@ -41,7 +41,7 @@ sam_to_bam.py --input1=$source.input1 --dbkey=${input1.metadata.dbkey}
       -->
       <param name="index_source" value="history" /> 
       <param name="input1" value="3.sam" ftype="sam" />
-      <param name="ref_file" value="chr_m.fasta" ftype="fasta" />
+      <param name="ref_file" value="chr_m.fasta" ftype="fasta" dbkey="equCab2" />
       <output name="output1" file="sam_to_bam_out1.bam" />
     </test>
     <test>
@@ -53,7 +53,7 @@ sam_to_bam.py --input1=$source.input1 --dbkey=${input1.metadata.dbkey}
       should be in the same directory
       -->
       <param name="index_source" value="cached" />
-      <param name="input1" value="3.sam" ftype="sam" dbkey="chrM" />
+      <param name="input1" value="3.sam" ftype="sam" dbkey="equCab2" />
       <param name="output1" file="sam_to_bam_out2.bam" />
     </test>
   </tests>
