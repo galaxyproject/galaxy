@@ -56,6 +56,9 @@ $( function() {
             <input type="submit" name="login_info_button" value="Save">
         </div>
     </form>
+</div>
+<p></p>
+<div class="toolForm">
     <form name="change_password" id="change_password" action="${h.url_for( controller='user', action='edit_info', user_id=user.id, admin_view=admin_view )}" method="post" >
         <div class="toolFormTitle">Change Password</div>
         %if not admin_view:
@@ -76,7 +79,10 @@ $( function() {
             <input type="submit" name="change_password_button" value="Save">
         </div>
     </form>
-    %if user.values or user_info_forms:
+</div>
+%if user.values or user_info_forms:
+<p></p>
+<div class="toolForm">
     <form name="user_info" id="user_info" action="${h.url_for( controller='user', action='edit_info', user_id=user.id, admin_view=admin_view )}" method="post" >
         <div class="toolFormTitle">User information</div>
         %if user_info_select:
@@ -104,7 +110,10 @@ $( function() {
             <input type="submit" name="edit_user_info_button" value="Save">
         </div>
     </form>
-    %endif
+</div>
+%endif
+<p></p>
+<div class="toolForm">
     <form name="user_info" id="user_info" action="${h.url_for( controller='user', action='new_address', user_id=user.id, admin_view=admin_view )}" method="post" >
         <div class="toolFormTitle">User Addresses</div>
         <div class="toolFormBody">
@@ -160,7 +169,7 @@ $( function() {
             </div>
             </div>
         </form>
-    
+
 
 
 

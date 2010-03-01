@@ -20,7 +20,7 @@
                     if ( $.browser.mozilla ) {
                         $(this).find( "pre.peek" ).css( "overflow", "hidden" );
                     }
-                    $(this).slideUp( "fast" );
+                    $(this).hide();
                 });
 
             });
