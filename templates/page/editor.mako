@@ -534,7 +534,6 @@
                 boxHtml:   "<table class='wym_box' width='100%' height='100%'>"
                             + "<tr><td><div class='wym_area_top'>" 
                             + WYMeditor.TOOLS
-                            + WYMeditor.CONTAINERS
                             + "</div></td></tr>"
                             + "<tr height='100%'><td>"
                             + "<div class='wym_area_main' style='height: 100%;'>"
@@ -559,11 +558,6 @@
                     {'name': 'Unlink', 'title': 'Unlink', 'css': 'wym_tools_unlink'},
                     {'name': 'InsertImage', 'title': 'Image', 'css': 'wym_tools_image'},
                     {'name': 'InsertTable', 'title': 'Table', 'css': 'wym_tools_table'},
-                    {'name': 'Insert Galaxy History Link', 'title' : 'Galaxy_History_Link', 'css' : 'galaxy_tools_insert_history_link'},
-                    {'name': 'Insert Galaxy Dataset Link', 'title' : 'Galaxy_Dataset_Link', 'css' : 'galaxy_tools_insert_dataset_link'},
-                    {'name': 'Insert Galaxy Workflow Link', 'title' : 'Galaxy_Workflow_Link', 'css' : 'galaxy_tools_insert_workflow_link'},
-                    {'name': 'Insert Galaxy Page Link', 'title' : 'Galaxy_Page_Link', 'css' : 'galaxy_tools_insert_page_link'},
-                    {'name': 'Annonate Galaxy History', 'title' : 'Annotate_Galaxy_History', 'css' : 'galaxy_tools_annotate_history'},
                 ]
             });
             ## Get the editor object
@@ -636,35 +630,29 @@
                 }
             });
             
-            // Initialize 'Insert history link' button.
-            $('.galaxy_tools_insert_history_link').children().click( function() {
-                editor.dialog(Galaxy.DIALOG_HISTORY_LINK); 
-            });
-            // Initialize 'Insert dataset link' button.
-            $('.galaxy_tools_insert_dataset_link').children().click( function() {
-                editor.dialog(Galaxy.DIALOG_DATASET_LINK); 
-            });
-            // Initialize 'Insert workflow link' button.
-            $('.galaxy_tools_insert_workflow_link').children().click( function() {
-                editor.dialog(Galaxy.DIALOG_WORKFLOW_LINK); 
-            });
-            // Initialize 'Insert page link' button.
-            $('.galaxy_tools_insert_page_link').children().click( function() {
-                editor.dialog(Galaxy.DIALOG_PAGE_LINK); 
-            });
-            // Initialize 'Annotate history' button.
-            $('.galaxy_tools_annotate_history').children().click( function() {
-                editor.dialog(Galaxy.DIALOG_ANNOTATE_HISTORY); 
-            });
             // Initialize galaxy elements.
             //init_galaxy_elts(editor);
+            
+            //
+            // Containers, Galaxy style
+            //
+            var containers_menu = $("<div class='galaxy-page-editor-button'><a id='insert-galaxy-link' class='action-button popup' href='#'>${_('Paragraph type')}</a></div>");
+            $(".wym_area_top").append( containers_menu );
+                        
+            // Add menu options.
+            var items = {}
+            $.each( editor._options.containersItems, function( k, v ) {
+                var tagname = v.name;
+                items[ v.title.replace( '_', ' ' ) ] = function() { editor.container( tagname ) }
+            });
+            make_popupmenu( containers_menu, items);
             
             //
             // Create 'Insert Link to Galaxy Object' menu.
             //
             
             // Add menu button.
-            var insert_link_menu_button = $("<div><a id='insert-galaxy-link' class='panel-header-button popup' href='#'>${_('Insert Link to Galaxy Object')}</a></div>").addClass('galaxy-page-editor-button');
+            var insert_link_menu_button = $("<div><a id='insert-galaxy-link' class='action-button popup' href='#'>${_('Insert Link to Galaxy Object')}</a></div>").addClass('galaxy-page-editor-button');
             $(".wym_area_top").append(insert_link_menu_button);
             
             // Add menu options.
@@ -688,7 +676,7 @@
             //
             
             // Add menu button.
-            var embed_object_button = $("<div><a id='embed-galaxy-object' class='panel-header-button popup' href='#'>${_('Embed Galaxy Object')}</a></div>").addClass('galaxy-page-editor-button');
+            var embed_object_button = $("<div><a id='embed-galaxy-object' class='action-button popup' href='#'>${_('Embed Galaxy Object')}</a></div>").addClass('galaxy-page-editor-button');
             $(".wym_area_top").append(embed_object_button);
             
             // Add menu options.

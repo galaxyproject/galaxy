@@ -87,7 +87,8 @@ ul.manage-table-actions li{display:block;float:left;margin-left:0.5em;}
 .action-button:active{color:white;background:#aaaaaa;}
 .menubutton{display:inline-block;cursor:pointer;position:relative;user-select:none;-moz-user-select:none;-webkit-user-select:none;border:solid transparent 1px;-moz-border-radius:0.5em;-webkit-border-radius:0.5em;border-radius:0.5em;padding:3px 0.5em;margin:-3px -0.5em;}
 .menubutton .label{position:relative;display:block;border-right:none;}
-.menubutton.popup{padding-right:1.5em;background:url(../images/dropdownarrow.png) no-repeat right 8px;}
+.menubutton.action-button{border-color:#aaaaaa;}
+.menubutton.popup,.action-button.popup{padding-right:20px;background-image:url(../images/dropdownarrow.png);background-repeat:no-repeat;background-position:right 8px;}
 .menubutton:hover{border-color:#aaaaaa;}
 .menubutton.popup.split{padding-right:2em;}
 .menubutton.popup.split:hover{background:url(../images/ddarrowsplit.png) no-repeat right -38px;}
