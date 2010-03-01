@@ -28,6 +28,7 @@ if 'LOG_TEMPFILES' in os.environ:
 
 pkg_resources.require( "Paste" )
 pkg_resources.require( "PasteScript" )
+pkg_resources.require( "PasteDeploy" )
 
 from paste.script import command
 command.run()

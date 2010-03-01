@@ -1,124 +1,77 @@
-import os, sys, subprocess, tarfile, shutil
+import os, sys, subprocess, tarfile, shutil, glob
+from distutils.sysconfig import get_config_var
 
-def unpack_prebuilt_postgres():
-    if not os.access( POSTGRES_BINARY_ARCHIVE, os.F_OK ):
-        print "unpack_prebuilt_postgres(): No binary archive of Postgres available for this platform - will build it now"
-        build_postgres()
+def prep_postgres( prepped, args ):
+
+    pg_version = args['version']
+    if pkg_resources.get_platform().startswith('solaris'):
+        make = 'gmake'
     else:
-        print "unpack_prebuilt_postgres(): Found a previously built Postgres binary archive for this platform."
-        print "unpack_prebuilt_postgres(): To force Postgres to be rebuilt, remove the archive:"
-        print " ", POSTGRES_BINARY_ARCHIVE
-        t = tarfile.open( POSTGRES_BINARY_ARCHIVE, "r" )
-        for fn in t.getnames():
-            t.extract( fn )
-        t.close()
+        make = 'make'
 
-def build_postgres():
-    # untar
-    print "build_postgres(): Unpacking postgres source archive from:"
-    print " ", POSTGRES_ARCHIVE
-    t = tarfile.open( POSTGRES_ARCHIVE, "r" )
-    for fn in t.getnames():
-        t.extract( fn )
-    t.close()
-    # configure
-    print "build_postgres(): Running postgres configure script"
-    p = subprocess.Popen( args = CONFIGURE, shell = True, cwd = os.path.join( os.getcwd(), "postgresql-%s" %POSTGRES_VERSION) )
-    r = p.wait()
-    if r != 0:
-        print "build_postgres(): postgres configure script failed"
-        sys.exit( 1 )
-    # compile
-    print "build_postgres(): Building postgres (make)"
-    p = subprocess.Popen( args = "make", shell = True, cwd = os.path.join( os.getcwd(), "postgresql-%s" %POSTGRES_VERSION) )
-    r = p.wait()
-    if r != 0:
-        print "build_postgres(): Building postgres (make) failed"
-        sys.exit( 1 )
-    # install
-    print "build_postgres(): Installing postgres (make install)"
-    p = subprocess.Popen( args = "make install", shell = True, cwd = os.path.join( os.getcwd(), "postgresql-%s" %POSTGRES_VERSION) )
-    r = p.wait()
-    if r != 0:
-        print "build_postgres(): Installing postgres (make install) failed"
-        sys.exit( 1 )
-    # pack
-    print "build_postgres(): Creating binary postgres archive for future builds of psycopg2"
-    t = tarfile.open( POSTGRES_BINARY_ARCHIVE, "w:bz2" )
-    t.add( "postgres/bin/pg_config" )
-    t.add( "postgres/include" )
-    t.add( "postgres/lib" )
-    t.close()
-    # remove self-referencing symlink
-    os.unlink( os.path.join( "postgresql-%s" %POSTGRES_VERSION, "src", "test", "regress", "regress.so" ) )
+    # set up environment
+    os.environ['CC'] = get_config_var('CC')
+    os.environ['CFLAGS'] = get_config_var('CFLAGS')
+    os.environ['LDFLAGS'] = get_config_var('LDFLAGS')
 
-# change back to the build dir
-if os.path.dirname( sys.argv[0] ) != "":
-    os.chdir( os.path.dirname( sys.argv[0] ) )
+    # run configure (to generate pg_config.h)
+    run( "./configure --without-readline",
+        os.path.join( os.getcwd(), "postgresql-%s" % pg_version ),
+        "Configuring postgres (./configure)" )
 
-# find setuptools
-scramble_lib = os.path.join( "..", "..", "..", "lib" )
-sys.path.append( scramble_lib )
-import get_platform # fixes fat python 2.5
-try:
-    from setuptools import *
-    import pkg_resources
-except:
-    from ez_setup import use_setuptools
-    use_setuptools( download_delay=8, to_dir=scramble_lib )
-    from setuptools import *
-    import pkg_resources
+    # create src/port/pg_config_paths.h
+    run( "%s pg_config_paths.h" % make,
+        os.path.join( os.getcwd(), "postgresql-%s" % pg_version, "src", "port" ),
+        "Creating postgresql-%s/src/port/pg_config_paths.h" % pg_version )
 
-# get the tag
-if os.access( ".galaxy_tag", os.F_OK ):
-    tagfile = open( ".galaxy_tag", "r" )
-    tag = tagfile.readline().strip()
-else:
-    tag = None
+    # remove win32 crap in libpq dir
+    for file in glob.glob( "postgresql-%s/src/interfaces/libpq/*win32*" % pg_version ):
+        print "prep_postgres(): Removing %s" % file
+        os.unlink( file )
 
-POSTGRES_VERSION = ( tag.split( "_" ) )[1]
-POSTGRES_ARCHIVE = os.path.abspath( os.path.join( "..", "..", "..", "archives", "postgresql-%s.tar.bz2" %POSTGRES_VERSION ) )
-POSTGRES_BINARY_ARCHIVE = os.path.abspath( os.path.join( "..", "..", "..", "archives", "postgresql-%s-%s.tar.bz2" %( POSTGRES_VERSION, pkg_resources.get_platform() ) ) )
-# there's no need to have a completely separate build script for this
-if pkg_resources.get_platform() == "macosx-10.3-fat":
-    CONFIGURE = "CFLAGS='-O -g -isysroot /Developer/SDKs/MacOSX10.4u.sdk -arch i386 -arch ppc' LDFLAGS='-arch i386 -arch ppc' LD='gcc -mmacosx-version-min=10.4 -isysroot /Developer/SDKs/MacOSX10.4u.sdk -nostartfiles -arch i386 -arch ppc' ./configure --prefix=%s/postgres --disable-shared --disable-dependency-tracking --without-readline" %os.getcwd()
-else:
-    CONFIGURE = "CFLAGS='-fPIC' ./configure --prefix=%s/postgres --disable-shared --without-readline" %os.getcwd()
+    # create prepped archive
+    print "%s(): Creating prepped archive for future builds at:" % sys._getframe().f_code.co_name
+    print " ", prepped
+    compress( prepped,
+           "postgresql-%s/src/include" % pg_version,
+           "postgresql-%s/src/port/pg_config_paths.h" % pg_version,
+           "postgresql-%s/src/port/pgstrcasecmp.c" % pg_version,
+           "postgresql-%s/src/backend/libpq/md5.c" % pg_version,
+           "postgresql-%s/src/interfaces/libpq" % pg_version )
 
-# clean, in case you're running this by hand from a dirty module source dir
-for dir in [ "build", "dist", "postgresql-%s" %POSTGRES_VERSION ]:
-    if os.access( dir, os.F_OK ):
-        print "scramble_it.py: removing dir:", dir
-        shutil.rmtree( dir )
+if __name__ == '__main__':
 
-# build/unpack Postgres
-unpack_prebuilt_postgres()
+    # change back to the build dir
+    if os.path.dirname( sys.argv[0] ) != "":
+        os.chdir( os.path.dirname( sys.argv[0] ) )
 
-# patch
-file = "setup.cfg"
-print "build(): Patching", file
-if not os.access( "%s.orig" %file, os.F_OK ):
-    shutil.copyfile( file, "%s.orig" %file )
-i = open( "%s.orig" %file, "r" )
-o = open( file, "w" )
-for line in i.readlines():
-    if line == "#pg_config=\n":
-        line = "pg_config=postgres/bin/pg_config\n"
-    if line == "#libraries=\n":
-        # linux has a separate crypt lib
-        if pkg_resources.get_platform().startswith( "linux" ):
-            line = "libraries=crypt\n"
-    print >>o, line,
-i.close()
-o.close()
+    # find setuptools
+    sys.path.append( os.path.abspath( os.path.join( '..', '..', '..', 'lib' ) ) )
+    from scramble_lib import *
 
-# tag
-me = sys.argv[0]
-sys.argv = [ me ]
-if tag is not None:
-    sys.argv.append( "egg_info" )
-    sys.argv.append( "--tag-build=%s" %tag )
-sys.argv.append( "bdist_egg" )
+    tag = get_tag()
 
-# go
-execfile( "setup.py", globals(), locals() )
+    pg_version = ( tag.split( "_" ) )[1]
+    pg_archive_base = os.path.join( archives, "postgresql-%s" % pg_version )
+    pg_archive = get_archive( pg_archive_base )
+    pg_archive_prepped = os.path.join( archives, "postgresql-%s-%s.tar.gz" % ( pg_version, platform_noucs ) )
+
+    # clean up any existing stuff (could happen if you run scramble.py by hand)
+    clean( [ 'postgresql-%s' % pg_version ] )
+
+    # unpack postgres
+    unpack_dep( pg_archive, pg_archive_prepped, prep_postgres, dict( version=pg_version ) )
+
+    # get setup.py
+    shutil.copy( os.path.join( patches, 'psycopg2', 'setup.py' ), 'setup.py' )
+
+    # tag
+    me = sys.argv[0]
+    sys.argv = [ me ]
+    if tag is not None:
+        sys.argv.append( "egg_info" )
+        sys.argv.append( "--tag-build=%s" %tag )
+    sys.argv.append( "bdist_egg" )
+
+    # go
+    execfile( "setup.py", globals(), locals() )

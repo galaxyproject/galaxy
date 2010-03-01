@@ -1,36 +1,29 @@
-import os, sys, shutil
+import os, sys
+
+def prep_sqlite( prepped, args ):
+    os.makedirs( 'amalgamation' )
+    for file in ( 'sqlite3.h', 'sqlite3.c', 'sqlite3ext.h' ):
+        os.rename( file, os.path.join( 'amalgamation', file ) )
 
 # change back to the build dir
 if os.path.dirname( sys.argv[0] ) != "":
     os.chdir( os.path.dirname( sys.argv[0] ) )
 
 # find setuptools
-scramble_lib = os.path.join( "..", "..", "..", "lib" )
-sys.path.append( scramble_lib )
-import get_platform # fixes fat python 2.5
-try:
-    from setuptools import *
-    import pkg_resources
-except:
-    from ez_setup import use_setuptools
-    use_setuptools( download_delay=8, to_dir=scramble_lib )
-    from setuptools import *
-    import pkg_resources
+sys.path.append( os.path.join( '..', '..', '..', 'lib' ) )
+from scramble_lib import *
 
-# get the tag
-if os.access( ".galaxy_tag", os.F_OK ):
-    tagfile = open( ".galaxy_tag", "r" )
-    tag = tagfile.readline().strip()
-else:
-    tag = None
+tag = get_tag() # get the tag
 
-# clean, in case you're running this by hand from a dirty module source dir
-for dir in [ "build", "dist", "sqlite" ]:
-    if os.access( dir, os.F_OK ):
-        print "scramble_it.py: removing dir:", dir
-        shutil.rmtree( dir )
+sqlite_version = ( tag.split( "_" ) )[1].replace('.','_')
+sqlite_archive_base = os.path.join( archives, "sqlite-amalgamation-%s" % sqlite_version )
+sqlite_archive = get_archive( sqlite_archive_base )
 
-# tag
+clean( ['amalgamation'] ) # clean up any existing stuff (could happen if you run scramble.py by hand)
+
+unpack_dep( sqlite_archive, None, prep_sqlite, None )
+
+# reset args for distutils
 me = sys.argv[0]
 sys.argv = [ me ]
 sys.argv.append( "build_static" )
@@ -39,5 +32,5 @@ if tag is not None:
     sys.argv.append( "--tag-build=%s" %tag )
 sys.argv.append( "bdist_egg" )
 
-# go
+# do it
 execfile( "setup.py", globals(), locals() )

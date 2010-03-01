@@ -11,28 +11,30 @@ root = logging.getLogger()
 root.setLevel( 10 )
 root.addHandler( logging.StreamHandler( sys.stdout ) )
 
-lib = os.path.abspath( os.path.join( os.path.dirname( __file__ ), "..", "lib" ) )
+lib = os.path.abspath( os.path.join( os.path.dirname( __file__ ), '..', 'lib' ) )
 sys.path.append( lib )
 
-from galaxy.eggs import DistCrate
+from galaxy.eggs.dist import DistScrambleCrate, ScrambleFailure
 
 if len( sys.argv ) > 3 or len( sys.argv ) < 2:
     print __doc__
     sys.exit( 1 )
 elif len( sys.argv ) == 3:
-    c = DistCrate( sys.argv[2] )
+    c = DistScrambleCrate( sys.argv[2] )
 else:
-    c = DistCrate()
+    c = DistScrambleCrate()
 
-c.parse()
-egg_list = c.get( sys.argv[1] )
-if egg_list is None:
+try:
+    eggs = c[sys.argv[1]]
+except:
     print "error: %s not in eggs.ini" % sys.argv[1]
     sys.exit( 1 )
 failed = []
-for egg in egg_list:
-    if not egg.scramble( dist=True ):
-        failed.append( egg.platform['galaxy'] )
+for egg in eggs:
+    try:
+        egg.scramble()
+    except ScrambleFailure:
+        failed.append( egg.platform )
 if len( failed ):
     print ""
     print "Scramble failed to build eggs on the following platforms (more details"

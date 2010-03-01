@@ -11,8 +11,11 @@ def prep_mysql( prepped, args ):
     os.environ['CFLAGS'] = get_config_var('CFLAGS')
     os.environ['LDFLAGS'] = get_config_var('LDFLAGS')
 
-    if '-fPIC' not in os.environ['CFLAGS']:
-        os.environ['CFLAGS'] += ' -fPIC'
+    cc = get_solaris_compiler()
+    if cc == 'cc':
+        os.environ['CFLAGS'] += ' -KPIC'
+    elif cc == 'gcc':
+        os.environ['CFLAGS'] += ' -fPIC -DPIC'
 
     # run configure
     run( "./configure --prefix=%s/mysql --disable-dependency-tracking --enable-static --disable-shared --without-server --without-uca " %os.getcwd() + \

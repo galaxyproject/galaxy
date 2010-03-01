@@ -2,30 +2,62 @@
 Galaxy root package -- this is a namespace package.
 """
 
-# Starting somewhere in 2.5.x, Python on Mac became broken - despite being fat,
-# the machine portion of the platform is not set to 'fat'.
-#
-# For more, see:
-#
-# http://bugs.python.org/setuptools/issue19
-#
-import os, sys
-from distutils.sysconfig import get_config_vars
+__import__( "pkg_resources" ).declare_namespace( __name__ )
 
-if sys.version_info[:2] == ( 2, 5 ) and \
+import os, sys, re
+from distutils.sysconfig import get_config_var, get_config_vars
+
+import pkg_resources
+
+# patch get_platform() for better ABI recognition
+def _get_build_platform():
+    plat = pkg_resources._get_build_platform()
+    if sys.version_info[:2] == ( 2, 5 ) and \
         ( ( os.uname()[-1] in ( 'i386', 'ppc' ) and sys.platform == 'darwin' and os.path.abspath( sys.prefix ).startswith( '/System' ) ) or \
           ( sys.platform == 'darwin' and get_config_vars().get('UNIVERSALSDK', '').strip() ) ):
-    # Has to be before anything imports pkg_resources
-    def _get_platform_monkeypatch():
-        plat = distutils.util._get_platform()
-        if plat.startswith( 'macosx-' ):
-            plat = 'macosx-10.3-fat'
-        return plat
-    import distutils.util
-    try:
-        assert distutils.util._get_platform
-    except:
-        distutils.util._get_platform = distutils.util.get_platform
-        distutils.util.get_platform = _get_platform_monkeypatch
+        plat = 'macosx-10.3-fat'
+    if sys.platform == "sunos5" and not (plat.endswith('_32') or plat.endswith('_64')):
+        if sys.maxint > 2**31:
+            plat += '_64'
+        else:
+            plat += '_32'
+    if not (plat.endswith('-ucs2') or plat.endswith('-ucs4')):
+        if sys.maxunicode > 2**16:
+            plat += '-ucs4'
+        else:
+            plat += '-ucs2'
+    return plat
+try:
+    assert pkg_resources._get_build_platform
+except:
+    pkg_resources._get_build_platform = pkg_resources.get_build_platform
+    pkg_resources.get_build_platform = _get_build_platform
+    pkg_resources.get_platform = _get_build_platform
 
-__import__( "pkg_resources" ).declare_namespace( __name__ )
+# patch compatible_platforms() to allow for Solaris binary compatibility
+solarisVersionString = re.compile(r"solaris-(\d)\.(\d+)-(.*)")
+def _compatible_platforms(provided,required):
+    # this is a bit kludgey since we need to know a bit about what happened in
+    # the original method
+    if provided is None or required is None or provided==required:
+        return True     # easy case
+    reqMac = pkg_resources.macosVersionString.match(required)
+    if reqMac:
+        return pkg_resources._compatible_platforms(provided,required)
+    reqSol = solarisVersionString.match(required)
+    if reqSol:
+        provSol = solarisVersionString.match(provided)
+        if not provSol:
+            return False
+        if provSol.group(1) != reqSol.group(1) or \
+            provSol.group(3) != reqSol.group(3):
+            return False
+        if int(provSol.group(2)) > int(reqSol.group(2)):
+            return False
+        return True
+    return False
+try:
+    assert pkg_resources._compatible_platforms
+except:
+    pkg_resources._compatible_platforms = pkg_resources.compatible_platforms
+    pkg_resources.compatible_platforms = _compatible_platforms

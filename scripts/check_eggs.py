@@ -17,16 +17,10 @@ try:
 except:
     quiet = False
 
-from galaxy.eggs import *
+from galaxy.eggs import Crate
 
 c = Crate()
-c.parse()
-galaxy_config = GalaxyConfig()
-ignore = []
-for name in c.get_names():
-    if not galaxy_config.check_conditional( name ):
-        ignore.append( name )
-if not c.find( ignore=ignore ):
+if c.config_missing:
     if not quiet:
         print "Some of your Galaxy eggs are out of date.  Please update them"
         print "by running:"

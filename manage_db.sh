@@ -6,4 +6,4 @@
 #######
 
 cd `dirname $0`
-`python ./scripts/check_python.py` ./scripts/manage_db.py $@
+python ./scripts/manage_db.py $@
