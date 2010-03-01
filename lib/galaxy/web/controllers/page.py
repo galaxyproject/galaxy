@@ -24,13 +24,13 @@ class PageListGrid( grids.Grid ):
     use_panels = True
     title = "Pages"
     model_class = model.Page
-    default_filter = { "published" : "All", "tags" : "All", "title" : "All"}
+    default_filter = { "published" : "All", "tags" : "All", "title" : "All", "sharing" : "All" }
     default_sort_key = "-create_time"
     columns = [
         grids.TextColumn( "Title", key="title", model_class=model.Page, attach_popup=True, filterable="advanced" ),
         URLColumn( "Public URL" ),
         grids.IndividualTagsColumn( "Tags", "tags", model.Page, model.PageTagAssociation, filterable="advanced", grid_name="PageListGrid" ),
-        grids.SharingStatusColumn( "Sharing", key="sharing", model_class=model.History, filterable="advanced", sortable=False ),
+        grids.SharingStatusColumn( "Sharing", key="sharing", model_class=model.Page, filterable="advanced", sortable=False ),
         grids.GridColumn( "Created", key="create_time", format=time_ago ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
     ]
@@ -79,40 +79,7 @@ class PageAllPublishedGrid( grids.Grid ):
         return session.query( self.model_class ).join( model.User.table )
     def apply_default_filter( self, trans, query, **kwargs ):
         return query.filter( self.model_class.deleted==False ).filter( self.model_class.published==True )
-        
-class HistorySelectionGrid( grids.Grid ):
-    # Custom columns.
-    class NameColumn( grids.TextColumn ):
-        def get_value(self, trans, grid, history):
-            return history.get_display_name()
-               
-    # Grid definition.
-    title = "Saved Histories"
-    template = "/page/select_histories_grid.mako"
-    async_template = "/page/select_histories_grid_async.mako" 
-    model_class = model.History
-    default_filter = { "deleted" : "False" , "shared" : "All" }
-    default_sort_key = "-update_time"
-    use_async = True
-    use_paging = True
-    num_rows_per_page = 10
-    columns = [
-        NameColumn( "Name", key="name", model_class=model.History, filterable="advanced" ),
-        grids.IndividualTagsColumn( "Tags", "tags", model.History, model.HistoryTagAssociation, filterable="advanced"),
-        grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
-        # Columns that are valid for filtering but are not visible.
-        grids.DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" ),
-        grids.SharingStatusColumn( "Sharing", key="sharing", model_class=model.History, filterable="advanced", sortable=False, visible=False ),
-    ]
-    columns.append(     
-        grids.MulticolFilterColumn(  
-        "Search", 
-        cols_to_filter=[ columns[0], columns[1] ], 
-        key="free-text-search", visible=False, filterable="standard" )
-                )
-    def apply_default_filter( self, trans, query, **kwargs ):
-        return query.filter_by( user=trans.user, purged=False )
-        
+                
 class ItemSelectionGrid( grids.Grid ):
     """ Base class for pages' item selection grids. """
     # Custom columns.
@@ -339,12 +306,12 @@ class PageController( BaseController, Sharable, UsesAnnotations, UsesHistory, Us
              
     @web.expose
     @web.require_login( "create pages" )
-    def create( self, trans, page_title="", page_slug="" ):
+    def create( self, trans, page_title="", page_slug="", page_annotation="" ):
         """
         Create a new page
         """
         user = trans.get_user()
-        page_title_err = page_slug_err = ""
+        page_title_err = page_slug_err = page_annotation_err = ""
         if trans.request.method == "POST":
             if not page_title:
                 page_title_err = "Page name is required"
@@ -355,12 +322,14 @@ class PageController( BaseController, Sharable, UsesAnnotations, UsesHistory, Us
             elif trans.sa_session.query( model.Page ).filter_by( user=user, slug=page_slug, deleted=False ).first():
                 page_slug_err = "Page id must be unique"
             else:
-                # Create the new stored workflow
+                # Create the new stored page
                 page = model.Page()
                 page.title = page_title
                 page.slug = page_slug
+                page_annotation = sanitize_html( page_annotation, 'utf-8', 'text/html' )
+                self.add_item_annotation( trans, page, page_annotation )
                 page.user = user
-                # And the first (empty) workflow revision
+                # And the first (empty) page revision
                 page_revision = model.PageRevision()
                 page_revision.title = page_title
                 page_revision.page = page
@@ -381,8 +350,10 @@ class PageController( BaseController, Sharable, UsesAnnotations, UsesHistory, Us
                                 public links to this page. A default is generated
                                 from the page title, but can be edited. This field
                                 must contain only lowercase letters, numbers, and
-                                the '-' character.""" ),
-            template="page/create.mako" )
+                                the '-' character.""" )
+                .add_text( "page_annotation", "Page annotation", value=page_annotation, error=page_annotation_err,
+                            help="A description of the page; annotation is shown alongside published pages."),
+                template="page/create.mako" )
         
     @web.expose
     @web.require_login( "create pages" )
@@ -432,7 +403,7 @@ class PageController( BaseController, Sharable, UsesAnnotations, UsesHistory, Us
                                 must contain only lowercase letters, numbers, and
                                 the '-' character.""" )
                 .add_text( "page_annotation", "Page annotation", value=page_annotation, error=page_annotation_err,
-                            help="A description of or notes about the page. Annotation is shown alongside published pages."),
+                            help="A description of the page; annotation is shown alongside published pages."),
             template="page/create.mako" )
         
     @web.expose
