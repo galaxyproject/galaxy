@@ -155,7 +155,7 @@ class JobQueue( object ):
         run and dispatching if so.
         """
         # HACK: Delay until after forking, we need a way to do post fork notification!!!
-        time.sleep( 1000 )
+        time.sleep( 10 )
         while self.running:
             try:
                 self.__monitor_step()
