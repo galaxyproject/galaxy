@@ -1,3 +1,5 @@
+/* NOTE: MODIFIED FROM ORIGINAL! */
+
 (function($) {
     function fixTitle($ele) {
         if ($ele.attr('title') || typeof($ele.attr('original-title')) != 'string') {
@@ -72,20 +74,29 @@
                             break;
                     }
                     // Shift if off screen
-                    var window = $(window);
+                    var w = $(window);
                     
-                    top = Math.max( top, window.scrollTop() );
-                    top = Math.min( top, window.scrollTop() + window.height() - tip.outerHeight() );
-                    
-                    var left_shift = 0;
-                    if ( left < window.scrollLeft() ) {
-                        left_shift = left - window.scrollLeft();
+                    // If off the top of the screen, flip
+                    if ( top < w.scrollTop() && gravity.charAt( 0 ) == 's' ) {
+                        top = pos.top + pos.height;
+                        gravity = 'north';
+                        tip.removeClass('tipsy-south').addClass('tipsy-north');
                     }
-                    var t = window.scrollLeft() + window.width() - tip.outerWidth();
+                    
+                    // If off bottom, just shift for now
+                    top = Math.min( top, w.scrollTop() + w.height() - tip.outerHeight() );
+                    
+                    
+                    // Shift left or right
+                    var left_shift = 0;
+                    if ( left < w.scrollLeft() ) {
+                        left_shift = left - w.scrollLeft();
+                    }
+                    var t = w.scrollLeft() + w.width() - tip.outerWidth();
                     if ( left > t ) {
                         left_shift = left - t;
                     }
-                    
+
                     left -= left_shift;
                     
                     tip.css( { left: left, top: top } );

@@ -35,6 +35,20 @@ def cross_lists(*sets):
                 digits[i] = wheels[i].next()
         else:
             break
+        
+def find_file( path, fname ):
+    # Path can be a single directory or a ':' separated list
+    if ':' in path:
+        paths = path.split( ':' )
+    else:
+        paths = [ path ]
+    # Check in each directory
+    for path in paths:
+        fullname = os.path.join( path, fname )
+        if os.path.exists( fullname ):
+            return fullname
+    # Not found
+    raise IOError( "File '%s' not found in path '%s'" % ( fname, paths ) )
 
 def build_stylesheet_parser():
     """
@@ -87,7 +101,7 @@ stylesheet_parser = build_stylesheet_parser()
 
 class CSSProcessor( object ):
     
-    def process( self, file, out, variables, image_dir ):
+    def process( self, file, out, variables, image_dir, out_dir ):
         # Build parse tree
         results = stylesheet_parser.parseFile( sys.stdin, parseAll=True )
         # Expand rules (elimimate recursion and resolve mixins)
@@ -95,7 +109,7 @@ class CSSProcessor( object ):
         # Expand variables (inplace)
         self.expand_variables( rules, variables )
         # Do sprites
-        self.make_sprites( rules, image_dir )
+        self.make_sprites( rules, image_dir, out_dir )
         # Print
         self.print_rules( rules, out )
         
@@ -139,7 +153,7 @@ class CSSProcessor( object ):
             for p in properties:
                 p[1] = string.Template( p[1] ).substitute( context ).strip()
     
-    def make_sprites( self, rules, image_dir ):
+    def make_sprites( self, rules, image_dir, out_dir ):
         
         pad = 10
         
@@ -159,7 +173,7 @@ class CSSProcessor( object ):
         class Sprite( object ):
             def __init__( self, fname, offset ):
                 self.fname = fname
-                self.image = Image.open( os.path.join( image_dir, fname ) )
+                self.image = Image.open( find_file( image_dir, fname ) )
                 self.offset = offset
                 
         sprite_groups = {}
@@ -200,7 +214,7 @@ class CSSProcessor( object ):
             for sprite in group.sprites.itervalues():
                 master.paste( sprite.image, (0,offset) )
                 offset += sprite.image.size[1] + pad
-            master.save( os.path.join( image_dir, group.name + ".png" ) )
+            master.save( os.path.join( out_dir, group.name + ".png" ) )
             
     def print_rules( self, rules, file ):
         for selectors, properties in rules:
@@ -223,11 +237,12 @@ def main():
         context[key] = value
         
     image_dir = sys.argv[2]
+    out_dir = sys.argv[3]
 
     try:
         
         processor = CSSProcessor()
-        processor.process( sys.stdin, sys.stdout, context, image_dir )
+        processor.process( sys.stdin, sys.stdout, context, image_dir, out_dir )
         
     except ParseException, e:
         

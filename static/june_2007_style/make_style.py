@@ -66,7 +66,7 @@ vars, out_dir = sys.argv[1:]
 
 for input, output in templates:
     print input ,"->", output
-    subprocess.call( "./process_css.py %s %s < %s > %s" % ( vars, out_dir, input, os.path.join( out_dir, output ) ), shell=True )
+    subprocess.call( "./process_css.py %s %s:../images %s < %s > %s" % ( vars, out_dir, out_dir, input, os.path.join( out_dir, output ) ), shell=True )
 
   
 """

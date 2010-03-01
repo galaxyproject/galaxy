@@ -32,7 +32,7 @@ $(function() {
     });
     
     // Generate 'collapse all' link
-    $("#top-links").append( "|&nbsp;" ).append( $("<a href='#'>${_('collapse all')}</a>").click( function() {
+    $("#top-links > a.toggle").click( function() {
         $( "div.historyItemBody:visible" ).each( function() {
             if ( $.browser.mozilla ) {
                 $(this).find( "pre.peek" ).css( "overflow", "hidden" );
@@ -40,7 +40,7 @@ $(function() {
             $(this).slideUp( "fast" );
         });
         $.jStore.remove("history_expand_state");
-    }));
+    }).show();
     
     // Rename management.
     async_save_text("history-name-container", "history-name", "${h.url_for( controller="/history", action="rename_async", id=trans.security.encode_id(history.id) )}", "new_name", 18);
@@ -49,22 +49,22 @@ $(function() {
     var historyTagArea = $('#history-tag-area');
     $('#history-tag').click( function() 
     {
-	if ( historyTagArea.is( ":hidden" ) ) {
+        if ( historyTagArea.is( ":hidden" ) ) {
             historyTagArea.slideDown("fast");
-	} else {
-	    historyTagArea.slideUp("fast");
-	}
+        } else {
+            historyTagArea.slideUp("fast");
+        }
         return false;
     });
     
     // Annotation management.
     var historyAnnotationArea = $('#history-annotation-area');
     $('#history-annotate').click( function() {
-	if ( historyAnnotationArea.is( ":hidden" ) ) {
+        if ( historyAnnotationArea.is( ":hidden" ) ) {
             historyAnnotationArea.slideDown("fast");
-	} else {
-	    historyAnnotationArea.slideUp("fast");
-	}
+        } else {
+            historyAnnotationArea.slideUp("fast");
+        }
         return false;
     });
     async_save_text("history-annotation-container", "history-annotation", "${h.url_for( controller="/history", action="annotate_async", id=trans.security.encode_id(history.id) )}", "new_annotation", 18, true, 4);
@@ -266,6 +266,26 @@ var updater_callback = function ( tracked_datasets ) {
 div.form-row {
     padding: 5px 5px 5px 0px;
 }
+#top-links {
+    margin-bottom: 15px;
+}
+#history-name-container {
+    display: inline-block;
+    color: gray;
+    font-weight: bold;
+}
+.editable-text {
+    border: solid transparent 1px;
+    padding: 3px;
+    margin: -4px;
+}
+.editable-text:hover {
+    cursor: text;
+    border: dotted #999999 1px;
+}
+.tag-area {
+    border: none;
+}
 </style>
 
 <noscript>
@@ -281,28 +301,33 @@ div.form-row {
 <body class="historyPage">
     
 <div id="top-links" class="historyLinks">
-    <a href="${h.url_for('history', show_deleted=show_deleted)}">${_('refresh')}</a> 
-    %if show_deleted:
-    | <a href="${h.url_for('history', show_deleted=False)}">${_('hide deleted')}</a> 
+    
+    <a title="${_('refresh')}" class="icon-button arrow-circle tooltip" href="${h.url_for('history', show_deleted=show_deleted)}"></a>
+    <a title='${_('collapse all')}' class='icon-button toggle tooltip' href='#' style="display: none;"></a>
+    
+    %if trans.get_user():
+    <div style="width: 40px; float: right; white-space: nowrap;">
+        <a id="history-tag" title="Edit history tags" class="icon-button tags tooltip" target="galaxy_main" href="${h.url_for( controller='history', action='tag' )}"></a>
+        <a id="history-annotate" title="Edit history annotation" class="icon-button annotate tooltip" target="galaxy_main" href="${h.url_for( controller='history', action='annotate' )}"></a>
+    </div>
     %endif
+
 </div>
 
-<div id="history-name-area" class="historyLinks" style="color: gray; font-weight: bold;">
-    <table width="100%" cellpadding="0" cellspacing="0">
-        <tr>
-            <td align="left">
-                <div id="history-name-container" class="editable-text">
-                    <span id="history-name" class="tooltip" title="Click to rename history">${history.get_display_name() | h}</span>
-                </div>
-            </td>
-            <td align="right" style="width: 40px">
-                <div style="float: right; white-space: nowrap">
-                    <a id="history-tag" title="Edit history tags" class="icon-button tags tooltip" target="galaxy_main" href="${h.url_for( controller='history', action='tag' )}"></a>
-                    <a id="history-annotate" title="Edit history annotation" class="icon-button annotate tooltip" target="galaxy_main" href="${h.url_for( controller='history', action='annotate' )}"></a>
-                </div>
-            </td>
-        </tr>
-    </table>
+<div style="clear: both;"></div>
+
+%if show_deleted:
+<div class="historyLinks">
+    <a href="${h.url_for('history', show_deleted=False)}">${_('hide deleted')}</a>
+</div>
+%endif
+
+<div id="history-name-area" class="historyLinks">
+    
+    <div id="history-name-container">
+        <div id="history-name" class="tooltip editable-text" title="Click to rename history">${history.get_display_name() | h}</div>
+    </div>
+                               
 </div>
 
 %if history.deleted:
@@ -316,15 +341,10 @@ div.form-row {
 <%namespace file="history_common.mako" import="render_dataset" />
 
 %if trans.get_user() is not None:
-    <div style="margin: 0px 0px 5px 10px">
+    <div style="margin: 0px 5px 10px 5px">
         ## Tagging elt.
         <div id="history-tag-area" style="display: none">
             <b>Tags:</b>
-            <style>
-                .tag-area {
-                    border: none;
-                }
-            </style>
             ${render_individual_tagging_element(user=trans.get_user(), tagged_item=history, elt_context="history.mako", use_toggle_link=False, input_size="20")}
         </div>
     
@@ -332,7 +352,7 @@ div.form-row {
         <div id="history-annotation-area" style="display: none">
    	    <b>Annotation / Notes:</b>
    	    <div id="history-annotation-container">
-		<span id="history-annotation" class="tooltip" title="Click to edit annotation">${annotation or 'None' | h}</span>
+		<div id="history-annotation" class="tooltip editable-text" title="Click to edit annotation">${annotation or 'None' | h}</div>
             </div>
         </div>
         

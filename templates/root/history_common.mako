@@ -33,110 +33,115 @@
                     <img src="${h.url_for('/static/images/pencil_icon_grey.png')}" width='16' height='16' alt='edit attributes' title='edit attributes' class='button edit' border='0'>
                 %endif
             %else:
-                <a class="icon-button display" title="display data" href="${h.url_for( controller='dataset', action='display', dataset_id=trans.security.encode_id( data.id ), preview=True, filename='' )}" target="galaxy_main"></a>
+                <a class="icon-button display tooltip" title="Display data in browser" href="${h.url_for( controller='dataset', action='display', dataset_id=trans.security.encode_id( data.id ), preview=True, filename='' )}" target="galaxy_main"></a>
                 %if user_owns_dataset:
-                    <a class="icon-button edit" title="edit attributes" href="${h.url_for( controller='root', action='edit', id=data.id )}" target="galaxy_main"></a>
+                    <a class="icon-button edit tooltip" title="Edit attributes" href="${h.url_for( controller='root', action='edit', id=data.id )}" target="galaxy_main"></a>
                 %endif
             %endif
             %if user_owns_dataset:
-                <a class="icon-button delete" title="delete" href="${h.url_for( action='delete', id=data.id, show_deleted_on_refresh=show_deleted_on_refresh )}" id="historyItemDeleter-${data.id}"></a>
+                <a class="icon-button delete tooltip" title="Delete" href="${h.url_for( action='delete', id=data.id, show_deleted_on_refresh=show_deleted_on_refresh )}" id="historyItemDeleter-${data.id}"></a>
             %endif
         </div>
         <span class="state-icon"></span>
         <span class="historyItemTitle">${hid}: ${data.display_name()}</span>
     </div>
         
-        ## Body for history items, extra info and actions, data "peek"
-        
-        <div id="info${data.id}" class="historyItemBody">
-            %if not trans.user_is_admin() and not trans.app.security_agent.can_access_dataset( current_user_roles, data.dataset ):
-                <div>You do not have permission to view this dataset.</div>
-            %elif data_state == "upload":
-                <div>Dataset is uploading</div>
-            %elif data_state == "queued":
-                <div>${_('Job is waiting to run')}</div>
-            %elif data_state == "running":
-                <div>${_('Job is currently running')}</div>
-            %elif data_state == "error":
-                <div>
-                    An error occurred running this job: <i>${data.display_info().strip()}</i>
-                </div>
-        <div>
-            <a href="${h.url_for( controller='dataset', action='errors', id=data.id )}" target="galaxy_main">report this error</a>
-            | <a href="${h.url_for( controller='tool_runner', action='rerun', id=data.id )}" target="galaxy_main">rerun</a>
-        </div>
-            %elif data_state == "discarded":
-                <div>
-                    The job creating this dataset was cancelled before completion.
-                </div>
-            %elif data_state == 'setting_metadata':
-                <div>${_('Metadata is being Auto-Detected.')}</div>
-            %elif data_state == "empty":
-                <div>${_('No data: ')}<i>${data.display_info()}</i></div>
-            %elif data_state == "ok":
-                <div>
-                    ${data.blurb},
-                    format: <span class="${data.ext}">${data.ext}</span>, 
-                    database:
-                    %if data.dbkey == '?':
-                        <a href="${h.url_for( controller='root', action='edit', id=data.id )}" target="galaxy_main">${_(data.dbkey)}</a>
-                    %else:
-                        <span class="${data.dbkey}">${_(data.dbkey)}</span>
+    ## Body for history items, extra info and actions, data "peek"
+    
+    <div id="info${data.id}" class="historyItemBody">
+        %if not trans.user_is_admin() and not trans.app.security_agent.can_access_dataset( current_user_roles, data.dataset ):
+            <div>You do not have permission to view this dataset.</div>
+        %elif data_state == "upload":
+            <div>Dataset is uploading</div>
+        %elif data_state == "queued":
+            <div>${_('Job is waiting to run')}</div>
+        %elif data_state == "running":
+            <div>${_('Job is currently running')}</div>
+        %elif data_state == "error":
+            <div>
+                An error occurred running this job: <i>${data.display_info().strip()}</i>
+            </div>
+            <div>
+                <a href="${h.url_for( controller='dataset', action='errors', id=data.id )}" target="galaxy_main" title="View or report this error" class="icon-button bug tooltip"></a>
+                <a href="${h.url_for( controller='tool_runner', action='rerun', id=data.id )}" target="galaxy_main" title="Run this job again" class="icon-button arrow-circle tooltip"></a>
+            </div>
+        %elif data_state == "discarded":
+            <div>
+                The job creating this dataset was cancelled before completion.
+            </div>
+        %elif data_state == 'setting_metadata':
+            <div>${_('Metadata is being Auto-Detected.')}</div>
+        %elif data_state == "empty":
+            <div>${_('No data: ')}<i>${data.display_info()}</i></div>
+        %elif data_state == "ok":
+            <div>
+                ${data.blurb},
+                format: <span class="${data.ext}">${data.ext}</span>, 
+                database:
+                %if data.dbkey == '?':
+                    <a href="${h.url_for( controller='root', action='edit', id=data.id )}" target="galaxy_main">${_(data.dbkey)}</a>
+                %else:
+                    <span class="${data.dbkey}">${_(data.dbkey)}</span>
+                %endif
+            </div>
+            <div class="info">${_('Info: ')}${data.display_info()}</div>
+            <div> 
+                %if data.has_data:
+                    <a href="${h.url_for( controller='dataset', action='display', dataset_id=trans.security.encode_id( data.id ), to_ext=data.ext )}" title="Save" class="icon-button disk tooltip"></a>
+                    %if user_owns_dataset:
+                        <a href="${h.url_for( controller='tool_runner', action='rerun', id=data.id )}" target="galaxy_main" title="Run this job again" class="icon-button arrow-circle tooltip"></a>
                     %endif
-                </div>
-                <div class="info">${_('Info: ')}${data.display_info()}</div>
-                <div> 
-                    %if data.has_data:
-                        <a href="${h.url_for( controller='dataset', action='display', dataset_id=trans.security.encode_id( data.id ), to_ext=data.ext )}">save</a>
-                        %if user_owns_dataset:
-                            | <a href="${h.url_for( controller='tool_runner', action='rerun', id=data.id )}" target="galaxy_main">rerun</a>
+		    <div style="clear: both"></div>
+                    %for display_app in data.datatype.get_display_types():
+                        <% target_frame, display_links = data.datatype.get_display_links( data, display_app, app, request.base ) %>
+                        %if len( display_links ) > 0:
+                            | ${data.datatype.get_display_label(display_app)}
+            %for display_name, display_link in display_links:
+                <a target="${target_frame}" href="${display_link}">${_(display_name)}</a> 
+            %endfor
                         %endif
-                        %for display_app in data.datatype.get_display_types():
-                            <% target_frame, display_links = data.datatype.get_display_links( data, display_app, app, request.base ) %>
-                            %if len( display_links ) > 0:
-                                | ${data.datatype.get_display_label(display_app)}
-                %for display_name, display_link in display_links:
-                    <a target="${target_frame}" href="${display_link}">${_(display_name)}</a> 
-                %endfor
-                            %endif
-                        %endfor
-                    %endif
-                %for display_app in data.datatype.display_applications.itervalues():
-                    | ${display_app.name} 
-                    %for link_app in display_app.links.itervalues():
-                    <a target="${link_app.url.get( 'target_frame', '_blank' )}" href="${link_app.get_display_url( data, trans )}">${_(link_app.name)}</a> 
                     %endfor
+                %endif
+            %for display_app in data.datatype.display_applications.itervalues():
+                | ${display_app.name} 
+                %for link_app in display_app.links.itervalues():
+                <a target="${link_app.url.get( 'target_frame', '_blank' )}" href="${link_app.get_display_url( data, trans )}">${_(link_app.name)}</a> 
                 %endfor
-                </div>
-                %if data.peek != "no peek":
-                    <div><pre id="peek${data.id}" class="peek">${_(data.display_peek())}</pre></div>
-                %endif
+            %endfor
+            </div>
+            %if data.peek != "no peek":
+                <div><pre id="peek${data.id}" class="peek">${_(data.display_peek())}</pre></div>
+            %endif
         %else:
-        <div>${_('Error: unknown dataset state "%s".') % data_state}</div>
+            <div>${_('Error: unknown dataset state "%s".') % data_state}</div>
+        %endif
+           
+        ## Recurse for child datasets
+                          
+        %if len( data.children ) > 0:
+            ## FIXME: This should not be in the template, there should
+            ##        be a 'visible_children' method on dataset.
+            <%
+            children = []
+            for child in data.children:
+                if child.visible:
+                    children.append( child )
+            %>
+            %if len( children ) > 0:
+                <div>
+                    There are ${len( children )} secondary datasets.
+                    %for idx, child in enumerate(children):
+                        ${render_dataset( child, idx + 1, show_deleted_on_refresh = show_deleted_on_refresh )}
+                    %endfor
+                </div>
             %endif
-               
-            ## Recurse for child datasets
-                              
-            %if len( data.children ) > 0:
-                ## FIXME: This should not be in the template, there should
-                ##        be a 'visible_children' method on dataset.
-                <%
-                children = []
-                for child in data.children:
-                    if child.visible:
-                        children.append( child )
-                %>
-                %if len( children ) > 0:
-                    <div>
-                        There are ${len( children )} secondary datasets.
-                        %for idx, child in enumerate(children):
-                            ${render_dataset( child, idx + 1, show_deleted_on_refresh = show_deleted_on_refresh )}
-                        %endfor
-                    </div>
-                %endif
-            %endif
+        %endif
 
-        </div>
+    <div style="clear: both;"></div>
+
+    </div>
+        
+        
     </div>
 
 </%def>
