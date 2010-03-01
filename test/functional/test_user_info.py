@@ -20,7 +20,6 @@ def get_latest_form(form_name):
             return fdc.latest_form
     return None
 
-
 class TestUserInfo( TwillTestCase ):
     def test_000_create_user_info_forms( self ):
         """Testing creating a new user info form and editing it"""
@@ -127,7 +126,11 @@ class TestUserInfo( TwillTestCase ):
         user = sa_session.query( galaxy.model.User ) \
                          .filter( and_( galaxy.model.User.table.c.email=='test11@bx.psu.edu' ) ).first()
         self.edit_login_info( new_email='test11_new@bx.psu.edu', new_username='test11_new' )
-        self.change_password('testuser', 'new_testuser')
+        self.change_password( 'testuser', 'testuser#' )
+        self.logout()
+        self.login( email='test11_new@bx.psu.edu', password='testuser#' )
+        self.edit_login_info( new_email='test11@bx.psu.edu', new_username='test11' )
+        self.change_password( 'testuser#', 'testuser' )
         self.edit_user_info( ['Research', 'PSU'] )
     def test_020_create_user_as_admin( self ):
         ''' Testing creating users as an admin '''

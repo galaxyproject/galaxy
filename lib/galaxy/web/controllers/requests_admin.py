@@ -1703,7 +1703,7 @@ class RequestsAdmin( BaseController ):
             # data transfer info
             rt.datatx_info = dict(host=util.restore_text( params.get( 'host', ''  ) ),
                                   username=util.restore_text( params.get( 'username', ''  ) ),
-                                  password=util.restore_text( params.get( 'password', ''  ) ),
+                                  password=params.get( 'password', '' ),
                                   data_dir=util.restore_text( params.get( 'data_dir', ''  ) )) 
             trans.sa_session.add( rt )
             trans.sa_session.flush()
@@ -1775,7 +1775,7 @@ class RequestsAdmin( BaseController ):
         # data transfer info
         rt.datatx_info = dict(host=util.restore_text( params.get( 'host', ''  ) ),
                               username=util.restore_text( params.get( 'username', ''  ) ),
-                              password=util.restore_text( params.get( 'password', ''  ) )) 
+                              password=params.get( 'password', '' )) 
         trans.sa_session.add( rt )
         trans.sa_session.flush()
         # set sample states

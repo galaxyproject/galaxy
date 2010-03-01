@@ -745,7 +745,10 @@ class TwillTestCase( unittest.TestCase ):
             self.create( email=email, password=password )
         except:
             self.home()
-            self.visit_page( "user/login?email=%s&password=%s" % ( email, password ) )
+            self.visit_url( "%s/user/login" % self.url )
+            tc.fv( '1', 'email', email )
+            tc.fv( '1', 'password', password )
+            tc.submit( 'Login' )
             self.check_page_for_string( "Now logged in as %s" %email )
             self.home()
     def logout( self ):

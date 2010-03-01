@@ -167,12 +167,14 @@ class User( BaseController ):
     @web.expose
     def create( self, trans, **kwd ):
         params = util.Params( kwd )
-        email = util.restore_text( params.get('email', '') )
-        username = util.restore_text( params.get('username', '') )
-        password = util.restore_text( params.get('password', '') )
-        confirm = util.restore_text( params.get('confirm', '') )
-        subscribe = CheckboxField.is_checked( params.get('subscribe', '') ) 
-        admin_view = params.get('admin_view', 'False')
+        email = util.restore_text( params.get( 'email', '' ) )
+        username = util.restore_text( params.get( 'username', '' ) )
+        # Do not sanitize passwords, so take from kwd
+        # instead of params ( which were sanitized )
+        password = kwd.get( 'password', '' )
+        confirm = kwd.get( 'confirm', '' )
+        subscribe = CheckboxField.is_checked( params.get( 'subscribe', '' ) ) 
+        admin_view = params.get( 'admin_view', 'False' )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
         if trans.app.config.require_login:
@@ -413,11 +415,11 @@ class User( BaseController ):
             login_info = { 'Email': TextField( 'email', 40, 
                                                util.restore_text( params.get('email', '') ) ),
                            'Public Username': TextField( 'username', 40, 
-                                                         util.restore_text( params.get('username', '') ) ),
+                                                         util.restore_text( params.get( 'username', '' ) ) ),
                            'Password': PasswordField( 'password', 40, 
-                                                              util.restore_text( params.get('password', '') ) ),
+                                                              params.get( 'password', '' ) ),
                            'Confirm': PasswordField( 'confirm', 40, 
-                                                     util.restore_text( params.get('confirm', '') ) ),
+                                                     params.get( 'confirm', '' ) ),
                            'Subscribe To Mailing List': CheckboxField( 'subscribe', 
                                                                        util.restore_text( params.get('subscribe', '') ) ) }
         # user information
@@ -531,11 +533,15 @@ class User( BaseController ):
         # Change password 
         #
         elif params.get('change_password_button', None) == 'Save':
-            password = util.restore_text( params.get('password', '') )
-            confirm = util.restore_text( params.get('confirm', '') )
+            # Do not sanitize passwords, so get from kwd and not params
+            # ( which were sanitized ).
+            password = kwd.get( 'password', '' )
+            confirm = kwd.get( 'confirm', '' )
             # when from the user perspective, validate the current password
             if params.get('admin_view', 'False') == 'False':
-                current = util.restore_text( params.get('current', '') )
+                # Do not sanitize passwords, so get from kwd and not params
+                # ( which were sanitized ).
+                current = kwd.get( 'current', '' )
                 if not trans.user.check_password( current ):
                     return trans.response.send_redirect( web.url_for( controller='user',
                                                                       action='show_info',
