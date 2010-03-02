@@ -22,6 +22,19 @@ os.environ['LD_RUN_PATH'] = os.environ['LIBTORQUE_DIR']
 # run the config script
 run( 'sh configure --with-pbsdir=%s' % os.environ['LIBTORQUE_DIR'], os.getcwd(), 'Running pbs_python configure script' )
 
+# version string in 2.9.4 setup.py is wrong
+print "scramble(): Patching setup.py"
+if not os.path.exists( 'setup.py.orig' ):
+    shutil.copyfile( 'setup.py', 'setup.py.orig' )
+    i = open( 'setup.py.orig', 'r' )
+    o = open( 'setup.py', 'w' )
+    for line in i.readlines():
+        if line == "    version = '2.9.0',\n":
+            line = "    version = '2.9.4',\n"
+        print >>o, line,
+i.close()
+o.close()
+
 # reset args for distutils
 me = sys.argv[0]
 sys.argv = [ me ]
