@@ -86,9 +86,9 @@
 
 <%def name="render_item( workflow, steps )">
     <%
-	    # HACK: Rendering workflow steps requires that trans have a history; however, if a user's first visit to Galaxy is here, he won't have a history
-	    # and an error will occur. To prevent this error, make sure user has a history. 
-    	trans.get_history( create=True ) 
+        # HACK: Rendering workflow steps requires that trans have a history; however, if it's  user's first visit to Galaxy is here, he won't have a history
+        # and an error will occur. To prevent this error, make sure user has a history. 
+        trans.get_history( create=True ) 
     %>
     <table class="annotated-item">
         <tr><th>Step</th><th class="annotation">Description/Notes</th></tr>
