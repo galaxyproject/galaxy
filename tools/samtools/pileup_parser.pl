@@ -4,7 +4,7 @@ use strict;
 use POSIX;
 
 
-die "Usage: pileup_parser.pl <in_file> <ref_base_column> <read_bases_column> <base_quality_column> <coverage column> <qv cutoff> <coverage cutoff> <SNPs only?> <output bed?> <coord_column> <out_file>\n" unless @ARGV == 11;
+die "Usage: pileup_parser.pl <in_file> <ref_base_column> <read_bases_column> <base_quality_column> <coverage column> <qv cutoff> <coverage cutoff> <SNPs only?> <output bed?> <coord_column> <out_file> <total_diff> <print_qual_bases>\n" unless @ARGV == 13;
 
 my $in_file = $ARGV[0];
 my $ref_base_column = $ARGV[1]-1; # 1 based
@@ -17,6 +17,8 @@ my $SNPs_only = $ARGV[7]; # set to "Yes" to print only positions with SNPs; set 
 my $bed = $ARGV[8]; #set to "Yes" to convert coordinates to bed format (0-based start, 1-based end); set to "No" to leave as is
 my $coord_column = $ARGV[9]-1; #1 based 
 my $out_file = $ARGV[10];
+my $total_diff = $ARGV[11]; # set to "Yes" to print total number of deviant based
+my $print_qual_bases = $ARGV[12]; #set to "Yes" to print quality and read base columns
 
 my $invalid_line_counter = 0;
 my $first_skipped_line = "";
@@ -24,6 +26,7 @@ my %SNPs = ('A',0,'T',0,'C',0,'G',0);
 my $above_qv_bases = 0;
 my $SNPs_exist = 0;
 my $out_string = "";
+my $diff_count = 0;
 
 open (IN, "<$in_file") or die "Cannot open $in_file $!\n";
 open (OUT, ">$out_file") or die "Cannot open $out_file $!\n";
@@ -65,6 +68,7 @@ while (<IN>) {
 			{
 				$SNPs_exist = 1;	
 				$SNPs{ uc( $bases[ $base ] ) } += 1;
+				$diff_count += 1;
 			} elsif ( $bases[ $base ] =~ m/[\.,]/ ) {
 			    $SNPs{ uc( $fields[ $ref_base_column ] ) } += 1;
 		    }		 	
@@ -77,11 +81,24 @@ while (<IN>) {
 	       $fields[ $coord_column ] = "$start\t$end";
 	} 
 	
+	if ($print_qual_bases ne "Yes") {
+	       $fields[ $base_quality_column ] = "";
+	       $fields[ $read_bases_column ] = "";
+	}
+	       
+	
 	$out_string = join("\t", @fields); # \t$read_bases\t$base_quality";
 	foreach my $SNP (sort keys %SNPs) {
 			$out_string .= "\t$SNPs{$SNP}";
 	}
-	$out_string .= "\t$above_qv_bases\n";
+	
+	if ($total_diff eq "Yes") {
+	   $out_string .= "\t$above_qv_bases\t$diff_count\n";
+	} else {
+	   $out_string .= "\t$above_qv_bases\n";
+	}	
+	
+	$out_string =~ s/\t+/\t/g;
 	
 	if ( $SNPs_only eq "Yes" ) {
 		print OUT $out_string if $SNPs_exist == 1;
@@ -94,6 +111,7 @@ while (<IN>) {
 	%SNPs = ('A',0,'T',0,'C',0,'G',0);
 	$above_qv_bases = 0;
 	$SNPs_exist = 0;
+	$diff_count = 0;
 	
 
 }

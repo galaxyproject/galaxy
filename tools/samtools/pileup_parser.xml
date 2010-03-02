@@ -1,9 +1,9 @@
-<tool id="pileup_parser" name="Filter pileup" version="1.0.1">>
+<tool id="pileup_parser" name="Filter pileup" version="1.0.2">>
   <description>on coverage and SNPs</description>
   <command interpreter="perl">
-    #if   $pileup_type.type_select == "six"    #pileup_parser.pl $input "3" "5" "6" "4" $qv_cutoff $cvrg_cutoff $snps_only $interval "2" $out_file1
-    #elif $pileup_type.type_select == "ten"    #pileup_parser.pl $input "3" "9" "10" "8" $qv_cutoff $cvrg_cutoff $snps_only $interval "2" $out_file1
-    #elif $pileup_type.type_select == "manual" #pileup_parser.pl $input $pileup_type.ref_base_column $pileup_type.read_bases_column $pileup_type.read_qv_column $pileup_type.cvrg_column $qv_cutoff $cvrg_cutoff $snps_only $interval $pileup_type.coord_column $out_file1
+    #if   $pileup_type.type_select == "six"    #pileup_parser.pl $input "3" "5" "6" "4" $qv_cutoff $cvrg_cutoff $snps_only $interval "2" $out_file1 $diff $qc_base
+    #elif $pileup_type.type_select == "ten"    #pileup_parser.pl $input "3" "9" "10" "8" $qv_cutoff $cvrg_cutoff $snps_only $interval "2" $out_file1 $diff $qc_base
+    #elif $pileup_type.type_select == "manual" #pileup_parser.pl $input $pileup_type.ref_base_column $pileup_type.read_bases_column $pileup_type.read_qv_column $pileup_type.cvrg_column $qv_cutoff $cvrg_cutoff $snps_only $interval $pileup_type.coord_column $out_file1 $diff $qc_base
     #end if#
   </command>
   <inputs>
@@ -36,6 +36,14 @@
         <option value="No" selected="true">No</option>
         <option value="Yes">Yes</option>
     </param>
+    <param name="diff" label="Print total number of differences?" type="select" help="See &quot;Example 3&quot; below for explanation">
+        <option value="No" selected="true">No</option>
+        <option value="Yes">Yes</option>
+    </param>
+    <param name="qc_base" label="Print quality and base string?" type="select" help="See &quot;Example 4&quot; below for explanation">
+        <option value="No">No</option>
+        <option value="Yes" selected="true">Yes</option>
+    </param>
         
   </inputs>
   <outputs>
@@ -54,6 +62,8 @@
       <param name="cvrg_cutoff" value="3" />
       <param name="snps_only" value="Yes"/>
       <param name="interval" value="Yes" />
+      <param name="diff" value="No" />
+      <param name="qc_base" value="Yes" />
     </test>
     <test>
       <param name="input" value="pileup_parser.6col.pileup"/>
@@ -63,6 +73,8 @@
       <param name="cvrg_cutoff" value="3" />
       <param name="snps_only" value="Yes"/>
       <param name="interval" value="No" />
+       <param name="diff" value="No" />
+      <param name="qc_base" value="Yes" />
     </test>
     <test>
       <param name="input" value="pileup_parser.6col.pileup"/>
@@ -72,6 +84,8 @@
       <param name="cvrg_cutoff" value="3" />
       <param name="snps_only" value="No"/>
       <param name="interval" value="No" />
+       <param name="diff" value="No" />
+      <param name="qc_base" value="Yes" />
     </test>
     <test>
       <param name="input" value="pileup_parser.10col.pileup"/>
@@ -81,6 +95,8 @@
       <param name="cvrg_cutoff" value="3" />
       <param name="snps_only" value="Yes"/>
       <param name="interval" value="Yes" />
+       <param name="diff" value="No" />
+      <param name="qc_base" value="Yes" />
     </test>
     <test>
       <param name="input" value="pileup_parser.10col.pileup"/>
@@ -95,7 +111,43 @@
       <param name="cvrg_cutoff" value="3" />
       <param name="snps_only" value="Yes"/>
       <param name="interval" value="Yes" />
+       <param name="diff" value="No" />
+      <param name="qc_base" value="Yes" />
     </test>
+        <test>
+      <param name="input" value="pileup_parser.10col.pileup"/>
+      <output name="out_file1" file="pileup_parser.10col.20-3-yes-yes-yes-yes.pileup.out"/>
+      <param name="type_select" value="manual"/>
+      <param name="ref_base_column" value="3"/>
+      <param name="read_bases_column" value="9"/>
+      <param name="read_qv_column" value="10"/>
+      <param name="cvrg_column" value="8"/>
+      <param name="coord_column" value="2"/>
+      <param name="qv_cutoff" value="20" />
+      <param name="cvrg_cutoff" value="3" />
+      <param name="snps_only" value="Yes"/>
+      <param name="interval" value="Yes" />
+       <param name="diff" value="Yes" />
+      <param name="qc_base" value="Yes" />
+    </test>
+    <test>
+      <param name="input" value="pileup_parser.10col.pileup"/>
+      <output name="out_file1" file="pileup_parser.10col.20-3-yes-yes-yes-no.pileup.out"/>
+      <param name="type_select" value="manual"/>
+      <param name="ref_base_column" value="3"/>
+      <param name="read_bases_column" value="9"/>
+      <param name="read_qv_column" value="10"/>
+      <param name="cvrg_column" value="8"/>
+      <param name="coord_column" value="2"/>
+      <param name="qv_cutoff" value="20" />
+      <param name="cvrg_cutoff" value="3" />
+      <param name="snps_only" value="Yes"/>
+      <param name="interval" value="Yes" />
+       <param name="diff" value="Yes" />
+      <param name="qc_base" value="No" />
+    </test>
+
+
  </tests>
 <help>
 
@@ -120,7 +172,7 @@ The descriptions of the following pileup formats are largely based on informatio
  ---------------------------------   
  chrM  412  A  2       .,       II
  chrM  413  G  4     ..t,     IIIH
- chrM  414  C  4     ...a     III2
+ chrM  414  C  4     ..Ta     III2
  chrM  415  C  4     TTTt     III7
    
 where::
@@ -143,7 +195,7 @@ The `ten-column`__ pileup incorporates additional consensus information generate
  ------------------------------------------------
  chrM  412  A  A  75   0  25  2       .,       II
  chrM  413  G  G  72   0  25  4     ..t,     IIIH
- chrM  414  C  C  75   0  25  4     ...a     III2
+ chrM  414  C  C  75   0  25  4     ..Ta     III2
  chrM  415  C  T  75  75  25  4     TTTt     III7
 
 where::
@@ -178,18 +230,21 @@ The tool modifies the input dataset in two ways:
 - Number of **T** variants
 - Number of read bases covering this position, where quality is equal to or higher than the value set by **Do not consider read bases with  quality lower than** option. 
 
+Optionally, if **Print total number of differences?** is set to **Yes**, the tool will append the sixth column with the total number of deviants (see below).
+
 2. If **Convert coordinates to intervals?** is set to **Yes**, the tool replaces the position column (typically the second column) with a pair of tab-delimited start/end values.
 
 For example, if you are calling variants with base quality above 20 on this dataset::
 
  chrM  412  A  2       .,       II
  chrM  413  G  4     ..t,     III2
- chrM  414  C  4     ...a     III2
+ chrM  414  C  4     ..Ta     III2
  chrM  415  C  4     TTTt     III7
 
 you will get::
 
  chrM  413  G  4  ..t,  IIIH  0  0  2  1  3
+ chrM  414  C  4  ..Ta  III2  1  1  0  1  3
  chrM  415  C  4  TTTt  III7  0  0  0  4  4
  
 where::
@@ -200,18 +255,29 @@ where::
        2 Position (1-based)
        3 Reference base at that position
        4 Coverage (# reads aligning over that position)
-       5 Bases within reads where (see Galaxy wiki for more info)
+       5 Bases within reads where (see Galaxy wiki for more info) 
        6 Quality values (phred33 scale, see Galaxy wiki for more)
        7 Number of A variants
        8 Number of C variants
        9 Number of G variants
       10 Number of T variants
       11 Quality adjusted coverage:
-         Number of read bases (i.e., # of reads) with quality above the set threshold
+      12 Number of read bases (i.e., # of reads) with quality above the set threshold
+      13 Total number of deviants (if Convert coordinates to intervals? is set to yes)
+         
+if **Print total number of differences?** is set to **Yes**, you will get::
+
+ chrM  413  G  4  ..t,  IIIH  0  0  2  1  3  1
+ chrM  414  C  4  ..Ta  III2  1  2  0  1  3  2
+ chrM  415  C  4  TTTt  III7  0  0  0  4  4  0 
  
-and if **Convert coordinates to intervals?** is set to **Yes**, you will get one additional column::
+Note the additional column 13, that contains the number of deviant reads (e.g., there are two deviants, T and a, for position 414).
+
+ 
+Finally, if **Convert coordinates to intervals?** is set to **Yes**, you will get one additional column with the end coordinate::
  
  chrM  412 413  G  4  ..t,  III2  0  0  2  1  3
+ chrM  414 415  C  4  ..Ta  III2  1  2  0  1  3
  chrM  414 415  C  4  TTTt  III7  0  0  0  4  4
  
 where::
@@ -230,13 +296,14 @@ where::
       10 Number of G variants
       11 Number of T variants
       12 Quality adjusted coverage
+      13 Total number of deviants (if Convert coordinates to intervals? is set to yes)
 
 
 Note that in this case the coordinates of SNPs were converted to intervals, where the start coordinate is 0-based and the end coordinate in 1-based using the UCSC Table Browser convention. 
  
 Although three positions have variants in the original file (413, 414, and 415), only 413 and 415 are reported because the quality values associated with these two SNPs are above the threshold of 20. In the case of 414 the **a** allele has a quality value of 17 ( ord("2")-33 ), and is therefore not reported. Note that five columns have been added to each of the reported lines::
 
-  chrM  413  G  4  ..t,  IIIH  0  0  0  1  3
+  chrM  413  G  4  ..t,  IIIH  0  0  2  1  3
   
 Here, there is one variant, **t**. Because the fourth column represents **T** counts, it is incremented by 1. The last column shows that at this position, three reads have bases above the quality threshold of 20.
 
@@ -248,7 +315,7 @@ In this mode, the tool only outputs the lines from the input datasets where at l
 
  chrM  412  A  2       .,       II
  chrM  413  G  4     ..t,     III2
- chrM  414  C  4     ...a     III2
+ chrM  414  C  4     ..Ta     III2
  chrM  415  C  4     TTTt     III7
  
 To call all variants (with no restriction by coverage) with quality above phred value of 20, we will need to set the parameters as follows:
@@ -258,6 +325,7 @@ To call all variants (with no restriction by coverage) with quality above phred 
 Running the tool with these parameters will return::
 
  chrM  413  G  4  ..t,  IIIH  0  0  0  1  3
+ chrM  414  C  4  ..Ta  III2  0  2  0  1  3
  chrM  415  C  4  TTTt  III7  0  0  0  4  4
  
 **Note** that position 414 is not reported because the *a* variant has associated quality value of 17 (because ord('2')-33 = 17) and is below the phred threshold of 20 set by the **Count variants with quality above this value** parameter.
@@ -274,12 +342,46 @@ will report everything from the original file::
 
  chrM  412  A  2  .,    II    2  0  0  0  2
  chrM  413  G  4  ..t,  III2  0  0  2  1  3
- chrM  414  C  4  ...a  III2  3  0  0  0  3
+ chrM  414  C  4  ..Ta  III2  0  2  0  1  3
  chrM  415  C  4  TTTt  III7  0  0  0  4  4
  
 Here, you can see that although the total coverage at position 414 is 4 (column 4), the quality adjusted coverage is 3 (last column). This is because only three out of four reads have bases with quality above the set threshold of 20 (the actual qualities are III2 or, after conversion,  40, 40, 40, 17).
 
 One can use the last column of this dataset to filter out (using Galaxy's **Filter** tool) positions where quality adjusted coverage (last column) is below a set threshold.
+
+------
+
+**Example 3**: Report everything and print total number of differences
+
+If you set the **Print total number of differences?** to **Yes** the tool will print an additional column with the total number of reads where a devinat base is above the quality threshold cutoff. So, seetiing parametrs like this:
+
+.. image:: ../static/images/pileup_parser_help3.png
+
+will produce this::
+
+ chrM  412  A  2  .,    II    2  0  0  0  2  0
+ chrM  413  G  4  ..t,  III2  0  0  2  1  3  1
+ chrM  414  C  4  ..Ta  III2  0  2  0  1  3  1
+ chrM  415  C  4  TTTt  III7  0  0  0  4  4  0
+ 
+ 
+-----
+
+**Example 4**: Report everything, print total number of differences, and ignore qualities and read bases
+
+Setting **Print quality and base string?** to **Yes** as shown here:
+
+.. image:: ../static/images/pileup_parser_help4.png
+
+will produce this::
+
+ chrM  412  A  2  2  0  0  0  2  0
+ chrM  413  G  4  0  0  2  1  3  1
+ chrM  414  C  4  0  2  0  1  3  1
+ chrM  415  C  4  0  0  0  4  4  0
+
+
+
  
 </help>
 </tool>
