@@ -1537,9 +1537,6 @@ class ItemTagAssociation ( object ):
         self.value = None
         self.user_value = None
         
-    def __str__ ( self ):
-        return "%s(item_id=%s, item_tag=%s, user_tname=%s, value=%s, user_value=%s)" % (self.__class__.__name__, self.item_id, self.tag_id, self.user_tname, self.value. self.user_value )  
-
 class HistoryTagAssociation ( ItemTagAssociation ):
     pass
     

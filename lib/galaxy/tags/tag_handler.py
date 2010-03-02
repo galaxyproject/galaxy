@@ -211,12 +211,12 @@ class TagHandler( object ):
             
         return tag
     
-    def _get_item_tag_assoc(self, user, item, tag_name):
-        """Return ItemTagAssociation object for an item and a tag string; returns None if there is
-            no such tag."""
-        scrubbed_tag_name = self._scrub_tag_name(tag_name)
+    def _get_item_tag_assoc( self, user, item, tag_name ):
+        """Return ItemTagAssociation object for a user, item, and tag string; returns None if there is
+            no such association."""
+        scrubbed_tag_name = self._scrub_tag_name( tag_name )
         for item_tag_assoc in item.tags:
-            if ( item_tag_assoc.user == user ) and ( item_tag_assoc.tag.name == scrubbed_tag_name ):
+            if ( item_tag_assoc.user == user ) and ( item_tag_assoc.user_tname == scrubbed_tag_name ):
                 return item_tag_assoc 
         return None
     
