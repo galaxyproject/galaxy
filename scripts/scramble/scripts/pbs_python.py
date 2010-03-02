@@ -1,4 +1,4 @@
-import os, sys
+import os, sys, shutil
 
 if "LIBTORQUE_DIR" not in os.environ:
     print "main(): Please set LIBTORQUE_DIR to the path of the"
@@ -13,12 +13,14 @@ if os.path.dirname( sys.argv[0] ) != "":
 sys.path.append( os.path.join( '..', '..', '..', 'lib' ) )
 from scramble_lib import *
 
-ver = get_ver() # get the version
 tag = get_tag() # get the tag
 clean() # clean up any existing stuff (could happen if you run scramble.py by hand)
 
 # the build process doesn't set an rpath for libtorque
 os.environ['LD_RUN_PATH'] = os.environ['LIBTORQUE_DIR']
+
+# patch setup.py
+shutil.copy( os.path.join( patches, 'pbs_python', 'setup.py' ), 'setup.py' )
 
 # run the config script
 run( 'sh configure --with-pbsdir=%s' % os.environ['LIBTORQUE_DIR'], os.getcwd(), 'Running pbs_python configure script' )
@@ -27,7 +29,6 @@ run( 'sh configure --with-pbsdir=%s' % os.environ['LIBTORQUE_DIR'], os.getcwd(),
 me = sys.argv[0]
 sys.argv = [ me ]
 sys.argv.append( "egg_info" )
-sys.argv.append( "--version=%s" % ver )
 if tag is not None:
     sys.argv.append( "--tag-build=%s" %tag )
 # svn revision (if any) is handled directly in tag-build
