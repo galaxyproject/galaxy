@@ -337,6 +337,6 @@ class SGEJobRunner( object ):
             self.queue.put( sge_job_state )
         elif job.state == model.Job.states.QUEUED:
             log.debug( "(%s/%s) is still in SGE queued state, adding to the SGE queue" % ( job.id, job.job_runner_external_id ) )
-            sge_job_state.old_state = DRMAA.Session.QUEUED
+            sge_job_state.old_state = DRMAA.Session.QUEUED_ACTIVE
             sge_job_state.running = False
             self.queue.put( sge_job_state )
