@@ -1,12 +1,12 @@
-<tool id="lastz_wrapper_2" name="Lastz" version="1.1.0">
-    <description> map short reads against reference sequence</description>
-    <command interpreter="python">lastz_wrapper.py
+<tool id="lastz_paired_reads_wrapper" name="Lastz paired reads" version="1.0.0">
+    <description> map short paired reads against reference sequence</description>
+    <command interpreter="python">lastz_paired_reads_wrapper.py
 #if $seq_name.how_to_name=="yes":
 --ref_name=$seq_name.ref_name 
 #else:
 --ref_name="None" 
 #end if
---ref_source=$source.ref_source --source_select=$params.source_select --out_format=$out_format --input2=$input2 
+--ref_source=$source.ref_source --input2=$input2 --input3=$input3 --input4=$input4
 #if $source.ref_source=="history":
 --input1=$source.input1
 --ref_sequences=$input1.metadata.sequences 
@@ -14,12 +14,7 @@
 --input1=$source.input1_2bit
 --ref_sequences="None" 
 #end if
-#if $params.source_select=="pre_set":
---pre_set_options=${params.pre_set_options} --strand="None" --seed="None" --gfextend="None" --chain="None" --transition="None" --O="None" --E="None" --X="None" --Y="None" --K="None" --L="None" --entropy="None" 
-#else:
---pre_set_options="None" --strand=$params.strand --seed=$params.seed --gfextend=$params.gfextend --chain=$params.chain --transition=$params.transition --O=$params.O --E=$params.E --X=$params.X --Y=$params.Y --K=$params.K --L=$params.L --entropy=$params.entropy 
-#end if
---identity_min=$min_ident --identity_max=$max_ident --coverage=$min_cvrg --output=$output1 --unmask=$unmask --lastzSeqsFileDir=${GALAXY_DATA_INDEX_DIR}
+--output=$output1 --lastz_seqs_file_dir=${GALAXY_DATA_INDEX_DIR}
     </command>
     <inputs>
         <param name="input2" format="fasta" type="data" label="Align sequencing reads in" />
@@ -40,62 +35,8 @@
                 <param name="input1" type="data" format="fasta" label="Select a reference dataset" />
             </when>
         </conditional>
-        <param name="out_format" type="select" label="Output format">
-            <option value="sam">SAM</option>
-            <option value="diffs">Polymorphisms</option>
-            <option value="tabular">Tabular</option>
-        </param>
-        <conditional name="params">
-            <param name="source_select" type="select" label="Lastz settings to use" help="For most mapping needs use Commonly used settings. If you want full control use Full List">
-                <option value="pre_set">Commonly used</option>
-                <option value="full">Full Parameter List</option>
-            </param>
-            <when value="pre_set">
-                <param name="pre_set_options" type="select" label="Select mapping mode">
-                    <option value="yasra98">Roche-454 98% identity</option>
-                    <option value="yasra95">Roche-454 95% identity</option>
-                    <option value="yasra90">Roche-454 90% identity</option>
-                    <option value="yasra85">Roche-454 85% identity</option>
-                    <option value="yasra75">Roche-454 75% identity</option>
-                    <option value="yasra95short">Illumina 95% identity</option>
-                    <option value="yasra85short">Illumina 85% identity</option>
-                </param>
-            </when>
-            <when value="full">
-                <param name="strand" type="select" label="Which strand to search?">
-                    <option value="both">Both</option>
-                    <option value="plus">Search forward strand only (the one in the reference)</option>
-                    <option value="minus">Search the reverse complement strand only (opposite of the reference)</option>
-                </param>
-                <param name="seed" type="select" label="Select seeding settings" help="allows you set word size and number of mismatches">
-                    <option value="12of19">Seed hits require a 19 bp word with matches in 12 specific positions</option>
-                    <option value="14of22">Seed hits require a 22 bp word with matches in 14 specific positions</option>
-                </param>
-                <param name="transition" type="select" label="Select transition settings" help="affects the number of allowed transition substitutions">
-                    <option value="transition">Allow one transition in each seed hit</option>
-                    <option value="transition2">Allow two transitions in a seed hit </option>
-                    <option value="notransition">Don't allow any transitions in seed hits</option>
-                </param>
-                <param name="gfextend" type="select" label="Perform gap-free extension of seed hits to HSPs (high scoring segment pairs)?">
-                    <option value="nogfextend">No</option>
-                    <option value="gfextend">Yes</option>
-                </param>
-                <param name="chain" type="select" label="Perform chaining of HSPs?">
-                    <option value="nochain">No</option>
-                    <option value="chain">Yes</option>
-                </param>
-                <param name="O" type="integer" size="5" value="400" label="Gap opening penalty"/>
-                <param name="E" type="integer" size="5" value="30" label="Gap extension penalty"/>
-                <param name="X" type="integer" size="5" value="910" label="X-drop threshold"/>
-                <param name="Y" type="integer" size="5" value="9370" label="Y-drop threshold"/>
-                <param name="K" type="integer" size="5" value="3000" label="Set the threshold for HSPs (ungapped extensions scoring lower are discarded)"/>
-                <param name="L" type="integer" size="5" value="3000" label="Set the threshold for gapped alignments (gapped extensions scoring lower are discarded)"/>
-                <param name="entropy" type="select" label="Involve entropy when filtering HSPs?">
-                    <option value="noentropy">No</option>
-                    <option value="entropy">Yes</option>
-                </param>
-            </when>   
-        </conditional>
+        <param name="input3" format="fasta" type="data" label="Linker file" />
+        <param name="input4" format="qual454" type="data" label="Select a base quality score 454 dataset" />
         <conditional name="seq_name">
             <param name="how_to_name" type="select" label="Do you want to modify reference name?">
                 <option value="no">No</option>
@@ -106,20 +47,9 @@
             </when>
             <when value="no" />
         </conditional>
-        <param name="min_ident" type="integer" size="3" value="0" label="Do not report matches below this identity (%)"/>
-        <param name="max_ident" type="integer" size="3" value="100" label="Do not report matches above this identity (%)"/>
-        <param name="min_cvrg" type="integer" size="3" value="0" label="Do not report matches that cover less than this percentage of each read"/>
-        <param name="unmask" type="select" label="Convert lowercase bases to uppercase">
-            <option value="yes">Yes</option>
-            <option value="no">No</option>
-        </param>
     </inputs>
     <outputs>
-        <data format="tabular" name="output1">
-            <change_format>
-                <when input="out_format" value="sam" format="sam" />
-            </change_format>
-        </data>
+        <data format="sam" name="output1" />
     </outputs>
     <requirements>
         <requirement type="binary">lastz</requirement>
@@ -127,86 +57,18 @@
     <tests>
         <test>
             <!--
-            Lastz command:
-            lastz phiX.2bit/PHIX174[nickname=Ref] test-data/b1.fasta +nogfextend +nochain +gapped +strand=both +seed=12of19 +transition O=400 E=30 X=910 Y=9370 K=3000 L=3000 +noentropy +ambiguousn +nolaj +identity=0..100 +coverage=0 +format=sam- > lastz_wrapper_out2.sam 
-            You need to point to phiX.2bit somewhere on your system. b1.fasta is located in galaxy's test-data.  You will have to replace all the pluses before the
-            commands with 2 dashes, as double-dash can't appear in an XML comment.
+                input1: a reference genome ( 2bit or fasta )
+                input2: a collection of 454 paired end reads ( a fasta file )
+                input3: a linker sequence ( a very small fasta file )
+                input4: a base quality score 454 file ( qual454 )
             -->
-            <param name="input2" value="b1.fasta" ftype="fasta" />
+            <param name="input2" value="lastz_paired_input2.fasta" ftype="fasta" />
             <param name="ref_source" value="cached" />
-            <param name="input1_2bit" value="phiX" />
-            <param name="out_format" value="sam" />
-            <param name="source_select" value="full" />
-            <param name="strand" value="both" />
-            <param name="seed" value="12of19" />
-            <param name="transition" value="transition" />      
-            <param name="gfextend" value="nogfextend" />
-            <param name="chain" value="nochain" />
-            <param name="O" value="400" />
-            <param name="E" value="30" />
-            <param name="X" value="910" />
-            <param name="Y" value="9370" />
-            <param name="K" value="3000" />
-            <param name="L" value="3000" />
-            <param name="entropy" value="noentropy" />
-            <!--
-             how_to_name is not the default. It is changed to modify 
-            	 input1_2bit by adding the ref_name as a nickname
-            -->
-            <param name="how_to_name" value="yes" />
-            <param name="ref_name" value="Ref" />
-            <param name="min_ident" value="0" />
-            <param name="max_ident" value="100" />
-            <param name="min_cvrg" value="0" />
-            <param name="unmask" value="yes" />
-            <output name="output1" file="lastz_wrapper_out2.sam" />
-        </test>
-        <test>
-            <!--
-            Lastz command:
-            lastz test-data/phiX.fasta test-data/b1.fasta[fullnames] +yasra95short +ambiguousn +nolaj +identity=0..100 +coverage=0 +format=diffs > lastz_wrapper_out3.tabular 
-        	phiX.fasta and b1.fasta are located in galaxy's test-data.  You will have to replace all the pluses before the commands with 2 dashes, 
-            as double-dash can't appear in an XML comment.
-            -->
-            <param name="input2" value="b1.fasta" ftype="fasta" />
-            <param name="ref_source" value="history" />
-            <param name="input1" value="phiX.fasta" ftype="fasta" />
-            <param name="out_format" value="diffs" />
-            <param name="source_select" value="pre_set" />
-            <param name="pre_set_options" value="yasra95short" />
+            <param name="input1_2bit" value="hg18Chr21" />
+            <param name="input3" value="lastz_paired_input3.fasta" ftype="fasta" />
+            <param name="input4" value="lastz_paired_input4.qual454" ftype="qual454" />
             <param name="how_to_name" value="no" />
-            <param name="min_ident" value="0" />
-            <param name="max_ident" value="100" />
-            <param name="min_cvrg" value="0" />
-            <param name="unmask" value="yes" />
-            <output name="output1" file="lastz_wrapper_out3.tabular" />
-        </test>
-        <test>
-            <!--
-        	Lastz command: first you will need to split the file phiX_split.fasta into two files, 
-        	phiX1.fasta and phiX2.fasta, each with 1 sequence (phiX1 and phiX2, respectively). Then:
-        	lastz phiX1.fasta test-data/b1.fasta *yasra95short *ambiguousn *nolaj *identity=0..100 *coverage=0 *format=general-:score,name1,strand1,size1,start1,zstart1,end1,length1,text1,name2,strand2,size2,start2,zstart2,end2,start2+,zstart2+,end2+,length2,text2,diff,cigar,identity,coverage,gaprate,diagonal,shingle > lastz_wrapper_out4.tabular 
-        	lastz phiX2.fasta test-data/b1.fasta *yasra95short *ambiguousn *nolaj *identity=0..100 *coverage=0 *format=general-:score,name1,strand1,size1,start1,zstart1,end1,length1,text1,name2,strand2,size2,start2,zstart2,end2,start2+,zstart2+,end2+,length2,text2,diff,cigar,identity,coverage,gaprate,diagonal,shingle >> lastz_wrapper_out4.tabular 
-        	You need to point to phiX1.fasta and phiX2.fasta somewhere on your system. 
-        	phiX_split.fasta and b1.fasta are located in galaxy's test-data 
-        	You will have to replace all the asterisks before the commands with 2 dashes, 
-        	as double-dash can't appear in an XML comment 
-        	
-        	NOTE: since the input file include more than 1 sequence, the output must be sorted in 
-        	order for functional test to pass.  This is done using the sort="True" attribute on the output.
-        	-->
-            <param name="input2" value="b1.fasta" ftype="fasta" />
-            <param name="ref_source" value="history" />
-            <param name="input1" value="phiX_split.fasta" ftype="fasta"  />
-            <param name="out_format" value="tabular" />
-            <param name="source_select" value="pre_set" />
-            <param name="pre_set_options" value="yasra95short" />
-            <param name="how_to_name" value="no" />
-            <param name="min_ident" value="0" />
-            <param name="max_ident" value="100" />
-            <param name="min_cvrg" value="0" />
-            <param name="unmask" value="yes" />
-            <output name="output1" file="lastz_wrapper_out4.tabular" sort="True" />
+            <output name="output1" file="lastz_paired_out1.sam" />
         </test>
     </tests>
     <help>
