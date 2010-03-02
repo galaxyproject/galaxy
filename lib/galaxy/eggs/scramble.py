@@ -167,7 +167,7 @@ class ScrambleEgg( Egg ):
             "%s-%s.py" % ( self.name, platform ),
             "%s-%s.py" % ( self.name, '-'.join( platform.split( '-' )[:2] ) ),
             "%s-%s.py" % ( self.name, '-'.join( platform.split( '-' )[1:] ) ),
-            "%s-%s.py" % ( self.name, self.py ),
+            "%s-%s.py" % ( self.name, platform.split( '-' )[:2][-1] ),
             "%s-%s.py" % ( self.name, platform.split( '-' )[0] ),
             "%s.py" % self.name,
             "generic.py" )

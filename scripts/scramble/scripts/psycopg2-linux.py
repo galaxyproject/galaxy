@@ -64,6 +64,7 @@ if __name__ == '__main__':
         shutil.copy( 'setup.cfg', 'setup.cfg.orig' )
         f = open( 'setup.cfg', 'a' )
         f.write( '\npg_config=postgres/bin/pg_config\n' )
+        f.write( '\nlibraries=crypt\n' )
         f.close()
 
     # tag

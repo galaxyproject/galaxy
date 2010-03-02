@@ -11,8 +11,11 @@ def prep_postgres( prepped, args ):
     os.environ['CFLAGS'] = get_config_var('CFLAGS')
     os.environ['LDFLAGS'] = get_config_var('LDFLAGS')
 
-    if '-fPIC' not in os.environ['CFLAGS']:
-        os.environ['CFLAGS'] += ' -fPIC'
+    cc = get_solaris_compiler()
+    if cc == 'cc':
+        os.environ['CFLAGS'] += ' -KPIC'
+    elif cc == 'gcc':
+        os.environ['CFLAGS'] += ' -fPIC -DPIC'
 
     # run configure
     run( "./configure --prefix=%s/postgres --disable-dependency-tracking --enable-static --disable-shared --without-readline --with-thread-safety" % os.getcwd(),
@@ -20,13 +23,13 @@ def prep_postgres( prepped, args ):
         "Configuring postgres (./configure)" )
 
     # compile
-    run( "make", os.path.join( pg_srcdir, 'src', 'interfaces', 'libpq' ), "Compiling libpq (cd src/interfaces/libpq; make)" )
-    run( "make", os.path.join( pg_srcdir, 'src', 'bin', 'pg_config' ), "Compiling pg_config (cd src/bin/pg_config; make)" )
+    run( "gmake", os.path.join( pg_srcdir, 'src', 'interfaces', 'libpq' ), "Compiling libpq (cd src/interfaces/libpq; gmake)" )
+    run( "gmake", os.path.join( pg_srcdir, 'src', 'bin', 'pg_config' ), "Compiling pg_config (cd src/bin/pg_config; gmake)" )
 
     # install
-    run( "make install", os.path.join( pg_srcdir, 'src', 'interfaces', 'libpq' ), "Compiling libpq (cd src/interfaces/libpq; make install)" )
-    run( "make install", os.path.join( pg_srcdir, 'src', 'bin', 'pg_config' ), "Compiling pg_config (cd src/bin/pg_config; make install)" )
-    run( "make install", os.path.join( pg_srcdir, 'src', 'include' ), "Compiling pg_config (cd src/include; make install)" )
+    run( "gmake install", os.path.join( pg_srcdir, 'src', 'interfaces', 'libpq' ), "Compiling libpq (cd src/interfaces/libpq; gmake install)" )
+    run( "gmake install", os.path.join( pg_srcdir, 'src', 'bin', 'pg_config' ), "Compiling pg_config (cd src/bin/pg_config; gmake install)" )
+    run( "gmake install", os.path.join( pg_srcdir, 'src', 'include' ), "Compiling pg_config (cd src/include; gmake install)" )
 
     # create prepped archive
     print "%s(): Creating prepped archive for future builds at:" % sys._getframe().f_code.co_name
