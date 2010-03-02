@@ -2,27 +2,27 @@
   <description>by column</description>
   <command interpreter="python">fastq_trimmer.py '$input_file' '$output_file' '${offset_type['left_column_offset']}' '${offset_type['right_column_offset']}' '${offset_type['base_offset_type']}' '${input_file.extension[len( 'fastq' ):]}' '$keep_zero_length'</command>
   <inputs>
-    <param name="input_file" type="data" format="fastqsanger,fastqillumina,fastqsolexa,fastqsolid" label="FASTQ File"/>
+    <param name="input_file" type="data" format="fastqsanger,fastqcssanger" label="FASTQ File"/>
     <conditional name="offset_type">
       <param name="base_offset_type" type="select" label="Define Base Offsets as">
         <option value="offsets_absolute" selected="true">Absolute Values</option>
         <option value="offsets_percent">Percentage of Read Length</option>
       </param>
       <when value="offsets_absolute">
-        <param name="left_column_offset" label="Absolute Left Base Offset" value="0" type="integer" help="Values start at 0, increasing from the left">
+        <param name="left_column_offset" label="Offset from 5' end" value="0" type="integer" help="Values start at 0, increasing from the left">
           <validator type="in_range" message="Base Offsets must be positive" min="0" max="inf"/>
           <validator type="expression" message="An integer is required.">int( float( value ) ) == float( value )</validator>
         </param>
-        <param name="right_column_offset" label="Absolute Right Base Offset" value="0" type="integer" help="Values start at 0, increasing from the right">
+        <param name="right_column_offset" label="Offset from 3' end" value="0" type="integer" help="Values start at 0, increasing from the right">
           <validator type="in_range" message="Base Offsets must be positive" min="0" max="inf"/>
           <validator type="expression" message="An integer is required.">int( float( value ) ) == float( value )</validator>
         </param>
       </when>
       <when value="offsets_percent">
-        <param name="left_column_offset" label="Percentage Left Base Offset" value="0" type="float">
+        <param name="left_column_offset" label="Offset from 5' end" value="0" type="float">
           <validator type="in_range" message="Base Offsets must be between 0 and 100" min="0" max="100"/>
         </param>
-        <param name="right_column_offset" label="Percentage Right Base Offset" value="0" type="float">
+        <param name="right_column_offset" label="Offset from 3' end" value="0" type="float">
           <validator type="in_range" message="Base Offsets must be between 0 and 100" min="0" max="100"/>
         </param>
       </when>
@@ -107,7 +107,7 @@ Or you set percent offsets of 6% and 20% (corresponds to absolute offsets of 2,7
 
 .. class:: warningmark
 
-Trimming a SOLiD read will cause any adapter base to be lost.
+Trimming a color space read will cause any adapter base to be lost.
 
   </help>
 </tool>

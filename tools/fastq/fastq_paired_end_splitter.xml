@@ -2,7 +2,7 @@
   <description>on joined paired end reads</description>
   <command interpreter="python">fastq_paired_end_splitter.py '$input1_file' '${input1_file.extension[len( 'fastq' ):]}' '$output1_file' '$output2_file'</command>
   <inputs>
-    <param name="input1_file" type="data" format="fastq" label="FASTQ reads" />
+    <param name="input1_file" type="data" format="fastqsanger,fastqcssanger" label="FASTQ reads" />
   </inputs>
   <outputs>
     <data name="output1_file" format="input" />

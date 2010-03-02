@@ -224,9 +224,9 @@ class FastqIllumina( Fastq ):
     """Class representing a FASTQ sequence ( the Illumina 1.3+ variant )"""
     file_ext = "fastqillumina"
 
-class FastqSolid( Fastq ):
-    """Class representing a FASTQ sequence ( the SOLiD (color space) variant )"""
-    file_ext = "fastqsolid"
+class FastqCSSanger( Fastq ):
+    """Class representing a Color Space FASTQ sequence ( e.g a SOLiD variant )"""
+    file_ext = "fastqcssanger"
 
 try:
     from galaxy import eggs

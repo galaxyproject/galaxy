@@ -35,7 +35,7 @@
         <datatype extension="fastq" type="galaxy.datatypes.sequence:Fastq" display_in_upload="true"/>
         <datatype extension="fastqsanger" type="galaxy.datatypes.sequence:FastqSanger" display_in_upload="true"/>
         <datatype extension="fastqsolexa" type="galaxy.datatypes.sequence:FastqSolexa" display_in_upload="true"/>
-        <datatype extension="fastqsolid" type="galaxy.datatypes.sequence:FastqSolid" display_in_upload="true"/>
+        <datatype extension="fastqcssanger" type="galaxy.datatypes.sequence:FastqCSSanger" display_in_upload="true"/>
         <datatype extension="fastqillumina" type="galaxy.datatypes.sequence:FastqIllumina" display_in_upload="true"/>
         <datatype extension="genetrack" type="galaxy.datatypes.tracks:GeneTrack">
             <!-- <display file="genetrack.xml" /> -->

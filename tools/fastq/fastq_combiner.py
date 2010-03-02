@@ -16,7 +16,7 @@ def main():
     
     format = 'sanger'
     if fasta_type == 'csfasta' or qual_type == 'qualsolid':
-        format = 'solid'
+        format = 'cssanger'
     elif qual_type == 'qualsolexa':
         format = 'solexa'
     elif qual_type == 'qualillumina':

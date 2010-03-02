@@ -1,4 +1,4 @@
-<tool id="fastq_combiner" name="Combine FASTA and QUAL" version="1.0.0">
+<tool id="fastq_combiner" name="Combine FASTA and QUAL" version="1.0.1">
   <description>into FASTQ</description>
   <command interpreter="python">fastq_combiner.py '$fasta_file' '${fasta_file.extension}' '$qual_file' '${qual_file.extension}' '$output_file' '$force_quality_encoding'</command>
   <inputs>
@@ -13,8 +13,8 @@
   <outputs>
     <data name="output_file" format="fastqsanger">
       <change_format>
-        <when input_dataset="fasta_file" attribute="extension" value="csfasta" format="fastqsolid" />
-        <when input_dataset="qual_file" attribute="extension" value="qualsolid" format="fastqsolid" />
+        <when input_dataset="fasta_file" attribute="extension" value="csfasta" format="fastqcssanger" />
+        <when input_dataset="qual_file" attribute="extension" value="qualsolid" format="fastqcssanger" />
         <when input_dataset="qual_file" attribute="extension" value="qualsolexa" format="fastqsolexa" />
         <when input_dataset="qual_file" attribute="extension" value="qualillumina" format="fastqillumina" />
       </change_format>
@@ -25,13 +25,13 @@
       <param name="fasta_file" value="s2fq_phiX.csfasta" ftype="csfasta" />
       <param name="qual_file" value="s2fq_phiX.qualsolid" ftype="qualsolid" />
       <param name="force_quality_encoding" value="None" />
-      <output name="output_file" file="combine_phiX_out_1.fastqsolid" />
+      <output name="output_file" file="combine_phiX_out_1.fastqcssanger" />
     </test>
     <test>
       <param name="fasta_file" value="s2fq_phiX.csfasta" ftype="csfasta" />
       <param name="qual_file" value="s2fq_phiX.qualsolid" ftype="qualsolid" />
       <param name="force_quality_encoding" value="ascii" />
-      <output name="output_file" file="combine_phiX_out_2.fastqsolid" />
+      <output name="output_file" file="combine_phiX_out_2.fastqcssanger" />
     </test>
     <test>
       <param name="fasta_file" value="fastq_combiner_in_1.fasta" ftype="fasta" />
@@ -55,7 +55,7 @@
       <param name="fasta_file" value="s2fq_phiX.csfasta" ftype="csfasta" />
       <param name="qual_file" />
       <param name="force_quality_encoding" value="ascii" />
-      <output name="output_file" file="fastq_combiner_no_qual_ascii_out_1.fastqsolid" />
+      <output name="output_file" file="fastq_combiner_no_qual_ascii_out_1.fastqcssanger" />
     </test>
   </tests>
   <help>
@@ -63,7 +63,8 @@
 
 This tool joins a FASTA file to a Quality Score file, creating a single FASTQ block for each read.
 
-Specifying a set of quality scores is optional; when not provided, the output will be fastqsanger or fastqsolid (when a csfasta is provided) with each quality score being the maximal allowed value (93).
+Specifying a set of quality scores is optional; when not provided, the output will be fastqsanger or fastqcssanger (when a csfasta is provided) with each quality score being the maximal allowed value (93).
 
+Use this tool, for example, to convert 454-type output to FASTQ.
   </help>
 </tool>

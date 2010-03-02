@@ -15,7 +15,7 @@
     </test>
     <!-- color space test -->
     <test>
-      <param name="input_file" value="sanger_full_range_as_solid.fastqsolid" ftype="fastqsolid" />
+      <param name="input_file" value="sanger_full_range_as_cssanger.fastqcssanger" ftype="fastqcssanger" />
       <output name="output_file" file="fastq_to_fasta_python_2.out" />
     </test>
     <!-- test of ignoring invalid score values: this input has ascii characters falling outside of illumina range, but they should not matter -->

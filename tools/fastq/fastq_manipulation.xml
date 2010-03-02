@@ -5,7 +5,7 @@
   <inputs>
     <!-- This tool is purposely over-engineered (e.g. Single option conditionals) to allow easy enhancement with workflow/rerun compatibility -->
     <page>
-      <param name="input_file" type="data" format="fastqsanger,fastqillumina,fastqsolexa,fastqsolid" label="FASTQ File" help="Requires groomed data: if your data does not appear here try using the FASTQ groomer."/>
+      <param name="input_file" type="data" format="fastqsanger,fastqcssanger" label="FASTQ File" help="Requires groomed data: if your data does not appear here try using the FASTQ groomer."/>
       <!-- Match Reads -->
       <repeat name="match_blocks" title="Match Reads" min="1">
         <conditional name="match_type">
@@ -376,13 +376,26 @@ def match_and_manipulate_read( fastq_read ):
 This tool allows you to build complex manipulations to be applied to each matching read in a FASTQ file. A read must match all matching directives in order for it to be manipulated; if a read does not match, it is output in a non-modified manner. All reads matching will have each of the specified manipulations performed upon them, in the order specified.
 
 Regular Expression Matches are made using re.search, see http://docs.python.org/library/re.html for more information.
+  All matching is performed on a single line string, regardless if e.g. the sequence or quality score spans multiple lines in the original file.
 
 String translations are performed using string.translate, see http://docs.python.org/library/string.html#string.translate and http://docs.python.org/library/string.html#string.maketrans for more information.
 
-
 .. class:: warningmark
 
-Only SOLiD (color space) reads can have adapter bases substituted.
+Only color space reads can have adapter bases substituted.
 
+
+-----
+
+**Example**
+
+Suppose you have a color space sanger formatted sequence (fastqcssanger) and you want to double-encode the color space into psuedo-nucleotide space (this is different from converting) to allow these reads to be used in tools which do not natively support it (using specially designed indexes). This tool can handle this manipulation, however, this is generally not recommended as results tend to be poorer than those produced from tools which are specially designed to handle color space data.
+
+Steps:
+
+1. Click **Add new Match Reads** and leave the matching options set to the default (Matching by sequence name/identifier using the regular expression "\*."; thereby matching all reads). 
+2. Click **Add new Manipulate Reads**, change **Manipulate Reads on** to "Sequence Content", set **Sequence Manipulation Type** to "Change Adapter Base" and set **New Adapter** to "" (an empty text field). 
+3. Click **Add new Manipulate Reads**, change **Manipulate Reads on** to "Sequence Content", set **Sequence Manipulation Type** to "String Translate" and set **From** to "0123." and **To** to "ACGTN".
+4. Click Execute. The new history item will contained double-encoded psuedo-nucleotide space reads.
 </help>
 </tool>

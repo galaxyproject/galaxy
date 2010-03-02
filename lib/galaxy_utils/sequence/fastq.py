@@ -176,8 +176,8 @@ class fastqSolexaRead( fastqSequencingRead ):
     score_system = 'solexa'
     sequence_space = 'base'
     
-class fastqSolidRead( fastqSequencingRead ):
-    format = 'solid' #color space
+class fastqCSSangerRead( fastqSequencingRead ):
+    format = 'cssanger' #color space
     ascii_min = 33
     ascii_max = 126
     quality_min = 0
@@ -260,7 +260,7 @@ class fastqSolidRead( fastqSequencingRead ):
 
 
 FASTQ_FORMATS = {}
-for format in [ fastqIlluminaRead, fastqSolexaRead, fastqSangerRead, fastqSolidRead ]:
+for format in [ fastqIlluminaRead, fastqSolexaRead, fastqSangerRead, fastqCSSangerRead ]:
     FASTQ_FORMATS[ format.format ] = format
 
 

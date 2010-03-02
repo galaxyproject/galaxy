@@ -104,7 +104,7 @@ class fastaWriter( object ):
     def __init__( self, fh ):
         self.file = fh
     def write( self, fastq_read ):
-        #this will include SOLiD adapter base if applicable
+        #this will include color space adapter base if applicable
         self.file.write( ">%s\n%s\n" % ( fastq_read.identifier[1:], fastq_read.sequence ) )
     def close( self ):
         return self.file.close()
