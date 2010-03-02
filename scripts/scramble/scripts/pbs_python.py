@@ -19,9 +19,6 @@ clean() # clean up any existing stuff (could happen if you run scramble.py by ha
 # the build process doesn't set an rpath for libtorque
 os.environ['LD_RUN_PATH'] = os.environ['LIBTORQUE_DIR']
 
-# patch setup.py
-shutil.copy( os.path.join( patches, 'pbs_python', 'setup.py' ), 'setup.py' )
-
 # run the config script
 run( 'sh configure --with-pbsdir=%s' % os.environ['LIBTORQUE_DIR'], os.getcwd(), 'Running pbs_python configure script' )
 

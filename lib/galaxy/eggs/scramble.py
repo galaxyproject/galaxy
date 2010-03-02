@@ -56,7 +56,7 @@ class ScrambleEgg( Egg ):
         self.run_scramble_script()
         new_egg = os.path.join( self.buildpath, 'dist', os.path.basename( self.distribution.location ) )
         if not os.path.exists( new_egg ):
-            raise ScrambleFailure( self, "%s(): Egg build for %s did not appear to fail, but no egg found to copy from expected path:\n  %s" % ( sys._getframe().f_code.co_name, self.name, egg_name ) )
+            raise ScrambleFailure( self, "%s(): Egg build for %s did not appear to fail, but no egg found to copy from expected path:\n  %s" % ( sys._getframe().f_code.co_name, self.name, new_egg ) )
         shutil.copyfile( new_egg, self.distribution.location )
         log.warning( "%s(): Copied egg to:" % sys._getframe().f_code.co_name )
         log.warning( "  %s" % self.distribution.location )
