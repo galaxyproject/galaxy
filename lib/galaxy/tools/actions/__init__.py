@@ -213,12 +213,20 @@ class DefaultToolAction( object ):
                         ext = input_ext
                     #process change_format tags
                     if output.change_format:
+                        params = make_dict_copy( incoming ) #FIXME: The wrapping of inputs should only be done once per call to execute; currently happens here and possibly when generating output dataset name
+                        wrap_values( tool.inputs, params )
                         for change_elem in output.change_format:
                             for when_elem in change_elem.findall( 'when' ):
-                                check = incoming.get( when_elem.get( 'input' ), None )
+                                check = when_elem.get( 'input', None )
                                 if check is not None:
-                                    if check == when_elem.get( 'value', None ):
-                                        ext = when_elem.get( 'format', ext )
+                                    try:
+                                        if '$' not in check:
+                                            #allow a simple name or more complex specifications
+                                            check = '${%s}' % check
+                                        if str( fill_template( check, context = params ) ) == when_elem.get( 'value', None ):
+                                            ext = when_elem.get( 'format', ext )
+                                    except: #bad tag input value; possibly referencing a param within a different conditional when block or other nonexistent grouping construct
+                                        continue
                                 else:
                                     check = when_elem.get( 'input_dataset', None )
                                     if check is not None:
