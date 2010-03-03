@@ -908,7 +908,7 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesHistory 
                 else:
                     # Only deal with datasets that have not been purged
                     for hda in history.activatable_datasets:
-                        if trans.app.security_agent.dataset_is_public( hda.dataset ):
+                        if trans.app.security_agent.can_access_dataset( send_to_user.all_roles(), hda.dataset ):
                             # The no_change_needed dictionary is a special case.  If both of can_change
                             # and cannot_change are empty, no_change_needed will used for sharing.  Otherwise
                             # unique_no_change_needed will be used for displaying, so we need to populate both.
@@ -924,12 +924,14 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesHistory 
                                 no_change_needed[ send_to_user ][ history ] = [ hda ]
                             else:
                                 no_change_needed[ send_to_user ][ history ].append( hda )
-                        elif not trans.app.security_agent.can_access_dataset( send_to_user.all_roles(), hda.dataset ):
+                        else:
                             # The user with which we are sharing the history does not have access permission on the current dataset
-                            if trans.app.security_agent.can_manage_dataset( user_roles, hda.dataset ) and not hda.dataset.library_associations:
+                            if trans.app.security_agent.can_manage_dataset( user_roles, hda.dataset ):
                                 # The current user has authority to change permissions on the current dataset because
-                                # they have permission to manage permissions on the dataset and the dataset is not associated 
-                                # with a library.
+                                # they have permission to manage permissions on the dataset.
+                                # NOTE: ( gvk )There may be problems if the dataset also has an ldda, but I don't think so
+                                # because the user with which we are sharing will not have the "manage permission" permission
+                                # on the dataset in their history.  Keep an eye on this though...
                                 if unique:
                                     # Build the dictionaries for display, containing unique histories only
                                     if history not in can_change:
