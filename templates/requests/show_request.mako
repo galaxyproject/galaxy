@@ -237,40 +237,6 @@ $(document).ready(function(){
     %endfor   
 </%def>
 
-<div class="toolForm">
-    <div class="form-row">
-        <div class="msg_list">
-            <h4 class="msg_head"><u>Request Information</u></h4>
-            <div class="msg_body">
-                %for index, rd in enumerate(request_details):
-                    <div class="form-row">
-                        <label>${rd['label']}</label>
-                        %if not rd['value']:
-                            <i>None</i>
-                        %else:                      
-                            %if rd['label'] == 'State':
-                                <a href="${h.url_for( controller='requests_admin', action='list', operation='events', id=trans.security.encode_id(request.id) )}">${rd['value']}</a>
-                            %else:
-                                ${rd['value']}     
-                            %endif
-                        %endif
-                    </div>
-                    <div style="clear: both"></div>
-                %endfor
-                <div class="form-row">
-                <ul class="manage-table-actions">
-                    <li>
-                        <a class="action-button"  href="${h.url_for( controller='requests_admin', action='list', operation='Edit', id=trans.security.encode_id(request.id))}">
-                        <span>Edit request details</span></a>
-                    </li>
-                </ul>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-<br/>
-
 <%def name="render_grid( grid_index, grid_name, fields_dict )">
     <br/>
     <div class="msg_list">
@@ -325,7 +291,38 @@ $(document).ready(function(){
 </%def>
 
 <div class="toolForm">
-    ##<div class="toolFormTitle">Samples (${len(request.samples)})</div>
+    <form id="request_details" name="request_details" >
+        <div class="form-row">
+            <div class="msg_list">
+                <h4 class="msg_head"><u>Request Information</u></h4>
+                <div class="msg_body">
+                    %for index, rd in enumerate(request_details):
+                        <div class="form-row">
+                            <label>${rd['label']}</label>
+                            %if not rd['value']:
+                                <i>None</i>
+                            %else:                      
+                                %if rd['label'] == 'State':
+                                    <a href="${h.url_for( controller='requests_admin', action='list', operation='events', id=trans.security.encode_id(request.id) )}">${rd['value']}</a>
+                                %else:
+                                    ${rd['value']}     
+                                %endif
+                            %endif
+                        </div>
+                        <div style="clear: both"></div>
+                    %endfor
+                    <div class="form-row">
+                    <ul class="manage-table-actions">
+                        <li>
+                            <a class="action-button"  href="${h.url_for( controller='requests_admin', action='list', operation='Edit', id=trans.security.encode_id(request.id))}">
+                            <span>Edit request details</span></a>
+                        </li>
+                    </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
     <form id="show_request" name="show_request" action="${h.url_for( controller='requests', action='show_request', edit_mode=edit_mode )}" enctype="multipart/form-data" method="post" >
         <div class="form-row">
             %if current_samples:

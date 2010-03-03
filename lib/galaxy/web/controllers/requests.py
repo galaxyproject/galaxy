@@ -947,7 +947,7 @@ class Requests( BaseController ):
                                                               msg=msg,
                                                               id=trans.security.encode_id(request.id) ))
         # change the request state to 'Submitted'
-        comments = "Request moved to 'Submitted' state."
+        comments = "Sequencing request is in progress."
         event = trans.app.model.RequestEvent(request, request.states.SUBMITTED, comments)
         trans.sa_session.add( event )
         trans.sa_session.flush()

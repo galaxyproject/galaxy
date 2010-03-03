@@ -412,7 +412,7 @@ class RequestsAdmin( BaseController ):
                                                               id=trans.security.encode_id(request.id) ) )
         # change the request state to 'Submitted'
         if request.user.email is not trans.user:
-            comments = "Request moved to 'Submitted' state by admin (%s) on behalf of %s." % (trans.user.email, request.user.email)
+            comments = "Request submitted by admin (%s) on behalf of %s." % (trans.user.email, request.user.email)
         else:
             comments = ""
         event = trans.app.model.RequestEvent(request, request.states.SUBMITTED, comments)
@@ -1295,8 +1295,6 @@ class RequestsAdmin( BaseController ):
             event = trans.app.model.RequestEvent(request, request.states.COMPLETE, comments)
             trans.sa_session.add( event )
             trans.sa_session.flush()
-#        trans.sa_session.add( request )
-#        trans.sa_session.flush()
     def change_state(self, trans, sample):
         possible_states = sample.request.type.states 
         curr_state = sample.current_state() 
@@ -1775,7 +1773,8 @@ class RequestsAdmin( BaseController ):
         # data transfer info
         rt.datatx_info = dict(host=util.restore_text( params.get( 'host', ''  ) ),
                               username=util.restore_text( params.get( 'username', ''  ) ),
-                              password=params.get( 'password', '' )) 
+                              password=params.get( 'password', '' ),
+                              data_dir=util.restore_text( params.get( 'data_dir', ''  ) )) 
         trans.sa_session.add( rt )
         trans.sa_session.flush()
         # set sample states

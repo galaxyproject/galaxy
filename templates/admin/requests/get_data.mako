@@ -30,12 +30,6 @@ $(document).ready(function(){
 <h3>Sample "${sample.name}" of Request "${sample.request.name}"</h3>
 
 <ul class="manage-table-actions">
-##    %if sample.request.submitted() and sample.untransferred_dataset_files():
-##    <li>
-##        <a class="action-button" href="${h.url_for( controller='requests_admin', action='start_datatx', id=trans.security.encode_id(sample.id) )}">
-##        <span>Start data transfer</span></a>
-##    </li>
-##    %endif
     %if sample.request.submitted() and sample.inprogress_dataset_files():
     <li>
         <a class="action-button" href="${h.url_for( controller='requests_admin', action='show_datatx_page', sample_id=trans.security.encode_id(sample.id) )}">
@@ -47,7 +41,7 @@ $(document).ready(function(){
         <span>Sequencer information</span></a>
     </li>
     <li>
-        <a class="action-button" href="${h.url_for( controller='library_common', action='browse_library', cntrller='library', id=trans.security.encode_id( sample.library.id ) )}">
+        <a class="action-button" href="${h.url_for( controller='library_common', action='browse_library', cntrller='library_admin', id=trans.security.encode_id( sample.library.id ) )}">
         <span>${sample.library.name} Data Library</span></a>
     </li>
     <li>
@@ -57,17 +51,16 @@ $(document).ready(function(){
 </ul>
 
 <div class="toolForm">
-    <form name="get_data" action="${h.url_for( controller='requests_admin', action='get_data', sample_id=sample.id)}" method="post" >
-        %if len(dataset_files):
+    %if len(dataset_files):
+##    <form name="get_data" action="${h.url_for( controller='requests_admin', action='get_data', sample_id=sample.id)}" method="post" >
             <div class="form-row">
-            <h4>Datasets Transferred</h4>
+            <h4>Sample Dataset(s)</h4>
             <div class="form-row">
                 <table class="grid">
                 <thead>
                     <tr>
                         <th>Dataset File</th>
                         <th>Transfer Status</th>
-                        ##<th>Data Library</th>
                         <th></th>
                     </tr>
                 <thead>
@@ -79,8 +72,14 @@ $(document).ready(function(){
                 </table>
             </div>
             </div>
-        %endif
+##    </form>
+##</div>
+<br/>
+%endif
+##<div class="toolForm">
+    <form name="get_data" action="${h.url_for( controller='requests_admin', action='get_data', sample_id=sample.id)}" method="post" >
         <div class="form-row">
+            ##<div class="toolFormTitle">Select files for transfer</div>
             <h4>Select files for transfer</h4>
             <div style="width: 60%;">
                 <div class="form-row">
@@ -98,6 +97,11 @@ $(document).ready(function(){
                 </select> 
                 </div>
                 <div class="form-row">
+                    <div class="toolParamHelp" style="clear: both;">
+                        After clicking <b>Transfer</b> do <i>not</i> close this page or 
+                        navigate away from this page. Once the transfer is complete
+                        the dataset(s) will show up on this page.
+                    </div>
                     <input type="submit" name="start_transfer_button" value="Transfer"/>
                 </div>
             </div>

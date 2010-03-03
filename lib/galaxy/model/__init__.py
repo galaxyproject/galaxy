@@ -1348,9 +1348,9 @@ class FormValues( object ):
         
 class Request( object ):
     states = Bunch( NEW = 'New',
-                    SUBMITTED = 'Submitted',
+                    SUBMITTED = 'In Progress',
                     REJECTED = 'Rejected',
-                    COMPLETE = 'Complete')
+                    COMPLETE = 'Complete'   )
     def __init__(self, name=None, desc=None, request_type=None, user=None, 
                  form_values=None):
         self.name = name
@@ -1385,6 +1385,7 @@ class Request( object ):
         return self.state() == self.states.NEW
     def complete(self):
         return self.state() == self.states.COMPLETE
+
     
 class RequestEvent( object ):
     def __init__(self, request=None, request_state=None, comment=''):
@@ -1430,6 +1431,12 @@ class Sample( object ):
         count = 0
         for df, status in self.dataset_files:
             if status == self.transfer_status.IN_PROGRESS:
+                count = count + 1
+        return count
+    def transferred_dataset_files(self):
+        count = 0
+        for df, status in self.dataset_files:
+            if status == self.transfer_status.COMPLETE:
                 count = count + 1
         return count
 

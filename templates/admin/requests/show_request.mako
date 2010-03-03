@@ -362,29 +362,27 @@ $(document).ready(function(){
             <table class="grid">
                 <tbody>
                     <tr>
-                        %if not request.complete():
                         <div class="form-row">
                             <td>
-                                %if current_samples and not request.complete():                        
+                                %if current_samples:                        
                                     <input type="submit" name="edit_samples_button" value="Edit samples"/>
                                 %endif
                             </td>
                             %if request.unsubmitted():
-                            <td>
-                                <label>Import from csv file</label>           
-                                <input type="file" name="file_data" />
-                                <input type="submit" name="import_samples_button" value="Import samples"/>
-                            </td>
-                            <td>
-                                %if current_samples:
-                                    <label>Copy from sample</label>
-                                    ${sample_copy.get_html()}
-                                %endif
-                                <input type="submit" name="add_sample_button" value="Add New"/>
-                            </td>
+                                <td>
+                                    <label>Import from csv file</label>           
+                                    <input type="file" name="file_data" />
+                                    <input type="submit" name="import_samples_button" value="Import samples"/>
+                                </td>
+                                <td>
+                                    %if current_samples:
+                                        <label>Copy from sample</label>
+                                        ${sample_copy.get_html()}
+                                    %endif
+                                    <input type="submit" name="add_sample_button" value="Add New"/>
+                                </td>
                             %endif
                         </div>
-                        %endif
                     </tr> 
                 </tbody>
             </table>
