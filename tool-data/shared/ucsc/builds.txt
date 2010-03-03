@@ -786,6 +786,7 @@ eschColi_K12	Escherichia coli K12 (eschColi_K12)
 aeroHydr_ATCC7966	Aeromonas hydrophila subsp. hydrophila ATCC 7966 (aeroHydr_ATCC7966)
 baciAnth_AMES	Bacillus anthracis str. Ames (baciAnth_AMES)
 shewOnei	Shewanella oneidensis MR-1 (shewOnei)
+equCab2	Horse Sep. 2007 (equCab2)
 arabidopsis	Arabidopsis thaliana TAIR9
 arabidopsis_tair8	Arabidopsis thaliana TAIR8
 araTha1	Arabidopsis thaliana TAIR7
