@@ -317,7 +317,7 @@ When using *Basic* options, the output will be *sanger* formatted or *cssanger* 
 
 When converting, if a quality score falls outside of the target score range, it will be coerced to the closest available value (i.e. the minimum or maximum). 
 
-When converting between Solexa and the other formats, quality scores are mapped between Solexa and PHRED scales using the equations found in Cock PJ, Fields CJ, Goto N, Heuer ML, Rice PM. The Sanger FASTQ file format for sequences with quality scores, and the Solexa/Illumina FASTQ variants. Nucleic Acids Res. 2009 Dec 16.
+When converting between Solexa and the other formats, quality scores are mapped between Solexa and PHRED scales using the equations found in `Cock PJ, Fields CJ, Goto N, Heuer ML, Rice PM. The Sanger FASTQ file format for sequences with quality scores, and the Solexa/Illumina FASTQ variants. Nucleic Acids Res. 2009 Dec 16.`_
 
 When converting between color space (csSanger) and base/sequence space (Sanger, Illumina, Solexa) formats, adapter bases are lost or gained; if gained, the base 'G' is used as the adapter. You cannot convert a color space read to base space if there is no adapter present in the color space sequence. Any masked or ambiguous nucleotides in base space will be converted to 'N's when determining color space encoding.
 
@@ -339,6 +339,9 @@ When converting between color space (csSanger) and base/sequence space (Sanger, 
    X - Solexa       Solexa+64, 67 values (-5, 62) (-5 to 40 expected in raw reads)
 
 Diagram adapted from http://en.wikipedia.org/wiki/FASTQ_format
+
+
+.. _Cock PJ, Fields CJ, Goto N, Heuer ML, Rice PM. The Sanger FASTQ file format for sequences with quality scores, and the Solexa/Illumina FASTQ variants. Nucleic Acids Res. 2009 Dec 16.: http://www.ncbi.nlm.nih.gov/pubmed/20015970
 
   </help>
 </tool>

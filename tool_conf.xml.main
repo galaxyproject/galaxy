@@ -265,20 +265,31 @@
   </section>
   <label text="NGS Toolbox Beta" id="ngs" />
   <section name="NGS: QC and manipulation" id="cshl_library_information">
-    <label text="Generic FASTQ data" id="fastq" />
+    <label text="Illumina data" id="illumina" />
+        <tool file="fastq/fastq_groomer.xml" />
+        <tool file="fastq/fastq_paired_end_splitter.xml" />
+        <tool file="fastq/fastq_paired_end_joiner.xml" />
+        <tool file="fastq/fastq_stats.xml" />
+    <!--<label text="Deprecated: Generic FASTQ data" id="fastq" />
         <tool file="next_gen_conversion/fastq_gen_conv.xml" />
         <tool file="fastx_toolkit/fastq_quality_converter.xml" />
         <tool file="fastx_toolkit/fastx_quality_statistics.xml" />
         <tool file="fastx_toolkit/fastq_quality_boxplot.xml" />
         <tool file="fastx_toolkit/fastx_nucleotides_distribution.xml" />
-        <tool file="metag_tools/split_paired_reads.xml" />
+        <tool file="metag_tools/split_paired_reads.xml" /> -->
     <label text="Roche-454 data" id="454" />
         <tool file="metag_tools/short_reads_figure_score.xml" />
         <tool file="metag_tools/short_reads_trim_seq.xml" />
+        <tool file="fastq/fastq_combiner.xml" />
     <label text="AB-SOLiD data" id="solid" />
         <tool file="next_gen_conversion/solid2fastq.xml" />
         <tool file="solid_tools/solid_qual_stats.xml" />
         <tool file="solid_tools/solid_qual_boxplot.xml" />
+    <label text="Generic FASTQ manipulation" id="generic_fastq" />
+        <tool file="fastq/fastq_filter.xml" />
+        <tool file="fastq/fastq_trimmer.xml" />
+        <tool file="fastq/fastq_manipulation.xml" />
+        <tool file="fastq/fastq_to_fasta.xml" />
   </section>
   <section name="NGS: Mapping" id="ngs_mapping">
     <label text="Illumina" id="illumina"/>

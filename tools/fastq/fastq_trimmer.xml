@@ -4,7 +4,7 @@
   <inputs>
     <param name="input_file" type="data" format="fastqsanger,fastqcssanger" label="FASTQ File"/>
     <conditional name="offset_type">
-      <param name="base_offset_type" type="select" label="Define Base Offsets as">
+      <param name="base_offset_type" type="select" label="Define Base Offsets as" help="Use Absolute for fixed length reads (Illumina, SOLiD)&lt;br&gt;Use Percentage for variable length reads (Roche/454)">
         <option value="offsets_absolute" selected="true">Absolute Values</option>
         <option value="offsets_percent">Percentage of Read Length</option>
       </param>
