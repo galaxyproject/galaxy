@@ -231,12 +231,12 @@ class TestFormsAndRequests( TwillTestCase ):
                           request_one.desc+' (Re-described)', fields)
         sa_session.refresh( request_one )
         # check if the request is showing in the 'new' filter
-        self.check_request_grid(state='New', request_name=request_one.name)
+        self.check_request_grid(state=request_one.states.NEW, request_name=request_one.name)
         # submit the request
         self.submit_request( request_one.id, request_one.name )
         sa_session.refresh( request_one )
         # check if the request is showing in the 'submitted' filter
-        self.check_request_grid(state='Submitted', request_name=request_one.name)
+        self.check_request_grid(state=request_one.states.SUBMITTED, request_name=request_one.name)
         # check if the request's state is now set to 'submitted'
         assert request_one.state is not request_one.states.SUBMITTED, "The state of the request '%s' should be set to '%s'" \
             % ( request_one.name, request_one.states.SUBMITTED )
@@ -245,7 +245,7 @@ class TestFormsAndRequests( TwillTestCase ):
         # goto admin manage requests page
         self.logout()
         self.login( email='test@bx.psu.edu' )
-        self.check_request_admin_grid(state='Submitted', request_name=request_one.name)
+        self.check_request_admin_grid(state=request_one.states.SUBMITTED, request_name=request_one.name)
         self.visit_url( "%s/requests_admin/list?sort=-create_time&operation=show_request&id=%s" \
                         % ( self.url, self.security.encode_id( request_one.id ) ))
         self.check_page_for_string( 'Sequencing Request "%s"' % request_one.name )
@@ -261,9 +261,9 @@ class TestFormsAndRequests( TwillTestCase ):
         self.logout()
         self.login( email='test1@bx.psu.edu' )
         # check if the request's state is now set to 'complete'
-#        self.check_request_grid(state='Complete', request_name=request_one.name)
-#        assert request_one.state is not request_one.states.COMPLETE, "The state of the request '%s' should be set to '%s'" \
-#            % ( request_one.name, request_one.states.COMPLETE )
+        self.check_request_grid(state='Complete', request_name=request_one.name)
+        assert request_one.state is not request_one.states.COMPLETE, "The state of the request '%s' should be set to '%s'" \
+            % ( request_one.name, request_one.states.COMPLETE )
     def test_040_admin_create_request_on_behalf_of_regular_user( self ):
         """Testing creating and submitting a request as an admin on behalf of a regular user"""
         self.logout()
@@ -281,7 +281,7 @@ class TestFormsAndRequests( TwillTestCase ):
                                                galaxy.model.Request.table.c.deleted==False ) ) \
                                 .first()        
         # check if the request is showing in the 'new' filter
-        self.check_request_admin_grid(state='New', request_name=request_two.name)
+        self.check_request_admin_grid(state=request_two.states.NEW, request_name=request_two.name)
         # check if the request's state is now set to 'new'
         assert request_two.state is not request_two.states.NEW, "The state of the request '%s' should be set to '%s'" \
             % ( request_two.name, request_two.states.NEW )
@@ -294,7 +294,7 @@ class TestFormsAndRequests( TwillTestCase ):
         self.submit_request_as_admin( request_two.id, request_two.name )
         sa_session.refresh( request_two )
         # check if the request is showing in the 'submitted' filter
-        self.check_request_admin_grid(state='Submitted', request_name=request_two.name)
+        self.check_request_admin_grid(state=request_two.states.SUBMITTED, request_name=request_two.name)
         # check if the request's state is now set to 'submitted'
         assert request_two.state is not request_two.states.SUBMITTED, "The state of the request '%s' should be set to '%s'" \
             % ( request_two.name, request_two.states.SUBMITTED )
@@ -308,7 +308,7 @@ class TestFormsAndRequests( TwillTestCase ):
         self.reject_request( request_two.id, request_two.name, "Rejection test comment" )
         sa_session.refresh( request_two )
         # check if the request is showing in the 'rejected' filter
-        self.check_request_admin_grid(state='Rejected', request_name=request_two.name)
+        self.check_request_admin_grid(state=request_two.states.REJECTED, request_name=request_two.name)
         # check if the request's state is now set to 'submitted'
         assert request_two.state is not request_two.states.REJECTED, "The state of the request '%s' should be set to '%s'" \
             % ( request_two.name, request_two.states.REJECTED )

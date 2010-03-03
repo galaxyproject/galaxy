@@ -1281,12 +1281,12 @@ class TwillTestCase( unittest.TestCase ):
     def check_request_grid(self, state, request_name, deleted=False):
         self.home()
         self.visit_url('%s/requests/list?sort=create_time&f-state=%s&f-deleted=%s' \
-                       % (self.url, state, str(deleted)))
+                       % (self.url, state.replace(' ', '+'), str(deleted)))
         self.check_page_for_string( request_name )
     def check_request_admin_grid(self, state, request_name, deleted=False):
         self.home()
         self.visit_url('%s/requests_admin/list?sort=create_time&f-state=%s&f-deleted=%s' \
-                       % (self.url, state, str(deleted)))
+                       % (self.url, state.replace(' ', '+'), str(deleted)))
         self.check_page_for_string( request_name )
     def create_request_type( self, name, desc, request_form_id, sample_form_id, states ):
         self.home()
@@ -1327,14 +1327,20 @@ class TwillTestCase( unittest.TestCase ):
         self.check_page_for_string( new_desc )
     def add_samples( self, request_id, request_name, samples ):
         self.home()
-        self.visit_url( "%s/requests/list?sort=-create_time&operation=show_request&id=%s" % ( self.url, self.security.encode_id( request_id ) ))
+        url = "%s/requests/list?sort=-create_time&operation=show_request&id=%s" % ( self.url, self.security.encode_id( request_id ) )
+        self.visit_url( url )
         self.check_page_for_string( 'Sequencing Request "%s"' % request_name )
+        self.check_page_for_string( 'There are no samples.' )
+        # this redundant stmt below is add so that the second form in 
+        # the page gets selected
+        tc.fv( "2", "request_id", request_id )
         for sample_index, sample in enumerate(samples):
             tc.submit( "add_sample_button" )
+            self.check_page_for_string( 'Sequencing Request "%s"' % request_name )
             sample_name, fields = sample
-            tc.fv( "1", "sample_%i_name" % sample_index, sample_name )
+            tc.fv( "2", "sample_%i_name" % sample_index, sample_name )
             for field_index, field_value in enumerate(fields):
-                tc.fv( "1", "sample_%i_field_%i" % ( sample_index, field_index ), field_value )
+                tc.fv( "2", "sample_%i_field_%i" % ( sample_index, field_index ), field_value )
         tc.submit( "save_samples_button" )
         for sample_name, fields in samples:
             self.check_page_for_string( sample_name )
