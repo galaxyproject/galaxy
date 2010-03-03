@@ -89,7 +89,7 @@
               </when>
               <when value="trim">
                 <conditional name="offset_type">
-                  <param name="base_offset_type" type="select" label="Define Base Offsets as">
+                  <param name="base_offset_type" type="select" label="Define Base Offsets as" help="Absolute for e.g. fixed length reads.&lt;br&gt;Percentage for e.g. variable length reads.">
                     <option value="offsets_absolute" selected="true">Absolute Values</option>
                     <option value="offsets_percent">Percentage of Read Length</option>
                   </param>

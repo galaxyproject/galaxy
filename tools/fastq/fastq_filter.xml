@@ -16,7 +16,7 @@
      <param name="paired_end" label="This is paired end data" type="boolean" truevalue="paired_end" falsevalue="single_end" checked="False"/>
       <repeat name="fastq_filters" title="Quality Filter on a Range of Bases" help="The above settings do not apply to these filters.">
         <conditional name="offset_type">
-          <param name="base_offset_type" type="select" label="Define Base Offsets as">
+          <param name="base_offset_type" type="select" label="Define Base Offsets as" help="Absolute for e.g. fixed length reads.&lt;br&gt;Percentage for e.g. variable length reads.">
             <option value="offsets_absolute" selected="true">Absolute Values</option>
             <option value="offsets_percent">Percentage of Read Length</option>
           </param>
@@ -289,15 +289,15 @@ ret_val = fastq_read_pass_filter( fastq_read )
 <help>
 This tool allows you to build complex filters to be applied to each read in a FASTQ file.
 
-Basic Options:
+**Basic Options:**
     * You can specify a minimum and maximum read lengths.
     * You can specify minimum and maximum per base quality scores, with optionally specifying the number of bases that are allowed to deviate from this range (default of 0 deviant bases).
     * If your data is paired-end, select the proper checkbox; this will cause each read to be internally split down the middle and filters applied to each half using the offsets specified.
 
-Advance Options:
+**Advance Options:**
     * You can specify any number of advanced filters. 
-    * Offsets are defined, starting at zero, increasing from the ends of the reads. For example, a quality string of "ABCDEFG", with offsets of 1 and 1 specified will yield "BCDEF".
-    * You can specify either absolute offset values, or percentage offset values. When using the percent-based method, offsets are rounded to the nearest integer.
+    * 5' and 3' offsets are defined, starting at zero, increasing from the respective end of the reads. For example, a quality string of "ABCDEFG", with 5' and 3' offsets of 1 and 1, respectively, specified will yield "BCDEF".
+    * You can specify either absolute offset values, or percentage offset values. *Absolute Values* based offsets are useful for fixed length reads (e.g. Illumina or SOLiD data). *Percentage of Read Length* based offsets are useful for variable length reads (e.g. 454 data). When using the percent-based method, offsets are rounded to the nearest integer.
     * The user specifies the aggregating action (min, max, sum, mean) to perform on the quality score values found between the specified offsets to be used with the user defined comparison operation and comparison value.
     * If a set of offsets is specified that causes the remaining quality score list to be of length zero, then the read will **pass** the quality filter unless the size range filter is used to remove these reads.
 
