@@ -97,7 +97,7 @@
             </when>   
         </conditional>
         <conditional name="seq_name">
-            <param name="how_to_name" type="select" label="Do you want to modify reference name?">
+            <param name="how_to_name" type="select" label="Do you want to modify the reference name?">
                 <option value="no">No</option>
                 <option value="yes">Yes</option>
             </param>
@@ -213,9 +213,9 @@
         
 **What it does**    
         
-**LASTZ** is a high performance pairwise sequence aligner derived from BLASTZ. It is written by Bob Harris in Webb Miller's laboratory at Penn State University. Special scoring sets were derived to improve runtime performance and quality. The Galaxy version of LASTZ is geared towards aligning of short (Illumina/Solexa, AB/SOLiD) and medium (Roche/454) reads against a reference sequence. There is excellent, extensive `documentation`__ on LASTZ available, although it hasn't been updated for the version of LASTZ that Galaxy is running (the key changes have to do with output formats, so it is still extremely helpful).
+**LASTZ** is a high performance pairwise sequence aligner derived from BLASTZ. It is written by Bob Harris in Webb Miller's laboratory at Penn State University. Special scoring sets were derived to improve runtime performance and quality. This Galaxy version of LASTZ is geared towards aligning short (Illumina/Solexa, AB/SOLiD) and medium (Roche/454) reads against a reference sequence. There is excellent, extensive documentation on LASTZ available here_.
 
- .. __: http://www.bx.psu.edu/miller_lab/dist/README.lastz-1.01.50/README.lastz-1.01.50.html
+ .. _here: http://www.bx.psu.edu/miller_lab/dist/README.lastz-1.02.00/README.lastz-1.02.00.html
  
 ------
 
@@ -227,7 +227,7 @@ LASTZ accepts reference and reads in FASTA format. However, because Galaxy suppo
 
 **Outputs**
 
-LASTZ generates one output. Depending on the choice you make in *Select output format* drop-down LASTZ will produce a SAM file showing sequence alignments, a list of differences between the reads and reference (Polymorphisms), or a general table with one line per alignment block (Tabular). Examples of these outputs are shown below.
+LASTZ generates one output. Depending on the choice you make in the *Select output format* drop-down, LASTZ will produce a SAM file showing sequence alignments, a list of differences between the reads and reference (Polymorphisms), or a general table with one line per alignment block (Tabular). Examples of these outputs are shown below.
 
 **SAM output**
 
@@ -355,23 +355,23 @@ There are seven modes::
   Roche-454 85% identity
   Roche-454 75% identity
 
-when deciding which one to use consider the following: a 36 bp read with two difference will be 34/36 = 94% identical to the reference.  
+When deciding which one to use, consider the following: a 36 bp read with two differences will be 34/36 = 94% identical to the reference.  
 
 **Full Parameter List**
 
-This modes gives you a fuller control over lastz. The description of these and other parameters is found at the end of this page. Note, that not all parameters are included in this interface. If you would like to make additional options available through Galaxy, e-mail us at galaxy-bugs@bx.psu.edu.
+This mode gives you fuller control over lastz. The description of these and other parameters is found at the end of this page. Note that not all parameters are included in this interface. If you would like to make additional options available through Galaxy, e-mail us at galaxy-bugs@bx.psu.edu.
 
 ------
 
-**Do you want to modify reference name?**
+**Do you want to modify the reference name?**
 
-This option allows you set the name of the reference sequence manually. This is helpful when, for example, you would like to make reference name compatible with the UCSC naming conventions to be able to display your lastz results as a custom track at UCSC Genome Browser.
+This option allows you to set the name of the reference sequence manually. This is helpful when, for example, you would like to make the reference name compatible with the UCSC naming conventions to be able to display your lastz results as a custom track at the UCSC Genome Browser.
 
 ------
 
 **LASTZ parameter list**
 
-This is an exhaustive list of LASTZ options. Once again, please note that not all parameters are included in this interface. If you would like to make additional options available through Galaxy, e-mail us at galaxy-bugs@bx.psu.edu::
+This is an exhaustive list of LASTZ options. Once again, please note that not all options are included in this interface. If you would like to make additional options available through Galaxy, e-mail us at galaxy-bugs@bx.psu.edu::
 
   target[[s..e]][-]       spec/file containing target sequence (fasta or nib)
                           [s..e] defines a subrange of the file

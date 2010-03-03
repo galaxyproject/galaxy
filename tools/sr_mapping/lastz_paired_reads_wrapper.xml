@@ -38,7 +38,7 @@
         <param name="input3" format="fasta" type="data" label="Linker file" />
         <param name="input4" format="qual454" type="data" label="Select a base quality score 454 dataset" />
         <conditional name="seq_name">
-            <param name="how_to_name" type="select" label="Do you want to modify reference name?">
+            <param name="how_to_name" type="select" label="Do you want to modify the reference name?">
                 <option value="no">No</option>
                 <option value="yes">Yes</option>
             </param>
@@ -75,9 +75,9 @@
         
 **What it does**    
         
-**LASTZ** is a high performance pairwise sequence aligner derived from BLASTZ. It is written by Bob Harris in Webb Miller's laboratory at Penn State University. Special scoring sets were derived to improve runtime performance and quality. The Galaxy version of LASTZ is geared towards aligning of short (Illumina/Solexa, AB/SOLiD) and medium (Roche/454) reads against a reference sequence. There is excellent, extensive `documentation`__ on LASTZ available, although it hasn't been updated for the version of LASTZ that Galaxy is running (the key changes have to do with output formats, so it is still extremely helpful).
+**LASTZ** is a high performance pairwise sequence aligner derived from BLASTZ. It is written by Bob Harris in Webb Miller's laboratory at Penn State University. Special scoring sets were derived to improve runtime performance and quality. This Galaxy version of LASTZ is geared towards aligning short (Illumina/Solexa, AB/SOLiD) and medium (Roche/454) paired reads against a reference sequence. There is excellent, extensive documentation on LASTZ available here_. 
 
- .. __: http://www.bx.psu.edu/miller_lab/dist/README.lastz-1.01.50/README.lastz-1.01.50.html
+ .. _here: http://www.bx.psu.edu/miller_lab/dist/README.lastz-1.02.00/README.lastz-1.02.00.html
  
 ------
 
@@ -89,7 +89,7 @@ LASTZ accepts reference and reads in FASTA format. However, because Galaxy suppo
 
 **Outputs**
 
-LASTZ generates one output. Depending on the choice you make in *Select output format* drop-down LASTZ will produce a SAM file showing sequence alignments, a list of differences between the reads and reference (Polymorphisms), or a general table with one line per alignment block (Tabular). Examples of these outputs are shown below.
+This LASTZ tool produces a SAM file showing sequence alignments.
 
 **SAM output**
 
@@ -132,102 +132,11 @@ The flags are as follows::
   0x0080  the read is the second read in a pair
   0x0100  the alignment is not primary
 
-**Polymorphism (SNP or differences) output**
-
-Polymorphism output contains 14 columns::
-
-     1     2     3  4     5                                   6   7   8  9  10  11 12                                   13                                    14
-  --------------------------------------------------------------------------------------------------------------------------------------------------------------
-  chrM  2490  2491  +  5386  HWI-EAS91_1_306UPAAXX:6:1:486:822   10  11  -  36  C  A  ACCTGTTTTACAGACACCTAAAGCTACATCGTCAAC  ACCTGTTTTAAAGACACCTAAAGCTACATCGTCAAC
-  chrM  2173  2174  +  5386  HWI-EAS91_1_306UPAAXX:6:1:259:1389  26  27  +  36  G  T  GCGTACTTATTCGCCACCATGATTATGACCAGTGTT  GCGTACTTATTCGCCACCATGATTATTACCAGTGTT
-
-where::
-
-  1. (chrM)   - Reference sequence id
-  2. (2490)   - Start position of the difference in the reference
-  3. (2491)   - End position of the difference in the reference
-  4. (+)      - Strand of the reference (always plus)
-  5. (5386)   - Length of the reference sequence
-  6. (HWI...) - read id
-  7. (10)     - Start position of the difference in the read
-  8. (11)     - End position of the difference in the read
-  9. (+)      - Strand of the read
- 10. (36)     - Length of the read
- 11. (C)      - Nucleotide in the reference
- 12. (A)      - Nucleotide in the read
- 13. (ACC...) - Reference side os the alignment
- 14. (ACC...) - Read side of the alignment
- 
-**Tabular output**
-
-Tabular output is a tab-separated format with 30 columns::
-
-   1        2  3     4     5     6     7   8                 9              10  11   12   13   14   15   16   17   18  19                20                21   22     23      24      25    26    27    28    29  30
-  -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-  14  PHIX174  +  5386  4648  4647  4661  14  ATTTTCGTGATATT    EYKX4VC01BV8HS  +   204  154  153  167  154  153  167  14  ATTTTCGTGATATT    ..............    14M  14/14  100.0%  14/204  6.9%  0/14  0.0%  4494  NA
-  16  PHIX174  +  5386  3363  3362  3378  16  GACGCCGGATTTGAGA  EYKX4VC01AWJ88  -   259   36   35   51  209  208  224  16  GACGCCGGATTTGAGA  ................  16M  16/16  100.0%  16/259  6.2%  0/16  0.0%  3327  NA
-
-The following columns are present::
-
-             Field  Meaning
-  ----------------  -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-   1.        score  Score of the alignment block. The scale and meaning of this number will vary, depending on the final stage performed and other command-line options.
-   2.        name1  Name of the target sequence.
-   3.      strand1  Target sequence strand, either "+" or "−".
-   4.        size1  Size of the entire target sequence.
-   5.       start1  Starting position of the alignment block in the target, origin-one.
-   6.      zstart1  Starting position of the alignment block in the target, origin-zero.
-   7.         end1  Ending position of the alignment block in the target, expressed either as origin-one closed or origin-zero half-open (the ending value is the same in both systems).
-   8.      length1  Length of the alignment block in the target (excluding gaps).
-   9.        text1  Aligned characters in the target, including gap characters.
-  10.        name2  Name of the query sequence.
-  11.      strand2  Query sequence strand, either "+" or "−".
-  12.        size2  Size of the entire query sequence.
-  13.       start2  Starting position of the alignment block in the query, origin-one.
-  14.      zstart2  Starting position of the alignment block in the query, origin-zero.
-  15.         end2  Ending position of the alignment block in the query, expressed either as origin-one closed or origin-zero half-open (the ending value is the same in both systems).
-  16.      start2+  Starting position of the alignment block in the query, counting along the query sequence's positive strand (regardless of which query strand was aligned), origin-one. Note that if strand2 is "−", then this is the other end of the block from start2.
-  17.     zstart2+  Starting position of the alignment block in the query, counting along the query sequence's positive strand (regardless of which query strand was aligned), origin-zero. Note that if strand2 is "−", then this is the other end of the block from zstart2.
-  18.        end2+  Ending position of the alignment block in the query, counting along the query sequence's positive strand (regardless of which query strand was aligned), expressed either as origin-one closed or origin-zero half-open (the ending value is the same in both systems). Note that if strand2 is "−", then this is the other end of the block from end2.
-  19.      length2  Length of the alignment block in the query (excluding gaps).
-  20.        text2  Aligned characters in the query, including gap characters.
-  21.         diff  Differences between what would be written for text1 and text2. Matches are written as . (period), transitions as : (colon), transversions as X, and gaps as - (hyphen).
-  22.        cigar  A CIGAR-like representation of the alignment's path through the Dynamic Programming matrix. This is the short representation, without spaces, described in the Ensembl CIGAR specification.
-  23./24. identity  Fraction of aligned bases in the block that are matches (see Identity). This is written as two fields. The first field is a fraction, written as &lt;n&gt;/&lt;d&gt;. The second field contains the same value, computed as a percentage.
-  25./26. coverage  Fraction of the entire input sequence (target or query, whichever is shorter) that is covered by the alignment block (see Coverage). This is written as two fields. The first field is a fraction, written as &lt;n&gt;/&lt;d&gt;. The second field contains the same value, computed as a percentage.
-  27./28.  gaprate  Rate of gaps (also called indels) in the alignment block. This is written as two fields. The first field is a fraction, written as &lt;n&gt;/&lt;d&gt;, with the numerator being the number of alignment columns containing gaps and the denominator being the number without gaps. The second field contains the same value, computed as a percentage.
-  29.     diagonal  The diagonal of the start of the alignment block in the dynamic programming matrix, expressed as an identifying number start1-start2.
-  30.      shingle  A measurement of the shingle overlap between the target and the query. This is intended for the case where both the target and query are relatively short, and their ends are expected to overlap.  
-
--------
-
-**LASTZ Settings**
-
-There are two setting modes: (1) **Commonly used settings** and (2) **Full Parameter List**.
-
-**Commonly used settings**
-
-There are seven modes::
-
-  Illumina-Solexa/AB-SOLiD 95% identity
-  Illumina-Solexa/AB-SOLiD 85% identity
-  Roche-454 98% identity
-  Roche-454 95% identity
-  Roche-454 90% identity
-  Roche-454 85% identity
-  Roche-454 75% identity
-
-when deciding which one to use consider the following: a 36 bp read with two difference will be 34/36 = 94% identical to the reference.  
-
-**Full Parameter List**
-
-This modes gives you a fuller control over lastz. The description of these and other parameters is found at the end of this page. Note, that not all parameters are included in this interface. If you would like to make additional options available through Galaxy, e-mail us at galaxy-bugs@bx.psu.edu.
-
 ------
 
-**Do you want to modify reference name?**
+**Do you want to modify the reference name?**
 
-This option allows you set the name of the reference sequence manually. This is helpful when, for example, you would like to make reference name compatible with the UCSC naming conventions to be able to display your lastz results as a custom track at UCSC Genome Browser.
+This option allows you to set the name of the reference sequence manually. This is helpful when, for example, you would like to make the reference name compatible with the UCSC naming conventions to be able to display your lastz results as a custom track at the UCSC Genome Browser.
 
 ------
 

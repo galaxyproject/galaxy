@@ -78,10 +78,48 @@ BAM_FDUP         = 1024    # optical or PCR duplicate
 # Keep track of all created temporary files so they can be deleted
 global tmp_file_names
 tmp_file_names = []
+# The values in the skipped_lines dict are tuples consisting of:
+# - the number of skipped lines for that error
+# If not a sequence error:
+# - the 1st line number on which the error was found
+# - the text of the 1st line on which the error was found
+# If a sequence error:
+# - The number of the sequence in the file
+# - the sequence name on which the error occurred
+# We may need to improve dealing with file position and text as
+# much of it comes from temporary files that are created from the
+# inputs, and not the inputs themselves, so this could be confusing
+# to the user.
+global skipped_lines
+skipped_lines = dict( bad_interval=( 0, 0, '' ),
+                      inconsistent_read_lengths=( 0, 0, '' ),
+                      inconsistent_reads=( 0, 0, '' ),
+                      inconsistent_sizes=( 0, 0, '' ),
+                      missing_mate=( 0, 0, '' ),
+                      missing_quals=( 0, 0, '' ),
+                      missing_seq=( 0, 0, '' ),
+                      multiple_seqs=( 0, 0, '' ),
+                      no_header=( 0, 0, '' ),
+                      num_fields=( 0, 0, '' ),
+                      reads_paired=( 0, 0, '' ),
+                      sam_flag=( 0, 0, '' ),
+                      sam_headers=( 0, 0, '' ),
+                      sam_min_columns=( 0, 0, '' ),
+                      two_mate_names=( 0, 0, '' ),
+                      wrong_seq_len=( 0, 0, '' ) )
+global total_skipped_lines
+total_skipped_lines = 0
 
 def stop_err( msg ):
     sys.stderr.write( "%s" % msg )
     sys.exit()
+
+def skip_line( error_key, position, text ):
+    if not skipped_lines[ error_key ][2]:
+        skipped_lines[ error_key ][1] = position
+        skipped_lines[ error_key ][2] = text
+    skipped_lines[ error_key ][0] += 1
+    total_skipped_lines += 1
 
 def get_tmp_file_name( dir=None, suffix=None ):
     """
@@ -150,16 +188,16 @@ def split_paired_reads( input2, combined_linker_file_name ):
             line = line.split( "#", 1 )[0].rstrip()
         fields = line.split()
         if len( fields ) != 4:
-            # TODO: Do we want to err out here or just skip the line?
-            stop_err( "Wrong number of fields ( must be 4 ) in line %d: %s" % ( i+1, line ) )
+            skip_line( 'num_fields', i+1, line )
+            continue
         name, start, length, size = fields
         start = int( start )
         length = int( length )
         size = int( size )
         end = start + length
         if end > size:
-            # TODO: Do we want to err out here or just skip the line?
-            stop_err( "Bad interval in line %d: %s" % ( i+1, line ) )
+            skip_line[ 'bad_interval' ] += 1
+            continue
         if name not in read_to_linker_dict:
             read_to_linker_dict[ name ] = ( start, end, size )
             continue
@@ -168,9 +206,8 @@ def split_paired_reads( input2, combined_linker_file_name ):
             continue
         ( s, e, sz ) = read_to_linker_dict[ name ]
         if sz != size:
-            # This should never occur
-            # TODO: Do we want to err out here or just skip the line?
-            stop_err( "Inconsistent sizes for %s" % name )
+            skip_line( 'inconsistent_sizes', i+1, name )
+            continue
         if s > end or e < start:
             # Non-overlapping intervals, so skip this sequence
             read_to_linker_dict[ name ] = None
@@ -194,18 +231,15 @@ def split_paired_reads( input2, combined_linker_file_name ):
             read_to_linker_dict[ seq.name ] = ""
             continue
         if read_to_linker_dict[ seq.name ] == "":
-            # TODO: Do we want to err out here or just skip the line?
-            stop_err( "Multiple sequences named %s" % seq.name )
+            skip_line( 'multiple_seqs', seqs, seq.name )
+            continue
         if read_to_linker_dict[ seq.name ] == None:
             # Read previously marked as non-overlapping intervals, so skip this sequence - see above
             continue
         ( start, end, size ) = read_to_linker_dict[ seq.name ]
         if seq.length != size:
-            # TODO: Do we want to err out here or just skip the line?
-            combined_linker_file.close()
-            mates_file.close()
-            mates_mapping_file.close()
-            stop_err( "Sequence disagrees with size for sequence %s, size: %s seq.length: %s" % ( seq.name, str( size ), str( seq.length ) ) )
+            skip_line( 'wrong_seq_len', seqs, seq.name )
+            continue
         left = seq.text[ :start ]
         right = seq.text[ end: ]
         left_is_small = len( left ) <= seq_len_lower_threshold
@@ -272,7 +306,9 @@ def align_mates( input1, ref_source, ref_name, ref_sequences, tmp_mates_short_fi
             if not seq:
                 break
             seqs += 1
-            # Create a temporary file to contain the current sequence as input to lastz
+            # Create a temporary file to contain the current sequence as input to lastz.
+            # We're doing this a bit differently here since we could be generating a huge
+            # number of temporary files.
             tmp_in_fd, tmp_in_file_name = tempfile.mkstemp( suffix='seq_%d_in' % seqs )
             tmp_in_file = os.fdopen( tmp_in_fd, 'w+b' )
             tmp_in_file.write( '>%s\n%s\n' % ( seq.name, seq.text ) )
@@ -441,10 +477,12 @@ def paired_mate_unmapper( input2, input4, tmp_mates_mapping_file_name, tmp_align
         if not line.startswith( "#" ):
             fields = line.split()
             if len( fields ) != 4:
-                stop_err( "Incorrect number of fields (must be 4) in line %s of file %s" % ( i+1, tmp_mates_mapping_file_name ) )
+                skip_line( "num_fields", i+1, line )
+                continue
             mate_name, read_name, s_offset, e_offset = fields
             if mate_name in mate_to_read_dict:
-                stop_err( "%s is in the mate_to_read_dict when it should not be." % mate_name )
+                skip_line( 'two_mate_names', i+1, mate_name )
+                continue
             mate_to_read_dict[ mate_name ] = ( read_name, int( s_offset ), int( e_offset ) )
     # Read sequence data
     read_to_nucs_dict = {}
@@ -458,9 +496,8 @@ def paired_mate_unmapper( input2, input4, tmp_mates_mapping_file_name, tmp_align
         seq_text_upper = seq.text.upper()
         if seq.name in read_to_nucs_dict:
             if seq_text_upper != read_to_nucs_dict[ seq.name ]:
-                # TODO: Should we err out here or just skip the line?
-                stop_err( "Inconsistent reads named %s (second occurs at line %d in file %s)" % ( seq.name, seqs, input2 ) )
-                #continue
+                skip_line( 'inconsistent_reads', seqs, seq.name )
+                continue
         read_to_nucs_dict[ seq.name ] = seq_text_upper
     # Read quality data
     def quality_sequences( f ):
@@ -477,7 +514,8 @@ def paired_mate_unmapper( input2, input4, tmp_mates_mapping_file_name, tmp_align
                 seq_line  = line_number
                 seq_quals = []
             elif seq_name is None:
-                stop_err( "First quality sequence has no header" )
+                skip_line( 'no_header', line_number, line )
+                continue
             else:
                 seq_quals += [ int( q ) for q in line.split() ]
         if seq_name is not None:
@@ -494,11 +532,11 @@ def paired_mate_unmapper( input2, input4, tmp_mates_mapping_file_name, tmp_align
         quals = samify_phred_scores( quals )
         if seq_name in read_to_quals_dict:
             if quals != read_to_quals_dict[ seq_name ]:
-                stop_err( "Inconsistent quality sequences named %s (second occurs at line %d in %s)" % ( seq_name, line_number, input4 ) )
+                skip_line( 'inconsistent_reads', line_number, seq_name )
             continue
         if len( quals ) != len( read_to_nucs_dict[ seq_name ] ):
-            stop_err( "Inconsistent read/quality lengths for %s, quals: %s, read_to_nucs_dict[ seq_name ]: %s" % \
-                      ( seq_name, quals, read_to_nucs_dict[ seq_name ] ) )
+            skip_line( 'inconsistent_read_lengths', line_number, seq_name )
+            continue
         read_to_quals_dict[ seq_name ] = quals
     # process the SAM file
     tmp_align_file_names = ' '.join( tmp_align_file_name_list )
@@ -512,21 +550,25 @@ def paired_mate_unmapper( input2, input4, tmp_mates_mapping_file_name, tmp_align
         line = line.strip()
         if line.startswith( "@" ):
             if has_non_header:
-                stop_err( "Input SAM contains headers in several places (e.g., line %d) in file %s" % ( i+1, combined_chrom_file_name ) )
+                skip_line( 'sam_headers', i+1, line )
+                continue
             fout.write( "%s\n" % line )
             continue
         has_non_header = True
         fields = line.split()
         num_fields = len( fields )
         if num_fields < SAM_MIN_COLUMNS:
-            stop_err( "Not enough columns at line %d (%d, expected %d)" % ( i+1, num_fields, SAM_MIN_COLUMNS ) )
+            skip_line( 'sam_min_columns', i+1, line )
+            continue
         # Set flags for mates
         try:
             flag = int( fields[ SAM_FLAG_COLUMN ] )
         except ValueError:
-            stop_err( "Bad SAM flag at line %d: %s" % ( i+1, line ) )
+            skip_line( 'sam_flag', i+1, line )
+            continue
         if not( flag & ( BAM_FPAIRED + BAM_FREAD1 + BAM_FREAD2 ) == 0 ):
-            stop_err( "SAM flag indicates reads already paired, at line %d\n%s" % ( i+1, line ) )
+            skip_line( 'reads_paired', i+1, line )
+            continue
         mate_name = fields[ SAM_QNAME_COLUMN ]
         unmap_it = False
         half = None
@@ -548,7 +590,8 @@ def paired_mate_unmapper( input2, input4, tmp_mates_mapping_file_name, tmp_align
             try:
                 read_name, s_offset, e_offset = mate_to_read_dict[ mate_name ]
             except KeyError:
-                stop_err( "'%s' doesn't appear in the mapping file." % mate_name )
+                skip_line( 'missing_mate', i+1, mate_name )
+                continue
             cigar = fields[ SAM_CIGAR_COLUMN ]
             cigar_prefix = None
             cigar_suffix = None
@@ -598,14 +641,16 @@ def paired_mate_unmapper( input2, input4, tmp_mates_mapping_file_name, tmp_align
             fields[ SAM_CIGAR_COLUMN ] = cigar
         # Fetch sequence and quality values, and flip/clip them
         if read_name not in read_to_nucs_dict:
-            stop_err( "Missing sequence for '%s'" % read_name )
+            skip_line( 'missing_seq', i+1, read_name )
+            continue
         nucs = read_to_nucs_dict[ read_name ]
         if not on_plus_strand:
             nucs = reverse_complement( nucs )
         quals = None
         if read_to_quals_dict != None:
             if read_name not in read_to_quals_dict:
-                stop_err( "Missing quality values for '%s'" % read_name )
+                skip_line( 'missing_quals', i+1, read_name )
+                continue
             quals = read_to_quals_dict[ read_name ]
             if not on_plus_strand:
                 quals = reverse_string( quals )
@@ -752,5 +797,32 @@ def __main__():
     # Delete all temporary files
     for file_name in tmp_file_names:
         os.remove( file_name )
+    # Handle any invalid lines in the input data
+    if total_skipped_lines:
+        msgs = dict( bad_interval="Bad interval in line",
+                     inconsistent_read_lengths="Inconsistent read/quality lengths for seq #",
+                     inconsistent_reads="Inconsistent reads for seq #",
+                     inconsistent_sizes="Inconsistent sizes for seq #",
+                     missing_mate="Mapping file does not include mate on line",
+                     missing_quals="Missing quality values for name on line",
+                     missing_seq="Missing sequence for name on line",
+                     multiple_seqs="Multiple names for seq #",
+                     no_header="First quality sequence has no header",
+                     num_fields="Must have 4 fields in line",
+                     reads_paired="SAM flag indicates reads already paired on line",
+                     sam_flag="Bad SAM flag on line",
+                     sam_headers="SAM headers on line",
+                     sam_min_columns="Need 11 columns on line",
+                     two_mate_names="Mate name already seen, line",
+                     wrong_seq_len="Size differs from length of seq #" )
+        print "Skipped %d invalid lines: "
+        msg = ""
+        for k, v in skipped_lines.items():
+            if v[0]:
+                # v[0] is the number of times the error occurred
+                # v[1] is the position of the line or sequence in the file
+                # v[2] is the name of the sequence or the text of the line
+                msg += "(%d)%s %d:%s. " % ( v[0], msgs[k], v[1], v[2] )
+        print msg
 
 if __name__=="__main__": __main__()
