@@ -571,7 +571,7 @@ WorkflowInvocationStep.table = Table( "workflow_invocation_step", metadata,
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "workflow_invocation_id", Integer, ForeignKey( "workflow_invocation.id" ), index=True, nullable=False ),
     Column( "workflow_step_id",  Integer, ForeignKey( "workflow_step.id" ), index=True, nullable=False ),
-    Column( "job_id",  Integer, ForeignKey( "job.id" ), index=True, nullable=False )
+    Column( "job_id",  Integer, ForeignKey( "job.id" ), index=True, nullable=True )
     )
 
 StoredWorkflowUserShareAssociation.table = Table( "stored_workflow_user_share_connection", metadata,
