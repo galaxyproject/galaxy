@@ -441,7 +441,7 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
     
     @web.expose
     @web.require_login( "create workflows" )
-    def create( self, trans, workflow_name=None ):
+    def create( self, trans, workflow_name=None, workflow_annotation="" ):
         """
         Create a new stored workflow with name `workflow_name`.
         """
@@ -456,6 +456,9 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
             workflow.name = workflow_name
             workflow.stored_workflow = stored_workflow
             stored_workflow.latest_workflow = workflow
+            # Add annotation.
+            workflow_annotation = sanitize_html( workflow_annotation, 'utf-8', 'text/html' )
+            self.add_item_annotation( trans, stored_workflow, workflow_annotation )
             # Persist
             session = trans.sa_session
             session.add( stored_workflow )
@@ -464,8 +467,9 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
             trans.set_message( "Workflow '%s' created" % stored_workflow.name )
             return self.list( trans )
         else:
-            return form( url_for(), "Create new workflow", submit_text="Create" ) \
-                .add_text( "workflow_name", "Workflow Name", value="Unnamed workflow" )
+            return form( url_for(), "Create New Workflow", submit_text="Create" ) \
+                    .add_text( "workflow_name", "Workflow Name", value="Unnamed workflow" ) \
+                    .add_text( "workflow_annotation", "Workflow Annotation", value="", help="A description of the workflow; annotation is shown alongside shared or published workflows." )
     
     @web.expose
     def delete( self, trans, id=None ):
