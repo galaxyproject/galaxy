@@ -308,6 +308,7 @@ $.extend( Node.prototype, {
         this.tool_state = data.tool_state;
         this.form_html = data.form_html;
         this.tool_errors = data.tool_errors;
+        this.annotation = data['annotation'];
         if ( this.tool_errors ) {
                 el.addClass( "tool-node-error" );
         } else {
@@ -447,7 +448,12 @@ $.extend( Workflow.prototype, {
         // If active form has changed, save it
         if (this.active_form_has_changes) {
             this.has_changes = true;
-            $("#right-content").find("form").submit();
+            // Get annotation and add to form.
+            var annotation = $("textarea[name=annotation]").val();
+            var tool_form = $("#right-content").find("form");
+            tool_form.append( "<input type='hidden' name='annotation' value='"+annotation+"' />" );
+            // Submit form.
+            tool_form.submit();
             this.active_form_has_changes = false;
         }
     },

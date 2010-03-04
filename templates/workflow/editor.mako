@@ -367,11 +367,10 @@
                         </div> \
                 </div> \
                 </div>");
-            // When metadata is changed, update node and set workflow changes flag.
+            // See above comment: this is necessary to handle autosaving.
             var textarea = $(metadata_div).find("textarea");
-            textarea.change( function () {
-                node.annotation = $(this).val();
-                workflow.has_changes = true;
+            textarea.focus( function () {
+                workflow.active_form_has_changes = true;
             });
             $("#right-content").find(".toolForm").after( metadata_div );
         }
