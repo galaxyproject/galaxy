@@ -668,4 +668,4 @@ lMaj5	Leishmania major 2005	chr1=268984,chr2=355714,chr3=384518,chr4=441313,chr5
 arabidopsis	Arabidopsis thaliana TAIR9
 arabidopsis_tair8	Arabidopsis thaliana TAIR8
 araTha1	Arabidopsis thaliana TAIR7
-mm5 Mouse May 2004 (mm5)
+mm5	Mouse May 2004 (mm5)
