@@ -555,15 +555,11 @@ class PageController( BaseController, Sharable, UsesAnnotations, UsesHistory, Us
         # Get page.
         session = trans.sa_session
         user = session.query( model.User ).filter_by( username=username ).first()
-        page_query_base = trans.sa_session.query( model.Page ).filter_by( user=user, slug=slug, deleted=False )
-        if user is not None:
-            # User can view page if it's importable or if it's shared with him/her.
-            page = page_query_base.filter( or_( model.Page.user==trans.get_user(), model.Page.importable==True, model.Page.users_shared_with.any( model.PageUserShareAssociation.user==trans.get_user() ) ) ).first()
-        else:
-            # User not logged in, so only way to view page is if it's importable.
-            page = page_query_base.filter_by( importable=True ).first()
+        page = trans.sa_session.query( model.Page ).filter_by( user=user, slug=slug, deleted=False ).first()
         if page is None:
             raise web.httpexceptions.HTTPNotFound()
+        # Security check raises error if user cannot access page.
+        self.security_check( trans.get_user(), page, False, True)
             
         # Process page content.
         processor = _PageContentProcessor( trans, 'utf-8', 'text/html', self._get_embed_html )

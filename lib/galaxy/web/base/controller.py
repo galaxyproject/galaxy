@@ -110,8 +110,7 @@ class SharableItemSecurity:
         if check_accessible:
             # Verify accessible.
             if ( item.user != user ) and ( not item.importable ) and ( user not in item.users_shared_with_dot_users ):
-                raise "hi"
-                error( "%s is not accessible by current user" % item.__class__.__name__ )
+                error( "%s is not accessible to current user" % item.__class__.__name__ )
         return item
         
 class UsesHistoryDatasetAssociation:

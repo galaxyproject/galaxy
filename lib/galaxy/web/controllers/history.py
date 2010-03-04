@@ -589,15 +589,11 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesHistory 
         # Get history.
         session = trans.sa_session
         user = session.query( model.User ).filter_by( username=username ).first()
-        history_query_base = trans.sa_session.query( model.History ).filter_by( user=user, slug=slug, deleted=False )
-        if user is not None:
-            # User can view history if it's importable or if it's shared with him/her.
-            history = history_query_base.filter( or_( model.History.importable==True, model.History.users_shared_with.any( model.HistoryUserShareAssociation.user==trans.get_user() ) ) ).first()
-        else:
-            # User not logged in, so only way to view history is if it's importable.
-            history = history_query_base.filter_by( importable=True ).first()
+        history = trans.sa_session.query( model.History ).filter_by( user=user, slug=slug, deleted=False ).first()
         if history is None:
            raise web.httpexceptions.HTTPNotFound()
+        # Security check raises error if user cannot access history.
+        self.security_check( trans.get_user(), history, False, True)
    
         # Get datasets.
         datasets = self.get_history_datasets( trans, history )
