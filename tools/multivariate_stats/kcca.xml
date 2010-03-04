@@ -1,0 +1,150 @@
+<tool id="kcca1" name="Kernel Canonical Correlation Analysis" version="1.0.0">
+  <description> </description>
+  <command interpreter="python">
+    kcca.py 
+      --input=$input1
+      --output1=$out_file1
+      --x_cols=$x_cols
+      --y_cols=$y_cols
+      --kernel=$kernelChoice.kernel
+      --features=$features
+      #if $kernelChoice.kernel == "rbfdot" or $kernelChoice.kernel == "anovadot":
+      --sigma=$kernelChoice.sigma
+      --degree="None"
+      --scale="None"
+      --offset="None"
+      --order="None"
+      #elif $kernelChoice.kernel == "polydot":
+      --sigma="None"
+      --degree=$kernelChoice.degree
+      --scale=$kernelChoice.scale
+      --offset=$kernelChoice.offset
+      --order="None"
+      #elif $kernelChoice.kernel == "tanhdot":
+      --sigma="None"
+      --degree="None"
+      --scale=$kernelChoice.scale
+      --offset=$kernelChoice.offset
+      --order="None"
+      #elif $kernelChoice.kernel == "besseldot":
+      --sigma=$kernelChoice.sigma
+      --degree=$kernelChoice.degree
+      --scale="None"
+      --offset="None"
+      --order=$kernelChoice.order
+      #elif $kernelChoice.kernel == "anovadot":
+      --sigma=$kernelChoice.sigma
+      --degree=$kernelChoice.degree
+      --scale="None"
+      --offset="None"
+      --order="None"
+      #else:
+      --sigma="None"
+      --degree="None"
+      --scale="None"
+      --offset="None"
+      --order="None"
+      #end if
+  </command>
+  <inputs>
+    <param format="tabular" name="input1" type="data" label="Select data" help="Query missing? See TIP below."/>
+    <param name="x_cols" label="Select columns containing X variables " type="data_column" data_ref="input1" numerical="True" multiple="true" >
+        <validator type="no_options" message="Please select at least one column."/>
+    </param>
+    <param name="y_cols" label="Select columns containing Y variables " type="data_column" data_ref="input1" numerical="True" multiple="true" >
+        <validator type="no_options" message="Please select at least one column."/>
+    </param>
+    <param name="features" size="10" type="integer" value="2" label="Number of canonical components to return" help="Enter an integer value greater than 0"/>
+    <conditional name="kernelChoice">
+        <param name="kernel" type="select" label="Kernel function">
+            <option value="rbfdot" selected="true">Gaussian Radial Basis Function</option>
+            <option value="polydot">Polynomial</option>
+            <option value="vanilladot">Linear</option>
+            <option value="tanhdot">Hyperbolic</option>
+            <option value="laplacedot">Laplacian</option>
+            <option value="besseldot">Bessel</option>
+            <option value="anovadot">ANOVA Radial Basis Function</option>
+            <option value="splinedot">Spline</option>
+        </param>
+        <when value="vanilladot" />
+        <when value="splinedot" />
+        <when value="rbfdot">
+            <param name="sigma" size="10" type="float" value="1" label="sigma (inverse kernel width)" />
+        </when>
+        <when value="laplacedot">
+            <param name="sigma" size="10" type="float" value="1" label="sigma (inverse kernel width)" />
+        </when>
+        <when value="polydot">
+            <param name="degree" size="10" type="float" value="1" label="degree" />
+            <param name="scale" size="10" type="float" value="1" label="scale" />
+            <param name="offset" size="10" type="float" value="1" label="offset" />
+        </when>
+        <when value="tanhdot">
+            <param name="scale" size="10" type="float" value="1" label="scale" />
+            <param name="offset" size="10" type="float" value="1" label="offset" />
+        </when>
+        <when value="besseldot">
+            <param name="sigma" size="10" type="float" value="1" label="sigma" />
+            <param name="order" size="10" type="float" value="1" label="order" />
+            <param name="degree" size="10" type="float" value="1" label="degree" />
+        </when>
+        <when value="anovadot">
+            <param name="sigma" size="10" type="float" value="1" label="sigma" />
+            <param name="degree" size="10" type="float" value="1" label="degree" />
+        </when>
+    </conditional>    
+  </inputs>
+  <outputs>
+    <data format="input" name="out_file1" metadata_source="input1" />
+  </outputs>
+  <requirements>
+    <requirement type="python-module">rpy</requirement>
+  </requirements>
+  <tests>
+    <test>
+        <param name="input1" value="iris.tabular"/>
+        <param name="x_cols" value="1,2"/>
+        <param name="y_cols" value="3,4"/>
+        <param name="kernel" value="anovadot"/>
+        <param name="features" value="4"/>
+        <param name="sigma" value="0.1"/>
+        <param name="degree" value="2"/>
+        <output name="out_file1" file="kcca_out1.tabular"/>
+    </test>
+    <test>
+        <param name="input1" value="iris.tabular"/>
+        <param name="x_cols" value="3,4"/>
+        <param name="y_cols" value="1,2"/>
+        <param name="kernel" value="rbfdot"/>
+        <param name="features" value="2"/>
+        <param name="sigma" value="0.5"/>
+        <output name="out_file1" file="kcca_out2.tabular"/>
+    </test>
+  </tests>
+  <help>
+
+
+.. class:: infomark
+
+**TIP:** If your data is not TAB delimited, use *Edit Queries-&gt;Convert characters*
+
+-----
+
+.. class:: infomark
+
+**What it does**
+
+This tool uses functions from 'kernlab' library from R statistical package to perform Kernel Canonical Correlation Analysis (kCCA) on the input data. 
+
+*Alexandros Karatzoglou, Alex Smola, Kurt Hornik, Achim Zeileis (2004). kernlab - An S4 Package for Kernel Methods in R. Journal of Statistical Software 11(9), 1-20. URL http://www.jstatsoft.org/v11/i09/*
+
+-----
+
+.. class:: warningmark
+
+**Note**
+
+This tool currently treats all variables as continuous numeric variables. Running the tool on categorical variables might result in incorrect results. Rows containing non-numeric (or missing) data in any of the chosen columns will be skipped from the analysis.
+
+  </help>
+</tool>

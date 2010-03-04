@@ -150,6 +150,12 @@
     <tool file="regVariation/best_regression_subsets.xml" />
     <tool file="regVariation/rcve.xml" />
   </section>
+  <section name="Multivariate Analysis" id="multVar">
+    <tool file="multivariate_stats/pca.xml" />
+    <tool file="multivariate_stats/cca.xml" />
+    <tool file="multivariate_stats/kpca.xml" />
+    <tool file="multivariate_stats/kcca.xml" />
+  </section>
  <section name="Evolution" id="hyphy">
     <tool file="hyphy/hyphy_branch_lengths_wrapper.xml" />
     <tool file="hyphy/hyphy_nj_tree_wrapper.xml" />

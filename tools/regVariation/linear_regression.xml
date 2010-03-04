@@ -11,8 +11,8 @@
   </command>
   <inputs>
     <param format="tabular" name="input1" type="data" label="Select data" help="Query missing? See TIP below."/>
-    <param name="response_col" label="Response column (Y)" type="data_column" data_ref="input1" />
-    <param name="predictor_cols" label="Predictor columns (X)" type="data_column" data_ref="input1" multiple="true" >
+    <param name="response_col" label="Response column (Y)" type="data_column" data_ref="input1" numerical="True"/>
+    <param name="predictor_cols" label="Predictor columns (X)" type="data_column" data_ref="input1" numerical="True" multiple="true" >
         <validator type="no_options" message="Please select at least one column."/>
     </param>
   </inputs>
@@ -47,13 +47,15 @@
 
 This tool uses the 'lm' function from R statistical package to perform linear regression on the input data. It outputs two files, one containing the summary statistics of the performed regression, and the other containing diagnostic plots to check whether model assumptions are satisfied.   
 
+*R Development Core Team (2009). R: A language and environment for statistical computing. R Foundation for Statistical Computing, Vienna, Austria. ISBN 3-900051-07-0, URL http://www.R-project.org.*
+
 -----
 
 .. class:: warningmark
 
 **Note**
 
-- This tool currently treats all predictor and response variables as continuous variables. Running the tool on categorical variables might result in incorrect results.
+- This tool currently treats all predictor and response variables as continuous numeric variables. Running the tool on categorical variables might result in incorrect results.
 
 - Rows containing non-numeric (or missing) data in any of the chosen columns will be skipped from the analysis.
 

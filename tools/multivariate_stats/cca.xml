@@ -1,0 +1,95 @@
+<tool id="cca1" name="Canonical Correlation Analysis" version="1.0.0">
+  <description> </description>
+  <command interpreter="python">
+    cca.py 
+      $input1
+      $x_cols
+      $y_cols
+      $x_scale
+      $y_scale
+      $std_scores
+      $out_file1
+      $out_file2
+  </command>
+  <inputs>
+    <param format="tabular" name="input1" type="data" label="Select data" help="Query missing? See TIP below."/>
+    <param name="x_cols" label="Select columns containing X variables " type="data_column" data_ref="input1" numerical="True" multiple="true" >
+        <validator type="no_options" message="Please select at least one column."/>
+    </param>
+    <param name="y_cols" label="Select columns containing Y variables " type="data_column" data_ref="input1" numerical="True" multiple="true" >
+        <validator type="no_options" message="Please select at least one column."/>
+    </param>
+    <param name="x_scale" type="select" label="Type of Scaling for X variables" help="Can be used to center and/or scale variables">
+        <option value="none" selected="true">None</option>
+        <option value="center">Center only</option>
+        <option value="scale">Scale only</option>
+        <option value="both">Center and Scale</option>
+    </param>
+    <param name="y_scale" type="select" label="Type of Scaling for Y variables" help="Can be used to center and/or scale variables">
+        <option value="none" selected="true">None</option>
+        <option value="center">Center only</option>
+        <option value="scale">Scale only</option>
+        <option value="both">Center and Scale</option>
+    </param>
+    <param name="std_scores" type="select" label="Report standardized scores?" help="Selecting 'Yes' will rescale scores (and coefficients) to produce scores of unit variance">
+        <option value="no" selected="true">No</option>
+        <option value="yes">Yes</option>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="input" name="out_file1" metadata_source="input1" />
+    <data format="pdf" name="out_file2" />
+  </outputs>
+  <requirements>
+    <requirement type="python-module">rpy</requirement>
+  </requirements>
+  <tests>
+    <test>
+        <param name="input1" value="iris.tabular"/>
+        <param name="x_cols" value="3,4"/>
+        <param name="y_cols" value="1,2"/>
+        <param name="x_scale" value="both"/>
+        <param name="y_scale" value="scale"/>
+        <param name="std_scores" value="yes"/>
+        <output name="out_file1" file="cca_out1.tabular"/>
+        <output name="out_file2" file="cca_out2.pdf"/>
+    </test>
+  </tests>
+  <help>
+
+
+.. class:: infomark
+
+**TIP:** If your data is not TAB delimited, use *Edit Queries-&gt;Convert characters*
+
+-----
+
+.. class:: infomark
+
+**What it does**
+
+This tool uses functions from 'yacca' library from R statistical package to perform Canonical Correlation Analysis (CCA) on the input data. It outputs two files, one containing the summary statistics of the performed CCA, and the other containing helioplots, which display structural loadings of X and Y variables on different canonical components.   
+
+*Carter T. Butts (2009). yacca: Yet Another Canonical Correlation Analysis Package. R package version 1.1.*
+
+-----
+
+.. class:: warningmark
+
+**Note**
+
+- This tool currently treats all predictor and response variables as continuous numeric variables. Running the tool on categorical variables might result in incorrect results.
+
+- Rows containing non-numeric (or missing) data in any of the chosen columns will be skipped from the analysis.
+
+- The summary statistics in the output are described below:
+
+  - correlation: Canonical correlation between the canonical variates (i.e. transformed variables)
+  - F-statistic: F-value obtained from F Test for Canonical Correlations Using Rao's Approximation
+  - p-value: denotes significance of canonical correlations
+  - Coefficients: represent the coefficients of X and Y variables on each canonical variate
+  - Loadings: represent the correlations between the original variables in each set and their respective canonical variates 
+  - CrossLoadings: represent the correlations between the original variables in each set and the opposite canonical variates 
+  
+  </help>
+</tool>

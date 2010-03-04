@@ -1,0 +1,76 @@
+<tool id="pca1" name="Principal Component Analysis" version="1.0.0">
+  <description> </description>
+  <command interpreter="python">
+    pca.py 
+      $input1
+      $var_cols
+      $method
+      $out_file1
+      $out_file2
+  </command>
+  <inputs>
+    <param format="tabular" name="input1" type="data" label="Select data" help="Query missing? See TIP below."/>
+    <param name="var_cols" label="Select columns containing input variables " type="data_column" data_ref="input1" numerical="True" multiple="true" >
+        <validator type="no_options" message="Please select at least one column."/>
+    </param>
+    <param name="method" type="select" label="Method" help="The correlation matrix can only be used if there are no constant variables">
+        <option value="cor" selected="true">Correlation</option>
+        <option value="cov">Covariance</option>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="input" name="out_file1" metadata_source="input1" />
+    <data format="pdf" name="out_file2" />
+  </outputs>
+  <requirements>
+    <requirement type="python-module">rpy</requirement>
+  </requirements>
+  <tests>
+    <test>
+        <param name="input1" value="iris.tabular"/>
+        <param name="var_cols" value="1,2,3,4"/>
+        <param name="method" value="cor"/>
+        <output name="out_file1" file="pca_out1.tabular"/>
+        <output name="out_file2" file="pca_out2.pdf"/>
+    </test>
+    <test>
+        <param name="input1" value="iris.tabular"/>
+        <param name="var_cols" value="1,2,3,4"/>
+        <param name="method" value="cov"/>
+        <output name="out_file1" file="pca_out3.tabular"/>
+        <output name="out_file2" file="pca_out4.pdf"/>
+    </test>
+  </tests>
+  <help>
+
+
+.. class:: infomark
+
+**TIP:** If your data is not TAB delimited, use *Edit Queries-&gt;Convert characters*
+
+-----
+
+.. class:: infomark
+
+**What it does**
+
+This tool uses the 'princomp' function from R statistical package to perform Principal Component Analysis (PCA) on the given numeric input data. It outputs two files, one containing the summary statistics of PCA, and the other containing biplots of the observations and principal components.   
+
+*R Development Core Team (2009). R: A language and environment for statistical computing. R Foundation for Statistical Computing, Vienna, Austria. ISBN 3-900051-07-0, URL http://www.R-project.org.*
+
+-----
+
+.. class:: warningmark
+
+**Note**
+
+- This tool currently treats all variables as continuous numeric variables. Running the tool on categorical variables might result in incorrect results. Rows containing non-numeric (or missing) data in any of the chosen columns will be skipped from the analysis.
+
+- The summary statistics in the output are described below:
+
+  - Std. deviation: Standard deviations of the principal components
+  - Loadings: a list of eigen-vectors
+  - Scores: Scores of the input data on the principal components
+
+  </help>
+</tool>
