@@ -182,6 +182,7 @@ class DefaultToolAction( object ):
             on_text = ""
         # Add the dbkey to the incoming parameters
         incoming[ "dbkey" ] = input_dbkey
+        params = None #wrapped params are used by change_format action and by output.label; only perform this wrapping once, as needed
         # Keep track of parent / child relationships, we'll create all the 
         # datasets first, then create the associations
         parent_to_child_pairs = []
@@ -213,8 +214,9 @@ class DefaultToolAction( object ):
                         ext = input_ext
                     #process change_format tags
                     if output.change_format:
-                        params = make_dict_copy( incoming ) #FIXME: The wrapping of inputs should only be done once per call to execute; currently happens here and possibly when generating output dataset name
-                        wrap_values( tool.inputs, params )
+                        if params is None:
+                            params = make_dict_copy( incoming )
+                            wrap_values( tool.inputs, params )
                         for change_elem in output.change_format:
                             for when_elem in change_elem.findall( 'when' ):
                                 check = when_elem.get( 'input', None )
@@ -258,12 +260,14 @@ class DefaultToolAction( object ):
                 data.blurb = "queued"
                 # Set output label
                 if output.label:
-                    params = make_dict_copy( incoming )
-                    # wrapping the params allows the tool config to contain things like
-                    # <outputs>
-                    #     <data format="input" name="output" label="Blat on ${<input_param>.name}" />
-                    # </outputs>
-                    wrap_values( tool.inputs, params )
+                    if params is None:
+                        params = make_dict_copy( incoming )
+                        # wrapping the params allows the tool config to contain things like
+                        # <outputs>
+                        #     <data format="input" name="output" label="Blat on ${<input_param>.name}" />
+                        # </outputs>
+                        wrap_values( tool.inputs, params )
+                    #tool (only needing to be set once) and on_string (set differently for each label) are overwritten for each output dataset label being determined
                     params['tool'] = tool
                     params['on_string'] = on_text
                     data.name = fill_template( output.label, context=params )
