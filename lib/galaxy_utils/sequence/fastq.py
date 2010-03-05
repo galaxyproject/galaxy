@@ -264,7 +264,7 @@ for format in [ fastqIlluminaRead, fastqSolexaRead, fastqSangerRead, fastqCSSang
     FASTQ_FORMATS[ format.format ] = format
 
 
-class fastqAggregator():
+class fastqAggregator( object ):
     VALID_FORMATS = FASTQ_FORMATS.keys()
     def __init__( self,  ):
         self.ascii_values_used = [] #quick lookup of all ascii chars used
