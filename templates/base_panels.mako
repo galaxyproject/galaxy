@@ -314,7 +314,7 @@
         <div class="unified-panel-header">
             <div class="unified-panel-header-inner"><span class='title'>${title}</span></div>
         </div>
-        <div class="body" style="max-height: 600px;">${content}</div>
+        <div class="body">${content}</div>
         <div>
             <div class="buttons" style="display: none; float: right;"></div>
             <div class="extra_buttons" style="display: none; padding: 5px;"></div>

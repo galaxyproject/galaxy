@@ -277,7 +277,7 @@
             </table>
             <div class="infomessagesmall" id="emptyHistoryMessage" style="display:none;">
         %endif
-                ${_("Your history is empty. Click 'Get Data' on the left pane to start")}
+                ${_("This history is empty.")}
             </div>
 
 </%def>
