@@ -37,8 +37,8 @@ class ToolTestBuilder( object ):
         except Exception, e:
             log.debug( "Error in add_param for %s: %s" % ( name, e ) )
         self.inputs.append( ( name, value, extra ) )
-    def add_output( self, name, file, sort ):
-        self.outputs.append( ( name, file, sort ) )
+    def add_output( self, name, file, extra ):
+        self.outputs.append( ( name, file, extra ) )
     def __expand_grouping_for_data_input( self, name, value, extra, grouping_name, grouping_value ):
         # Currently handles grouping.Conditional and grouping.Repeat
         if isinstance( grouping_value, grouping.Conditional  ):

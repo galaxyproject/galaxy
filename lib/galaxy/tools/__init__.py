@@ -532,8 +532,11 @@ class Tool:
                     file = attrib.pop( 'file', None )
                     if file is None:
                         raise Exception( "Test output does not have a 'file'")
-                    sort = util.string_as_bool( attrib.pop( 'sort', False ) )
-                    test.add_output( name, file, sort )
+                    attributes = Bunch()
+                    attributes.compare = attrib.pop( 'compare', 'diff' ).lower() #method of comparison
+                    attributes.lines_diff = int( attrib.pop( 'lines_diff', '0' ) ) # allow a few lines (dates etc) to vary in logs
+                    attributes.sort = util.string_as_bool( attrib.pop( 'sort', False ) )
+                    test.add_output( name, file, attributes )
             except Exception, e:
                 test.error = True
                 test.exception = e

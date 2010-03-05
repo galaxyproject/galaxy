@@ -36,14 +36,21 @@ class TwillTestCase( unittest.TestCase ):
         #self.set_history()
 
     # Functions associated with files
-    def files_diff( self, file1, file2, sort=False ):
+    def files_diff( self, file1, file2, attributes=None ):
         """Checks the contents of 2 files for differences"""
+        def get_lines_diff( diff ):
+            count = 0
+            for line in diff:
+                if ( line.startswith( '+' ) and not line.startswith( '+++' ) ) or ( line.startswith( '-' ) and not line.startswith( '---' ) ):
+                    count += 1
+            return count
         if not filecmp.cmp( file1, file2 ):
             files_differ = False
             local_file = open( file1, 'U' ).readlines()
             history_data = open( file2, 'U' ).readlines()
-            if sort:
+            if attributes and attributes.sort:
                 history_data.sort()
+            ##Why even bother with the check loop below, why not just use the diff output? This seems wasteful.
             if len( local_file ) == len( history_data ):
                 for i in range( len( history_data ) ):
                     if local_file[i].rstrip( '\r\n' ) != history_data[i].rstrip( '\r\n' ):
@@ -52,37 +59,79 @@ class TwillTestCase( unittest.TestCase ):
             else:
                 files_differ = True
             if files_differ:
-                diff = difflib.unified_diff( local_file, history_data, "local_file", "history_data" )
-                diff_slice = list( islice( diff, 40 ) )        
-                if file1.endswith( '.pdf' ) or file2.endswith( '.pdf' ):
-                    # PDF files contain creation dates, modification dates, ids and descriptions that change with each
-                    # new file, so we need to handle these differences.  As long as the rest of the PDF file does
-                    # not differ we're ok.
-                    valid_diff_strs = [ 'description', 'createdate', 'creationdate', 'moddate', 'id' ]
-                    valid_diff = False
-                    for line in diff_slice:
-                        # Make sure to lower case strings before checking.
-                        line = line.lower()
-                        # Diff lines will always start with a + or - character, but handle special cases: '--- local_file \n', '+++ history_data \n'
-                        if ( line.startswith( '+' ) or line.startswith( '-' ) ) and line.find( 'local_file' ) < 0 and line.find( 'history_data' ) < 0:
-                            for vdf in valid_diff_strs:
-                                if line.find( vdf ) < 0:
-                                    valid_diff = False
-                                else:
-                                    valid_diff = True
-                                    # Stop checking as soon as we know we have a valid difference
-                                    break
-                            if not valid_diff:
-                                # Print out diff_slice so we can see what failed
-                                print "###### diff_slice ######"
-                                raise AssertionError( "".join( diff_slice ) )
-                                break
+                if attributes and attributes.lines_diff:
+                    allowed_diff_count = attributes.lines_diff
                 else:
-                    for line in diff_slice:
-                        for char in line:
-                            if ord( char ) > 128:
-                                raise AssertionError( "Binary data detected, not displaying diff" )
-                    raise AssertionError( "".join( diff_slice ) )
+                    allowed_diff_count = 0
+                diff = list( difflib.unified_diff( local_file, history_data, "local_file", "history_data" ) )
+                diff_lines = get_lines_diff( diff )
+                if diff_lines > allowed_diff_count:
+                    diff_slice = diff[0:40]
+                    #FIXME: This pdf stuff is rather special cased and has not been updated to consider lines_diff 
+                    #due to unknown desired behavior when used in conjunction with a non-zero lines_diff
+                    #PDF forgiveness can probably be handled better by not special casing by __extension__ here
+                    #and instead using lines_diff or a regular expression matching
+                    #or by creating and using a specialized pdf comparison function
+                    if file1.endswith( '.pdf' ) or file2.endswith( '.pdf' ):
+                        # PDF files contain creation dates, modification dates, ids and descriptions that change with each
+                        # new file, so we need to handle these differences.  As long as the rest of the PDF file does
+                        # not differ we're ok.
+                        valid_diff_strs = [ 'description', 'createdate', 'creationdate', 'moddate', 'id' ]
+                        valid_diff = False
+                        for line in diff_slice:
+                            # Make sure to lower case strings before checking.
+                            line = line.lower()
+                            # Diff lines will always start with a + or - character, but handle special cases: '--- local_file \n', '+++ history_data \n'
+                            if ( line.startswith( '+' ) or line.startswith( '-' ) ) and line.find( 'local_file' ) < 0 and line.find( 'history_data' ) < 0:
+                                for vdf in valid_diff_strs:
+                                    if line.find( vdf ) < 0:
+                                        valid_diff = False
+                                    else:
+                                        valid_diff = True
+                                        # Stop checking as soon as we know we have a valid difference
+                                        break
+                                if not valid_diff:
+                                    # Print out diff_slice so we can see what failed
+                                    print "###### diff_slice ######"
+                                    raise AssertionError( "".join( diff_slice ) )
+                    else:
+                        for line in diff_slice:
+                            for char in line:
+                                if ord( char ) > 128:
+                                    raise AssertionError( "Binary data detected, not displaying diff" )
+                        raise AssertionError( "".join( diff_slice )  )
+
+    def files_re_match( self, file1, file2, attributes=None ):
+        """Checks the contents of 2 files for differences using re.match"""
+        local_file = open( file1, 'U' ).readlines() #regex file
+        history_data = open( file2, 'U' ).readlines()
+        assert len( local_file ) == len( history_data ), 'Data File and Regular Expression File contain a different number of lines (%s != %s)' % ( len( local_file ), len( history_data ) )
+        if attributes and attributes.sort:
+            history_data.sort()
+        if attributes and attributes.lines_diff:
+            lines_diff = attributes.lines_diff
+        else:
+            lines_diff = 0
+        line_diff_count = 0
+        diffs = []
+        for i in range( len( history_data ) ):
+            if not re.match( local_file[i].rstrip( '\r\n' ), history_data[i].rstrip( '\r\n' ) ):
+                line_diff_count += 1
+                diffs.append( 'Regular Expression: %s\nData file         : %s' % ( local_file[i].rstrip( '\r\n' ),  history_data[i].rstrip( '\r\n' ) ) )
+            if line_diff_count > lines_diff:
+                raise AssertionError, "Regular expression did not match data file (allowed variants=%i):\n%s" % ( lines_diff, "".join( diffs ) )
+
+    def files_re_match_multiline( self, file1, file2, attributes=None ):
+        """Checks the contents of 2 files for differences using re.match in multiline mode"""
+        local_file = open( file1, 'U' ).read() #regex file
+        if attributes and attributes.sort:
+            history_data = open( file2, 'U' ).readlines()
+            history_data.sort()
+            history_data = ''.join( history_data )
+        else:
+            history_data = open( file2, 'U' ).read()
+        #lines_diff not applicable to multiline matching
+        assert re.match( local_file, history_data, re.MULTILINE ), "Multiline Regular expression did not match data file"
 
     def get_filename( self, filename ):
         full = os.path.join( self.file_dir, filename)
@@ -541,7 +590,7 @@ class TwillTestCase( unittest.TestCase ):
             hid = elem.get('hid')
             hids.append(hid)
         return hids
-    def verify_dataset_correctness( self, filename, hid=None, wait=True, maxseconds=120, sort=False ):
+    def verify_dataset_correctness( self, filename, hid=None, wait=True, maxseconds=120, attributes=None ):
         """Verifies that the attributes and contents of a history item meet expectations"""
         if wait:
             self.wait( maxseconds=maxseconds ) #wait for job to finish
@@ -576,13 +625,24 @@ class TwillTestCase( unittest.TestCase ):
             data = self.last_page()
             file( temp_name, 'wb' ).write(data)
             try:
-                self.files_diff( local_name, temp_name, sort=sort )
+                if attributes and 'compare' in attributes:
+                    compare = attributes.compare
+                else:
+                    compare = 'diff'
+                if compare == 'diff':
+                    self.files_diff( local_name, temp_name, attributes=attributes )
+                elif compare == 're_match':
+                    self.files_re_match( local_name, temp_name, attributes=attributes )
+                elif compare == 're_match_multiline':
+                    self.files_re_match_multiline( local_name, temp_name, attributes=attributes )
+                else:
+                    raise Exception, 'Unimplemented Compare type: %s' % compare
             except AssertionError, err:
-                os.remove(temp_name)
-                errmsg = 'History item %s different than expected, difference:\n' % hid
+                errmsg = 'History item %s different than expected, difference (using %s):\n' % ( hid, compare )
                 errmsg += str( err )
                 raise AssertionError( errmsg )
-            os.remove(temp_name)
+            finally:
+                os.remove( temp_name )
     def verify_composite_datatype_file_content( self, file_name, hda_id ):
         local_name = self.get_filename( file_name )
         temp_name = self.get_filename( 'temp_%s' % file_name )

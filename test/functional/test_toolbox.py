@@ -66,13 +66,13 @@ class ToolTestCase( TwillTestCase ):
         self.assertTrue( data_list )
         elem_index = 0 - len( testdef.outputs )
         for output_tuple in testdef.outputs:
-            name, file, sort = output_tuple
+            name, outfile, attributes = output_tuple
             # Get the correct hid
             elem = data_list[ elem_index ]
             self.assertTrue( elem is not None )
             elem_hid = elem.get( 'hid' )
             elem_index += 1
-            self.verify_dataset_correctness( file, hid=elem_hid, maxseconds=testdef.maxseconds, sort=sort )
+            self.verify_dataset_correctness( outfile, hid=elem_hid, maxseconds=testdef.maxseconds, attributes=attributes )
         self.delete_history( id=self.security.encode_id( latest_history.id ) )
 
     def __expand_grouping( self, tool_inputs, declared_inputs, prefix='' ):
