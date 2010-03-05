@@ -6,6 +6,7 @@ import sys, re, os.path
 from galaxy import eggs
 from galaxy.tools import validation
 from galaxy.datatypes import metadata
+from math import log,exp,sqrt,ceil,floor
 
 assert sys.version_info[:2] >= ( 2, 4 )
 
