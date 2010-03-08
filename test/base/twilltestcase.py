@@ -48,7 +48,9 @@ class TwillTestCase( unittest.TestCase ):
             files_differ = False
             local_file = open( file1, 'U' ).readlines()
             history_data = open( file2, 'U' ).readlines()
-            if attributes and attributes.sort:
+            if attributes is None:
+                attributes = {}
+            if attributes.get( 'sort', False ):
                 history_data.sort()
             ##Why even bother with the check loop below, why not just use the diff output? This seems wasteful.
             if len( local_file ) == len( history_data ):
@@ -59,10 +61,7 @@ class TwillTestCase( unittest.TestCase ):
             else:
                 files_differ = True
             if files_differ:
-                if attributes and attributes.lines_diff:
-                    allowed_diff_count = attributes.lines_diff
-                else:
-                    allowed_diff_count = 0
+                allowed_diff_count = attributes.get( 'lines_diff', 0 )
                 diff = list( difflib.unified_diff( local_file, history_data, "local_file", "history_data" ) )
                 diff_lines = get_lines_diff( diff )
                 if diff_lines > allowed_diff_count:
@@ -106,12 +105,11 @@ class TwillTestCase( unittest.TestCase ):
         local_file = open( file1, 'U' ).readlines() #regex file
         history_data = open( file2, 'U' ).readlines()
         assert len( local_file ) == len( history_data ), 'Data File and Regular Expression File contain a different number of lines (%s != %s)' % ( len( local_file ), len( history_data ) )
-        if attributes and attributes.sort:
+        if attributes is None:
+            attributes = {}
+        if attributes.get( 'sort', False ):
             history_data.sort()
-        if attributes and attributes.lines_diff:
-            lines_diff = attributes.lines_diff
-        else:
-            lines_diff = 0
+        lines_diff = attributes.get( 'lines_diff', 0 )
         line_diff_count = 0
         diffs = []
         for i in range( len( history_data ) ):
@@ -124,7 +122,9 @@ class TwillTestCase( unittest.TestCase ):
     def files_re_match_multiline( self, file1, file2, attributes=None ):
         """Checks the contents of 2 files for differences using re.match in multiline mode"""
         local_file = open( file1, 'U' ).read() #regex file
-        if attributes and attributes.sort:
+        if attributes is None:
+            attributes = {}
+        if attributes.get( 'sort', False ):
             history_data = open( file2, 'U' ).readlines()
             history_data.sort()
             history_data = ''.join( history_data )
@@ -619,16 +619,16 @@ class TwillTestCase( unittest.TestCase ):
                     raise AssertionError( errmsg )
         else:
             local_name = self.get_filename( filename )
-            temp_name = self.get_filename( 'temp_%s' % filename )
+            temp_name = self.get_filename( '%s_temp' % filename ) #This is a terrible way to generate a temp name
             self.home()
             self.visit_page( "display?hid=" + hid )
             data = self.last_page()
             file( temp_name, 'wb' ).write(data)
             try:
-                if attributes and 'compare' in attributes:
-                    compare = attributes.compare
-                else:
-                    compare = 'diff'
+                if attributes is None:
+                    attributes = {}
+                compare = attributes.get( 'compare', 'diff' )
+                extra_files = attributes.get( 'extra_files', None )
                 if compare == 'diff':
                     self.files_diff( local_name, temp_name, attributes=attributes )
                 elif compare == 're_match':
@@ -637,26 +637,55 @@ class TwillTestCase( unittest.TestCase ):
                     self.files_re_match_multiline( local_name, temp_name, attributes=attributes )
                 else:
                     raise Exception, 'Unimplemented Compare type: %s' % compare
+                if extra_files:
+                    self.verify_extra_files_content( extra_files, elem.get( 'id' ) )
             except AssertionError, err:
                 errmsg = 'History item %s different than expected, difference (using %s):\n' % ( hid, compare )
                 errmsg += str( err )
                 raise AssertionError( errmsg )
             finally:
                 os.remove( temp_name )
-    def verify_composite_datatype_file_content( self, file_name, hda_id ):
+
+    def verify_extra_files_content( self, extra_files, hda_id ):
+        files_list = []
+        for extra_type, extra_value, extra_name, extra_attributes in extra_files:
+            if extra_type == 'file':
+                files_list.append( ( extra_name, extra_value, extra_attributes ) )
+            elif extra_type == 'directory':
+                for filename in os.listdir( self.get_filename( extra_value ) ):
+                    files_list.append( ( filename, os.path.join( extra_value, filename ), extra_attributes ) )
+            else:
+                raise ValueError, 'unknown extra_files type: %s' % extra_type
+        for filename, filepath, attributes in files_list:
+            self.verify_composite_datatype_file_content( filepath, hda_id, base_name = filename, attributes = attributes )
+        
+    def verify_composite_datatype_file_content( self, file_name, hda_id, base_name = None, attributes = None ):
         local_name = self.get_filename( file_name )
-        temp_name = self.get_filename( 'temp_%s' % file_name )
-        self.visit_url( "%s/datasets/%s/display/%s" % ( self.url, self.security.encode_id( hda_id ), file_name ) )
+        if base_name is None:
+            base_name = file_name
+        temp_name = self.get_filename( '%s_temp' % file_name ) #This is a terrible way to generate a temp name
+        self.visit_url( "%s/datasets/%s/display/%s" % ( self.url, self.security.encode_id( hda_id ), base_name ) )
         data = self.last_page()
         file( temp_name, 'wb' ).write( data )
         try:
-            self.files_diff( local_name, temp_name )
+            if attributes is None:
+                attributes = {}
+            compare = attributes.get( 'compare', 'diff' )
+            if compare == 'diff':
+                self.files_diff( local_name, temp_name, attributes=attributes )
+            elif compare == 're_match':
+                self.files_re_match( local_name, temp_name, attributes=attributes )
+            elif compare == 're_match_multiline':
+                self.files_re_match_multiline( local_name, temp_name, attributes=attributes )
+            else:
+                raise Exception, 'Unimplemented Compare type: %s' % compare
         except AssertionError, err:
-            os.remove( temp_name )
-            errmsg = 'History item %s different than expected, difference:\n' % str( hda_id )
+            errmsg = 'Composite file (%s) of History item %s different than expected, difference (using %s):\n' % ( base_name, hda_id, compare )
             errmsg += str( err )
             raise AssertionError( errmsg )
-        os.remove( temp_name )
+        finally:
+            os.remove( temp_name )
+
     def is_zipped( self, filename ):
         if not zipfile.is_zipfile( filename ):
             return False

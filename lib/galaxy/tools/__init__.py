@@ -532,10 +532,22 @@ class Tool:
                     file = attrib.pop( 'file', None )
                     if file is None:
                         raise Exception( "Test output does not have a 'file'")
-                    attributes = Bunch()
-                    attributes.compare = attrib.pop( 'compare', 'diff' ).lower() #method of comparison
-                    attributes.lines_diff = int( attrib.pop( 'lines_diff', '0' ) ) # allow a few lines (dates etc) to vary in logs
-                    attributes.sort = util.string_as_bool( attrib.pop( 'sort', False ) )
+                    attributes = {}
+                    attributes['compare'] = attrib.pop( 'compare', 'diff' ).lower() #method of comparison
+                    attributes['lines_diff'] = int( attrib.pop( 'lines_diff', '0' ) ) # allow a few lines (dates etc) to vary in logs
+                    attributes['sort'] = util.string_as_bool( attrib.pop( 'sort', False ) )
+                    attributes['extra_files'] = []
+                    for extra in output_elem.findall( 'extra_files' ):
+                        extra_type = extra.get( 'type', 'file' ) #file or directory, when directory, compare basename by basename
+                        extra_name = extra.get( 'name', None )
+                        assert extra_type == 'directory' or extra_name is not None, 'extra_files type (%s) requires a name attribute' % extra_type
+                        extra_value = extra.get( 'value', None )
+                        assert extra_value is not None, 'extra_files requires a value attribute'
+                        extra_attributes = {}
+                        extra_attributes['compare'] = extra.get( 'compare', 'diff' ).lower() #method of comparison
+                        extra_attributes['lines_diff'] = int( extra.get( 'lines_diff', '0' ) ) # allow a few lines (dates etc) to vary in logs
+                        extra_attributes['sort'] = util.string_as_bool( extra.get( 'sort', False ) )
+                        attributes['extra_files'].append( ( extra_type, extra_value, extra_name, extra_attributes ) )
                     test.add_output( name, file, attributes )
             except Exception, e:
                 test.error = True
