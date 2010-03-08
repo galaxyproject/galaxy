@@ -12,9 +12,6 @@ except:
 import logging
 log = logging.getLogger( __name__ )
 
-# States for passing messages
-SUCCESS, INFO, WARNING, ERROR = "done", "info", "warning", "error"
-
 class LibraryListGrid( grids.Grid ):
     class NameColumn( grids.TextColumn ):
         def get_value( self, trans, grid, library ):

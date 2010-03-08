@@ -119,6 +119,19 @@
         };
     };
     
+    // Make an item importable.
+    function make_item_importable( item_controller, item_id, item_type )
+    {
+        url_template = "${h.url_for( controller='ITEM_CONTROLLER', action='set_accessible_async' )}";
+        ajax_url = url_template.replace( "ITEM_CONTROLLER", item_controller );
+        $.ajax({
+          type: "POST",
+          url: ajax_url,
+          data: { id: item_id, accessible: 'True' },
+          error: function() { alert("Making " + item_type + " accessible failed"); }
+        });
+    };
+    
     ## Completely replace WYM's dialog handling
     WYMeditor.editor.prototype.dialog = function( dialogType, dialogFeatures, bodyHtml ) {
           
@@ -340,7 +353,7 @@
                         {
                             "Insert": function() 
                             {
-                                // Make items accessible (importable) ?
+                                // Make selected items accessible (importable) ?
                                 var make_importable = false;
                                 if ( $('#make-importable:checked').val() !== null )
                                     make_importable = true;
@@ -352,16 +365,7 @@
                                     
                                     // Make item importable?
                                     if (make_importable)
-                                    {
-                                        url_template = "${h.url_for( controller='ITEM_CONTROLLER', action='set_accessible_async' )}";
-                                        ajax_url = url_template.replace( "ITEM_CONTROLLER", item_info.controller);
-                                        $.ajax({
-                                          type: "POST",
-                                          url: ajax_url,
-                                          data: { id: item_id, accessible: 'True' },
-                                          error: function() { alert("Making " + item_info.plural.toLowerCase() + " accessible failed"); }
-                                        });
-                                    }
+                                        make_item_importable(item_info.controller, item_id, item_info.singular);
                                     
                                     // Insert link(s) to item(s). This is done by getting item info and then manipulating wym.
                                     url_template = "${h.url_for( controller='ITEM_CONTROLLER', action='get_name_and_link_async' )}?id=" + item_id;
@@ -427,29 +431,43 @@
                 error: function() { alert( "Failed to list "  + item_info.plural.toLowerCase() + " for selection"); },
                 success: function(list_html) 
                 {
+                    // Can make histories, workflows importable; cannot make datasets importable.
+                    if (dialogType == Galaxy.DIALOG_EMBED_HISTORY || dialogType == Galaxy.DIALOG_EMBED_WORKFLOW)
+                        list_html = list_html + "<div><input id='make-importable' type='checkbox' checked/>" +
+                                    "Make the selected " + item_info.plural.toLowerCase() + " accessible so that they can viewed by everyone.</div>";
                     show_modal(
                         "Embed " + item_info.plural,
                         list_html,
                         {
                             "Embed": function() 
-                            {
-                                // Embed a Galaxy item.
-                                var item_ids = new Array();
+                            {   
+                                // Make selected items accessible (importable) ?
+                                var make_importable = false;
+                                if ( $('#make-importable:checked').val() != null )
+                                    make_importable = true;
+                                
                                 $('input[name=id]:checked').each(function() {
                                     // Get item ID and name.
                                     var item_id = $(this).val();
                                     // Use ':first' because there are many labels in table; the first one is the item name.
                                     var item_name = $("label[for='" + item_id + "']:first").text();
                                     
+                                    if (make_importable)
+                                        make_item_importable(item_info.controller, item_id, item_info.singular);
+                                    
                                     // Embedded item HTML; item class is embedded in div container classes; this is necessary because the editor strips 
                                     // all non-standard attributes when it returns its content (e.g. it will not return an element attribute of the form 
                                     // item_class='History').
-                                    var item_embed_html =
-                                        "<p><div id='" + item_info.iclass + "-" + item_id + "' class='embedded-item placeholder'> \
+                                    var item_embed_html =                                     
+                                        "<p> \
+                                         <div id='"  + item_info.iclass + "-" + item_id + "' class='embedded-item " + item_info.singular.toLowerCase() + 
+                                                " placeholder'> \
                                             <div class='title'> Embedded Galaxy " + item_info.singular + " '" + item_name + "'</div> \
-                                            <div class='content'>[Do not edit this block; Galaxy will fill it in with the annotated " + \
-                                            item_info.singular.toLowerCase() + " when it is displayed.]</div> \
-                                            </div></p><p>";
+                                            <div class='content'> \
+                                                [Do not edit this block; Galaxy will fill it in with the annotated " +
+                                                item_info.singular.toLowerCase() + " when it is displayed.]</div> \
+                                            </div> \
+                                        </div></p>";
                                     
                                     // Insert embedded representation into document.
                                     wym.insert(item_embed_html);

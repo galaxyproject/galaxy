@@ -48,7 +48,7 @@ class PageListGrid( grids.Grid ):
         grids.GridOperation( "Edit attributes", allow_multiple=False, url_args=dict( action='edit') ),
         grids.GridOperation( "Edit content", allow_multiple=False, url_args=dict( action='edit_content') ),
         grids.GridOperation( "Share or Publish", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False ),
-        grids.GridOperation( "Delete" ),
+        grids.GridOperation( "Delete", confirm="Are you sure you want to delete this page?" ),
     ]
     def apply_default_filter( self, trans, query, **kwargs ):
         return query.filter_by( user=trans.user, deleted=False )

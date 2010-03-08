@@ -13,6 +13,9 @@ from galaxy.workflow.modules import *
 from Cheetah.Template import Template
 
 log = logging.getLogger( __name__ )
+
+# States for passing messages
+SUCCESS, INFO, WARNING, ERROR = "done", "info", "warning", "error"
     
 class BaseController( object ):
     """

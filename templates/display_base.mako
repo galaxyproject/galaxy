@@ -32,7 +32,7 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js( "galaxy.base", "jquery", "json2", "jquery.autocomplete", "autocomplete_tagging" )}
+    ${h.js( "jquery", "jquery.tipsy", "galaxy.base", "json2", "jquery.autocomplete", "jquery.jstore-all", "autocomplete_tagging" )}
 
     <script type="text/javascript">
         //
@@ -102,7 +102,7 @@
 <%def name="render_item_header( item )">
     <h3>Galaxy ${get_class_display_name( item.__class__ )} '${get_item_name( item )| h}'</h3>
     %if hasattr( item, "annotation"):
-        <div class="annotation">Description/Notes: ${item.annotation}</div>
+        <div class="annotation">Annotation: ${item.annotation}</div>
     %endif
     <hr/>
 </%def>

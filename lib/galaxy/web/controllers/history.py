@@ -13,9 +13,6 @@ from cgi import escape
 
 log = logging.getLogger( __name__ )
 
-# States for passing messages
-SUCCESS, INFO, WARNING, ERROR = "done", "info", "warning", "error"
-
 class NameColumn( grids.TextColumn ):
     def get_value( self, trans, grid, history ):
         return history.get_display_name()
@@ -475,7 +472,6 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesHistory 
             return history.slug
             
     @web.expose
-    @web.require_login("get item content asynchronously")
     def get_item_content_async( self, trans, id ):
         """ Returns item content in HTML format. """
 

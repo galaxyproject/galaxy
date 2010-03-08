@@ -182,7 +182,6 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
         return trans.fill_template_mako( "workflow/display.mako", item=stored_workflow, item_data=stored_workflow.latest_workflow.steps )
 
     @web.expose
-    @web.require_login("get item content asynchronously")
     def get_item_content_async( self, trans, id ):
         """ Returns item content in HTML format. """
         

@@ -2,7 +2,6 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js( "jquery", "json2", "jquery.jstore-all", "jquery.autocomplete", "autocomplete_tagging" )}
     <script type="text/javascript">
     $(function() {
         // Load jStore for local storage
@@ -31,47 +30,68 @@
         //  (b) ...
         $('.embedded-item').each( function() 
         {
-            // Setup toggle expand.
             var container = $(this);
-            var toggle_expand = $(this).find('.toggle-expand');
-            toggle_expand.click( function() 
-            {
+            
+            // Show embedded item.
+            var show_embedded_item = function() {
                 var ajax_url = container.find("input[type=hidden]").val();
                 // Only get item content if it's not already there.
                 var item_content = $.trim(container.find(".item-content").text());
                 if (item_content == "")
-                    $.ajax({
-                        type: "GET",
-                        url: ajax_url,
-                        error: function() { alert("Getting item content failed."); },
-                        success: function( item_content ) {
-                            container.find(".summary-content").hide("fast");
-                            container.find(".item-content").html(item_content).show("fast");
-                            container.find(".toggle-expand").hide();
-                            container.find(".toggle-contract").show();
-                        }
-                    });
+                 $.ajax({
+                     type: "GET",
+                     url: ajax_url,
+                     error: function() { alert("Getting item content failed."); },
+                     success: function( item_content ) {
+                         container.find(".summary-content").hide("fast");
+                         container.find(".item-content").html(item_content).show("fast");
+                         container.find(".toggle-expand").hide();
+                         container.find(".toggle-contract").show();
+                     }
+                 });
                 else
                 {
-                    container.find(".summary-content").hide("fast");
-                    container.find(".item-content").show("fast");
-                    container.find(".toggle-expand").hide();
-                    container.find(".toggle-contract").show();
-                }
-                return false;
-            });
-            // Setup toggle contract.
-            var toggle_contract = $(this).find('.toggle-contract');
-            toggle_contract.click( function() 
-            {
+                 container.find(".summary-content").hide("fast");
+                 container.find(".item-content").show("fast");
+                 container.find(".toggle-expand").hide();
+                 container.find(".toggle-contract").show();
+                } 
+            };
+            
+            // Hide embedded item.
+            var hide_embedded_item = function() {
                 container.find(".item-content").hide("fast");
                 container.find(".summary-content").show("fast");
                 container.find(".toggle-contract").hide();
                 container.find(".toggle-expand").show();
+            };
+            
+            // Setup toggle expand.
+            var toggle_expand = $(this).find('.toggle-expand');
+            toggle_expand.click( function() 
+            {
+                show_embedded_item();
                 return false;
             });
             
+            // Setup toggle contract.
+            var toggle_contract = $(this).find('.toggle-contract');
+            toggle_contract.click( function() 
+            {
+                hide_embedded_item();
+                return false;
+            });
             
+            // Setup toggle embed.
+            var toggle_embed = $(this).find('.toggle-embed');
+            toggle_embed.click( function() 
+            {
+                if (container.find(".item-content").is(":visible"))
+                    hide_embedded_item();
+                else
+                    show_embedded_item();
+                return false;
+            });
         });
     });
     // Functionized so AJAX'd datasets can call them
@@ -199,6 +219,9 @@
     <style type="text/css">
         .toggle-contract { display: none; }
         .item-content { overflow: auto; }
+        .embedded-item h4 {
+            margin: 0px;
+        }
     </style>
 </%def>
 

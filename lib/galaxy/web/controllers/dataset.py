@@ -85,12 +85,11 @@ class HistoryDatasetAssociationListGrid( grids.Grid ):
     columns = [
         grids.TextColumn( "Name", key="name", model_class=model.HistoryDatasetAssociation,
                             # Link name to dataset's history.
-                              link=( lambda item: iff( item.history.deleted, None, dict( operation="switch", id=item.id ) ) ), filterable="advanced" ),
+                              link=( lambda item: iff( item.history.deleted, None, dict( operation="switch", id=item.id ) ) ), filterable="advanced", attach_popup=True ),
         HistoryColumn( "History", key="history", 
                         link=( lambda item: iff( item.history.deleted, None, dict( operation="switch_history", id=item.id ) ) ) ),
         grids.IndividualTagsColumn( "Tags", "tags", model.HistoryDatasetAssociation, model.HistoryDatasetAssociationTagAssociation, filterable="advanced", grid_name="HistoryDatasetAssocationListGrid" ),
         StatusColumn( "Status", key="deleted", attach_popup=False ),
-        grids.GridColumn( "Created", key="create_time", format=time_ago ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
     ]
     columns.append( 
@@ -99,7 +98,9 @@ class HistoryDatasetAssociationListGrid( grids.Grid ):
         cols_to_filter=[ columns[0], columns[2] ], 
         key="free-text-search", visible=False, filterable="standard" )
                 )
-    operations = []
+    operations = [
+        grids.GridOperation( "Copy to current history", condition=( lambda item: not item.deleted ), async_compatible=False ),
+    ]
     standard_filters = []
     default_filter = dict( name="All", deleted="False", tags="All" )
     preserve_state = False
@@ -284,9 +285,30 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistoryDatasetAssoc
                     if operation == "switch":
                         hda_ids = [ trans.security.encode_id( hda.id ) for hda in hdas ]
                         trans.template_context[ 'seek_hda_ids' ] = hda_ids
+                elif operation == "copy to current history":
+                    # Copy a dataset to the current history.
+                    target_histories = [ trans.get_history() ]
+                    status, message = self._copy_datasets( trans, hda_ids, target_histories )
+                    
+                    # Current history changed, refresh history frame.
+                    trans.template_context['refresh_frames'] = ['history']
 
         # Render the list view
         return self.stored_list_grid( trans, status=status, message=message, **kwargs )
+        
+    @web.expose
+    def imp( self, trans, id=None, **kwd ):
+        """ Import another user's dataset via a shared URL; dataset is added to user's current history. """
+        msg = ""
+        
+        # Error checking.
+        if not id:
+            return trans.show_error_message( "You must specify an ID for a dataset to import." )
+            
+        # Do import.
+        cur_history = trans.get_history( create=True )
+        status, message = self._copy_datasets( trans, [ id ], [ cur_history ] )
+        return trans.show_message( message, type=status )
         
     @web.expose
     @web.json
@@ -324,7 +346,6 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistoryDatasetAssoc
             raise web.httpexceptions.HTTPNotFound()
             
     @web.expose
-    @web.require_login("get item content asynchronously")
     def get_item_content_async( self, trans, id ):
         """ Returns item content in HTML format. """
 
@@ -535,3 +556,39 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistoryDatasetAssoc
                                     done_msg = done_msg,
                                     error_msg = error_msg,
                                     refresh_frames = refresh_frames )
+
+    def _copy_datasets( self, trans, dataset_ids, target_histories ):
+        """ Helper method for copying datasets. """
+        user = trans.get_user()
+        done_msg = error_msg = ""
+        
+        invalid_datasets = 0
+        if not dataset_ids or not target_histories:
+            error_msg = "You must provide both source datasets and target histories."
+        else:
+            # User must own target histories to copy datasets to them.
+            for history in target_histories:
+                if user != history.user:
+                    error_msg = error_msg + "You do not have permission to add datasets to %i requested histories.  " % ( len( target_histories ) )
+            for dataset_id in dataset_ids:
+                data = self.get_dataset( trans, dataset_id )
+                if data is None:
+                    error_msg = error_msg + "You tried to copy a dataset that does not exist or that you do not have access to.  "
+                    invalid_datasets += 1
+                else:
+                    for hist in target_histories:
+                        hist.add_dataset( data.copy( copy_children = True ) )
+            trans.sa_session.flush()
+            num_datasets_copied = len( dataset_ids ) - invalid_datasets
+            done_msg = "%i dataset%s copied to %i histor%s." % \
+                ( num_datasets_copied, iff( num_datasets_copied == 1, "", "s"), len( target_histories ), iff( len ( target_histories ) == 1, "y", "ies") )
+            trans.sa_session.refresh( history )
+        
+        if error_msg != "":
+            status = ERROR
+            message = error_msg
+        else:
+            status = SUCCESS
+            message = done_msg
+        return status, message
+        

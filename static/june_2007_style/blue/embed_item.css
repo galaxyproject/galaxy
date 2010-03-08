@@ -1,5 +1,9 @@
-.embedded-item{background-color:#BBBBBB;margin-left:auto;margin-right:auto;width:90%;max-height:25em;overflow:auto;padding: 0.5em;-moz-border-radius:0.5em;-webkit-border-radius:0.5em;border-radius:0.5em;}
+.embedded-item{margin-left:auto;margin-right:auto;width:90%;padding: 0.5em;-moz-border-radius:0.5em;-webkit-border-radius:0.5em;border-radius:0.5em;}
+.embedded-item.history{background-color:#C1C9E5}
+.embedded-item.dataset{background-color:#CFC}
+.embedded-item.workflow{background-color:#EBD9B2}
 .embedded-item.placeholder{}
+.embedded-item .item-content{max-height:25em;overflow:auto;}
 .embedded-item .title{vertical-align:top;text-align:center;}
 .embedded-item.placeholder .content{padding: 1em 1em;font-style:italic;text-align:center;}
 table.annotated-item{width:100%;border-collapse:collapse;}
