@@ -154,7 +154,14 @@ ${ simplejson.dumps( __options ) }
       <param name="nomodel_type_selector" value="create_model" />
       <param name="diag_type_selector" value="no_diag" />
       <param name="futurefdr"/>
-      <output name="output_bed_file" file="macs_test_1_out.bed" />
+      <output name="output_bed_file" file="peakcalling_macs/macs_test_1_out.bed" />
+      <output name="output_html_file" file="peakcalling_macs/macs_test_1_out.html" compare="re_match" >
+        <extra_files type="file" name="Galaxy_Test_Run_model.pdf" value="peakcalling_macs/test2/Galaxy_Test_Run_model.pdf" compare="re_match"/>
+        <extra_files type="file" name="Galaxy_Test_Run_model.r" value="peakcalling_macs/test2/Galaxy_Test_Run_model.r" compare="re_match"/>
+        <extra_files type="file" name="Galaxy_Test_Run_model.r.log" value="peakcalling_macs/test2/Galaxy_Test_Run_model.r.log"/>
+        <extra_files type="file" name="Galaxy_Test_Run_negative_peaks.xls" value="peakcalling_macs/test2/Galaxy_Test_Run_negative_peaks.xls" compare="re_match"/>
+        <extra_files type="file" name="Galaxy_Test_Run_peaks.xls" value="peakcalling_macs/test2/Galaxy_Test_Run_peaks.xls" compare="re_match"/>
+      </output>
     </test>
     <test>
       <param name="input_chipseq_file1" value="chipseq_enriched.bed.gz" ftype="bed" />
@@ -173,9 +180,12 @@ ${ simplejson.dumps( __options ) }
       <param name="nomodel_type_selector" value="create_model" />
       <param name="diag_type_selector" value="no_diag" />
       <param name="futurefdr"/>
-      <output name="output_bed_file" file="macs_test_1_out.bed" />
-      <output name="output_xls_to_interval_peaks_file" file="macs_test_2_peaks_out.interval" />
-      <output name="output_xls_to_interval_negative_peaks_file" file="macs_test_2_neg_peaks_out.interval" />
+      <output name="output_bed_file" file="peakcalling_macs/macs_test_1_out.bed" />
+      <output name="output_xls_to_interval_peaks_file" file="peakcalling_macs/macs_test_2_peaks_out.interval" lines_diff="4" />
+      <output name="output_xls_to_interval_negative_peaks_file" file="peakcalling_macs/macs_test_2_neg_peaks_out.interval" />
+      <output name="output_html_file" file="peakcalling_macs/macs_test_1_out.html" compare="re_match" >
+        <extra_files type="directory" value="peakcalling_macs/test2/" compare="re_match"/>
+      </output>
     </test>
     <!-- <test>
       <param name="input_chipseq_file1" value="chipseq_enriched.bed.gz" ftype="bed" />
@@ -196,9 +206,14 @@ ${ simplejson.dumps( __options ) }
       <param name="nomodel_type_selector" value="create_model" />
       <param name="diag_type_selector" value="no_diag" />
       <param name="futurefdr"/>
-      <output name="output_bed_file" file="macs_test_1_out.bed" />
-      <output name="output_treatment_wig_file" file="macs_test_3_treatment_out.wig" />
-      <output name="output_control_wig_file" file="macs_test_3_control_out.wig" />
+      <output name="output_bed_file" file="peakcalling_macs/macs_test_1_out.bed" />
+      <output name="output_xls_to_interval_peaks_file" file="peakcalling_macs/macs_test_2_peaks_out.interval" lines_diff="4" />
+      <output name="output_xls_to_interval_negative_peaks_file" file="macs_test_2_neg_peaks_out.interval" />
+      <output name="output_treatment_wig_file" file="peakcalling_macs/macs_test_3_treatment_out.wig" />
+      <output name="output_control_wig_file" file="peakcalling_macs/macs_test_3_control_out.wig" />
+      <output name="output_html_file" file="peakcalling_macs/macs_test_3_out.html" compare="re_match" >
+        <extra_files type="directory" value="peakcalling_macs/test2/" compare="re_match"/>
+      </output>
     </test> -->
   </tests>
   <help>
