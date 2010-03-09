@@ -155,7 +155,6 @@ class ToolRunner( BaseController ):
             permissions, in_roles, error, msg = trans.app.security_agent.derive_roles_from_access( trans, library_id, cntrller, library=True, **vars )
             if error:
                 return [ 'error', msg ]
-        permissions = trans.app.security_agent.history_get_default_permissions( trans.history )
         def create_dataset( name ):
             ud = Bunch( name=name, file_type=None, dbkey=None )
             if nonfile_params.get( 'folder_id', False ):

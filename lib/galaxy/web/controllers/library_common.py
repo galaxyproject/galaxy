@@ -659,6 +659,7 @@ class LibraryCommon( BaseController ):
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
         deleted = util.string_as_bool( params.get( 'deleted', False ) )
+        show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
         dbkey = params.get( 'dbkey', '?' )
         if isinstance( dbkey, list ):
             last_used_build = dbkey[0]
@@ -705,6 +706,7 @@ class LibraryCommon( BaseController ):
                                                                            folder_id=folder_id,
                                                                            replace_id=replace_id,
                                                                            upload_option=upload_option,
+                                                                           show_deleted=show_deleted,
                                                                            msg=util.sanitize_text( msg ),
                                                                            messagetype='error' ) )
 
@@ -758,6 +760,7 @@ class LibraryCommon( BaseController ):
                                                                            id=library_id,
                                                                            default_action=default_action,
                                                                            created_ldda_ids=created_ldda_ids,
+                                                                           show_deleted=show_deleted,
                                                                            msg=util.sanitize_text( msg ), 
                                                                            messagetype='done' ) )
                         
@@ -770,6 +773,7 @@ class LibraryCommon( BaseController ):
                                                                cntrller=cntrller,
                                                                id=library_id,
                                                                created_ldda_ids=created_ldda_ids,
+                                                               show_deleted=show_deleted,
                                                                msg=util.sanitize_text( msg ),
                                                                messagetype=messagetype ) )
         # See if we have any inherited templates, but do not inherit contents.
@@ -819,6 +823,7 @@ class LibraryCommon( BaseController ):
                                     roles=roles,
                                     history=history,
                                     widgets=widgets,
+                                    show_deleted=show_deleted,
                                     msg=msg,
                                     messagetype=messagetype )
     def upload_dataset( self, trans, cntrller, library_id, folder_id, replace_dataset=None, **kwd ):
@@ -834,6 +839,7 @@ class LibraryCommon( BaseController ):
                 dataset_upload_inputs.append( input )
         # Library-specific params
         params = util.Params( kwd ) # is this filetoolparam safe?
+        show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
         library_bunch = upload_common.handle_library_params( trans, params, folder_id, replace_dataset )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
@@ -883,6 +889,7 @@ class LibraryCommon( BaseController ):
                                                        folder_id=folder_id,
                                                        replace_id=replace_id,
                                                        upload_option=upload_option,
+                                                       show_deleted=show_deleted,
                                                        msg=util.sanitize_text( msg ),
                                                        messagetype='error' ) )
         json_file_path = upload_common.create_paramfile( trans, uploaded_datasets )

@@ -404,7 +404,7 @@
 
    <ul class="manage-table-actions">
        %if not library.deleted and ( cntrller in [ 'library_admin', 'requests_admin' ] or can_add ):
-           <li><a class="action-button" href="${h.url_for( controller='library_common', action='upload_library_dataset', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( library.root_folder.id ) )}"><span>Add datasets</span></a></li>
+           <li><a class="action-button" href="${h.url_for( controller='library_common', action='upload_library_dataset', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( library.root_folder.id ), use_panels=use_panels, show_deleted=show_deleted )}"><span>Add datasets</span></a></li>
            <li><a class="action-button" href="${h.url_for( controller='library_common', action='create_folder', cntrller=cntrller, parent_id=trans.security.encode_id( library.root_folder.id ), library_id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}">Add folder</a></li>
        %endif
    </ul>

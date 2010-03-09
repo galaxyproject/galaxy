@@ -87,7 +87,7 @@
     %endif
 </%def>
 
-<%def name="render_upload_form( cntrller, upload_option, action, library_id, folder_id, replace_dataset, file_formats, dbkeys, widgets, roles, history )">
+<%def name="render_upload_form( cntrller, upload_option, action, library_id, folder_id, replace_dataset, file_formats, dbkeys, widgets, roles, history, show_deleted )">
     <% import os, os.path %>
     %if upload_option in [ 'upload_file', 'upload_directory', 'upload_paths' ]:
         <div class="toolForm" id="upload_library_dataset">
@@ -106,6 +106,7 @@
                     <input type="hidden" name="library_id" value="${library_id}"/>
                     <input type="hidden" name="folder_id" value="${folder_id}"/>
                     <input type="hidden" name="upload_option" value="${upload_option}"/>
+                    <input type="hidden" name="show_deleted" value="${show_deleted}"/>
                     %if replace_dataset not in [ None, 'None' ]:
                         <input type="hidden" name="replace_id" value="${trans.security.encode_id( replace_dataset.id )}"/>
                         <div class="form-row">

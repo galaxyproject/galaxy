@@ -131,10 +131,11 @@
                             $(this).ajaxSubmit( { iframe: true } );
                             if ( $(this).find("input[name='folder_id']").val() != undefined ) {
                                 var library_id = $(this).find("input[name='library_id']").val();
+                                var show_deleted = $(this).find("input[name='show_deleted']").val();
                                 if ( location.pathname.indexOf( 'admin' ) != -1 ) {
-                                    $("iframe#galaxy_main").attr("src","${h.url_for( controller='library_common', action='browse_library' )}?cntrller=library_admin&id=" + library_id + "&created_ldda_ids=" + async_datasets);
+                                    $("iframe#galaxy_main").attr("src","${h.url_for( controller='library_common', action='browse_library' )}?cntrller=library_admin&id=" + library_id + "&created_ldda_ids=" + async_datasets + "&show_deleted=" + show_deleted);
                                 } else {
-                                    $("iframe#galaxy_main").attr("src","${h.url_for( controller='library_common', action='browse_library' )}?cntrller=library&id=" + library_id + "&created_ldda_ids=" + async_datasets);
+                                    $("iframe#galaxy_main").attr("src","${h.url_for( controller='library_common', action='browse_library' )}?cntrller=library&id=" + library_id + "&created_ldda_ids=" + async_datasets + "&show_deleted=" + show_deleted);
                                 }
                             } else {
                                 $("iframe#galaxy_main").attr("src","${h.url_for(controller='tool_runner', action='upload_async_message')}");
