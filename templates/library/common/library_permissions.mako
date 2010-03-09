@@ -5,7 +5,7 @@
 <br/><br/>
 <ul class="manage-table-actions">
     <li>
-        <a class="action-button" href="${h.url_for( controller='library_common', action='browse_library', cntrller=cntrller, id=trans.security.encode_id( library.id ), show_deleted=show_deleted )}"><span>Browse this data library</span></a>
+        <a class="action-button" href="${h.url_for( controller='library_common', action='browse_library', cntrller=cntrller, id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}"><span>Browse this data library</span></a>
     </li>
 </ul>
 

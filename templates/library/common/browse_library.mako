@@ -166,7 +166,7 @@
 
 <%def name="render_dataset( cntrller, ldda, library_dataset, selected, library, folder, pad, parent, row_counter, tracked_datasets, show_deleted=False )">
    <%
-       ## The received data must always be a LibraryDatasetDatasetAssociation object.  The object id passed to methods
+       ## The received ldda must always be a LibraryDatasetDatasetAssociation object.  The object id passed to methods
        ## from the drop down menu should be the ldda id to prevent id collision ( which could happen when displaying
        ## children, which are always lddas ).  We also need to make sure we're displaying the latest version of this
        ## library_dataset, so we display the attributes from the ldda.
@@ -204,33 +204,33 @@
                %if ldda.library_dataset.deleted:
                    <span class="libraryItem-error">
                %endif
-               <a href="${h.url_for( controller='library_common', action='ldda_info', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), id=trans.security.encode_id( ldda.id ), show_deleted=show_deleted )}"><b>${ldda.name[:50]}</b></a>
+               <a href="${h.url_for( controller='library_common', action='ldda_info', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), id=trans.security.encode_id( ldda.id ), use_panels=use_panels, show_deleted=show_deleted )}"><b>${ldda.name[:50]}</b></a>
                %if ldda.library_dataset.deleted:
                    </span>
                %endif
                <a id="dataset-${ldda.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
                <div popupmenu="dataset-${ldda.id}-popup">
                    %if not branch_deleted( folder ) and not ldda.library_dataset.deleted and ( cntrller == 'library_admin' or can_modify ):
-                       <a class="action-button" href="${h.url_for( controller='library_common', action='ldda_edit_info', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), id=trans.security.encode_id( ldda.id ), show_deleted=show_deleted )}">Edit information</a>
+                       <a class="action-button" href="${h.url_for( controller='library_common', action='ldda_edit_info', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), id=trans.security.encode_id( ldda.id ), use_panels=use_panels, show_deleted=show_deleted )}">Edit information</a>
                    %else:
-                       <a class="action-button" href="${h.url_for( controller='library_common', action='ldda_info', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), id=trans.security.encode_id( ldda.id ), show_deleted=show_deleted )}">View information</a>
+                       <a class="action-button" href="${h.url_for( controller='library_common', action='ldda_info', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), id=trans.security.encode_id( ldda.id ), use_panels=use_panels, show_deleted=show_deleted )}">View information</a>
                    %endif
                    %if not branch_deleted( folder ) and not ldda.library_dataset.deleted and ( ( cntrller == 'library_admin' or can_modify ) and not info_association ):
-                       <a class="action-button" href="${h.url_for( controller='library_common', action='add_template', cntrller=cntrller, item_type='ldda', library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), ldda_id=trans.security.encode_id( ldda.id ), show_deleted=show_deleted )}">Add template</a>
+                       <a class="action-button" href="${h.url_for( controller='library_common', action='add_template', cntrller=cntrller, item_type='ldda', library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), ldda_id=trans.security.encode_id( ldda.id ), use_panels=use_panels, show_deleted=show_deleted )}">Add template</a>
                    %endif
                    %if not branch_deleted( folder ) and not ldda.library_dataset.deleted and ( ( cntrller == 'library_admin' or can_modify ) and info_association ):
-                       <a class="action-button" href="${h.url_for( controller='library_common', action='edit_template', cntrller=cntrller, item_type='ldda', library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), ldda_id=trans.security.encode_id( ldda.id ), show_deleted=show_deleted )}">Edit template</a>
-                       <a class="action-button" href="${h.url_for( controller='library_common', action='delete_template', cntrller=cntrller, item_type='ldda', library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), ldda_id=trans.security.encode_id( ldda.id ), show_deleted=show_deleted )}">Delete template</a>
+                       <a class="action-button" href="${h.url_for( controller='library_common', action='edit_template', cntrller=cntrller, item_type='ldda', library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), ldda_id=trans.security.encode_id( ldda.id ), use_panels=use_panels, show_deleted=show_deleted )}">Edit template</a>
+                       <a class="action-button" href="${h.url_for( controller='library_common', action='delete_template', cntrller=cntrller, item_type='ldda', library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), ldda_id=trans.security.encode_id( ldda.id ), use_panels=use_panels, show_deleted=show_deleted )}">Delete template</a>
                    %endif
                    %if not branch_deleted( folder ) and not ldda.library_dataset.deleted and ( cntrller == 'library_admin' or can_manage ):
-                       <a class="action-button" href="${h.url_for( controller='library_common', action='ldda_permissions', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), id=trans.security.encode_id( ldda.id ), show_deleted=show_deleted )}">Edit permissions</a>
+                       <a class="action-button" href="${h.url_for( controller='library_common', action='ldda_permissions', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), id=trans.security.encode_id( ldda.id ), use_panels=use_panels, show_deleted=show_deleted )}">Edit permissions</a>
                    %endif
                    %if not branch_deleted( folder ) and not ldda.library_dataset.deleted and ( cntrller == 'library_admin' or can_modify ):
                        <a class="action-button" href="${h.url_for( controller='library_common', action='upload_library_dataset', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), replace_id=trans.security.encode_id( library_dataset.id ), show_deleted=show_deleted )}">Upload a new version of this dataset</a>
                    %endif
                    %if not branch_deleted( folder ) and not ldda.library_dataset.deleted and ldda.has_data:
-                       <a class="action-button" href="${h.url_for( controller='library_common', action='act_on_multiple_datasets', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), ldda_ids=trans.security.encode_id( ldda.id ), do_action='add', show_deleted=show_deleted )}">Import this dataset into your current history</a>
-                       <a class="action-button" href="${h.url_for( controller='library_common', action='download_dataset_from_folder', cntrller=cntrller, id=trans.security.encode_id( ldda.id ), library_id=trans.security.encode_id( library.id ) )}">Download this dataset</a>
+                       <a class="action-button" href="${h.url_for( controller='library_common', action='act_on_multiple_datasets', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), ldda_ids=trans.security.encode_id( ldda.id ), do_action='add', use_panels=use_panels, show_deleted=show_deleted )}">Import this dataset into your current history</a>
+                       <a class="action-button" href="${h.url_for( controller='library_common', action='download_dataset_from_folder', cntrller=cntrller, id=trans.security.encode_id( ldda.id ), library_id=trans.security.encode_id( library.id ), use_panels=use_panels )}">Download this dataset</a>
                    %endif
                    %if cntrller in [ 'library_admin', 'requests_admin' ]:
                        %if not library.deleted and not branch_deleted( folder ) and not ldda.library_dataset.deleted:
@@ -300,7 +300,7 @@
                %if folder.deleted:
                    <span class="libraryItem-error">
                %endif
-               <a href="${h.url_for( controller='library_common', action='folder_info', cntrller=cntrller, id=trans.security.encode_id( folder.id ), library_id=library_id, show_deleted=show_deleted )}">${folder.name}</a>
+               <a href="${h.url_for( controller='library_common', action='folder_info', cntrller=cntrller, use_panels=use_panels, id=trans.security.encode_id( folder.id ), library_id=library_id, show_deleted=show_deleted )}">${folder.name}</a>
                %if folder.description:
                    <i>- ${folder.description}</i>
                %endif
@@ -310,21 +310,21 @@
                <a id="folder_img-${folder.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
                <div popupmenu="folder_img-${folder.id}-popup">
                    %if not branch_deleted( folder ) and ( cntrller == 'library_admin' or can_add ):
-                       <a class="action-button" href="${h.url_for( controller='library_common', action='upload_library_dataset', cntrller=cntrller, library_id=library_id, folder_id=trans.security.encode_id( folder.id ), show_deleted=show_deleted )}">Add datasets</a>
-                       <a class="action-button" href="${h.url_for( controller='library_common', action='create_folder', cntrller=cntrller, parent_id=trans.security.encode_id( folder.id ), library_id=library_id )}">Add sub-folder</a>
+                       <a class="action-button" href="${h.url_for( controller='library_common', action='upload_library_dataset', cntrller=cntrller, library_id=library_id, folder_id=trans.security.encode_id( folder.id ), use_panels=use_panels, show_deleted=show_deleted )}">Add datasets</a>
+                       <a class="action-button" href="${h.url_for( controller='library_common', action='create_folder', cntrller=cntrller, parent_id=trans.security.encode_id( folder.id ), library_id=library_id, use_panels=use_panels, show_deleted=show_deleted )}">Add sub-folder</a>
                    %endif
                    %if not branch_deleted( folder ) and ( cntrller == 'library_admin' or can_modify ):
-                       <a class="action-button" href="${h.url_for( controller='library_common', action='folder_info', cntrller=cntrller, id=trans.security.encode_id( folder.id ), library_id=library_id, show_deleted=show_deleted )}">Edit information</a>
+                       <a class="action-button" href="${h.url_for( controller='library_common', action='folder_info', cntrller=cntrller, id=trans.security.encode_id( folder.id ), library_id=library_id, use_panels=use_panels, show_deleted=show_deleted )}">Edit information</a>
                    %endif
                    %if not branch_deleted( folder ) and ( ( cntrller == 'library_admin' or can_modify ) and not info_association ):
-                       <a class="action-button" href="${h.url_for( controller='library_common', action='add_template', cntrller=cntrller, item_type='folder', library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), show_deleted=show_deleted )}">Add template</a>
+                       <a class="action-button" href="${h.url_for( controller='library_common', action='add_template', cntrller=cntrller, item_type='folder', library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), use_panels=use_panels, show_deleted=show_deleted )}">Add template</a>
                    %endif
                    %if not branch_deleted( folder ) and ( ( cntrller == 'library_admin' or can_modify ) and info_association ):
-                       <a class="action-button" href="${h.url_for( controller='library_common', action='edit_template', cntrller=cntrller, item_type='folder', library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), show_deleted=show_deleted )}">Edit template</a>
-                       <a class="action-button" href="${h.url_for( controller='library_common', action='delete_template', cntrller=cntrller, item_type='folder', library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), show_deleted=show_deleted )}">Delete template</a>
+                       <a class="action-button" href="${h.url_for( controller='library_common', action='edit_template', cntrller=cntrller, item_type='folder', library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), use_panels=use_panels, show_deleted=show_deleted )}">Edit template</a>
+                       <a class="action-button" href="${h.url_for( controller='library_common', action='delete_template', cntrller=cntrller, item_type='folder', library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), use_panels=use_panels, show_deleted=show_deleted )}">Delete template</a>
                    %endif
                    %if not branch_deleted( folder ) and ( cntrller == 'library_admin' or can_manage ):
-                       <a class="action-button" href="${h.url_for( controller='library_common', action='folder_permissions', cntrller=cntrller, id=trans.security.encode_id( folder.id ), library_id=library_id, show_deleted=show_deleted )}">Edit permissions</a>
+                       <a class="action-button" href="${h.url_for( controller='library_common', action='folder_permissions', cntrller=cntrller, id=trans.security.encode_id( folder.id ), library_id=library_id, use_panels=use_panels, show_deleted=show_deleted )}">Edit permissions</a>
                    %endif
                    %if cntrller in [ 'library_admin', 'requests_admin' ]:
                        %if not library.deleted and not folder.deleted:
@@ -404,8 +404,8 @@
 
    <ul class="manage-table-actions">
        %if not library.deleted and ( cntrller in [ 'library_admin', 'requests_admin' ] or can_add ):
-           <li><a class="action-button" href="${h.url_for( controller='library_common', action='upload_library_dataset', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( library.root_folder.id ), show_deleted=show_deleted )}"><span>Add datasets</span></a></li>
-           <li><a class="action-button" href="${h.url_for( controller='library_common', action='create_folder', cntrller=cntrller, parent_id=trans.security.encode_id( library.root_folder.id ), library_id=trans.security.encode_id( library.id ), show_deleted=show_deleted )}">Add folder</a></li>
+           <li><a class="action-button" href="${h.url_for( controller='library_common', action='upload_library_dataset', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( library.root_folder.id ) )}"><span>Add datasets</span></a></li>
+           <li><a class="action-button" href="${h.url_for( controller='library_common', action='create_folder', cntrller=cntrller, parent_id=trans.security.encode_id( library.root_folder.id ), library_id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}">Add folder</a></li>
        %endif
    </ul>
 
@@ -420,47 +420,47 @@
        <br/>
    %endif
 
-   <form name="act_on_multiple_datasets" action="${h.url_for( controller='library_common', action='act_on_multiple_datasets', cntrller=cntrller, library_id=trans.security.encode_id( library.id ) )}" onSubmit="javascript:return checkForm();" method="post">
+   <form name="act_on_multiple_datasets" action="${h.url_for( controller='library_common', action='act_on_multiple_datasets', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}" onSubmit="javascript:return checkForm();" method="post">
        <table cellspacing="0" cellpadding="0" border="0" width="100%" class="grid" id="library-grid">
            <thead>
                <tr class="libraryTitle">
                    %if cntrller == 'library_admin' or can_add or can_modify or can_manage:
                        <th style="padding-left: 42px;">
-                           <a href="${h.url_for( controller='library_common', action='library_info', cntrller=cntrller, id=trans.security.encode_id( library.id ), show_deleted=show_deleted )}"><b>${library.name[:50]}</b></a>
+                           <a href="${h.url_for( controller='library_common', action='library_info', cntrller=cntrller, id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}"><b>${library.name[:50]}</b></a>
                            <a id="library-${library.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
                            <div popupmenu="library-${library.id}-popup">
                                %if not library.deleted:
                                    %if cntrller == 'library_admin' or can_modify:
-                                       <a class="action-button" href="${h.url_for( controller='library_common', action='library_info', cntrller=cntrller, id=trans.security.encode_id( library.id ), show_deleted=show_deleted )}">Edit information</a>
+                                       <a class="action-button" href="${h.url_for( controller='library_common', action='library_info', cntrller=cntrller, id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}">Edit information</a>
                                    %endif
                                    %if ( cntrller == 'library_admin' or can_modify ) and not library.info_association:
-                                       <a class="action-button" href="${h.url_for( controller='library_common', action='add_template', cntrller=cntrller, item_type='library', library_id=trans.security.encode_id( library.id ), show_deleted=show_deleted )}">Add template</a>
+                                       <a class="action-button" href="${h.url_for( controller='library_common', action='add_template', cntrller=cntrller, item_type='library', library_id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}">Add template</a>
                                    %endif
                                    %if ( cntrller == 'library_admin' or can_modify ) and info_association:
-                                       <a class="action-button" href="${h.url_for( controller='library_common', action='edit_template', cntrller=cntrller, item_type='library', library_id=trans.security.encode_id( library.id ), show_deleted=show_deleted )}">Edit template</a>
-                                       <a class="action-button" href="${h.url_for( controller='library_common', action='delete_template', cntrller=cntrller, item_type='library', library_id=trans.security.encode_id( library.id ), show_deleted=show_deleted )}">Delete template</a>
+                                       <a class="action-button" href="${h.url_for( controller='library_common', action='edit_template', cntrller=cntrller, item_type='library', library_id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}">Edit template</a>
+                                       <a class="action-button" href="${h.url_for( controller='library_common', action='delete_template', cntrller=cntrller, item_type='library', library_id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}">Delete template</a>
                                    %endif
                                    %if cntrller == 'library_admin' or can_manage:
-                                       <a class="action-button" href="${h.url_for( controller='library_common', action='library_permissions', cntrller=cntrller, id=trans.security.encode_id( library.id ), show_deleted=show_deleted )}">Edit permissions</a>
+                                       <a class="action-button" href="${h.url_for( controller='library_common', action='library_permissions', cntrller=cntrller, id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}">Edit permissions</a>
                                    %endif
                                    %if cntrller == 'library_admin':
                                        <a class="action-button" confirm="Click OK to delete the library named '${library.name}'." href="${h.url_for( controller='library_admin', action='delete_library_item', library_id=trans.security.encode_id( library.id ), item_id=trans.security.encode_id( library.id ), item_type='library' )}">Delete this data library</a>
                                    %endif
                                    %if show_deleted:
-                                       <a class="action-button" href="${h.url_for( controller='library_common', action='browse_library', cntrller=cntrller, id=trans.security.encode_id( library.id ), show_deleted=False )}">Hide deleted items</a>
+                                       <a class="action-button" href="${h.url_for( controller='library_common', action='browse_library', cntrller=cntrller, id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=False )}">Hide deleted items</a>
                                    %else:
-                                       <a class="action-button" href="${h.url_for( controller='library_common', action='browse_library', cntrller=cntrller, id=trans.security.encode_id( library.id ), show_deleted=True )}">Show deleted items</a>
+                                       <a class="action-button" href="${h.url_for( controller='library_common', action='browse_library', cntrller=cntrller, id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=True )}">Show deleted items</a>
                                    %endif
                                %elif cntrller == 'library_admin' and not library.purged:
-                                   <a class="action-button" href="${h.url_for( controller='library_admin', action='undelete_library_item', library_id=trans.security.encode_id( library.id ), item_id=trans.security.encode_id( library.id ), item_type='library' )}">Undelete this data library</a>
+                                   <a class="action-button" href="${h.url_for( controller='library_admin', action='undelete_library_item', library_id=trans.security.encode_id( library.id ), item_id=trans.security.encode_id( library.id ), item_type='library', use_panels=use_panels )}">Undelete this data library</a>
                                %elif library.purged:
-                                   <a class="action-button" href="${h.url_for( controller='library_common', action='browse_library', cntrller=cntrller, id=trans.security.encode_id( library.id ), show_deleted=show_deleted )}">This data library has been purged</a>
+                                   <a class="action-button" href="${h.url_for( controller='library_common', action='browse_library', cntrller=cntrller, id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}">This data library has been purged</a>
                                %endif
                            </div>
                        </th>
                    %else:
                        <th style="padding-left: 42px;">
-                           <a href="${h.url_for( controller='library_common', action='library_info', cntrller=cntrller, id=trans.security.encode_id( library.id ), show_deleted=show_deleted )}"><b>${library.name[:50]}</b></a>
+                           <a href="${h.url_for( controller='library_common', action='library_info', cntrller=cntrller, id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}"><b>${library.name[:50]}</b></a>
                        </th>
                    %endif
                    <th>Information</th>

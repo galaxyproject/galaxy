@@ -33,7 +33,7 @@ $( function() {
 <br/><br/>
 <ul class="manage-table-actions">
     <li>
-        <a class="action-button" href="${h.url_for( controller='library_common', action='browse_library', cntrller=cntrller, id=library_id, show_deleted=show_deleted )}"><span>Browse this data library</span></a>
+        <a class="action-button" href="${h.url_for( controller='library_common', action='browse_library', cntrller=cntrller, id=library_id, use_panels=use_panels, show_deleted=show_deleted )}"><span>Browse this data library</span></a>
     </li>
 </ul>
 
@@ -44,7 +44,7 @@ $( function() {
 <div class="toolForm">
     <div class="toolFormTitle">Select a template for the ${item_desc} '${item_name}'</div>
     <div class="toolFormBody">
-        <form id="select_template" name="select_template" action="${h.url_for( controller='library_common', action='add_template', cntrller=cntrller, item_type=item_type, library_id=library_id, folder_id=folder_id, ldda_id=ldda_id, show_deleted=show_deleted )}" method="post" >
+        <form id="select_template" name="select_template" action="${h.url_for( controller='library_common', action='add_template', cntrller=cntrller, item_type=item_type, library_id=library_id, folder_id=folder_id, ldda_id=ldda_id, use_panels=use_panels, show_deleted=show_deleted )}" method="post" >
             <div class="form-row">
                 <input type="hidden" name="refresh" value="true" size="40"/>
                 <label>Template:</label>

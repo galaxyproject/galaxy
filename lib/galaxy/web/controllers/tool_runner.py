@@ -142,6 +142,7 @@ class ToolRunner( BaseController ):
         """
         Precreate datasets for asynchronous uploading.
         """
+        cntrller = kwd.get( 'cntrller', '' )
         roles = kwd.get( 'roles', False )
         if roles:
             # The user associated the DATASET_ACCESS permission on the uploaded datasets with 1 or more roles.
@@ -151,7 +152,7 @@ class ToolRunner( BaseController ):
             # did not associated roles that would make the dataset in-accessible by everyone.
             library_id = trans.app.security.decode_id( kwd.get( 'library_id', '' ) )
             vars = dict( DATASET_ACCESS_in=roles )
-            permissions, in_roles, error, msg = trans.app.security_agent.check_access_permission( trans, library_id, library=True, **vars )
+            permissions, in_roles, error, msg = trans.app.security_agent.derive_roles_from_access( trans, library_id, cntrller, library=True, **vars )
             if error:
                 return [ 'error', msg ]
         permissions = trans.app.security_agent.history_get_default_permissions( trans.history )
@@ -166,7 +167,7 @@ class ToolRunner( BaseController ):
                 library_bunch = upload_common.handle_library_params( trans, nonfile_params, nonfile_params.folder_id, replace_dataset )
             else:
                 library_bunch = None
-            return upload_common.new_upload( trans, ud, library_bunch=library_bunch, state=trans.app.model.HistoryDatasetAssociation.states.UPLOAD )
+            return upload_common.new_upload( trans, cntrller, ud, library_bunch=library_bunch, state=trans.app.model.HistoryDatasetAssociation.states.UPLOAD )
         tool = self.get_toolbox().tools_by_id.get( tool_id, None )
         if not tool:
             return False # bad tool_id

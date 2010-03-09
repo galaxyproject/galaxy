@@ -72,10 +72,10 @@
     <![if !IE]>
     <script type="text/javascript">
         var upload_form_error = function( msg ) {
-            if ( ! $("iframe#galaxy_main").contents().find("body").find("div[name='upload_error']").size() ) {
+            if ( ! $("iframe#galaxy_main").contents().find("body").find("div[class='errormessage']").size() ) {
                 $("iframe#galaxy_main").contents().find("body").prepend( '<div class="errormessage" name="upload_error">' + msg + '</div><p/>' );
             } else {
-                $("iframe#galaxy_main").contents().find("body").find("div[name='upload_error']").text( msg );
+                $("iframe#galaxy_main").contents().find("body").find("div[class='errormessage']").text( msg );
             }
         }
         jQuery( function() {

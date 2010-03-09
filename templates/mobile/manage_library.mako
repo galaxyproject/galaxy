@@ -64,7 +64,7 @@
     </div>
 %endif
 %if trans.app.security_agent.can_manage_library_item( current_user_roles, library ):
-    <% roles = trans.app.security_agent.get_legitimate_roles( trans, library ) %>
+    <% roles = trans.app.security_agent.get_legitimate_roles( trans, library, 'mobile' ) %>
     ${render_permission_form( library, library.name, h.url_for( controller='library_common', cntrller='mobile', action='library_permissions', id=trans.security.encode_id( library.id ) ), roles )}
 %endif
 

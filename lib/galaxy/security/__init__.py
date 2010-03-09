@@ -18,8 +18,6 @@ class Action( object ):
 
 class RBACAgent:
     """Class that handles galaxy security"""
-    IN_ACCESSIBLE = 'access_error'
-    ILL_LEGITIMATE = 'legitimate_error'
     permitted_actions = Bunch(
         DATASET_MANAGE_PERMISSIONS = Action( "manage permissions", "Role members can manage the roles associated with permissions on this dataset", "grant" ),
         DATASET_ACCESS = Action( "access", "Role members can import this dataset into their history for analysis", "restrict" ),
@@ -79,9 +77,9 @@ class RBACAgent:
         raise "Unimplemented Method"
     def get_permissions( self, library_dataset ):
         raise "Unimplemented Method"
-    def get_legitimate_roles( self, trans, item ):
+    def get_legitimate_roles( self, trans, item, cntrller ):
         raise "Unimplemented Method"
-    def derive_roles_from_access( self, trans, item_id, library=False, **kwd ):
+    def derive_roles_from_access( self, trans, item_id, cntrller, library=False, **kwd ):
         raise "Unimplemented Method"
     def get_component_associations( self, **kwd ):
         raise "Unimplemented Method"
@@ -109,15 +107,26 @@ class GalaxyRBACAgent( RBACAgent ):
     def sa_session( self ):
         """Returns a SQLAlchemy session"""
         return self.model.context
-    def get_legitimate_roles( self, trans, item ):
+    def get_legitimate_roles( self, trans, item, cntrller ):
         """
         Return a sorted list of legitimate roles that can be associated with a permission on
-        item where item is a Library or a Dataset.  If item is public, all non-private roles,
-        except for the current user's private role, are legitimate.  If item is restricted,
-        legitimate roles are derived from the users and groups associated with each role that
-        is associated with the access permission ( i.e., DATASET_MANAGE_PERMISSIONS or
-        LIBRARY_MANAGE ) on item.
+        item where item is a Library or a Dataset.  The cntrller param is the controller from
+        which the request is sent.  We cannot use trans.user_is_admin() because the controller is
+        what is important since admin users do not necessarily have permission to do things
+        on items outside of the admin view.
+        If cntrller is from the admin side ( e.g., library_admin ):
+            -if item is public, all roles, including private roles, are legitimate.
+            -if item is restricted, legitimate roles are derived from the users and groups associated
+            with each role that is associated with the access permission ( i.e., DATASET_MANAGE_PERMISSIONS or
+            LIBRARY_MANAGE ) on item.  Legitimate roles will include private roles.
+        If cntrller is not from the admin side ( e.g., root, library ):
+            -if item is public, all non-private roles, except for the current user's private role,
+            are legitimate.
+            -if item is restricted, legitimate roles are derived from the users and groups associated
+            with each role that is associated with the access permission on item.  Private roles, except
+            for the current user's private role, will be excluded.
         """
+        admin_controller = cntrller in [ 'library_admin' ]
         def sort_by_attr( seq, attr ):
             """
             Sort the sequence of objects by object's attribute
@@ -142,29 +151,37 @@ class GalaxyRBACAgent( RBACAgent ):
                                                       self.model.Role.table.c.type != self.model.Role.types.PRIVATE,
                                                       self.model.Role.table.c.type != self.model.Role.types.SHARING ) ) \
                                        .order_by( self.model.Role.table.c.name )
-            # Add the current user's private role
-            roles.add( self.get_private_user_role( trans.user ) )
-            # Add the current user's sharing roles
-            for role in self.get_sharing_roles( trans.user ):
-                roles.add( role )
-            # Add all remaining non-private, non-sharing roles
-            for role in trans.sa_session.query( trans.app.model.Role ) \
-                                        .filter( and_( self.model.Role.table.c.deleted==False,
-                                                       self.model.Role.table.c.type != self.model.Role.types.PRIVATE,
-                                                       self.model.Role.table.c.type != self.model.Role.types.SHARING ) ) \
-                                        .order_by( self.model.Role.table.c.name ):
-                roles.add( role )
-            return sort_by_attr( [ role for role in roles ], 'name' )     
+            if admin_controller:
+                # The library is public and the user is an admin, so all roles are legitimate
+                for role in trans.sa_session.query( trans.app.model.Role ) \
+                                            .filter( self.model.Role.table.c.deleted==False ) \
+                                            .order_by( self.model.Role.table.c.name ):
+                    roles.add( role )
+                return sort_by_attr( [ role for role in roles ], 'name' ) 
+            else:
+                # Add the current user's private role
+                roles.add( self.get_private_user_role( trans.user ) )
+                # Add the current user's sharing roles
+                for role in self.get_sharing_roles( trans.user ):
+                    roles.add( role )
+                # Add all remaining non-private, non-sharing roles
+                for role in trans.sa_session.query( trans.app.model.Role ) \
+                                            .filter( and_( self.model.Role.table.c.deleted==False,
+                                                           self.model.Role.table.c.type != self.model.Role.types.PRIVATE,
+                                                           self.model.Role.table.c.type != self.model.Role.types.SHARING ) ) \
+                                            .order_by( self.model.Role.table.c.name ):
+                    roles.add( role )
+                return sort_by_attr( [ role for role in roles ], 'name' )     
         # If item has roles associated with the access permission, we need to start with them.
         access_roles = item.get_access_roles( trans )
         for role in access_roles:
-            if self.ok_to_display( trans, role ):
+            if admin_controller or self.ok_to_display( trans.user, role ):
                 roles.add( role )
                 # Each role potentially has users.  We need to find all roles that each of those users have.
                 for ura in role.users:
                     user = ura.user
                     for ura2 in user.roles:
-                        if self.ok_to_display( trans, ura2.role ):
+                        if admin_controller or self.ok_to_display( trans.user, ura2.role ):
                             roles.add( ura2.role )
                 # Each role also potentially has groups which, in turn, have members ( users ).  We need to 
                 # find all roles that each group's members have.
@@ -173,20 +190,20 @@ class GalaxyRBACAgent( RBACAgent ):
                     for uga in group.users:
                         user = uga.user
                         for ura in user.roles:
-                            if self.ok_to_display( trans, ura.role ):
+                            if admin_controller or self.ok_to_display( trans.user, ura.role ):
                                 roles.add( ura.role )
         return sort_by_attr( [ role for role in roles ], 'name' )
-    def ok_to_display( self, trans, role ):
+    def ok_to_display( self, user, role ):
         """
         Method for checking if:
         - a role is private and is the current user's private role
         - a role is a sharing role and belongs to the current user
         """
-        if trans.user:
+        if user:
             if role.type == self.model.Role.types.PRIVATE:
-                return role == self.get_private_user_role( trans.user )
+                return role == self.get_private_user_role( user )
             if role.type == self.model.Role.types.SHARING:
-                return role in self.get_sharing_roles( trans.user )
+                return role in self.get_sharing_roles( user )
             # If role.type is neither private nor sharing, it's ok to display
             return True
         return role.type != self.model.Role.types.PRIVATE and role.type != self.model.Role.types.SHARING
@@ -490,17 +507,21 @@ class GalaxyRBACAgent( RBACAgent ):
             if lp.action == self.permitted_actions.LIBRARY_ACCESS.action:
                 self.sa_session.delete( lp )
         self.sa_session.flush()
-    def derive_roles_from_access( self, trans, item_id, library=False, **kwd ):
+    def derive_roles_from_access( self, trans, item_id, cntrller, library=False, **kwd ):
         # Check the access permission on a dataset.  If library is true, item_id refers to a library.  If library
-        # is False, item_id refers to a dataset ( item_id must currently be decoded before being sent ).
+        # is False, item_id refers to a dataset ( item_id must currently be decoded before being sent ).  The
+        # cntrller param is the calling controller, which needs to be passed to get_legitimate_roles().
         msg = ''
         permissions = {}
         # accessible will be True only if at least 1 user has every role in DATASET_ACCESS_in
         accessible = False 
-        # legitimate will be True only if all roles in DATASET_ACCESS_in are in the set
-        # of roles returned from self.get_legitimate_roles()
+        # legitimate will be True only if all roles in DATASET_ACCESS_in are in the set of roles returned from
+        # get_legitimate_roles()
         legitimate = False
-        error = None
+        # private_role_found will be true only if more than 1 role is being associated with the DATASET_ACCESS
+        # permission on item, and at least 1 of the roles is private.
+        private_role_found = False
+        error = False
         for k, v in get_permitted_actions( filter='DATASET' ).items():
             in_roles = [ self.sa_session.query( self.model.Role ).get( x ) for x in listify( kwd.get( k + '_in', [] ) ) ]
             if v == self.permitted_actions.DATASET_ACCESS and in_roles:
@@ -514,22 +535,18 @@ class GalaxyRBACAgent( RBACAgent ):
                     # will keep ill-legitimate roles from being associated with the DATASET_ACCESS permission on the
                     # dataset (i.e., in the case where item is a library, if Role1 is associated with LIBRARY_ACCESS,
                     # then only those users that have Role1 should be associated with DATASET_ACCESS.
-                    legitimate_roles = self.get_legitimate_roles( trans, item )
+                    legitimate_roles = self.get_legitimate_roles( trans, item, cntrller )
                     ill_legitimate_roles = []
                     for role in in_roles:
                         if role not in legitimate_roles:
                             ill_legitimate_roles.append( role )
                     if ill_legitimate_roles:
-                        # NOTE: this condition should never occur since ill-legitimate roles are filtered out of the set of
-                        # roles displayed on the permissions forms, but just in case there is a bug somewhere that incorrectly
+                        # This condition should never occur since ill-legitimate roles are filtered out of the set of
+                        # roles displayed on the forms, but just in case there is a bug somewhere that incorrectly
                         # filters, we'll display this message.
-                        error = self.ILL_LEGITIMATE
-                        if library:
-                            msg += "The following roles are not associated with users that have the 'access library' permission on this "
-                            msg += "library, so they cannot be associated with the 'access' permission on the datasets: "
-                        else:
-                            msg += "The following roles are not associated with users that have the 'access' permission on this "
-                            msg += "dataset, so they were incorrectly displayed on the permission form: "
+                        error = True
+                        msg += "The following roles are not associated with users that have the 'access' permission on this "
+                        msg += "item, so they were incorrectly displayed: "
                         for role in ill_legitimate_roles:
                             msg += "%s, " % role.name
                         msg = msg.rstrip( ", " )
@@ -540,6 +557,14 @@ class GalaxyRBACAgent( RBACAgent ):
                         in_roles = new_in_roles
                     else:
                         legitimate = True
+                if len( in_roles ) > 1:
+                    # At least 1 user must have every role associated with the access 
+                    # permission on this dataset, or the dataset is not accessible.
+                    # Since we have more than 1 role, none of them can be private.
+                    for role in in_roles:
+                        if role.type == self.model.Role.types.PRIVATE:
+                            private_role_found = True
+                            break
                 if len( in_roles ) == 1:
                     accessible = True
                 else:
@@ -556,7 +581,7 @@ class GalaxyRBACAgent( RBACAgent ):
                             group = gra.group
                             for uga in group.users:
                                 users_set.add( uga.user )
-                    # Make sure that at least 1 user has every role being associated with the dataset
+                    # Make sure that at least 1 user has every role being associated with the dataset.
                     for user in users_set:
                         user_roles_set = set()
                         for ura in user.roles:
@@ -564,14 +589,16 @@ class GalaxyRBACAgent( RBACAgent ):
                         if in_roles_set.issubset( user_roles_set ):
                             accessible = True
                             break
-                if not accessible:
-                    error = self.IN_ACCESSIBLE
-                    # Don't set the permissions for DATASET_ACCESS if inaccessible, but set all other permissions
+                if private_role_found or not accessible:
+                    error = True
+                    # Don't set the permissions for DATASET_ACCESS if inaccessible or multiple roles with
+                    # at least 1 private, but set all other permissions.
                     permissions[ self.get_action( v.action ) ] = []
-                    msg += "At least 1 user must have every role associated with accessing datasets.  The roles you "
-                    msg += "attempted to associate for access would make the datasets in-accessible by everyone, "
-                    msg += "so access permissions were left in their original state (or not set).  All other "
-                    msg += "permissions were updated for the datasets."
+                    msg = "At least 1 user must have every role associated with accessing datasets.  "
+                    if private_role_found:
+                        msg += "Since you are associating more than 1 role, no private roles are allowed."
+                    if not accessible:
+                        msg += "The roles you attempted to associate for access would make the datasets in-accessible by everyone."
                 else:
                     permissions[ self.get_action( v.action ) ] = in_roles
             else:

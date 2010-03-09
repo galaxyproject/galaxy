@@ -335,31 +335,18 @@ class RootController( BaseController, UsesHistory, UsesAnnotations ):
                 if not trans.user:
                     return trans.show_error_message( "You must be logged in if you want to change permissions." )
                 if trans.app.security_agent.can_manage_dataset( current_user_roles, data.dataset ):
-                    # The user associated the DATASET_ACCESS permission on the dataset with 1 or more roles.  We need
-                    # to ensure that they did not associated roles that would make the dataset in-accessible by everyone.
+                    # The user associated the DATASET_ACCESS permission on the dataset with 1 or more roles.  We
+                    # need to ensure that they did not associate roles that would cause accessibility problems.
                     permissions, in_roles, error, msg = \
-                    trans.app.security_agent.derive_roles_from_access( trans, data.dataset.id, **kwd )
+                    trans.app.security_agent.derive_roles_from_access( trans, data.dataset.id, 'root', **kwd )
                     a = trans.app.security_agent.get_action( trans.app.security_agent.permitted_actions.DATASET_ACCESS.action )
-                    if error == trans.app.security_agent.IN_ACCESSIBLE:
-                        # If derive_roles_from_access() returned an "in_accessible" error, then we keep the original role
-                        # associations for the DATASET_ACCESS permission on the dataset.
+                    if error:
+                        # Keep the original role associations for the DATASET_ACCESS permission on the dataset.
                         permissions[ a ] = data.dataset.get_access_roles( trans )
-                    # Make sure the user is not associating another user's private role with the DATASET_ACCESS permission.
-                    # It would be better to filter out other user's private roles from the access box on the permission form,
-                    # but that gets a bit tricky since we are not differentiating between permissions ( i.e., the same set of
-                    # derived roles are used for both the manage permissions and the access box ).
-                    current_user_private_role = trans.app.security_agent.get_private_user_role( trans.user )
-                    access_roles = permissions[ a ]
-                    for role in access_roles:
-                        if role.type == trans.app.model.Role.types.PRIVATE and role is not current_user_private_role:
-                            error = trans.app.security_agent.IN_ACCESSIBLE
-                            permissions[ a ] = data.dataset.get_access_roles( trans )
-                            msg = "You cannot associate another user's private role with the access permission on this dataset "
-                            msg += "or it will become in-accessible to you.  Access permissions were left in their original state."
-                            messagetype = 'error'
-                            break
                     trans.app.security_agent.set_all_dataset_permissions( data.dataset, permissions )
                     trans.sa_session.refresh( data.dataset )
+                    if not msg:
+                        msg = 'Your changes completed successfully.'
                 else:
                     return trans.show_error_message( "You are not authorized to change this dataset's permissions" )
             if "dbkey" in data.datatype.metadata_spec and not data.metadata.dbkey:
@@ -374,11 +361,10 @@ class RootController( BaseController, UsesHistory, UsesAnnotations ):
             # the built-in 'id' is overwritten in lots of places as well
             ldatatypes = [ dtype_name for dtype_name, dtype_value in trans.app.datatypes_registry.datatypes_by_extension.iteritems() if dtype_value.allow_datatype_change ]
             ldatatypes.sort()
-            all_roles = trans.app.security_agent.get_legitimate_roles( trans, data.dataset )
+            all_roles = trans.app.security_agent.get_legitimate_roles( trans, data.dataset, 'root' )
             if error:
                 messagetype = 'error'
             else:
-                msg = 'Your changes completed successfully.'
                 messagetype = 'done'
             return trans.fill_template( "/dataset/edit_attributes.mako",
                                         data=data,

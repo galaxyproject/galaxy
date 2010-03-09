@@ -102,6 +102,7 @@
                 <form name="upload_library_dataset" action="${action}" enctype="multipart/form-data" method="post">
                     <input type="hidden" name="tool_id" value="upload1"/>
                     <input type="hidden" name="tool_state" value="None"/>
+                    <input type="hidden" name="cntrller" value="${cntrller}"/>
                     <input type="hidden" name="library_id" value="${library_id}"/>
                     <input type="hidden" name="folder_id" value="${folder_id}"/>
                     <input type="hidden" name="upload_option" value="${upload_option}"/>

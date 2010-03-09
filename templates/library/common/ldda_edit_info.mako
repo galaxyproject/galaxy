@@ -29,7 +29,7 @@
 
 <ul class="manage-table-actions">
     <li>
-        <a class="action-button" href="${h.url_for( controller='library_common', action='browse_library', cntrller=cntrller, id=library_id, show_deleted=show_deleted )}"><span>Browse this data library</span></a>
+        <a class="action-button" href="${h.url_for( controller='library_common', action='browse_library', cntrller=cntrller, id=library_id, use_panels=use_panels, show_deleted=show_deleted )}"><span>Browse this data library</span></a>
     </li>
 </ul>
 
@@ -53,7 +53,7 @@
     <div class="toolForm">
         <div class="toolFormTitle">Edit attributes of ${ldda.name}</div>
         <div class="toolFormBody">
-            <form name="edit_attributes" action="${h.url_for( controller='library_common', action='ldda_edit_info', cntrller=cntrller, library_id=library_id, folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ), show_deleted=show_deleted, )}" method="post">
+            <form name="edit_attributes" action="${h.url_for( controller='library_common', action='ldda_edit_info', cntrller=cntrller, library_id=library_id, folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ), use_panels=use_panels, show_deleted=show_deleted, )}" method="post">
                 <input type="hidden" name="id" value="${trans.security.encode_id( ldda.id )}"/>
                 <div class="form-row">
                     <label>Name:</label>
@@ -90,7 +90,7 @@
                     <input type="submit" name="save" value="Save"/>
                 </div>
             </form>
-            <form name="auto_detect" action="${h.url_for( controller='library_common', action='ldda_edit_info', cntrller=cntrller, library_id=library_id, folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ), show_deleted=show_deleted, )}" method="post">
+            <form name="auto_detect" action="${h.url_for( controller='library_common', action='ldda_edit_info', cntrller=cntrller, library_id=library_id, folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ), use_panels=use_panels, show_deleted=show_deleted, )}" method="post">
                 <div class="form-row">
                     <input type="hidden" name="id" value="${trans.security.encode_id( ldda.id )}"/>
                     <input type="submit" name="detect" value="Auto-detect"/>
@@ -106,7 +106,7 @@
         <div class="toolFormTitle">Change data type</div>
         <div class="toolFormBody">
             %if ldda.datatype.allow_datatype_change:
-                <form name="change_datatype" action="${h.url_for( controller='library_common', action='ldda_edit_info', cntrller=cntrller, library_id=library_id, folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ), show_deleted=show_deleted, )}" method="post">
+                <form name="change_datatype" action="${h.url_for( controller='library_common', action='ldda_edit_info', cntrller=cntrller, library_id=library_id, folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ), use_panels=use_panels, show_deleted=show_deleted, )}" method="post">
                     <div class="form-row">
                         <label>New Type:</label>
                         ${datatype( ldda, file_formats )}

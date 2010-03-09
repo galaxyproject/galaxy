@@ -121,10 +121,9 @@ def new_history_upload( trans, uploaded_dataset, state=None ):
     trans.app.security_agent.set_all_dataset_permissions( hda.dataset, permissions )
     trans.sa_session.flush()
     return hda
-def new_library_upload( trans, uploaded_dataset, library_bunch, state=None ):
+def new_library_upload( trans, cntrller, uploaded_dataset, library_bunch, state=None ):
     current_user_roles = trans.get_current_user_roles()
-    if not ( trans.app.security_agent.can_add_library_item( current_user_roles, library_bunch.folder ) \
-             or trans.user.email in trans.app.config.get( "admin_users", "" ).split( "," ) ):
+    if not ( cntrller in [ 'library_admin' ] or trans.app.security_agent.can_add_library_item( current_user_roles, library_bunch.folder ) ):
         # This doesn't have to be pretty - the only time this should happen is if someone's being malicious.
         raise Exception( "User is not authorized to add datasets to this library." )
     folder = library_bunch.folder
@@ -203,19 +202,19 @@ def new_library_upload( trans, uploaded_dataset, library_bunch, state=None ):
             trans.sa_session.add( dp )
             trans.sa_session.flush()
     return ldda
-def new_upload( trans, uploaded_dataset, library_bunch=None, state=None ):
+def new_upload( trans, cntrller, uploaded_dataset, library_bunch=None, state=None ):
     if library_bunch:
-        return new_library_upload( trans, uploaded_dataset, library_bunch, state )
+        return new_library_upload( trans, cntrller, uploaded_dataset, library_bunch, state )
     else:
         return new_history_upload( trans, uploaded_dataset, state )
-def get_uploaded_datasets( trans, params, precreated_datasets, dataset_upload_inputs, library_bunch=None ):
+def get_uploaded_datasets( trans, cntrller, params, precreated_datasets, dataset_upload_inputs, library_bunch=None ):
     uploaded_datasets = []
     for dataset_upload_input in dataset_upload_inputs:
         uploaded_datasets.extend( dataset_upload_input.get_uploaded_datasets( trans, params ) )
     for uploaded_dataset in uploaded_datasets:
         data = get_precreated_dataset( precreated_datasets, uploaded_dataset.name )
         if not data:
-            data = new_upload( trans, uploaded_dataset, library_bunch )
+            data = new_upload( trans, cntrller, uploaded_dataset, library_bunch )
         else:
             data.extension = uploaded_dataset.file_type
             data.dbkey = uploaded_dataset.dbkey
