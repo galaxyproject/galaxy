@@ -172,7 +172,8 @@ def get_database_engine_options( kwargs ):
         'pool_recycle': int,
         'pool_size': int,
         'max_overflow': int,
-        'pool_threadlocal': string_as_bool
+        'pool_threadlocal': string_as_bool,
+        'server_side_cursors': string_as_bool
     }
     prefix = "database_engine_option_"
     prefix_len = len( prefix )
