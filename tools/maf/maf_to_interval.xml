@@ -27,7 +27,7 @@
       <param name="complete_blocks" value="partial_disallowed"/>
       <param name="remove_gaps" value="keep_gaps"/>
       <param name="species" value="panTro1" />
-      <!-- <output name="out_file1" file="maf_to_interval_out_hg17.interval"/> cannot test primary species, because we cannot leave species blank and we can only test the last item added to a history-->
+      <output name="out_file1" file="maf_to_interval_out_hg17.interval"/>
       <output name="out_file1" file="maf_to_interval_out_panTro1.interval"/>
     </test>
   </tests>
