@@ -53,6 +53,11 @@ class ToolTestCase( TwillTestCase ):
             if isinstance( input_value, grouping.Repeat ):
                 repeat_name = input_name
                 break
+        #check if we need to verify number of outputs created dynamically by tool
+        if testdef.tool.force_history_refresh:
+            job_finish_by_output_count = len( self.get_history_as_data_list() )
+        else:
+            job_finish_by_output_count = False
         # Do the first page
         page_inputs =  self.__expand_grouping(testdef.tool.inputs_by_page[0], all_inputs)
         # Run the tool
@@ -65,7 +70,11 @@ class ToolTestCase( TwillTestCase ):
             print "page_inputs (%i)" % i, page_inputs
         # Check the results ( handles single or multiple tool outputs ).  Make sure to pass the correct hid.
         # The output datasets from the tool should be in the same order as the testdef.outputs.
-        data_list = self.get_history_as_data_list()
+        data_list = None
+        while data_list is None:
+            data_list = self.get_history_as_data_list()
+            if job_finish_by_output_count and len( testdef.outputs ) > ( len( data_list ) - job_finish_by_output_count ):
+                data_list = None
         self.assertTrue( data_list )
         elem_index = 0 - len( testdef.outputs )
         for output_tuple in testdef.outputs:
