@@ -288,7 +288,7 @@ class UploadDataset( Group ):
             dataset_info = None
             if dataset.datatype.composite_type == 'auto_primary_file':
                 #replace sniff here with just creating an empty file
-                temp_name, is_multi_byte = sniff.stream_to_file( StringIO.StringIO( d_type.generate_primary_file() ), prefix='upload_auto_primary_file' )
+                temp_name, is_multi_byte = sniff.stream_to_file( StringIO.StringIO( d_type.generate_primary_file( dataset ) ), prefix='upload_auto_primary_file' )
                 dataset.primary_file = temp_name
                 dataset.space_to_tab = False
                 dataset.precreated_name = dataset.name = 'Uploaded Composite Dataset (%s)' % ( file_type )

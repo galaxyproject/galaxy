@@ -275,12 +275,6 @@ class Rgenetics(Html):
     allow_datatype_change = False
     file_ext = 'rgenetics'
 
-    def missing_meta( self, dataset=None, **kwargs):
-        """Checks for empty meta values"""
-        for key, value in dataset.metadata.items():
-            if not value:
-                return True
-        return False
     def generate_primary_file( self, dataset = None ):
         rval = ['<html><head><title>Rgenetics Galaxy Composite Dataset </title></head><p/>']
         rval.append('<div>This composite dataset is composed of the following files:<p/><ul>')
