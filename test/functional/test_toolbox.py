@@ -32,7 +32,10 @@ class ToolTestCase( TwillTestCase ):
             raise AssertionError("ToolTestCase.do_it failed")
         # Upload any needed files
         for fname, extra in testdef.required_files:
-            self.upload_file( fname, ftype=extra.get( 'ftype', 'auto' ), dbkey=extra.get( 'dbkey', 'hg17' ) )
+            children = extra.get( 'children', [] )
+            metadata = [ child for child in children if child.tag == 'metadata' ]
+            composite_data = [ child for child in children if child.tag == 'composite_data' ]
+            self.upload_file( fname, ftype=extra.get( 'ftype', 'auto' ), dbkey=extra.get( 'dbkey', 'hg17' ), metadata = metadata, composite_data = composite_data )
             print "Uploaded file: ", fname, ", ftype: ", extra.get( 'ftype', 'auto' ), ", extra: ", extra
         # We need to handle the case where we've uploaded a valid compressed file since the upload
         # tool will have uncompressed it on the fly.

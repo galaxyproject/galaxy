@@ -523,6 +523,7 @@ class Tool:
                         value = attrib['value']
                     else:
                         value = None
+                    attrib['children'] = list( param_elem.getchildren() )
                     test.add_param( attrib.pop( 'name' ), value, attrib )
                 for output_elem in test_elem.findall( "output" ):
                     attrib = dict( output_elem.attrib )

@@ -30,10 +30,12 @@ class ToolTestBuilder( object ):
                     if isinstance( input_value, grouping.Conditional ) or isinstance( input_value, grouping.Repeat ):
                         self.__expand_grouping_for_data_input(name, value, extra, input_name, input_value)
             elif isinstance( self.tool.inputs[name], parameters.DataToolParameter ) and ( value, extra ) not in self.required_files:
-                if value is None:
+                if value is None and len( [ child for child in extra.get( 'children', [] ) if child.tag == 'composite_data' ] ) == 0:
                     assert self.tool.inputs[name].optional, '%s is not optional. You must provide a valid filename.' % name
                 else:
                     self.required_files.append( ( value, extra ) )
+                    if value is None and len( [ child for child in extra.get( 'children', [] ) if child.tag == 'composite_data' ] ) > 0:
+                        value = extra.get( 'ftype' )
         except Exception, e:
             log.debug( "Error in add_param for %s: %s" % ( name, e ) )
         self.inputs.append( ( name, value, extra ) )

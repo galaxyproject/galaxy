@@ -142,14 +142,22 @@ class TwillTestCase( unittest.TestCase ):
         filename = os.path.join( *path )
         file(filename, 'wt').write(buffer.getvalue())
 
-    def upload_file( self, filename, ftype='auto', dbkey='unspecified (?)' ):
+    def upload_file( self, filename, ftype='auto', dbkey='unspecified (?)', metadata = None, composite_data = None ):
         """Uploads a file"""
-        filename = self.get_filename(filename)
         self.visit_url( "%s/tool_runner?tool_id=upload1" % self.url )
         try: 
-            tc.fv("1","file_type", ftype)
+            self.refresh_form( "file_type", ftype ) #Refresh, to support composite files
             tc.fv("1","dbkey", dbkey)
-            tc.formfile("1","file_data", filename)
+            if metadata:
+                for elem in metadata:
+                    tc.fv( "1", "files_metadata|%s" % elem.get( 'name' ), elem.get( 'value' ) )
+            if composite_data:
+                for i, composite_file in enumerate( composite_data ):
+                    filename = self.get_filename( composite_file.get( 'value' ) )
+                    tc.formfile( "1", "files_%i|file_data" % i, filename )
+            else:
+                filename = self.get_filename( filename )
+                tc.formfile( "1", "file_data", filename )
             tc.submit("runtool_btn")
             self.home()
         except AssertionError, err:
