@@ -23,7 +23,7 @@ class DistScrambleEgg( ScrambleEgg ):
     def run_scramble_script( self ):
         log.warning( "%s(): Beginning build" % sys._getframe().f_code.co_name )
         # subprocessed to sterilize the env
-        cmd = "ssh %s 'cd %s; %s -ES %s'" % ( self.build_host, self.buildpath, self.python, 'scramble.py' )
+        cmd = "ssh %s 'cd %s; PYTHONPATH= %s -ES %s'" % ( self.build_host, self.buildpath, self.python, 'scramble.py' )
         log.debug( '%s(): Executing:' % sys._getframe().f_code.co_name )
         log.debug( '  %s' % cmd )
         p = subprocess.Popen( args = cmd, shell = True )
