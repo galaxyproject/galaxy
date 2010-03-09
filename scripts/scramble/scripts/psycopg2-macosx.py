@@ -11,11 +11,8 @@ def prep_postgres( prepped, args ):
     os.environ['CFLAGS'] = get_config_var('CFLAGS')
     os.environ['LDFLAGS'] = get_config_var('LDFLAGS')
 
-    cc = get_solaris_compiler()
-    if cc == 'cc':
-        os.environ['CFLAGS'] += ' -KPIC'
-    elif cc == 'gcc':
-        os.environ['CFLAGS'] += ' -fPIC -DPIC'
+    if '-fPIC' not in os.environ['CFLAGS']:
+        os.environ['CFLAGS'] += ' -fPIC'
 
     # run configure
     run( "./configure --prefix=%s/postgres --disable-dependency-tracking --enable-static --disable-shared --without-readline --with-thread-safety" % os.getcwd(),
@@ -23,14 +20,20 @@ def prep_postgres( prepped, args ):
         "Configuring postgres (./configure)" )
 
     # compile
-    run( "gmake ../../src/include/utils/fmgroids.h", os.path.join( pg_srcdir, 'src', 'backend' ), "Compiling fmgroids.h (cd src/backend; gmake ../../src/include/utils/fmgroids.h)" )
-    run( "gmake", os.path.join( pg_srcdir, 'src', 'interfaces', 'libpq' ), "Compiling libpq (cd src/interfaces/libpq; gmake)" )
-    run( "gmake", os.path.join( pg_srcdir, 'src', 'bin', 'pg_config' ), "Compiling pg_config (cd src/bin/pg_config; gmake)" )
+    run( "make ../../src/include/utils/fmgroids.h", os.path.join( pg_srcdir, 'src', 'backend' ), "Compiling fmgroids.h (cd src/backend; make ../../src/include/utils/fmgroids.h)" )
+    run( "make all-static-lib", os.path.join( pg_srcdir, 'src', 'interfaces', 'libpq' ), "Compiling libpq (cd src/interfaces/libpq; make)" )
+    run( "make", os.path.join( pg_srcdir, 'src', 'bin', 'pg_config' ), "Compiling pg_config (cd src/bin/pg_config; make)" )
 
     # install
-    run( "gmake install", os.path.join( pg_srcdir, 'src', 'interfaces', 'libpq' ), "Compiling libpq (cd src/interfaces/libpq; gmake install)" )
-    run( "gmake install", os.path.join( pg_srcdir, 'src', 'bin', 'pg_config' ), "Compiling pg_config (cd src/bin/pg_config; gmake install)" )
-    run( "gmake install", os.path.join( pg_srcdir, 'src', 'include' ), "Compiling pg_config (cd src/include; gmake install)" )
+    run( "make install-lib-static", os.path.join( pg_srcdir, 'src', 'interfaces', 'libpq' ), "Compiling libpq (cd src/interfaces/libpq; make install)" )
+    run( "make install", os.path.join( pg_srcdir, 'src', 'bin', 'pg_config' ), "Compiling pg_config (cd src/bin/pg_config; make install)" )
+    run( "make install", os.path.join( pg_srcdir, 'src', 'include' ), "Compiling pg_config (cd src/include; make install)" )
+
+    # manually install some headers
+    run( "cp libpq-fe.h %s" % os.path.join( os.getcwd(), 'postgres', 'include' ), os.path.join( pg_srcdir, 'src', 'interfaces', 'libpq' ), "Installing libpq-fe.h" )
+    run( "cp libpq-events.h %s" % os.path.join( os.getcwd(), 'postgres', 'include' ), os.path.join( pg_srcdir, 'src', 'interfaces', 'libpq' ), "Installing libpq-fe.h" )
+    run( "cp libpq-int.h %s" % os.path.join( os.getcwd(), 'postgres', 'include', 'internal' ), os.path.join( pg_srcdir, 'src', 'interfaces', 'libpq' ), "Installing libpq-fe.h" )
+    run( "cp pqexpbuffer.h %s" % os.path.join( os.getcwd(), 'postgres', 'include', 'internal' ), os.path.join( pg_srcdir, 'src', 'interfaces', 'libpq' ), "Installing libpq-fe.h" )
 
     # create prepped archive
     print "%s(): Creating prepped archive for future builds at:" % sys._getframe().f_code.co_name

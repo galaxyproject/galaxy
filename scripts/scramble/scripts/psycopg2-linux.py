@@ -20,6 +20,7 @@ def prep_postgres( prepped, args ):
         "Configuring postgres (./configure)" )
 
     # compile
+    run( "make ../../src/include/utils/fmgroids.h", os.path.join( pg_srcdir, 'src', 'backend' ), "Compiling fmgroids.h (cd src/backend; make ../../src/include/utils/fmgroids.h)" )
     run( "make", os.path.join( pg_srcdir, 'src', 'interfaces', 'libpq' ), "Compiling libpq (cd src/interfaces/libpq; make)" )
     run( "make", os.path.join( pg_srcdir, 'src', 'bin', 'pg_config' ), "Compiling pg_config (cd src/bin/pg_config; make)" )
 
