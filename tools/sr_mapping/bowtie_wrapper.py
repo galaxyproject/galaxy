@@ -2,7 +2,7 @@
 
 """
 Runs Bowtie on single-end or paired-end data.
-For use with Bowtie v. 0.12.1
+For use with Bowtie v. 0.12.3
 
 usage: bowtie_wrapper.py [options]
     -t, --threads=t: The number of threads to run
@@ -58,12 +58,12 @@ usage: bowtie_wrapper.py [options]
     -H, --suppressHeader=H: Suppress header
 """
 
-import optparse, os, shutil, sys, tempfile
+import optparse, os, shutil, subprocess, sys, tempfile
 
 def stop_err( msg ):
-    sys.stderr.write( "%s\n" % msg )
+    sys.stderr.write( '%s\n' % msg )
     sys.exit()
- 
+
 def __main__():
     #Parse Command Line
     parser = optparse.OptionParser()
@@ -119,6 +119,7 @@ def __main__():
     parser.add_option( '-x', '--indexSettings', dest='index_settings', help='Whether or not indexing options are to be set' )
     parser.add_option( '-H', '--suppressHeader', dest='suppressHeader', help='Suppress header' )
     (options, args) = parser.parse_args()
+    stdout = ''
     # make temp directory for placement of indices and copy reference file there if necessary
     tmp_index_dir = tempfile.mkdtemp()
     # get type of data (solid or solexa)
@@ -187,17 +188,25 @@ def __main__():
                                   iseed, icutoff, colorspace )
             except ValueError:
                 indexing_cmds = '%s' % colorspace
+        ref_file = tempfile.NamedTemporaryFile( dir=tmp_index_dir )
+        ref_file_name = ref_file.name
+        ref_file.close()
+        os.symlink( options.ref, ref_file_name )
+        cmd1 = 'bowtie-build %s -f %s %s' % ( indexing_cmds, ref_file_name, ref_file_name )
         try:
-            shutil.copy( options.ref, tmp_index_dir )
+            proc = subprocess.Popen( args=cmd1, shell=True, cwd=tmp_index_dir, stderr=subprocess.PIPE, stdout=subprocess.PIPE )
+            returncode = proc.wait()
+            stderr = proc.stderr.read()
+            if returncode != 0:
+                raise Exception, stderr
         except Exception, e:
-            stop_err( 'Error creating temp directory for indexing purposes\n' + str( e ) )
-        options.ref = os.path.join( tmp_index_dir, os.path.split( options.ref )[1] )
-        cmd1 = 'bowtie-build %s -f %s %s 2> /dev/null' % ( indexing_cmds, options.ref, options.ref )
-        try:
-            os.chdir( tmp_index_dir )
-            os.system( cmd1 )
-        except Exception, e:
+            # clean up temp dir
+            if os.path.exists( tmp_index_dir ):
+                shutil.rmtree( tmp_index_dir )
             stop_err( 'Error indexing reference sequence\n' + str( e ) )
+        stdout += 'File indexed. '
+    else:
+        ref_file_name = options.ref
     # set up aligning and generate aligning command options
     # automatically set threads in both cases
     if options.suppressHeader == 'true':
@@ -328,19 +337,34 @@ def __main__():
                               best, strata, offrate, seed, colorspace, snpphred, snpfrac, 
                               keepends, options.threads, suppressHeader )
         except ValueError, e:
+            # clean up temp dir
+            if os.path.exists( tmp_index_dir ):
+                shutil.rmtree( tmp_index_dir )
             stop_err( 'Something is wrong with the alignment parameters and the alignment could not be run\n' + str( e ) )
-    # prepare actual aligning commands
-    if options.paired == 'paired':
-        cmd2 = 'bowtie %s %s -1 %s -2 %s > %s 2> /dev/null' % ( aligning_cmds, options.ref, options.input1, options.input2, options.output ) 
-    else:
-        cmd2 = 'bowtie %s %s %s > %s 2> /dev/null' % ( aligning_cmds, options.ref, options.input1, options.output ) 
-    # align
     try:
-        os.system( cmd2 )
-    except Exception, e:
-        stop_err( 'Error aligning sequence\n' + str( e ) )
-    # clean up temp dir
-    if os.path.exists( tmp_index_dir ):
-        shutil.rmtree( tmp_index_dir )
+        # have to nest try-except in try-finally to handle 2.4
+        try:
+            # prepare actual aligning commands
+            if options.paired == 'paired':
+                cmd2 = 'bowtie %s %s -1 %s -2 %s > %s' % ( aligning_cmds, ref_file_name, options.input1, options.input2, options.output )
+            else:
+                cmd2 = 'bowtie %s %s %s > %s' % ( aligning_cmds, ref_file_name, options.input1, options.output )
+            # align
+            proc = subprocess.Popen( args=cmd2, shell=True, cwd=tmp_index_dir, stderr=subprocess.PIPE )
+            returncode = proc.wait()
+            stderr = proc.stderr.read()
+            if returncode != 0:
+                raise Exception, stderr
+            # check that there are results in the output file
+            if len( open( options.output, 'rb' ).read().strip() ) == 0:
+                raise Exception, 'The output file is empty, there may be an error with your input file or settings.'
+        except Exception, e:
+            stop_err( 'Error aligning sequence. ' + str( e ) )
+    finally:
+        # clean up temp dir
+        if os.path.exists( tmp_index_dir ):
+            shutil.rmtree( tmp_index_dir )
+    stdout += 'Sequence file aligned.\n'
+    sys.stdout.write( stdout )
 
 if __name__=="__main__": __main__()

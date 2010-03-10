@@ -4,7 +4,7 @@
 Converts coordinates from one build/assembly to another using liftOver binary and mapping files downloaded from UCSC.
 """
 
-import sys, os, string
+import os, string, subprocess, sys
 import tempfile
 import re
 
@@ -51,15 +51,20 @@ except:
 if in_dbkey == "?": 
     stop_err( "Input dataset genome build unspecified, click the pencil icon in the history item to specify it." )
 
-
 if not os.path.isfile( mapfilepath ):
     stop_err( "%s mapping is not currently available."  % ( mapfilepath.split('/')[-1].split('.')[0] ) )
 
 safe_infile = safe_bed_file(infile)
-cmd_line = "liftOver -minMatch=" + str(minMatch) + " " + safe_infile + " " + mapfilepath + " " + outfile1 + " " + outfile2 + "  > /dev/null 2>&1"
+cmd_line = "liftOver -minMatch=" + str(minMatch) + " " + safe_infile + " " + mapfilepath + " " + outfile1 + " " + outfile2 + "  > /dev/null"
 try:
-    os.system( cmd_line )
-except Exception, exc:
-    stop_err( "Exception caught attempting conversion: %s"  % str( exc ) )
+    # have to nest try-except in try-finally to handle 2.4
+    try:
+        proc = subprocess.Popen( args=cmd_line, shell=True, stderr=subprocess.PIPE )
+        returncode = proc.wait()
+        stderr = proc.stderr.read()
+        if returncode != 0:
+            raise Exception, stderr
+    except Exception, e:
+        raise Exception, 'Exception caught attempting conversion: ' + str( e )
 finally:
     os.remove(safe_infile)

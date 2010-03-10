@@ -152,55 +152,57 @@ def __main__():
         cmd3 = 'bwa samse %s %s %s %s >> %s' % ( gen_alignment_cmds, ref_file_name, tmp_align_out_name, options.fastq, options.output )
     # perform alignments
     try:
-        # align
+        # need to nest try-except in try-finally to handle 2.4
         try:
-            proc = subprocess.Popen( args=cmd2, shell=True, cwd=tmp_dir, stderr=subprocess.PIPE )
-            returncode = proc.wait()
-            stderr = proc.stderr.read()
-            if returncode != 0:
-                raise Exception, stderr
-        except Exception, e:
-            raise Exception, 'Error aligning sequence. ' + str( e )
-        # and again if paired data
-        try:
-            if cmd2b: 
-                proc = subprocess.Popen( args=cmd2b, shell=True, cwd=tmp_dir, stderr=subprocess.PIPE )
+            # align
+            try:
+                proc = subprocess.Popen( args=cmd2, shell=True, cwd=tmp_dir, stderr=subprocess.PIPE )
                 returncode = proc.wait()
                 stderr = proc.stderr.read()
                 if returncode != 0:
                     raise Exception, stderr
-        except Exception, e:
-            raise Exception, 'Error aligning second sequence. ' + str( e )
-        # generate align
-        try:
-            proc = subprocess.Popen( args=cmd3, shell=True, cwd=tmp_dir, stderr=subprocess.PIPE )
-            returncode = proc.wait()
-            stderr = proc.stderr.read()
-            if returncode != 0:
-                raise Exception, stderr
-        except Exception, e:
-            raise Exception, 'Error generating alignments. ' + str( e ) 
-        # remove header if necessary
-        if options.suppressHeader == 'true':
-            tmp_out = tempfile.NamedTemporaryFile( dir=tmp_dir)
-            tmp_out_name = tmp_out.name
-            tmp_out.close()
-            try:
-                shutil.move( options.output, tmp_out_name )
             except Exception, e:
-                raise Exception, 'Error moving output file before removing headers. ' + str( e )
-            fout = file( options.output, 'w' )
-            for line in file( tmp_out.name, 'r' ):
-                if not ( line.startswith( '@HD' ) or line.startswith( '@SQ' ) or line.startswith( '@RG' ) or line.startswith( '@PG' ) or line.startswith( '@CO' ) ):
-                    fout.write( line )
-            fout.close()
-        # check that there are results in the output file
-        if os.path.getsize( options.output ) > 0:
-            sys.stdout.write( 'BWA run on %s-end data' % options.genAlignType )
-        else:
-            raise Exception, 'The output file is empty. You may simply have no matches, or there may be an error with your input file or settings.'
-    except Exception, e:
-        stop_err( 'The alignment failed.\n' + str( e ) )
+                raise Exception, 'Error aligning sequence. ' + str( e )
+            # and again if paired data
+            try:
+                if cmd2b: 
+                    proc = subprocess.Popen( args=cmd2b, shell=True, cwd=tmp_dir, stderr=subprocess.PIPE )
+                    returncode = proc.wait()
+                    stderr = proc.stderr.read()
+                    if returncode != 0:
+                        raise Exception, stderr
+            except Exception, e:
+                raise Exception, 'Error aligning second sequence. ' + str( e )
+            # generate align
+            try:
+                proc = subprocess.Popen( args=cmd3, shell=True, cwd=tmp_dir, stderr=subprocess.PIPE )
+                returncode = proc.wait()
+                stderr = proc.stderr.read()
+                if returncode != 0:
+                    raise Exception, stderr
+            except Exception, e:
+                raise Exception, 'Error generating alignments. ' + str( e ) 
+            # remove header if necessary
+            if options.suppressHeader == 'true':
+                tmp_out = tempfile.NamedTemporaryFile( dir=tmp_dir)
+                tmp_out_name = tmp_out.name
+                tmp_out.close()
+                try:
+                    shutil.move( options.output, tmp_out_name )
+                except Exception, e:
+                    raise Exception, 'Error moving output file before removing headers. ' + str( e )
+                fout = file( options.output, 'w' )
+                for line in file( tmp_out.name, 'r' ):
+                    if not ( line.startswith( '@HD' ) or line.startswith( '@SQ' ) or line.startswith( '@RG' ) or line.startswith( '@PG' ) or line.startswith( '@CO' ) ):
+                        fout.write( line )
+                fout.close()
+            # check that there are results in the output file
+            if os.path.getsize( options.output ) > 0:
+                sys.stdout.write( 'BWA run on %s-end data' % options.genAlignType )
+            else:
+                raise Exception, 'The output file is empty. You may simply have no matches, or there may be an error with your input file or settings.'
+        except Exception, e:
+            stop_err( 'The alignment failed.\n' + str( e ) )
     finally:
         # clean up temp dir
         if os.path.exists( tmp_index_dir ):

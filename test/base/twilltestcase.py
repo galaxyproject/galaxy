@@ -633,24 +633,26 @@ class TwillTestCase( unittest.TestCase ):
             data = self.last_page()
             file( temp_name, 'wb' ).write(data)
             try:
-                if attributes is None:
-                    attributes = {}
-                compare = attributes.get( 'compare', 'diff' )
-                extra_files = attributes.get( 'extra_files', None )
-                if compare == 'diff':
-                    self.files_diff( local_name, temp_name, attributes=attributes )
-                elif compare == 're_match':
-                    self.files_re_match( local_name, temp_name, attributes=attributes )
-                elif compare == 're_match_multiline':
-                    self.files_re_match_multiline( local_name, temp_name, attributes=attributes )
-                else:
-                    raise Exception, 'Unimplemented Compare type: %s' % compare
-                if extra_files:
-                    self.verify_extra_files_content( extra_files, elem.get( 'id' ) )
-            except AssertionError, err:
-                errmsg = 'History item %s different than expected, difference (using %s):\n' % ( hid, compare )
-                errmsg += str( err )
-                raise AssertionError( errmsg )
+                # have to nest try-except in try-finally to handle 2.4
+                try:
+                    if attributes is None:
+                        attributes = {}
+                    compare = attributes.get( 'compare', 'diff' )
+                    extra_files = attributes.get( 'extra_files', None )
+                    if compare == 'diff':
+                        self.files_diff( local_name, temp_name, attributes=attributes )
+                    elif compare == 're_match':
+                        self.files_re_match( local_name, temp_name, attributes=attributes )
+                    elif compare == 're_match_multiline':
+                        self.files_re_match_multiline( local_name, temp_name, attributes=attributes )
+                    else:
+                        raise Exception, 'Unimplemented Compare type: %s' % compare
+                    if extra_files:
+                        self.verify_extra_files_content( extra_files, elem.get( 'id' ) )
+                except AssertionError, err:
+                    errmsg = 'History item %s different than expected, difference (using %s):\n' % ( hid, compare )
+                    errmsg += str( err )
+                    raise AssertionError( errmsg )
             finally:
                 os.remove( temp_name )
 
@@ -676,21 +678,23 @@ class TwillTestCase( unittest.TestCase ):
         data = self.last_page()
         file( temp_name, 'wb' ).write( data )
         try:
-            if attributes is None:
-                attributes = {}
-            compare = attributes.get( 'compare', 'diff' )
-            if compare == 'diff':
-                self.files_diff( local_name, temp_name, attributes=attributes )
-            elif compare == 're_match':
-                self.files_re_match( local_name, temp_name, attributes=attributes )
-            elif compare == 're_match_multiline':
-                self.files_re_match_multiline( local_name, temp_name, attributes=attributes )
-            else:
-                raise Exception, 'Unimplemented Compare type: %s' % compare
-        except AssertionError, err:
-            errmsg = 'Composite file (%s) of History item %s different than expected, difference (using %s):\n' % ( base_name, hda_id, compare )
-            errmsg += str( err )
-            raise AssertionError( errmsg )
+            # have to nest try-except in try-finally to handle 2.4
+            try:
+                if attributes is None:
+                    attributes = {}
+                compare = attributes.get( 'compare', 'diff' )
+                if compare == 'diff':
+                    self.files_diff( local_name, temp_name, attributes=attributes )
+                elif compare == 're_match':
+                    self.files_re_match( local_name, temp_name, attributes=attributes )
+                elif compare == 're_match_multiline':
+                    self.files_re_match_multiline( local_name, temp_name, attributes=attributes )
+                else:
+                    raise Exception, 'Unimplemented Compare type: %s' % compare
+            except AssertionError, err:
+                errmsg = 'Composite file (%s) of History item %s different than expected, difference (using %s):\n' % ( base_name, hda_id, compare )
+                errmsg += str( err )
+                raise AssertionError( errmsg )
         finally:
             os.remove( temp_name )
 

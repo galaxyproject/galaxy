@@ -78,30 +78,32 @@ def __main__():
     #prepare basic pileup command
     cmd = 'samtools pileup %s -f %s %s > %s'
     try:
-        #index reference if necessary and prepare pileup command
-        if options.ref == 'indexed':
-            if not os.path.exists( "%s.fai" % seqPath ):
-                raise Exception, "No sequences are available for '%s', request them by reporting this error." % options.dbkey
-            cmd = cmd % ( opts, seqPath, tmpf0bam_name, options.output1 )
-        elif options.ref == 'history':
-            os.symlink( options.ownFile, tmpf1_name )
-            cmdIndex = 'samtools faidx %s' % ( tmpf1_name )
-            proc = subprocess.Popen( args=cmdIndex, shell=True, cwd=tmpDir, stderr=subprocess.PIPE )
+        # have to nest try-except in try-finally to handle 2.4
+        try:
+            #index reference if necessary and prepare pileup command
+            if options.ref == 'indexed':
+                if not os.path.exists( "%s.fai" % seqPath ):
+                    raise Exception, "No sequences are available for '%s', request them by reporting this error." % options.dbkey
+                cmd = cmd % ( opts, seqPath, tmpf0bam_name, options.output1 )
+            elif options.ref == 'history':
+                os.symlink( options.ownFile, tmpf1_name )
+                cmdIndex = 'samtools faidx %s' % ( tmpf1_name )
+                proc = subprocess.Popen( args=cmdIndex, shell=True, cwd=tmpDir, stderr=subprocess.PIPE )
+                returncode = proc.wait()
+                stderr = proc.stderr.read()
+                #did index succeed?
+                if returncode != 0:
+                    raise Exception, 'Error creating index file\n' + stderr
+                cmd = cmd % ( opts, tmpf1_name, tmpf0bam_name, options.output1 )
+            #perform pileup command
+            proc = subprocess.Popen( args=cmd, shell=True, cwd=tmpDir, stderr=subprocess.PIPE )
             returncode = proc.wait()
+            #did it succeed?
             stderr = proc.stderr.read()
-            #did index succeed?
             if returncode != 0:
-                raise Exception, 'Error creating index file\n' + stderr
-            cmd = cmd % ( opts, tmpf1_name, tmpf0bam_name, options.output1 )
-        #perform pileup command
-        proc = subprocess.Popen( args=cmd, shell=True, cwd=tmpDir, stderr=subprocess.PIPE )
-        returncode = proc.wait()
-        #did it succeed?
-        stderr = proc.stderr.read()
-        if returncode != 0:
-            raise Exception, stderr
-    except Exception, e:
-        stop_err( 'Error running Samtools pileup tool\n' + str( e ) )
+                raise Exception, stderr
+        except Exception, e:
+            stop_err( 'Error running Samtools pileup tool\n' + str( e ) )
     finally:
         #clean up temp files
         if os.path.exists( tmpDir ):

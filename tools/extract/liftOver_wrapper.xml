@@ -23,19 +23,16 @@
   <requirements>
     <requirement type="binary">liftOver</requirement>
   </requirements>
-  
   <tests>
     <test>
       <param name="input" value="5.bed" dbkey="hg18" ftype="bed" />
-      <param name="to_dbkey" value="/galaxy/data/hg18/liftOver/hg18ToPanTro2.over.chain" />
+      <param name="to_dbkey" value="panTro2" />
       <param name="minMatch" value="0.95" />
       <output name="out_file1" file="5_liftover_mapped.bed"/>
       <output name="out_file2" file="5_liftover_unmapped.bed"/>
     </test>
   </tests>
-
   <help>
-
 .. class:: warningmark
 
 Make sure that the genome build of the input dataset is specified (click the pencil icon in the history item to set it if necessary).
@@ -71,6 +68,6 @@ will produce the following hg18 intervals::
     chrX  158279  160020  AK097346  0  +
     chrX  160024  169033  AK074528  0  -
 
-</help>
-<code file="liftOver_wrapper_code.py"/>
+  </help>
+  <code file="liftOver_wrapper_code.py" />
 </tool>
