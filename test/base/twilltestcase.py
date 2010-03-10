@@ -23,8 +23,6 @@ logging.getLogger( "ClientCookie.cookies" ).setLevel( logging.WARNING )
 log = logging.getLogger( __name__ )
 
 class TwillTestCase( unittest.TestCase ):
-    composite_extensions = ['html','lped','pbed','fped','pphe','eigenstratgeno','eset','affybatch','malist','test-data' ]
-
 
     def setUp( self ):
         # Security helper
