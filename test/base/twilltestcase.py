@@ -1595,14 +1595,17 @@ class TwillTestCase( unittest.TestCase ):
         self.home()
     def add_library_dataset( self, cntrller, filename, library_id, folder_id, folder_name,
                              file_type='auto', dbkey='hg18', roles=[], message='', root=False,
-                             template_field_name1='', template_field_contents1='' ):
+                             template_field_name1='', template_field_contents1='', show_deleted='False',
+                             upload_option='upload_file' ):
         """Add a dataset to a folder"""
         filename = self.get_filename( filename )
         self.home()
-        self.visit_url( "%s/library_common/upload_library_dataset?cntrller=%s&upload_option=upload_file&library_id=%s&folder_id=%s&message=%s" % \
-                        ( self.url, cntrller, library_id, folder_id, message ) )
+        self.visit_url( "%s/library_common/upload_library_dataset?cntrller=%s&library_id=%s&folder_id=%s&upload_option=%s&message=%s" % \
+                        ( self.url, cntrller, library_id, folder_id, upload_option, message ) )
         self.check_page_for_string( 'Upload files' )
+        tc.fv( "1", "library_id", library_id )
         tc.fv( "1", "folder_id", folder_id )
+        tc.fv( "1", "show_deleted", show_deleted )
         tc.formfile( "1", "files_0|file_data", filename )
         tc.fv( "1", "file_type", file_type )
         tc.fv( "1", "dbkey", dbkey )

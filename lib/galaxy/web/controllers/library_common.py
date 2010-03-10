@@ -1246,8 +1246,7 @@ class LibraryCommon( BaseController ):
                                     messagetype=messagetype )
     @web.expose
     def act_on_multiple_datasets( self, trans, cntrller, library_id, ldda_ids='', **kwd ):
-        # This method is used by the select list labeled "Perform action on selected datasets"
-        # on the analysis library browser
+        # Perform an action on a list of library datasets.
         params = util.Params( kwd )
         msg = util.restore_text( params.get( 'msg', ''  ) )
         messagetype = params.get( 'messagetype', 'done' )
@@ -1262,7 +1261,7 @@ class LibraryCommon( BaseController ):
             messagetype = 'error'
         else:
             ldda_ids = util.listify( ldda_ids )
-            if action == 'add':
+            if action == 'import_to_history':
                 history = trans.get_history()
                 if history is None:
                     # Must be a bot sending a request without having a history.
@@ -1306,9 +1305,12 @@ class LibraryCommon( BaseController ):
             elif action == 'delete':
                 for ldda_id in ldda_ids:
                     ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( ldda_id ) )
-                    ldda.deleted = True
-                    trans.sa_session.add( ldda )
-                    trans.sa_session.flush()
+                    # Do not delete the association, just delete the library_dataset.  The
+                    # cleanup_datasets.py script handles everything else.
+                    ld = ldda.library_dataset
+                    ld.deleted = True
+                    trans.sa_session.add( ld )
+                trans.sa_session.flush()
                 msg = "The selected datasets have been removed from this data library"
             else:
                 error = False

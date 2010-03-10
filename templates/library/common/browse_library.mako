@@ -229,7 +229,7 @@
                        <a class="action-button" href="${h.url_for( controller='library_common', action='upload_library_dataset', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), replace_id=trans.security.encode_id( library_dataset.id ), show_deleted=show_deleted )}">Upload a new version of this dataset</a>
                    %endif
                    %if not branch_deleted( folder ) and not ldda.library_dataset.deleted and ldda.has_data:
-                       <a class="action-button" href="${h.url_for( controller='library_common', action='act_on_multiple_datasets', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), ldda_ids=trans.security.encode_id( ldda.id ), do_action='add', use_panels=use_panels, show_deleted=show_deleted )}">Import this dataset into your current history</a>
+                       <a class="action-button" href="${h.url_for( controller='library_common', action='act_on_multiple_datasets', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), ldda_ids=trans.security.encode_id( ldda.id ), do_action='import_to_history', use_panels=use_panels, show_deleted=show_deleted )}">Import this dataset into your current history</a>
                        <a class="action-button" href="${h.url_for( controller='library_common', action='download_dataset_from_folder', cntrller=cntrller, id=trans.security.encode_id( ldda.id ), library_id=trans.security.encode_id( library.id ), use_panels=use_panels )}">Download this dataset</a>
                    %endif
                    %if cntrller in [ 'library_admin', 'requests_admin' ]:

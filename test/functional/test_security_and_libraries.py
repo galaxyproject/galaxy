@@ -1181,7 +1181,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
         # Test importing the restricted dataset into a history, can't use the 
         # ~/library_admin/libraries form as twill barfs on it so we'll simulate the form submission
         # by going directly to the form action
-        self.visit_url( '%s/library_common/act_on_multiple_datasets?cntrller=library&do_action=add&ldda_ids=%s&library_id=%s' \
+        self.visit_url( '%s/library_common/act_on_multiple_datasets?cntrller=library&do_action=import_to_history&ldda_ids=%s&library_id=%s' \
                         % ( self.url, self.security.encode_id( ldda_five.id ), self.security.encode_id( library_one.id ) ) )
         self.check_page_for_string( '1 dataset(s) have been imported into your history' )
         self.logout()
@@ -1473,7 +1473,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
             for ldda in lddas:
                 # Import each library dataset into our history
                 self.home()
-                self.visit_url( '%s/library_common/act_on_multiple_datasets?cntrller=library&do_action=add&ldda_ids=%s&library_id=%s' % \
+                self.visit_url( '%s/library_common/act_on_multiple_datasets?cntrller=library&do_action=import_to_history&ldda_ids=%s&library_id=%s' % \
                     ( self.url, self.security.encode_id( ldda.id ), self.security.encode_id( library_one.id ) ) )
                 # Determine the new HistoryDatasetAssociation id created when the library dataset was imported into our history
                 last_hda_created = sa_session.query( galaxy.model.HistoryDatasetAssociation ) \
@@ -1522,7 +1522,7 @@ class TestSecurityAndLibraries( TwillTestCase ):
             # be all of the above on any of the 3 datasets that are imported into a history
             for ldda in lddas:
                 self.home()
-                self.visit_url( '%s/library_common/act_on_multiple_datasets?cntrller=library&library_id=%s&do_action=add&ldda_ids=%s' % \
+                self.visit_url( '%s/library_common/act_on_multiple_datasets?cntrller=library&library_id=%s&do_action=import_to_history&ldda_ids=%s' % \
                     ( self.url, self.security.encode_id( library_one.id ), self.security.encode_id( ldda.id ) ) )
                 # Determine the new HistoryDatasetAssociation id created when the library dataset was imported into our history
                 last_hda_created = sa_session.query( galaxy.model.HistoryDatasetAssociation ) \

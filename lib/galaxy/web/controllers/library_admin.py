@@ -169,8 +169,8 @@ class LibraryAdmin( BaseController ):
         # deleted / purged contents will have the same state ).  When a library or folder has been deleted for
         # the amount of time defined in the cleanup_datasets.py script, the library or folder and all of its
         # contents will be purged.  The association between this method and the cleanup_datasets.py script
-        # enables clean maintenance of libraries and library dataset disk files.  This is also why the following
-        # 3 objects, and not any of the associations ( the cleanup_datasets.py scipot handles everything else ).
+        # enables clean maintenance of libraries and library dataset disk files.  This is also why the item_types
+        # are not any of the associations ( the cleanup_datasets.py script handles everything ).
         show_deleted = util.string_as_bool( kwd.get( 'show_deleted', False ) )
         item_types = { 'library': trans.app.model.Library,
                        'folder': trans.app.model.LibraryFolder,
