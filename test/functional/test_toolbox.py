@@ -33,10 +33,22 @@ class ToolTestCase( TwillTestCase ):
         # Upload any needed files
         for fname, extra in testdef.required_files:
             children = extra.get( 'children', [] )
-            metadata = [ child for child in children if child.tag == 'metadata' ]
-            composite_data = [ child for child in children if child.tag == 'composite_data' ]
+            metadata = extra.get( 'metadata', [] )
+            composite_data = extra.get( 'composite_data', [] )
             self.upload_file( fname, ftype=extra.get( 'ftype', 'auto' ), dbkey=extra.get( 'dbkey', 'hg17' ), metadata = metadata, composite_data = composite_data )
             print "Uploaded file: ", fname, ", ftype: ", extra.get( 'ftype', 'auto' ), ", extra: ", extra
+            #Post upload attribute editing
+            edit_attributes = extra.get( 'edit_attributes', [] )
+            #currently only renaming is supported
+            for edit_att in edit_attributes:
+                if edit_att.get( 'type', None ) == 'name':
+                    new_name = edit_att.get( 'value', None )
+                    assert new_name, 'You must supply the new dataset name as the value tag of the edit_attributes tag'
+                    hda_id = self.get_history_as_data_list()[-1].get( 'id' )
+                    self.edit_hda_attribute_info( hda_id, new_name = new_name )
+                    print "Renamed uploaded file to:", new_name
+                else:
+                    raise Exception( 'edit_attributes type (%s) is unimplemented' % edit_att.get( 'type', None ) )
         # We need to handle the case where we've uploaded a valid compressed file since the upload
         # tool will have uncompressed it on the fly.
         all_inputs = {}

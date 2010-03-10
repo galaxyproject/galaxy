@@ -510,6 +510,7 @@ class Tool:
         store in `self.tests`.
         """
         self.tests = []
+        composite_data_names_counter = 0 #composite datasets need a unique name: each test occurs in a fresh history, but we'll keep it unique per set of tests
         for i, test_elem in enumerate( tests_elem.findall( 'test' ) ):
             name = test_elem.get( 'name', 'Test-%d' % (i+1) )
             maxseconds = int( test_elem.get( 'maxseconds', '120' ) )
@@ -524,6 +525,28 @@ class Tool:
                     else:
                         value = None
                     attrib['children'] = list( param_elem.getchildren() )
+                    if attrib['children']:
+                        #at this time, we can assume having children only occurs on DataToolParameter test items
+                        #but this could change and would cause the below parsing to change based upon differences in children items
+                        attrib['metadata'] = []
+                        attrib['composite_data'] = []
+                        attrib['edit_attributes'] = []
+                        composite_data_name = None #composite datasets need to be renamed uniquely
+                        for child in attrib['children']:
+                            if child.tag == 'composite_data':
+                                attrib['composite_data'].append( child )
+                                if composite_data_name is None:
+                                    #generate a unique name; each test uses a fresh history
+                                    composite_data_name = '_COMPOSITE_RENAMED %i_' % ( composite_data_names_counter )
+                                    composite_data_names_counter += 1
+                            elif child.tag == 'metadata':
+                                attrib['metadata'].append( child )
+                            elif child.tag == 'metadata':
+                                attrib['metadata'].append( child )
+                            elif child.tag == 'edit_attributes':
+                                attrib['edit_attributes'].append( child )
+                        if composite_data_name:
+                            attrib['edit_attributes'].insert( 0, { 'type': 'name', 'value': composite_data_name } ) #composite datasets need implicit renaming; inserted at front of list so explicit declarations take precedence
                     test.add_param( attrib.pop( 'name' ), value, attrib )
                 for output_elem in test_elem.findall( "output" ):
                     attrib = dict( output_elem.attrib )

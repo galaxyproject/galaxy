@@ -30,12 +30,15 @@ class ToolTestBuilder( object ):
                     if isinstance( input_value, grouping.Conditional ) or isinstance( input_value, grouping.Repeat ):
                         self.__expand_grouping_for_data_input(name, value, extra, input_name, input_value)
             elif isinstance( self.tool.inputs[name], parameters.DataToolParameter ) and ( value, extra ) not in self.required_files:
-                if value is None and len( [ child for child in extra.get( 'children', [] ) if child.tag == 'composite_data' ] ) == 0:
+                name_change = [ att for att in extra.get( 'edit_attributes', [] ) if att.get( 'type' ) == 'name' ]
+                if name_change:
+                    name_change = name_change[-1].get( 'value' ) #only the last name change really matters
+                if value is None and not name_change:
                     assert self.tool.inputs[name].optional, '%s is not optional. You must provide a valid filename.' % name
                 else:
-                    self.required_files.append( ( value, extra ) )
-                    if value is None and len( [ child for child in extra.get( 'children', [] ) if child.tag == 'composite_data' ] ) > 0:
-                        value = extra.get( 'ftype' )
+                    self.required_files.append( ( value, extra ) ) #these files will be uploaded
+                    if name_change:
+                        value = name_change #change value for select to renamed uploaded file for e.g. composite dataset
         except Exception, e:
             log.debug( "Error in add_param for %s: %s" % ( name, e ) )
         self.inputs.append( ( name, value, extra ) )
