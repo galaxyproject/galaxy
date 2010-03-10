@@ -124,33 +124,33 @@ for i in range(ncomps):
 
 ftest=ftest.as_py()
 print >>fout, "#Component\t%s" %("\t".join(["%s" % el for el in range(1,ncomps+1)]))
-print >>fout, "#Correlation\t%s" %("\t".join(["%s" % el for el in corr]))
-print >>fout, "#F-statistic\t%s" %("\t".join(["%s" % el for el in ftest['statistic']]))
-print >>fout, "#p-value\t%s" %("\t".join(["%s" % el for el in ftest['p.value']]))
+print >>fout, "#Correlation\t%s" %("\t".join(["%.4g" % el for el in corr]))
+print >>fout, "#F-statistic\t%s" %("\t".join(["%.4g" % el for el in ftest['statistic']]))
+print >>fout, "#p-value\t%s" %("\t".join(["%.4g" % el for el in ftest['p.value']]))
 
 print >>fout, "#X-Coefficients\t%s" %("\t".join(["%s" % el for el in range(1,ncomps+1)]))
 for i,val in enumerate(summary['xcoef']):
-    print >>fout, "%s\t%s" %(xlab[i], "\t".join(["%s" % el for el in val]))
+    print >>fout, "%s\t%s" %(xlab[i], "\t".join(["%.4g" % el for el in val]))
 
 print >>fout, "#Y-Coefficients\t%s" %("\t".join(["%s" % el for el in range(1,ncomps+1)]))
 for i,val in enumerate(summary['ycoef']):
-    print >>fout, "%s\t%s" %(ylab[i], "\t".join(["%s" % el for el in val]))
+    print >>fout, "%s\t%s" %(ylab[i], "\t".join(["%.4g" % el for el in val]))
        
 print >>fout, "#X-Loadings\t%s" %("\t".join(["%s" % el for el in range(1,ncomps+1)]))
 for i,val in enumerate(summary['xstructcorr']):
-    print >>fout, "%s\t%s" %(xlab[i], "\t".join(["%s" % el for el in val]))
+    print >>fout, "%s\t%s" %(xlab[i], "\t".join(["%.4g" % el for el in val]))
 
 print >>fout, "#Y-Loadings\t%s" %("\t".join(["%s" % el for el in range(1,ncomps+1)]))
 for i,val in enumerate(summary['ystructcorr']):
-    print >>fout, "%s\t%s" %(ylab[i], "\t".join(["%s" % el for el in val]))
+    print >>fout, "%s\t%s" %(ylab[i], "\t".join(["%.4g" % el for el in val]))
 
 print >>fout, "#X-CrossLoadings\t%s" %("\t".join(["%s" % el for el in range(1,ncomps+1)]))
 for i,val in enumerate(summary['xcrosscorr']):
-    print >>fout, "%s\t%s" %(xlab[i], "\t".join(["%s" % el for el in val]))
+    print >>fout, "%s\t%s" %(xlab[i], "\t".join(["%.4g" % el for el in val]))
 
 print >>fout, "#Y-CrossLoadings\t%s" %("\t".join(["%s" % el for el in range(1,ncomps+1)]))
 for i,val in enumerate(summary['ycrosscorr']):
-    print >>fout, "%s\t%s" %(ylab[i], "\t".join(["%s" % el for el in val]))
+    print >>fout, "%s\t%s" %(ylab[i], "\t".join(["%.4g" % el for el in val]))
 
 r.pdf( outfile2, 8, 8 )
 #r.plot(cc)

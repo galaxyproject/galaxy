@@ -40,13 +40,18 @@ for ind,line in enumerate( file( infile )):
     if line and not line.startswith( '#' ):
         try:
             fields = line.strip().split("\t")
+            valid_line = True
             for k,col in enumerate(x_cols):
                 try:
                     xval = float(fields[col])
                 except:
-                    #xval = r('NA')
-                    xval = NaN#
-                x_vals[k].append(xval)
+                    skipped += 1 
+                    valid_line = False
+                    break
+            if valid_line:
+                for k,col in enumerate(x_cols):
+                    xval = float(fields[col])
+                    x_vals[k].append(xval)
         except:
             skipped += 1
 
@@ -71,7 +76,7 @@ for i in range(ncomps):
     sd[comps.index('Comp.%s' %(i+1))] = summary['sdev'].values()[i]
 
 print >>fout, "#Component\t%s" %("\t".join(["%s" % el for el in range(1,ncomps+1)]))
-print >>fout, "#Std. deviation\t%s" %("\t".join(["%s" % el for el in sd]))
+print >>fout, "#Std. deviation\t%s" %("\t".join(["%.4g" % el for el in sd]))
 total_var = 0
 vars = []
 for s in sd:
@@ -81,17 +86,17 @@ for s in sd:
 for i,var in enumerate(vars):
     vars[i] = vars[i]/total_var
        
-print >>fout, "#Proportion of variance explained\t%s" %("\t".join(["%s" % el for el in vars]))
+print >>fout, "#Proportion of variance explained\t%s" %("\t".join(["%.4g" % el for el in vars]))
 
 print >>fout, "#Loadings\t%s" %("\t".join(["%s" % el for el in range(1,ncomps+1)]))
 xcolnames = ["c%d" %(el+1) for el in x_cols]
 for i,val in enumerate(summary['loadings']):
-    print >>fout, "%s\t%s" %(xcolnames[i], "\t".join(["%s" % el for el in val]))
+    print >>fout, "%s\t%s" %(xcolnames[i], "\t".join(["%.4g" % el for el in val]))
 
 print >>fout, "#Scores\t%s" %("\t".join(["%s" % el for el in range(1,ncomps+1)]))
 
 for obs,sc in enumerate(summary['scores']):
-    print >>fout, "%s\t%s" %(obs+1, "\t".join(["%s" % el for el in sc]))
+    print >>fout, "%s\t%s" %(obs+1, "\t".join(["%.4g" % el for el in sc]))
 
 r.pdf( outfile2, 8, 8 )
 r.biplot(pc)

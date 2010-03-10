@@ -116,15 +116,15 @@ for i in range(ncomps):
 
 print >>fout, "#Component\t%s" %("\t".join(["%s" % el for el in range(1,ncomps+1)]))
 
-print >>fout, "#Eigenvalue\t%s" %("\t".join(["%s" % el for el in eig.values()]))
+print >>fout, "#Eigenvalue\t%s" %("\t".join(["%.4g" % el for el in eig.values()]))
     
 print >>fout, "#Principal component vectors\t%s" %("\t".join(["%s" % el for el in range(1,ncomps+1)]))
 for obs,val in enumerate(pcv):
-    print >>fout, "%s\t%s" %(obs+1, "\t".join(["%s" % el for el in val]))
+    print >>fout, "%s\t%s" %(obs+1, "\t".join(["%.4g" % el for el in val]))
 
 print >>fout, "#Rotated values\t%s" %("\t".join(["%s" % el for el in range(1,ncomps+1)]))
 for obs,val in enumerate(rotated):
-    print >>fout, "%s\t%s" %(obs+1, "\t".join(["%s" % el for el in val]))
+    print >>fout, "%s\t%s" %(obs+1, "\t".join(["%.4g" % el for el in val]))
 
 r.pdf( outfile2, 8, 8 )
 if ncomps != 1:
