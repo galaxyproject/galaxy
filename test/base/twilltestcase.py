@@ -23,6 +23,8 @@ logging.getLogger( "ClientCookie.cookies" ).setLevel( logging.WARNING )
 log = logging.getLogger( __name__ )
 
 class TwillTestCase( unittest.TestCase ):
+    composite_extensions = ['html','lped','pbed','fped','pphe','eigenstratgeno','eset','affybatch','malist','test-data' ]
+
 
     def setUp( self ):
         # Security helper
@@ -61,9 +63,10 @@ class TwillTestCase( unittest.TestCase ):
             else:
                 files_differ = True
             if files_differ:
-                allowed_diff_count = attributes.get( 'lines_diff', 0 )
+                allowed_diff_count = int(attributes.get( 'lines_diff', 0 ))
                 diff = list( difflib.unified_diff( local_file, history_data, "local_file", "history_data" ) )
                 diff_lines = get_lines_diff( diff )
+                log.debug('## files diff on %s and %s lines_diff=%d, found diff = %d' % (file1,file2,allowed_diff_count,diff_lines))
                 if diff_lines > allowed_diff_count:
                     diff_slice = diff[0:40]
                     #FIXME: This pdf stuff is rather special cased and has not been updated to consider lines_diff 
@@ -75,7 +78,7 @@ class TwillTestCase( unittest.TestCase ):
                         # PDF files contain creation dates, modification dates, ids and descriptions that change with each
                         # new file, so we need to handle these differences.  As long as the rest of the PDF file does
                         # not differ we're ok.
-                        valid_diff_strs = [ 'description', 'createdate', 'creationdate', 'moddate', 'id' ]
+                        valid_diff_strs = [ 'description', 'createdate', 'creationdate', 'moddate', 'id', 'producer', 'creator' ]
                         valid_diff = False
                         for line in diff_slice:
                             # Make sure to lower case strings before checking.
@@ -109,7 +112,7 @@ class TwillTestCase( unittest.TestCase ):
             attributes = {}
         if attributes.get( 'sort', False ):
             history_data.sort()
-        lines_diff = attributes.get( 'lines_diff', 0 )
+        lines_diff = int(attributes.get( 'lines_diff', 0 ))
         line_diff_count = 0
         diffs = []
         for i in range( len( history_data ) ):
@@ -194,36 +197,7 @@ class TwillTestCase( unittest.TestCase ):
                 raise AssertionError, "Invalid hid (%s) created when pasting %s" % ( hid, url_paste )
         # Wait for upload processing to finish (TODO: this should be done in each test case instead)
         self.wait()
-    def upload_composite_datatype_file( self, ftype, ped_file='', map_file='', bim_file='', bed_file='', fam_file='', dbkey='unspecified (?)', base_name='rgenetics' ):
-        """Tests uploading either of 2 different composite data types ( lped and pbed )"""
-        self.visit_url( "%s/tool_runner/index?tool_id=upload1" % self.url )
-        # Handle refresh_on_change
-        self.refresh_form( "file_type", ftype )
-        tc.fv( "1", "dbkey", dbkey )
-        tc.fv( "1", "files_metadata|base_name", base_name )
-        if ftype == 'lped':
-            # lped data types include a ped_file and a map_file
-            ped_file = self.get_filename( ped_file )
-            tc.formfile( "1", "files_0|file_data", ped_file )
-            map_file = self.get_filename( map_file )
-            tc.formfile( "1", "files_1|file_data", map_file )
-        elif ftype == 'pbed':
-            # pbed data types include a bim_file, a bed_file and a fam_file
-            bim_file = self.get_filename( bim_file )
-            tc.formfile( "1", "files_0|file_data", bim_file )
-            bed_file = self.get_filename( bed_file )
-            tc.formfile( "1", "files_1|file_data", bed_file )
-            fam_file = self.get_filename( fam_file )
-            tc.formfile( "1", "files_2|file_data", fam_file )
-        else:
-            raise AssertionError, "Unsupported composite data type (%s) received, currently only lped and pbed data types are supported." % ftype
-        tc.submit( "runtool_btn" )
-        self.check_page_for_string( 'The following job has been succesfully added to the queue:' )
-        check_str = 'Uploaded Composite Dataset (%s)' % ftype
-        self.check_page_for_string( check_str )
-        # Wait for upload processing to finish (TODO: this should be done in each test case instead)
-        self.wait()
-        self.check_history_for_string( check_str )
+
     # Functions associated with histories
     def check_history_for_errors( self ):
         """Raises an exception if there are errors in a history"""
@@ -672,7 +646,7 @@ class TwillTestCase( unittest.TestCase ):
     def verify_composite_datatype_file_content( self, file_name, hda_id, base_name = None, attributes = None ):
         local_name = self.get_filename( file_name )
         if base_name is None:
-            base_name = file_name
+            base_name = os.path.split(file_name)[-1]
         temp_name = self.get_filename( '%s_temp' % file_name ) #This is a terrible way to generate a temp name
         self.visit_url( "%s/datasets/%s/display/%s" % ( self.url, self.security.encode_id( hda_id ), base_name ) )
         data = self.last_page()
@@ -915,9 +889,14 @@ class TwillTestCase( unittest.TestCase ):
         # To help with debugging a tool, print out the form controls when the test fails
         print "form '%s' contains the following controls ( note the values )" % f.name
         control_names = []
+        hidden_control_names = [] # cannot change these, so ignore or many complex page tool tests will fail
+        hc_prefix = '<HiddenControl('
         for i, control in enumerate( f.controls ):
-            print "control %d: %s" % ( i, str( control ) )
-            try:
+           print "control %d: %s" % ( i, str( control ) )
+           if hc_prefix in str(control):
+                hidden_control_names.append(control.name) # cannot do much with these
+           else: 
+              try:
                 #check if a repeat element needs to be added
                 if control.name not in kwd and control.name.endswith( '_add' ):
                     #control name doesn't exist, could be repeat
@@ -946,12 +925,14 @@ class TwillTestCase( unittest.TestCase ):
                         # Submit for refresh
                         tc.submit( '___refresh_grouping___' )
                         return self.submit_form( form_no=form_no, button=button, **kwd )
-            except Exception, e:
+              except Exception, e:
                 log.debug( "In submit_form, continuing, but caught exception: %s" % str( e ) )
                 continue
-            control_names.append( control.name )
+              control_names.append( control.name )
         # No refresh_on_change attribute found in current form, so process as usual
         for control_name, control_value in kwd.items():
+            if control_name in hidden_control_names:
+                continue # these cannot be handled safely - cause the test to barf out
             if not isinstance( control_value, list ):
                 control_value = [ control_value ]
             try:

@@ -99,6 +99,10 @@ class UploadDataset( Group ):
         self.default_file_type = 'txt'
         self.file_type_to_ext = { 'auto':self.default_file_type }
         self.metadata_ref = 'files_metadata'
+    def get_file_base_name( self, context ):
+        log.debug('### uploadDataset get base name context = %s' % str(context))
+        fd = context.get('files_metadata|base_name','?')
+        return fd
     def get_file_type( self, context ):
         return context.get( self.file_type_name, self.default_file_type )
     def get_datatype_ext( self, trans, context ):
@@ -291,15 +295,13 @@ class UploadDataset( Group ):
                 temp_name, is_multi_byte = sniff.stream_to_file( StringIO.StringIO( d_type.generate_primary_file( dataset ) ), prefix='upload_auto_primary_file' )
                 dataset.primary_file = temp_name
                 dataset.space_to_tab = False
-                dataset.precreated_name = dataset.name = 'Uploaded Composite Dataset (%s)' % ( file_type )
+                dataset.precreated_name = dataset.name = dataset.metadata['base_name'] # was 'Uploaded Composite Dataset (%s)' % ( file_type )
             else:
                 file_bunch, warnings = get_one_filename( groups_incoming[ 0 ] )
-                if dataset.datatype.composite_type:
-                    precreated_name = 'Uploaded Composite Dataset (%s)' % ( file_type )
                 writable_files_offset = 1
                 dataset.primary_file = file_bunch.path
                 dataset.space_to_tab = file_bunch.space_to_tab
-                dataset.precreated_name = file_bunch.precreated_name
+                dataset.precreated_name = dataset.metadata['base_name'] # file_bunch.precreated_name
                 dataset.name = file_bunch.precreated_name
                 dataset.warnings.extend( file_bunch.warnings )
             if dataset.primary_file is None:#remove this before finish, this should create an empty dataset

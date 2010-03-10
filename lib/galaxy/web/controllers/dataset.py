@@ -1,4 +1,4 @@
-import logging, os, string, shutil, re, socket, mimetypes, smtplib, urllib
+import logging, os, string, shutil, re, socket, mimetypes, smtplib, urllib, tempfile, zipfile, glob
 
 from galaxy.web.base.controller import *
 from galaxy.web.framework.helpers import time_ago, iff, grids
@@ -7,10 +7,29 @@ from cgi import escape, FieldStorage
 from galaxy.datatypes.display_applications.util import encode_dataset_user, decode_dataset_user
 
 from email.MIMEText import MIMEText
-
 import pkg_resources; 
 pkg_resources.require( "Paste" )
 import paste.httpexceptions
+
+tmpd = tempfile.mkdtemp()
+comptypes=[]
+ziptype = '32'
+tmpf = os.path.join( tmpd, 'compression_test.zip' )
+try:
+    archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED, True )
+    archive.close()
+    comptypes.append( 'zip' )
+    ziptype = '64'
+except RuntimeError:
+    log.exception( "Compression error when testing zip compression. This option will be disabled for library downloads." )
+except (TypeError, zipfile.LargeZipFile):    # ZIP64 is only in Python2.5+.  Remove TypeError when 2.4 support is dropped
+    log.warning( 'Max zip file size is 2GB, ZIP64 not supported' )    
+    comptypes.append( 'zip' )
+try:
+    os.unlink( tmpf )
+except OSError:
+    pass
+os.rmdir( tmpd )
 
 log = logging.getLogger( __name__ )
 
@@ -182,6 +201,97 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistoryDatasetAssoc
         return 'This link may not be followed from within Galaxy.'
     
     @web.expose
+    def archive_composite_dataset( self, trans, data=None, **kwd ):
+        # save a composite object into a compressed archive for downloading
+        params = util.Params( kwd )
+        if (params.do_action == None):
+     	    params.do_action = 'zip' # default
+        msg = util.restore_text( params.get( 'msg', ''  ) )
+        messagetype = params.get( 'messagetype', 'done' )
+        if not data:
+            msg = "You must select at least one dataset"
+            messagetype = 'error'
+        else:
+            error = False
+            try:
+                if (params.do_action == 'zip'): 
+                    # Can't use mkstemp - the file must not exist first
+                    tmpd = tempfile.mkdtemp()
+                    tmpf = os.path.join( tmpd, 'library_download.' + params.do_action )
+                    if ziptype == '64':
+                        archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED, True )
+                    else:
+                        archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED )
+                    archive.add = lambda x, y: archive.write( x, y.encode('CP437') )
+                elif params.do_action == 'tgz':
+                    archive = util.streamball.StreamBall( 'w|gz' )
+                elif params.do_action == 'tbz':
+                    archive = util.streamball.StreamBall( 'w|bz2' )
+            except (OSError, zipfile.BadZipFile):
+                error = True
+                log.exception( "Unable to create archive for download" )
+                msg = "Unable to create archive for %s for download, please report this error" % data.name
+                messagetype = 'error'
+            if not error:
+                current_user_roles = trans.get_current_user_roles()
+                ext = data.extension
+                path = data.file_name
+                fname = os.path.split(path)[-1]
+                basename = data.metadata.base_name
+                efp = data.extra_files_path
+                htmlname = os.path.splitext(data.name)[0]
+                if not htmlname.endswith(ext):
+                    htmlname = '%s_%s' % (htmlname,ext)
+                archname = '%s.html' % htmlname # fake the real nature of the html file
+                try:
+                    archive.add(data.file_name,archname)
+                except IOError:
+                    error = True
+                    log.exception( "Unable to add composite parent %s to temporary library download archive" % data.file_name)
+                    msg = "Unable to create archive for download, please report this error"
+                    messagetype = 'error'
+                flist = glob.glob(os.path.join(efp,'*.*')) # glob returns full paths
+                for fpath in flist:
+                    efp,fname = os.path.split(fpath)
+                    try:
+                        archive.add( fpath,fname )
+                    except IOError:
+                        error = True
+                        log.exception( "Unable to add %s to temporary library download archive" % fname)
+                        msg = "Unable to create archive for download, please report this error"
+                        messagetype = 'error'
+                        continue
+                if not error:    
+                    if params.do_action == 'zip':
+                        archive.close()
+                        tmpfh = open( tmpf )
+                        # clean up now
+                        try:
+                            os.unlink( tmpf )
+                            os.rmdir( tmpd )
+                        except OSError:
+                            error = True
+                            msg = "Unable to remove temporary library download archive and directory"
+                            log.exception( msg )
+                            messagetype = 'error'
+                        if not error:
+                            trans.response.set_content_type( "application/x-zip-compressed" )
+                            trans.response.headers[ "Content-Disposition" ] = "attachment; filename=GalaxyCompositeObject.zip" 
+                            return tmpfh
+                    else:
+                        trans.response.set_content_type( "application/x-tar" )
+                        outext = 'tgz'
+                        if params.do_action == 'tbz':
+                            outext = 'tbz'
+                        trans.response.headers[ "Content-Disposition" ] = "attachment; filename=GalaxyLibraryFiles.%s" % outext 
+                        archive.wsgi_status = trans.response.wsgi_status()
+                        archive.wsgi_headeritems = trans.response.wsgi_headeritems()
+                        return archive.stream
+        return trans.show_error_message( msg )
+
+
+    
+    @web.expose
     def display(self, trans, dataset_id=None, preview=False, filename=None, to_ext=None, **kwd):
         """Catches the dataset id and displays file contents as directed"""
         
@@ -219,15 +329,19 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistoryDatasetAssoc
             trans.log_event( "Display dataset id: %s" % str( dataset_id ) )
             
             if to_ext: # Saving the file
-                trans.response.headers['Content-Length'] = int( os.stat( data.file_name ).st_size )
-                if to_ext[0] != ".":
-                    to_ext = "." + to_ext
-                valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-                fname = data.name
-                fname = ''.join(c in valid_chars and c or '_' for c in fname)[0:150]
-                trans.response.headers["Content-Disposition"] = "attachment; filename=GalaxyHistoryItem-%s-[%s]%s" % (data.hid, fname, to_ext)
-                return open( data.file_name )
-                
+                composite_extensions = trans.app.datatypes_registry.get_composite_extensions( )
+                composite_extensions.append('html')
+                if data.ext in composite_extensions:
+                    return self.archive_composite_dataset( trans, data, **kwd )
+                else:                    
+                    trans.response.headers['Content-Length'] = int( os.stat( data.file_name ).st_size )
+                    if to_ext[0] != ".":
+                        to_ext = "." + to_ext
+                    valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+                    fname = data.name
+                    fname = ''.join(c in valid_chars and c or '_' for c in fname)[0:150]
+                    trans.response.headers["Content-Disposition"] = "attachment; filename=GalaxyHistoryItem-%s-[%s]%s" % (data.hid, fname, to_ext)
+                    return open( data.file_name )
             if os.path.exists( data.file_name ):
                 max_peek_size = 1000000 # 1 MB
                 if preview and os.stat( data.file_name ).st_size > max_peek_size:
@@ -367,7 +481,10 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistoryDatasetAssoc
             raise paste.httpexceptions.HTTPRequestRangeNotSatisfiable( "Invalid reference dataset id: %s." % str( dataset_id ) )
         if 'display_url' not in kwd or 'redirect_url' not in kwd:
             return trans.show_error_message( 'Invalid parameters specified for "display at" link, please contact a Galaxy administrator' )
-        redirect_url = kwd['redirect_url'] % urllib.quote_plus( kwd['display_url'] )
+        try:
+              redirect_url = kwd['redirect_url'] % urllib.quote_plus( kwd['display_url'] )
+        except:
+              redirect_url = kwd['redirect_url'] # not all will need custom text
         current_user_roles = trans.get_current_user_roles()
         if trans.app.security_agent.dataset_is_public( data.dataset ):
             return trans.response.send_redirect( redirect_url ) # anon access already permitted by rbac
@@ -591,4 +708,3 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistoryDatasetAssoc
             status = SUCCESS
             message = done_msg
         return status, message
-        

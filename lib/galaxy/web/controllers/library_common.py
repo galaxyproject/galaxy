@@ -1098,6 +1098,7 @@ class LibraryCommon( BaseController ):
     def download_dataset_from_folder( self, trans, cntrller, id, library_id=None, **kwd ):
         """Catches the dataset id and displays file contents as directed"""
         show_deleted = util.string_as_bool( kwd.get( 'show_deleted', False ) )
+        params = util.Params( kwd )        
         use_panels = util.string_as_bool( params.get( 'use_panels', False ) )
         ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( id ) )
         if not ldda.dataset:
