@@ -161,3 +161,4 @@ def build_tests():
                 m.__doc__ = "%s ( %s ) > %s" % ( tool.name, tool.id, testdef.name )
                 d['test_tool_%06d' % j] = m
             G[ n ] = new.classobj( n, s, d )
+

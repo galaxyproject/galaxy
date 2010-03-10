@@ -196,6 +196,60 @@ class TwillTestCase( unittest.TestCase ):
         # Wait for upload processing to finish (TODO: this should be done in each test case instead)
         self.wait()
 
+    def upload_composite_datatype_file( self, ftype, ped_file='', map_file='', bim_file='', bed_file='',
+           fped_file='',fphe_file='',pphe_file='',fam_file='',pheno_file='',eset_file='',malist_file='',
+           affybatch_file='', dbkey='unspecified (?)', base_name='rgenetics' ):
+        """Tests uploading either of 2 different composite data types ( lped and pbed )"""
+        self.visit_url( "%s/tool_runner/index?tool_id=upload1" % self.url )
+        # Handle refresh_on_change
+        self.refresh_form( "file_type", ftype )
+        tc.fv( "1", "dbkey", dbkey )
+        tc.fv( "1", "files_metadata|base_name", base_name )
+        if ftype == 'lped':
+            # lped data types include a ped_file and a map_file
+            ped_file = self.get_filename( ped_file )
+            tc.formfile( "1", "files_0|file_data", ped_file )
+            map_file = self.get_filename( map_file )
+            tc.formfile( "1", "files_1|file_data", map_file )
+        elif ftype == 'pbed':
+            # pbed data types include a bim_file, a bed_file and a fam_file
+            bim_file = self.get_filename( bim_file )
+            tc.formfile( "1", "files_0|file_data", bim_file )
+            bed_file = self.get_filename( bed_file )
+            tc.formfile( "1", "files_1|file_data", bed_file )
+            fam_file = self.get_filename( fam_file )
+            tc.formfile( "1", "files_2|file_data", fam_file )
+        elif ftype == 'pphe':
+            # pphe data types include a phe_file
+            pphe_file = self.get_filename( pphe_file )
+            tc.formfile( "1", "files_0|file_data", pphe_file )
+        elif ftype == 'fped':
+            # fped data types include an fped_file only
+            fped_file = self.get_filename( fped_file )
+            tc.formfile( "1", "files_0|file_data", fped_file )
+        elif ftype == 'eset':
+            # eset data types include a eset_file, a pheno_file
+            eset_file = self.get_filename( eset_file )
+            tc.formfile( "1", "files_0|file_data", eset_file )
+            pheno_file = self.get_filename( pheno_file )
+            tc.formfile( "1", "files_1|file_data", pheno_file )
+        elif ftype == 'affybatch':
+            # affybatch data types include an affybatch_file, and a pheno_file
+            affybatch_file = self.get_filename( affybatch_file )
+            tc.formfile( "1", "files_0|file_data", affybatch_file )
+            pheno_file = self.get_filename( pheno_file )
+            tc.formfile( "1", "files_1|file_data", pheno_file )
+        else:
+            raise AssertionError, "Unsupported composite data type (%s) received, currently only %s data types are supported."\
+                 % (ftype,','.join(self.composite_extensions))
+        tc.submit( "runtool_btn" )
+        self.check_page_for_string( 'The following job has been succesfully added to the queue:' )
+        check_str = base_name #'Uploaded Composite Dataset (%s)' % ftype
+        self.check_page_for_string( check_str )
+        # Wait for upload processing to finish (TODO: this should be done in each test case instead)
+        self.wait()
+        self.check_history_for_string( check_str )
+
     # Functions associated with histories
     def check_history_for_errors( self ):
         """Raises an exception if there are errors in a history"""

@@ -183,7 +183,7 @@ class UploadData( TwillTestCase ):
         # We'll test against the resulting ped file and map file for correctness
         self.verify_composite_datatype_file_content( 'rgenetics.ped', str( hda.id ) )
         self.verify_composite_datatype_file_content( 'rgenetics.map', str( hda.id ) )
-        self.check_history_for_string( "Uploaded Composite Dataset (lped)" )
+        self.check_history_for_string( "rgenetics" )
         self.delete_history( id=self.security.encode_id( history.id ) )
     def test_0060_upload_file( self ):
         """Test uploading pbed composite datatype file, manually setting the file format"""
@@ -205,7 +205,7 @@ class UploadData( TwillTestCase ):
         self.verify_composite_datatype_file_content( 'rgenetics.bim', str( hda.id ) )
         self.verify_composite_datatype_file_content( 'rgenetics.bed', str( hda.id ) )
         self.verify_composite_datatype_file_content( 'rgenetics.fam', str( hda.id ) )
-        self.check_history_for_string( "Uploaded Composite Dataset (pbed)" )
+        self.check_history_for_string( "rgenetics" )
         self.delete_history( id=self.security.encode_id( history.id ) )
     def test_0065_upload_file( self ):
         """Test uploading asian_chars_1.txt, NOT setting the file format"""
