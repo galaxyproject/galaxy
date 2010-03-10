@@ -235,7 +235,3 @@ class LibraryAdmin( BaseController ):
                                                               show_deleted=show_deleted,
                                                               msg=msg,
                                                               messagetype=status ) )
-    @web.expose
-    @web.require_admin
-    def upload_library_dataset( self, trans, library_id, folder_id, **kwd ):
-        return trans.webapp.controllers[ 'library_common' ].upload_library_dataset( trans, 'library_admin', library_id, folder_id, **kwd )

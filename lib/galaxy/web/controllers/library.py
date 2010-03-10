@@ -34,6 +34,3 @@ class Library( BaseController ):
                                     default_action=params.get( 'default_action', None ),
                                     msg=msg,
                                     messagetype=messagetype )
-    @web.expose
-    def upload_library_dataset( self, trans, library_id, folder_id, **kwd ):
-        return trans.webapp.controllers[ 'library_common' ].upload_library_dataset( trans, 'library', library_id, folder_id, **kwd )
