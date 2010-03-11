@@ -1,4 +1,4 @@
-import logging, os, string, shutil, re, socket, mimetypes, smtplib, urllib, tempfile, zipfile, glob
+import logging, os, string, shutil, re, socket, mimetypes, smtplib, urllib, tempfile, zipfile, glob, sys
 
 from galaxy.web.base.controller import *
 from galaxy.web.framework.helpers import time_ago, iff, grids
@@ -10,6 +10,11 @@ from email.MIMEText import MIMEText
 import pkg_resources; 
 pkg_resources.require( "Paste" )
 import paste.httpexceptions
+
+if sys.version_info[:2] < ( 2, 6 ):
+    zipfile.BadZipFile = zipfile.error
+if sys.version_info[:2] < ( 2, 5 ):
+    zipfile.LargeZipFile = zipfile.error
 
 tmpd = tempfile.mkdtemp()
 comptypes=[]
@@ -204,6 +209,9 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistoryDatasetAssoc
     def archive_composite_dataset( self, trans, data=None, **kwd ):
         # save a composite object into a compressed archive for downloading
         params = util.Params( kwd )
+        valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+        outfname = data.name[0:150]
+        outfname = ''.join(c in valid_chars and c or '_' for c in outfname)
         if (params.do_action == None):
      	    params.do_action = 'zip' # default
         msg = util.restore_text( params.get( 'msg', ''  ) )
@@ -230,7 +238,7 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistoryDatasetAssoc
             except (OSError, zipfile.BadZipFile):
                 error = True
                 log.exception( "Unable to create archive for download" )
-                msg = "Unable to create archive for %s for download, please report this error" % data.name
+                msg = "Unable to create archive for %s for download, please report this error" % outfname
                 messagetype = 'error'
             if not error:
                 current_user_roles = trans.get_current_user_roles()
@@ -239,7 +247,7 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistoryDatasetAssoc
                 fname = os.path.split(path)[-1]
                 basename = data.metadata.base_name
                 efp = data.extra_files_path
-                htmlname = os.path.splitext(data.name)[0]
+                htmlname = os.path.splitext(outfname)[0]
                 if not htmlname.endswith(ext):
                     htmlname = '%s_%s' % (htmlname,ext)
                 archname = '%s.html' % htmlname # fake the real nature of the html file
@@ -276,14 +284,14 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistoryDatasetAssoc
                             messagetype = 'error'
                         if not error:
                             trans.response.set_content_type( "application/x-zip-compressed" )
-                            trans.response.headers[ "Content-Disposition" ] = "attachment; filename=GalaxyCompositeObject.zip" 
+                            trans.response.headers[ "Content-Disposition" ] = "attachment; filename=%s.zip" % outfname 
                             return tmpfh
                     else:
                         trans.response.set_content_type( "application/x-tar" )
                         outext = 'tgz'
                         if params.do_action == 'tbz':
                             outext = 'tbz'
-                        trans.response.headers[ "Content-Disposition" ] = "attachment; filename=GalaxyLibraryFiles.%s" % outext 
+                        trans.response.headers[ "Content-Disposition" ] = "attachment; filename=%s.%s" % (outfname,outext) 
                         archive.wsgi_status = trans.response.wsgi_status()
                         archive.wsgi_headeritems = trans.response.wsgi_headeritems()
                         return archive.stream
@@ -294,7 +302,8 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistoryDatasetAssoc
     @web.expose
     def display(self, trans, dataset_id=None, preview=False, filename=None, to_ext=None, **kwd):
         """Catches the dataset id and displays file contents as directed"""
-        
+        composite_extensions = trans.app.datatypes_registry.get_composite_extensions( )
+        composite_extensions.append('html') # for archiving composite datatypes
         # DEPRECATION: We still support unencoded ids for backward compatibility
         try:
             dataset_id = int( dataset_id )
@@ -329,8 +338,6 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistoryDatasetAssoc
             trans.log_event( "Display dataset id: %s" % str( dataset_id ) )
             
             if to_ext: # Saving the file
-                composite_extensions = trans.app.datatypes_registry.get_composite_extensions( )
-                composite_extensions.append('html')
                 if data.ext in composite_extensions:
                     return self.archive_composite_dataset( trans, data, **kwd )
                 else:                    
@@ -340,7 +347,7 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistoryDatasetAssoc
                     valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
                     fname = data.name
                     fname = ''.join(c in valid_chars and c or '_' for c in fname)[0:150]
-                    trans.response.headers["Content-Disposition"] = "attachment; filename=GalaxyHistoryItem-%s-[%s]%s" % (data.hid, fname, to_ext)
+                    trans.response.headers["Content-Disposition"] = "attachment; filename=Galaxy%s-[%s]%s" % (data.hid, fname, to_ext)
                     return open( data.file_name )
             if os.path.exists( data.file_name ):
                 max_peek_size = 1000000 # 1 MB

@@ -1312,6 +1312,7 @@ class LibraryCommon( BaseController ):
             else:
                 error = False
                 try:
+                    outext = 'zip'
                     if action == 'zip':
                         # Can't use mkstemp - the file must not exist first
                         tmpd = tempfile.mkdtemp()
@@ -1323,8 +1324,10 @@ class LibraryCommon( BaseController ):
                         archive.add = lambda x, y: archive.write( x, y.encode('CP437') )
                     elif action == 'tgz':
                         archive = util.streamball.StreamBall( 'w|gz' )
+                        outext = 'gz'
                     elif action == 'tbz':
                         archive = util.streamball.StreamBall( 'w|bz2' )
+                        outext = 'bz2'
                 except (OSError, zipfile.BadZipFile):
                     error = True
                     log.exception( "Unable to create archive for download" )
@@ -1357,11 +1360,11 @@ class LibraryCommon( BaseController ):
                         seen.append( path )
                         if is_composite: # need to add all the components from the extra_files_path to the zip
                             zpath = os.path.split(path)[-1] # comes as base_name/fname
-                            zpathext = os.path.splitext(zpath)[-1]
+                            outfname,zpathext = os.path.splitext(zpath)
                             if zpathext == '':
                                 zpath = '%s.html' % zpath # fake the real nature of the html file 
                             try:
-                                archive.add(ldda.dataset.file_name,zpath)
+                                archive.add(ldda.dataset.file_name,zpath) # add the primary of a composite set
                             except IOError:
                                 error = True
                                 log.exception( "Unable to add composite parent %s to temporary library download archive" % ldda.dataset.file_name)
@@ -1375,7 +1378,7 @@ class LibraryCommon( BaseController ):
                                     archive.add( fpath,fname )
                                 except IOError:
                                     error = True
-                                    log.exception( "Unable to add %s to temporary library download archive" % fname)
+                                    log.exception( "Unable to add %s to temporary library download archive %s" % (fname,outfname))
                                     msg = "Unable to create archive for download, please report this error"
                                     messagetype = 'error'
                                     continue
@@ -1402,11 +1405,11 @@ class LibraryCommon( BaseController ):
                                 messagetype = 'error'
                             if not error:
                                 trans.response.set_content_type( "application/x-zip-compressed" )
-                                trans.response.headers[ "Content-Disposition" ] = "attachment; filename=GalaxyLibraryFiles.%s" % action
+                                trans.response.headers[ "Content-Disposition" ] = "attachment; filename=%s.%s" % (outfname,outext)
                                 return tmpfh
                         else:
                             trans.response.set_content_type( "application/x-tar" )
-                            trans.response.headers[ "Content-Disposition" ] = "attachment; filename=GalaxyLibraryFiles.%s" % action
+                            trans.response.headers[ "Content-Disposition" ] = "attachment; filename=%s.%s" % (outfname,outext)
                             archive.wsgi_status = trans.response.wsgi_status()
                             archive.wsgi_headeritems = trans.response.wsgi_headeritems()
                             return archive.stream
