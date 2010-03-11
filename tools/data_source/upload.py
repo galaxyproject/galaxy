@@ -138,6 +138,7 @@ def parse_outputs( args ):
 def add_file( dataset, json_file, output_path ):
     data_type = None
     line_count = None
+    converted_path = None
 
     if dataset.type == 'url':
         try:
@@ -239,10 +240,15 @@ def add_file( dataset, json_file, output_path ):
                 file_err( 'The uploaded file contains inappropriate content', dataset, json_file )
                 return
         if data_type != 'binary' and data_type != 'zip':
-            if dataset.space_to_tab:
-                line_count = sniff.convert_newlines_sep2tabs( dataset.path )
-            else:
-                line_count = sniff.convert_newlines( dataset.path )
+            # don't convert newlines on data we're only going to symlink
+            if not dataset.get( 'link_data_only', False ):
+                in_place = True
+                if dataset.type in ( 'server_dir', 'path_paste' ):
+                    in_place = False
+                if dataset.space_to_tab:
+                    line_count, converted_path = sniff.convert_newlines_sep2tabs( dataset.path, in_place=in_place )
+                else:
+                    line_count, converted_path = sniff.convert_newlines( dataset.path, in_place=in_place )
             if dataset.file_type == 'auto':
                 ext = sniff.guess_ext( dataset.path )
             else:
@@ -257,7 +263,15 @@ def add_file( dataset, json_file, output_path ):
     if dataset.get( 'link_data_only', False ):
         pass # data will remain in place
     elif dataset.type in ( 'server_dir', 'path_paste' ):
-        shutil.copy( dataset.path, output_path )
+        if converted_path is not None:
+            shutil.copy( converted_path, output_path )
+            try:
+                os.remove( converted_path )
+            except:
+                pass
+        else:
+            # this should not happen, but it's here just in case
+            shutil.copy( dataset.path, output_path )
     else:
         shutil.move( dataset.path, output_path )
     # Write the job info
