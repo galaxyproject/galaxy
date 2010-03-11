@@ -15,10 +15,7 @@
             <!-- <display file="ucsc/interval_as_bed.xml" /> -->
             <display file="genetrack.xml" />
         </datatype>
-        <datatype extension="bedstrict" type="galaxy.datatypes.interval:BedStrict">
-            <display file="ucsc/interval_as_bed.xml" />
-            <display file="genetrack.xml" />
-        </datatype>
+        <datatype extension="bedstrict" type="galaxy.datatypes.interval:BedStrict" />
         <datatype extension="binseq.zip" type="galaxy.datatypes.binary:Binseq" mimetype="application/zip" display_in_upload="true"/>
         <datatype extension="len" type="galaxy.datatypes.chrominfo:ChromInfo" display_in_upload="true">
             <!-- no converters yet -->
@@ -51,8 +48,8 @@
             <converter file="interval_to_bed_converter.xml" target_datatype="bed"/>
             <converter file="interval_to_bedstrict_converter.xml" target_datatype="bedstrict"/>
             <indexer file="interval_awk.xml" />
-            <!-- <display file="ucsc/interval_as_bed.xml" /> -->
-            <display file="genetrack.xml" />
+            <!-- <display file="ucsc/interval_as_bed.xml" inherit="True" /> -->
+            <display file="genetrack.xml" inherit="True"/>
         </datatype>
         <datatype extension="jpg" type="galaxy.datatypes.images:Image" mimetype="image/jpeg"/>
         <datatype extension="laj" type="galaxy.datatypes.images:Laj"/>

@@ -205,6 +205,15 @@ class Data( object ):
         """New style display applications"""
         assert display_application.id not in self.display_applications, 'Attempted to add a display application twice'
         self.display_applications[ display_application.id ] = display_application
+    def get_display_application( self, key, default = None ):
+        return self.display_applications.get( key, default )
+    def get_display_applications_by_dataset( self, dataset, trans ):
+        rval = odict()
+        for key, value in self.display_applications.iteritems():
+            value = value.filter_by_dataset( dataset, trans )
+            if value.links:
+                rval[key] = value
+        return rval
     def get_display_types(self):
         """Returns display types available"""
         return self.supported_display_apps.keys()

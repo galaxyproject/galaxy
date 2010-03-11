@@ -25,6 +25,7 @@ class Registry( object ):
         self.sniff_order = []
         self.upload_file_formats = []
         self.display_applications = odict() #map a display application id to a display application
+        inherit_display_application_by_class = []
         if root_dir and config:
             # Parse datatypes_conf.xml
             tree = galaxy.util.parse_xml( config )
@@ -42,11 +43,11 @@ class Registry( object ):
             for elem in registration.findall( 'datatype' ):
                 try:
                     extension = elem.get( 'extension', None ) 
-                    type = elem.get( 'type', None )
+                    dtype = elem.get( 'type', None )
                     mimetype = elem.get( 'mimetype', None )
                     display_in_upload = elem.get( 'display_in_upload', False )
-                    if extension and type:
-                        fields = type.split( ':' )
+                    if extension and dtype:
+                        fields = dtype.split( ':' )
                         datatype_module = fields[0]
                         datatype_class = fields[1]
                         fields = datatype_module.split( '.' )
@@ -85,27 +86,36 @@ class Registry( object ):
                         for display_app in elem.findall( 'display' ):
                             display_file = display_app.get( 'file', None )
                             assert display_file is not None, "A file must be specified for a datatype display tag."
+                            inherit = galaxy.util.string_as_bool( display_app.get( 'inherit', 'False' ) )
                             display_app = DisplayApplication.from_file( os.path.join( self.display_applications_path, display_file ), self )
                             if display_app:
                                 if display_app.id in self.display_applications:
                                     #if we already loaded this display application, we'll use the first one again
                                     display_app = self.display_applications[ display_app.id ]
-                                self.log.debug( "Loaded display application '%s' for datatype '%s'" % ( display_app.id, extension ) )
+                                self.log.debug( "Loaded display application '%s' for datatype '%s', inherit=%s" % ( display_app.id, extension, inherit ) )
                                 self.display_applications[ display_app.id ] = display_app #Display app by id
                                 self.datatypes_by_extension[ extension ].add_display_application( display_app )
-                            
+                                if inherit and ( self.datatypes_by_extension[extension], display_app ) not in inherit_display_application_by_class:
+                                    #subclass inheritance will need to wait until all datatypes have been loaded
+                                    inherit_display_application_by_class.append( ( self.datatypes_by_extension[extension], display_app ) )
                 except Exception, e:
                     self.log.warning( 'Error loading datatype "%s", problem: %s' % ( extension, str( e ) ) )
+            # Handle display_application subclass inheritance here:
+            for ext, d_type1 in self.datatypes_by_extension.iteritems():
+                for d_type2, display_app in inherit_display_application_by_class:
+                    current_app = d_type1.get_display_application( display_app.id, None )
+                    if current_app is None and isinstance( d_type1, type( d_type2 ) ):
+                        d_type1.add_display_application( display_app )
             # Load datatype sniffers from the config
             sniff_order = []
             sniffers = root.find( 'sniffers' )
             for elem in sniffers.findall( 'sniffer' ):
-                type = elem.get( 'type', None )
-                if type:
-                    sniff_order.append( type )
-            for type in sniff_order:
+                dtype = elem.get( 'type', None )
+                if dtype:
+                    sniff_order.append( dtype )
+            for dtype in sniff_order:
                 try:
-                    fields = type.split( ":" )
+                    fields = dtype.split( ":" )
                     datatype_module = fields[0]
                     datatype_class = fields[1]
                     fields = datatype_module.split( "." )
@@ -120,9 +130,9 @@ class Registry( object ):
                             break
                     if not included:
                         self.sniff_order.append( aclass )
-                        self.log.debug( 'Loaded sniffer for datatype: %s' % type )
+                        self.log.debug( 'Loaded sniffer for datatype: %s' % dtype )
                 except Exception, exc:
-                    self.log.warning( 'Error appending datatype %s to sniff_order, problem: %s' % ( type, str( exc ) ) )
+                    self.log.warning( 'Error appending datatype %s to sniff_order, problem: %s' % ( dtype, str( exc ) ) )
         #default values
         if len(self.datatypes_by_extension) < 1:
             self.datatypes_by_extension = { 

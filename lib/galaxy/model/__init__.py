@@ -637,6 +637,9 @@ class DatasetInstance( object ):
             return ( None, None )
         return get_source( self )
 
+    def get_display_applications( self, trans ):
+        return self.datatype.get_display_applications_by_dataset( self, trans )
+
 class HistoryDatasetAssociation( DatasetInstance ):
     def __init__( self, 
                   hid = None, 

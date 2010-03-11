@@ -1,24 +1,27 @@
 #Contains objects for using external display applications
-from galaxy.util import parse_xml
+from galaxy.util import parse_xml, string_as_bool
 from galaxy.util.odict import odict
 from galaxy.util.template import fill_template
 from galaxy.web import url_for
 from parameters import DisplayApplicationParameter, DEFAULT_DATASET_NAME
 from urllib import quote_plus
 from util import encode_dataset_user
+from copy import deepcopy
 
 #Any basic functions that we want to provide as a basic part of parameter dict should be added to this dict
 BASE_PARAMS = { 'qp': quote_plus, 'url_for':url_for } #url_for has route memory...
 
 class DisplayApplicationLink( object ):
     @classmethod
-    def from_elem( cls, elem, display_application ):
+    def from_elem( cls, elem, display_application, other_values = None ):
         rval = DisplayApplicationLink( display_application )
         rval.id = elem.get( 'id', None )
         assert rval.id, 'Link elements require a id.'
         rval.name = elem.get( 'name', rval.id )
         rval.url = elem.find( 'url' )
         assert rval.url is not None, 'A url element must be provided for link elements.'
+        rval.other_values = other_values
+        rval.filters = elem.findall( 'filter' )
         for param_elem in elem.findall( 'param' ):
             param = DisplayApplicationParameter.from_elem( param_elem, rval )
             assert param, 'Unable to load parameter from element: %s' % param_elem
@@ -36,13 +39,19 @@ class DisplayApplicationLink( object ):
         dataset_hash, user_hash = encode_dataset_user( trans, data, None )
         return url_for( controller = '/dataset', action = "display_application", dataset_id = dataset_hash, user_id = user_hash, app_name = self.display_application.id, link_name = self.id, app_action = None )
     def get_inital_values( self, data, trans ):
-        rval = odict( { 'BASE_URL': trans.request.base, 'APP': trans.app } ) #trans automatically appears as a response, need to add properties of trans that we want here
+        if self.other_values:
+            rval = odict( self.other_values )
+        else:
+            rval = odict()
+        rval.update( { 'BASE_URL': trans.request.base, 'APP': trans.app } ) #trans automatically appears as a response, need to add properties of trans that we want here
         for key, value in  BASE_PARAMS.iteritems(): #add helper functions/variables
             rval[ key ] = value
         rval[ DEFAULT_DATASET_NAME ] = data #always have the display dataset name available
         return rval
     def build_parameter_dict( self, data, dataset_hash, user_hash, trans ):
         other_values = self.get_inital_values( data, trans )
+        other_values[ 'DATASET_HASH' ] = dataset_hash
+        other_values[ 'USER_HASH' ] = user_hash
         for name, param in self.parameters.iteritems():
             assert name not in other_values, "The display parameter '%s' has been defined more than once." % name
             if param.ready( other_values ):
@@ -51,6 +60,51 @@ class DisplayApplicationLink( object ):
                 other_values[ name ] = None
                 return False, other_values #need to stop here, next params may need this value
         return True, other_values #we built other_values, lets provide it as well, or else we will likely regenerate it in the next step
+    def filter_by_dataset( self, data, trans ):
+        context = self.get_inital_values( data, trans )
+        for filter_elem in self.filters:
+            if fill_template( filter_elem.text, context = context ) != filter_elem.get( 'value', 'True' ):
+                return False
+        return True
+
+class DynamicDisplayApplicationBuilder( object ):
+    @classmethod
+    def __init__( self, elem, display_application ):
+        rval = []
+        filename = elem.get( 'from_file', None )
+        assert filename is not None, 'Filename and id attributes required for dynamic_links'
+        skip_startswith = elem.get( 'skip_startswith', None )
+        separator = elem.get( 'separator', '\t' )
+        id_col = int( elem.get( 'id', None ) )
+        name_col = int( elem.get( 'name', id_col ) )
+        dynamic_params = {}
+        max_col = max( id_col, name_col )
+        for dynamic_param in elem.findall( 'dynamic_param' ):
+            name = dynamic_param.get( 'name' )
+            value = int( dynamic_param.get( 'value' ) )
+            split = string_as_bool( dynamic_param.get( 'split', False ) )
+            param_separator =  dynamic_param.get( 'separator', ',' )
+            max_col = max( max_col, value )
+            dynamic_params[name] = { 'column': value, 'split': split, 'separator': param_separator }
+        for line in open( filename ):
+            if not skip_startswith or not line.startswith( skip_startswith ):
+                line = line.rstrip( '\n\r' )
+                fields = line.split( separator )
+                if len( fields ) >= max_col:
+                    new_elem = deepcopy( elem )
+                    new_elem.set( 'id', fields[id_col] )
+                    new_elem.set( 'name', fields[name_col] )
+                    dynamic_values = {}
+                    for key, attributes in dynamic_params.iteritems():
+                        value = fields[ attributes[ 'column' ] ]
+                        if attributes['split']:
+                            value = value.split( attributes['separator'] )
+                        dynamic_values[key] = value
+                    #now populate
+                    rval.append( DisplayApplicationLink.from_elem( new_elem, display_application, other_values = dynamic_values ) )
+        self.links = rval
+    def __iter__( self ):
+        return iter( self.links )
 
 class PopulatedDisplayApplicationLink( object ):
     def __init__( self, display_application_link, data, dataset_hash, user_hash, trans ):
@@ -84,9 +138,11 @@ class PopulatedDisplayApplicationLink( object ):
     def display_url( self ):
         assert self.display_ready(), 'Display is not yet ready, cannot generate display link'
         return fill_template( self.link.url.text, context = self.parameters )
-    def get_param_name_by_url( self, name ):
-        assert name in self.link.url_param_name_map, "Unknown URL parameter name provided: %s" % name
-        return self.link.url_param_name_map[ name ]
+    def get_param_name_by_url( self, url ):
+        for name, parameter in self.link.parameters.iteritems():
+            if parameter.build_url( self.parameters ) == url:
+                return name
+        raise ValueError( "Unknown URL parameter name provided: %s" % url )
 
 class DisplayApplication( object ):
     @classmethod
@@ -103,6 +159,9 @@ class DisplayApplication( object ):
             link = DisplayApplicationLink.from_elem( link_elem, rval )
             if link:
                 rval.links[ link.id ] = link
+        for dynamic_links in elem.findall( 'dynamic_links' ):
+            for link in DynamicDisplayApplicationBuilder( dynamic_links, rval ):
+                rval.links[ link.id ] = link
         return rval
     def __init__( self, display_id, name, datatypes_registry, version = None ):
         self.id = display_id
@@ -115,4 +174,9 @@ class DisplayApplication( object ):
     def get_link( self, link_name, data, dataset_hash, user_hash, trans ):
         #returns a link object with data knowledge to generate links
         return PopulatedDisplayApplicationLink( self.links[ link_name ], data, dataset_hash, user_hash, trans )
-    
+    def filter_by_dataset( self, data, trans ):
+        filtered = DisplayApplication( self.id, self.name, self.datatypes_registry, version = self.version )
+        for link_name, link_value in self.links.iteritems():
+            if link_value.filter_by_dataset( data, trans ):
+                filtered.links[link_name] = link_value
+        return filtered
