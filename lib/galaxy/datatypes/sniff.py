@@ -70,7 +70,7 @@ def check_newlines( fname, bytes_to_read=52428800 ):
     f.close()
     return False
 
-def convert_newlines( fname ):
+def convert_newlines( fname, in_place=True ):
     """
     Converts in place a file from universal line endings 
     to Posix line endings.
@@ -78,7 +78,7 @@ def convert_newlines( fname ):
     >>> fname = get_test_fname('temp.txt')
     >>> file(fname, 'wt').write("1 2\\r3 4")
     >>> convert_newlines(fname)
-    2
+    (2, None)
     >>> file(fname).read()
     '1 2\\n3 4\\n'
     """
@@ -87,18 +87,21 @@ def convert_newlines( fname ):
     for i, line in enumerate( file( fname, "U" ) ):
         fp.write( "%s\n" % line.rstrip( "\r\n" ) )
     fp.close()
-    shutil.move( temp_name, fname )
-    # Return number of lines in file.
-    return i + 1
+    if in_place:
+        shutil.move( temp_name, fname )
+        # Return number of lines in file.
+        return ( i + 1, None )
+    else:
+        return ( i + 1, temp_name )
 
-def sep2tabs(fname, patt="\\s+"):
+def sep2tabs( fname, in_place=True, patt="\\s+" ):
     """
     Transforms in place a 'sep' separated file to a tab separated one
 
     >>> fname = get_test_fname('temp.txt')
     >>> file(fname, 'wt').write("1 2\\n3 4\\n")
     >>> sep2tabs(fname)
-    2
+    (2, None)
     >>> file(fname).read()
     '1\\t2\\n3\\t4\\n'
     """
@@ -110,11 +113,14 @@ def sep2tabs(fname, patt="\\s+"):
         elems = regexp.split( line )
         fp.write( "%s\n" % '\t'.join( elems ) )
     fp.close()
-    shutil.move( temp_name, fname )
-    # Return number of lines in file.
-    return i + 1
+    if in_place:
+        shutil.move( temp_name, fname )
+        # Return number of lines in file.
+        return ( i + 1, None )
+    else:
+        return ( i + 1, temp_name )
 
-def convert_newlines_sep2tabs( fname, patt="\\s+" ):
+def convert_newlines_sep2tabs( fname, in_place=True, patt="\\s+" ):
     """
     Combines above methods: convert_newlines() and sep2tabs()
     so that files do not need to be read twice
@@ -122,7 +128,7 @@ def convert_newlines_sep2tabs( fname, patt="\\s+" ):
     >>> fname = get_test_fname('temp.txt')
     >>> file(fname, 'wt').write("1 2\\r3 4")
     >>> convert_newlines_sep2tabs(fname)
-    2
+    (2, None)
     >>> file(fname).read()
     '1\\t2\\n3\\t4\\n'
     """
@@ -134,9 +140,12 @@ def convert_newlines_sep2tabs( fname, patt="\\s+" ):
         elems = regexp.split( line )
         fp.write( "%s\n" % '\t'.join( elems ) )
     fp.close()
-    shutil.move( temp_name, fname )
-    # Return number of lines in file.
-    return i + 1
+    if in_place:
+        shutil.move( temp_name, fname )
+        # Return number of lines in file.
+        return ( i + 1, None )
+    else:
+        return ( i + 1, temp_name )
 
 def get_headers( fname, sep, count=60, is_multi_byte=False ):
     """
