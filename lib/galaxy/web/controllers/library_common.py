@@ -1357,8 +1357,6 @@ class LibraryCommon( BaseController ):
                             path = os.path.join( parent_folder.name, path )
                             parent_folder = parent_folder.parent
                         path += ldda.name
-                        if path > '':
-			    path = path.translate(trantab)
                         while path in seen:
                             path += '_'
                         seen.append( path )
