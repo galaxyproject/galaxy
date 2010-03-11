@@ -257,7 +257,7 @@ class Data( object ):
                 break
         params[input_name] = original_dataset
         #Run converter, job is dispatched through Queue
-        converted_dataset = converter.execute( trans, incoming = params, set_output_hid = visible )
+        converted_dataset = converter.execute( trans, incoming = params, set_output_hid = visible )[1]
         if len(params) > 0:
             trans.log_event( "Converter params: %s" % (str(params)), tool_id=converter.id )
         if not visible:
