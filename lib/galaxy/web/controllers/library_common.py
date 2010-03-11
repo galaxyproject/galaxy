@@ -1357,7 +1357,8 @@ class LibraryCommon( BaseController ):
                             path = os.path.join( parent_folder.name, path )
                             parent_folder = parent_folder.parent
                         path += ldda.name
-    			path = path.translate(trantab)
+                        if path > '':
+			    path = path.translate(trantab)
                         while path in seen:
                             path += '_'
                         seen.append( path )
@@ -1377,7 +1378,8 @@ class LibraryCommon( BaseController ):
                             flist = glob.glob(os.path.join(ldda.dataset.extra_files_path,'*.*')) # glob returns full paths
                             for fpath in flist:
                                 efp,fname = os.path.split(fpath)
-               			fname = fname.translate(trantab)
+               			if fname > '':
+				    fname = fname.translate(trantab)
                                 try:
                                     archive.add( fpath,fname )
                                 except IOError:
