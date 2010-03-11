@@ -1,4 +1,4 @@
-import os, os.path, shutil, urllib, StringIO, re, gzip, tempfile, shutil, zipfile, copy, glob
+import os, os.path, shutil, urllib, StringIO, re, gzip, tempfile, shutil, zipfile, copy, glob, string
 from galaxy.web.base.controller import *
 from galaxy import util, jobs
 from galaxy.datatypes import sniff
@@ -1258,7 +1258,6 @@ class LibraryCommon( BaseController ):
             messagetype = 'error'
         else:
             ldda_ids = util.listify( ldda_ids )
-	    log.debug('## act on multiple got %s' % ldda_ids)
             if action == 'import_to_history':
                 history = trans.get_history()
                 if history is None:
@@ -1312,6 +1311,8 @@ class LibraryCommon( BaseController ):
                 msg = "The selected datasets have been removed from this data library"
             else:
                 error = False
+                killme = string.punctuation + string.whitespace
+    		trantab = string.maketrans(killme,'_'*len(killme))
                 try:
                     outext = 'zip'
                     if action == 'zip':
@@ -1325,10 +1326,10 @@ class LibraryCommon( BaseController ):
                         archive.add = lambda x, y: archive.write( x, y.encode('CP437') )
                     elif action == 'tgz':
                         archive = util.streamball.StreamBall( 'w|gz' )
-                        outext = 'gz'
+                        outext = 'tgz'
                     elif action == 'tbz':
                         archive = util.streamball.StreamBall( 'w|bz2' )
-                        outext = 'bz2'
+                        outext = 'tbz2'
                 except (OSError, zipfile.BadZipFile):
                     error = True
                     log.exception( "Unable to create archive for download" )
@@ -1356,12 +1357,13 @@ class LibraryCommon( BaseController ):
                             path = os.path.join( parent_folder.name, path )
                             parent_folder = parent_folder.parent
                         path += ldda.name
+    			path = path.translate(trantab)
                         while path in seen:
                             path += '_'
                         seen.append( path )
+                        zpath = os.path.split(path)[-1] # comes as base_name/fname
+                        outfname,zpathext = os.path.splitext(zpath)
                         if is_composite: # need to add all the components from the extra_files_path to the zip
-                            zpath = os.path.split(path)[-1] # comes as base_name/fname
-                            outfname,zpathext = os.path.splitext(zpath)
                             if zpathext == '':
                                 zpath = '%s.html' % zpath # fake the real nature of the html file 
                             try:
@@ -1375,6 +1377,7 @@ class LibraryCommon( BaseController ):
                             flist = glob.glob(os.path.join(ldda.dataset.extra_files_path,'*.*')) # glob returns full paths
                             for fpath in flist:
                                 efp,fname = os.path.split(fpath)
+               			fname = fname.translate(trantab)
                                 try:
                                     archive.add( fpath,fname )
                                 except IOError:
