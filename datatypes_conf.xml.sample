@@ -194,7 +194,6 @@
         <!-- genome graphs ucsc file - first col is always marker then numeric values to plot -->
         <datatype extension="gg" type="galaxy.datatypes.genetics:GenomeGraphs"/>
         <!-- part of linkage format pedigree -->
-        <datatype extension="lmap" type="galaxy.datatypes.genetics:Lmap" display_in_upload="true"/>
         <datatype extension="malist" type="galaxy.datatypes.genetics:MAlist" display_in_upload="true"/>
         <!-- linkage format pedigree (separate .map file) -->
         <datatype extension="lped" type="galaxy.datatypes.genetics:Lped" display_in_upload="true">

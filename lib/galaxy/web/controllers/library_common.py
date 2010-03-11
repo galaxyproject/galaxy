@@ -1111,7 +1111,7 @@ class LibraryCommon( BaseController ):
                 # is composite - must return a zip of contents and the html file itself - ugh - should be reversible at upload!
                 # use act_on_multiple_datasets( self, trans, cntrller, library_id, ldda_ids='', **kwd ) since it does what we need
                 kwd['do_action'] = 'zip'
-                return self.act_on_multiple_datasets( trans, cntrller, library_id, ldda_ids=id, **kwd )
+                return self.act_on_multiple_datasets( trans, cntrller, library_id, ldda_ids=[id,], **kwd )
             else:
                 mime = trans.app.datatypes_registry.get_mimetype_by_extension( ldda.extension.lower() )
                 trans.response.set_content_type( mime )
@@ -1258,6 +1258,7 @@ class LibraryCommon( BaseController ):
             messagetype = 'error'
         else:
             ldda_ids = util.listify( ldda_ids )
+	    log.debug('## act on multiple got %s' % ldda_ids)
             if action == 'import_to_history':
                 history = trans.get_history()
                 if history is None:
