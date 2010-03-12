@@ -5,6 +5,7 @@
 <head>
 <title>${self.title()}</title>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+${self.metas()}
 ${self.stylesheets()}
 ${self.javascripts()}
 </head>
@@ -30,3 +31,5 @@ ${self.javascripts()}
   ${h.js( "jquery", "galaxy.base" )}
 </%def>
 
+## Additional metas can be defined by templates inheriting from this one.
+<%def name="metas()"></%def>
