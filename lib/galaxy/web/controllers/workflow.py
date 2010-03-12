@@ -278,18 +278,28 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
     @web.expose
     @web.require_login( "use Galaxy workflows" )
     def imp( self, trans, id, **kwargs ):
+        # Set referer message.
+        referer = trans.request.referer
+        if referer is not "":
+            referer_message = "<a href='%s'>return to the previous page</a>" % referer
+        else:
+            referer_message = "<a href='%s'>go to Galaxy's start page</a>" % url_for( '/' )
+        
+        # Do import.
         session = trans.sa_session
         stored = self.get_stored_workflow( trans, id, check_ownership=False )
         if stored.importable == False:
-            error( "The owner of this workflow has disabled imports via this link" )
+            return trans.show_error_message( "The owner of this workflow has disabled imports via this link.<br>You can %s" % referer_message, use_panels=True )
         elif stored.user == trans.user:
-            error( "You are already the owner of this workflow, can't import" )
+            return trans.show_error_message( "You can't import this workflow because you own it.<br>You can %s" % referer_message, use_panels=True )
         elif stored.deleted:
-            error( "This workflow has been deleted, can't import" )
+            return trans.show_error_message( "You can't import this workflow because it has been deleted.<br>You can %s" % referer_message, use_panels=True )
         elif session.query( model.StoredWorkflowUserShareAssociation ) \
                     .filter_by( user=trans.user, stored_workflow=stored ).count() > 0:
-            error( "This workflow is already shared with you" )
+            # TODO: this is only reasonable as long as import creates a sharing relation.
+            return trans.show_error_message( "You can't import this workflow because it is already shared with you.<br>You can %s" % referer_message, use_panels=True )
         else:
+            # TODO: Shouldn't an import provide a copy of a workflow?
             share = model.StoredWorkflowUserShareAssociation()
             share.stored_workflow = stored
             share.user = trans.user
@@ -297,7 +307,9 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
             session.add( share )
             session.flush()
             # Redirect to load galaxy frames.
-            return trans.response.send_redirect( url_for( controller='workflow' ) )
+            return trans.show_ok_message(
+                message="""Workflow "%s" has been imported. <br>You can <a href="%s">start using this workflow</a> or %s.""" 
+                % ( stored.name, web.url_for( controller='workflow' ), referer_message ), use_panels=True )
             
     @web.expose
     @web.require_login( "use Galaxy workflows" )

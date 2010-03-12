@@ -23,7 +23,8 @@
 
 <%def name="render_item_links( data )">
     ## Provide links to save data and TODO: import dataset.
-    <a href="${h.url_for( controller='dataset', action='display', dataset_id=trans.security.encode_id( data.id ), to_ext=data.ext )}">save</a>
+    <a href="${h.url_for( controller='/dataset', action='display', dataset_id=trans.security.encode_id( data.id ), to_ext=data.ext )}" class="icon-button disk tooltip" title="Save dataset"></a>
+        <a href="${h.url_for( controller='/dataset', action='imp', dataset_id=trans.security.encode_id( data.id ) )}" class="icon-button import tooltip" title="Import dataset"></a>
 </%def>
 
 <%def name="render_item( data, data_to_render )">
@@ -49,11 +50,12 @@
     <div class="unified-panel-body">
         <div style="overflow: auto; height: 100%;">        
             <div class="page-body">
-                <div style="padding: 0px 0px 5px 0px">
+                <div style="float: right">
                     ${self.render_item_links( item )}
                 </div>
-                
-                ${self.render_item_header( item )}
+                <div>
+                    ${self.render_item_header( item )}
+                </div>
                 
                 ${self.render_item( item, item_data )}
             </div>

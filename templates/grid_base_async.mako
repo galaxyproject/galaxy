@@ -1,4 +1,5 @@
 <%namespace file="./grid_base.mako" import="*" />
+<%namespace file="/display_common.mako" import="render_message" />
 
 <%
     # Set flag to indicate whether grid has operations that operate on multiple items.
@@ -12,4 +13,4 @@ ${render_grid_table_body_contents( grid, show_item_checkboxes=multiple_item_ops_
 *****
 ${num_pages}
 *****
-${render_grid_message( grid )}
+${render_message( grid )}

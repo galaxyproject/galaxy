@@ -77,11 +77,7 @@
 
 
 <%def name="render_item_links( workflow )">
-    %if workflow.user != trans.get_user():
-        <a href="${h.url_for( controller='/workflow', action='imp', id=trans.security.encode_id(workflow.id) )}">import and start using workflow</a>
-    %else:
-        import and start using workflow
-    %endif
+    <a href="${h.url_for( controller='/workflow', action='imp', id=trans.security.encode_id(workflow.id) )}" class="icon-button import tooltip" title="Import workflow"></a>
 </%def>
 
 <%def name="render_item( workflow, steps )">

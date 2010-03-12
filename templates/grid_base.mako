@@ -9,6 +9,7 @@
             return '/base.mako'
 %>
 <%inherit file="${inherit(context)}"/>
+<%namespace file="/display_common.mako" import="render_message" />
 
 <%def name="init()">
 <%
@@ -663,21 +664,11 @@
         <tr>
             <td width="75%">${self.render_grid_header( grid )}</td>
             <td></td>
-            <td width="25%" id="grid-message" valign="top">${self.render_grid_message( grid )}</td>
+            <td width="25%" id="grid-message" valign="top">${render_message( message, message_type )}</td>
         </tr>
     </table>
 
     ${self.render_grid_table( grid )}
-</%def>
-
-## Render grid message.
-<%def name="render_grid_message( grid )">
-    %if message:
-        <p>
-            <div class="${message_type}message transient-message">${util.restore_text( message )}</div>
-            <div style="clear: both"></div>
-        </p>
-    %endif
 </%def>
 
 ## Render grid header.

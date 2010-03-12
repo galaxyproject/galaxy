@@ -505,16 +505,27 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesHistory 
         msg = ""
         user = trans.get_user()
         user_history = trans.get_history()
+        # Set referer message
+        if 'referer' in kwd:
+            referer = kwd['referer']
+        else:
+            referer = trans.request.referer
+        if referer is not "":
+            referer_message = "<a href='%s'>return to the previous page</a>" % referer
+        else:
+            referer_message = "<a href='%s'>go to Galaxy's start page</a>" % url_for( '/' )
+            
+        # Do import.
         if not id:
-            return trans.show_error_message( "You must specify a history you want to import." )
+            return trans.show_error_message( "You must specify a history you want to import.<br>You can %s." % referer_message, use_panels=True )
         import_history = self.get_history( trans, id, check_ownership=False )
         if not import_history:
-            return trans.show_error_message( "The specified history does not exist.")
+            return trans.show_error_message( "The specified history does not exist.<br>You can %s." % referer_message, use_panels=True )
         if not import_history.importable:
-            error( "The owner of this history has disabled imports via this link." )
+            return trans.show_error_message( "The owner of this history has disabled imports via this link.<br>You can %s." % referer_message, use_panels=True )
         if user:
             if import_history.user_id == user.id:
-                return trans.show_error_message( "You cannot import your own history." )
+                return trans.show_error_message( "You cannot import your own history.<br>You can %s." % referer_message, use_panels=True )
             new_history = import_history.copy( target_user=user )
             new_history.name = "imported: " + new_history.name
             new_history.user_id = user.id
@@ -530,9 +541,9 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesHistory 
             trans.sa_session.flush()
             if not user_history.datasets:
                 trans.set_history( new_history )
-            return trans.show_ok_message( """
-                History "%s" has been imported. Click <a href="%s">here</a>
-                to begin.""" % ( new_history.name, web.url_for( '/' ) ) )
+            return trans.show_ok_message(
+                message="""History "%s" has been imported. <br>You can <a href="%s">start using this history</a> or %s.""" 
+                % ( new_history.name, web.url_for( '/' ), referer_message ), use_panels=True )
         elif not user_history or not user_history.datasets or confirm:
             new_history = import_history.copy()
             new_history.name = "imported: " + new_history.name
@@ -548,13 +559,13 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesHistory 
             trans.sa_session.add( new_history )
             trans.sa_session.flush()
             trans.set_history( new_history )
-            return trans.show_ok_message( """
-                History "%s" has been imported. Click <a href="%s">here</a>
-                to begin.""" % ( new_history.name, web.url_for( '/' ) ) )
+            return trans.show_ok_message(
+                message="""History "%s" has been imported. <br>You can <a href="%s">start using this history</a> or %s.""" 
+                % ( new_history.name, web.url_for( '/' ), referer_message ), use_panels=True )
         return trans.show_warn_message( """
             Warning! If you import this history, you will lose your current
-            history. Click <a href="%s">here</a> to confirm.
-            """ % web.url_for( id=id, confirm=True ) )
+            history. <br>You can <a href="%s">continue and import this history</a> or %s.
+            """ % ( web.url_for( id=id, confirm=True, referer=trans.request.referer ), referer_message ), use_panels=True )
         
     @web.expose
     def view( self, trans, id=None ):

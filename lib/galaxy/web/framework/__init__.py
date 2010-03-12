@@ -561,7 +561,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         context.
         """
         return self.template_context['message']
-    def show_message( self, message, type='info', refresh_frames=[], cont=None ):
+    def show_message( self, message, type='info', refresh_frames=[], cont=None, use_panels=False ):
         """
         Convenience method for displaying a simple page with a single message.
         
@@ -571,22 +571,22 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         `refresh_frames`: names of frames in the interface that should be 
                           refreshed when the message is displayed
         """
-        return self.fill_template( "message.mako", message_type=type, message=message, refresh_frames=refresh_frames, cont=cont )
-    def show_error_message( self, message, refresh_frames=[] ):
+        return self.fill_template( "message.mako", message_type=type, message=message, refresh_frames=refresh_frames, cont=cont, use_panels=use_panels )
+    def show_error_message( self, message, refresh_frames=[], use_panels=False ):
         """
         Convenience method for displaying an error message. See `show_message`.
         """
-        return self.show_message( message, 'error', refresh_frames )
-    def show_ok_message( self, message, refresh_frames=[] ):
+        return self.show_message( message, 'error', refresh_frames, use_panels=use_panels )
+    def show_ok_message( self, message, refresh_frames=[], use_panels=False ):
         """
         Convenience method for displaying an ok message. See `show_message`.
         """
-        return self.show_message( message, 'done', refresh_frames )
-    def show_warn_message( self, message, refresh_frames=[] ):
+        return self.show_message( message, 'done', refresh_frames, use_panels=use_panels )
+    def show_warn_message( self, message, refresh_frames=[], use_panels=False ):
         """
         Convenience method for displaying an warn message. See `show_message`.
         """
-        return self.show_message( message, 'warning', refresh_frames )
+        return self.show_message( message, 'warning', refresh_frames, use_panels=use_panels )
     def show_form( self, form, header=None, template="form.mako" ):
         """
         Convenience method for displaying a simple page with a single HTML

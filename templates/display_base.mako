@@ -156,11 +156,12 @@
     <div class="unified-panel-body">
         <div style="overflow: auto; height: 100%;">        
             <div class="page-body">
-                <div style="padding: 0px 0px 5px 0px">
+                <div style="float: right">
                     ${self.render_item_links( item )}
                 </div>
-                
-                ${self.render_item_header( item )}
+                <div>
+                    ${self.render_item_header( item )}
+                </div>
                 
                 ${self.render_item( item, item_data )}
             </div>

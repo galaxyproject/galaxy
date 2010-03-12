@@ -1,5 +1,21 @@
+<%!
+    def inherit(context):
+        if context.get('use_panels'):
+            return '/base_panels.mako'
+        else:
+            return '/base.mako'
+%>
+<%inherit file="${inherit(context)}"/>
 <% _=n_ %>
-<%inherit file="/base.mako"/>
+
+<%def name="init()">
+<%
+    self.has_left_panel=False
+    self.has_right_panel=False
+    self.active_view=active_view
+    self.message_box_visible=False
+%>
+</%def>
 
 <%def name="javascripts()">
     ${parent.javascripts()}
@@ -45,7 +61,23 @@
     </script>
 </%def>
 
-<div class="${message_type}messagelarge">${_(message)}</div>
+##
+## Override methods from base.mako and base_panels.mako
+##
+
+<%def name="center_panel()">
+    ${render_large_message( message, message_type )}
+</%def>
+
+## Render the grid's basic elements. Each of these elements can be subclassed.
+<%def name="body()">
+    ${render_large_message( message, message_type )}
+</%def>
+
+## Render large message.
+<%def name="render_large_message( message, message_type )">
+    <div class="${message_type}messagelarge" style="margin: 1em">${_(message)}</div>
+</%def>
 
 ## Render a message
 <%def name="render_msg( msg, messagetype='done' )">

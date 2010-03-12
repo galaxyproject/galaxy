@@ -1,8 +1,9 @@
 <%namespace file="../grid_base.mako" import="*" />
+<%namespace file="/display_common.mako" import="render_message" />
 
 ## Always show item checkboxes so that users can select histories.
 ${render_grid_table_body_contents( grid, show_item_checkboxes=True )}
 *****
 ${num_pages}
 *****
-${render_grid_message( grid )}
+${render_message( message, message_type )}

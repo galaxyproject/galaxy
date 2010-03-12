@@ -236,16 +236,7 @@
 </%def>
 
 <%def name="render_item_links( history )">
-    %if history.user != trans.get_user():
-        <a href="${h.url_for( controller='/history', action='imp', id=trans.security.encode_id(history.id) )}">import and start using history</a>
-    %else:
-        ## TODO: add tooltip to indicate why this link is disabled.
-        import and start using history
-    %endif
-    ##<a href="${self.get_history_link( history )}">${_('refresh')}</a> 
-    %if show_deleted:
-        | <a href="${h.url_for('history', show_deleted=False)}">${_('hide deleted')}</a> 
-    %endif
+    <a href="${h.url_for( controller='/history', action='imp', id=trans.security.encode_id(history.id) )}" class="icon-button import tooltip" title="Import history"></a>
 </%def>
 
 <%def name="render_item( history, datasets )">

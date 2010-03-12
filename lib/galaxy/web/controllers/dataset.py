@@ -418,17 +418,25 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistoryDatasetAssoc
         return self.stored_list_grid( trans, status=status, message=message, **kwargs )
         
     @web.expose
-    def imp( self, trans, id=None, **kwd ):
+    def imp( self, trans, dataset_id=None, **kwd ):
         """ Import another user's dataset via a shared URL; dataset is added to user's current history. """
         msg = ""
         
+        # Set referer message.
+        referer = trans.request.referer
+        if referer is not "":
+            referer_message = "<a href='%s'>return to the previous page</a>" % referer
+        else:
+            referer_message = "<a href='%s'>go to Galaxy's start page</a>" % url_for( '/' )
+        
         # Error checking.
-        if not id:
-            return trans.show_error_message( "You must specify an ID for a dataset to import." )
+        if not dataset_id:
+            return trans.show_error_message( "You must specify a dataset to import. You can %s." % referer_message, use_panels=True )
             
         # Do import.
         cur_history = trans.get_history( create=True )
-        status, message = self._copy_datasets( trans, [ id ], [ cur_history ] )
+        status, message = self._copy_datasets( trans, [ dataset_id ], [ cur_history ] )
+        message = message + "<br>You can <a href='%s'>start using the dataset</a> or %s." % ( url_for('/'),  referer_message )
         return trans.show_message( message, type=status )
         
     @web.expose
