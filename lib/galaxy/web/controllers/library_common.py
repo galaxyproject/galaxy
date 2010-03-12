@@ -155,7 +155,7 @@ class LibraryCommon( BaseController ):
                 library.root_folder.description = new_description
                 trans.sa_session.add_all( ( library, library.root_folder ) )
                 trans.sa_session.flush()
-                msg = "Library '%s' has been renamed to '%s'" % ( old_name, new_name )
+                msg = "The information has been updated."
                 return trans.response.send_redirect( web.url_for( controller='library_common',
                                                                   action='library_info',
                                                                   cntrller=cntrller,
@@ -313,7 +313,7 @@ class LibraryCommon( BaseController ):
                     folder.description = new_description
                     trans.sa_session.add( folder )
                     trans.sa_session.flush()
-                    msg = "Folder '%s' has been renamed to '%s'" % ( old_name, new_name )
+                    msg = "The information has been updated."
                     messagetype='done'
             else:
                 msg = "You are not authorized to edit this folder"
@@ -698,7 +698,6 @@ class LibraryCommon( BaseController ):
                         trans.app.security_agent.derive_roles_from_access( trans, trans.app.security.decode_id( library_id ), cntrller, library=True, **vars )
                 if error:
                     messagetype = 'error'
-
                     trans.response.send_redirect( web.url_for( controller='library_common',
                                                                            action='upload_library_dataset',
                                                                            cntrller=cntrller,
@@ -1171,7 +1170,7 @@ class LibraryCommon( BaseController ):
                         library_dataset.info = new_info
                         trans.sa_session.add( library_dataset )
                         trans.sa_session.flush()
-                        msg = "Dataset '%s' has been renamed to '%s'" % ( old_name, new_name )
+                        msg = "The information has been updated."
                         messagetype = 'done'
             else:
                 msg = "You are not authorized to change the attributes of this dataset"
