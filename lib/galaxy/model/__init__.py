@@ -1527,6 +1527,11 @@ class VisualizationRevision( object ):
         self.title = None
         self.config = None
         
+class VisualizationUserShareAssociation( object ):
+    def __init__( self ):
+        self.visualization = None
+        self.user = None
+        
 class Tag ( object ):
     def __init__( self, id=None, type=None, parent_id=None, name=None ):
         self.id = id
@@ -1558,14 +1563,14 @@ class HistoryDatasetAssociationTagAssociation ( ItemTagAssociation ):
 
 class PageTagAssociation ( ItemTagAssociation ):
     pass
-    
-class WorkflowTagAssociation ( ItemTagAssociation ):
-    pass
-    
+
 class WorkflowStepTagAssociation ( ItemTagAssociation ):
     pass
     
 class StoredWorkflowTagAssociation ( ItemTagAssociation ):
+    pass
+    
+class VisualizationTagAssociation ( ItemTagAssociation ):
     pass
     
 class HistoryAnnotationAssociation( object ):
@@ -1581,6 +1586,9 @@ class WorkflowStepAnnotationAssociation( object ):
     pass
     
 class PageAnnotationAssociation( object ):
+    pass
+    
+class VisualizationAnnotationAssociation( object ):
     pass
     
 class UserPreference ( object ):

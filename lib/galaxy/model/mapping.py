@@ -80,7 +80,7 @@ History.table = Table( "history", metadata,
     Column( "genome_build", TrimmedString( 40 ) ),
     Column( "importable", Boolean, default=False ),
     Column( "slug", TEXT, index=True ),
-    Column( "published", Boolean, index=True ) )
+    Column( "published", Boolean, index=True, default=False ) )
 
 HistoryUserShareAssociation.table = Table( "history_user_share_association", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -521,7 +521,7 @@ StoredWorkflow.table = Table( "stored_workflow", metadata,
     Column( "deleted", Boolean, default=False ),
     Column( "importable", Boolean, default=False ),
     Column( "slug", TEXT, index=True ),
-    Column( "published", Boolean, index=True )
+    Column( "published", Boolean, index=True, default=False )
     )
 
 Workflow.table = Table( "workflow", metadata,
@@ -721,7 +721,11 @@ Visualization.table = Table( "visualization", metadata,
     Column( "latest_revision_id", Integer,
             ForeignKey( "visualization_revision.id", use_alter=True, name='visualization_latest_revision_id_fk' ), index=True ),
     Column( "title", TEXT ),
-    Column( "type", TEXT )
+    Column( "type", TEXT ),
+    Column( "deleted", Boolean, default=False, index=True ),
+    Column( "importable", Boolean, default=False, index=True ),
+    Column( "slug", TEXT, index=True ),
+    Column( "published", Boolean, default=False, index=True )
     )
 
 VisualizationRevision.table = Table( "visualization_revision", metadata,
@@ -731,6 +735,12 @@ VisualizationRevision.table = Table( "visualization_revision", metadata,
     Column( "visualization_id", Integer, ForeignKey( "visualization.id" ), index=True, nullable=False ),
     Column( "title", TEXT ),
     Column( "config", JSONType )
+    )
+    
+VisualizationUserShareAssociation.table = Table( "visualization_user_share_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "visualization_id", Integer, ForeignKey( "visualization.id" ), index=True ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True )
     )
     
 # Tagging tables.
@@ -768,16 +778,7 @@ HistoryDatasetAssociationTagAssociation.table = Table( "history_dataset_associat
     Column( "user_tname", TrimmedString(255), index=True),
     Column( "value", TrimmedString(255), index=True),
     Column( "user_value", TrimmedString(255), index=True) )
-    
-WorkflowTagAssociation.table = Table( "workflow_tag_association", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "workflow_id", Integer, ForeignKey( "workflow.id" ), index=True ),
-    Column( "tag_id", Integer, ForeignKey( "tag.id" ), index=True ),
-    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
-    Column( "user_tname", Unicode(255), index=True),
-    Column( "value", Unicode(255), index=True),
-    Column( "user_value", Unicode(255), index=True) )
-    
+        
 StoredWorkflowTagAssociation.table = Table( "stored_workflow_tag_association", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "stored_workflow_id", Integer, ForeignKey( "stored_workflow.id" ), index=True ),
@@ -804,6 +805,15 @@ WorkflowStepTagAssociation.table = Table( "workflow_step_tag_association", metad
     Column( "user_tname", Unicode(255), index=True),
     Column( "value", Unicode(255), index=True),
     Column( "user_value", Unicode(255), index=True) )
+    
+VisualizationTagAssociation.table = Table( "visualization_tag_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "visualization_id", Integer, ForeignKey( "visualization.id" ), index=True ),
+    Column( "tag_id", Integer, ForeignKey( "tag.id" ), index=True ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+    Column( "user_tname", TrimmedString(255), index=True),
+    Column( "value", TrimmedString(255), index=True),
+    Column( "user_value", TrimmedString(255), index=True) )
     
 # Annotation tables.
 
@@ -834,6 +844,12 @@ WorkflowStepAnnotationAssociation.table = Table( "workflow_step_annotation_assoc
 PageAnnotationAssociation.table = Table( "page_annotation_association", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "page_id", Integer, ForeignKey( "page.id" ), index=True ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+    Column( "annotation", TEXT, index=True) )
+    
+VisualizationAnnotationAssociation.table = Table( "visualization_annotation_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "visualization_id", Integer, ForeignKey( "visualization.id" ), index=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "annotation", TEXT, index=True) )
 
@@ -1271,8 +1287,7 @@ assign_mapper( context, Workflow, Workflow.table,
     properties=dict( steps=relation( WorkflowStep, backref='workflow',
                                      order_by=asc(WorkflowStep.table.c.order_index),
                                      cascade="all, delete-orphan",
-                                     lazy=False ),
-                     tags=relation(WorkflowTagAssociation, order_by=WorkflowTagAssociation.table.c.id, backref="workflows") 
+                                     lazy=False )
                                       ) )
 
 assign_mapper( context, WorkflowStep, WorkflowStep.table,
@@ -1359,8 +1374,20 @@ assign_mapper( context, Visualization, Visualization.table,
                                          primaryjoin=( Visualization.table.c.id == VisualizationRevision.table.c.visualization_id ) ),
                      latest_revision=relation( VisualizationRevision, post_update=True,
                                                primaryjoin=( Visualization.table.c.latest_revision_id == VisualizationRevision.table.c.id ),
-                                               lazy=False )
+                                               lazy=False ),
+                     tags=relation( VisualizationTagAssociation, order_by=VisualizationTagAssociation.table.c.id, backref="visualizations" ),
+                     annotations=relation( VisualizationAnnotationAssociation, order_by=VisualizationAnnotationAssociation.table.c.id, backref="visualizations" )
                    ) )
+                   
+# Set up proxy so that 
+#   Visualization.users_shared_with_dot_users
+# returns a list of User objects for users that a visualization is shared with.
+Visualization.users_shared_with_dot_users = association_proxy( 'users_shared_with', 'user' )
+                   
+assign_mapper( context, VisualizationUserShareAssociation, VisualizationUserShareAssociation.table,
+  properties=dict( user=relation( User, backref='visualizations_shared_by_others' ),
+                   visualization=relation( Visualization, backref='users_shared_with' )
+                 ) )
 
 assign_mapper( context, Tag, Tag.table,
     properties=dict( children=relation(Tag, backref=backref( 'parent', remote_side=[Tag.table.c.id] ) )  
@@ -1381,17 +1408,17 @@ assign_mapper( context, HistoryDatasetAssociationTagAssociation, HistoryDatasetA
 assign_mapper( context, PageTagAssociation, PageTagAssociation.table,
     properties=dict( tag=relation(Tag, backref="tagged_pages"), user=relation( User ) )
                     )
-
-assign_mapper( context, WorkflowTagAssociation, WorkflowTagAssociation.table,
-    properties=dict( tag=relation(Tag, backref="tagged_workflows"), user=relation( User ) )
-                    )
                     
 assign_mapper( context, StoredWorkflowTagAssociation, StoredWorkflowTagAssociation.table,
-    properties=dict( tag=relation(Tag, backref="tagged_stored_workflows"), user=relation( User ) )
+    properties=dict( tag=relation(Tag, backref="tagged_workflows"), user=relation( User ) )
                     )
                     
 assign_mapper( context, WorkflowStepTagAssociation, WorkflowStepTagAssociation.table,
     properties=dict( tag=relation(Tag, backref="tagged_workflow_steps"), user=relation( User ) )
+                    )
+                    
+assign_mapper( context, VisualizationTagAssociation, VisualizationTagAssociation.table,
+    properties=dict( tag=relation(Tag, backref="tagged_visualizations"), user=relation( User ) )
                     )
                     
 assign_mapper( context, HistoryAnnotationAssociation, HistoryAnnotationAssociation.table,
@@ -1412,6 +1439,10 @@ assign_mapper( context, WorkflowStepAnnotationAssociation, WorkflowStepAnnotatio
                     
 assign_mapper( context, PageAnnotationAssociation, PageAnnotationAssociation.table,
     properties=dict( page=relation( Page ), user=relation( User ) )
+                    )
+                    
+assign_mapper( context, VisualizationAnnotationAssociation, VisualizationAnnotationAssociation.table,
+    properties=dict( visualization=relation( Visualization ), user=relation( User ) )
                     )
                     
 assign_mapper( context, UserPreference, UserPreference.table, 

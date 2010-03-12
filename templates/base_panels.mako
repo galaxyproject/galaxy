@@ -207,7 +207,7 @@
         <ul>
             <li><a href="${h.url_for( controller='/tracks', action='index' )}">Build track browser</a></li>
             <li><hr style="color: inherit; background-color: gray"/></li>
-	    <li><a href="${h.url_for( controller='/visualization', action='index' )}">Stored visualizations</a></li>
+	    <li><a href="${h.url_for( controller='/visualization', action='list' )}">Stored visualizations</a></li>
         </ul>
         </div>
     </td>

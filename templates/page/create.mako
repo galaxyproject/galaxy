@@ -8,8 +8,7 @@ $(function(){
     var page_slug = $("input[name=page_slug]");
     page_name.keyup(function(){
         page_slug.val( $(this).val().replace(/\s+/g,'-').replace(/[^a-zA-Z0-9\-]/g,'').toLowerCase() )
-    });
-    
+    });    
 })
 </script>
 </%def>

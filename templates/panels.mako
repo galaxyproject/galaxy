@@ -10,11 +10,9 @@
 </%def>
 
 <%def name="center_panel()">
-    
     <div style="overflow: auto; height: 100%;">
         <div style="padding: 10px">
             ${grid}
         </div>
     </div>
-
 </%def>

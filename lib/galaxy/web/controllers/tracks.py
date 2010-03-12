@@ -262,7 +262,9 @@ class TracksController( BaseController ):
     @web.json
     def save( self, trans, **kwargs ):
         session = trans.sa_session
-        vis_id = kwargs['vis_id'].strip('"')
+        vis_id = "undefined"
+        if 'vis_id' in kwargs:
+            vis_id = kwargs['vis_id'].strip('"')
         dbkey = kwargs['dbkey']
         
         if vis_id == "undefined": # new vis

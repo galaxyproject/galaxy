@@ -34,6 +34,7 @@ class TagHandler( object ):
         ItemTagAssocInfo( model.HistoryDatasetAssociation, model.HistoryDatasetAssociationTagAssociation, model.HistoryDatasetAssociationTagAssociation.table.c.history_dataset_association_id )
     item_tag_assoc_info["Page"] = ItemTagAssocInfo( model.Page, model.PageTagAssociation, model.PageTagAssociation.table.c.page_id )
     item_tag_assoc_info["StoredWorkflow"] = ItemTagAssocInfo( model.StoredWorkflow, model.StoredWorkflowTagAssociation, model.StoredWorkflowTagAssociation.table.c.stored_workflow_id )
+    item_tag_assoc_info["Visualization"] = ItemTagAssocInfo( model.Visualization, model.VisualizationTagAssociation, model.VisualizationTagAssociation.table.c.visualization_id )
         
     def get_tag_assoc_class(self, item_class):
         """ Returns tag association class for item class. """

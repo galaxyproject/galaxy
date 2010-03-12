@@ -123,7 +123,7 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
         # Legacy issue: all shared workflows must have slugs.
         slug_set = False
         for workflow_assoc in shared_by_others:
-            slug_set = self.set_item_slug( trans.sa_session, workflow_assoc.stored_workflow )
+            slug_set = self.create_item_slug( trans.sa_session, workflow_assoc.stored_workflow )
         if slug_set:
             trans.sa_session.flush()
 
@@ -224,7 +224,7 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
                 share.user = other
                 session = trans.sa_session
                 session.add( share )
-                self.set_item_slug( session, stored )
+                self.create_item_slug( session, stored )
                 session.flush()
                 trans.set_message( "Workflow '%s' shared with user '%s'" % ( stored.name, other.email ) )
                 return trans.response.send_redirect( url_for( controller='workflow', action='sharing', id=id ) )
@@ -401,7 +401,7 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
         """ Returns workflow's name and link. """
         stored = self.get_stored_workflow( trans, id )
 
-        if self.set_item_slug( trans.sa_session, stored ):
+        if self.create_item_slug( trans.sa_session, stored ):
             trans.sa_session.flush()
         return_dict = { "name" : stored.name, "link" : url_for( action="display_by_username_and_slug", username=stored.user.username, slug=stored.slug ) }
         return return_dict

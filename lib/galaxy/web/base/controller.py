@@ -16,6 +16,9 @@ log = logging.getLogger( __name__ )
 
 # States for passing messages
 SUCCESS, INFO, WARNING, ERROR = "done", "info", "warning", "error"
+
+# RE that tests for valid slug.
+VALID_SLUG_RE = re.compile( "^[a-z0-9\-]+$" )
     
 class BaseController( object ):
     """
@@ -40,6 +43,8 @@ class BaseController( object ):
             item_class = model.Page
         elif class_name == 'StoredWorkflow':
             item_class = model.StoredWorkflow
+        elif class_name == 'Visualization':
+            item_class = model.Visualization
         else:
             item_class = None
         return item_class
@@ -76,6 +81,8 @@ class UsesAnnotations:
             annotation_assoc = annotation_assoc.filter_by( workflow_step=item )
         elif item.__class__ == model.Page:
             annotation_assoc = annotation_assoc.filter_by( page=item )
+        elif item.__class__ == model.Visualization:
+            annotation_assoc = annotation_assoc.filter_by( visualization=item )
         return annotation_assoc.first()
         
     def add_item_annotation( self, trans, item, annotation ):
@@ -152,6 +159,19 @@ class UsesHistoryDatasetAssociation:
                 dataset_data = open( dataset.file_name ).read(max_peek_size)
                 truncated = False
         return truncated, dataset_data
+        
+class UsesVisualization( SharableItemSecurity ):
+    """ Mixin for controllers that use Visualization objects. """
+
+    def get_visualization( self, trans, id, check_ownership=True, check_accessible=False ):
+        """ Get a Visualization from the database by id, verifying ownership. """
+        # Load workflow from database
+        id = trans.security.decode_id( id )
+        visualization = trans.sa_session.query( model.Visualization ).get( id )
+        if not visualization:
+            error( "Visualization not found" )
+        else:
+            return self.security_check( trans.get_user(), stored, check_ownership, check_accessible )
         
 class UsesStoredWorkflow( SharableItemSecurity ):
     """ Mixin for controllers that use StoredWorkflow objects. """
@@ -240,6 +260,12 @@ class Sharable:
         pass
     
     @web.expose
+    @web.require_login( "share Galaxy items" )
+    def share( self, trans, id=None, email="", **kwd ):
+        """ Handle sharing an item with a particular user. """
+        pass
+    
+    @web.expose
     def display_by_username_and_slug( self, trans, username, slug ):
         """ Display item by username and slug. """
         pass
@@ -262,13 +288,18 @@ class Sharable:
     def _make_item_accessible( self, sa_session, item ):
         """ Makes item accessible--viewable and importable--and sets item's slug. Does not flush/commit changes, however. Item must have name, user, importable, and slug attributes. """
         item.importable = True
-        self.set_item_slug( sa_session, item )
+        self.create_item_slug( sa_session, item )
 
-    def set_item_slug( self, sa_session, item ):
-        """ Set item slug. Slug is unique among user's importable items for item's class. Returns true if item's slug was set; false otherwise. """
+    def create_item_slug( self, sa_session, item ):
+        """ Create item slug. Slug is unique among user's importable items for item's class. Returns true if item's slug was set; false otherwise. """
         if item.slug is None or item.slug == "":
+            # Item can have either a name or a title.
+            if hasattr( item, 'name' ):
+                item_name = item.name
+            elif hasattr( item, 'title' ):
+                item_name = item.title
             # Replace whitespace with '-'
-            slug_base = re.sub( "\s+", "-", item.name.lower() )
+            slug_base = re.sub( "\s+", "-", item_name.lower() )
             # Remove all non-alphanumeric characters.
             slug_base = re.sub( "[^a-zA-Z0-9\-]", "", slug_base )
             # Remove trailing '-'.

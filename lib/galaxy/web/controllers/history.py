@@ -440,7 +440,7 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesHistory 
         """ Returns history's name and link. """
         history = self.get_history( trans, id, False )
         
-        if self.set_item_slug( trans.sa_session, history ):
+        if self.create_item_slug( trans.sa_session, history ):
             trans.sa_session.flush()
         return_dict = { "name" : history.name, "link" : url_for( action="display_by_username_and_slug", username=history.user.username, slug=history.slug ) }
         return return_dict
@@ -652,58 +652,6 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesHistory 
         session.flush()
                 
         return trans.fill_template( "/sharing_base.mako", item=history )
-        
-    ## TODO: remove this method when history sharing has been verified to work correctly with new sharing() method.
-    @web.expose
-    @web.require_login( "share histories with other users" )
-    def sharing_old( self, trans, histories=[], id=None, **kwd ):
-        """Performs sharing of histories among users."""
-        # histories looks like: [ historyX, historyY ]
-        params = util.Params( kwd )
-        msg = util.restore_text ( params.get( 'msg', '' ) )
-        if id:
-            ids = util.listify( id )
-            if ids:
-                histories = [ self.get_history( trans, history_id ) for history_id in ids ]
-        for history in histories:
-            trans.sa_session.add( history )
-            if params.get( 'enable_import_via_link', False ):
-                self._make_item_accessible( trans.sa_session, history )
-                trans.sa_session.flush()
-            elif params.get( 'disable_import_via_link', False ):
-                history.importable = False
-                trans.sa_session.flush()
-            elif params.get( 'unshare_user', False ):
-                user = trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( kwd[ 'unshare_user' ] ) )
-                if not user:
-                    msg = 'History (%s) does not seem to be shared with user (%s)' % ( history.name, user.email )
-                    return trans.fill_template( 'history/sharing.mako', histories=histories, msg=msg, messagetype='error' )
-                husas = trans.sa_session.query( trans.app.model.HistoryUserShareAssociation ).filter_by( user=user, history=history ).all()
-                if husas:
-                    for husa in husas:
-                        trans.sa_session.delete( husa )
-                        trans.sa_session.flush()
-        histories = []
-        # Get all histories that have been shared with others
-        husas = trans.sa_session.query( trans.app.model.HistoryUserShareAssociation ) \
-                                .join( "history" ) \
-                                .filter( and_( trans.app.model.History.user == trans.user,
-                                               trans.app.model.History.deleted == False ) ) \
-                                .order_by( trans.app.model.History.table.c.name )
-        for husa in husas:
-            history = husa.history
-            if history not in histories:
-                histories.append( history )
-        # Get all histories that are importable
-        importables = trans.sa_session.query( trans.app.model.History ) \
-                                      .filter_by( user=trans.user, importable=True, deleted=False ) \
-                                      .order_by( trans.app.model.History.table.c.name )
-        for importable in importables:
-            if importable not in histories:
-                histories.append( importable )
-        # Sort the list of histories by history.name
-        histories.sort( key=operator.attrgetter( 'name') )
-        return trans.fill_template( 'history/sharing.mako', histories=histories, msg=msg, messagetype='done' )
                                       
     @web.expose
     @web.require_login( "share histories with other users" )
@@ -975,7 +923,7 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesHistory 
                     share.history = history
                     share.user = send_to_user
                     trans.sa_session.add( share )
-                    self.set_item_slug( trans.sa_session, history )
+                    self.create_item_slug( trans.sa_session, history )
                     trans.sa_session.flush()
                     if history not in shared_histories:
                         shared_histories.append( history )

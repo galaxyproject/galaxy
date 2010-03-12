@@ -18,8 +18,11 @@
 
 <%def name="get_item_name( item )">
     <% 
+        # Start with exceptions, end with default.
 		if type( item ) is model.Page:
 			return item.title
+		elif type( item ) is model.Visualization:
+		    return item.title
 		if hasattr( item, 'get_display_name'):
 		    return item.get_display_name()
 		return item.name
@@ -29,7 +32,7 @@
 ## Get plural display name for a class.
 <%def name="get_class_plural_display_name( a_class )">
 <%
-    ## Start with exceptions, end with default.
+    # Start with exceptions, end with default.
     if a_class is model.History:
         return "Histories"
     elif a_class is model.FormDefinitionCurrent:
@@ -89,6 +92,8 @@
             return "dataset"
         elif isinstance( item, model.Page ):
             return "page"
+        elif isinstance( item, model.Visualization ):
+            return "visualization"
     %>
 </%def>
 

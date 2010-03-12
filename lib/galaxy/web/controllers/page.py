@@ -4,10 +4,6 @@ from galaxy.util.sanitize_html import sanitize_html, _BaseHTMLProcessor
 from galaxy.util.odict import odict
 from galaxy.util.json import from_json_string
 
-import re
-
-VALID_SLUG_RE = re.compile( "^[a-z0-9\-]+$" )
-
 def format_bool( b ):
     if b:
         return "yes"
@@ -45,8 +41,8 @@ class PageListGrid( grids.Grid ):
     ]
     operations = [
         grids.DisplayByUsernameAndSlugGridOperation( "View", allow_multiple=False ),
-        grids.GridOperation( "Edit attributes", allow_multiple=False, url_args=dict( action='edit') ),
         grids.GridOperation( "Edit content", allow_multiple=False, url_args=dict( action='edit_content') ),
+        grids.GridOperation( "Edit attributes", allow_multiple=False, url_args=dict( action='edit') ),
         grids.GridOperation( "Share or Publish", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False ),
         grids.GridOperation( "Delete", confirm="Are you sure you want to delete this page?" ),
     ]
@@ -62,7 +58,7 @@ class PageAllPublishedGrid( grids.Grid ):
     default_sort_key = "-update_time"
     default_filter = dict( title="All", username="All" )
     columns = [
-        grids.PublicURLColumn( "Title", key="title", model_class=model.Page, filterable="advanced"),
+        grids.PublicURLColumn( "Title", key="title", model_class=model.Page, filterable="advanced" ),
         grids.OwnerAnnotationColumn( "Annotation", key="annotation", model_class=model.Page, model_annotation_association_class=model.PageAnnotationAssociation, filterable="advanced" ),
         grids.OwnerColumn( "Owner", key="username", model_class=model.User, filterable="advanced", sortable=False ), 
         grids.CommunityTagsColumn( "Community Tags", "tags", model.Page, model.PageTagAssociation, filterable="advanced", grid_name="PageAllPublishedGrid" ),
@@ -356,10 +352,10 @@ class PageController( BaseController, Sharable, UsesAnnotations, UsesHistory, Us
                 template="page/create.mako" )
         
     @web.expose
-    @web.require_login( "create pages" )
+    @web.require_login( "edit pages" )
     def edit( self, trans, id, page_title="", page_slug="", page_annotation="" ):
         """
-        Create a new page
+        Edit a page's attributes.
         """
         encoded_id = id
         id = trans.security.decode_id( id )
@@ -456,6 +452,7 @@ class PageController( BaseController, Sharable, UsesAnnotations, UsesHistory, Us
     @web.expose
     @web.require_login( "use Galaxy pages" )
     def share( self, trans, id, email="" ):
+        """ Handle sharing with an individual user. """
         msg = mtype = None
         page = trans.sa_session.query( model.Page ).get( trans.security.decode_id( id ) )
         if email:
@@ -468,18 +465,18 @@ class PageController( BaseController, Sharable, UsesAnnotations, UsesHistory, Us
                 msg = ( "User '%s' does not exist" % email )
             elif other == trans.get_user():
                 mtype = "error"
-                msg = ( "You cannot share a workflow with yourself" )
+                msg = ( "You cannot share a page with yourself" )
             elif trans.sa_session.query( model.PageUserShareAssociation ) \
                     .filter_by( user=other, page=page ).count() > 0:
                 mtype = "error"
-                msg = ( "Workflow already shared with '%s'" % email )
+                msg = ( "Page already shared with '%s'" % email )
             else:
                 share = model.PageUserShareAssociation()
                 share.page = page
                 share.user = other
                 session = trans.sa_session
                 session.add( share )
-                self.set_item_slug( session, page )
+                self.create_item_slug( session, page )
                 session.flush()
                 trans.set_message( "Page '%s' shared with user '%s'" % ( page.title, other.email ) )
                 return trans.response.send_redirect( url_for( controller='page', action='sharing', id=id ) )
@@ -609,7 +606,7 @@ class PageController( BaseController, Sharable, UsesAnnotations, UsesHistory, Us
         """ Returns page's name and link. """
         page = self.get_page( trans, id )
 
-        if self.set_item_slug( trans.sa_session, page ):
+        if self.create_item_slug( trans.sa_session, page ):
             trans.sa_session.flush()
         return_dict = { "name" : page.title, "link" : url_for( action="display_by_username_and_slug", username=page.user.username, slug=page.slug ) }
         return return_dict
