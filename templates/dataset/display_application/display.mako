@@ -7,6 +7,6 @@
 %if refresh:
 <%def name="metas()"><meta http-equiv="refresh" content="10" /></%def>
 <p>
-This page will <a href="javascript:location.reload(true);">refresh</a> after 10 seconds.
+This page will <a href="${trans.request.url}">refresh</a> after 10 seconds.
 </p>
 %endif
