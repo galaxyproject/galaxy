@@ -65,15 +65,15 @@ def json( func ):
     decorator.exposed = True
     return decorator
 
-def require_login( verb="perform this action" ):
+def require_login( verb="perform this action", use_panels=False ):
     def argcatcher( func ):
         def decorator( self, trans, *args, **kwargs ):
             if trans.get_user():
                 return func( self, trans, *args, **kwargs )
             else:
                 return trans.show_error_message(
-                    "You must be <a target='galaxy_main' href='%s'>logged in</a> to %s</div>"
-                    % ( url_for( controller='user', action='login' ), verb ) )      
+                    "You must be <a target='_top' href='%s'>logged in</a> to %s</div>."
+                    % ( url_for( controller='user', action='login' ), verb ), use_panels=use_panels )      
         return decorator
     return argcatcher
     
@@ -561,7 +561,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         context.
         """
         return self.template_context['message']
-    def show_message( self, message, type='info', refresh_frames=[], cont=None, use_panels=False ):
+    def show_message( self, message, type='info', refresh_frames=[], cont=None, use_panels=False, active_view="" ):
         """
         Convenience method for displaying a simple page with a single message.
         
@@ -571,28 +571,28 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         `refresh_frames`: names of frames in the interface that should be 
                           refreshed when the message is displayed
         """
-        return self.fill_template( "message.mako", message_type=type, message=message, refresh_frames=refresh_frames, cont=cont, use_panels=use_panels )
-    def show_error_message( self, message, refresh_frames=[], use_panels=False ):
+        return self.fill_template( "message.mako", message_type=type, message=message, refresh_frames=refresh_frames, cont=cont, use_panels=use_panels, active_view=active_view )
+    def show_error_message( self, message, refresh_frames=[], use_panels=False, active_view="" ):
         """
         Convenience method for displaying an error message. See `show_message`.
         """
-        return self.show_message( message, 'error', refresh_frames, use_panels=use_panels )
-    def show_ok_message( self, message, refresh_frames=[], use_panels=False ):
+        return self.show_message( message, 'error', refresh_frames, use_panels=use_panels, active_view=active_view )
+    def show_ok_message( self, message, refresh_frames=[], use_panels=False, active_view="" ):
         """
         Convenience method for displaying an ok message. See `show_message`.
         """
-        return self.show_message( message, 'done', refresh_frames, use_panels=use_panels )
-    def show_warn_message( self, message, refresh_frames=[], use_panels=False ):
+        return self.show_message( message, 'done', refresh_frames, use_panels=use_panels, active_view=active_view )
+    def show_warn_message( self, message, refresh_frames=[], use_panels=False, active_view="" ):
         """
         Convenience method for displaying an warn message. See `show_message`.
         """
-        return self.show_message( message, 'warning', refresh_frames, use_panels=use_panels )
-    def show_form( self, form, header=None, template="form.mako" ):
+        return self.show_message( message, 'warning', refresh_frames, use_panels=use_panels, active_view=active_view )
+    def show_form( self, form, header=None, template="form.mako", use_panels=False, active_view="" ):
         """
         Convenience method for displaying a simple page with a single HTML
         form.
         """    
-        return self.fill_template( template, form=form, header=header )
+        return self.fill_template( template, form=form, header=header, use_panels=use_panels, active_view=active_view )
     def fill_template(self, filename, **kwargs):
         """
         Fill in a template, putting any keyword arguments on the context.

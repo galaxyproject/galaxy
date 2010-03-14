@@ -10,7 +10,7 @@
 </%def>
 
 <%def name="title()">
-    Galaxy :: Published Workflows
+    Galaxy | Published Workflows
 </%def>
 
 <%def name="stylesheets()">

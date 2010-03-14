@@ -85,7 +85,7 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
     
     @web.expose
     def index( self, trans ):
-        return trans.fill_template( "workflow/index.mako" )
+        return self.list( trans )
         
     @web.expose
     @web.require_login( "use Galaxy workflows" )
@@ -102,7 +102,7 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
         return self.stored_list_grid( trans, **kwargs )
                                    
     @web.expose
-    @web.require_login( "use Galaxy workflows" )
+    @web.require_login( "use Galaxy workflows", use_panels=True )
     def list( self, trans ):
         """
         Render workflow main page (management of existing workflows)
@@ -276,7 +276,7 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
                                     item=stored )
 
     @web.expose
-    @web.require_login( "use Galaxy workflows" )
+    @web.require_login( "to import a workflow", use_panels=True )
     def imp( self, trans, id, **kwargs ):
         # Set referer message.
         referer = trans.request.referer
@@ -284,7 +284,7 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
             referer_message = "<a href='%s'>return to the previous page</a>" % referer
         else:
             referer_message = "<a href='%s'>go to Galaxy's start page</a>" % url_for( '/' )
-        
+                    
         # Do import.
         session = trans.sa_session
         stored = self.get_stored_workflow( trans, id, check_ownership=False )

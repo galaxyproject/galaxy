@@ -791,7 +791,7 @@ class TwillTestCase( unittest.TestCase ):
         self.home()
         # Create user, setting username to email.
         self.visit_page( "user/create?email=%s&username=%s&password=%s&confirm=%s&create_user_button=Submit" % ( email, email, password, password ) )
-        self.check_page_for_string( "Now logged in as %s" %email )
+        self.check_page_for_string( "now logged in as %s" %email )
         self.home()
         # Make sure a new private role was created for the user
         self.visit_page( "user/set_default_permissions" )
@@ -816,7 +816,7 @@ class TwillTestCase( unittest.TestCase ):
         for index, info_value in enumerate(user_info_values):
             tc.fv( "1", "field_%i" % index, info_value )
         tc.submit( "create_user_button" )
-        self.check_page_for_string( "Now logged in as %s" % email )
+        self.check_page_for_string( "now logged in as %s" % email )
     def create_user_with_info_as_admin( self, email, password, username, user_info_forms, user_info_form_id, user_info_values ):
         '''
         This method registers a new user and also provides use info as an admin
@@ -906,16 +906,17 @@ class TwillTestCase( unittest.TestCase ):
             self.create( email=email, password=password )
         except:
             self.home()
-            self.visit_url( "%s/user/login" % self.url )
+            # HACK: don't use panels because late_javascripts() messes up the twill browser and it can't find form fields (and hence user can't be logged in).
+            self.visit_url( "%s/user/login?use_panels=False" % self.url )
             tc.fv( '1', 'email', email )
             tc.fv( '1', 'password', password )
             tc.submit( 'Login' )
-            self.check_page_for_string( "Now logged in as %s" %email )
+            self.check_page_for_string( "now logged in as %s" %email )
             self.home()
     def logout( self ):
         self.home()
         self.visit_page( "user/logout" )
-        self.check_page_for_string( "You are no longer logged in" )
+        self.check_page_for_string( "You have been logged out" )
         self.home()
     
     # Functions associated with browsers, cookies, HTML forms and page visits

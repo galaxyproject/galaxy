@@ -216,11 +216,13 @@
                     %endif
                 </div>
                 ## Individual tags.
-                <p>
-                <div>
-                    Yours:
-                    ${render_individual_tagging_element( user=trans.get_user(), tagged_item=item, elt_context='view.mako', use_toggle_link=False, tag_click_fn='community_tag_click' )}
-                </div>
+                %if trans.get_user():
+                    <p>
+                    <div>
+                        Yours:
+                        ${render_individual_tagging_element( user=trans.get_user(), tagged_item=item, elt_context='view.mako', use_toggle_link=False, tag_click_fn='community_tag_click' )}
+                    </div>
+                %endif
             </div>    
         </div>
     </div>

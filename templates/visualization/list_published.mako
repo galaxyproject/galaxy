@@ -10,7 +10,7 @@
 </%def>
 
 <%def name="title()">
-    Galaxy :: Published Visualizations
+    Galaxy | Published Visualizations
 </%def>
 
 <%def name="stylesheets()">

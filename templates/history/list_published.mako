@@ -10,7 +10,7 @@
 </%def>
 
 <%def name="title()">
-    Galaxy :: Published Histories
+    Galaxy | Published Histories
 </%def>
 
 <%def name="stylesheets()">

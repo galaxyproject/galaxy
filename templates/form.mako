@@ -1,54 +1,83 @@
+<%!
+    def inherit(context):
+        if context.get('use_panels') is True:
+            print "here"
+            return '/base_panels.mako'
+        else:
+            return '/base.mako'
+%>
+<%inherit file="${inherit(context)}"/>
 <% _=n_ %>
-<%inherit file="/base.mako"/>
+
+<%def name="init()">
+<%
+    self.has_left_panel=False
+    self.has_right_panel=False
+    self.active_view=active_view
+    self.message_box_visible=False
+%>
+</%def>
+
+
 <%def name="title()">${form.title}</%def>
 
 <%def name="javascripts()">
-${parent.javascripts()}
-<script type="text/javascript">
-$(function(){
-    $("input:text:first").focus();
-})
-</script>
+    ${parent.javascripts()}
+    <script type="text/javascript">
+        $(function(){
+            $("input:text:first").focus();
+        })
+    </script>
 </%def>
 
-%if header:
-    ${header}
-%endif
+<%def name="center_panel()">
+    ${render_form( )}
+</%def>
 
-<div class="form">
-    <div class="form-title">${form.title}</div>
-    <div class="form-body">
-    <form name="${form.name}" action="${form.action}" method="post" >
-        %for input in form.inputs:
-            <%
-            cls = "form-row"
-            if input.error:
-                cls += " form-row-error"
-            %>
-            <div class="${cls}">
-            %if input.use_label:
-              <label>
-                  ${_(input.label)}:
-              </label>
-            %endif
-              <div class="form-row-input">
-                  <input type="${input.type}" name="${input.name}" value="${input.value}" size="40">
-              </div>
-              %if input.error:
-              <div class="form-row-error-message">${input.error}</div>
-              %endif
-              %if input.help:
-              <div class="toolParamHelp" style="clear: both;">
-                  ${input.help}
-              </div>
-              %endif
+<%def name="body()">
+    ${render_form( )}
+</%def>
+
+<%def name="render_form()">
+    %if header:
+        ${header}
+    %endif
     
-                  <div style="clear: both"></div>
+    <div class="form" style="margin: 1em">
+        <div class="form-title">${form.title}</div>
+        <div class="form-body">
+        <form name="${form.name}" action="${form.action}" method="post" >
+            %for input in form.inputs:
+                <%
+                cls = "form-row"
+                if input.error:
+                    cls += " form-row-error"
+                %>
+                <div class="${cls}">
+                %if input.use_label:
+                  <label>
+                      ${_(input.label)}:
+                  </label>
+                %endif
+                  <div class="form-row-input">
+                      <input type="${input.type}" name="${input.name}" value="${input.value}" size="40">
+                  </div>
+                  %if input.error:
+                  <div class="form-row-error-message">${input.error}</div>
+                  %endif
+                  %if input.help:
+                  <div class="toolParamHelp" style="clear: both;">
+                      ${input.help}
+                  </div>
+                  %endif
     
-                </div>
-            %endfor
-            <div class="form-row"><input type="submit" value="${form.submit_text}"></div>
+                      <div style="clear: both"></div>
     
-        </form>
+                    </div>
+                %endfor
+                <div class="form-row"><input type="submit" value="${form.submit_text}"></div>
+    
+            </form>
+        </div>
     </div>
-</div>
+</%def>

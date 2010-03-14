@@ -227,7 +227,13 @@
         </div>
     </td>
     
-    <td class="tab">
+    ## User tab.
+    <%
+        cls = "tab"
+        if self.active_view == 'user':
+	        cls += " active"
+    %>
+    <td class="${cls}">
         <a>User</a>
         <%
         if trans.user:
@@ -241,9 +247,9 @@
         %>
         <div class="submenu">
         <ul class="loggedout-only" style="${style1}">
-            <li><a target="galaxy_main" href="${h.url_for( controller='/user', action='login' )}">Login</a></li>
+            <li><a href="${h.url_for( controller='/user', action='login' )}">Login</a></li>
             %if app.config.allow_user_creation:
-            <li><a target="galaxy_main" href="${h.url_for( controller='/user', action='create' )}">Register</a></li>
+            <li><a href="${h.url_for( controller='/user', action='create' )}">Register</a></li>
             %endif
         </ul>
         <ul class="loggedin-only" style="${style2}">
@@ -259,7 +265,7 @@
                         logout_target = ""
                         logout_url = h.url_for( controller='/root', action='index', m_c='user', m_a='logout' )
                     else:
-                        logout_target = "galaxy_main"
+                        logout_target = ""
                         logout_url = h.url_for( controller='/user', action='logout' )
                 %>
                 <li><a target="${logout_target}" href="${logout_url}">Logout</a></li>

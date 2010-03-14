@@ -115,9 +115,14 @@ class User( BaseController ):
                                 you share publicly. Usernames must be at least
                                 four characters in length and contain only lowercase
                                 letters, numbers, and the '-' character.""" ) )
+                                
     @web.expose
-    def login( self, trans, email='', password='' ):
+    def login( self, trans, email='', password='', referer='', use_panels='True' ):
         email_error = password_error = None
+        
+        # Convert use_panels to Boolean.
+        use_panels = use_panels in [ 'True', 'true', 't', 'T' ]
+        
         # Attempt login
         if trans.app.config.require_login:
             refresh_frames = [ 'masthead', 'history', 'tools' ]
@@ -136,21 +141,23 @@ class User( BaseController ):
             else:
                 trans.handle_user_login( user )
                 trans.log_event( "User logged in" )
-                msg = "Now logged in as " + user.email + "."
+                msg = "You are now logged in as %s.<br>You can <a href='%s'>go back to the page you were visiting</a> or <a href='%s'>go to the Galaxy homepage</a>." % ( user.email, referer, url_for( '/' ) )
                 if trans.app.config.require_login:
                     msg += '  <a href="%s">Click here</a> to continue to the front page.' % web.url_for( '/static/welcome.html' )
-                return trans.show_ok_message( msg, refresh_frames=refresh_frames )
+                return trans.show_ok_message( msg, refresh_frames=refresh_frames, use_panels=use_panels, active_view="user" )
         form = web.FormBuilder( web.url_for(), "Login", submit_text="Login" ) \
                 .add_text( "email", "Email address", value=email, error=email_error ) \
                 .add_password( "password", "Password", value='', error=password_error, 
-                                help="<a href='%s'>Forgot password? Reset here</a>" % web.url_for( action='reset_password' ) )
+                                help="<a href='%s'>Forgot password? Reset here</a>" % web.url_for( action='reset_password' ) ) \
+                .add_input( "hidden", "referer", "referer", value=trans.request.referer, use_label=False )
         if trans.app.config.require_login:
             if trans.app.config.allow_user_creation:
-                return trans.show_form( form, header = require_login_creation_template % web.url_for( action = 'create' ) )
+                return trans.show_form( form, header = require_login_creation_template % web.url_for( action = 'create' ), use_panels=use_panels, active_view="user" )
             else:
-                return trans.show_form( form, header = require_login_nocreation_template )
+                return trans.show_form( form, header = require_login_nocreation_template, use_panels=use_panels, active_view="user" )
         else:
-            return trans.show_form( form )
+            return trans.show_form( form, use_panels=use_panels, active_view="user" )
+            
     @web.expose
     def logout( self, trans ):
         if trans.app.config.require_login:
@@ -160,10 +167,11 @@ class User( BaseController ):
         # Since logging an event requires a session, we'll log prior to ending the session
         trans.log_event( "User logged out" )
         trans.handle_user_logout()
-        msg = "You are no longer logged in."
+        msg = "You have been logged out.<br>You can <a href='%s'>go back to the page you were visiting</a> or <a href='%s'>go to the Galaxy homepage</a>." % ( trans.request.referer, url_for( '/' ) )
         if trans.app.config.require_login:
             msg += '  <a href="%s">Click here</a> to return to the login page.' % web.url_for( controller='user', action='login' )
-        return trans.show_ok_message( msg, refresh_frames=refresh_frames )
+        return trans.show_ok_message( msg, refresh_frames=refresh_frames, use_panels=True, active_view="user" )
+        
     @web.expose
     def create( self, trans, **kwd ):
         params = util.Params( kwd )
@@ -217,7 +225,7 @@ class User( BaseController ):
                 trans.log_event( "User created a new account" )
                 trans.log_event( "User logged in" )
                 # subscribe user to email list
-                return trans.show_ok_message( "Now logged in as " + user.email, refresh_frames=refresh_frames )
+                return trans.show_ok_message( "Now logged in as %s.<br><a href='%s'>Return to the Galaxy start page.</a>" % ( user.email, url_for( '/' ) ), refresh_frames=refresh_frames, use_panels=True )
             else:
                 trans.response.send_redirect( web.url_for( controller='admin',
                                                            action='users',

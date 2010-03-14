@@ -75,7 +75,7 @@ class VisualizationController( BaseController, Sharable, UsesAnnotations, UsesVi
             return trans.fill_template( "visualization/list_published.mako", grid=grid )
     
     @web.expose
-    @web.require_login("use Galaxy visualizations")
+    @web.require_login( "use Galaxy visualizations", use_panels=True )
     def list( self, trans, *args, **kwargs ):
         # Handle operation
         if 'operation' in kwargs and 'id' in kwargs:

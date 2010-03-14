@@ -1,6 +1,6 @@
 <%!
     def inherit(context):
-        if context.get('use_panels'):
+        if context.get('use_panels') is True:
             return '/base_panels.mako'
         else:
             return '/base.mako'
@@ -69,7 +69,6 @@
     ${render_large_message( message, message_type )}
 </%def>
 
-## Render the grid's basic elements. Each of these elements can be subclassed.
 <%def name="body()">
     ${render_large_message( message, message_type )}
 </%def>

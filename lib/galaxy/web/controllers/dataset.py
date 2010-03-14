@@ -436,8 +436,8 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistoryDatasetAssoc
         # Do import.
         cur_history = trans.get_history( create=True )
         status, message = self._copy_datasets( trans, [ dataset_id ], [ cur_history ] )
-        message = message + "<br>You can <a href='%s'>start using the dataset</a> or %s." % ( url_for('/'),  referer_message )
-        return trans.show_message( message, type=status )
+        message = "Dataset imported. <br>You can <a href='%s'>start using the dataset</a> or %s." % ( url_for('/'),  referer_message )
+        return trans.show_message( message, type=status, use_panels=True )
         
     @web.expose
     @web.json
