@@ -1,5 +1,7 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
+<%namespace file="/requests/sample_state.mako" import="render_sample_state" />
+<%namespace file="/requests/sample_datasets.mako" import="render_sample_datasets" />
 
 %if msg:
     ${render_msg( msg, messagetype )}
@@ -40,6 +42,54 @@ $(document).ready(function(){
         $(this).next(".msg_body").slideToggle(450);
     });
 });
+</script>
+
+<script type="text/javascript">
+    // Looks for changes in sample states using an async request. Keeps
+    // calling itself (via setTimeout) until all samples are in a terminal
+    // state.
+    var updater = function ( sample_states ) {
+        // Check if there are any items left to track
+        var empty = true;
+        for ( i in sample_states ) {
+            empty = false;
+            break;
+        }
+        if ( ! empty ) {
+            setTimeout( function() { updater_callback( sample_states ) }, 1000 );
+        }
+    };
+    var updater_callback = function ( sample_states ) {
+        // Build request data
+        var ids = []
+        var states = []
+        $.each( sample_states, function ( id, state ) {
+            ids.push( id );
+            states.push( state );
+        });
+        // Make ajax call
+        $.ajax( {
+            type: "POST",
+            url: "${h.url_for( controller='requests_admin', action='sample_state_updates' )}",
+            dataType: "json",
+            data: { ids: ids.join( "," ), states: states.join( "," ) },
+            success : function ( data ) {
+                $.each( data, function( id, val ) {
+                    // Replace HTML
+                    var cell1 = $("#sampleState-" + id);
+                    cell1.html( val.html_state );
+                    var cell2 = $("#sampleDatasets-" + id);
+                    cell2.html( val.html_datasets );
+                    sample_states[ parseInt(id) ] = val.state;
+                });
+                updater( sample_states ); 
+            },
+            error: function() {
+                // Just retry, like the old method, should try to be smarter
+                updater( sample_states );
+            }
+        });
+    };
 </script>
 
 <style type="text/css">
@@ -162,15 +212,21 @@ $(document).ready(function(){
                         %if sample_index in range(len(request.samples)):
                             <td>${info['name']}</td>
                             <td>${info['barcode']}</td>
-                            <td>
-                                %if sample:
-                                    %if sample.request.unsubmitted():
-                                        Unsubmitted
-                                    %else:
-                                        <a href="${h.url_for( controller='requests_admin', action='show_events', sample_id=sample.id)}">${sample.current_state().name}</a>
-                                    %endif
-                                %endif
-                            </td>
+                            %if sample.request.unsubmitted():
+                                <td>Unsubmitted</td>
+                            %else:
+                                <td id="sampleState-${sample.id}">${render_sample_state( sample )}</td>
+                            %endif
+                                
+##                            <td>
+##                                %if sample:
+##                                    %if sample.request.unsubmitted():
+##                                        Unsubmitted
+##                                    %else:
+##                                        <a href="${h.url_for( controller='requests_admin', action='show_events', sample_id=sample.id)}">${sample.current_state().name}</a>
+##                                    %endif
+##                                %endif
+##                            </td>
                             %if info['library']:
                                 <td><a href="${h.url_for( controller='library_common', action='browse_library', cntrller='library', id=trans.security.encode_id( info['library'].id ) )}">${info['library'].name}</a></td>
                             %else:
@@ -182,8 +238,9 @@ $(document).ready(function(){
                                 <td></td>
                             %endif
                             %if request.submitted() or request.complete(): 
-                                <td>
-                                    <a href="${h.url_for( controller='requests_admin', action='show_datatx_page', sample_id=trans.security.encode_id(sample.id) )}">${len(sample.dataset_files)}</a>
+                                <td id="sampleDatasets-${sample.id}">
+                                    ${render_sample_datasets( sample )}
+##                                    <a href="${h.url_for( controller='requests_admin', action='show_datatx_page', sample_id=trans.security.encode_id(sample.id) )}">${len(sample.dataset_files)}</a>
                                 </td>
                             %endif
                             
@@ -358,6 +415,14 @@ $(document).ready(function(){
                 <label>There are no samples.</label>
             %endif
         </div>
+        
+        %if request.samples and request.submitted():
+            <script type="text/javascript">
+                // Updater
+                updater({${ ",".join( [ '"%s" : "%s"' % ( s.id, s.current_state().name ) for s in request.samples ] ) }});
+            </script>
+        %endif
+        
         %if edit_mode == 'False':
             <table class="grid">
                 <tbody>

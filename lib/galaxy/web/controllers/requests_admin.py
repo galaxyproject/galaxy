@@ -231,6 +231,27 @@ class RequestsAdmin( BaseController ):
     def index( self, trans ):
         return trans.fill_template( "/admin/requests/index.mako" )
     
+    @web.json
+    def sample_state_updates( self, trans, ids=None, states=None ):
+        # Avoid caching
+        trans.response.headers['Pragma'] = 'no-cache'
+        trans.response.headers['Expires'] = '0'
+        # Create new HTML for any that have changed
+        rval = {}
+        if ids is not None and states is not None:
+            ids = map( int, ids.split( "," ) )
+            states = states.split( "," )
+            for id, state in zip( ids, states ):
+                sample = trans.sa_session.query( self.app.model.Sample ).get( id )
+                if sample.current_state().name != state:
+                    rval[id] = {
+                        "state": sample.current_state().name,
+                        "datasets": len(sample.dataset_files),
+                        "html_state": unicode( trans.fill_template( "requests/sample_state.mako", sample=sample ), 'utf-8' ),
+                        "html_datasets": unicode( trans.fill_template( "requests/sample_datasets.mako", trans=trans, sample=sample ), 'utf-8' )
+                    }
+        return rval
+    
     @web.expose
     @web.require_admin
     def list( self, trans, **kwd ):
