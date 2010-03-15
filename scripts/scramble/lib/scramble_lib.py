@@ -21,6 +21,15 @@ def get_ver():
     except:
         return None
 
+def get_deps():
+    try:
+        depf = open( '.galaxy_deps', 'r' )
+    except:
+        return []
+    c = eggs.Crate()
+    for dep in depf:
+        c[dep.strip()].require()
+
 def clean( extra_dirs=[] ):
     for dir in [ 'build', 'dist' ] + extra_dirs:
         try:
@@ -127,29 +136,10 @@ def get_solaris_compiler():
     else:
         return 'gcc'
 
-# Monkeypatch pkg_resources for better ABI recognition
-def _get_platform():
-    plat = distutils.util._get_platform()
-    if sys.version_info[:2] == ( 2, 5 ) and \
-        ( ( os.uname()[-1] in ( 'i386', 'ppc' ) and sys.platform == 'darwin' and os.path.abspath( sys.prefix ).startswith( '/System' ) ) or \
-          ( sys.platform == 'darwin' and get_config_vars().get('UNIVERSALSDK', '').strip() ) ):
-        plat = 'macosx-10.3-fat'
-    if sys.platform == "sunos5" and not (plat.endswith('_32') or plat.endswith('_64')):
-        if sys.maxint > 2**31:
-            plat += '_64'
-        else:
-            plat += '_32'
-    if not (plat.endswith('-ucs2') or plat.endswith('-ucs4')):
-        if sys.maxunicode > 2**16:
-            plat += '-ucs4'
-        else:
-            plat += '-ucs2'
-    return plat
-try:
-    assert distutil.util._get_platform
-except:
-    distutils.util._get_platform = distutils.util.get_platform
-    distutils.util.get_platform = _get_platform
+# get galaxy eggs lib
+galaxy_lib = os.path.abspath( os.path.join( os.path.dirname( __file__ ), '..', '..', '..', 'lib' ) )
+sys.path.insert( 0, galaxy_lib )
+from galaxy import eggs
 
 # get setuptools
 from ez_setup import use_setuptools

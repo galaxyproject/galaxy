@@ -3,7 +3,7 @@ Manage Galaxy eggs
 """
 
 import os, sys, shutil, tempfile, subprocess, urlparse, urllib
-from __init__ import Egg, Crate, URLRetriever, galaxy_dir, py, unpack_zipfile
+from __init__ import Egg, Crate, URLRetriever, galaxy_dir, py, unpack_zipfile, EggNotFetchable
 from distutils.sysconfig import get_config_var
 
 import tarfile, zipfile, zlib
@@ -37,6 +37,7 @@ class ScrambleEgg( Egg ):
     def __init__( self, *args, **kwargs ):
         Egg.__init__( self, *args, **kwargs )
         self.sources = []
+        self.dependencies = []
         self.buildpath = None
         self.source_path = None
         self.py = py
@@ -184,6 +185,11 @@ class ScrambleEgg( Egg ):
             tagfile = open( os.path.join( self.buildpath, ".galaxy_tag" ), "w" )
             tagfile.write( self.tag + '\n' )
             tagfile.close()
+        if self.dependencies:
+            depfile = open( os.path.join( self.buildpath, ".galaxy_deps" ), "w" )
+            for dependency in self.dependencies:
+                depfile.write( dependency + '\n' )
+            depfile.close()
     def run_scramble_script( self ):
         log.warning( "%s(): Beginning build" % sys._getframe().f_code.co_name )
         # subprocessed to sterilize the env
@@ -211,6 +217,10 @@ class ScrambleCrate( Crate ):
                 egg.sources = self.config.get( "source", egg.name ).split()
             except:
                 egg.sources = []
+            try:
+                egg.dependencies = self.config.get( "dependencies", egg.name ).split()
+            except:
+                egg.dependencies = []
     def parse_egg_section( self, *args, **kwargs ):
         kwargs['egg_class'] = ScrambleEgg
         Crate.parse_egg_section( self, *args, **kwargs )

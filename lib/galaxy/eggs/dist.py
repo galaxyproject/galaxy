@@ -72,6 +72,10 @@ class DistScrambleCrate( ScrambleCrate ):
                 sources = self.config.get( 'source', name ).split()
             except:
                 sources = []
+            try:
+                dependencies = self.config.get( 'dependencies', name ).split()
+            except:
+                dependencies = []
             if full_platform:
                 platforms = self.platforms
             else:
@@ -83,4 +87,5 @@ class DistScrambleCrate( ScrambleCrate ):
                 host_info = self.hosts[platform].split()
                 egg.build_host, egg.python = host_info[:2]
                 egg.sources = sources
+                egg.dependencies = dependencies
                 self.eggs[name].append( egg )

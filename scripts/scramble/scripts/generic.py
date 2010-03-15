@@ -9,6 +9,7 @@ sys.path.append( os.path.join( '..', '..', '..', 'lib' ) )
 from scramble_lib import *
 
 tag = get_tag() # get the tag
+get_deps() # require any dependent eggs
 clean() # clean up any existing stuff (could happen if you run scramble.py by hand)
 
 # reset args for distutils

@@ -32,6 +32,19 @@ except:
 failed = []
 for egg in eggs:
     try:
+        for dependency in egg.dependencies:
+            print "Checking %s dependency: %s" % ( egg.name, dependency )
+            # this could be in a better data structure...
+            dep = filter( lambda x: x.platform == egg.platform, c[dependency] )[0]
+            dep.resolve()
+    except EggNotFetchable, e:
+        degg = e.eggs[0]
+        print "%s build dependency %s %s %s couldn't be" % ( egg.name, degg.name, degg.version, degg.platform )
+        print "downloaded automatically.  There isn't really a graceful"
+        print "way to handle this when dist-scrambling."
+        failed.append( egg.platform )
+        continue
+    try:
         egg.scramble()
     except ScrambleFailure:
         failed.append( egg.platform )
