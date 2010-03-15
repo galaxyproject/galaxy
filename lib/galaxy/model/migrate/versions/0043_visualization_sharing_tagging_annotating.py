@@ -54,10 +54,8 @@ def upgrade():
         log.debug( "Creating visualization_user_share_association table failed: %s" % str( e ) )
         
     # Get default boolean value 'false' so that columns can be initialized.
-    if migrate_engine.name == 'mysql':
+    if migrate_engine.name == 'mysql' or migrate_engine.name == 'sqlite':
         default_false = "0"
-    elif migrate_engine.name == 'sqlite':
-        default_false = "'false'"
     elif migrate_engine.name == 'postgres':
         default_false = "false"
         
