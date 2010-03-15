@@ -2,7 +2,7 @@
 Manage Galaxy eggs
 """
 
-import os, sys, glob, urllib, urllib2, ConfigParser, HTMLParser, zipimport, zipfile
+import os, sys, shutil, glob, urllib, urllib2, ConfigParser, HTMLParser, zipimport, zipfile
 
 import logging
 log = logging.getLogger( __name__ )
@@ -281,7 +281,7 @@ class Crate( object ):
         for egg in eggs:
             try:
                 egg.resolve()
-            except:
+            except EggNotFetchable:
                 missing.append( egg )
         if missing:
             raise EggNotFetchable( missing )
