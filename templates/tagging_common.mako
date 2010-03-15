@@ -13,7 +13,7 @@
 ## Render a tagging element if there is a tagged_item.
 %if tagged_item is not None:
     %if tag_type == "individual":
-        ${render_individual_tagging_element(user=user, tagged_item=tagged_item, elt_context=elt_context, in_form=in_form, input_size=input_size, tag_click_fn=tag_click_fn)}
+        ${render_individual_tagging_element( user=user, tagged_item=tagged_item, elt_context=elt_context, in_form=in_form, input_size=input_size, tag_click_fn=tag_click_fn, use_toggle_link=use_toggle_link )}
     %elif tag_type == "community":
         ${render_community_tagging_element(tagged_item=tagged_item, elt_context=elt_context, tag_click_fn=tag_click_fn)}
     %endif
@@ -123,7 +123,7 @@
         //
         // Set up autocomplete tagger.
         //
-    
+
         //
         // Default function get text to display on the toggle link.
         //
@@ -193,7 +193,7 @@
             ajax_delete_tag_url: "${h.url_for( controller='/tag', action='remove_tag_async', item_id=tagged_item_id, item_class=tagged_item.__class__.__name__, context=elt_context )}",
             delete_tag_img: "${h.url_for('/static/images/delete_tag_icon_gray.png')}",
             delete_tag_img_rollover: "${h.url_for('/static/images/delete_tag_icon_white.png')}",
-            use_toggle_link: ${iff( use_toggle_link, 'true', 'false' )},
+            use_toggle_link: ${iff( use_toggle_link, 'true', 'false' )}
          };
          
         $('#${elt_id}').autocomplete_tagging(options);

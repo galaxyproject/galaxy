@@ -5,6 +5,7 @@ from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy import util, datatypes, jobs, web, model
 from cgi import escape, FieldStorage
 from galaxy.datatypes.display_applications.util import encode_dataset_user, decode_dataset_user
+from galaxy.util.sanitize_html import sanitize_html
 
 from email.MIMEText import MIMEText
 import pkg_resources; 
@@ -444,16 +445,14 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistoryDatasetAssoc
     @web.require_login( "use Galaxy datasets" )
     def get_name_and_link_async( self, trans, id=None ):
         """ Returns dataset's name and link. """
-        dataset = self.get_dataset( trans, id )
+        dataset = self.get_dataset( trans, id, False, True )
         return_dict = { "name" : dataset.name, "link" : url_for( action="display_by_username_and_slug", username=dataset.history.user.username, slug=trans.security.encode_id( dataset.id ) ) }
         return return_dict
                 
     @web.expose
     def get_embed_html_async( self, trans, id ):
         """ Returns HTML for embedding a dataset in a page. """
-
-        # TODO: user should be able to embed any item he has access to. see display_by_username_and_slug for security code.
-        dataset = self.get_dataset( trans, id )
+        dataset = self.get_dataset( trans, id, False, True )
         if dataset:
             return "Embedded Dataset '%s'" % dataset.name
 
@@ -466,7 +465,7 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistoryDatasetAssoc
     @web.expose
     def display_by_username_and_slug( self, trans, username, slug, preview=True ):
         """ Display dataset by username and slug; because datasets do not yet have slugs, the slug is the dataset's id. """
-        dataset = self.get_dataset( trans, slug )
+        dataset = self.get_dataset( trans, slug, False, True )
         if dataset:
             truncated, dataset_data = self.get_data( dataset, preview )
             dataset.annotation = self.get_item_annotation_str( trans.sa_session, dataset.history.user, dataset )
@@ -478,7 +477,7 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistoryDatasetAssoc
     def get_item_content_async( self, trans, id ):
         """ Returns item content in HTML format. """
 
-        dataset = self.get_dataset( trans, id )
+        dataset = self.get_dataset( trans, id, False, True )
         if dataset is None:
             raise web.httpexceptions.HTTPNotFound()
         truncated, dataset_data = self.get_data( dataset, preview=True )
@@ -486,6 +485,24 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistoryDatasetAssoc
         dataset.annotation = self.get_item_annotation_str( trans.sa_session, trans.get_user(), dataset )
         return trans.stream_template_mako( "/dataset/item_content.mako", item=dataset, item_data=dataset_data, truncated=truncated )
         
+    @web.expose
+    def annotate_async( self, trans, id, new_annotation=None, **kwargs ):
+        dataset = self.get_dataset( trans, id, False, True )
+        if not dataset:
+            web.httpexceptions.HTTPNotFound()
+        if dataset and new_annotation:
+            # Sanitize annotation before adding it.
+            new_annotation = sanitize_html( new_annotation, 'utf-8', 'text/html' )
+            self.add_item_annotation( trans, dataset, new_annotation )
+            trans.sa_session.flush()
+            return new_annotation
+    
+    @web.expose
+    def get_annotation_async( self, trans, id ):
+        dataset = self.get_dataset( trans, id, False, True )
+        if not dataset:
+            web.httpexceptions.HTTPNotFound()
+        return self.get_item_annotation_str( trans.sa_session, trans.get_user(), dataset )
 
     @web.expose
     def display_at( self, trans, dataset_id, filename=None, **kwd ):
@@ -704,7 +721,7 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistoryDatasetAssoc
                 if user != history.user:
                     error_msg = error_msg + "You do not have permission to add datasets to %i requested histories.  " % ( len( target_histories ) )
             for dataset_id in dataset_ids:
-                data = self.get_dataset( trans, dataset_id )
+                data = self.get_dataset( trans, dataset_id, False, True )
                 if data is None:
                     error_msg = error_msg + "You tried to copy a dataset that does not exist or that you do not have access to.  "
                     invalid_datasets += 1

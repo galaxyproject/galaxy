@@ -86,10 +86,26 @@
             </div>
             <div class="info">${_('Info: ')}${data.display_info()}</div>
             <div> 
+                <% dataset_id=trans.security.encode_id( data.id ) %>
                 %if data.has_data:
-                    <a href="${h.url_for( controller='dataset', action='display', dataset_id=trans.security.encode_id( data.id ), to_ext=data.ext )}" title="Save" class="icon-button disk tooltip"></a>
+                    <a href="${h.url_for( controller='dataset', action='display', dataset_id=dataset_id, to_ext=data.ext )}" title="Save" class="icon-button disk tooltip"></a>
                     %if user_owns_dataset:
                         <a href="${h.url_for( controller='tool_runner', action='rerun', id=data.id )}" target="galaxy_main" title="Run this job again" class="icon-button arrow-circle tooltip"></a>
+                        %if trans.user:
+                            <div style="float: right">
+                                <a href="${h.url_for( controller='tag', action='retag', item_class=data.__class__.__name__, item_id=dataset_id )}" target="galaxy_main" title="Edit dataset tags" class="icon-button tags tooltip"></a>
+                                <a href="${h.url_for( controller='dataset', action='annotate', id=dataset_id )}" target="galaxy_main" title="Edit dataset annotation" class="icon-button annotate tooltip"></a>
+                            </div>
+                            <div style="clear: both"></div>
+                            <div class="tag-area" style="display: none">
+                                <strong>Tags:</strong>
+                                <div class="tag-elt"></div>
+                            </div>
+                            <div id="${dataset_id}-annotation-area" class="annotation-area" style="display: none">
+                                <strong>Annotation:</strong>
+                                <div id="${dataset_id}-annotation-elt" style="margin: 1px 0px 1px 0px" class="annotation-elt tooltip editable-text" title="Edit dataset annotation"></div>
+                            </div>
+                        %endif
                     %endif
 		    <div style="clear: both"></div>
                     %for display_app in data.datatype.get_display_types():

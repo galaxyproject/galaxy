@@ -674,7 +674,7 @@ class PageController( BaseController, Sharable, UsesAnnotations, UsesHistory, Us
                 datasets = self.get_history_datasets( trans, history )
                 return trans.fill_template( "history/embed.mako", item=history, item_data=datasets )
         elif item_class == model.HistoryDatasetAssociation:
-            dataset = self.get_dataset( trans, item_id )
+            dataset = self.get_dataset( trans, item_id, False, True )
             dataset.annotation = self.get_item_annotation_str( trans.sa_session, dataset.history.user, dataset )
             if dataset:
                 data = self.get_data( dataset )

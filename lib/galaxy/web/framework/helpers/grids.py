@@ -389,7 +389,7 @@ class CommunityTagsColumn( TextColumn ):
         self.grid_name = grid_name
     def get_value( self, trans, grid, item ):
         return trans.fill_template( "/tagging_common.mako", tag_type="community", trans=trans, user=trans.get_user(), tagged_item=item, elt_context=self.grid_name,
-                                    in_form=True, input_size="20", tag_click_fn="add_tag_to_grid_filter" )
+                                    in_form=True, input_size="20", tag_click_fn="add_tag_to_grid_filter", use_toggle_link=True )
     def filter( self, db_session, user, query, column_filter ):
         """ Modify query to filter model_class by tag. Multiple filters are ANDed. """
         if column_filter == "All":
@@ -418,7 +418,7 @@ class IndividualTagsColumn( CommunityTagsColumn ):
     """ Column that supports individual tags. """
     def get_value( self, trans, grid, item ):
         return trans.fill_template( "/tagging_common.mako", tag_type="individual", trans=trans, user=trans.get_user(), tagged_item=item, elt_context=self.grid_name,
-                                    in_form=True, input_size="20", tag_click_fn="add_tag_to_grid_filter" )
+                                    in_form=True, input_size="20", tag_click_fn="add_tag_to_grid_filter", use_toggle_link=True )
     def get_filter( self, user, column_filter ):
             # Parse filter to extract multiple tags.
             tag_handler = TagHandler()

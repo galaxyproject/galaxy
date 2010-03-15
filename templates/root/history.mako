@@ -42,10 +42,10 @@ $(function() {
         $.jStore.remove("history_expand_state");
     }).show();
     
-    // Rename management.
+    // History rename functionality.
     async_save_text("history-name-container", "history-name", "${h.url_for( controller="/history", action="rename_async", id=trans.security.encode_id(history.id) )}", "new_name", 18);
     
-    // Tag management.
+    // History tagging functionality.
     var historyTagArea = $('#history-tag-area');
     $('#history-tag').click( function() 
     {
@@ -57,7 +57,7 @@ $(function() {
         return false;
     });
     
-    // Annotation management.
+    // History annotation functionality.
     var historyAnnotationArea = $('#history-annotation-area');
     $('#history-annotate').click( function() {
         if ( historyAnnotationArea.is( ":hidden" ) ) {
@@ -104,7 +104,8 @@ function initShowHide() {
         })
     }
 }
-// Add show/hide link and delete link to a history item
+// (a) Add show/hide link and delete link to a history item;
+// (b) handle tagging and annotation using jquery.
 function setupHistoryItem( query ) {
     query.each( function() {
         var id = this.id;
@@ -180,6 +181,99 @@ function setupHistoryItem( query ) {
                 return false;
             });
         });
+        
+        // Tag handling.
+        $(this).find( "a.icon-button.tags").each( function() 
+        {
+            // Use links parameters but custom URL as ajax URL.
+            $(this).click( function() {
+                // Get tag area, tag element.
+                var history_item = $(this).parents(".historyItem");
+                var tag_area = history_item.find(".tag-area");
+                var tag_elt = history_item.find(".tag-elt");
+                
+                // Show or hide tag area; if showing tag area and it's empty, fill it.
+                if ( tag_area.is( ":hidden" ) ) 
+                {
+                    if (tag_elt.html() == "" )
+                    {
+                        // Need to fill tag element.
+                        var href_parms = $(this).attr("href").split("?")[1];
+                        var ajax_url = "${h.url_for( controller='tag', action='get_tagging_elt_async' )}?" + href_parms;
+                        $.ajax({
+                            url: ajax_url,
+                            error: function() { alert( "Tagging failed" ) },
+                            success: function(tag_elt_html) {
+                                tag_elt.html(tag_elt_html);
+                                tag_elt.find(".tooltip").tipsy( { gravity: 's' } );
+                                tag_area.slideDown("fast");
+                            }
+                        });
+                    }
+                    else
+                    {
+                        // Tag element is filled; show.
+                        tag_area.slideDown("fast");
+                    }
+                } 
+                else 
+                {
+                    // Hide.
+                    tag_area.slideUp("fast");
+                }
+                return false;        
+            });
+        });
+        
+        // Annotation handling.
+        $(this).find( "a.icon-button.annotate").each( function() 
+        {
+            // Use links parameters but custom URL as ajax URL.
+            $(this).click( function() {
+                // Get tag area, tag element.
+                var history_item = $(this).parents(".historyItem");
+                var annotation_area = history_item.find(".annotation-area");
+                var annotation_elt = history_item.find(".annotation-elt");
+                
+                // Show or hide annotation area; if showing annotation area and it's empty, fill it.
+                if ( annotation_area.is( ":hidden" ) ) 
+                {
+                    if (annotation_elt.html() == "" )
+                    {
+                        // Need to fill annotation element.
+                        var href_parms = $(this).attr("href").split("?")[1];
+                        var ajax_url = "${h.url_for( controller='dataset', action='get_annotation_async' )}?" + href_parms;
+                        $.ajax({
+                            url: ajax_url,
+                            error: function() { alert( "Annotations failed" ) },
+                            success: function(annotation) {
+                                if (annotation == "")
+                                    annotation = "<i>Describe or add notes to dataset</i>";
+                                annotation_elt.html(annotation);
+                                annotation_area.find(".tooltip").tipsy( { gravity: 's' } );
+                                async_save_text(
+                                    annotation_elt.attr("id"), annotation_elt.attr("id"),
+                                    "${h.url_for( controller="/dataset", action="annotate_async")}?" + href_parms,
+                                    "new_annotation", 18, true, 4);
+                                annotation_area.slideDown("fast");
+                            }
+                        });
+                    }
+                    else
+                    {
+                        // Annotation element is filled; show.
+                        annotation_area.slideDown("fast");
+                    }
+                } 
+                else 
+                {
+                    // Hide.
+                    annotation_area.slideUp("fast");
+                }
+                return false;        
+            });
+        });
+        
     });
 };
 // Looks for changes in dataset state using an async request. Keeps
@@ -279,13 +373,6 @@ div.form-row {
     padding: 3px;
     margin: -4px;
 }
-.editable-text:hover {
-    cursor: text;
-    border: dotted #999999 1px;
-}
-.tag-area {
-    border: none;
-}
 </style>
 
 <noscript>
@@ -299,7 +386,6 @@ div.form-row {
 </head>
 
 <body class="historyPage">
-    
 <div id="top-links" class="historyLinks">
     
     <a title="${_('refresh')}" class="icon-button arrow-circle tooltip" href="${h.url_for('history', show_deleted=show_deleted)}"></a>

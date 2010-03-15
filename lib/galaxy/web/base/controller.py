@@ -62,7 +62,7 @@ class UsesAnnotations:
         
     def get_item_annotation_obj( self, db_session, user, item ):
         """ Returns a user's annotation object for an item. """
-        # Get annotation association. TODO: we could replace this eval() with a long if/else stmt, but this is more general without sacrificing
+        # Get annotation association.
         try:
             annotation_assoc_class = eval( "model.%sAnnotationAssociation" % item.__class__.__name__ )
         except:
@@ -126,7 +126,7 @@ class SharableItemSecurity:
 class UsesHistoryDatasetAssociation:
     """ Mixin for controllers that use HistoryDatasetAssociation objects. """
     
-    def get_dataset( self, trans, dataset_id, check_accessible=True ):
+    def get_dataset( self, trans, dataset_id, check_ownership=True, check_accessible=False ):
         """ Get an HDA object by id. """
         # DEPRECATION: We still support unencoded ids for backward compatibility
         try:
@@ -136,6 +136,13 @@ class UsesHistoryDatasetAssociation:
         data = trans.sa_session.query( model.HistoryDatasetAssociation ).get( dataset_id )
         if not data:
             raise paste.httpexceptions.HTTPRequestRangeNotSatisfiable( "Invalid dataset id: %s." % str( dataset_id ) )
+        if check_ownership:
+            # Verify ownership.
+            user = trans.get_user()
+            if not user:
+                error( "Must be logged in to manage Galaxy items" )
+            if data.history.user != user:
+                error( "%s is not owned by current user" % data.__class__.__name__ )
         if check_accessible:
             current_user_roles = trans.get_current_user_roles()
             if trans.app.security_agent.can_access_dataset( current_user_roles, data.dataset ):

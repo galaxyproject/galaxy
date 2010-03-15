@@ -11,12 +11,21 @@ class TagsController ( BaseController ):
 
     def __init__(self, app):
         BaseController.__init__(self, app)
-
-        # Set up tag handler to recognize the following items: History, HistoryDatasetAssociation, Page, ...
         self.tag_handler = TagHandler()
+        
+    @web.expose
+    @web.require_login( "edit item tags" )
+    def get_tagging_elt_async( self, trans, item_id, item_class, elt_context="" ):
+        """ Returns HTML for editing an item's tags. """
+        item = self._get_item( trans, item_class, trans.security.decode_id( item_id ) )
+        if not item:
+            return trans.show_error_message( "No item of class %s with id % " % ( item_class, item_id ) )
+        user = trans.get_user()
+        return trans.fill_template( "/tagging_common.mako", tag_type="individual", user=trans.get_user(), tagged_item=item, elt_context=elt_context,
+                                    in_form=False, input_size="22", tag_click_fn="default_tag_click_fn", use_toggle_link=False )
 
     @web.expose
-    @web.require_login( "Add tag to an item." )
+    @web.require_login( "add tag to an item" )
     def add_tag_async( self, trans, item_id=None, item_class=None, new_tag=None, context=None ):
         """ Add tag to an item. """
                 
@@ -28,10 +37,10 @@ class TagsController ( BaseController ):
         
         # Log.
         params = dict( item_id=item.id, item_class=item_class, tag=new_tag)
-        trans.log_action( user, unicode( "tag"), context, params )
+        trans.log_action( user, unicode( "tag" ), context, params )
         
     @web.expose
-    @web.require_login( "Remove tag from an item." )
+    @web.require_login( "remove tag from an item" )
     def remove_tag_async( self, trans, item_id=None, item_class=None, tag_name=None, context=None ):
         """ Remove tag from an item. """
         

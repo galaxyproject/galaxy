@@ -18,8 +18,19 @@
     </div>
 </div>
 
-## Render item-specific title links.
-<%def name="render_item_specific_title_links( item )">
+## Render item links.
+<%def name="render_item_links( item )">
+    <%
+        item_display_name = get_class_display_name( item.__class__ ).lower()
+        item_controller = "/%s" % get_controller_name( item )
+        item_user = get_item_user( item )
+        item_slug = get_item_slug( item )
+        display_href = h.url_for( controller=item_controller, action='display_by_username_and_slug', username=item_user.username, slug=item_slug )
+    %>
+    
+    ## Links for importing and viewing an item.
+    <a href="${h.url_for( controller=item_controller, action='imp', id=trans.security.encode_id( item.id ) )}" title="Import ${item_display_name}" class="icon-button import tooltip"></a>
+    <a class="icon-button go-to-full-screen tooltip" href="${display_href}" title="Go to ${item_display_name}"></a>
 </%def>
 
 <%def name="render_title( item )">
@@ -36,10 +47,7 @@
         <a class="toggle-contract icon-button tooltip" href="${display_href}" title="Hide ${item_display_name} content"></a>
     </div>
     <div style="float: right">
-        ${self.render_item_specific_title_links( item )}
-        ## Links applicable for all items.
-        <a href="${h.url_for( controller=item_controller, action='imp', id=trans.security.encode_id( item.id ) )}" title="Import ${item_display_name}" class="icon-button import tooltip"></a>
-        <a class="icon-button go-to-full-screen tooltip" href="${display_href}" title="Go to ${item_display_name}"></a>
+        ${self.render_item_links( item )}
     </div>
     <h4><a class="toggle-embed tooltip" href="${display_href}" title="Show or hide ${item_display_name} content">Galaxy ${get_class_display_name( item.__class__ )} | ${get_item_name( item )}</a></h4>
     %if hasattr( item, "annotation") and item.annotation:
