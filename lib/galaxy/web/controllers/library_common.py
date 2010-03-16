@@ -1257,7 +1257,7 @@ class LibraryCommon( BaseController ):
             messagetype = 'error'
         else:
             ldda_ids = util.listify( ldda_ids )
-            if action == 'import_to_history':
+            if action == 'import_to_history' or action == 'add':
                 history = trans.get_history()
                 if history is None:
                     # Must be a bot sending a request without having a history.
@@ -1308,7 +1308,7 @@ class LibraryCommon( BaseController ):
                     trans.sa_session.add( ld )
                 trans.sa_session.flush()
                 msg = "The selected datasets have been removed from this data library"
-            else:
+            elif action in ['zip','tgz','tbz']:
                 error = False
                 killme = string.punctuation + string.whitespace
     		trantab = string.maketrans(killme,'_'*len(killme))
@@ -1416,6 +1416,9 @@ class LibraryCommon( BaseController ):
                             archive.wsgi_status = trans.response.wsgi_status()
                             archive.wsgi_headeritems = trans.response.wsgi_headeritems()
                             return archive.stream
+            else: # unknown action
+		msg = '### unknown action = %s in act_on_multiple_datasets' % action		
+
         return trans.response.send_redirect( web.url_for( controller='library_common',
                                                           action='browse_library',
                                                           cntrller=cntrller,
