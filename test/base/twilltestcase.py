@@ -806,17 +806,18 @@ class TwillTestCase( unittest.TestCase ):
             self.visit_page( "user/create?user_info_select=%i&admin_view=False" % user_info_form_id )
         else:
             self.visit_page( "user/create?admin_view=False" )
+        print self.write_temp_file( self.last_page() )
         self.check_page_for_string( "Create account" )
-        tc.fv( "1", "email", email )
-        tc.fv( "1", "password", password )
-        tc.fv( "1", "confirm", password )
-        tc.fv( "1", "username", username )
+        tc.fv( "2", "email", email )
+        tc.fv( "2", "password", password )
+        tc.fv( "2", "confirm", password )
+        tc.fv( "2", "username", username )
         if user_info_forms == 'multiple':
             self.check_page_for_string( "User type" )
         for index, info_value in enumerate(user_info_values):
-            tc.fv( "1", "field_%i" % index, info_value )
+            tc.fv( "2", "field_%i" % index, info_value )
         tc.submit( "create_user_button" )
-        self.check_page_for_string( "now logged in as %s" % email )
+        self.check_page_for_string( "ogged in as %s" % email )
     def create_user_with_info_as_admin( self, email, password, username, user_info_forms, user_info_form_id, user_info_values ):
         '''
         This method registers a new user and also provides use info as an admin
@@ -827,14 +828,14 @@ class TwillTestCase( unittest.TestCase ):
         else:
             self.visit_page( "admin/users?operation=create" )
         self.check_page_for_string( "Create account" )
-        tc.fv( "1", "email", email )
-        tc.fv( "1", "password", password )
-        tc.fv( "1", "confirm", password )
-        tc.fv( "1", "username", username )
+        tc.fv( "2", "email", email )
+        tc.fv( "2", "password", password )
+        tc.fv( "2", "confirm", password )
+        tc.fv( "2", "username", username )
         if user_info_forms == 'multiple':
             self.check_page_for_string( "User type" )
         for index, info_value in enumerate(user_info_values):
-            tc.fv( "1", "field_%i" % index, info_value )
+            tc.fv( "2", "field_%i" % index, info_value )
         tc.submit( "create_user_button" )
         self.check_page_for_string( "Created new user account (%s)" % email )
     def edit_login_info( self, new_email, new_username ):
