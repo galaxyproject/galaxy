@@ -1,4 +1,8 @@
 /*
+ * JG: edited to remove '!important' from rules so that embedded Galaxy items can have unique background colors.
+ */
+
+/*
  * WYMeditor : what you see is What You Mean web-based editor
  * Copyright (c) 2005 - 2009 Jean-Francois Hovinne, http://www.wymeditor.org/
  * Dual licensed under the MIT (MIT-license.txt)
@@ -33,9 +37,9 @@
   ol,
   table,
   blockquote,
-  pre           { background: #FFFFFF no-repeat 2px 2px !important;
-                  padding:8px 5px 5px !important;
-                  margin:10px !important; }
+  pre           { background: #FFFFFF no-repeat 2px 2px; /* JG removed: !important */
+                  padding:8px 5px 5px; /* JG removed: !important */
+                  margin:10px} /* JG removed: !important */
   td            { background: #F0F4F8; }
   th            { background: #ffffcc; }
   ul,
@@ -52,6 +56,7 @@
   td            { height: 1.6em; }
  
 /* labels */
+/* JG commented out:
   p         { background-image: url(lbl-p.png); }
   h1        { background-image: url(lbl-h1.png); }
   h2        { background-image: url(lbl-h2.png); }
@@ -61,6 +66,7 @@
   h6        { background-image: url(lbl-h6.png); }
   blockquote{ background-image: url(lbl-blockquote.png); }
   pre       { background-image: url(lbl-pre.png); }
+*/
 
 /* specific HTML elements */
   caption   { text-align: left; }

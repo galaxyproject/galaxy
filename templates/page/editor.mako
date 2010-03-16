@@ -459,17 +459,18 @@
                                     // all non-standard attributes when it returns its content (e.g. it will not return an element attribute of the form 
                                     // item_class='History').
                                     var item_embed_html =                                     
-                                        "<p> \
+                                        "\
                                          <div id='"  + item_info.iclass + "-" + item_id + "' class='embedded-item " + item_info.singular.toLowerCase() + 
                                                 " placeholder'> \
-                                            <div class='title'> Embedded Galaxy " + item_info.singular + " '" + item_name + "'</div> \
-                                            <div class='content'> \
+                                            <p class='title'>Embedded Galaxy " + item_info.singular + " '" + item_name + "'</p> \
+                                            <p class='content'> \
                                                 [Do not edit this block; Galaxy will fill it in with the annotated " +
                                                 item_info.singular.toLowerCase() + " when it is displayed.]</div> \
-                                            </div> \
-                                        </div></p>";
+                                            </p> \
+                                        </div><p></p>";
                                     
                                     // Insert embedded representation into document.
+                                    // TODO: maybe try replace() instead to handle indenting?
                                     wym.insert(item_embed_html);
                                 });
                                 hide_modal();

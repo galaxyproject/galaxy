@@ -6,7 +6,7 @@
 <%namespace file="/display_common.mako" import="*" />
 
 ## HTML structure.
-<div class='embedded-item ${get_class_display_name( item.__class__ ).lower()}'>
+<div class='embedded-item display ${get_class_display_name( item.__class__ ).lower()}'>
     <div class='title'>
         ${self.render_title( item )}
         <hr/>
