@@ -61,3 +61,34 @@ try:
 except:
     pkg_resources._compatible_platforms = pkg_resources.compatible_platforms
     pkg_resources.compatible_platforms = _compatible_platforms
+
+# patch to insert eggs at the beginning of sys.path instead of at the end
+def _insert_on(self, path, loc = None):
+    """Insert self.location in path before its nearest parent directory"""
+
+    loc = loc or self.location
+    if not loc:
+        return
+
+    nloc = pkg_resources._normalize_cached(loc)
+    npath= [(p and pkg_resources._normalize_cached(p) or p) for p in path]
+
+    if path is sys.path:
+        self.check_version_conflict()
+    path.insert(0, loc)
+
+    # remove dups
+    while 1:
+        try:
+            np = npath.index(nloc, 1)
+        except ValueError:
+            break
+        else:
+            del npath[np], path[np]
+
+    return
+try:
+    assert pkg_resources.Distribution._insert_on
+except:
+    pkg_resources.Distribution._insert_on = pkg_resources.Distribution.insert_on
+    pkg_resources.Distribution.insert_on = _insert_on
