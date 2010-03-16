@@ -34,7 +34,7 @@ class LibraryListGrid( grids.Grid ):
     template='/admin/library/grid.mako'
     default_sort_key = "name"
     columns = [
-        NameColumn( "Library Name",
+        NameColumn( "Name",
                     key="name",
                     model_class=model.Library,
                     link=( lambda library: dict( operation="browse", id=library.id ) ),

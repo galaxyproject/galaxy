@@ -1616,7 +1616,6 @@ class LibraryCommon( BaseController ):
                      response_redirect=web.url_for( controller='library_common',
                                                     action='edit_template',
                                                     cntrller=cntrller,
-                                                    use_panels=use_panels,
                                                     item_type=item_type,
                                                     library_id=library_id,
                                                     folder_id=folder_id,

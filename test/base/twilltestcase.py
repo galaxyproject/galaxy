@@ -1630,7 +1630,6 @@ class TwillTestCase( unittest.TestCase ):
                 pass
     def create_library( self, name='Library One', description='This is Library One', synopsis='Synopsis for Library One' ):
         """Create a new library"""
-        self.home()
         self.visit_url( "%s/library_admin/create_library" % self.url )
         self.check_page_for_string( 'Create a new data library' )
         tc.fv( "1", "name", name )
@@ -1640,10 +1639,25 @@ class TwillTestCase( unittest.TestCase ):
         check_str = "The new library named '%s' has been created" % name
         self.check_page_for_string( check_str )
         self.home()
+    def edit_template( self, cntrller, item_type, library_id, folder_id='', ldda_id='', action='add_field',
+                       field_name='', field_name_value='', field_help='', field_help_value='',
+                       field_type='', field_type_value='' ):
+        """Edit the form fields defining a library template"""
+        self.visit_url( "%s/library_common/edit_template?cntrller=%s&item_type=%s&library_id=%s" % \
+                        ( self.url, cntrller, item_type, library_id ) )
+        self.check_page_for_string( "Edit form definition" )
+        if action == 'add_field':
+            tc.submit( 'add_field_button' )
+            tc.fv( '1', field_name, field_name_value )
+            tc.fv( '1', field_help, field_help_value )
+            tc.fv( '1', field_type, field_type_value )
+        tc.submit( 'save_changes_button' )
+        self.check_page_for_string( "The template for this data library has been updated with your changes." )
+        if action == 'add_field':
+            self.check_page_for_string( field_name_value )
     def library_info( self, cntrller, library_id, library_name, new_name='', new_description='', new_synopsis='',
                            ele_1_field_name='', ele_1_contents='', ele_2_field_name='', ele_2_contents='', check_str1='' ):
         """Edit information about a library, optionally using an existing template with up to 2 elements"""
-        self.home()
         self.visit_url( "%s/library_common/library_info?cntrller=%s&id=%s" % ( self.url, cntrller, library_id ) )
         if check_str1:
             self.check_page_for_string( check_str1 )
@@ -1866,7 +1880,7 @@ class TwillTestCase( unittest.TestCase ):
         self.visit_url( url )
         self.check_page_for_string( 'Upload a directory of files' )
         if check_str1:
-            self.check_page_for_strin( check_str1 )
+            self.check_page_for_string( check_str1 )
         tc.fv( "1", "folder_id", folder_id )
         tc.fv( "1", "file_type", file_type )
         tc.fv( "1", "dbkey", dbkey )

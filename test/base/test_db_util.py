@@ -112,12 +112,3 @@ def get_user_role_associations_by_role( role ):
                      .all()
 def refresh( obj ):
     sa_session.refresh( obj )
-def set_library_permissions( in_list ):
-    permissions_in = []
-    permissions_out = []
-    for k, v in galaxy.model.Library.permitted_actions.items():
-        if k in in_list:
-            permissions_in.append( k )
-        else:
-            permissions_out.append( k )
-    return permissions_in, permissions_out
