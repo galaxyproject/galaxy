@@ -5,12 +5,14 @@
         <datatype extension="axt" type="galaxy.datatypes.sequence:Axt" display_in_upload="true"/>
         <datatype extension="bam" type="galaxy.datatypes.binary:Bam" mimetype="application/octet-stream" display_in_upload="true">
             <converter file="bam_to_bai.xml" target_datatype="bai"/>
+            <converter file="bam_to_array_tree_converter.xml" target_datatype="array_tree"/>
             <display file="ucsc/bam.xml" />
         </datatype>
         <datatype extension="bed" type="galaxy.datatypes.interval:Bed" display_in_upload="true">
             <converter file="bed_to_gff_converter.xml" target_datatype="gff"/>
             <converter file="interval_to_coverage.xml" target_datatype="coverage"/>
             <converter file="bed_to_interval_index_converter.xml" target_datatype="interval_index"/>
+            <converter file="bed_to_array_tree_converter.xml" target_datatype="array_tree"/>
             <converter file="bed_to_genetrack_converter.xml" target_datatype="genetrack"/>
             <!-- <display file="ucsc/interval_as_bed.xml" /> -->
             <display file="genetrack.xml" />

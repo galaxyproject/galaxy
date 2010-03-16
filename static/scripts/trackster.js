@@ -6,6 +6,7 @@ var DEBUG = false;
 var DENSITY = 1000,
     FEATURE_LEVELS = 10,
     DATA_ERROR = "There was an error in indexing this dataset.",
+    DATA_NOCONVERTER = "A converter for this dataset is not installed. Please check your datatypes_conf.xml file.",
     DATA_NONE = "No data for this chrom/contig.",
     DATA_PENDING = "Currently indexing... please wait",
     DATA_LOADING = "Loading data...",
@@ -77,6 +78,18 @@ $.extend( Cache.prototype, {
     }
 });
 
+var Drawer = function() {};
+$.extend( Drawer.prototype, {
+    intensity: function(ctx, max, data) {
+        
+        
+    },
+    
+});
+
+drawer = new Drawer();
+    
+    
 var View = function( chrom, title, vis_id, dbkey ) {
     this.vis_id = vis_id;
     this.dbkey = dbkey;
@@ -124,6 +137,13 @@ $.extend( View.prototype, {
             }
         }
     },
+    reset: function() {
+        this.low = this.max_low;
+        this.high = this.max_high;
+        this.center = this.center = (this.max_high - this.max_low) / 2;
+        this.zoom_level = 0;
+        $(".yaxislabel").remove();
+    },        
     redraw: function(nodraw) {
         this.span = this.max_high - this.max_low;
         var span = this.span / Math.pow(this.zoom_factor, this.zoom_level),
@@ -156,20 +176,22 @@ $.extend( View.prototype, {
         $("#high").val( commatize(this.high) );
         if (!nodraw) {
             for ( var i = 0, len = this.tracks.length; i < len; i++ ) {
-                this.tracks[i].draw();
+                if (this.tracks[i].enabled) {
+                    this.tracks[i].draw();
+                }
             }
             for ( var i = 0, len = this.label_tracks.length; i < len; i++ ) {
                 this.label_tracks[i].draw();
             }
         }
     },
-    zoom_in: function ( point ) {
+    zoom_in: function ( point, container ) {
         if (this.max_high === 0 || this.high - this.low < 30) {
             return;
         }
         
         if ( point ) {
-            this.center = point / $(document).width() * (this.high - this.low) + this.low;
+            this.center = point / container.width() * (this.high - this.low) + this.low;
         }
         this.zoom_level += 1;
         this.redraw();
@@ -201,6 +223,7 @@ $.extend( Track.prototype, {
     },
     init_each: function(params, success_fn) {
         var track = this;
+        track.enabled = false;
         track.data_queue = {};
         track.tile_cache.clear();
         track.data_cache.clear();
@@ -209,21 +232,25 @@ $.extend( Track.prototype, {
         track.container_div.removeClass("nodata error pending");
 
         if (track.view.chrom) {
-            $.getJSON( data_url, params, function ( data ) {
-                if (!data || data == "error") {
+            $.getJSON( data_url, params, function (result) {
+                if (!result || result === "error") {
                     track.container_div.addClass("error");
                     track.content_div.text(DATA_ERROR);
-                } else if (data.length === 0 || data == "no data") {
+                } else if (result === "no converter") {
+                    track.container_div.addClass("error");
+                    track.content_div.text(DATA_NOCONVERTER);
+                } else if ( (result.data && result.data.length === 0) || result === "no data") {
                     track.container_div.addClass("nodata");
                     track.content_div.text(DATA_NONE);
-                } else if (data == "pending") {
+                } else if (result === "pending") {
                     track.container_div.addClass("pending");
                     track.content_div.text(DATA_PENDING);
                     setTimeout(function() { track.init(); }, 5000);
                 } else {
                     track.content_div.text("");
                     track.content_div.css( "height", track.height_px + "px" );
-                    success_fn(data);
+                    track.enabled = true;
+                    success_fn(result);
                     track.draw();
                 }
             });
@@ -318,12 +345,11 @@ $.extend( LabelTrack.prototype, Track.prototype, {
     }
 });
 
-var LineTrack = function ( name, dataset_id, indexer, prefs ) {
+var LineTrack = function ( name, dataset_id, prefs ) {
     this.track_type = "LineTrack";
     Track.call( this, name, $("#viewport") );
     TiledTrack.call( this );
     
-    this.indexer = indexer;
     this.height_px = 100;
     this.container_div.addClass( "line-track" );
     this.dataset_id = dataset_id;
@@ -339,9 +365,9 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
             track_id = track.view.tracks.indexOf(track);
         
         track.vertical_range = undefined;
-        this.init_each({  stats: true, indexer: track.indexer,
-                                chrom: track.view.chrom, low: null, high: null,
-                                dataset_id: track.dataset_id }, function(data) {
+        this.init_each({  stats: true, chrom: track.view.chrom, low: null, high: null,
+                                dataset_id: track.dataset_id }, function(result) {
+            data = result.data;
             if ( isNaN(parseFloat(track.prefs.min_value)) || isNaN(parseFloat(track.prefs.max_value)) ) {
                 track.prefs.min_value = data.min;
                 track.prefs.max_value = data.max;
@@ -350,6 +376,7 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
                 $('#track_' + track_id + '_maxval').val(track.prefs.max_value);
             }
             track.vertical_range = track.prefs.max_value - track.prefs.min_value;
+            track.total_frequency = data.total_frequency;
         
             // Draw y-axis labels if necessary
             $('#linetrack_' + track_id + '_minval').remove();
@@ -373,17 +400,29 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
         
         if (!track.data_queue[key]) {
             track.data_queue[key] = true;
-            $.getJSON( data_url, {  "indexer": this.indexer, "chrom": this.view.chrom, 
+            /*$.getJSON( data_url, {  "chrom": this.view.chrom, 
                                     "low": low, "high": high, "dataset_id": this.dataset_id,
-                                    "resolution": this.view.resolution, }, function (data) {
+                                    "resolution": this.view.resolution }, function (data) {
                 track.data_cache.set(key, data);
                 delete track.data_queue[key];
                 track.draw();
+            });*/
+            $.ajax({ 'url': data_url, 'dataType': 'json', 'data': {  "chrom": this.view.chrom, 
+                                    "low": low, "high": high, "dataset_id": this.dataset_id,
+                                    "resolution": this.view.resolution }, 
+            success: function (result) {
+                data = result.data;
+                track.data_cache.set(key, data);
+                delete track.data_queue[key];
+                track.draw();
+            }, error: function(r, t, e) {
+                console.log(r, t, e);
+            } 
             });
         }
     },
     draw_tile: function( resolution, tile_index, parent_element, w_scale ) {
-        if (this.vertical_range === undefined) { // We don't have the necessary information yet
+        if (this.vertical_range === undefined) {
             return;
         }
         
@@ -398,6 +437,7 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
         }
         
         var data = this.data_cache.get(key);
+        
         canvas.css( {
             position: "absolute",
             top: 0,
@@ -411,31 +451,56 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
             min_value = this.prefs.min_value,
             max_value = this.prefs.max_value,
             vertical_range = this.vertical_range,
+            total_frequency = this.total_frequency,
             height_px = this.height_px;
             
         ctx.beginPath();
-        for ( var i = 0; i < data.length - 1; i++ ) {
+        
+        // for intensity, calculate delta x in pixels to for width of box
+        var delta_x_px = Math.ceil((data[1][0] - data[0][0]) * w_scale);
+        var mode = "line";
+        
+        for ( var i = 0; i < data.length; i++ ) {
             var x = data[i][0] - tile_low;
             var y = data[i][1];
-            // Missing data causes us to stop drawing
-            if ( isNaN( y ) ) {
-                in_path = false;
-            } else {
-                // Translate
+            
+            if ( mode == "intensity" ) {
+                // DRAW INTENSITY
+                if (y === null) {
+                    continue;
+                }
                 x = x * w_scale;
-                // console.log(y, this.min_value, this.vertical_range, (y - this.min_value) / this.vertical_range * this.height_px);
                 if (y <= min_value) {
                     y = min_value;
                 } else if (y >= max_value) {
                     y = max_value;
                 }
-                y = Math.round( height_px - (y - min_value) / vertical_range * height_px );
-                // console.log(canvas.get(0).height, canvas.get(0).width);
-                if ( in_path ) {
-                    ctx.lineTo( x, y );
+                y = Math.floor( (y - min_value) / vertical_range * 255 );
+                ctx.fillStyle = "rgb(" +y+ "," +y+ "," +y+ ")";
+                ctx.fillRect(x, 0, delta_x_px, 30);
+            }
+            else {
+                // Missing data causes us to stop drawing
+                if (y === null) {
+                    in_path = false;
+                    continue;
                 } else {
-                    ctx.moveTo( x, y );
-                    in_path = true;
+                    // Translate
+                    x = x * w_scale;
+                    // console.log(y, this.min_value, this.vertical_range, (y - this.min_value) / this.vertical_range * this.height_px);
+                    if (y <= min_value) {
+                        y = min_value;
+                    } else if (y >= max_value) {
+                        y = max_value;
+                    }
+                    y = Math.round( height_px - (y - min_value) / vertical_range * height_px );
+                    // console.log(canvas.get(0).height, canvas.get(0).width);
+                    if ( in_path ) {
+                        ctx.lineTo( x, y );
+                    } else {
+                        ctx.moveTo( x, y );
+                        in_path = true;
+                    }
                 }
             }
         }
@@ -471,12 +536,11 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
     }
 });
 
-var FeatureTrack = function ( name, dataset_id, indexer, prefs ) {
+var FeatureTrack = function ( name, dataset_id, prefs ) {
     this.track_type = "FeatureTrack";
     Track.call( this, name, $("#viewport") );
     TiledTrack.call( this );
     
-    this.indexer = indexer;
     this.height_px = 100;
     this.container_div.addClass( "feature-track" );
     this.dataset_id = dataset_id;
@@ -500,13 +564,16 @@ var FeatureTrack = function ( name, dataset_id, indexer, prefs ) {
 };
 $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
     init: function() {
-        var track = this;
-        this.init_each({  indexer: track.indexer, low: track.view.max_low, 
+        var track = this,
+            key = track.view.max_low + '_' + track.view.max_high;
+        this.init_each({  low: track.view.max_low, 
                                     high: track.view.max_high, dataset_id: track.dataset_id,
-                                    chrom: track.view.chrom }, function (data) {
-            track.values = data;
-            track.calc_slots();
-            track.slots = track.zo_slots;
+                                    chrom: track.view.chrom, resolution: this.view.resolution }, function (result) {
+            track.data_cache.set(key, result);
+            // track.values = result;
+            // track.calc_slots();
+            // track.slots = track.zo_slots;
+            track.draw();
         });
     },
     get_data: function( low, high ) {
@@ -515,10 +582,10 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
         
         if (!track.data_queue[key]) {
             track.data_queue[key] = true;
-            $.getJSON( data_url, {  indexer: track.indexer, chrom: track.view.chrom, 
+            $.getJSON( data_url, {  chrom: track.view.chrom, 
                                     low: low, high: high, dataset_id: track.dataset_id,
-                                    include_blocks: true }, function (data) {
-                track.data_cache.set(key, data);
+                                    include_blocks: true, resolution: this.view.resolution }, function (result) {
+                track.data_cache.set(key, result);
                 // console.log("datacache", track.data_cache.get(key));
                 delete track.data_queue[key];
                 track.draw();
@@ -612,52 +679,48 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
         
     },
     draw_tile: function( resolution, tile_index, parent_element, w_scale ) {
-        if (!this.values) {
-            return;
-        }
         var tile_low = tile_index * DENSITY * resolution,
             tile_high = ( tile_index + 1 ) * DENSITY * resolution,
             tile_span = DENSITY * resolution;
         // console.log("drawing " + tile_index);
-        // Once we zoom in enough, show name labels
         var data, slots, required_height;
-        if (w_scale > this.show_labels_scale) {
-            if (!this.showing_details) {
-                this.showing_details = true;
+
+        /*for (var k in this.data_cache.obj_cache) {
+            var k_split = k.split("_"), k_low = k_split[0], k_high = k_split[1];
+            if (k_low <= tile_low && k_high >= tile_high) {
+                data = this.data_cache.get(k);
+                break;
             }
-            for (var k in this.data_cache.obj_cache) {
-                var k_split = k.split("_"), k_low = k_split[0], k_high = k_split[1];
-                if (k_low <= tile_low && k_high >= tile_high) {
-                    data = this.data_cache.get(k);
-                    break;
-                }
-            }
-            if (!data) {
-                this.data_queue[ [tile_low, tile_high] ] = true;
-                this.get_data(tile_low, tile_high);
-                return;
-            }
-            // Calculate new slots incrementally for this new chunk of data and update height if necessary
-            required_height = this.incremental_slots( this.view.zoom_res, data ) * this.vertical_detail_px + 15;
+        }*/
+        
+        // var k = this.view.low + '_' + this.view.high;
+        var k = tile_low + '_' + tile_high;
+        var data = this.data_cache.get(k);
+        
+        if (!data) {
+            this.data_queue[ [tile_low, tile_high] ] = true;
+            this.get_data(tile_low, tile_high);
+            return;
+        }
+        
+        if (data.dataset_type == "array_tree") {
+            required_height = 30;
+            // Blah
+        } else {
+        // Calculate new slots incrementally for this new chunk of data and update height if necessary
+            required_height = this.incremental_slots( this.view.zoom_res, data.data ) * this.vertical_detail_px + 15;
             // console.log(required_height);
             slots = this.inc_slots[this.view.zoom_res];
-        } else {
-            if (this.showing_details) {
-                this.showing_details = false;
-            }
-            required_height = this.height_px;
-            slots = this.zo_slots;
-            data = this.values;
         }
-
+        
         // console.log(tile_low, tile_high, tile_length, w_scale);
         var width = Math.ceil( tile_span * w_scale ),
             new_canvas = $("<canvas class='tile'></canvas>"),
             label_color = this.prefs.label_color,
             block_color = this.prefs.block_color,
             left_offset = this.left_offset,
-            showing_details = this.showing_details,
-            y_scale = (this.showing_details ? this.vertical_detail_px : this.vertical_nodetail_px);
+            // showing_details = this.showing_details,
+            y_scale = this.vertical_detail_px;
         
         new_canvas.css({
             position: "absolute",
@@ -671,7 +734,30 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
         ctx.fillStyle = this.prefs.block_color;
         ctx.font = this.default_font;
         ctx.textAlign = "right";
-
+        var min_color = 150;
+        
+        if (data.dataset_type == "array_tree") {
+            var points = data.data;
+            var sums = data.sums;
+            var avg_f = data.avg_f;
+            var delta_x_px = Math.ceil((points[1][0] - points[0][0]) * w_scale);
+            
+            for ( var i = 0, len = points.length; i < len; i++ ) {
+                var x = Math.ceil( (points[i][0] - tile_low) * w_scale );
+                var y = points[i][1];
+                
+                if (!y) {
+                    continue;
+                }
+                y = Math.floor( min_color + (y - avg_f)/sums * min_color );
+                ctx.fillStyle = "rgb(" +y+ "," +y+ "," +y+ ")";
+                ctx.fillRect(x + left_offset, 0, delta_x_px, 20);
+            }
+            parent_element.append( new_canvas );
+            return new_canvas;
+        }
+        
+        var data = data.data;
         var j = 0;
         for (var i = 0, len = data.length; i < len; i++) {
             var feature = data[i];
@@ -685,10 +771,10 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                     thick_start = Math.floor( Math.max(0, (feature.thick_start - tile_low) * w_scale) );
                     thick_end = Math.ceil( Math.min(width, (feature.thick_end - tile_low) * w_scale) );
                 }
-                if (!showing_details) {
+                // if (!showing_details) {
                     // Non-detail levels
-                    ctx.fillRect(f_start + left_offset, y_center + 5, f_end - f_start, 1);
-                } else {
+                    // ctx.fillRect(f_start + left_offset, y_center + 5, f_end - f_start, 1);
+                // } else {
                     // Showing labels, blocks, details
                     if (feature.start > tile_low) {
                         ctx.fillStyle = label_color;
@@ -743,7 +829,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                             ctx.fillStyle = prefs.block_color;
                         }
                     }
-                }
+                // }
                 j++;
             }
         }        
@@ -772,12 +858,12 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
     }
 });
 
-var ReadTrack = function ( name, dataset_id, indexer, prefs ) {
+var ReadTrack = function ( name, dataset_id, prefs ) {
     this.track_type = "ReadTrack";
     this.tile_cache = new Cache(CACHED_TILES_FEATURE);
     Track.call( this, name, $("#viewport") );
     TiledTrack.call( this );
-    FeatureTrack.call( this, name, dataset_id, indexer, prefs );
+    FeatureTrack.call( this, name, dataset_id, prefs );
     
 };
 $.extend( ReadTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype, {

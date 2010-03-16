@@ -30,13 +30,7 @@
 }
 
 #nav-controls a {
-    color: white;
-    padding: 0.1em 0.4em;
-    margin: 0 0;
-    text-decoration: none;
-    background: black;
-    -webkit-border-radius: 1em;
-    -moz-border-radius: 1em;
+    padding: 5px 0.4em;
 }
 
 #overview {

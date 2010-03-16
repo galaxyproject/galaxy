@@ -51,8 +51,12 @@ ${h.css( "history" )}
                 </select>
             <input id="low" size="12" />:<input id="high" size="12" />
             <input type="hidden" name="id" value="${config.get('vis_id', '')}" />
-                <a href="#" onclick="javascript:view.zoom_in();view.redraw();">+</a>
-                <a href="#" onclick="javascript:view.zoom_out();view.redraw();">-</a>
+                <a href="#" onclick="javascript:view.zoom_in();view.redraw();">
+                    <img src="${h.url_for('/static/images/fugue/magnifier-zoom.png')}" />
+                </a>
+                <a href="#" onclick="javascript:view.zoom_out();view.redraw();">
+                    <img src="${h.url_for('/static/images/fugue/magnifier-zoom-out.png')}" />
+                </a>
             </form>
             <div id="debug" style="float: right"></div>
         </div>
@@ -91,7 +95,7 @@ ${h.js( 'galaxy.base', 'galaxy.panels', "json2", "jquery", "jquery.event.drag", 
             view = new View( "${config.get('chrom')}", "${config.get('title') | h}", "${config.get('vis_id')}", "${config.get('dbkey')}" );
             %for track in config.get('tracks'):
                 view.add_track( 
-                    new ${track["track_type"]}( "${track['name'] | h}", ${track['dataset_id']}, "${track['indexer']}", ${track['prefs']} ) 
+                    new ${track["track_type"]}( "${track['name'] | h}", ${track['dataset_id']}, ${track['prefs']} ) 
                 );
             %endfor
             init();
@@ -131,7 +135,7 @@ ${h.js( 'galaxy.base', 'galaxy.panels', "json2", "jquery", "jquery.event.drag", 
 
             $("#content").bind("mousewheel", function( e, delta ) {
                 if (delta > 0) {
-                    view.zoom_in(e.pageX);
+                    view.zoom_in(e.pageX, $("#viewport-container"));
                 } else {
                     view.zoom_out();
                 }
@@ -139,7 +143,7 @@ ${h.js( 'galaxy.base', 'galaxy.panels', "json2", "jquery", "jquery.event.drag", 
             });
 
             $("#content").bind("dblclick", function( e ) {
-                view.zoom_in(e.pageX);
+                view.zoom_in(e.pageX, $("#viewport-container"));
             });
 
             // To let the overview box be draggable
@@ -210,13 +214,13 @@ ${h.js( 'galaxy.base', 'galaxy.panels', "json2", "jquery", "jquery.event.drag", 
                                             var td = track_data;
                                             switch(track_data.track_type) {
                                                 case "LineTrack":
-                                                    new_track = new LineTrack( track_data.name, track_data.dataset_id, track_data.indexer, track_data.prefs );
+                                                    new_track = new LineTrack( track_data.name, track_data.dataset_id, track_data.prefs );
                                                     break;
                                                 case "FeatureTrack":
-                                                    new_track = new FeatureTrack( track_data.name, track_data.dataset_id, track_data.indexer, track_data.prefs );
+                                                    new_track = new FeatureTrack( track_data.name, track_data.dataset_id, track_data.prefs );
                                                     break;
                                                 case "ReadTrack":
-                                                    new_track = new ReadTrack( track_data.name, track_data.dataset_id, track_data.indexer, track_data.prefs );
+                                                    new_track = new ReadTrack( track_data.name, track_data.dataset_id, track_data.prefs );
                                                     break;
                                             }
                                             view.add_track(new_track);
@@ -245,7 +249,6 @@ ${h.js( 'galaxy.base', 'galaxy.panels', "json2", "jquery", "jquery.event.drag", 
                     
                     payload.push( {
                         "track_type": track.track_type,
-                        "indexer": track.indexer,
                         "name": track.name,
                         "dataset_id": track.dataset_id,
                         "prefs": track.prefs
@@ -286,6 +289,7 @@ ${h.js( 'galaxy.base', 'galaxy.panels', "json2", "jquery", "jquery.event.drag", 
                         return v.chrom === view.chrom;
                     })[0];
                     view.max_high = found.len;
+                    view.reset();
                     view.redraw(true);
                     
                     for (var track_id in view.tracks) {
@@ -307,13 +311,12 @@ ${h.js( 'galaxy.base', 'galaxy.panels', "json2", "jquery", "jquery.event.drag", 
                         del_icon = $('<a href="#" class="icon-button delete" />'),
                         edit_icon = $('<a href="#" class="icon-button edit" />'),
                         body = $('<div class="historyItemBody"></div>'),
-                        checkbox = $('<input type="checkbox" checked="checked"></input>').attr("id", "track_" + track_id + "title"),
                         li = $('<li class="sortable"></li>').attr("id", "track_" + track_id),
                         div = $('<div class="historyItemContainer historyItem"></div>'),
-                        editable = $('<div style="display:none"></div>');
+                        editable = $('<div style="display:none"></div>').attr("id", "track_" + track_id + "_editable");
                     
                     edit_icon.bind("click", function() {
-                        editable.toggle();
+                        $("#track_" + track_id + "_editable").toggle();
                     });
                     
                     del_icon.bind("click", function() {

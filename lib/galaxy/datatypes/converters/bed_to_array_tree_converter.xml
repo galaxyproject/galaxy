@@ -1,0 +1,14 @@
+<tool id="CONVERTER_bed_to_array_tree_0" name="Convert BED to Array Tree" version="1.0.0">
+<!--  <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
+  <command interpreter="python">bed_to_array_tree_converter.py $input1 $output1</command>
+  <inputs>
+    <page>
+        <param format="bed" name="input1" type="data" label="Choose BED file"/>
+    </page>
+   </inputs>
+  <outputs>
+    <data format="array_tree" name="output1"/>
+  </outputs>
+  <help>
+  </help>
+</tool>

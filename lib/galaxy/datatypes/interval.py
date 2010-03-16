@@ -508,7 +508,7 @@ class Bed( Interval ):
         except: return False
     
     def get_track_type( self ):
-        return "FeatureTrack", "interval_index"
+        return "FeatureTrack", ["interval_index", "array_tree"]
 
 class BedStrict( Bed ):
     """Tab delimited data in strict BED format - no non-standard columns allowed"""
@@ -959,7 +959,7 @@ class Wiggle( Tabular, _RemoteCallMixin ):
         resolution = max( resolution, 1 )
         return resolution
     def get_track_type( self ):
-        return "LineTrack", "array_tree"
+        return "LineTrack", ["array_tree"]
 
 class CustomTrack ( Tabular ):
     """UCSC CustomTrack"""

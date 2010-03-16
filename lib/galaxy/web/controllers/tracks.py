@@ -98,11 +98,10 @@ class TracksController( BaseController ):
         
         hda_query = trans.sa_session.query( model.HistoryDatasetAssociation )
         dataset = hda_query.get( dataset_id )
-        track_type, indexer = dataset.datatype.get_track_type()
+        track_type, _ = dataset.datatype.get_track_type()
         
         track = {
             "track_type": track_type,
-            "indexer": indexer,
             "name": dataset.name,
             "dataset_id": dataset.id,
             "prefs": {},
@@ -134,10 +133,9 @@ class TracksController( BaseController ):
             except KeyError:
                 prefs = {}
             dataset = hda_query.get( dataset_id )
-            track_type, indexer = dataset.datatype.get_track_type()
+            track_type, _ = dataset.datatype.get_track_type()
             tracks.append( {
                 "track_type": track_type,
-                "indexer": indexer,
                 "name": dataset.name,
                 "dataset_id": dataset.id,
                 "prefs": simplejson.dumps(prefs),
@@ -187,41 +185,50 @@ class TracksController( BaseController ):
         return manifest
 
     @web.json
-    def data( self, trans, dataset_id, indexer, chrom, low, high, **kwargs ):
+    def data( self, trans, dataset_id, chrom, low, high, **kwargs ):
         """
         Called by the browser to request a block of data
         """
-        # Load the requested dataset
         dataset = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( dataset_id )
-        # No dataset for that id
         if not dataset or not chrom:
             return messages.NO_DATA
-        # Dataset is in error state, can't display
         if dataset.state == trans.app.model.Job.states.ERROR:
             return messages.ERROR
-        # Dataset is still being generated
         if dataset.state != trans.app.model.Job.states.OK:
             return messages.PENDING
-        # Determine what to return based on the type of track being drawn.
-        converted_dataset_type = indexer
-        converted_dataset = self.__dataset_as_type( trans, dataset, converted_dataset_type )
-        if not converted_dataset:
-            # No converter
-            return messages.NO_CONVERTER
-        # Need to check states again for the converted version
-        if converted_dataset.state == model.Dataset.states.ERROR:
-            return messages.ERROR
-        if converted_dataset.state != model.Dataset.states.OK:
-            return messages.PENDING
-        # We have a dataset in the right format that is ready to use, wrap in
-        # a data provider that knows how to access it
-        data_provider = dataset_type_to_data_provider[ converted_dataset_type ]( converted_dataset, dataset )
+        
+        track_type, indexes = dataset.datatype.get_track_type()
+        converted = dict([ (index, self.__dataset_as_type( trans, dataset, index )) for index in indexes ])
 
-        # Return stats if we need them
-        if 'stats' in kwargs: return data_provider.get_stats( chrom )
+        for index, converted_dataset in converted.iteritems():
+            if not converted_dataset:
+                return messages.NO_CONVERTER
 
-        # Get the requested chunk of data
-        return data_provider.get_data( chrom, low, high, **kwargs )
+            # Need to check states again for the converted version
+            if converted_dataset.state == model.Dataset.states.ERROR:
+                return messages.ERROR
+            if converted_dataset.state != model.Dataset.states.OK:
+                return messages.PENDING
+        
+        if len(converted) > 1:
+            # Have to choose between array_tree and other provider
+            array_tree = ArrayTreeDataProvider( converted['array_tree'], dataset )
+            freqs = array_tree.get_data( chrom, low, high, frequencies=True, **kwargs )
+            if freqs is not None:
+                frequencies, sums, avg_f = freqs
+                return { "dataset_type": "array_tree", "data": frequencies, "sums": sums, "avg_f": avg_f }
+            dataset_type = "interval_index"
+        else:
+            dataset_type = converted.keys()[0]
+            
+        data_provider = dataset_type_to_data_provider[ dataset_type ]( converted[dataset_type], dataset )
+
+        if 'stats' in kwargs:
+            data = data_provider.get_stats( chrom )
+        else:
+            data = data_provider.get_data( chrom, low, high, **kwargs )
+        
+        return { "dataset_type": dataset_type, "data": data }
 
     def __dataset_as_type( self, trans, dataset, type ):
         """
@@ -240,12 +247,11 @@ class TracksController( BaseController ):
         # See if converted dataset already exists
         converted_datasets = [c for c in dataset.get_converted_files_by_type( type ) if c != None]
         if converted_datasets:
-            for d in converted_datasets:
-                if d.state != 'error':
-                    return d
-                else:
-                    return None
-                    
+            if converted_datasets[0].state != 'error':
+                return converted_datasets[0]
+            else:
+                return None
+        
         # Conversion is possible but hasn't been done yet, run converter here
         # FIXME: this is largely duplicated from DefaultToolAction
         assoc = model.ImplicitlyConvertedDatasetAssociation( parent = dataset, file_type = type, metadata_safe = False )
@@ -285,7 +291,6 @@ class TracksController( BaseController ):
         for track in decoded_payload:
             tracks.append( {    "dataset_id": str(track['dataset_id']),
                                 "name": track['name'],
-                                "indexer": track['indexer'],
                                 "track_type": track['track_type'],
                                 "prefs": track['prefs']
             } )
