@@ -1304,7 +1304,9 @@ assign_mapper( context, WorkflowStepConnection, WorkflowStepConnection.table,
 
 
 assign_mapper( context, StoredWorkflow, StoredWorkflow.table,
-    properties=dict( user=relation( User ),
+    properties=dict( user=relation( User, 
+                                    primaryjoin=( User.table.c.id == StoredWorkflow.table.c.user_id ),
+                                    backref='stored_workflows' ),
                      workflows=relation( Workflow, backref='stored_workflow',
                                          cascade="all, delete-orphan",
                                          primaryjoin=( StoredWorkflow.table.c.id == Workflow.table.c.stored_workflow_id ) ),

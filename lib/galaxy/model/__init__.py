@@ -1319,6 +1319,10 @@ class FormDefinition( object ):
                 field_widget.user = user
                 field_widget.value = value
                 field_widget.params = params
+            elif field['type'] == 'WorkflowField':
+                field_widget.user = user
+                field_widget.value = value
+                field_widget.params = params
             elif field[ 'type' ] == 'SelectField':
                 for option in field[ 'selectlist' ]:
                     if option == value:

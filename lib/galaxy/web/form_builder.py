@@ -12,7 +12,7 @@ class BaseField(object):
         raise TypeError( "Abstract Method" )
     @staticmethod
     def form_field_types():
-        return ['TextField', 'TextArea', 'SelectField', 'CheckboxField', 'AddressField']
+        return ['TextField', 'TextArea', 'SelectField', 'CheckboxField', 'AddressField', 'WorkflowField']
 
 class TextField(BaseField):
     """
@@ -433,6 +433,34 @@ class AddressField(BaseField):
         else:
             self.select_address.add_option('Add a new address', 'new')
         return self.select_address.get_html()+address_html
+    
+    
+class WorkflowField(BaseField):
+    def __init__(self, name, user=None, value=None, params=None):
+        self.name = name
+        self.user = user
+        self.value = value
+        self.select_workflow = None
+        self.params = params
+    def get_html(self):
+        from galaxy import util
+        add_ids = ['none']
+        if self.user:
+            for a in self.user.stored_workflows:
+                add_ids.append(str(a.id))
+        self.select_workflow = SelectField(self.name)
+        if self.value == 'none':
+            self.select_workflow.add_option('Select one', 'none', selected=True)
+        else:
+            self.select_workflow.add_option('Select one', 'none')
+        if self.user:
+            for a in self.user.stored_workflows:
+                if not a.deleted:
+                    if self.value == str(a.id):
+                        self.select_workflow.add_option(a.name, str(a.id), selected=True)
+                    else:
+                        self.select_workflow.add_option(a.name, str(a.id))
+        return self.select_workflow.get_html()
 
 
 def get_suite():

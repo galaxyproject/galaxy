@@ -284,6 +284,16 @@ $(document).ready(function(){
                         %endif
                     %endfor
                 </select>
+            %elif field['type'] == 'WorkflowField':
+                <select name="sample_${index}_field_${field_index}">
+                    %for option_index, option in enumerate(request.user.stored_workflows):
+                        %if option == sample_values[field_index]:
+                            <option value="${option.id}" selected>${option.name}</option>
+                        %else:
+                            <option value="${option.id}">${option.name}</option>
+                        %endif
+                    %endfor
+                </select>
             %elif field['type'] == 'CheckboxField':
                 <input type="checkbox" name="sample_${index}_field_${field_index}" value="Yes"/>
             %endif
