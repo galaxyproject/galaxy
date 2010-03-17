@@ -110,8 +110,8 @@
       BWA commands:
       cp test-data/phiX.fasta phiX.fasta
       bwa index -a is phiX.fasta
-      bwa aln -n 0.04 -o 1 -e -1 -d 16 -i 5 -k 2 -t 4 -M 3 -O 11 -E 4 -R -N phiX.fasta test-data/bwa_wrapper_in1.fastq > bwa_wrapper_out1.sai
-      bwa samse phiX.fasta bwa_wrapper_out1.sai test-data/bwa_wrapper_in1.fastq >> bwa_wrapper_out2.sam
+      bwa aln -n 0.04 -o 1 -e -1 -d 16 -i 5 -k 2 -t 4 -M 3 -O 11 -E 4 -R -N phiX.fasta test-data/bwa_wrapper_in1.fastq > bwa_wrapper_out2.sai
+      bwa samse phiX.fasta bwa_wrapper_out2.sai test-data/bwa_wrapper_in1.fastq >> bwa_wrapper_out2.sam
       phiX.fasta is the prefix for the reference
       remove the comment lines (beginning with '@') from the resulting sam file
       -->
@@ -222,7 +222,6 @@ The flags are as follows::
 
     Flag  Description
   ------  -------------------------------------
-  Flag    Description
   0x0001  the read is paired in sequencing
   0x0002  the read is mapped in a proper pair
   0x0004  the query sequence itself is unmapped
