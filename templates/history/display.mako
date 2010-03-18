@@ -208,11 +208,6 @@
     ${parent.stylesheets()}
     ${h.css( "history" )}
     <style type="text/css">
-        .visible-right-border {
-            padding-right: 3px;
-            border-right-style: solid;
-            border-right-color: #66AA66;
-        }
         .historyItemBody {
             display: none;
         }
@@ -252,7 +247,7 @@
         %else:    
             ## Render requested datasets, ordered from newest to oldest, including annotations.
             <table class="annotated-item">
-                <tr><th>Dataset</th><th class="annotation">Description/Notes</th></tr>
+                <tr><th>Dataset</th><th class="annotation">Annotation</th></tr>
                 %for data in datasets:
                     <tr>
                         %if data.visible:

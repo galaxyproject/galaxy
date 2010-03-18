@@ -4,8 +4,8 @@
 .embedded-item.history p{background:#C1C9E5 no-repeat 2px 2px;margin-top:0;margin-bottom:0;}
 .embedded-item.dataset{background-color:#CFC} 
 .embedded-item.dataset p{background:#CFC no-repeat 2px 2px;margin-top:0;margin-bottom:0;}
-.embedded-item.workflow{background-color:#EBD9B2} 
-.embedded-item.workflow p{background:#EBD9B2 no-repeat 2px 2px;margin-top:0;margin-bottom:0;}
+.embedded-item.workflow{background-color:#FBDDB3} 
+.embedded-item.workflow p{background:#FBDDB3 no-repeat 2px 2px;margin-top:0;margin-bottom:0;}
 .embedded-item.placeholder{}
 .embedded-item .item-content{max-height:25em;overflow:auto;display:none;}
 .embedded-item .title{vertical-align:top;text-align:center;font-weight:bold;}

@@ -8,12 +8,6 @@
 <%def name="stylesheets()">
     ${parent.stylesheets()}
     ${h.css( "workflow" )}
-    <style type="text/css">
-        div.toolForm{
-            margin-top: 10px;
-            margin-bottom: 10px;
-        }
-    </style>
 </%def>
 
 <%def name="do_inputs( inputs, values, prefix, step, other_values=None )">
@@ -87,7 +81,7 @@
         trans.get_history( create=True ) 
     %>
     <table class="annotated-item">
-        <tr><th>Step</th><th class="annotation">Description/Notes</th></tr>
+        <tr><th>Step</th><th class="annotation">Annotation</th></tr>
         %for i, step in enumerate( steps ):
             <tr><td>
             %if step.type == 'tool' or step.type is None:

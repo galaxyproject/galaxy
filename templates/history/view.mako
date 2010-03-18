@@ -269,7 +269,7 @@
     ${parent.stylesheets()}
     ${h.css( "history", "autocomplete_tagging" )}
     <style type="text/css">
-        .visible-right-border {
+        .historyItemContainer {
           padding-right: 3px;
           border-right-style: solid;
           border-right-color: #66AA66;

@@ -47,6 +47,15 @@
                          container.find(".item-content").html(item_content).show("fast");
                          container.find(".toggle-expand").hide();
                          container.find(".toggle-contract").show();
+                         
+                         // Init needed for history items.
+                         setupHistoryItem( container.find("div.historyItemWrapper") ); 
+                         container.find( "div.historyItemBody:visible" ).each( function() {
+                             if ( $.browser.mozilla ) {
+                                 $(this).find( "pre.peek" ).css( "overflow", "hidden" );
+                             }
+                             $(this).hide();
+                         });
                      }
                  });
                 else
@@ -218,7 +227,6 @@
     ${h.css( "base", "history", "autocomplete_tagging" )}
     <style type="text/css">
         .toggle-contract { display: none; }
-        .item-content { overflow: auto; }
         .embedded-item h4 {
             margin: 0px;
         }
