@@ -311,7 +311,12 @@ $(document).ready(function(){
     %for field_index, field in fields_dict.items():
         <td>
             %if sample_values[field_index]:
-                ${sample_values[field_index]}
+                %if field['type'] == 'WorkflowField':
+                    <% workflow = trans.sa_session.query( trans.app.model.StoredWorkflow ).get( int(sample_values[field_index]) ) %>
+                    <a href="${h.url_for( controller='workflow', action='run', id=trans.security.encode_id(workflow.id) )}">${workflow.name}</a>
+                %else:
+                    ${sample_values[field_index]}
+                %endif
             %else:
                 <i>None</i>
             %endif
