@@ -107,7 +107,7 @@ class RequestsGrid( grids.Grid ):
                      link=( lambda item: iff( item.deleted, None, dict( operation="events", id=item.id ) ) ) )
     ]
     columns.append( grids.MulticolFilterColumn( "Search", 
-                                                cols_to_filter=[ columns[0], columns[1], columns[6] ], 
+                                                cols_to_filter=[ columns[0], columns[1] ], 
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
