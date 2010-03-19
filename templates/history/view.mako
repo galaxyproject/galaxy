@@ -258,7 +258,7 @@
     {
         var href = '${h.url_for( controller='/history', action='list_published')}';
         href = href + "?f-tags=" + tag_name;
-        if (tag_value != null && tag_value != "")
+        if (tag_value != undefined && tag_value != "")
             href = href + ":" + tag_value;
         self.location = href;
     }

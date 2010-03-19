@@ -345,7 +345,7 @@
         // Add tag to grid filter.
         function add_tag_to_grid_filter(tag_name, tag_value) {
             // Put tag name and value together.
-            var tag = tag_name + (tag_value !== null && tag_value != "" ? ":" + tag_value : "");
+            var tag = tag_name + (tag_value !== undefined && tag_value != "" ? ":" + tag_value : "");
             $('#more-search-options').show('fast');
             add_filter_condition("tags", tag, true); 
         }
