@@ -1,8 +1,8 @@
 <tool id="qual_stats_boxplot" name="Boxplot" version="1.0.0">
   <description>of quality statistics</description>
-  <command>gnuplot &lt; '$gnuplot_commands' &gt; '$output_file'</command>
+  <command>gnuplot &lt; '$gnuplot_commands' 2&gt;&amp;1 || echo "Error running gnuplot." >&amp;2</command>
   <requirements>
-    <requirement type="binary">gnuplot</requirement>
+    <requirement type="binary" version="gnuplot 4.2 patchlevel 2">gnuplot</requirement>
   </requirements>
   <inputs>
     <param name="input_file" type="data" format="tabular" label="Quality Statistics File"/>
@@ -30,6 +30,7 @@
   </inputs>
   <configfiles>
     <configfile name="gnuplot_commands">
+set output '$output_file'
 set term png size ${graph_size}
 set boxwidth 0.8 
 set key right tmargin
