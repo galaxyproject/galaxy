@@ -126,10 +126,12 @@ static_style_dir = %(here)s/static/june_2007_style/blue
 ## for a local mirror where you are doing private software development
 ##
 ## Brand: appends "/[brand]" to the "Galaxy" text in the masthead
+## logo_url: replaces the default "Galaxy + brand" link url
 ## wiki_url: replaces the default galaxy main wiki
 ## bugs_email: replaces the default galaxy bugs email list
 ##citation_url: point to a URL listing citations
 #brand = Private local mirror
+#logo_url = /
 #wiki_url = /path/to/my/local/wiki
 #bugs_email = mailto:galaxy-bugs@example.org
 #citation_url = /path/to/my/citations

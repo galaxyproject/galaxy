@@ -205,9 +205,9 @@
         Visualization
         <div class="submenu">
         <ul>
-            <li><a href="${h.url_for( controller='/tracks', action='index' )}">Build track browser</a></li>
+            <li><a href="${h.url_for( controller='/tracks', action='index' )}">New Track Browser</a></li>
             <li><hr style="color: inherit; background-color: gray"/></li>
-	    <li><a href="${h.url_for( controller='/visualization', action='list' )}">Stored visualizations</a></li>
+	    <li><a href="${h.url_for( controller='/visualization', action='list' )}">Saved Visualizations</a></li>
         </ul>
         </div>
     </td>
@@ -287,11 +287,11 @@
     
     ## Logo, layered over tabs to be clickable
     <div class="title" style="position: absolute; top: 0; left: 0;">
-        <a href="/">
+        <a href="${app.config.get( 'logo_url', '/' )}">
         <img border="0" src="${h.url_for('/static/images/galaxyIcon_noText.png')}" style="width: 26px; vertical-align: top;">
         Galaxy
         %if app.config.brand:
-        <span class='brand'>/${app.config.brand}</span>
+            <span class='brand'>/ ${app.config.brand}</span>
         %endif
         </a>
     </div>
