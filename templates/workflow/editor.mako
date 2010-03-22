@@ -310,7 +310,22 @@
 
     function show_form_for_tool( text, node ) {
         $("#edit-attributes").hide();
-		$("#right-content").show().html( text );   
+        $("#right-content").show().html( text );
+        
+        // Add metadata form to tool.
+        if (node) {
+            $("#right-content").find(".toolForm").after( "<p><div class='metadataForm'> \
+                <div class='metadataFormTitle'>Edit Step Attributes</div> \
+                <div class='form-row'> \
+                <label>Annotation / Notes:</label> \
+                        <div style='margin-right: 10px;'> \
+                        <textarea name='annotation' rows='3' style='width: 100%'>" + node.annotation + "</textarea> \
+                            <div class='toolParamHelp'>Add an annotation or notes to this step; annotations are available when a workflow is viewed.</div> \
+                        </div> \
+                </div> \
+                </div>" );
+        }
+        
         $("#right-content").find( "form" ).ajaxForm( {
             type: 'POST',
             dataType: 'json',
@@ -352,28 +367,6 @@
                 });
             });
         });
-        
-            
-        // Add metadata form to tool.
-        if (node) {
-            var metadata_div = 
-            $( "<p><div class='metadataForm'> \
-                <div class='metadataFormTitle'>Edit Step Attributes</div> \
-                <div class='form-row'> \
-                <label>Annotation / Notes:</label> \
-                        <div style='margin-right: 10px;'> \
-                        <textarea name='annotation' rows='3' style='width: 100%'>" + node.annotation + "</textarea> \
-                            <div class='toolParamHelp'>Add an annotation or notes to this step; annotations are available when a workflow is viewed.</div> \
-                        </div> \
-                </div> \
-                </div>");
-            // See above comment: this is necessary to handle autosaving.
-            var textarea = $(metadata_div).find("textarea");
-            textarea.focus( function () {
-                workflow.active_form_has_changes = true;
-            });
-            $("#right-content").find(".toolForm").after( metadata_div );
-        }
     }
     
     var close_editor = function() {

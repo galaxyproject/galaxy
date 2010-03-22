@@ -94,10 +94,11 @@ from galaxy.util.expressions import ExpressionContext
     </div>
 </%def>
 
-<div class="toolForm">
-    <div class="toolFormTitle">Tool: ${tool.name}</div>
-    <div class="toolFormBody">
-        <form method="post" action="${h.url_for( action='editor_form_post' )}">
+<form method="post" action="${h.url_for( action='editor_form_post' )}">
+
+    <div class="toolForm">
+        <div class="toolFormTitle">Tool: ${tool.name}</div>
+        <div class="toolFormBody">
             <input type="hidden" name="tool_id" value="${tool.id}" />
             %for i, inputs in enumerate( tool.inputs_by_page ):
                 %if tool.has_multiple_pages:
@@ -105,6 +106,8 @@ from galaxy.util.expressions import ExpressionContext
                 %endif
                 ${do_inputs( inputs, values, errors, "" )}
             %endfor
-        </form>
+        </div>
     </div>
-</div>
+    
+
+</form>

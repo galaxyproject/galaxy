@@ -448,12 +448,8 @@ $.extend( Workflow.prototype, {
         // If active form has changed, save it
         if (this.active_form_has_changes) {
             this.has_changes = true;
-            // Get annotation and add to form.
-            var annotation = $("textarea[name=annotation]").val();
-            var tool_form = $("#right-content").find("form");
-            tool_form.append( "<input type='hidden' name='annotation' value='"+annotation+"' />" );
             // Submit form.
-            tool_form.submit();
+            $("#right-content").find("form").submit();
             this.active_form_has_changes = false;
         }
     },
