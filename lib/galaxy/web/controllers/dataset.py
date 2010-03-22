@@ -332,7 +332,7 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistoryDatasetAssoc
                     trans.response.set_content_type( mime )
                     return open( file_path )
                 else:
-                    return "Could not find '%s' on the extra files path." % filename
+                    return "Could not find '%s' on the extra files path %s." % (filename,file_path)
             
             mime = trans.app.datatypes_registry.get_mimetype_by_extension( data.extension.lower() )
             trans.response.set_content_type(mime)

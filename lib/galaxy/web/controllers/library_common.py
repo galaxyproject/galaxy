@@ -1334,6 +1334,11 @@ class LibraryCommon( BaseController ):
                     log.exception( "Unable to create archive for download" )
                     msg = "Unable to create archive for download, please report this error"
                     messagetype = 'error'
+                except:
+                     error = True
+         	     log.exception( "Unexpected error %s in create archive for download" % sys.exc_info()[0])
+                     msg = "Unable to create archive for download, please report - %s" % sys.exc_info()[0]
+                     messagetype = 'error'
                 if not error:
                     composite_extensions = trans.app.datatypes_registry.get_composite_extensions( )
                     seen = []

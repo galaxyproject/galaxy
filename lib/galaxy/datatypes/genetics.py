@@ -114,7 +114,10 @@ class GenomeGraphs( Tabular ):
         npeek = 5
         out = ['<table cellspacing="0" cellpadding="3">']
         f = open(dataset.file_name,'r')
-        d = [f.next() for x in range(npeek)]
+        d = f.readlines()[:5]
+        if len(d) == 0:
+	    out = "Cannot find anything to parse in %s" % dataset.name
+	    return out
         hasheader = 0
         try:
             test = ['%f' % x for x in d[0][1:]] # first is name - see if starts all numerics
