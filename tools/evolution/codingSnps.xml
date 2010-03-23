@@ -1,0 +1,89 @@
+<tool id="codingSnps" name="Amino-acid changes">
+  <description>caused by a set of SNPs</description>
+  <command interpreter="perl">
+    codingSnps.pl $input1 $input2 ${GALAXY_DATA_INDEX_DIR}/codingSnps.loc chr=${input1.metadata.chromCol} start=${input1.metadata.startCol} end=${input1.metadata.endCol} snp=$col1 $out_file1
+  </command>
+  <inputs>
+    <param format="interval" name="input1" type="data" label="SNPs"/>
+    <param format="interval" name="input2" type="data" label="genes"/>
+    <param name="col1" label="Column with SNPs" type="data_column" data_ref="input1" />
+  </inputs>
+  <outputs>
+    <data format="input" name="out_file1" />
+  </outputs>
+  <code file="codingSnps_filter.py"></code>
+  <requirements>
+    <requirement type="binary">twoBitToFa</requirement>
+  </requirements>
+  <tests>
+    <test>
+	<param name="input1" value="codingSnps_input1.interval" dbkey="hg18" />
+	<param name="input2" value="codingSnps_input2.bed" dbkey="hg18" />
+	<param name="col1" value="6" />
+	<output name="output" file="codingSnps_output.interval" />
+    </test>
+  </tests>
+
+  <help>
+This tool identifies which SNPs create amino-acid changes in the specified coding regions.
+
+**Example**
+
+- first input file, with SNPs::
+
+    chr22       14440426        14440427        C/T
+    chr22       14494851        14494852        A/G
+    chr22       14494911        14494912        A/T
+    chr22       14550435        14550436        A/G
+    chr22       14611956        14611957        G/T
+    chr22       14612076        14612077        A/G
+    chr22       14668537        14668538        C
+    chr22       14668703        14668704        A/T
+    chr22       14668775        14668776        G
+    chr22       14680074        14680075        A/T
+    etc.
+
+    alternatively indicating polymorphisms using ambiguous-nucleotide symbols:
+
+    chr22       14440426        14440427        Y
+    chr22       14494851        14494852        R
+    chr22       14494911        14494912        W
+    chr22       14550435        14550436        R
+    chr22       14611956        14611957        K
+    chr22       14612076        14612077        R
+    chr22       14668537        14668538        C
+    chr22       14668703        14668704        W
+    chr22       14668775        14668776        G
+    chr22       14680074        14680075        W
+    etc.
+
+- second input file, with UCSC annotations for human genes::
+
+    chr22   14504263        14572999        uc002zkr.2      0       -       14504263        14504263        0       5       710,91,136,138,94,      0,38133,62547,62901,68642,
+    chr22   14527995        14572999        uc010gqo.1      0       -       14527995        14527995        0       4       3826,91,136,94, 0,14401,38815,44910,
+    chr22   14542065        14552264        uc002zkt.2      0       +       14542065        14542065        0       3       323,88,313,     0,2416,9886,
+    chr22   14559619        14561004        uc002zku.2      0       -       14559619        14559619        0       1       1385,   0,
+    chr22   14567164        14572999        uc002zkv.2      0       -       14567164        14567164        0       5       138,112,115,111,94,     0,1867,2099,3516,5741,
+    chr22   14620243        14620281        uc002zkw.1      0       -       14620243        14620243        0       1       38,     0,
+    chr22   14620300        14620339        uc002zkx.1      0       -       14620300        14620300        0       1       39,     0,
+    chr22   14621086        14621125        uc002zky.1      0       +       14621086        14621086        0       1       39,     0,
+    chr22   14622000        14622030        uc002zkz.1      0       -       14622000        14622000        0       1       30,     0,
+    chr22   14623380        14623414        uc002zla.1      0       -       14623380        14623380        0       1       34,     0,
+    etc.
+
+- output file, showing non-synonymous substitutions in coding regions::
+
+    chr22    15452482        15452483        G       uc002zlp.1      Trp:Arg            320     A
+    chr22    15644564        15644565        T       uc002zlv.1      His:Asn            442     G
+    chr22    15645123        15645124        C       uc002zlv.1      Phe:Leu            255     A
+    chr22    15645193        15645194        A/G     uc002zlv.1      Pro:Leu/Pro        232     G
+    chr22    15660821        15660822        A/G     uc002zlv.1      Thr:Met/Thr        143     G
+    chr22    15969208        15969209        C/T     uc002zly.1      Ala:Ala/Val        367     C
+    chr22    15969208        15969209        C/T     uc010gqt.1      Ala:Ala/Val        315     C
+    chr22    15999075        15999076        C/G     uc002zmd.1      Arg:Arg/Ser        180     C
+    chr22    15999075        15999076        C/G     uc002zme.1      Arg:Arg/Ser        161     C
+    chr22    15999075        15999076        C/G     uc002zmf.1      Arg:Arg/Ser        369     C
+    etc.
+
+</help>
+</tool>

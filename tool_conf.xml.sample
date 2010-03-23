@@ -161,6 +161,7 @@
     <tool file="hyphy/hyphy_nj_tree_wrapper.xml" />
     <tool file="hyphy/hyphy_dnds_wrapper.xml" />
     <tool file="evolution/mutate_snp_codon.xml" />
+    <tool file="evolution/codingSnps.xml" />
  </section>
  <section name="Metagenomic analyses" id="tax_manipulation">
     <tool file="taxonomy/gi2taxonomy.xml" />
