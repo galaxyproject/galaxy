@@ -158,11 +158,11 @@ class DataTransfer(object):
             cj = cookielib.CookieJar()
             opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
             f = opener.open(url)
-            if f.read().find("Now logged in as "+self.datatx_email) == -1:
+            if f.read().find("ogged in as "+self.datatx_email) == -1:
                 # if the user doesnt exist, create the user
                 url = "%s/user/create?email=%s&username=%s&password=%s&confirm=%s&create_user_button=Submit" % ( base_url, self.datatx_email, self.datatx_email, self.datatx_password, self.datatx_password )
                 f = opener.open(url)
-                if f.read().find("Now logged in as "+self.datatx_email) == -1:
+                if f.read().find("ogged in as "+self.datatx_email) == -1:
                     raise DataTransferException("The "+self.datatx_email+" user could not login to Galaxy")
             # after login, add dataset to the library
             params = urllib.urlencode(dict( cntrller='library_admin',
@@ -185,7 +185,7 @@ class DataTransfer(object):
                 raise DataTransferException("Dataset could not be uploaded to the data library")
             # finally logout
             f = opener.open(base_url+'/user/logout')
-            if f.read().find("You are no longer logged in.") == -1:
+            if f.read().find("You have been logged out.") == -1:
                 raise DataTransferException("The "+self.datatx_email+" user could not logout of Galaxy")
         except DataTransferException, (e):
             self.error_and_exit(e.msg)
