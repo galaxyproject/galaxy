@@ -1,0 +1,60 @@
+<tool id="add_scores" name="Add scores">
+  <description>for interspecies conservation at each SNPs</description>
+  <command>
+    add_scores $input1 ${input1.metadata.dbkey} ${input1.metadata.chromCol} ${input1.metadata.startCol} ${GALAXY_DATA_INDEX_DIR}/add_scores.loc $out_file1
+  </command>
+  <inputs>
+    <param format="interval" name="input1" type="data" label="SNPs"/>
+  </inputs>
+  <outputs>
+    <data format="input" name="out_file1" />
+  </outputs>
+  <tests>
+    <test>
+	<param name="input1" value="add_scores_input1.interval" dbkey="hg18" />
+	<output name="output" file="add_scores_output1.interval" />
+    </test>
+    <test>
+	<param name="input1" value="add_scores_input2.bed" dbkey="hg18" />
+	<output name="output" file="add_scores_output2.interval" />
+    </test>
+  </tests>
+
+  <help>
+This tool adds a column that measures interspecies conservation at each SNP position, using conservation scores for primates computed by the phyloP program. It currently works only for hg18.
+
+**Example**
+
+- input file, with SNPs::
+
+    chr22	16440426	14440427	C/T
+    chr22	15494851	14494852	A/G
+    chr22	14494911	14494912	A/T
+    chr22	14550435	14550436	A/G
+    chr22	14611956	14611957	G/T
+    chr22	14612076	14612077	A/G
+    chr22	14668537	14668538	C
+    chr22	14668703	14668704	A/T
+    chr22	14668775	14668776	G
+    chr22	14680074	14680075	A/T
+    etc.
+
+- output file, showing non-synonymous substitutions in coding regions::
+
+    chr22	16440426	14440427	C/T	0.509
+    chr22	15494851	14494852	A/G	0.427
+    chr22	14494911	14494912	A/T	NA
+    chr22	14550435	14550436	A/G	NA
+    chr22	14611956	14611957	G/T	-2.142
+    chr22	14612076	14612077	A/G	0.369
+    chr22	14668537	14668538	C	0.419
+    chr22	14668703	14668704	A/T	-1.462
+    chr22	14668775	14668776	G	0.470
+    chr22	14680074	14680075	A/T	0.000
+    chr22       14680074        14680075        A/T	0.303
+    etc.
+
+"NA", means that the phyloP score was not available.
+
+</help>
+</tool>
