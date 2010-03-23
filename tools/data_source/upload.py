@@ -24,6 +24,9 @@ def file_err( msg, dataset, json_file ):
                                            ext = 'data',
                                            dataset_id = dataset.dataset_id,
                                            stderr = msg ) ) + "\n" )
+    # never remove a server-side upload
+    if dataset.type in ( 'server_dir', 'path_paste' ):
+        return
     try:
         os.remove( dataset.path )
     except:
