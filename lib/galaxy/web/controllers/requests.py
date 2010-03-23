@@ -438,18 +438,28 @@ class Requests( BaseController ):
         current_samples, details, edit_mode, libraries = self.__update_samples( trans, request, **kwd )
         if params.get('import_samples_button', False) == 'Import samples':
             try:
+                lib_widget, folder_widget = self.__library_widgets(trans, request.user, 
+                                                                   len(current_samples), 
+                                                                   libraries, None, **kwd)
                 file_obj = params.get('file_data', '')
                 import csv
                 reader = csv.reader(file_obj.file)
                 for row in reader:
-                    current_samples.append([row[0], row[1:]])  
-                return trans.fill_template( '/requests/show_request.mako',
+                    current_samples.append(dict(name=row[0], 
+                                                barcode='',
+                                                library=None,
+                                                folder=None,
+                                                lib_widget=lib_widget,
+                                                folder_widget=folder_widget,
+                                                field_values=row[1:]))  
+                return trans.fill_template( '/admin/requests/show_request.mako',
                                             request=request,
                                             request_details=self.request_details(trans, request.id),
                                             current_samples=current_samples,
                                             sample_copy=self.__copy_sample(current_samples), 
                                             details=details,
                                             edit_mode=edit_mode)
+
             except:
                 return trans.response.send_redirect( web.url_for( controller='requests',
                                                                   action='list',
