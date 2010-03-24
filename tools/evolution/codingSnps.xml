@@ -1,7 +1,7 @@
 <tool id="codingSnps" name="Amino-acid changes">
   <description>caused by a set of SNPs</description>
   <command interpreter="perl">
-    codingSnps.pl $input1 $input2 ${GALAXY_DATA_INDEX_DIR}/codingSnps.loc chr=${input1.metadata.chromCol} start=${input1.metadata.startCol} end=${input1.metadata.endCol} snp=$col1 $out_file1
+    codingSnps.pl $input1 $input2 Galaxy build=${input1.metadata.dbkey} loc=${GALAXY_DATA_INDEX_DIR}/codingSnps.loc chr=${input1.metadata.chromCol} start=${input1.metadata.startCol} end=${input1.metadata.endCol} snp=$col1 > $out_file1
   </command>
   <inputs>
     <param format="interval" name="input1" type="data" label="SNPs"/>

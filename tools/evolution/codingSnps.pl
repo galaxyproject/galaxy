@@ -9,75 +9,32 @@ use strict;
 #	those that cause a frameshift or substitution in the amino acid.
 #########################################################################
 
-my $uniq    = 0;	# flag for whether want uniq positions
-my $syn     = 0;	# flag for if want synonomous changes rather than non-syn
-my $seqFlag = "2bit";	# flag to set sequence type 2bit|nib
-my $nibDir;		# directory containg data
-my $nibTag;		# tag for directory above
-
-################################################################################
-# Parse command line arguments                                                 #
-################################################################################
-
-# make sure we have enough arguments
 if (!@ARGV or scalar @ARGV < 3) {
-   print STDERR "Usage: codingSnps.pl snps.bed genes.bed locfile.loc [chr=# start=# end=# snp=#] output_file\n";
+   print "Usage: codingSnps.pl snps.bed genes.bed (/dir/nib/|Galaxy build= loc=) [chr=# start=# end=# snp=#] > codingSnps.txt\n";
    exit;
 }
-
-# get first three command line arguments
-my $snpFile  = shift @ARGV;
+my $uniq = 0; #flag for whether want uniq positions
+my $syn = 0;  #flag for if want synonomous changes rather than non-syn
+my $snpFile = shift @ARGV;
 my $geneFile = shift @ARGV;
-my $locFile  = shift @ARGV;
-
-# read $locFile to get $nibDir (ignoring commets)
-# FIXME: the last entry is the one you get
-open(LF, "< $locFile") || die "open($locFile): $!\n";
-while(<LF>) {
-	s/#.*$//;
-	s/(?:^\s+|\s+$)//g;
-	next if (/^$/);
-
-	# $tag and $path are set for each "valid" line in the file
-	($nibTag, $nibDir) = split(/\t/);
-}
-close(LF);
-
-# bed like columns in default positions
-my $col0 = 0;
+my $nibDir = shift @ARGV;
+if ($nibDir eq 'Galaxy') { getGalaxyInfo(); }
+my $seqFlag = "2bit"; #flag to set sequence type 2bit|nib
+my $col0 = 0; #bed like columns in default positions
 my $col1 = 1;
 my $col2 = 2;
 my $col3 = 3;
-
-# get column positions for chr, start, end, snp
-# column positions 1 based coming in (for Galaxy)
+#column positions 1 based coming in (for Galaxy)
 foreach (@ARGV) {
-	if (/^chr=(\d+)$/) {
-		$col0 = $1 - 1;
-	} elsif (/^start=(\d+)$/) {
-		$col1 = $1 - 1;
-	} elsif (/^end=(\d+)$/) {
-		$col2 = $1 - 1;
-	} elsif (/^snp=(\d+)$/) {
-		$col3 = $1 - 1;
-	}
+   if (/chr=(\d+)/) { $col0 = $1 -1; }
+   elsif (/start=(\d+)/) { $col1 = $1 -1; }
+   elsif (/end=(\d+)/) { $col2 = $1 -1; }
+   elsif (/snp=(\d+)/) { $col3 = $1 -1; }
 }
-
-# make sure the column positions are sane
 if ($col0 < 0 || $col1 < 0 || $col2 < 0 || $col3 < 0) {
    print STDERR "ERROR column numbers are given with origin 1\n";
    exit 1;
 }
-
-# get the output_file from the command line arguments
-my $outFile = $ARGV[$#ARGV];
-
-open(OUTFILE, "> $outFile") || die "open($outFile): $!\n";
-
-################################################################################
-# Initialization                                                               #
-################################################################################
-
 my @genes; #bed lines for genes, sorted by chrom and start
 my %chrSt; #index in array where each chrom starts
 my %codon; #hash of codon amino acid conversions
@@ -97,13 +54,7 @@ my %amb = (
 "V" => "A/C/G",
 "N" => "A/C/G/T"
 );
-
 fill_codon();
-
-################################################################################
-# Main                                                                         #
-################################################################################
-
 open(FH, "cat $geneFile | sort -k1,1 -k2,2n |") 
    or die "Couldn't open and sort $geneFile, $!\n";
 my $i = 0;
@@ -117,7 +68,7 @@ while(<FH>) {
 }
 close FH or die "Couldn't close $geneFile, $!\n";
 
-if ($ends) { print STDERR "TESTING using block ends rather than sizes\n"; }
+if ($ends) { print STDERR "WARNING using block ends rather than sizes\n"; }
 
 #open snps sorted as well
 my $s1 = $col0 + 1; #sort order is origin 1
@@ -129,6 +80,7 @@ my @g; #one genes fields, should be used repeatedly
 my %done;
 while(<FH>) {
    chomp;
+   if (/^\s*#/) { next; } #comment
    my @s = split(/\t/); #SNP fields
    if (!@s or !$s[$col0]) { die "ERROR missing SNP data, $_\n"; }
    my $size = $#s;
@@ -200,14 +152,10 @@ while(<FH>) {
    }
 }
 close FH or die "Couldn't close $snpFile, $!\n";
-close(OUTFILE) || die "close($outFile): $!\n";
 
 exit;
 
-################################################################################
-# Subroutines                                                                  #
-################################################################################
-
+########################################################################
 sub processSnp {
    my $sref = shift;
    my $gref = shift;
@@ -220,7 +168,7 @@ sub processSnp {
    my $i = 0;
    my @st = split(/,/, $gref->[11]);
    my @size = split(/,/, $gref->[10]);
-   if (scalar @st ne $gref->[9]) { die "bad gene $gref->[3]\n"; }
+   if (scalar @st ne $gref->[9]) { return; } #cant do this gene #die "bad gene $gref->[3]\n"; }
    my @pos;
    my $in = 0;
    for($i = 0; $i < $gref->[9]; $i++) {
@@ -246,12 +194,12 @@ sub processSnp {
       my $c = ($copy =~ tr/-//);
       if ($c % 3 == 0) { return; } #not frameshift 
       #handle bed4 to bed4 + 4 (pgSnp)
-      print OUTFILE "$sref->[$col0]\t$sref->[$col1]\t$sref->[$col2]\t$sref->[$col3]";
+      print "$sref->[$col0]\t$sref->[$col1]\t$sref->[$col2]\t$sref->[$col3]";
       #if ($sref->[4]) { print "\t$sref->[4]"; }
       #if ($sref->[5]) { print "\t$sref->[5]"; }
       #if ($sref->[6]) { print "\t$sref->[6]"; }
       #if ($sref->[7]) { print "\t$sref->[7]"; }
-      print OUTFILE "\t$gref->[3]\tframeshift\n";
+      print "\t$gref->[3]\tframeshift\n";
       $done{"$sref->[$col0] $sref->[$col1] $sref->[$col2]"}++;
       return;
    }elsif ($sref->[$col1] == $sref->[$col2]) { #insertion
@@ -259,12 +207,12 @@ sub processSnp {
       my $c = ($copy =~ tr/\[ACTG]+//);
       if ($c % 3 == 0) { return; } #not frameshift
       #handle bed4 to bed4 + 4 (pgSnp)
-      print OUTFILE "$sref->[$col0]\t$sref->[$col1]\t$sref->[$col2]\t$sref->[$col3]";
+      print "$sref->[$col0]\t$sref->[$col1]\t$sref->[$col2]\t$sref->[$col3]";
       #if ($sref->[4]) { print "\t$sref->[4]"; }
       #if ($sref->[5]) { print "\t$sref->[5]"; }
       #if ($sref->[6]) { print "\t$sref->[6]"; }
       #if ($sref->[7]) { print "\t$sref->[7]"; }
-      print OUTFILE "\t$gref->[3]\tframeshift\n";
+      print "\t$gref->[3]\tframeshift\n";
       $done{"$sref->[$col0] $sref->[$col1] $sref->[$col2]"}++;
       return;
    }
@@ -310,6 +258,7 @@ sub processSnp {
       my @vars = split(/\//, $sref->[$col3]);
       if ($gref->[5] eq '-') { #complement oldnts and revcomp vars
          $oldnts = compl($oldnts);
+         if (!$oldnts) { return; } #skip this one
          $oldnts = join('', (reverse(split(/ */, $oldnts))));
          foreach (@vars) {
             $_ = reverse(split(/ */));
@@ -320,6 +269,7 @@ sub processSnp {
       my @newnts;
       my $changed = '';
       foreach my $v (@vars) {
+         if (!$v or length($v) != 1) { return; } #only simple changes
          my @new = split(/ */, $oldnts);
          $changed = splice(@new, $r, $len, split(/ */, $v));
          #should only change single nt
@@ -335,8 +285,8 @@ sub processSnp {
          push(@newaa, $t);
       }
       if (!$change && $syn) { 
-          print OUTFILE "$sref->[$col0]\t$sref->[$col1]\t$sref->[$col2]\t$sref->[$col3]";
-          print OUTFILE "\t$gref->[3]\t$oldaa:", join("/", @newaa), "\n";
+          print "$sref->[$col0]\t$sref->[$col1]\t$sref->[$col2]\t$sref->[$col3]";
+          print "\t$gref->[3]\t$oldaa:", join("/", @newaa), "\n";
           return;
       }elsif ($syn) { return; } #only want synonymous changes
       if (!$change) { return; } #no change in amino acids
@@ -346,13 +296,14 @@ sub processSnp {
 #print STDERR "oldnt $oldnts, strand $gref->[5]\n";
 #exit;
 #}
-      print OUTFILE "$sref->[$col0]\t$sref->[$col1]\t$sref->[$col2]\t$sref->[$col3]";
+      print "$sref->[$col0]\t$sref->[$col1]\t$sref->[$col2]\t$sref->[$col3]";
       #if (defined $sref->[4]) { print "\t$sref->[4]"; }
       #if (defined $sref->[5]) { print "\t$sref->[5]"; }
       #if (defined $sref->[6]) { print "\t$sref->[6]"; }
       #if (defined $sref->[7]) { print "\t$sref->[7]"; }
       if ($gref->[5] eq '-') { $changed = compl($changed); } #use plus for ref
-      print OUTFILE "\t$gref->[3]\t$oldaa:", join("/", @newaa), "\t$cdNum\t$changed\n";
+      if (!$changed) { return; } #skip this one
+      print "\t$gref->[3]\t$oldaa:", join("/", @newaa), "\t$cdNum\t$changed\n";
       $done{"$sref->[$col0] $sref->[$col1] $sref->[$col2]"}++;
    }
 }
@@ -415,7 +366,7 @@ sub fetchSeq2bit {
    my $end = shift;
    my $strand = '+';
    $st--; #change to UCSC numbering
-   open (BIT, "twoBitToFa -seq=$chr -start=$st -end=$end $nibDir/$nibTag.2bit stdout |") or
+   open (BIT, "twoBitToFa -seq=$chr -start=$st -end=$end $nibDir stdout |") or
       die "Couldn't run twoBitToFa, $!\n";
    my $seq = '';
    while (<BIT>) {
@@ -423,7 +374,7 @@ sub fetchSeq2bit {
       if (/^>/) { next; } #header
       $seq .= $_;
    }
-   close BIT or die "Couldn't finish nibFrag on $chr $st $end, $!\n";
+   close BIT or die "Couldn't finish twoBitToFa on $chr $st $end, $!\n";
    return $seq;
 }
 
@@ -454,7 +405,7 @@ sub compl {
       elsif ($n eq 'G') { $comp .= 'C'; }
       elsif ($n eq 'N') { $comp .= 'N'; }
       elsif ($n eq '-') { $comp .= '-'; } #deletion
-      else { die "Couldn't do complement of $n for $nts\n"; }
+      else { $comp = undef; }
    }
    return $comp;
 }
@@ -473,69 +424,96 @@ sub getaa {
 }
 
 sub fill_codon {
-	$codon{GCA} = 'Ala';
-	$codon{GCC} = 'Ala';
-	$codon{GCG} = 'Ala';
-	$codon{GCT} = 'Ala';
-	$codon{CGG} = 'Arg';
-	$codon{CGT} = 'Arg';
-	$codon{CGC} = 'Arg';
-	$codon{AGA} = 'Arg';
-	$codon{AGG} = 'Arg';
-	$codon{CGA} = 'Arg';
-	$codon{AAC} = 'Asn';
-	$codon{AAT} = 'Asn';
-	$codon{GAC} = 'Asp';
-	$codon{GAT} = 'Asp';
-	$codon{TGC} = 'Cys';
-	$codon{TGT} = 'Cys';
-	$codon{CAG} = 'Gln';
-	$codon{CAA} = 'Gln';
-	$codon{GAA} = 'Glu';
-	$codon{GAG} = 'Glu';
-	$codon{GGG} = 'Gly';
-	$codon{GGA} = 'Gly';
-	$codon{GGC} = 'Gly';
-	$codon{GGT} = 'Gly';
-	$codon{CAC} = 'His';
-	$codon{CAT} = 'His';
-	$codon{ATA} = 'Ile';
-	$codon{ATT} = 'Ile';
-	$codon{ATC} = 'Ile';
-	$codon{CTA} = 'Leu';
-	$codon{CTC} = 'Leu';
-	$codon{CTG} = 'Leu';
-	$codon{CTT} = 'Leu';
-	$codon{TTG} = 'Leu';
-	$codon{TTA} = 'Leu';
-	$codon{AAA} = 'Lys';
-	$codon{AAG} = 'Lys';
-	$codon{ATG} = 'Met';
-	$codon{TTC} = 'Phe';
-	$codon{TTT} = 'Phe';
-	$codon{CCT} = 'Pro';
-	$codon{CCA} = 'Pro';
-	$codon{CCC} = 'Pro';
-	$codon{CCG} = 'Pro';
-	$codon{TCA} = 'Ser';
-	$codon{AGC} = 'Ser';
-	$codon{AGT} = 'Ser';
-	$codon{TCC} = 'Ser';
-	$codon{TCT} = 'Ser';
-	$codon{TCG} = 'Ser';
-	$codon{TGA} = 'Stop';
-	$codon{TAG} = 'Stop';
-	$codon{TAA} = 'Stop';
-	$codon{ACT} = 'Thr';
-	$codon{ACA} = 'Thr';
-	$codon{ACC} = 'Thr';
-	$codon{ACG} = 'Thr';
-	$codon{TGG} = 'Trp';
-	$codon{TAT} = 'Tyr';
-	$codon{TAC} = 'Tyr';
-	$codon{GTC} = 'Val';
-	$codon{GTA} = 'Val';
-	$codon{GTG} = 'Val';
-	$codon{GTT} = 'Val';
+$codon{GCA} = 'Ala';
+$codon{GCC} = 'Ala';
+$codon{GCG} = 'Ala';
+$codon{GCT} = 'Ala';
+$codon{CGG} = 'Arg';
+$codon{CGT} = 'Arg';
+$codon{CGC} = 'Arg';
+$codon{AGA} = 'Arg';
+$codon{AGG} = 'Arg';
+$codon{CGA} = 'Arg';
+$codon{AAC} = 'Asn';
+$codon{AAT} = 'Asn';
+$codon{GAC} = 'Asp';
+$codon{GAT} = 'Asp';
+$codon{TGC} = 'Cys';
+$codon{TGT} = 'Cys';
+$codon{CAG} = 'Gln';
+$codon{CAA} = 'Gln';
+$codon{GAA} = 'Glu';
+$codon{GAG} = 'Glu';
+$codon{GGG} = 'Gly';
+$codon{GGA} = 'Gly';
+$codon{GGC} = 'Gly';
+$codon{GGT} = 'Gly';
+$codon{CAC} = 'His';
+$codon{CAT} = 'His';
+$codon{ATA} = 'Ile';
+$codon{ATT} = 'Ile';
+$codon{ATC} = 'Ile';
+$codon{CTA} = 'Leu';
+$codon{CTC} = 'Leu';
+$codon{CTG} = 'Leu';
+$codon{CTT} = 'Leu';
+$codon{TTG} = 'Leu';
+$codon{TTA} = 'Leu';
+$codon{AAA} = 'Lys';
+$codon{AAG} = 'Lys';
+$codon{ATG} = 'Met';
+$codon{TTC} = 'Phe';
+$codon{TTT} = 'Phe';
+$codon{CCT} = 'Pro';
+$codon{CCA} = 'Pro';
+$codon{CCC} = 'Pro';
+$codon{CCG} = 'Pro';
+$codon{TCA} = 'Ser';
+$codon{AGC} = 'Ser';
+$codon{AGT} = 'Ser';
+$codon{TCC} = 'Ser';
+$codon{TCT} = 'Ser';
+$codon{TCG} = 'Ser';
+$codon{TGA} = 'Stop';
+$codon{TAG} = 'Stop';
+$codon{TAA} = 'Stop';
+$codon{ACT} = 'Thr';
+$codon{ACA} = 'Thr';
+$codon{ACC} = 'Thr';
+$codon{ACG} = 'Thr';
+$codon{TGG} = 'Trp';
+$codon{TAT} = 'Tyr';
+$codon{TAC} = 'Tyr';
+$codon{GTC} = 'Val';
+$codon{GTA} = 'Val';
+$codon{GTG} = 'Val';
+$codon{GTT} = 'Val';
 }
-	
+
+sub getGalaxyInfo {
+   my $build;
+   my $locFile;
+   foreach (@ARGV) {
+      if (/build=(.*)/) { $build = $1; }
+      elsif (/loc=(.*)/) { $locFile = $1; }
+   }
+   if (!$build or !$locFile) {
+      print STDERR "ERROR missing build or locfile for Galaxy input\n";
+      exit 1;
+   }
+   # read $locFile to get $nibDir (ignoring commets)
+   open(LF, "< $locFile") || die "open($locFile): $!\n";
+   while(<LF>) {
+      s/#.*$//;
+      s/(?:^\s+|\s+$)//g;
+      next if (/^$/);
+   
+      my @t = split(/\t/);
+      if ($t[0] eq $build) { $nibDir = $t[1]; }
+   }
+   close(LF);
+   if ($nibDir eq 'Galaxy') {
+      print STDERR "Failed to find sequence directory in locfile $locFile\n";
+   }
+   $nibDir .= "/$build.2bit";  #we want full path and filename
+}
