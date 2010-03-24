@@ -1,0 +1,37 @@
+<tool id="tabular_to_fastq" name="Tabular to FASTQ" version="1.0.0">
+  <description>converter</description>
+  <command interpreter="python">tabular_to_fastq.py '$input_file' '$output_file' '$identifier' '$sequence' '$quality'</command>
+  <inputs>
+    <param name="input_file" type="data" format="tabular" label="Tabular file to convert" />
+    <param name="identifier" label="Identifier column" type="data_column" data_ref="input_file" />
+    <param name="sequence" label="Sequence column" type="data_column" data_ref="input_file" />
+    <param name="quality" label="Quality column" type="data_column" data_ref="input_file" />
+  </inputs>
+  <outputs>
+    <data name="output_file" format="fastq" />
+  </outputs>
+  <tests>
+    <!-- basic test -->
+    <test>
+      <param name="input_file" value="fastq_to_tabular_out_1.tabular" ftype="tabular" />
+      <param name="identifier" value="1" />
+      <param name="sequence" value="2" />
+      <param name="quality" value="3" />
+      <output name="output_file" file="sanger_full_range_original_sanger.fastqsanger" />
+    </test>
+    <!-- color space test -->
+    <test>
+      <param name="input_file" value="fastq_to_tabular_out_2.tabular" ftype="tabular" />
+      <param name="identifier" value="1" />
+      <param name="sequence" value="2" />
+      <param name="quality" value="3" />
+      <output name="output_file" file="sanger_full_range_as_cssanger.fastqcssanger" />
+    </test>
+  </tests>
+  <help>
+**What it does**
+
+This tool attempts to convert a tabular file containing sequencing read data to a FASTQ formatted file. The FASTQ Groomer tool should always be used on the output of this tool. 
+
+  </help>
+</tool>
