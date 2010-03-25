@@ -1,6 +1,8 @@
 """
 Interval index data provider for the Galaxy track browser.
 Kanwei Li, 2009
+
+Payload format: [ uid (offset), start, end, name, strand, thick_start, thick_end, blocks ]
 """
 
 import pkg_resources; pkg_resources.require( "bx-python" )
@@ -21,26 +23,22 @@ class IntervalIndexDataProvider( object ):
         for start, end, offset in index.find(chrom, start, end):
             source.seek(offset)
             feature = source.readline().split()
-            payload = { 'uid': offset, 'start': start, 'end': end, 'name': feature[3] }
-            try:
-                payload['strand'] = feature[5]
-            except IndexError:
-                pass
-            
-            if 'include_blocks' in kwargs:
-                try:
+            payload = [ offset, start, end ]
+            if "no_detail" not in kwargs:
+                length = len(feature)
+                payload.append(feature[3]) # name
+                if length >= 6: # strand
+                    payload.append(feature[5])
+                
+                if length >= 8:
+                    payload.append(int(feature[6]))
+                    payload.append(int(feature[7]))
+
+                if length >= 12:
                     block_sizes = [ int(n) for n in feature[10].split(',') if n != '']
                     block_starts = [ int(n) for n in feature[11].split(',') if n != '' ]
                     blocks = zip(block_sizes, block_starts)
-                    payload['blocks'] = [ (start + block[1], start + block[1] + block[0]) for block in blocks]
-                except IndexError:
-                    pass
-    
-                try:
-                    payload['thick_start'] = int(feature[6])
-                    payload['thick_end'] = int(feature[7])
-                except IndexError:
-                    pass
+                    payload.append( [ (start + block[1], start + block[1] + block[0]) for block in blocks] )
 
             results.append(payload)
         

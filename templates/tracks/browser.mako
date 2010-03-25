@@ -170,7 +170,7 @@ ${h.js( 'galaxy.base', 'galaxy.panels', "json2", "jquery", "jquery.event.drag", 
             $("#right-border").bind( "dragend", function(e) { refresh(e); } );
             $(window).trigger( "resize" );
 
-            $("#viewport").bind( "dragstart", function( e ) {
+            $("#viewport-container").bind( "dragstart", function( e ) {
                 this.original_low = view.low;
                 this.current_height = e.clientY;
                 this.current_x = e.offsetX;

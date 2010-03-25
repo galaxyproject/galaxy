@@ -5,10 +5,8 @@ from __future__ import division
 import sys
 from galaxy import eggs
 import pkg_resources; pkg_resources.require( "bx-python" )
-from bx.arrays.array_tree import *
+from galaxy.visualization.tracks.summary import *
 from bx.arrays.bed import BedReader
-
-BLOCK_SIZE = 1000
 
 def main():
    
@@ -17,13 +15,11 @@ def main():
     
     reader = BedReader( open( input_fname ) )
     
-    # Fill array from reader
-    d = array_tree_dict_from_reader( reader, {}, block_size = BLOCK_SIZE )
+    st = SummaryTree(block_size=100, levels=4, draw_cutoff=100, detail_cutoff=20)
+    for chrom, chrom_start, chrom_end, name, score in reader:
+        st.insert_range(chrom, chrom_start, chrom_end)
     
-    for array_tree in d.itervalues():
-        array_tree.root.build_summary()
-    
-    FileArrayTreeDict.dict_to_file( d, open( out_fname, "w" ), no_leaves=True )
+    st.write(out_fname)    
 
 if __name__ == "__main__": 
     main()

@@ -25,6 +25,7 @@ from galaxy.util.bunch import Bunch
 from galaxy.visualization.tracks.data.array_tree import ArrayTreeDataProvider
 from galaxy.visualization.tracks.data.interval_index import IntervalIndexDataProvider
 from galaxy.visualization.tracks.data.bam import BamDataProvider
+from galaxy.visualization.tracks.data.summary_tree import SummaryTreeDataProvider
 
 # Message strings returned to browser
 messages = Bunch(
@@ -41,7 +42,8 @@ messages = Bunch(
 dataset_type_to_data_provider = {
     "array_tree": ArrayTreeDataProvider,
     "interval_index": IntervalIndexDataProvider,
-    "bai": BamDataProvider
+    "bai": BamDataProvider,
+    "summary_tree": SummaryTreeDataProvider
 }
 
 class DatasetSelectionGrid( grids.Grid ):
@@ -199,6 +201,7 @@ class TracksController( BaseController ):
         
         track_type, indexes = dataset.datatype.get_track_type()
         converted = dict([ (index, self.__dataset_as_type( trans, dataset, index )) for index in indexes ])
+        extra_info = None
 
         for index, converted_dataset in converted.iteritems():
             if not converted_dataset:
@@ -212,11 +215,15 @@ class TracksController( BaseController ):
         
         if len(converted) > 1:
             # Have to choose between array_tree and other provider
-            array_tree = ArrayTreeDataProvider( converted['array_tree'], dataset )
-            freqs = array_tree.get_data( chrom, low, high, frequencies=True, **kwargs )
+            summary_tree = SummaryTreeDataProvider( converted['summary_tree'], dataset )
+            freqs = summary_tree.get_summary( chrom, low, high, **kwargs )
             if freqs is not None:
-                frequencies, sums, avg_f = freqs
-                return { "dataset_type": "array_tree", "data": frequencies, "sums": sums, "avg_f": avg_f }
+                frequencies, max_v, avg_v = freqs
+                if frequencies != "no_detail":
+                    return { "dataset_type": "summary_tree", "data": frequencies, "max": max_v, "avg": avg_v }
+                else:
+                    kwargs["no_detail"] = True # meh
+                    extra_info = "no_detail"
             dataset_type = "interval_index"
         else:
             dataset_type = converted.keys()[0]
@@ -228,7 +235,7 @@ class TracksController( BaseController ):
         else:
             data = data_provider.get_data( chrom, low, high, **kwargs )
         
-        return { "dataset_type": dataset_type, "data": data }
+        return { "dataset_type": dataset_type, "extra_info": extra_info, "data": data }
 
     def __dataset_as_type( self, trans, dataset, type ):
         """

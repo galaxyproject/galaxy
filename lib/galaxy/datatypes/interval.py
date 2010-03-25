@@ -508,7 +508,7 @@ class Bed( Interval ):
         except: return False
     
     def get_track_type( self ):
-        return "FeatureTrack", ["interval_index", "array_tree"]
+        return "FeatureTrack", ["interval_index", "summary_tree"]
 
 class BedStrict( Bed ):
     """Tab delimited data in strict BED format - no non-standard columns allowed"""

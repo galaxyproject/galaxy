@@ -25,8 +25,8 @@ class VisualizationListGrid( grids.Grid ):
         key="free-text-search", visible=False, filterable="standard" )
                 )
     operations = [
-        grids.GridOperation( "Edit content", allow_multiple=False, url_args=dict( controller='tracks', action='browser' ) ),
-        grids.GridOperation( "Edit attributes", allow_multiple=False, url_args=dict( action='edit') ),
+        grids.GridOperation( "View", allow_multiple=False, url_args=dict( controller='tracks', action='browser' ) ),
+        grids.GridOperation( "Edit Attributes", allow_multiple=False, url_args=dict( action='edit') ),
         grids.GridOperation( "Share or Publish", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False ),
         grids.GridOperation( "Delete", condition=( lambda item: not item.deleted ), async_compatible=True, confirm="Are you sure you want to delete this visualization?" ),
     ]
