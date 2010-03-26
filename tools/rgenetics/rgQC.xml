@@ -1,4 +1,4 @@
-<tool id="rgqc1" name="QC reports:">
+<tool id="rgQC1" name="QC reports:">
     <code file="rgQC_code.py"/>
 
     <description>Marker and Subject measures</description>

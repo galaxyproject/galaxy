@@ -294,8 +294,7 @@ def makePlots(markers=[],subjects=[],newfpath='.',basename='test',nbreaks='20',n
     outfnames = [os.path.join(newfpath,ploturls[x]) for x in range(nplots)]
     ordoutfnames = [os.path.join(newfpath,ordploturls[x]) for x in range(nplots)]
     datasources = [markers,markers,markers,markers,subjects,subjects,subjects] # use this table
-    titles = ["Marker HWE","Marker Missing Genotype",
-        "Marker MAF","Marker Mendel",
+    titles = ["Marker HWE","Marker Missing Genotype", "Marker MAF","Marker Mendel",
         "Subject Missing Genotype","Subject Mendel",'Subject F Statistic']
     html = []
     pdflist = []
@@ -630,8 +629,7 @@ def RmakePlots(markers=[],subjects=[],newfpath='.',basename='test',nbreaks='100'
     outfnames = [os.path.join(newfpath,ploturls[x]) for x in range(nplots)]
     ordoutfnames = [os.path.join(newfpath,ordploturls[x]) for x in range(nplots)]
     datasources = [markers,markers,markers,markers,subjects,subjects,subjects] # use this table
-    titles = ["Marker HWE","Marker Missing Genotype",
-        "Marker MAF","Marker Mendel",
+    titles = ["Marker HWE","Marker Missing Genotype", "Marker MAF","Marker Mendel",
         "Subject Missing Genotype","Subject Mendel",'Subject F Statistic']
     html = []
     pdflist = []
@@ -1148,7 +1146,7 @@ def markerRep(froot='cleantest',outfname="mrep",newfpath='.',logf=None ):
         except:
             inmend = 'NA'
         try:
-            fhweall = '%f' % float(hwe_unaff[1]) # the log value
+            fhweall = '%f' % float(hwe_all[1]) # the log value
         except:
             fhweall = 'NA'
         try:
@@ -1263,7 +1261,7 @@ if __name__ == "__main__":
     repout = os.path.join(newfpath,basename)
     subjects,subjectTops = subjectRep(froot=repout,outfname=asubjf,newfpath=newfpath,
                 logf=alogf) # writes the subject_froot.xls file
-    markers,markerTops = markerRep(froot=newfpath,outfname=amarkf,newfpath=newfpath,
+    markers,markerTops = markerRep(froot=repout,outfname=amarkf,newfpath=newfpath,
                 logf=alogf) # marker_froot.xls
     nbreaks = 100
     s = '## starting plotpage, newfpath=%s,m=%s,s=%s/n' % (newfpath,markers[:2],subjects[:2])
@@ -1283,9 +1281,14 @@ if __name__ == "__main__":
     html.append('<tr><td colspan="3"><a href="%s" type="application/vnd.ms-excel">%s</a>%s tab delimited</td></tr>' % \
                 (asubjf,'Click here to download the Subject QC Detail report file',size))
     for (title,url,ofname) in plotpage:
-        dat = subjectTops.get(title,None)
+        ttitle = 'Ranked %s' % title
+        dat = subjectTops.get(ttitle,None)
         if not dat:
-            dat = markerTops.get(title,None)
+            dat = markerTops.get(ttitle,None)
+        if not dat:
+            print '## iterating plotpage - cannot find title=%s/ttitle=%s' % (title,ttitle)
+        else:
+            print '## iterating plotpage - found title=%s/ttitle=%s' % (title,ttitle)
         imghref = '%s.jpg' % os.path.splitext(url)[0] # removes .pdf
         thumbnail = os.path.join(newfpath,imghref)
         if not os.path.exists(thumbnail): # for multipage pdfs, mogrify makes multiple jpgs - fugly hack
@@ -1297,7 +1300,7 @@ if __name__ == "__main__":
             html.append('<tr><td><a href="%s"><img src="%s" alt="%s" hspace="10" align="middle">' \
                     % (url,imghref,title))
             if dat: # one or the other - write as an extra file and make a link here
-                t = '%s.xls' % (title.replace(' ','_'))
+                t = '%s.xls' % (ttitle.replace(' ','_'))
                 fname = os.path.join(newfpath,t)
                 f = file(fname,'w')
                 f.write('\n'.join(['\t'.join(x) for x in dat])) # the report
