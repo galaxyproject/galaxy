@@ -1,0 +1,157 @@
+<tool id="rgLDIndep1" name="LD Independent:">
+    <code file="rgLDIndep_code.py"/>
+
+    <description>filter high LD pairs - decrease redundancy</description>
+
+    <command interpreter="python">
+        rgLDIndep.py '$input_file.extra_files_path' '$input_file.metadata.base_name' '$title1' '$mind'
+        '$geno' '$hwe' '$maf' '$mef' '$mei' '$out_file1'
+        '$out_file1.files_path'  '$window' '$step' '$r2'
+    </command>
+
+    <inputs>
+       <param name="input_file"  type="data" label="RGenetics genotype data from your current history"
+         size="80" format="pbed" />
+       <param name="title1" type="text" size="80" label="Descriptive title for cleaned genotype file" value="LD_Independent"/>
+       <param name="r2" type="float" value = "0.1"
+       label="r2 threshold: Select only pairs at or below this r^2 threshold (eg 0.1)"
+       help="LD threshold defining LD independent markers" />
+       <param name="window" type="integer" value = "40" label="Window: Window size to limit LD pairwise"
+       help = "Bigger is better but time taken blows up exponentially as the window grows!" />
+       <param name="step" type="integer" value = "30" label="Step: Move window this far and recompute"
+       help = "Smaller is better but of course, time increases..." />
+       <param name="geno"  type="float" label="Maximum Missing Fraction: Markers" value="1.0" />
+       <param name="mind" type="float" value="1.0" label="Maximum Missing Fraction: Subjects"/>
+       <param name="mef"  type="float" label="Maximum Mendel Error Rate: Family" value="1.0"/>
+       <param name="mei"  type="float" label="Maximum Mendel Error Rate: Marker" value="1.0"/>
+       <param name="hwe" type="float" value="0.0" label="Smallest HWE p value (set to 0 for all)" />
+       <param name="maf" type="float" value="0.0"
+       label="Smallest Allowable Minor Allele Frequency (set to 0.0 for all)"/>
+
+   </inputs>
+
+   <outputs>
+       <data format="pbed" name="out_file1" metadata_source="input_file"  />
+   </outputs>
+<tests>
+ <test>
+
+    <param name='input_file' value='tinywga' ftype='pbed' >
+    <metadata name='base_name' value='tinywga' />
+    <composite_data value='tinywga.bim' />
+    <composite_data value='tinywga.bed' />
+    <composite_data value='tinywga.fam' />
+    </param>
+    <param name='title1' value='rgLDIndeptest1' />
+    <param name="mind" value="1" />
+    <param name="geno" value="1" />
+    <param name="hwe" value="0" />
+    <param name="maf" value="0" />
+    <param name="mef" value="1" />
+    <param name="mei" value="1" />
+    <param name="window" value="10000" />
+    <param name="step" value="5000" />
+    <param name="r2" value="0.1" />
+    <output name='out_file1' file='rgtestouts/rgLDIndep/rgLDIndeptest1.pbed' ftype='pbed' compare="diff" lines_diff='7'>
+    <extra_files type="file" name='rgLDIndeptest1.bim' value="rgtestouts/rgLDIndep/rgLDIndeptest1.bim" compare="diff" />
+    <extra_files type="file" name='rgLDIndeptest1.fam' value="rgtestouts/rgLDIndep/rgLDIndeptest1.fam" compare="diff" />
+    <extra_files type="file" name='rgLDIndeptest1.bed' value="rgtestouts/rgLDIndep/rgLDIndeptest1.bed" compare="diff" />
+    </output>
+ </test>
+</tests>
+<help>
+
+.. class:: infomark
+
+**Attribution**
+
+This tool relies on Plink from Shaun Purcell. For full documentation, please see his web site
+at http://pngu.mgh.harvard.edu/~purcell/plink/ where there is excellent documentation describing
+the parameters you can set here.
+
+Rgenetics merely exposes them, wrapping Plink so you can use it in Galaxy.
+
+**Summary**
+
+In addition to filtering some marker and sample quality measures,
+this tool reduces the amount of overlapping information, by removing
+most of the duplicate information contained in linkage disequilibrium. This is
+a lossy process and for some methods, signal may be lost. However, this makes
+the dataset far more compact (eg 10% of the original storage size) while still
+being highly informative and less biased for some (note NOT all!) statistical methods.
+This is the Clean tool with additional data reduction via Plink LD pruning.
+Use the Clean tool if you don't want LD pruning - which you don't for most statistical testing.
+For ancestry and relatedness, you may well want LD pruned data as it has
+some specific desirable properties.
+
+**LD**
+
+Pairwise Linkage disequilibrium (LD) measures the extent to which the genotype at one locus
+predicts the state of another locus at the level of an entire population.
+When population LD between a pair of markers is high,
+knowing an individual's genotype at one locus allows confident prediction of the genotype at the other.
+In other words, high LD means information redundancy between markers. For some
+purposes, removing some of this redundancy can improve the performance of some analyses.
+Executing this tool will create a new genotype dataset in your current history containing
+LD independent markers - most of the genetic information is retained but without as much redundancy.
+
+Set a pairwise LD threshold (eg r^2 = 0.2) and the (smaller) resulting dataset will have no
+pairs of marker with r^2 greater than 0.2. Additional filters are available to remove markers
+below a specific minor allele frequency, or above a specific level of missingness,
+and to remove subjects using similar criteria. Subjects and markers for family data can be
+filtered by proportions of Mendelian errors in observed transmission.
+
+-----
+
+**Syntax**
+
+- **Genotype data** is the input pedfile chosen from available library files
+- **New name** is the name to use for the filtered output file
+- **Missfrac threshold: subjects** is the threshold for missingness by subject. Subjects with more than this fraction missing will be excluded from the import
+- **Missfrac threshold: markers** is the threshold for missingness by marker. Markers with more than this fraction missing will be excluded from the import
+- **MaxMendel Individuals** Mendel error fraction above which to exclude subjects with more than the specified fraction of mendelian errors in transmission (for family data only)
+- **MaxMendel Families** Mendel error fraction above which to exclude families with more than the specified fraction of mendelian errors in transmission (for family data only)
+- **HWE** is the threshold for HWE test p values below which the marker will not be imported. Set this to -1 and all markers will be imported regardless of HWE p value
+- **MAF** is the threshold for minor allele frequency - SNPs with lower MAF will be excluded
+- **r^2** is the pairwise LD threshold as r^2. Lower -> less marker redundancy -> fewer markers
+- **Window** is the window width for LD threshold. Bigger -> slower -> more complete
+- **Skip** is the distance to move the window along the genome. Should be window or less.
+
+-----
+
+**Disclaimer**
+
+This tool relies on Plink from Shaun Purcell. For full documentation, please see his web site
+at http://pngu.mgh.harvard.edu/~purcell/plink/ where thereis excellent documentation describing
+the parameters you can set here. Rgenetics merely exposes them, and wraps Plink so you can use it in Galaxy.
+
+This tool is designed to create genotype data files with more or less LD independent sets of markers. These
+reduced genotype data files are particularly useful for purposes such as evaluating
+ancestry (eg eigenstrat) or relatedness (eg rgGRR)
+
+LD pruning decreases redundancy among the genotype data by removing one of each pair of markers
+in strong LD (above the r^2 threshold) over successive genomic windows (the Window parameter),
+skipping (the Skip parameter bases between windows. The defaults should produce useable outputs.
+
+This might be more efficient for rgGRR and
+eigenstrat...The core quote is
+
+    "This generates the same output files as the first version;
+    the only difference is that a simple pairwise threshold is used.
+    The first two parameters (50 and 5) are the same as above (window size and step);
+    the third parameter represents the r^2 threshold.
+    Note: this represents the pairwise SNP-SNP metric now, not the
+    multiple correlation coefficient; also note, this is based on the
+    genotypic correlation, i.e. it does not involve phasing.
+    "
+
+-----
+
+
+
+This Galaxy tool was written by Ross Lazarus for the Rgenetics project
+It uses Plink for most calculations - for full Plink attribution, source code and documentation,
+please see http://pngu.mgh.harvard.edu/~purcell/plink/ plus some custom python code
+
+</help>
+</tool>

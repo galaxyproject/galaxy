@@ -1,0 +1,142 @@
+<tool id="rgEigPCA1" name="Eigensoft:">
+    <code file="rgEigPCA_code.py"/>
+    <description>PCA Ancestry using SNP</description>
+
+    <command interpreter="python">
+    rgEigPCA.py "$i.extra_files_path/$i.metadata.base_name" "$title" "$out_file1"
+    "$out_file1.files_path" "$k" "$m" "$t" "$s" "$pca"
+    </command>
+
+    <inputs>
+
+       <param name="i"  type="data" label="Input genotype data file"
+          size="120" format="eigenstratgeno,lped,pbed" />
+       <param name="title"  type="text" value="Ancestry PCA" label="Title for outputs from this run"
+          size="80"  />
+       <param name="k"  type="integer" value="4" label="Number of principal components to output"
+          size="3"  />
+       <param name="m"  type="integer" value="0" label="Max. outlier removal iterations"
+          help="To turn on outlier removal, set m=5 or so. Do this if you plan on adjusting any analyses"
+          size="3"  />
+       <param name="t"  type="integer" value="5" label="# principal components used for outlier removal"
+          size="3"  />
+       <param name="s"  type="integer" value="6" label="#SDs for outlier removal"
+          help = "Any individual with SD along one of k top principal components > s will be removed as an outlier."
+          size="3"  />
+
+   </inputs>
+
+   <outputs>
+       <data name="out_file1" format="html" />
+       <data name="pca" format="txt" />
+   </outputs>
+
+<!-- python $TOOLPATH/$TOOL.py "$INPATH/tinywga" "$NPRE" ${OUTPATH}/${NPRE}.html $OUTPATH 4 2 2 2 $OUTPATH/pca.out $BINPATH -->
+
+<tests>
+ <test>
+   <param name='i' value='tinywga' ftype='pbed' >
+   <metadata name='base_name' value='tinywga' />
+   <composite_data value='tinywga.bim' />
+   <composite_data value='tinywga.bed' />
+   <composite_data value='tinywga.fam' />
+   </param>
+    <param name='title' value='rgEigPCAtest1' />
+    <param name="k" value="4" />
+    <param name="m" value="2" />
+    <param name="t" value="2" />
+    <param name="s" value="2" />
+    <output name='out_file1' file='rgtestouts/rgEigPCA/rgEigPCAtest1.html' ftype='html' compare='diff' lines_diff='148'>
+    <extra_files type="file" name='rgEigPCAtest1_PCAPlot.pdf' value="rgtestouts/rgEigPCA/rgEigPCAtest1_PCAPlot.pdf" compare="diff" 
+      lines_diff="27"/>
+    </output>
+    <output name='pca' file='rgtestouts/rgEigPCA/rgEigPCAtest1.txt' compare='diff'/>
+ </test>
+</tests>
+
+<help>
+
+
+**Syntax**
+
+- **Genotype data** is the input genotype file chosen from available library files.
+- **Title** is used to name the output files
+- **Tuning parameters** documented in the Eigensoft documentation - see below
+
+(Note that you may need to convert an existing genotype file into that format to use this tool)
+
+-----
+
+**Summary**
+
+**Attribution**
+This tool runs and relies on the work of many others, including the
+maintainers of the Eigensoft program, and the R and
+Bioconductor projects. For full attribution, source code and documentation, please see
+http://genepath.med.harvard.edu/~reich/Software.htm, http://cran.r-project.org/
+and http://www.bioconductor.org/ respectively
+
+This implementation is a Galaxy tool wrapper around these third party applications.
+It was originally designed and written for family based data from the CAMP Illumina run of 2007 by
+ross lazarus (ross.lazarus@gmail.com) and incorporated into the rgenetics toolkit.
+
+copyright Ross Lazarus 2007
+Licensed under the terms of the LGPL as documented http://www.gnu.org/licenses/lgpl.html
+but is about as useful as a sponge boat without EIGENSOFT pca code.
+
+**README from eigensoft2**
+
+[rerla@beast eigensoft2]$ cat README
+EIGENSOFT version 2.0, January 2008 (for Linux only)
+
+This is the same as our EIGENSOFT 2.0 BETA release with a few recent changes
+as described at http://genepath.med.harvard.edu/~reich/New_In_EIGENSOFT.htm.
+
+Features of EIGENSOFT version 2.0 include:
+-- Keeping track of ref/var alleles in all file formats: see CONVERTF/README
+-- Handling data sets up to 8 billion genotypes: see CONVERTF/README
+-- Output SNP weightings of each principal component: see POPGEN/README
+
+The EIGENSOFT package implements methods from the following 2 papers:
+Patterson N. et al. 2006 PLoS Genetics in press (population structure)
+Price A.L. et al. 2006 NG 38:904-9 (EIGENSTRAT stratification correction)
+
+See POPGEN/README for documentation of population structure programs.
+
+See EIGENSTRAT/README for documentation of EIGENSTRAT programs.
+
+See CONVERTF/README for documentation of programs for converting file formats.
+
+
+Executables and source code:
+----------------------------
+All C executables are in the bin/ directory.
+
+We have placed source code for all C executables in the src/ directory,
+for users who wish to modify and recompile our programs.  For example, to
+recompile the eigenstrat program, type
+"cd src"
+"make eigenstrat"
+"mv eigenstrat ../bin"
+
+Note that some of our software will only compile if your system has the
+lapack package installed.  (This package is used to compute eigenvectors.)
+Some users may need to change "blas-3" to "blas" in the Makefile,
+depending on how blas and lapack are installed.
+
+If cc is not available on your system, try "cp Makefile.alt Makefile"
+and then recompile.
+
+If you have trouble compiling and running our code, try compiling and
+running the pcatoy program in the src directory:
+"cd src"
+"make pcatoy"
+"./pcatoy"
+If you are unable to run the pcatoy program successfully, please contact
+your system administrator for help, as this is a systems issue which is
+beyond our scope.  Your system administrator will be able to troubleshoot
+your systems issue using this trivial program.  [You can also try running
+the pcatoy program in the bin directory, which we have already compiled.]
+</help>
+</tool>
+

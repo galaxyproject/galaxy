@@ -1,0 +1,139 @@
+<tool id="rgGLM1" name="Linear Models:" version="0.2">
+    <code file="listFiles.py"/>
+    <code file="rgGLM_code.py"/>
+
+    <description>for genotype data</description>
+
+    <command interpreter="python">
+        rgGLM.py '$i.extra_files_path/$i.metadata.base_name' '$phef.extra_files_path/$phef.metadata.base_name'
+        "$title1" '$predvar' '$covar' '$out_file1' '$logf' '$i.metadata.base_name'
+        '$inter' '$cond' '$gender' '$mind' '$geno' '$maf' '$logistic' '$gffout'
+    </command>
+
+    <inputs>
+      <page>
+       <param name='title1' label='Title for outputs' type='text' value='GLM' size="80" />
+       <param name="i" type="data" format="pbed" label="Genotype file" size="80"  />
+       <param name="phef"  type="data" format="pphe" label="Phenotype file" size="80"
+       help="Dependent variable and covariates will be chosen from this file on the next page"/>
+       <param name="logistic" type="text" value = "0" label="1=Use a logistic model (trait must be 1/2 coded like affection)"
+       help="Please read the Plink documentation about this option"  />
+       <param name="gender" type="text" value = "0" label="1=Add a gender term to model"  />
+       <param name='inter' label='1=Build an interaction model - please read the docs carefully before using this'
+         type='text' value='0' size="1" />
+       <param name="cond"  type="text"  area='true' size='15x20' value = ""
+       label="condition on this whitespace delimited rs (snp id) list"  />
+       <param name="mind" type="float" value = "0.1" label="Remove subjects with missing genotypes gt (eg 0.1)"
+       help = "Set to 1 to include all subjects in the input file" />
+       <param name="geno"  type="float" value = "0.1" label="Remove markers with missing genotypes gt (eg 0.1)"
+       help = "Set to 1 to include all markers in the input file"  />
+       <param name="maf"  type="float" value = "0.01" label="Remove markers with MAF lt (eg 0.01) "
+       help = "Set to 0 to include all markers in the input file"/>
+      </page>
+      <page>
+       <param name="predvar" size="80"  type="select" label="Dependent Trait"
+       dynamic_options="get_phecols(phef=phef,selectOne=1)"  display="radio" multiple="false"
+       help="Model this characteristic in terms of subject snp genotypes - eg rare allele dosage for additive model" />
+       <param name="covar" size="80"  type="select" label="Covariates"
+       dynamic_options="get_phecols(phef=phef,selectOne=0)" multiple="true" display="checkboxes"
+       help="Use these phenotypes as covariates in models of snp dosage effects on the dependent trait"/>
+      </page>
+   </inputs>
+
+   <outputs>
+       <data format="tabular" name="out_file1" />
+       <data format="txt" name="logf"  />
+       <data format="gff" name="gffout"  />
+   </outputs>
+<tests>
+ <test>
+  <param name='i' value='tinywga' ftype='pbed' >
+   <metadata name='base_name' value='tinywga' />
+   <composite_data value='tinywga.bim' />
+   <composite_data value='tinywga.bed' />
+   <composite_data value='tinywga.fam' />
+ </param>
+ <param name='phef' value='tinywga' ftype='pphe' >
+   <metadata name='base_name' value='tinywga' />
+   <composite_data value='tinywga.pphe' />
+ </param>
+ <param name='title1' value='rgGLMtest1' />
+ <param name='predvar' value='c1' />
+ <param name='covar' value='None' />
+ <param name='inter' value='0' />
+ <param name='cond' value='' />
+ <param name='gender' value='0' />
+ <param name='mind' value='1.0' />
+ <param name='geno' value='1.0' />
+ <param name='maf' value='0.0' />
+ <param name='logistic' value='0' />
+ <output name='out_file1' file='rgGLMtest1_GLM.xls' ftype='tabular' compare="diff" />
+ <output name='logf' file='rgGLMtest1_GLM_log.txt' ftype='txt' compare="diff" lines_diff='33'/>
+ <output name='gffout' file='rgGLMtest1_GLM_topTable.gff' compare="diff" ftype='gff' />
+ </test>
+</tests>
+<help>
+
+.. class:: infomark
+
+**Syntax**
+
+Note this is a two form tool - you will choose the dependent trait and covariates
+on the second page based on the phenotype file you choose on the first page
+
+- **Genotype file** is the input Plink format compressed genotype (pbed) file
+- **Phenotype file** is the input Plink phenotype (pphe) file with FAMID IID followed by phenotypes
+- **Dependant variable** is the term on the left of the model and is chosen from the pphe columns on the second page
+- **Logistic** if you are (eg) using disease status as the outcome variable (case/control) - otherwise the model is linear.
+- **Covariates** are covariate terms on the right of the model, also chosen on the second page
+- **Interactions** will add interactions - please be careful how you interpret these - see the Plink documentation.
+- **Gender** will add gender as a model term - described in the Plink documentation
+- **Condition** will condition the model on one or more specific SNP rs ids as a whitespace delimited sequence
+- **Format** determines how your data will be returned to your Galaxy workspace
+
+-----
+
+.. class:: infomark
+
+**Summary**
+
+This tool will test GLM models for SNP predicting a dependent phenotype
+variable with adjustment for specified covariates.
+
+If you don't see the genotype or phenotype data set you want here, it can be imported using
+one of the methods available from the rg get data tool group.
+
+Output format can be UCSC .bed if you want to see one column of your
+results as a fully fledged UCSC genome browser track. A map file containing the chromosome and offset for each marker is
+required for writing this kind of output.
+Alternatively you can use .gg for the UCSC Genome Graphs tool which has all of the advantages
+of the the .bed track, plus a neat, visual front end that displays a lot of useful clues.
+Either of these are a very useful way of quickly getting a look
+at your data in full genomic context.
+
+Finally, if you can't live without
+spreadsheet data, choose the .xls tab delimited format. It's not a stupid binary excel file. Just a plain old tab
+delimited
+one with a header. Fortunately excel is dumb enough to open these without much protest.
+
+-----
+
+.. class:: infomark
+
+**Attribution**
+
+This tool allows you to control settings for models using Plink linear models. So, we rely on the author (Shaun Purcell)
+for the documentation you need specific to those settings - they are very nicely documented at
+http://pngu.mgh.harvard.edu/~purcell/plink/anal.shtml#glm
+
+Tool and Galaxy datatypes originally designed and written for the Rgenetics
+series of whole genome scale statistical genetics tools by ross lazarus (ross.lazarus@gmail.com)
+supported by NIH grant
+Shaun Purcell created and maintains Plink
+
+Please acknowledge your use of this tool, Galaxy and Plink in your publications and let
+us know so we can keep track. These tools all rely on highly competitive grant funding
+so your letting us know about publications is important to our ongoing support.
+</help>
+</tool>
+

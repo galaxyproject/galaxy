@@ -1,0 +1,111 @@
+<tool id="rgfakePed1" name="Null genotypes">
+  <description>for testing</description>
+  <code file="rgfakePed_code.py"/>
+  <command interpreter="python">rgfakePed.py --title '$title1'
+  -o '$out_file1' -p '$out_file1.extra_files_path' -c '$ncases' -n '$ntotal'
+  -s '$nsnp'  -w '$lowmaf' -v '$missingValue' -l '$outFormat'
+  -d '$mafdist' -m '$missingRate' -M '$mendelRate' </command>
+   <inputs>
+    <page>
+
+    <param name="title1"
+         type="text"
+         help="Name for outputs from this job"
+         label="Descriptive short name"/>
+    <param name="ntotal"
+         type="integer" value = "200"
+         help="N total: total number of subjects"
+         label="Create this total N subjects"/>
+    <param name="ncases" type="integer"
+         value="100"
+         help = "N cases: Independent subjects with status set to 2. Set 0 for family data (NSubj/3 trios)"
+         label="Total N Cases (0=generate family data - trios)"/>
+    <param name="nsnp"
+         type="integer" value="1000"
+         help="nsnp: total number of markers"
+         label="Total N SNP"/>
+    <param name="lowmaf" type="float"
+         value="0.01"
+         help = "Lower limit for MAF distribution"
+         label="Lower MAF limit (default=1%)"/>
+    <param name="mafdist"
+         type="select"
+         help="Choose a MAF distribution"
+         label="SNP Minor Allele Frequency distribution">
+           <option value="U" selected="true">Uniform</option>
+           <option value="T">Triangular (more low frequency SNPs)</option>
+    </param>
+    <param name="outFormat"
+         type="select"
+         help="Choose an output format"
+         label="Output format file type - linkage ped or fbat ped">
+           <option value="L" selected="true">Linkage format - separate .map file</option>
+           <option value="F">fbat style - marker names in a header row</option>
+    </param>
+    <param name="missingRate" type="float"
+         value="0.05"
+         help = "Fraction of genotypes to be randomly set missing"
+         label="Missing genotype call fraction"/>
+    <param name="mendelRate"
+         type="float" value = "0.05"
+         help="(family data) Fraction of apparently non-Mendelian transmission patterns"
+         label="Mendel error transmission rate"/>
+
+    <param name="missingValue" type="text" size="1"
+         value='0'
+         help = "Missing allele value"
+         label="Missing value for an allele for the output ped file"/>
+
+    </page>
+</inputs>
+
+ <outputs>
+    <data format="lped" name="out_file1" />
+  </outputs>
+<tests>
+ <test>
+    <param name='title1' value='rgfakePedtest1' />
+    <param name="ntotal" value="40" />
+    <param name="ncases" value="20" />
+    <param name="nsnp" value="10" />
+    <param name="lowmaf" value="0" />
+    <param name="mafdist" value="T" />
+    <param name="outFormat" value="L" />
+    <param name="missingRate" value="0" />
+    <param name="mendelRate" value="0" />
+    <param name="missingValue" value="0" />
+    <output name='out_file1' file='rgtestouts/rgfakePed/rgfakePedtest1.lped' ftype='lped' compare="diff" lines_diff='5'>
+    <extra_files type="file" name='rgfakePedtest1.ped' value="rgtestouts/rgfakePed/rgfakePedtest1.ped" compare="diff" lines_diff='80'/>
+    <extra_files type="file" name='rgfakePedtest1.map' value="rgtestouts/rgfakePed/rgfakePedtest1.map" compare="diff" />
+    </output>
+ </test>
+</tests>
+<help>
+.. class:: infomark
+
+This tool allows you to generate an arbitrary (sort of)
+synthetic genotype file (no attempt at LD - the markers are independent)
+with optional missingness, Mendel errors, minor allele frequency settings, family structure
+These might be used for testing under
+the null hypothesis of no association and are certainly useful for
+scale testing.
+
+Note that although it runs reasonably fast given it's a script, generating a large data set takes
+a while. An hour or so should get you a reasonable (3GB) sized simulated null data set..
+
+A better simulator can easily be swapped in with this tool interface.
+
+-----
+
+.. class:: warningmark
+
+This tool is very experimental
+
+**Attribution**
+Designed and written for the Rgenetics Galaxy tools
+copyright Ross Lazarus 2007 (ross.lazarus@gmail.com)
+Licensed under the terms of the LGPL
+as documented http://www.gnu.org/licenses/lgpl.html
+
+</help>
+</tool>

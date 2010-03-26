@@ -1,0 +1,99 @@
+<tool id="rgQQ1" name="QQ Plots:">
+    <code file="rgQQ_code.py"/>
+
+    <description>for p values from an analysis </description>
+
+    <command interpreter="python">
+        rgQQ.py "$input1" "$name" "$sample" "$cols" "$allqq" "$height" "$width" "$logtrans" "$allqq.id" "$__new_file_path__"
+    </command>
+
+    <inputs>
+       <page>
+       <param name="input1"  type="data" label="Choose the History dataset containing p values to QQ plot"
+          size="80" format="tabular" help="Query missing? See Tip below" />
+       <param name="name" type="text" size="80" label = "Descriptive title for QQ plot" value="QQ" />
+
+       <param name="logtrans" type="boolean" label = "Use a log scale - recommended for p values in range 0-1.0"
+          truevalue="true" falsevalue="false"/>
+       <param name="sample" type="float" label="Random sample fraction - set to 1.0 for all data points" value="0.01"
+        help="If you have a million values, the QQ plots will be huge - a random sample of 1% will be fine" />
+       <param name="height" type="integer" label="PDF image height (inches)" value="6" />
+       <param name="width" type="integer" label="PDF image width (inches)" value="6" />
+       </page>
+       <page>
+       <param name="cols" type="select" display="checkboxes" multiple="True"
+       help="Choose from these numeric columns in the data file to make a quantile-quantile plot against a uniform distribution"
+       label="Columns (p values 0-1 eg) to make QQ plots" dynamic_options="get_columns( input1 )" />
+       </page>
+   </inputs>
+
+   <outputs>
+       <data format="pdf" name="allqq" />
+   </outputs>
+
+<tests>
+ <test>
+ <param name='input1' value='tinywga.pphe' />
+ <param name='name' value="rgQQtest1" />
+ <param name='logtrans' value="false" />
+ <param name='sample' value='1.0' />
+ <param name='height' value='8' />
+ <param name='width' value='10' />
+ <param name='cols' value='3' />
+ <output name='allqq' file='rgQQtest1.pdf' ftype='binary' compare="diff" lines_diff="29"/>
+ </test>
+</tests>
+
+<help>
+
+.. class:: infomark
+
+**Explanation**
+
+A quantile-quantile (QQ) plot is a good way to see systematic departures from the null expectation of uniform p-values
+from a genomic analysis. If the QQ plot shows departure from the null (ie a uniform 0-1 distribution), you hope that this will be
+in the very smallest p-values suggesting that there might be some interesting results to look at. A log scale will help emphasise departures
+from the null at low p values more clear
+
+-----
+
+.. class:: infomark
+
+**Syntax**
+
+This tool has 2 pages. On the first one you choose the data set and output options, then on the second page, the
+column names are shown so you can choose the one containing the p values you wish to plot.
+
+- **History data** is one of your history tabular data sets
+- **Descriptive Title** is the text to appear in the output file names to remind you what the plots are!
+- **Use a Log scale** is recommended for p values in the range 0-1 as it highlights departures from the null at small p values
+- **Random Sample Fraction** is the fraction of points to randomly sample - highly recommended for >5k or so values
+- **Height and Width** will determine the scale of the pdf images
+
+
+-----
+
+.. class:: infomark
+
+**Summary**
+
+Generate a uniform QQ plot for any large number of p values from an analysis.
+Essentially a plot of n ranked p values against their rank as a centile - ie rank/n
+
+Works well where you have a column containing p values from
+a statistical test of some sort. These will be plotted against the values expected under the null. Departure
+from the diagonal suggests one distribution is more extreme than the other. You hope your p values are
+smaller than expected under the null.
+
+The sampling fraction will help cut down the size of the pdfs. If there are fewer than 5k points on any plot, all will be shown.
+Otherwise the sampling fraction will be used or 5k, whichever is larger.
+
+Note that the use of a log scale is ill-advised if you are plotting log transformed p values because the
+uniform distribution chosen for the qq plot is always 0-1 and log transformation is applied if required.
+The most useful plots for p values are log QQ plots of untransformed p values in the range 0-1
+
+Originally designed and written for family based data from the CAMP Illumina run of 2007 by
+ross lazarus (ross.lazarus@gmail.com)
+
+</help>
+</tool>

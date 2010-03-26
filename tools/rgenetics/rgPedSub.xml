@@ -1,0 +1,143 @@
+<tool id="rgPedSub1" name="Subset markers:">
+    <code file="rgPedSub_code.py"/>
+
+    <description>region or rs list</description>
+
+    <command interpreter="python">
+        rgPedSub.py $script_file
+    </command>
+
+    <inputs>
+        <page>
+       <param name="title" type="text" size="80" label="Title for output files"
+        help="Descriptive title for new genotype/map files" value="Genotype_Subset" />
+       <param name="input1" type="data" format="lped"
+   		label="Current history lPed format data" optional="false"
+    	size="120" help="Choose a Linkage Ped format data from your current history" />
+       <param name='relfilter' label = "Filter out family relatedness" type="select"
+   	     optional="false" size="132"
+         help="Optionally remove related subjects if pedigree identifies founders and their offspring">
+         <option value="all" selected='true'>No filter on relatedness - all subjects passed through</option>
+         <option value="fo" >Founders only (pedigree mother and father ID = "0")</option>
+         <option value="oo" >Offspring only (one randomly chosen if >1 sibs in family)</option>
+   		</param>
+
+        </page><page>
+       <conditional name="m">
+	        <param name="mtype" type="select"  label="Markers in a genomic interval,or as an rs list?" refresh_on_change='true'
+	        help="Indicate the markers to be saved - as a list or as genomic region coordinates">
+	          <option value="grslist" >Cut and paste a list of marker ids as rs numbers</option>
+	          <option value="gregion" selected='true'>Supply genomic coordinates for a region (as UCSC location)</option>
+	        </param>
+	        <when value="gregion">
+	         <param name="region" type="text" label="Genomic refseq coordinates - chromosome:start-end"
+        		size="120" help="Region to be saved as chr9:119,506,000-119,518,000"/>
+	       	  <param name="rslist" type="hidden" value='' />
+	        </when>
+	        <when value="grslist">
+	          <param name="region" value="" type="hidden"/>
+	       	    <param name="rslist" type="text" area='true' size='15x20' label="marker id (rs) list"
+       			help="Cut and paste, or type a list of marker ids separated by spaces"  />
+	        </when>
+        </conditional>
+        </page>
+   </inputs>
+
+   <outputs>
+       <data format="lped" name="output1" metadata_source="input1"/>
+   </outputs>
+
+<configfiles>
+<configfile name="script_file">
+title~~~~$title
+output1~~~~$output1
+userId~~~~$userId
+outformat~~~~lped
+basename~~~~$input1.metadata.base_name
+inped~~~~$input1.extra_files_path/$input1.metadata.base_name
+outdir~~~~$output1.files_path
+relfilter~~~~$relfilter
+#if $m.mtype=='grslist'
+rslist~~~~$m.rslist
+region~~~~
+#else
+rslist~~~~
+region~~~~$m.region
+#end if
+</configfile>
+</configfiles>
+
+<tests>
+ <test>
+    <param name='input1' value='tinywga' ftype='lped' >
+    <metadata name='base_name' value='tinywga' />
+    <composite_data value='tinywga.ped' />
+    <composite_data value='tinywga.map' />
+    </param>
+    <param name='title' value='rgPedSubtest1' />
+    <param name="region" value="" />
+    <param name="rslist" value="rs2283802Xrs2267000Xrs16997606Xrs4820537Xrs3788347Xrs756632Xrs4820539Xrs2283804Xrs2267006Xrs4822363X" />
+    <param name="relfilter" value="all" />
+    <param name="mtype" value="grslist" />
+    <output name='output1' file='rgtestouts/rgPedSub/rgPedSubtest1.lped' ftype='lped' linesDiff='7'/>
+ </test>
+</tests>
+
+<help>
+
+.. class:: infomark
+
+**Note**
+
+There are 2 forms to complete before the job is ready to be run
+
+  **Page 1**
+
+     give the job a mnemonic descriptive title and select the output format.
+
+     Choose a file containing genotypes and a pedigree from your current history
+
+     The input file must be in linkage ped format.
+
+     If the data are not yet in your history, import from one of the system libraries or upload from your computer using the get data tool
+
+  **Page 2**
+
+     Define the markers to be used. You can supply a UCSC style location as chr:start_offset-end_offset
+
+     or a list of marker ids - rs numbers. You can flip between marker input style by changing the select box.
+
+     If you supply a list, the markers must all be from the same chromosome or region for sensible results.
+
+Run the job and the subset file will eventually appear in your history ready to be used with other tools.
+
+-----
+
+**Syntax**
+
+- **Library Linkage Ped** is a linkage format pedigree file chosen from the system file Library
+- **History Linkage Ped** is a linkage format pedigree file chosen from your current Galaxy History
+- **Region** is the genomic region cut and paste from a UCSC browser location window
+- **Genome Build** is the version of the genome your markers are from - use hg18 for CAMP illumina data
+
+-----
+
+.. class:: infomark
+
+**Summary**
+
+This tool is a special purpose tool to extract genotypes from genotype data in linkage
+pedigree format (separate map file) over a specified genomic region
+The region to be extracted can be described as UCSC browser location, or as a list of
+markers.
+
+It is possible to retain ALL markers by leaving the rslist and region empty if you just want to remove
+all offspring from a pedigree for example
+
+The extracted data will appear in your current history as a new lped data set
+
+Copyright, Ross Lazarus, March 2008 for the Rgenetics project
+Released under the LGPL. See http://www.gnu.org/licenses/lgpl.html for license terms.
+
+</help>
+</tool>

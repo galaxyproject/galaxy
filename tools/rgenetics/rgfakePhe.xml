@@ -1,0 +1,132 @@
+<tool id="fakePhe1" name="Null phenotypes">
+  <description>for testing</description>
+   <code file="rgfakePhe_code.py"/>
+   <command interpreter="python">rgfakePhe.py '$infile1.extra_files_path/$infile1.metadata.base_name'
+   "$title1" '$ppheout' '$ppheout.files_path' '$script_file'
+   </command>
+   <inputs>
+    <page>
+    <param name="infile1"
+         type="data" format="pbed,lped"
+         label="Pedigree from Dataset" />
+        <param name="title1" type="text"
+         value="My null phenos" size="60"
+         label="Title for outputs"/>
+        <param name="dbkey" type="hidden" value='hg18' />
+    </page>
+    <page>
+    <repeat name="fakePhe" title="Phenotypes to simulate under the Null">
+        <param name="pName" type="text" label="Phenotype Name">
+        </param>
+      <conditional name="series">
+        <param name="phetype" type="select" label="Phenotype Distribution">
+          <option value="rnorm" selected="true">Random Normal variate</option>
+          <option value="unif">Random Uniform variate</option>
+          <option value="rgamma">Random Gamma variate</option>
+          <option value="weibull">Random Weibull variate</option>
+          <option value="exponential">Random exponential variate</option>
+          <option value="poisson">Random Poisson variate</option>
+          <option value="cat">Random categorical choice</option>
+        </param>
+        <when value="poisson">
+          <param name="lamb" type="integer" value="2" label="Lambda (mean and variance)" />
+        </when>
+        <when value="rnorm">
+          <param name="Mean" type="float" value="0.0" label="Mean" />
+          <param name="SD" type="float" label="SD" value="1.0"/>
+        </when>
+        <when value="exponential">
+          <param name="Mean" type="float" value="1.0" label="Mean" help="lambda for the exponential will be 1.0/Mean" />=
+        </when>
+        <when value="rgamma">
+          <param name="Alpha" type="float" value="10" label="Alpha">
+          </param>
+          <param name="Beta" type="float" label="Beta" value="1.0">
+          </param>
+        </when>
+        <when value="weibull">
+          <param name="Alpha" type="float" value="10" label="Alpha">
+          </param>
+          <param name="Beta" type="float" label="Beta" value="1.0">
+          </param>
+        </when>
+        <when value="unif">
+          <param name="low" type="float" value="0.0" label="Lowest uniform value">
+          </param>
+          <param name="hi" type="float" label="Highest uniform value" value="1.0"
+           help="A uniform value will be generated from the range specified (low to high) - eg 0.0 to 1.0">
+          </param>
+        </when>
+        <when value="cat">
+          <param name="values" type="text" value="A,B,C" label="Comma separated values to choose from"
+         help = "Each of the comma separated values will have an equal probability of being chosen - eg 'A1,A2,B1,B2'">
+          </param>
+        </when>
+      </conditional>
+    </repeat>
+    </page>
+</inputs>
+<outputs>
+       <data format="pphe" name="ppheout"  metadata_source="infile1" />
+</outputs>
+<configfiles>
+<configfile name="script_file">
+#for $n, $f in enumerate($fakePhe)
+#if $f.series.phetype=='rnorm'
+{'pN':'$f.pName','pT':'rnorm','pP':"{'Mean':'$f.series.Mean', 'SD':'$f.series.SD'}"}
+#elif $f.series.phetype=='rgamma'
+{'pN':'$f.pName','pT':'rgamma','pP':"{'Alpha':'$f.series.Alpha', 'Beta':'$f.series.Beta'}"}
+#elif $f.series.phetype=='poisson'
+{'pN':'$f.pName','pT':'poisson','pP':"{'lamb':'$f.series.lamb',}"}
+#elif $f.series.phetype=='exponential'
+{'pN':'$f.pName','pT':'exponential','pP':"{'Mean':'$f.series.Mean',}"}
+#elif $f.series.phetype=='weibull'
+{'pN':'$f.pName','pT':'weibull','pP':"{'Alpha':'$f.series.Alpha', 'Beta':'$f.series.Beta'}"}
+#elif $f.series.phetype=='cat'
+{'pN':'$f.pName','pT':'$f.series.phetype','pP':"{'values':'$f.series.values'}"}
+#elif $f.series.phetype=='unif'
+{'pN':'$f.pName','pT':'$f.series.phetype','pP':"{'low':'$f.series.low','hi':'$f.series.hi'}"}
+#end if
+#end for
+</configfile>
+</configfiles>
+<help>
+.. class:: infomark
+
+This tool allows you to generate an arbitrary (sort of)
+synthetic phenotype file with measurements drawn from normal,
+gamma, weibull, exponential, uniform or categorical distributions. These are for testing under
+the null hypothesis of no association - the values are random but
+from user specified distributions.
+
+Two output files will appear - one for FBAT and the other for Plink since unfortunately,
+they have slightly differing requirements for the header row.
+
+-----
+
+.. class:: warningmark
+
+This tool is very experimental
+
+-----
+
+- **Pedigree** is a library pedigree file - the id's will be used in the synthetic null phenotypes
+- **Title** is a name to give to the output phenotype file
+
+On the next page, you can add an unlimited number of various kinds of phenotypes including choices for
+categorical ones or distributions with specific parameters
+
+Just keep using the "Add new phenotype" button to add new specifications until you're done.
+Use the Execute button to run the program and generate the null phenotype data.
+The new files will be available on the drop down lists for appropriate tools - eg the
+FBAT format one will be available if you run the FBAT modelling tool.
+
+**Attribution**
+Originally designed and written for the Rgenetics
+series of Galaxy tools, and
+copyright Ross Lazarus 2007 (ross period lazarus at gmail period com)
+Licensed under the terms of the LGPL
+as documented http://www.gnu.org/licenses/lgpl.html
+
+</help>
+</tool>

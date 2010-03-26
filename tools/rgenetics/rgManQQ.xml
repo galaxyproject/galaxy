@@ -1,0 +1,117 @@
+<tool id="rgManQQ1" name="Manhattan/QQ:">
+    <code file="rgManQQ_code.py"/>
+
+    <description>Plots for WGA P values</description>
+
+    <command interpreter="python">
+        rgManQQ.py '$i' "$name" '$out_html' '$out_html.files_path' '$chrom_col' '$offset_col' '$pval_col' 
+    </command>
+
+    <inputs>
+      <page>
+      <param name="i"  type="data" label="Tabular data from your current history"
+      format="tabular" refresh_on_change="true"/>
+      </page>
+      <page>
+       <param name='name' type='text' size="132" value='Manhattan and QQ plots' label="Title for this job"/>
+       <param name="pval_col" type='select' size="5" label = 'P value (0-1) column in input file'  
+        dynamic_options="get_phecols(i,False,'pval')" refresh_on_change="true" multiple="true" 
+        help="(Select multiple P value columns for multiple plots holding down the [Ctrl] key as you click)" />
+       <param name="chrom_col" type='select' label = 'Chromosome column in input file'
+        help='Select "None" if chromosome not available or no Manhattan plot required'
+        dynamic_options="get_phecols(i,True,'chr')" />
+       <param name="offset_col" type='select' label = 'Base pair offset column in input file'
+        help='Select "None" if offset not available or no Manhattan plot required'
+        dynamic_options="get_phecols(i,True,'offs')" />
+       </page>
+    </inputs>
+    
+   <outputs>
+       <data format="html" name="out_html" />
+   </outputs>
+   <options refresh="True"/>
+
+<tests>
+ <test>
+ <param name='i' value='smallwgaP.xls' ftype='tabular' >
+ </param>
+ <param name='name' value='rgManQQ_test1' />
+ <param name='pval_col' value='5,7' />
+ <param name='chrom_col' value='1' />
+ <param name='offset_col' value='2' />
+ <output name='out_html' file='rgtestouts/rgManQQ/rgManQQtest1.html' ftype='html' lines_diff='10'>
+   <extra_files type="file" name='Allelep_manhattan.png' value='rgtestouts/rgManQQ/Allelep_manhattan.png' compare="sim_size"   
+     delta = "100" />
+   <extra_files type="file" name='Allelep_qqplot.png' value='rgtestouts/rgManQQ/Allelep_qqplot.png' compare="sim_size"   
+     delta = "100" />
+   <extra_files type="file" name='Armitagep_manhattan.png' value='rgtestouts/rgManQQ/Armitagep_manhattan.png' compare="sim_size" 
+     delta = "100"/>
+   <extra_files type="file" name='Armitagep_qqplot.png' value='rgtestouts/rgManQQ/Armitagep_qqplot.png' compare="sim_size"
+     delta = "100" />
+   <extra_files type="file" name='rgManQQtest1.R' value='rgtestouts/rgManQQ/rgManQQtest1.R' compare="diff" lines_diff="160"/>
+ </output>
+ </test>
+</tests>
+<help>
+
+.. class:: infomark
+
+**Syntax**
+
+- **Tabular Data** is a tab delimited header file with chromosome, offset and p values to be plotted
+- **Chromosome Column** is the column in that data containing the chromosome as an integer
+- **Offset Column** contains the offset within the chromosome
+- **P Value Column** contains the (untransformed) p values at that locus - choose multiple columns if needed
+
+-----
+
+.. class:: infomark
+
+**Summary**
+
+This tool will create a qq plot and a Manhattan plot for one or more GWA P value columns from a tabular
+dataset. For Manhatten plots, the data must include the chromosome (eg use 23,24,25 for x,y,mt...) and
+offset. Many analysis files contain the required fields but even without chromosome and offset, a qq plot 
+can be created.
+
+-----
+
+.. class:: infomark
+
+**Explanation**
+
+A "Manhattan" plot shows -log10 p values ordered by offset and by chromosome. Regions with interestingly
+improbable p values are above the red line which is drawn at the Bonferroni FWER control level (0.05/n 
+where n is the number of tests - this is highly conservative for correlated SNPs typical of GWA)
+
+.. image:: ../static/images/Armitagep_manhattan.png
+
+A quantile-quantile (QQ) plot is a good way to see systematic departures from the null expectation of 
+uniform p-values from a genomic analysis. If the QQ plot shows departure from the null (ie a uniform 0-1 
+distribution), you hope that this will be in the very smallest p-values suggesting that there might be some 
+interesting results to look at. A log scale will help emphasise departures from the null at low p values 
+more clear
+
+.. image:: ../static/images/Armitagep_qqplot.png
+
+-----
+
+.. class:: infomark
+
+**Attribution**
+
+This is a Galaxy tool written by Ross Lazarus. It relies on 
+ggplot2, an R package from hadley wickham and some 
+R code for manhattan and qq plots using ggplot2,
+borrowed from Stephen Turner found at http://GettingGeneticsDone.blogspot.com/
+
+copyright Ross Lazarus 2010
+Licensed under the terms of the LGPL as documented http://www.gnu.org/licenses/lgpl.html
+but is about as useful as a chocolate teapot without R and Galaxy which all have a
+twisty maze of little licenses, all different.
+
+I'm no lawyer, but it looks like at least LGPL if you create derived works from this code. 
+Good luck.
+
+</help>
+</tool>

@@ -1,0 +1,153 @@
+<tool id="rgHaploView1" name="LD plots:">
+    <code file="rgHaploView_code.py"/>
+
+    <description>and comparisons with HapMap data</description>
+
+    <command interpreter="python">
+    rgHaploView.py "$ucsc_region" "$rslist" "$title" "$out_file1"
+    "$lhistIn.extra_files_path" "$lhistIn.metadata.base_name"
+    "$minmaf" "$maxdist" "$ldtype" "$hires" "$memsize" "$out_file1.files_path"
+    "$infoTrack" "$tagr2" "$hmpanel" ${GALAXY_DATA_INDEX_DIR}/rg/bin/haploview.jar
+    </command>
+
+    <inputs>
+
+       <param name="lhistIn" type="data" format="lped"
+        label="Current history lPed format data"
+        size="80" help="Linkage Ped format data from your current history" />
+
+       <param name="ucsc_region" type="text" label="Optional subset region (blank=ALL)"
+        size="80" optional="true"
+        help="Region eg: chr9:119,506,000-119,518,000 Leave blank for all or to extract the rs list supplied below."/>
+
+       <param name="rslist" type="text" area='true' size='5x20' label="rs list" optional="true"
+       help="List of rs numbers to select - cut and paste or type, use space delimiters. Leave blank to extract region supplied above."  />
+
+       <param name="title" type="text" size="80" label="Title for output files" optional="true"
+        help="Descriptive title for new genotype/map files" value="LD Plots" />
+
+    <param name="ldtype" type="select" label="Type of LD measure to estimate and plot"
+        size="80" help="" >
+        <option value="RSQ" selected="True">rsquared (default)</option>
+        <option value="DEFAULT">D prime</option>
+        <option value="DPALT">D prime alternative</option>
+        <option value="GAB">Gabriel</option>
+        <option value="GAM">4 Gamete test</option>
+    </param>
+
+   <param name="minmaf" type="float" label = "Minimum minor allele frequency to use" value="0.05"
+    help="If &gt; 0.0, markers below this MAF will be ignored for calculations"/>
+
+    <param name="maxdist" type="integer" label = "Maximum distance (kbp) between markers for LD estimate"
+    value="200" help="If &lt; &gt; 0, only marker pairs at or below this distance will have LD calculated"/>
+
+    <param name="hmpanel" type="select" multiple="true" label="Hapmap panels to compare"
+        size="40" help="HapMap data LD plots will also be produced for each selected population panel" >
+        <option value='CEU' selected="True">CEPH (European) (default)</option>
+        <option value='YRI'>Yoruba (African)</option>
+        <option value='CHB+JPT'>Chinese + Japanese</option>
+        <option value="">(None - no comparison)</option>
+    </param>
+    <param name="tagr2" type="float" label = "rsquared threshold for tagging outputs" value="0.8"
+    help="Tagging output will use this value as the minimum rsquared threshold"/>
+
+    <param name="infoTrack" type="select" label="Add Hapmap information track to image"
+    help="Refseq genes and snp density can be added to the plot if desired for orientation" >
+    <option value="info">Add Information track (Not available - awaiting fix from Haploview authors)</option>
+    <option value="noinfo" selected="True">No Information track</option>
+    </param>
+
+    <param name="hires" type="select" label="High resolution plots"
+    help="A high resolution plot file may be possible but only for small regions - not reliable &gt;100's of snps">
+    <option value="hi">High resolution - only a few (hundreds of) markers</option>
+    <option value="lo" selected="True">Low resolution - large number of markers</option>
+    </param>
+
+    <param name="memsize" type="select" label="System RAM to allocate"
+        size="80" help="Very large files will need extra memory (java is a bit of a pig)" >
+        <option value="1024">1GB</option>
+        <option value="2048" selected="True">2GB (default)</option>
+        <option value="4096">4GB</option>
+        <option value="6144">6GB</option>
+        <option value="8192">8GB</option>
+    </param>
+
+   </inputs>
+
+   <outputs>
+       <data format="html" name="out_file1" />
+
+   </outputs>
+
+<!-- python $TOOLPATH/$TOOL.py "" "rs2283802Xrs2267000Xrs16997606Xrs4820537Xrs3788347Xrs756632Xrs4820539Xrs2283804Xrs2267006Xrs4822363X" \
+"$NPRE" $OUTPATH/${NPRE}.html "test" "" "$INPATH" "tinywga" 0.0 200000 "RSQ" "lo" "2048" "$OUTPATH" "hg18" "noinfo" "0.8" \
+"['CEU','YRI','CHB+JPT']" $BINPATH/haploview.jar -->
+<tests>
+ <test>
+  <param name='lhistIn' value='tinywga' ftype='lped' >
+   <metadata name='base_name' value='tinywga' />
+   <composite_data value='tinywga.ped' />
+   <composite_data value='tinywga.map' />
+  </param>
+ <param name='ucsc_region' value='' />
+ <param name='title' value='rgHaploViewtest1' />
+ <param name='rslist' value="rs2283802Xrs2267000Xrs16997606Xrs4820537Xrs3788347Xrs756632Xrs4820539Xrs2283804Xrs2267006Xrs4822363X" />
+ <param name='ldtype' value='RSQ' />
+ <param name='minmaf' value='0.0' />
+ <param name='maxdist' value='200000' />
+ <param name='tagr2' value='0.8' />
+ <param name='hmpanel' value="YRI" />
+ <param name='infoTrack' value='noinfo' />
+ <param name='hires' value='lo' />
+ <param name='memsize' value='2048' />
+ <output name='out_file1' file='rgtestouts/rgHaploView/rgHaploViewtest1.html' ftype='html' lines_diff="16">
+    <extra_files type="file" name='alljoin.pdf' value="rgtestouts/rgHaploView/alljoin.pdf" compare="diff" lines_diff="3625"/>
+    <extra_files type="file" name='allnup.pdf' value="rgtestouts/rgHaploView/allnup.pdf" compare="diff" lines_diff="3675" />
+    <extra_files type="file" name='Log_rgHaploViewtest1.txt' value="rgtestouts/rgHaploView/Log_rgHaploViewtest1.txt" compare="diff" lines_diff="20"/>
+    <extra_files type="file" name='rgHaploViewtest1.ped.TESTS' value="rgtestouts/rgHaploView/rgHaploViewtest1.ped.TESTS" compare="diff" 
+            lines_diff="16"/>
+    <extra_files type="file" name='rgHaploViewtest1.ped.TAGS' value="rgtestouts/rgHaploView/rgHaploViewtest1.ped.TAGS" compare="diff"
+            lines_diff="16" />
+ </output>
+ </test>
+</tests>
+
+<help>
+
+.. class:: infomark
+
+**Note**
+
+The input file must be in linkage ped format. A suitable file can be chosen from the system library,
+or from the files already imported into your current history. Use either one of the selection boxes to
+make your choice.
+
+-----
+
+**Syntax**
+
+- **Library Linkage Ped** is a linkage format pedigree file chosen from the system file Library
+- **History Linkage Ped** is a linkage format pedigree file chosen from your current Galaxy History
+- **Region** is the genomic region cut and paste from a UCSC browser location window
+- **Genome Build** is the version of the genome your markers are from - use hg18 for CAMP illumina data
+
+-----
+
+**Summary**
+
+This tool is a special purpose tool to estimate and plot linkage disequilibrium estimated
+from genotype data in linkage pedigree format (separate map file). All markers in the input file
+are used as the default. To limit the calculations to a subset of the input data, supply
+a specified genomic region in UCSC browser location format or a list of specific marker IDs.
+
+Note that you can choose either a file of the correct type (linkage pedigree - lped) from
+your current history **or** from the system library
+
+This tool currently calls Haploview for estimation and plots. For full attribution, source code and documentation, see
+http://www.broad.mit.edu/mpg/haploview/index.php
+
+Copyright, Ross Lazarus, April 2008 for the Rgenetics project
+Released under the LGPL. See http://www.gnu.org/licenses/lgpl.html for license terms.
+
+</help>
+</tool>

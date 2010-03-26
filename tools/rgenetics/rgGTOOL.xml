@@ -1,0 +1,54 @@
+<tool id="rgGTOOL1" name="Converter">
+    <code file="listFiles.py"/> 
+    <code file="rgGTOOL_code.py"/> 
+  
+    <description>from linkage format to SNPTEST Marchini files</description>
+  
+    <command interpreter="python">
+        rgGTOOL.py $i $o $discrete $logf $outdir
+    </command>
+    
+    <inputs>    
+       <param name="i"  type="select" label="Genotype file" dynamic_options="get_lib_pedfiles()" /> 
+       <param name="discrete" type="select" label="Make Case/Control based on affection 2/1">
+                        <option selected="yes" value="1">Discrete</option>
+                        <option value="0">Continuous</option>
+       </param>
+       <param name="o" type="text" label="Output Marchini format name" value="Marchini"/>
+       <param name="outdir" type="hidden" value="/usr/local/galaxy/data/rg/snptest" />
+   </inputs>
+
+   <outputs>  
+       <data format="txt" name="logf"  />
+   </outputs>
+<help>
+
+
+**Syntax**
+
+- **Genotype file** is the input linkage format pedigree and corresponding map file
+- **Discrete** is the type of phenotype in the affection column 
+- **Output name** is the file name (.gen and .sample will be added) for the new SNPTEST compatible file
+
+**Note on Discrete**
+See GTOOL_ documentation link below for more details. Briefly, if
+your linkage format pedigree file has 1/2 in column 6 for control/case respectively, setting this to Yes will create two 
+complete sets of output files distinguished by 1 and 2 respectively. otherwise, affection status is assumed to contain a 
+continuous phenotype and a single output set is produced
+
+
+**Summary**
+
+Code used here from Jonathon Marchini's group - see documentation at GTOOL_.
+
+.. _GTOOL: http://www.stats.ox.ac.uk/~marchini/software/gwas/gtool.html
+
+-----
+
+**Attribution**
+Originally designed and written for the Rgenetics
+series of Galaxy tools by ross lazarus (ross.lazarus@gmail.com), who didn't write GTOOL_
+but wishes he had.
+
+</help>
+</tool>

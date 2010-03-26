@@ -1,0 +1,109 @@
+<tool id="rgqc1" name="QC reports:">
+    <code file="rgQC_code.py"/>
+
+    <description>Marker and Subject measures</description>
+
+    <command interpreter="python">
+        rgQC.py -i '$input_file.extra_files_path/$input_file.metadata.base_name' -o "$out_prefix"
+        -s '$html_file' -p '$html_file.files_path'
+    </command>
+
+    <inputs>
+          <param name="input_file" type="data" label="RGenetics genotype file in compressed Plink format"
+          size="80" format="pbed" />
+       <param name="out_prefix" size="80" type="text" value="RgQC report" label="Descriptive report title"/>
+   </inputs>
+
+   <outputs>
+       <data format="html" name="html_file" metadata_source="input_file"/>
+   </outputs>
+
+<tests>
+ <test>
+    <param name='input_file' value='tinywga' ftype='pbed' >
+    <metadata name='base_name' value='tinywga' />
+    <composite_data value='tinywga.bim' />
+    <composite_data value='tinywga.bed' />
+    <composite_data value='tinywga.fam' />
+    </param>
+    <param name='out_prefix' value='rgQCtest1' />
+    <output name='html_file' file='rgtestouts/rgQC/rgQCtest1.html' ftype='html' lines_diff='437'>
+    <extra_files type="file" name='tinywga_All_Paged.pdf' value="rgtestouts/rgQC/tinywga_All_Paged.pdf" compare="diff" lines_diff="1190"/>
+    <extra_files type="file" name='tinywga.log' value="rgtestouts/rgQC/tinywga.log" compare="diff" lines_diff="10"/>
+    <extra_files type="file" name='tinywga.frq' value="rgtestouts/rgQC/tinywga.frq" compare="diff" />
+    <extra_files type="file" name='tinywga.het' value="rgtestouts/rgQC/tinywga.het" compare="diff" />
+    <extra_files type="file" name='tinywga.hwe' value="rgtestouts/rgQC/tinywga.hwe" compare="diff" />
+    <extra_files type="file" name='tinywga.imendel' value="rgtestouts/rgQC/tinywga.imendel" compare="diff"/>
+    <extra_files type="file" name='tinywga.imiss' value="rgtestouts/rgQC/tinywga.imiss" compare="diff" />
+    <extra_files type="file" name='tinywga.lmendel' value="rgtestouts/rgQC/tinywga.lmendel" compare="diff" />
+    <extra_files type="file" name='tinywga.lmiss' value="rgtestouts/rgQC/tinywga.lmiss" compare="diff" />
+    <extra_files type="file" name='tinywga_All_3x3.pdf' value="rgtestouts/rgQC/tinywga_All_3x3.pdf" compare="diff" lines_diff="1112"/>
+    <extra_files type="file" name='ldp_tinywga.bed' value="rgtestouts/rgQC/ldp_tinywga.bed" compare="diff" />
+    <extra_files type="file" name='ldp_tinywga.bim' value="rgtestouts/rgQC/ldp_tinywga.bim" compare="diff" />
+    <extra_files type="file" name='ldp_tinywga.fam' value="rgtestouts/rgQC/ldp_tinywga.fam" compare="diff" />
+    <extra_files type="file" name='ldp_tinywga.log' value="rgtestouts/rgQC/ldp_tinywga.log" compare="diff" lines_diff="17"/>
+    <extra_files type="file" name='Ranked_Marker_HWE.xls' value="rgtestouts/rgQC/Ranked_Marker_HWE.xls" compare="diff" />
+    <extra_files type="file" name='Ranked_Marker_MAF.xls' value="rgtestouts/rgQC/Ranked_Marker_MAF.xls" compare="diff" />
+    <extra_files type="file" name='Ranked_Marker_Missing_Genotype.xls' value="rgtestouts/rgQC/Ranked_Marker_Missing_Genotype.xls" compare="diff" />
+    <extra_files type="file" name='Ranked_Subject_Missing_Genotype.xls' value="rgtestouts/rgQC/Ranked_Subject_Missing_Genotype.xls" compare="diff" lines_diff="10"/>
+    <extra_files type="file" name='tinywga_fracmiss_cum.jpg' value="rgtestouts/rgQC/tinywga_fracmiss_cum.jpg" compare="diff" />
+    <extra_files type="file" name='tinywga_fracmiss_cum.pdf' value="rgtestouts/rgQC/tinywga_fracmiss_cum.pdf" compare="diff" lines_diff="29"/>
+ </output>
+ </test>
+</tests>
+ <help>
+
+.. class:: infomark
+
+**Summary**
+
+This tool prepares an extensive and comprehensive series of reports for quality control checking of SNP genotypes from any arbitrary
+genotyping experiment. Designed for family based data, so includes optional reports on Mendelian errors by
+subject and by marker.
+
+The outputs include histograms and boxplots for missingness, maf, mendel counts and hwe by marker, and the ones that make sense by
+subject. The report is built as a single web page containing links to the summary marker and subject files.
+
+The F (inbreeding) statistic is calculated using a somewhat LD independent group of genotypes
+The Plink used is --indep-pairwise 40 20 0.5 until we make it configurable.
+High heterozygosity might mean contaminated sample - more than one DNA. Low heterozygosity might mean inbreeding as in strains
+of mice.
+
+If the data file you want is missing from the option list above,
+you will first need to "import" it so it will be available here. Files available in the system library
+can be imported by selecting and completing the "Import ped/map" choice from the Get Data tool group at the top of the Galaxy
+menu. Your system administrator will be responsible for adding files to the system library.
+
+-----
+
+.. class:: infomark
+
+**Syntax**
+
+- **Genotype file** is the input pedfile -
+- **Prefix** is a string used to name all of the outputs
+
+-----
+
+**Attribution**
+
+This Galaxy tool was written by Ross Lazarus for the Rgenetics project
+The current version uses Plink for most calculations and R for plotting - for full Plink attribution, source code and documentation,
+please see http://pngu.mgh.harvard.edu/~purcell/plink/ while R attribution and source code can be found at http://r-project.org
+
+Shaun Purcell provides the documentation you need specific to those settings, at
+http://pngu.mgh.harvard.edu/~purcell/plink/anal.shtml#glm
+
+Tool and Galaxy datatypes originally designed and written for the Rgenetics
+series of whole genome scale statistical genetics tools by ross lazarus (ross.lazarus@gmail.com)
+Shaun Purcell created and maintains Plink, while a cast of many maintain R.
+
+Please acknowledge your use of this tool, Galaxy, R and Plink in your publications and let
+us know so we can keep track. These tools all rely on highly competitive grant funding
+so your letting us know about publications is important to our ongoing support.
+
+</help>
+
+
+
+</tool>

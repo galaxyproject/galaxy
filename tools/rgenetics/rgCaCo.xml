@@ -1,0 +1,101 @@
+<tool id="rgCaCo1" name="Case Control:">
+    <code file="listFiles.py"/>
+    <code file="rgCaCo_code.py"/>
+
+    <description>for unrelated subjects</description>
+
+    <command interpreter="python">
+        rgCaCo.py '$i.extra_files_path/$i.metadata.base_name' "$name"
+        '$out_file1' '$logf' '$logf.files_path' '$gffout'
+    </command>
+
+    <inputs>
+      <param name="i"  type="data" label="RGenetics genotype data from your current history"
+      format="pbed" />
+       <param name='name' type='text' size="132" value='CaseControl' label="Title for this job"/>
+
+    </inputs>
+
+   <outputs>
+       <data format="tabular" name="out_file1" />
+       <data format="txt" name="logf" />
+       <data format="gff" name="gffout"  />
+   </outputs>
+<tests>
+ <test>
+ <param name='i' value='tinywga' ftype='pbed' >
+   <metadata name='base_name' value='tinywga' />
+   <composite_data value='tinywga.bim' />
+   <composite_data value='tinywga.bed' />
+   <composite_data value='tinywga.fam' />
+ </param>
+ <param name='name' value='rgCaCotest1' />
+ <output name='out_file1' file='rgCaCotest1_CaCo.xls' ftype='tabular' compare='diff' />
+ <output name='logf' file='rgCaCotest1_CaCo_log.txt' ftype='txt' compare='diff' lines_diff='19' />
+ <output name='gffout' file='rgCaCotest1_CaCo_topTable.gff' ftype='gff' compare='diff' />
+ </test>
+</tests>
+<help>
+
+.. class:: infomark
+
+**Syntax**
+
+- **Genotype file** is the input case control data chosen from available library Plink binary files
+- **Map file** is the linkage format .map file corresponding to the genotypes in the Genotype file
+- **Type of test** is the kind of test statistic to report such as Armitage trend test or genotype test
+- **Format** determines how your data will be returned to your Galaxy workspace
+
+-----
+
+**Summary**
+
+This tool will perform some standard statistical tests comparing subjects designated as
+affected (cases) and unaffected subjects (controls). To avoid bias, it is important that
+controls who had been affected would have been eligible for sampling as cases. This may seem
+odd, but it requires that the cases and controls are drawn from the same sampling frame.
+
+The armitage trend test is robust to departure from HWE and so very attractive - after all, a real disease
+mutation may well result in distorted HWE at least in cases. All the others are susceptible to
+bias in the presence of HWE departures.
+
+All of these tests are exquisitely sensitive to non-differential population stratification in cases
+compared to controls and this must be tested before believing any results here. Use the PCA method for
+100k markers or more.
+
+If you don't see the genotype data set you want here, it can be imported using one of the methods available from
+the Galaxy Get Data tool page.
+
+Output format can be UCSC .bed if you want to see your
+results as a fully fledged UCSC track. A map file containing the chromosome and offset for each marker is required for
+writing this kind of output.
+Alternatively you can use .gg for the UCSC Genome Graphs tool which has all of the advantages
+of the the .bed track, plus a neat, visual front end that displays a lot of useful clues.
+Either of these are a very useful way of quickly getting a look
+at your data in full genomic context.
+
+Finally, if you can't live without
+spreadsheet data, choose the .xls tab delimited format. It's not a stupid binary excel file. Just a plain old tab delimited
+one with a header. Fortunately excel is dumb enough to open these without much protest.
+
+-----
+
+**Attribution**
+
+When you click 'execute', this Galaxy tool will run Plink (from Shaun Purcell) for you (which is GPL, so this must be too I guess) for calculations. For full Plink
+attribution, source code and documentation, please see http://pngu.mgh.harvard.edu/~purcell/plink/
+
+The Plink output files will be adjusted into UCSC compatible tracks - gg or wig, or else as tab delimited
+for you spreadsheet junkies out there. Python is used for all glue and data format yoga.
+Originally designed and written for the Rgenetics Galaxy tools by
+ross lazarus (ross spot lazarus ate gmail spot com), who didn't write
+either Galaxy or Plink but wishes he had.
+
+copyright Ross Lazarus 2007
+Licensed under the terms of the LGPL as documented http://www.gnu.org/licenses/lgpl.html
+but is about as useful as a chocolate teapot without Plink which is GPL.
+
+I'm no lawyer, but it looks like you got GPL if you use this software. Good luck.
+
+</help>
+</tool>

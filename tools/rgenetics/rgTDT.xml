@@ -1,0 +1,84 @@
+<tool id="rgTDT1" name="Transmission Distortion:">
+    <code file="rgTDT_code.py"/>
+
+    <description>for family data</description>
+
+    <command interpreter="python">
+        rgTDT.py -i '$i.extra_files_path/$i.metadata.base_name' -o '$title1'
+        -r '$out_file1' -l '$logf'  -g '$gffout'
+    </command>
+
+    <inputs>
+       <param name="i"  type="data" label="Genotypes for analysis from your current history datasets"
+          size="132" format="pbed" />
+       <param name='title1' type='text' value='rgTDT'  size="80"/>
+   </inputs>
+
+   <outputs>
+       <data format="tabular" name="out_file1" />
+       <data format="gff" name="gffout" />
+       <data format="txt" name="logf" />
+   </outputs>
+
+<tests>
+ <test>
+ <param name='i' value='tinywga' ftype='pbed' >
+   <metadata name='base_name' value='tinywga' />
+   <composite_data value='tinywga.bim' />
+   <composite_data value='tinywga.bed' />
+   <composite_data value='tinywga.fam' />
+ </param>
+ <param name='title1' value='rgTDTtest1' />
+ <output name='out_file1' file='rgTDTtest1_TDT.xls' ftype='tabular' compare="diff"/>
+ <output name='gffout' file='rgTDTtest1_TDT_topTable.gff' ftype='gff' compare="diff" />
+ <output name='logf' file='rgTDTtest1_TDT_log.txt' ftype='txt' lines_diff='79'/>
+ </test>
+</tests>
+
+
+<help>
+
+.. class:: infomark
+
+**Attribution**
+
+This tool relies on the work of many people. It uses Plink http://pngu.mgh.harvard.edu/~purcell/plink/ for
+analysis, and the R http://cran.r-project.org/ for graphics respectively.
+
+This implementation is a Galaxy tool wrapper around these third party applications.
+It was originally designed and written for family based data from the CAMP Illumina run of 2007 by
+ross lazarus (ross.lazarus@gmail.com) and incorporated into the rgenetics toolkit.
+
+Rgenetics merely exposes them, wrapping Plink so you can use it in Galaxy.
+
+-----
+
+.. class:: infomark
+
+**Syntax**
+
+- **Genotype file** is the input family data chosen from available library compressed files
+- **Format** determines how your data will be returned to your Galaxy workspace - the gg format is strongly recommended
+
+-----
+
+.. class:: infomark
+
+**Summary**
+
+This tool will perform the standard transmission distortion analyses suitable for
+nuclear families and a simple binary "affected" phenotype
+
+If you don't see the genotype data set you want here, it can be imported using one of the methods available from
+the Galaxy Get Data tool page.
+
+Outputs will include a GFF toptable with a link to view at UCSC if you want to see your
+results as a fully fledged UCSC track.
+
+Finally, if you can't live without
+spreadsheet data, choose the .xls tab delimited format. It's not a stupid binary excel file. Just a plain old tab delimited
+one with a header. Fortunately excel is dumb enough to open these without much protest.
+
+
+</help>
+</tool>

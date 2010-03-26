@@ -1,0 +1,94 @@
+<tool id="rgGRR1" name="GRR:">
+    <code file="rgGRR_code.py"/>
+    <description>Pairwise Allele Sharing</description>
+    <command interpreter="python">
+         rgGRR.py $i.extra_files_path/$i.metadata.base_name "$i.metadata.base_name"
+        '$out_file1' '$out_file1.extra_files_path' "$title1"  '$n' '$Z'
+    </command>
+    <inputs>
+      <param name="i"  type="data" label="Genotype data file from your current history"
+      format="pbed" />
+       <param name='title1' type='text' size="80" value='rgGRR' label="Title for this job"/>
+       <param name="n" type="integer" label="N snps to use (0=all)" value="5000" />
+       <param name="Z" type="float" label="Z score cutoff for outliers (eg 2)" value="6"
+       help="2 works but for very large numbers of pairs, you might want to see less than 5%" />
+    </inputs>
+    <outputs>
+       <data format="html" name="out_file1" />
+    </outputs>
+
+<tests>
+ <test>
+    <param name='i' value='tinywga' ftype='pbed' >
+    <metadata name='base_name' value='tinywga' />
+    <composite_data value='tinywga.bim' />
+    <composite_data value='tinywga.bed' />       
+    <composite_data value='tinywga.fam' />
+    </param>
+  <param name='title1' value='rgGRRtest1' />
+  <param name='n' value='100' />
+  <param name='Z' value='6' />
+  <output name='out_file1' file='rgtestouts/rgGRR/rgGRRtest1.html' ftype='html' compare="diff" lines_diff='30'>
+    <extra_files type="file" name='Log_rgGRRtest1.txt' value="rgtestouts/rgGRR/Log_rgGRRtest1.txt" compare="diff" lines_diff="30"/>
+    <extra_files type="file" name='rgGRRtest1.svg' value="rgtestouts/rgGRR/rgGRRtest1.svg" compare="diff" lines_diff="1000" />
+    <extra_files type="file" name='rgGRRtest1_table.xls' value="rgtestouts/rgGRR/rgGRRtest1_table.xls" compare="diff" lines_diff="100" />
+  </output>
+ </test>
+</tests>
+
+
+<help>
+
+.. class:: infomark
+
+**Explanation**
+
+This tool will calculate allele sharing among all subjects, one pair at a time. It outputs measures of average alleles
+shared and measures of variability for each pair of subjects and creates an interactive image where each pair is
+plotted in this mean/variance space. It is based on the GRR windows application available at
+http://www.sph.umich.edu/csg/abecasis/GRR/
+
+The plot is interactive - you can unselect one of the relationships in the legend to remove all those points
+from the plot for example. Details of outlier pairs will pop up when the pointer is over them. e found by moving your pointer
+over them. This relies on a working browser SVG plugin - try getting one installed for your browser if the interactivity is
+broken.
+
+-----
+
+**Syntax**
+
+- **Genotype file** is the input pedigree data chosen from available library Plink binary files
+- **Title** will be used to name the outputs so make it mnemonic and useful
+- **N** is left 0 to use all snps - otherwise you get a random sample - much quicker with little loss of precision > 5000 SNPS
+
+**Summary**
+
+Warning - this tool works pairwise so slows down exponentially with sample size. An LD-reduced dataset is
+strongly recommended as it will give good resolution with relatively few SNPs. Do not use all million snps from a whole
+genome chip - it's overkill - 5k is good, 10k is almost indistinguishable from 100k.
+
+SNP are sampled randomly from the autosomes - otherwise parent/child pairs will be separated by gender.
+This tool will estimate mean pairwise allele shareing among all subjects. Based on the work of Abecasis, it has
+been rewritten so it can run with much larger data sets, produces cross platform svg and runs
+on a Galaxy server, instead of being MS windows only. Written in is Python, it uses numpy, and the innermost loop
+is inline C so it can calculate about 50M SNPpairs/sec on a typical opteron server.
+
+Setting N to some (fraction) of available markers will speed up calculation - the difference is most painful for
+large subject N. The real cost is that every subject must be compared to every other one over all genotypes -
+this is an exponential problem on subjects.
+
+If you don't see the genotype data set you want here, it can be imported using one of the methods available from
+the Rgenetics Get Data tool.
+
+-----
+
+**Attribution**
+
+Based on an idea from G. Abecasis implemented as GRR (windows only) at http://www.sph.umich.edu/csg/abecasis/GRR/
+
+Ross Lazarus wrote the original pdf writer Galaxy tool version.
+John Ziniti added the C and created the slick svg representation.
+Copyright Ross Lazarus 2007
+Licensed under the terms of the LGPL as documented http://www.gnu.org/licenses/lgpl.html
+</help>
+</tool>

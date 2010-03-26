@@ -1,0 +1,60 @@
+<tool id="rgRegion" name="Subset:">
+    <code file="rgRegion_code.py"/> 
+    <code file="listFiles.py"/> 
+  
+    <description>genotypes from genomic region</description>
+  
+    <command interpreter="python">
+        rgRegion.py $infile $r $tag $out_file1
+    </command>
+    
+    <inputs>    
+       <page>
+       <param name="infile" type="data" format="lped" label="Linkage ped genotype file name from current history" size="80"/>
+       <param name="r" type="text" label="Region" help="Cut and paste a UCSC browser region" 
+        size="80" value="chr9:119,506,000-122,518,000"/>
+       <param name="rslist" type="text" area="true" label="List of rs numbers" help="Type (or cut and paste) a space or newline separated list of rs numbers" 
+        size="5x20"/>
+
+       <param name="tag" type="text" label="Output file name" value="My_favourite_region" size="80"/>
+       <param name="outformat" type="select" label="Output file format" dynamic_options="get_rgRegionOutFormats()" size="80"/>
+        <param name="dbkey" type="hidden" value="hg18" />
+
+       </page>
+
+ 
+   </inputs>
+
+   <outputs>  
+       <data format="lped" name="out_file1" />
+   </outputs>
+<help>
+
+.. class:: infomark
+
+**Syntax**
+
+- **Source** is the file you want to extract some columns from over a genomic region such as a gene or chromosome
+- **Tag** is the name to give the results file for this run 
+- **Region** is the genomic region cut and paste from a UCSC browser location window
+- **Genome Build** is the version of the genome your markers are from - use hg18 for CAMP illumina data
+
+-----
+
+**Summary**
+
+This tool is a very general purpose report builder. It can cut specific columns from 
+amalgamated analyses - eg powers and pvalues,
+or regressions over a specified genomic region (given as a UCSC browser location - eg)
+
+It takes a tab delimited file containing rs chrom offset float1..floatn and cuts out a region and
+a subset of the columns into a tabular file. If you make sure that RS is included, the
+result that appears in your history will have a direct link to ucsc genome graphs for viewing
+in full genomic context
+
+ross lazarus (ross.lazarus@gmail.com)
+August 2007
+released under the LGPL. see documentation for license terms.
+
+</help>
+</tool>
