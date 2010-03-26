@@ -2,7 +2,9 @@
 Array tree data provider for the Galaxy track browser. 
 """
 
-import pkg_resources; pkg_resources.require( "bx-python" )
+import pkg_resources
+pkg_resources.require( "numpy" )
+pkg_resources.require( "bx-python" )
 from bx.arrays.array_tree import FileArrayTreeDict
 from math import floor, ceil, log, pow
 
