@@ -25,6 +25,12 @@ class ToolRunner( BaseController ):
         """Catches the tool id and redirects as needed"""
         return self.index(trans, tool_id=tool_id, **kwd)
 
+    #test to get hapmap to work, ideally, we could pass tool_id to hapmap biomart and receive it back
+    @web.expose
+    def hapmapmart(self, trans, tool_id='hapmapmart', **kwd):
+        """Catches the tool id and redirects as needed"""
+        return self.index(trans, tool_id=tool_id, **kwd)
+
     @web.expose
     def default(self, trans, tool_id=None, **kwd):
         """Catches the tool id and redirects as needed"""

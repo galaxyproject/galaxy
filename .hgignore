@@ -1,5 +1,6 @@
 syntax: glob
 
+.hg*
 # Downloaded and locally built eggs
 eggs
 scripts/scramble/build
@@ -10,6 +11,8 @@ scripts/scramble/archives
 database/beaker_sessions
 database/compiled_templates
 database/files
+database/pbs
+database/tmp
 database/*.sqlite
 
 # Python bytecode
@@ -20,6 +23,7 @@ universe_wsgi.ini
 reports_wsgi.ini
 datatypes_conf.xml
 tool_conf.xml
+static/welcome.html.*
 tool-data/*.loc
 
 # Test output
