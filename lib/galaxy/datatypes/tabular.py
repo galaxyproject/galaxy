@@ -327,3 +327,96 @@ class Sam( Tabular ):
         except:
             pass
         return False
+
+class Pileup( Tabular ):
+    """Tab delimited data in pileup (6- or 10-column) format"""
+    file_ext = "pileup"
+
+    """Add metadata elements"""
+    MetadataElement( name="chromCol", default=1, desc="Chrom column", param=metadata.ColumnParameter )
+    MetadataElement( name="startCol", default=2, desc="Start column", param=metadata.ColumnParameter )
+    MetadataElement( name="baseCol", default=3, desc="Reference base column", param=metadata.ColumnParameter )
+
+    def init_meta( self, dataset, copy_from=None ):
+        Tabular.init_meta( self, dataset, copy_from=copy_from )
+
+    def set_peek( self, dataset, line_count=None, is_multi_byte=False ):
+        """Set the peek and blurb text"""
+        if not dataset.dataset.purged:
+            dataset.peek = data.get_file_peek( dataset.file_name, is_multi_byte=is_multi_byte )
+            if line_count is None:
+                # See if line_count is stored in the metadata
+                if dataset.metadata.data_lines:
+                    dataset.blurb = "%s genomic coordinates" % util.commaify( str( dataset.metadata.data_lines ) )
+                else:
+                    # Number of lines is not known ( this should not happen ), and auto-detect is
+                    # needed to set metadata
+                    dataset.blurb = "? genomic coordinates"
+            else:
+                dataset.blurb = "%s genomic coordinates" % util.commaify( str( line_count ) )
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def make_html_table( self, dataset, skipchars=[] ):
+        """Create HTML table, used for displaying peek"""
+        out = ['<table cellspacing="0" cellpadding="3">']
+        comments = []
+        try:
+            # Generate column header
+            out.append('<tr>')
+            for i in range( 1, dataset.metadata.columns+1 ):
+                if i == dataset.metadata.chromCol:
+                    out.append( '<th>%s.Chrom</th>' % i )
+                elif i == dataset.metadata.startCol:
+                    out.append( '<th>%s.Start</th>' % i )
+                elif i == dataset.metadata.baseCol:
+                    out.append( '<th>%s.Base</th>' % i )
+                else:
+                    out.append( '<th>%s</th>' % i )
+            out.append('</tr>')
+            out.append( self.make_html_peek_rows( dataset, skipchars=skipchars ) )
+            out.append( '</table>' )
+            out = "".join( out )
+        except Exception, exc:
+            out = "Can't create peek %s" % str( exc )
+        return out
+
+    def repair_methods( self, dataset ):
+        """Return options for removing errors along with a description"""
+        return [ ("lines", "Remove erroneous lines") ]
+
+    def sniff( self, filename ):
+        """
+        Checks for 'pileup-ness'
+
+        There are two main types of pileup: 6-column and 10-column. For both, 
+        the first three and last two columns are the same. We only check the
+        first three to allow for some personalization of the format.
+
+        >>> fname = get_test_fname( 'interval.interval' )
+        >>> Pileup().sniff( fname )
+        False
+        >>> fname = get_test_fname( '6col.pileup' )
+        >>> Pileup().sniff( fname )
+        True
+        >>> fname = get_test_fname( '10col.pileup' )
+        >>> Pileup().sniff( fname )
+        True
+        """
+        headers = get_headers( filename, '\t' )
+        try:
+            for hdr in headers:
+                if hdr and not hdr[0].startswith( '#' ):
+                    if len( hdr ) < 3:
+                        return False
+                    try:
+                        # chrom start in column 1 (with 0-based columns)
+                        # and reference base is in column 2
+                        check = int( hdr[1] )
+                        assert hdr[2] in [ 'A', 'C', 'G', 'T', 'N', 'a', 'c', 'g', 't', 'n' ]
+                    except:
+                        return False
+            return True
+        except:
+            return False

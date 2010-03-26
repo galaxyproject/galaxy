@@ -61,6 +61,7 @@
             <converter file="maf_to_interval_converter.xml" target_datatype="interval"/>
         </datatype>
         <datatype extension="pdf" type="galaxy.datatypes.images:Image" mimetype="application/pdf"/>
+        <datatype extension="pileup" type="galaxy.datatypes.tabular:Pileup" display_in_upload="true" />
         <datatype extension="png" type="galaxy.datatypes.images:Image" mimetype="image/png"/>
         <datatype extension="qual" type="galaxy.datatypes.qualityscore:QualityScore" />
         <datatype extension="qualsolexa" type="galaxy.datatypes.qualityscore:QualityScoreSolexa" display_in_upload="true"/>
@@ -239,6 +240,7 @@
         <sniffer type="galaxy.datatypes.interval:CustomTrack"/>
         <sniffer type="galaxy.datatypes.interval:Gff"/>
         <sniffer type="galaxy.datatypes.interval:Gff3"/>
+        <sniffer type="galaxy.datatypes.tabular:Pileup"/>
         <sniffer type="galaxy.datatypes.interval:Interval"/>
         <sniffer type="galaxy.datatypes.tabular:Sam"/>
     </sniffers>

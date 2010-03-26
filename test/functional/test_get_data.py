@@ -575,5 +575,22 @@ class UploadData( TwillTestCase ):
         self.check_history_for_string( 'Pasted Entry' )
         self.check_history_for_string( 'hello world' )
         self.delete_history( id=self.security.encode_id( history.id ) )
+    def test_0165_upload_file( self ):
+        """Test uploading 1.pileup, NOT setting the file format"""
+        self.check_history_for_string( 'Your history is empty' )
+        history = sa_session.query( galaxy.model.History ) \
+                            .filter( and_( galaxy.model.History.table.c.deleted==False,
+                                           galaxy.model.History.table.c.user_id==admin_user.id ) ) \
+                            .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
+                            .first()
+        self.upload_file( '1.pileup' )
+        hda = sa_session.query( galaxy.model.HistoryDatasetAssociation ) \
+                        .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ) \
+                        .first()
+        assert hda is not None, "Problem retrieving hda from database"
+        self.verify_dataset_correctness( '1.pileup', hid=str( hda.hid ) )
+        self.check_history_for_string( '1.pileup format: <span class="pileup">pileup</span>, database: \? Info: uploaded file' )
+        self.check_metadata_for_string( 'value="1.pileup" value="\?" Change data type selected value="pileup" selected="yes"' )
+        self.delete_history( id=self.security.encode_id( history.id ) )
     def test_9999_clean_up( self ):
         self.logout()
