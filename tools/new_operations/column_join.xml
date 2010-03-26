@@ -1,0 +1,150 @@
+<tool id="column_join" name="Column Join" version="1.0.0">
+  <description></description>
+  <command interpreter="python">
+    column_join.py
+        $output
+        $input1
+        $input2
+        $hinge
+        $columns
+        #for $f in $file_chooser:
+            ${f.input}
+        #end for
+  </command>
+  <inputs>
+    <param name="input1" type="data" format="tabular" label="Choose the first file for the join" />
+    <param name="columns" type="data_column" data_ref="input1" multiple="true" numerical="false" label="Include these column" help="Multi-select list - hold the appropriate key while clicking to select multiple columns" />
+    <param name="hinge" type="data_column" data_ref="input1" multiple="false" numerical="false" label="Use this column and columns to left the 'hinge' (matching data for each join)" help="All columns to left of selected column (plus selected column) will be used. Select 2 for pileup" />
+    <param name="input2" type="data" format="tabular" label="Choose the second file for the join" />
+    <repeat name="file_chooser" title="Additional Input">
+      <param name="input" label="Additional input file" type="data" format="tabular" />
+    </repeat>
+  </inputs>
+  <outputs>
+    <data name="output" format="pileup" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="input1" value="column_join_in1.pileup" ftype="pileup" />
+      <param name="columns" value="1,2,3,4,5,7" />
+      <param name="hinge" value="1,2" />
+      <param name="input2" value="column_join_in2.pileup" ftype="pileup" />
+      <param name="input" value="column_join_in3.pileup" ftype="pileup" />
+      <output name="output" file="column_join_out1.pileup" ftype="pileup" />
+    </test>
+    <test>
+      <param name="input1" value="column_join_in4.pileup" ftype="pileup" />
+      <param name="columns" value="1,2,3,4" />
+      <param name="hinge" value="1,2" />
+      <param name="input2" value="column_join_in5.pileup" ftype="pileup" />
+      <param name="input" value="column_join_in6.pileup" ftype="pileup" />
+      <output name="output" file="column_join_out2.pileup" ftype="pileup" />
+    </test>
+    <test>
+      <param name="input1" value="column_join_in7.pileup" ftype="pileup" />
+      <param name="columns" value="1,2,3,4,5" />
+      <param name="hinge" value="1,2" />
+      <param name="input2" value="column_join_in8.pileup" ftype="pileup" />
+      <param name="input" value="column_join_in9.pileup" ftype="pileup" />
+      <output name="output" file="column_join_out3.pileup" ftype="pileup" />
+    </test>
+  </tests>
+  <help>
+**What it does**
+
+This tool allows you to join several files with the same column structure into one file, removing certain columns if necessary. The user needs to select a 'hinge', which is the number of left-most columns to match on. They also need to select the columns to include in the join, which should include the hinge columns, too.
+
+-----
+
+**Example**
+
+Given the following files::
+
+  FILE 1
+  chr2    1    T    6    .C...,     I$$III
+  chr2    2    G    6    ..N..,     III@II
+  chr2    3    C    7    ..C...,    I$IIIII
+  chr2    4    G    7    .G....,    I#IIIII
+  chr2    5    G    7    ...N..,    IIII#BI
+  chr2    6    A    7    ..T...,    I$IDIII
+  chr1    1    C    1    ^:.        I
+  chr1    2    G    2    .^:.       $I
+  chr1    3    A    2    ..         I%
+  chr1    4    C    2    ..         I$
+  chr1    5    T    3    ..^:.      I#I
+  chr1    6    G    3    ..^:,      I#I
+
+  FILE 2
+  chr1    3    T    1    ^:.        I
+  chr1    4    G    2    .^:.       $I
+  chr1    5    T    2    ..         I%
+  chr1    6    C    3    ..^:.      III
+  chr1    7    G    3    ..^:.      I#I
+  chr1    8    T    4    ...^:,     I#II
+  chr2    77   C    6    .G...,     I$$III
+  chr2    78   G    6    ..N..,     III@II
+  chr2    79   T    7    ..N...,    I$IIIII
+  chr2    80   C    7    .G....,    I#IIIII
+  chr2    81   G    7    ...A..,    IIII#BI
+  chr2    82   A    8    ...G...,   I$IDIIII
+  chr2    83   T    8    .A.....N   IIIIIIII
+  chr2    84   A    9    ......T.   I$IIIIIII
+
+  FILE 3
+  chr1    1    A    1    .          I
+  chr1    2    T    2    G.         I$
+  chr1    3    C    2    .,         I@
+  chr1    4    C    3    ..N        III
+  chr1    42   C    5    ...N^:.    III@I
+  chr1    43   C    5    .N..^:.    IIIII
+  chr1    44   T    5    .A..,      IA@II
+  chr1    45   A    6    .N...^:.   IIIII$
+  chr1    46   G    6    .GN..^:.   I@IIII
+  chr1    47   A    7    ....^:..,  IIIII$I
+  chr2    73   T    5    .N..,      II$II
+  chr2    74   A    5    ....,      IIIII
+  chr2    75   T    5    ....,      IIIII
+  chr2    76   T    5    ....,      IIIII
+  chr2    77   C    5    ....,      IIIBI
+  chr2    78   T    5    ....,      IDIII
+
+To join on columns 3 and 4 combining on columns 1 and 2, columns 1-4 should be selected for the 'Include these columns' option, and column 2 selected for the 'hinge'. With these settings, the following would be output::
+
+  chr1    1    C    1              A    1
+  chr1    2    G    2              T    2
+  chr1    3    A    2    T    1    C    2
+  chr1    4    C    2    G    2    C    3
+  chr1    5    T    3    T    2
+  chr1    6    G    3    C    3
+  chr1    7              G    3
+  chr1    8              T    4
+  chr1    42                       C    5
+  chr1    43                       C    5
+  chr1    44                       T    5
+  chr1    45                       A    6
+  chr1    46                       G    6
+  chr1    47                       A    7
+  chr2    1    T    6
+  chr2    2    G    6
+  chr2    3    C    7
+  chr2    4    G    7
+  chr2    5    G    7
+  chr2    6    A    7
+  chr2    73                       T    5
+  chr2    74                       A    5
+  chr2    75                       T    5
+  chr2    76                       T    5
+  chr2    77             C    6    C    5
+  chr2    78             G    6    T    5
+  chr2    79             T    7
+  chr2    80             C    7
+  chr2    81             G    7
+  chr2    82             A    8
+  chr2    83             T    8
+  chr2    84             A    9
+
+
+  </help>
+</tool>
+
+
