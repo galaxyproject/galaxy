@@ -155,6 +155,7 @@ class Registry( object ):
                 'laj'         : images.Laj(),
                 'lav'         : sequence.Lav(),
                 'maf'         : sequence.Maf(),
+                'pileup'      : tabular.Pileup(),
                 'qualsolid'   : qualityscore.QualityScoreSOLiD(),
                 'qualsolexa'  : qualityscore.QualityScoreSolexa(),
                 'qual454'     : qualityscore.QualityScore454(),
@@ -185,6 +186,7 @@ class Registry( object ):
                 'laj'         : 'text/plain',
                 'lav'         : 'text/plain',
                 'maf'         : 'text/plain',
+                'pileup'      : 'text/plain',
                 'qualsolid'   : 'text/plain',
                 'qualsolexa'  : 'text/plain',
                 'qual454'     : 'text/plain',
@@ -218,6 +220,7 @@ class Registry( object ):
                 interval.CustomTrack(),
                 interval.Gff(),
                 interval.Gff3(),
+                tabular.Pileup(),
                 interval.Interval(),
                 tabular.Sam()
             ]
