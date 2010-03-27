@@ -4,7 +4,7 @@
     <description>Plots for WGA P values</description>
 
     <command interpreter="python">
-        rgManQQ.py '$i' "$name" '$out_html' '$out_html.files_path' '$chrom_col' '$offset_col' '$pval_col' 
+        rgManQQ.py '$i' "$name" '$out_html' '$out_html.files_path' '$chrom_col' '$offset_col' '$pval_col' '$grey'
     </command>
 
     <inputs>
@@ -23,6 +23,8 @@
        <param name="offset_col" type='select' label = 'Base pair offset column in input file'
         help='Select "None" if offset not available or no Manhattan plot required'
         dynamic_options="get_phecols(i,True,'offs')" />
+       <param name="grey" type="boolean" checked="false" truevalue="true" falsevalue="false" 
+        label="Grey scale for Manhatten plot (default is colour"/> 
        </page>
     </inputs>
     

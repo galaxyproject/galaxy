@@ -31,7 +31,7 @@ coloursTouse = c('firebrick','darkblue','goldenrod','darkgreen')
 
 
 manhattan = function(chrom=NULL,offset=NULL,pvals=NULL, title=NULL, max.y="max", 
-   suggestiveline=0, genomewide=T, size.x.labels=9, size.y.labels=10, annotate=F, SNPlist=NULL,grey=F) {
+   suggestiveline=0, genomewide=T, size.x.labels=9, size.y.labels=10, annotate=F, SNPlist=NULL,grey=0) {
 
         if (annotate & is.null(SNPlist)) stop("You requested annotation but provided no SNPlist!")
         genomewideline=NULL # was genomewideline=-log10(5e-8)
@@ -120,7 +120,7 @@ qq = function(pvector, title=NULL, spartan=F) {
 # instantiate rcode2 string with infile,chromcol,offsetcol,pvalscols,title before saving and running
 
 rcode2 = """rgqqMan = function(infile="%s",chromcolumn=%d, offsetcolumn=%d, pvalscolumns=%s, 
-     title="%s") {
+     title="%s",grey=%d) {
   d = read.table(infile,head=T,sep='\t')
   print(paste('###',length(d[,1]),'values read from',infile,'read - now running plots',sep=' '))
   for (pvalscolumn in pvalscolumns) {
@@ -133,7 +133,7 @@ rcode2 = """rgqqMan = function(infile="%s",chromcolumn=%d, offsetcolumn=%d, pval
      print(paste('## qqplot on',cname,'done'))
      if ((chromcolumn > 0) & (offsetcolumn > 0)) {
          print(paste('## manhattan on',cname,'starting',chromcolumn,offsetcolumn,pvalscolumn))
-         mymanplot= manhattan(chrom=d[,chromcolumn],offset=d[,offsetcolumn],pvals=d[,pvalscolumn],title=mytitle)
+         mymanplot= manhattan(chrom=d[,chromcolumn],offset=d[,offsetcolumn],pvals=d[,pvalscolumn],title=mytitle,grey=grey)
          print(paste('## manhattan plot on',cname,'done'))
          ggsave(file=paste(myfname,"manhattan.png",sep='_'),mymanplot,width=11,height=8,dpi=100)
          }
@@ -141,7 +141,7 @@ rcode2 = """rgqqMan = function(infile="%s",chromcolumn=%d, offsetcolumn=%d, pval
               print(paste('chrom column =',chromcolumn,'offset column = ',offsetcolumn,
               'so no Manhattan plot - supply both chromosome and offset as numerics for Manhattan plots if required'))
               } 
-     ggsave(file=paste(myfname,"qqplot.png",sep='_'),myqqplot,w=5,h=5,dpi=100)
+     ggsave(file=paste(myfname,"qqplot.png",sep='_'),myqqplot,width=8,height=11,dpi=100)
      } 
   else {
         print(paste('pvalue column =',pvalscolumn,'Cannot parse it so no plots possible'))
@@ -160,7 +160,7 @@ def main():
     </command>
     """
     print >> sys.stdout,'## rgManQQ.py. cl=',sys.argv
-    npar = 7
+    npar = 8
     if len(sys.argv) < npar:
             print >> sys.stdout, '## error - too few command line parameters - wanting %d' % npar
             print >> sys.stdout, u
@@ -189,7 +189,11 @@ def main():
     if chrom_col == 1 or offset_col == 1: # was passed as zero - do not do manhattan plots
         chrom_col = 0
         offset_col = 0
-    rcmd = '%s%s' % (rcode,rcode2 % (input_fname,chrom_col,offset_col,pval_cols,title))
+    if sys.argv[8].lower() in ['1','true']:
+       grey = 1
+    else:
+       grey = 0
+    rcmd = '%s%s' % (rcode,rcode2 % (input_fname,chrom_col,offset_col,pval_cols,title,grey))
     rlog,flist = RRun(rcmd=rcmd,title=ctitle,outdir=outdir)
     flist.sort()
     html = [galhtmlprefix % progname,]

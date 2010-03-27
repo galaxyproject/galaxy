@@ -112,14 +112,13 @@ def plink_assocToGG(plinkout="hm",tag='test'):
       if p <> 'NA': # eesh
           logp = '%9.9f' % -math.log10(p)
       else:
-          logp = '1'
+          logp = 'NA'
       try:
          orat = ll[8]
-         if orat == 'NA':
-            orat = '1'
       except:
-         orat = '1'
+         orat = 'NA'
       orat2 = orat
+      # invert large negative odds ratios
       if float(orat) < 1 and float(orat) > 0.0:
          orat2 = '%9.9f' % (1.0/float(orat))
       outl = [ll[1],logp, orat2, orat]
@@ -207,16 +206,16 @@ def xformModel(infname='',resf='',outfname='',
                     flog.write('### offending line #%d in %s = %s' % (lnum,l))
             except:
                 pass
-            width = max(3,1+int(abs(lp))) # get desired precision for output
-            w = '%d' % width
-            fps = '%%%s.%sf' % (w,w) # eg '%9.9f'
             if snp <> lastsnp:
                 if len(outl.keys()) > 3:
                     sl = [outl.get(x,'?') for x in ('snp','chrom','offset','GENO','TREND','ALLELIC','DOM')]
                     res.append('\t'.join(sl)) # last snp line
                 outl = {'snp':snp,'chrom':chrom,'offset':offset} # first 3 cols for gg line
                 lastsnp = snp # reset for next marker
-            outl[test] = '\t'.join([(fps % fp).strip(),('%6.6f' % lp).strip()])
+            #if p == 'NA':
+            #      p = 1.0 
+            # let's pass downstream for handling R is fine?
+            outl[test] = '%s\t%f' % (p,lp)
     if len(outl.keys()) > 3:
         l = [outl.get(x,'?') for x in ('snp','chrom','offset','GENO','TREND','ALLELIC','DOM')]
         res.append('\t'.join(l)) # last snp line
