@@ -41,6 +41,7 @@
  <param name='pval_col' value='5,7' />
  <param name='chrom_col' value='1' />
  <param name='offset_col' value='2' />
+ <param name='grey' value='0' />
  <output name='out_html' file='rgtestouts/rgManQQ/rgManQQtest1.html' ftype='html' lines_diff='17'>
    <extra_files type="file" name='Allelep_manhattan.png' value='rgtestouts/rgManQQ/Allelep_manhattan.png' compare="sim_size"   
      delta = "100" />

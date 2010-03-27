@@ -189,10 +189,9 @@ def main():
     if chrom_col == 1 or offset_col == 1: # was passed as zero - do not do manhattan plots
         chrom_col = 0
         offset_col = 0
-    if sys.argv[8].lower() in ['1','true']:
+    grey = 0
+    if (sys.argv[8].lower() in ['1','true']):
        grey = 1
-    else:
-       grey = 0
     rcmd = '%s%s' % (rcode,rcode2 % (input_fname,chrom_col,offset_col,pval_cols,title,grey))
     rlog,flist = RRun(rcmd=rcmd,title=ctitle,outdir=outdir)
     flist.sort()
