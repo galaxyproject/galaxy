@@ -17,7 +17,7 @@ def stop_err( msg ):
 inp_file = sys.argv[1]
 out_file = sys.argv[2]
 expr = sys.argv[3]
-round = sys.argv[4]
+round_result = sys.argv[4]
 try:
     in_columns = int( sys.argv[5] )
 except:
@@ -52,11 +52,11 @@ for col in range( 1, in_columns + 1 ):
     col_name = "c%d" % col
     cols.append( col_name )
     col_type = in_column_types[ col - 1 ].strip()
-    if round == 'no' and col_type == 'int':
+    if round_result == 'no' and col_type == 'int':
         col_type = 'float'
     type_cast = "%s(%s)" % ( col_type, col_name )
     type_casts.append( type_cast )
-
+        
 col_str = ', '.join( cols )    # 'c1, c2, c3, c4'
 type_cast_str = ', '.join( type_casts )  # 'str(c1), int(c2), int(c3), str(c4)'
 assign = "%s = line.split( '\\t' )" % col_str
@@ -82,7 +82,10 @@ for i, line in enumerate( file( inp_file ) ):
     try:
         %s
         %s
-        new_line = line + '\\t' + str( %s )
+        new_val = %s
+        if round_result == "yes":
+            new_val = int( round( new_val ) )
+        new_line = line + '\\t' + str( new_val )
         print >> out, new_line
         lines_kept += 1
     except:

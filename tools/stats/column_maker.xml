@@ -1,4 +1,4 @@
-<tool id="Add_a_column1" name="Compute">
+<tool id="Add_a_column1" name="Compute" version="1.1.0">
   <description>an expression on every row</description>
   <command interpreter="python">
     column_maker.py $input $out_file1 "$cond" $round ${input.metadata.columns} "${input.metadata.column_types}"
@@ -19,7 +19,19 @@
       <param name="cond" value="c3-c2"/>
       <param name="input" value="1.bed"/>
       <param name="round" value="no"/>
-      <output name="out_file1" file="eq-compute.dat"/>
+      <output name="out_file1" file="column_maker_out1.interval"/>
+    </test>
+    <test>
+      <param name="cond" value="c4*1"/>
+      <param name="input" value="1.interval"/>
+      <param name="round" value="no"/>
+      <output name="out_file1" file="column_maker_out2.interval"/>
+    </test>
+    <test>
+      <param name="cond" value="c4*1"/>
+      <param name="input" value="1.interval"/>
+      <param name="round" value="yes"/>
+      <output name="out_file1" file="column_maker_out3.interval"/>
     </test>
   </tests>
   <help>
