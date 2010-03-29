@@ -97,6 +97,7 @@ class Egg( object ):
                 if tmp_dist.platform is not None and \
                         self.distribution.project_name == tmp_dist.project_name and \
                         self.distribution.version == tmp_dist.version and \
+                        self.distribution.py_version == tmp_dist.py_version and \
                         pkg_resources.compatible_platforms( tmp_dist.platform, pkg_resources.get_platform() ):
                     return file
             return None
