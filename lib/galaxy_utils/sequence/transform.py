@@ -2,10 +2,9 @@
 #Contains methods to tranform sequence strings
 import string
 
-#FIXME: This should Handle ambiguity codes...
-#Translation table for reverse Complement
-DNA_COMPLEMENT = string.maketrans( "ACGTacgt", "TGCAtgca" )
-RNA_COMPLEMENT = string.maketrans( "ACGUacgu", "UGCAugca" )
+#Translation table for reverse Complement, with ambiguity codes
+DNA_COMPLEMENT = string.maketrans( "ACGTRYKMBDHVacgtrykmbdhv", "TGCAYRMKVHDBtgcayrmkvhdb" )
+RNA_COMPLEMENT = string.maketrans( "ACGURYKMBDHVacgurykmbdhv", "UGCAYRMKVHDBugcayrmkvhdb" )
 #Translation table for DNA <--> RNA
 DNA_TO_RNA = string.maketrans( "Tt", "Uu" )
 RNA_TO_DNA = string.maketrans( "Uu", "Tt" )

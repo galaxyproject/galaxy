@@ -331,6 +331,26 @@ def match_and_manipulate_read( fastq_read ):
       <param name="manipulation_selector" value="rev_comp" />
       <output name="output_file" file="sanger_full_range_rev_comp.fastqsanger" />
     </test>
+    <!-- match all and rev comp, with ambiguous DNA -->
+    <test>
+      <param name="input_file" value="misc_dna_original_sanger.fastqsanger" ftype="fastqsanger" />
+      <param name="match_type_selector" value="identifier" />
+      <param name="match_selector" value="regex" />
+      <param name="match_by" value=".*" />
+      <param name="manipulation_type_selector" value="sequence" />
+      <param name="manipulation_selector" value="rev_comp" />
+      <output name="output_file" file="misc_dna_as_sanger_rev_comp_1.fastqsanger" />
+    </test>
+    <!-- match all and rev comp, with ambiguous RNA -->
+    <test>
+      <param name="input_file" value="misc_rna_original_sanger.fastqsanger" ftype="fastqsanger" />
+      <param name="match_type_selector" value="identifier" />
+      <param name="match_selector" value="regex" />
+      <param name="match_by" value=".*" />
+      <param name="manipulation_type_selector" value="sequence" />
+      <param name="manipulation_selector" value="rev_comp" />
+      <output name="output_file" file="misc_rna_as_sanger_rev_comp_1.fastqsanger" />
+    </test>
     <!-- match first seq and rev comp -->
     <test>
       <param name="input_file" value="sanger_full_range_original_sanger.fastqsanger" ftype="fastqsanger" />
