@@ -287,10 +287,12 @@ $(document).ready(function(){
             %elif field['type'] == 'WorkflowField':
                 <select name="sample_${index}_field_${field_index}">
                     %for option_index, option in enumerate(request.user.stored_workflows):
-                        %if option == sample_values[field_index]:
-                            <option value="${option.id}" selected>${option.name}</option>
-                        %else:
-                            <option value="${option.id}">${option.name}</option>
+                        %if not option.deleted:
+                            %if str(option.id) == str(sample_values[field_index]):
+                                <option value="${option.id}" selected>${option.name}</option>
+                            %else:
+                                <option value="${option.id}">${option.name}</option>
+                            %endif
                         %endif
                     %endfor
                 </select>

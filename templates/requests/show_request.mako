@@ -212,6 +212,18 @@ $(document).ready(function(){
                         %endif
                     %endfor
                 </select>
+            %elif field['type'] == 'WorkflowField':
+                <select name="sample_${index}_field_${field_index}">
+                    %for option_index, option in enumerate(request.user.stored_workflows):
+                        %if not option.deleted:
+                            %if str(option.id) == str(sample_values[field_index]):
+                                <option value="${option.id}" selected>${option.name}</option>
+                            %else:
+                                <option value="${option.id}">${option.name}</option>
+                            %endif
+                        %endif
+                    %endfor
+                </select>
             %elif field['type'] == 'CheckboxField':
                 <input type="checkbox" name="sample_${index}_field_${field_index}" value="Yes"/>
             %endif
@@ -229,10 +241,16 @@ $(document).ready(function(){
     %for field_index, field in fields_dict.items():
         <td>
             %if sample_values[field_index]:
-                ${sample_values[field_index]}
+                %if field['type'] == 'WorkflowField':
+                    <% workflow = trans.sa_session.query( trans.app.model.StoredWorkflow ).get( int(sample_values[field_index]) ) %>
+                    <a href="${h.url_for( controller='workflow', action='run', id=trans.security.encode_id(workflow.id) )}">${workflow.name}</a>
+                %else:
+                    ${sample_values[field_index]}
+                %endif
             %else:
                 <i>None</i>
             %endif
+
         </td>
     %endfor   
 </%def>
