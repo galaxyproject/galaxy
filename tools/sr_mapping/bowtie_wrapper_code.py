@@ -10,6 +10,6 @@ def exec_before_job(app, inp_data, out_data, param_dict, tool):
             refFile = '?'
     dbkey = os.path.split( refFile )[1].split( '.' )[0]
     # deal with the one odd case
-    if dbkey.find( 'chrM' ) >= 0 or dbkey.find( 'chr_m' ) >= 0:
+    if dbkey == 'equCab2chrM':
         dbkey = 'equCab2'
-    out_data[ 'output' ].set_dbkey(dbkey)
+    out_data[ 'output' ].set_dbkey( dbkey )

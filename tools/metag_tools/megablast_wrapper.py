@@ -15,7 +15,7 @@ usage: %prog [options]
 usage: %prog db_build input_file word_size identity_cutoff eval_cutoff filter_query index_dir output_file
 """
 
-import sys, os, tempfile
+import os, subprocess, sys, tempfile
 from galaxy import eggs
 import pkg_resources; pkg_resources.require( "bx-python" )
 from bx.cookbook import doc_optparse
@@ -29,7 +29,7 @@ def stop_err( msg ):
 def __main__():
     #Parse Command Line
     options, args = doc_optparse.parse( __doc__ )
-    
+
     db_build = options.db_build
     query_filename = options.input.strip()
     output_filename = options.output.strip()
@@ -66,18 +66,33 @@ def __main__():
 
     if not db.has_key( db_build ):
         stop_err( 'Cannot locate the target database. Please check your location file.' )
-    
+
     # arguments for megablast    
     chunk = db[ ( db_build ) ]
-    megablast_command = "megablast -d %s -i %s -o %s -m 8 -a 8 -W %s -p %s -e %s -F %s > /dev/null 2>&1 " \
+    megablast_command = "megablast -d %s -i %s -o %s -m 8 -a 8 -W %s -p %s -e %s -F %s > /dev/null " \
         % ( chunk, query_filename, mega_temp_output, mega_word_size, mega_iden_cutoff, mega_evalue_cutoff, mega_filter ) 
-    
+
     print megablast_command
-       
+
     try:
-        os.system( megablast_command )
+        proc = subprocess.Popen( args=megablast_command, shell=True, stderr=subprocess.PIPE )
+        returncode = proc.wait()
+        # get stderr, allowing for case where it's very large
+        stderr = ''
+        buffsize = 1048576
+        try:
+            while True:
+                stderr += proc.stderr.read( buffsize )
+                if not stderr or len( stderr ) % buffsize != 0:
+                    break
+        except OverflowError:
+            pass
+        if returncode != 0:
+            raise Exception, stderr
     except Exception, e:
-        stop_err( str( e ) )
+        if os.path.exists( mega_temp_output ):
+            os.unlink( mega_temp_output )
+        stop_err( 'Error indexing reference sequence. ' + str( e ) )
 
     output = open( output_filename, 'w' )
     invalid_lines = 0
@@ -89,24 +104,24 @@ def __main__():
             gi, gi_len = fields[1].split( '_' )
             # convert the last column (causing problem in filter tool) to float
             fields[-1] = float( fields[-1] )
-            
             new_line = "%s\t%s\t%s\t%s\t%0.1f" % ( fields[0], gi, gi_len, '\t'.join( fields[2:-1] ), fields[-1] )
         except:
             new_line = line
             invalid_lines += 1
         output.write( "%s\n" % new_line )
     output.close()
-    
-    os.unlink( mega_temp_output ) #remove the tempfile that we just reformatted the contents of
-    
+
+    if os.path.exists( mega_temp_output ):
+        os.unlink( mega_temp_output ) #remove the tempfile that we just reformatted the contents of
+
     if invalid_lines:
         print "Unable to parse %d lines. Keep the default format." % invalid_lines
-        
+
     # megablast generates a file called error.log, if empty, delete it, if not, show the contents
     if os.path.exists( './error.log' ):
         for i, line in enumerate( file( './error.log' ) ):
             line = line.rstrip( '\r\n' )
             print line
         os.remove( './error.log' )
-    
+
 if __name__ == "__main__" : __main__()

@@ -77,7 +77,16 @@ def __main__():
             command = 'samtools faidx %s' % fai_index_file_base
             proc = subprocess.Popen( args=command, shell=True, cwd=tmp_dir, stderr=subprocess.PIPE )
             returncode = proc.wait()
-            stderr = proc.stderr.read()
+            # get stderr, allowing for case where it's very large
+            stderr = ''
+            buffsize = 1048576
+            try:
+                while True:
+                    stderr += proc.stderr.read( buffsize )
+                    if not stderr or len( stderr ) % buffsize != 0:
+                        break
+            except OverflowError:
+                pass
             if returncode != 0:
                 raise Exception, stderr 
             if len( open( fai_index_file_path ).read().strip() ) == 0:
@@ -97,7 +106,16 @@ def __main__():
         command = 'samtools view -bt %s -o %s %s' % ( fai_index_file_path, tmp_aligns_file_name, options.input1 )
         proc = subprocess.Popen( args=command, shell=True, cwd=tmp_dir, stderr=subprocess.PIPE )
         returncode = proc.wait()
-        stderr = proc.stderr.read()
+        # get stderr, allowing for case where it's very large
+        stderr = ''
+        buffsize = 1048576
+        try:
+            while True:
+                stderr += proc.stderr.read( buffsize )
+                if not stderr or len( stderr ) % buffsize != 0:
+                    break
+        except OverflowError:
+            pass
         if returncode != 0:
             raise Exception, stderr
         if len( open( tmp_aligns_file_name ).read() ) == 0:
@@ -117,7 +135,16 @@ def __main__():
         command = 'samtools sort %s %s' % ( tmp_aligns_file_name, tmp_sorted_aligns_file_name )
         proc = subprocess.Popen( args=command, shell=True, cwd=tmp_dir, stderr=subprocess.PIPE )
         returncode = proc.wait()
-        stderr = proc.stderr.read()
+        # get stderr, allowing for case where it's very large
+        stderr = ''
+        buffsize = 1048576
+        try:
+            while True:
+                stderr += proc.stderr.read( buffsize )
+                if not stderr or len( stderr ) % buffsize != 0:
+                    break
+        except OverflowError:
+            pass
         if returncode != 0:
             raise Exception, stderr
     except Exception, e:

@@ -93,7 +93,16 @@ def __main__():
         try:
             proc = subprocess.Popen( args=cmd1, shell=True, cwd=tmp_index_dir, stderr=subprocess.PIPE )
             returncode = proc.wait()
-            stderr = proc.stderr.read()
+            # get stderr, allowing for case where it's very large
+            stderr = ''
+            buffsize = 1048576
+            try:
+                while True:
+                    stderr += proc.stderr.read( buffsize )
+                    if not stderr or len( stderr ) % buffsize != 0:
+                        break
+            except OverflowError:
+                pass
             if returncode != 0:
                 raise Exception, stderr
         except Exception, e:
@@ -151,6 +160,7 @@ def __main__():
     else:
         cmd3 = 'bwa samse %s %s %s %s >> %s' % ( gen_alignment_cmds, ref_file_name, tmp_align_out_name, options.fastq, options.output )
     # perform alignments
+    buffsize = 1048576
     try:
         # need to nest try-except in try-finally to handle 2.4
         try:
@@ -158,7 +168,15 @@ def __main__():
             try:
                 proc = subprocess.Popen( args=cmd2, shell=True, cwd=tmp_dir, stderr=subprocess.PIPE )
                 returncode = proc.wait()
-                stderr = proc.stderr.read()
+                # get stderr, allowing for case where it's very large
+                stderr = ''
+                try:
+                    while True:
+                        stderr += proc.stderr.read( buffsize )
+                        if not stderr or len( stderr ) % buffsize != 0:
+                            break
+                except OverflowError:
+                    pass
                 if returncode != 0:
                     raise Exception, stderr
             except Exception, e:
@@ -168,7 +186,15 @@ def __main__():
                 if cmd2b: 
                     proc = subprocess.Popen( args=cmd2b, shell=True, cwd=tmp_dir, stderr=subprocess.PIPE )
                     returncode = proc.wait()
-                    stderr = proc.stderr.read()
+                    # get stderr, allowing for case where it's very large
+                    stderr = ''
+                    try:
+                        while True:
+                            stderr += proc.stderr.read( buffsize )
+                            if not stderr or len( stderr ) % buffsize != 0:
+                                break
+                    except OverflowError:
+                        pass
                     if returncode != 0:
                         raise Exception, stderr
             except Exception, e:
@@ -177,7 +203,15 @@ def __main__():
             try:
                 proc = subprocess.Popen( args=cmd3, shell=True, cwd=tmp_dir, stderr=subprocess.PIPE )
                 returncode = proc.wait()
-                stderr = proc.stderr.read()
+                # get stderr, allowing for case where it's very large
+                stderr = ''
+                try:
+                    while True:
+                        stderr += proc.stderr.read( buffsize )
+                        if not stderr or len( stderr ) % buffsize != 0:
+                            break
+                except OverflowError:
+                    pass
                 if returncode != 0:
                     raise Exception, stderr
             except Exception, e:

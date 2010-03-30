@@ -25,7 +25,16 @@ def __main__():
     try:
         proc = subprocess.Popen( args=cmd, shell=True, stderr=subprocess.PIPE )
         returncode = proc.wait()
-        stderr = proc.stderr.read()
+        # get stderr, allowing for case where it's very large
+        stderr = ''
+        buffsize = 1048576
+        try:
+            while True:
+                stderr += proc.stderr.read( buffsize )
+                if not stderr or len( stderr ) % buffsize != 0:
+                    break
+        except OverflowError:
+            pass
         if returncode != 0:
             raise Exception, stderr
     except Exception, e:

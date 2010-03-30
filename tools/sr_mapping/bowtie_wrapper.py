@@ -196,7 +196,15 @@ def __main__():
         try:
             proc = subprocess.Popen( args=cmd1, shell=True, cwd=tmp_index_dir, stderr=subprocess.PIPE, stdout=subprocess.PIPE )
             returncode = proc.wait()
-            stderr = proc.stderr.read()
+            stderr = ''
+            buffsize = 1048576
+            try:
+                while True:
+                    stderr += proc.stderr.read( buffsize )
+                    if not stderr or len( stderr ) % buffsize != 0:
+                        break
+            except OverflowError:
+                pass
             if returncode != 0:
                 raise Exception, stderr
         except Exception, e:
@@ -352,7 +360,16 @@ def __main__():
             # align
             proc = subprocess.Popen( args=cmd2, shell=True, cwd=tmp_index_dir, stderr=subprocess.PIPE )
             returncode = proc.wait()
-            stderr = proc.stderr.read()
+            # get stderr, allowing for case where it's very large
+            stderr = ''
+            buffsize = 1048576
+            try:
+                while True:
+                    stderr += proc.stderr.read( buffsize )
+                    if not stderr or len( stderr ) % buffsize != 0:
+                        break
+            except OverflowError:
+                pass
             if returncode != 0:
                 raise Exception, stderr
             # check that there are results in the output file

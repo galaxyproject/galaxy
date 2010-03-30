@@ -90,7 +90,16 @@ def __main__():
                 cmdIndex = 'samtools faidx %s' % ( tmpf1_name )
                 proc = subprocess.Popen( args=cmdIndex, shell=True, cwd=tmpDir, stderr=subprocess.PIPE )
                 returncode = proc.wait()
-                stderr = proc.stderr.read()
+                # get stderr, allowing for case where it's very large
+                stderr = ''
+                buffsize = 1048576
+                try:
+                    while True:
+                        stderr += proc.stderr.read( buffsize )
+                        if not stderr or len( stderr ) % buffsize != 0:
+                            break
+                except OverflowError:
+                    pass
                 #did index succeed?
                 if returncode != 0:
                     raise Exception, 'Error creating index file\n' + stderr
@@ -99,7 +108,16 @@ def __main__():
             proc = subprocess.Popen( args=cmd, shell=True, cwd=tmpDir, stderr=subprocess.PIPE )
             returncode = proc.wait()
             #did it succeed?
-            stderr = proc.stderr.read()
+            # get stderr, allowing for case where it's very large
+            stderr = ''
+            buffsize = 1048576
+            try:
+                while True:
+                    stderr += proc.stderr.read( buffsize )
+                    if not stderr or len( stderr ) % buffsize != 0:
+                        break
+            except OverflowError:
+                pass
             if returncode != 0:
                 raise Exception, stderr
         except Exception, e:
