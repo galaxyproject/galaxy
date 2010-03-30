@@ -410,9 +410,11 @@ div.form-row {
 
 <div id="history-name-area" class="historyLinks">
     
+    %if trans.get_user():
     <div id="history-name-container">
         <div id="history-name" class="tooltip editable-text" title="Click to rename history">${history.get_display_name() | h}</div>
     </div>
+    %endif
                                
 </div>
 
