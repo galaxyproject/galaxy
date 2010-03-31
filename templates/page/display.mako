@@ -230,6 +230,23 @@
         .embedded-item h4 {
             margin: 0px;
         }
+        ## Format tables in pages so that they look like they do in the page editor.
+        .page-body table {
+            padding: 8px 5px 5px;
+            min-width: 500px; 
+            border: none;
+            border-collapse: separate;
+        }
+        .page-body caption { 
+            text-align: left;
+            background: #E4E4B0; 
+            padding: 5px; 
+            font-weight: bold; 
+        }
+        .page-body td {
+            width: 25%;
+            padding: 0.2em 0.8em;
+        }
     </style>
 </%def>
 
