@@ -90,16 +90,12 @@ class Interval( Tabular ):
                         self.init_meta( dataset )
                         line = line.strip( '#' )
                         elems = line.split( '\t' )
-                        valid = dict( alias_helper ) # shrinks
-                        for index, col_name in enumerate( elems ):
-                            if col_name in valid:
-                                meta_name = valid[col_name]
-                                if overwrite or not dataset.metadata.element_is_set( meta_name ):
-                                    setattr( dataset.metadata, meta_name, index+1 )
-                                values = alias_spec[ meta_name ]
-                                start = values.index( col_name )
-                                for lower in values[ start: ]:
-                                    del valid[ lower ]  # removes lower priority keys 
+                        for meta_name, header_list in alias_spec.iteritems():
+                            for header_val in header_list:
+                                if header_val in elems:
+                                    #found highest priority header to meta_name
+                                    setattr( dataset.metadata, meta_name, elems.index( header_val ) + 1 )
+                                    break #next meta_name
                         break  # Our metadata is set, so break out of the outer loop
                     else: 
                         # Header lines in Interval files are optional. For example, BED is Interval but has no header.
