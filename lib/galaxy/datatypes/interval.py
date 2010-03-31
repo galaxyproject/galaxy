@@ -150,7 +150,7 @@ class Interval( Tabular ):
                 peek = []
                 for idx, line in enumerate(file(dataset.file_name)):
                     if line[0] != '#':
-                        peek.append( line.split() )
+                        peek.append( line.rstrip( '\n\r' ).split() )
                         if idx > 10:
                             break
 
@@ -975,6 +975,7 @@ class CustomTrack ( Tabular ):
             wiggle_format = False
             for line in open(dataset.file_name):
                 if (line.startswith("chr") or line.startswith("scaffold")):  
+                    line = line.rstrip( '\n\r' )
                     start = line.split("\t")[1].replace(",","")   
                     end = line.split("\t")[2].replace(",","")
 
