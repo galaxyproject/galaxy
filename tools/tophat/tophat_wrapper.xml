@@ -1,0 +1,129 @@
+<tool id="tophat" name="Tophat" version="1.0.13">
+    <description>Find splice junctions using RNA-seq data</description>
+    <command interpreter="python">
+        tophat_wrapper.py 
+            --num-threads="4"
+            --coverage-output=$coverage 
+            --junctions-output=$junctions 
+            --hits-output=$accepted_hits
+            #if $refGenomeSource.genomeSource == "history":
+                --indexes-dir=$refGenomeSource.ownFile
+            #else:
+                --indexes-dir=$refGenomeSource.index.value
+            #end if
+            #if $singlePaired.sPaired == "single":
+                --input1=$singlePaired.input1
+                --input2="None"
+            #else:
+                -r $singlePaired.mean_inner_distance
+                --input1=$singlePaired.input1
+                --input2=$singlePaired.input2
+            #end if
+    </command>
+    <inputs>
+        <conditional name="refGenomeSource">
+          <param name="genomeSource" type="select" label="Will you select a reference genome from your history or use a built-in index?" help="Built-ins were indexed using default options">
+            <option value="indexed">Use a built-in index</option>
+            <option value="history">Use one from the history</option>
+          </param>
+          <when value="indexed">
+        	<param name="index" type="select" label="Select a reference genome" help="If your genome of interest is not listed, contact the Galaxy team">
+      	      <options from_file="tophat_indices.loc">
+      	        <column name="value" index="1" />
+      	        <column name="name" index="0" />
+      	      </options>
+      	    </param>
+      	  </when>
+          <when value="history">
+            <param name="ownFile" type="data" format="fasta" metadata_name="dbkey" label="Select the reference genome" />
+          </when>  <!-- history -->
+     	</conditional>  <!-- refGenomeSource -->
+        <conditional name="singlePaired">
+            <param name="sPaired" type="select" label="Is this library mate-paired?">
+                <option value="single">Single-end</option>
+                <option value="paired">Paired-end</option>
+            </param>
+            <when value="single">
+                <param format="fastqsanger" name="input1" type="data" label="RNA-Seq FASTQ file" help="Must have Sanger-scaled quality values with ASCII offset 33"/>
+            </when>
+            <when value="paired">
+                <param format="fastqsanger" name="input1" type="data" label="RNA-Seq FASTQ file" help="Must have Sanger-scaled quality values with ASCII offset 33"/>
+                <param format="fastqsanger" name="input2" type="data" label="RNA-Seq FASTQ file" help="Must have Sanger-scaled quality values with ASCII offset 33"/>
+                <param format="fastqsanger" name="mean_inner_distance" type="integer" value="20" label="Mean Inner Distance between Mate Pairs"/>
+            </when>
+        </conditional>
+    </inputs>
+    
+    <outputs>
+	    <data format="sam" name="accepted_hits"/>
+        <data format="wig" name="coverage" />
+        <data format="bed" name="junctions" />
+    </outputs>
+    
+    <tests>
+        <test>
+            <param name="genomeSource" value="indexed"/>
+            <param name="index" value="test_ref"/>
+            <param name="sPaired" value="paired"/>
+            <param name="input1" ftype="fastqsanger" value="tophat_in1.fq"/>
+            <param name="input2" ftype="fastqsanger" value="tophat_in2.fq"/>
+            <param name="mean_inner_distance" value="20"/>
+            <!-- 
+                Can't test this right now because first lines of file are run-specific.
+            <output name="accepted_hits" file="tophat_out1.sam"/>
+            -->
+            <output name="coverage" file="tophat_out2.wig"/>
+            <output name="junctions" file="tophat_out3.bed"/>
+        </test>
+    </tests>
+    
+    <help>
+**Tophat Overview**
+
+TopHat_ is a fast splice junction mapper for RNA-Seq reads. It aligns RNA-Seq reads to mammalian-sized genomes using the ultra high-throughput short read aligner Bowtie, and then analyzes the mapping results to identify splice junctions between exons. Please cite: Trapnell, C., Pachter, L. and Salzberg, S.L. TopHat: discovering splice junctions with RNA-Seq. Bioinformatics 25, 1105-1111 (2009).        
+
+.. _Tophat: http://tophat.cbcb.umd.edu/
+        
+------
+
+**Know what you are doing**
+
+.. class:: warningmark
+
+There is no such thing (yet) as an automated gearshift in splice junction identification. It is all like stick-shift driving in San Francisco. In other words, running this tool with default parameters will probably not give you meaningful results. A way to deal with this is to **understand** the parameters by carefully reading the `documentation`__ and experimenting. Fortunately, Galaxy makes experimenting easy.
+
+.. __: http://tophat.cbcb.umd.edu/manual.html
+
+------
+
+**Input formats**
+
+Tophat accepts files in Sanger FASTQ format. Use the FASTQ Groomer to prepare your files.
+
+------
+
+**Outputs**
+
+Tophat produces three output files::
+
+  coverage.wig -- coverage of reads
+  accepted_hits.sam -- reads that were mapped onto genome
+  junctions.bed -- splice junctions identified by Tophat
+    
+-------
+
+**Tophat settings**
+
+All of the options have a default value. You can change any of them. Some of the options in Tophat have been implemented here.
+
+------
+
+**Tophat parameter list**
+
+This is a list of implemented Tophat options::
+
+  -r                This is the expected (mean) inner distance between mate pairs. For, example, for paired end runs with fragments 
+                    selected at 300bp, where each end is 50bp, you should set -r to be 200. There is no default, and this parameter 
+                    is required for paired end runs.
+    </help>
+</tool>
