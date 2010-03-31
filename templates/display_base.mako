@@ -3,7 +3,7 @@
 	    if context.get('no_panels'):
 	        return '/base.mako'
 	    else:
-	        return '/base_panels.mako'
+	        return '/webapps/galaxy/base_panels.mako'
 	
 	from galaxy.model import History, StoredWorkflow, Page
 	from galaxy.web.framework.helpers import iff

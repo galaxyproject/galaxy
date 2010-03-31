@@ -2,7 +2,7 @@
     def inherit(context):
         if context.get('use_panels') is True:
             print "here"
-            return '/base_panels.mako'
+            return '/webapps/galaxy/base_panels.mako'
         else:
             return '/base.mako'
 %>

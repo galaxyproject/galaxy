@@ -1,4 +1,4 @@
-<%inherit file="/base_panels.mako"/>
+<%inherit file="/webapps/galaxy/base_panels.mako"/>
 
 <%def name="late_javascripts()">
     ${parent.late_javascripts()}

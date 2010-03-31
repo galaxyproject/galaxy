@@ -1,4 +1,4 @@
-<%inherit file="/base_panels.mako"/>
+<%inherit file="/webapps/galaxy/base_panels.mako"/>
 <%namespace file="/display_common.mako" import="get_history_link, get_controller_name" />
 <%namespace file="/root/history_common.mako" import="render_dataset" />
 <%namespace file="/tagging_common.mako" import="render_individual_tagging_element, render_community_tagging_element" />
