@@ -5,17 +5,17 @@ class TestDataSecurity( TwillTestCase ):
     def test_000_initiate_users( self ):
         """Ensuring all required user accounts exist"""
         self.logout()
-        self.login( email='test1@bx.psu.edu' )
+        self.login( email='test1@bx.psu.edu', username='regular-user1' )
         global regular_user1
         regular_user1 = get_user( 'test1@bx.psu.edu' )
         assert regular_user1 is not None, 'Problem retrieving user with email "test1@bx.psu.edu" from the database'
         self.logout()
-        self.login( email='test2@bx.psu.edu' )
+        self.login( email='test2@bx.psu.edu', username='regular-user2' )
         global regular_user2
         regular_user2 = get_user( 'test2@bx.psu.edu' )
         assert regular_user2 is not None, 'Problem retrieving user with email "test2@bx.psu.edu" from the database'
         self.logout()
-        self.login( email='test@bx.psu.edu' )
+        self.login( email='test@bx.psu.edu', username='admin-user' )
         global admin_user
         admin_user = get_user( 'test@bx.psu.edu' )
         assert admin_user is not None, 'Problem retrieving user with email "test@bx.psu.edu" from the database'
@@ -24,7 +24,7 @@ class TestDataSecurity( TwillTestCase ):
         # Logged in as admin_user
         email = 'test3@bx.psu.edu'
         password = 'testuser'
-        previously_created = self.create_new_account_as_admin( email=email, password=password )
+        previously_created = self.create_new_account_as_admin( email=email, password=password, username='regular-user3' )
         # Get the user object for later tests
         global regular_user3
         regular_user3 = get_user( email )

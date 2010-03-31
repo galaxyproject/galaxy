@@ -7,8 +7,10 @@
 %if user:
     <p>You are currently logged in as ${user.email}.</p>
     <ul>
-        <li><a href="${h.url_for( action='show_info' )}">${_('Manage your information')}</a></li>
-        <li><a href="${h.url_for( action='set_default_permissions' )}">${_('Change default permissions')}</a> for new histories</li>
+        %if webapp == 'galaxy':
+            <li><a href="${h.url_for( action='show_info' )}">${_('Manage your information')}</a></li>
+            <li><a href="${h.url_for( action='set_default_permissions' )}">${_('Change default permissions')}</a> for new histories</li>
+        %endif
         <li><a href="${h.url_for( action='logout' )}">${_('Logout')}</a></li>
     </ul>
 %else:

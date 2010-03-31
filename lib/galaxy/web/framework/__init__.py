@@ -411,7 +411,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         Update the session cookie to match the current session.
         """
         self.set_cookie( self.security.encode_session_key( self.galaxy_session.session_key ), name=name )
-    def handle_user_login( self, user ):
+    def handle_user_login( self, user, webapp ):
         """
         Login a new user (possibly newly created)
            - create a new session

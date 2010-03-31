@@ -1,7 +1,6 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
 
-
 %if msg:
     ${render_msg( msg, messagetype )}
 %endif
@@ -45,15 +44,20 @@ $( function() {
     <form name="login_info" id="login_info" action="${h.url_for( controller='user', action='edit_info', user_id=user.id, admin_view=admin_view )}" method="post" >
         <div class="toolFormTitle">Login Information</div>
         <div class="form-row">
-            <label>Email</label>
-            ${login_info[ 'Email' ].get_html()}
+            <label>Email address:</label>
+            <input type="text" name="email" value="${email}" size="40"/>
         </div>
         <div class="form-row">
-            <label>Public Username</label>
-            ${login_info[ 'Public Username' ].get_html()}
+            <label>Public user name:</label>
+            <input type="text" name="username" size="40" value="${username}"/>
+            <div class="toolParamHelp" style="clear: both;">
+                Your user name is an optional identifier that will be used to generate addresses for information
+                you share publicly. User names must be at least four characters in length and contain only lower-case
+                letters, numbers, and the '-' character.
+            </div>
         </div>
         <div class="form-row">
-            <input type="submit" name="login_info_button" value="Save">
+            <input type="submit" name="login_info_button" value="Save"/>
         </div>
     </form>
 </div>
@@ -63,54 +67,54 @@ $( function() {
         <div class="toolFormTitle">Change Password</div>
         %if not admin_view:
             <div class="form-row">
-                <label>Current Password</label>
-                ${login_info[ 'Current Password' ].get_html()}
+                <label>Current Password:</label>
+                <input type="password" name="current" value="${current}" size="40"/>
             </div>
         %endif
         <div class="form-row">
-            <label>New Password</label>
-            ${login_info[ 'New Password' ].get_html()}
+            <label>New Password:</label>
+            <input type="password" name="password" value="${password}" size="40"/>
         </div>
         <div class="form-row">
-            <label>Confirm</label>
-            ${login_info[ 'Confirm' ].get_html()}
+            <label>Confirm:</label>
+            <input type="password" name="confirm" value="${confirm}" size="40"/>
         </div>
         <div class="form-row">
-            <input type="submit" name="change_password_button" value="Save">
+            <input type="submit" name="change_password_button" value="Save"/>
         </div>
     </form>
 </div>
 %if user.values or user_info_forms:
-<p></p>
-<div class="toolForm">
-    <form name="user_info" id="user_info" action="${h.url_for( controller='user', action='edit_info', user_id=user.id, admin_view=admin_view )}" method="post" >
-        <div class="toolFormTitle">User information</div>
-        %if user_info_select:
-            <div class="form-row">
-                <label>User type</label>
-                ${user_info_select.get_html()}
-            </div>
-        %endif
-        
-        %for field in widgets:
-            <div class="form-row">
-                <label>${field['label']}</label>
-                ${field['widget'].get_html()}
-                <div class="toolParamHelp" style="clear: both;">
-                    ${field['helptext']}
+    <p></p>
+    <div class="toolForm">
+        <form name="user_info" id="user_info" action="${h.url_for( controller='user', action='edit_info', user_id=user.id, admin_view=admin_view )}" method="post" >
+            <div class="toolFormTitle">User information</div>
+            %if user_info_select:
+                <div class="form-row">
+                    <label>User type:</label>
+                    ${user_info_select.get_html()}
                 </div>
-                <div style="clear: both"></div>
+            %endif
+            
+            %for field in widgets:
+                <div class="form-row">
+                    <label>${field['label']}:</label>
+                    ${field['widget'].get_html()}
+                    <div class="toolParamHelp" style="clear: both;">
+                        ${field['helptext']}
+                    </div>
+                    <div style="clear: both"></div>
+                </div>
+            %endfor
+            %if not user_info_select:
+                <input type="hidden" name="user_info_select" value="${user_info_form.id}"/>
+            %endif  
+        
+            <div class="form-row">
+                <input type="submit" name="edit_user_info_button" value="Save"/>
             </div>
-        %endfor
-        %if not user_info_select:
-            <input type="hidden" name="user_info_select" value="${user_info_form.id}"/>
-        %endif  
-    
-        <div class="form-row">
-            <input type="submit" name="edit_user_info_button" value="Save">
-        </div>
-    </form>
-</div>
+        </form>
+    </div>
 %endif
 <p></p>
 <div class="toolForm">
@@ -139,7 +143,7 @@ $( function() {
                             <tr class="libraryRow libraryOrFolderRow" id="libraryRow">
                                 <td>
                                     <div class="form-row">   
-                                        <label>${address.desc}</label>
+                                        <label>${address.desc}:</label>
                                         ${address.get_html()}
                                     </div>
                                     <div class="form-row">
@@ -167,10 +171,6 @@ $( function() {
             <div class="form-row">
                 <input type="submit" value="Add a new address">
             </div>
-            </div>
-        </form>
-
-
-
-
+        </div>
+    </form>
 </div>

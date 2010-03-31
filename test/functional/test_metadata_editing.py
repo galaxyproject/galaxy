@@ -8,7 +8,7 @@ class TestMetadataEdit( TwillTestCase ):
     def test_00_metadata_edit( self ):
         """test_metadata_edit: Testing metadata editing"""
         self.logout()
-        self.login( email='test@bx.psu.edu' )
+        self.login( email='test@bx.psu.edu', username='admin-user' )
         admin_user = sa_session.query( galaxy.model.User ) \
                               .filter( galaxy.model.User.table.c.email=='test@bx.psu.edu' ) \
                               .one()

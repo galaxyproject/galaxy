@@ -280,7 +280,7 @@ class TwillTestCase( unittest.TestCase ):
         num_deleted = len( id.split( ',' ) )
         self.home()
         self.visit_page( "history/list?operation=delete&id=%s" % ( id ) )
-        check_str = 'Deleted %d %s' % ( num_deleted, iff( num_deleted != 1, "histories","history") )
+        check_str = 'Deleted %d %s' % ( num_deleted, iff( num_deleted != 1, "histories", "history" ) )
         self.check_page_for_string( check_str )
         self.home()
     def delete_current_history( self, check_str='' ):
@@ -793,41 +793,41 @@ class TwillTestCase( unittest.TestCase ):
         self.assertTrue( genome_build == dbkey )
 
     # Functions associated with user accounts
-    def create( self, email='test@bx.psu.edu', password='testuser' ):
-        self.home()
-        # Create user, setting username to email.
-        self.visit_page( "user/create?email=%s&username=%s&password=%s&confirm=%s&create_user_button=Submit" % ( email, email, password, password ) )
-        self.check_page_for_string( "now logged in as %s" %email )
-        self.home()
+    def create( self, email='test@bx.psu.edu', password='testuser', username='admin-user', webapp='galaxy' ):
+        # HACK: don't use panels because late_javascripts() messes up the twill browser and it 
+        # can't find form fields (and hence user can't be logged in).
+        self.visit_url( "%s/user/create?use_panels=False&webapp=%s" % ( self.url, webapp ) )
+        tc.fv( '1', 'email', email )
+        tc.fv( '1', 'password', password )
+        tc.fv( '1', 'confirm', password )
+        tc.fv( '1', 'username', username )
+        tc.submit( 'create_user_button' )
+        self.check_page_for_string( "now logged in as %s" % email )
         # Make sure a new private role was created for the user
-        self.visit_page( "user/set_default_permissions" )
+        self.visit_url( "%s/user/set_default_permissions" % self.url )
         self.check_page_for_string( email )
         self.home()
     def create_user_with_info( self, email, password, username, user_info_forms, user_info_form_id, user_info_values ):
         '''
         This method registers a new user and also provides use info
         '''
-        self.home()
         if user_info_forms == 'multiple':
-            self.visit_page( "user/create?user_info_select=%i&admin_view=False" % user_info_form_id )
+            self.visit_url( "%s/user/create?user_info_select=%i&admin_view=False&use_panels=False" % ( self.url, user_info_form_id ) )
         else:
-            self.visit_page( "user/create?admin_view=False" )
-        print self.write_temp_file( self.last_page() )
+            self.visit_url( "%s/user/create?admin_view=False&use_panels=False" % self.url )
+        ##print self.write_temp_file( self.last_page() )
         self.check_page_for_string( "Create account" )
-        tc.fv( "2", "email", email )
-        tc.fv( "2", "password", password )
-        tc.fv( "2", "confirm", password )
-        tc.fv( "2", "username", username )
+        tc.fv( "1", "email", email )
+        tc.fv( "1", "password", password )
+        tc.fv( "1", "confirm", password )
+        tc.fv( "1", "username", username )
         if user_info_forms == 'multiple':
             self.check_page_for_string( "User type" )
         for index, info_value in enumerate(user_info_values):
-            tc.fv( "2", "field_%i" % index, info_value )
+            tc.fv( "1", "field_%i" % index, info_value )
         tc.submit( "create_user_button" )
-        self.check_page_for_string( "ogged in as %s" % email )
     def create_user_with_info_as_admin( self, email, password, username, user_info_forms, user_info_form_id, user_info_values ):
-        '''
-        This method registers a new user and also provides use info as an admin
-        '''
+        # This method creates a new user with associated info
         self.home()
         if user_info_forms == 'multiple':
             self.visit_page( "admin/users?operation=create?user_info_select=%i&admin_view=False" % user_info_form_id )
@@ -844,16 +844,15 @@ class TwillTestCase( unittest.TestCase ):
             tc.fv( "2", "field_%i" % index, info_value )
         tc.submit( "create_user_button" )
         self.check_page_for_string( "Created new user account (%s)" % email )
-    def edit_login_info( self, new_email, new_username ):
+    def edit_login_info( self, new_email, new_username, check_str1='' ):
         self.home()
-        self.visit_page( "user/show_info" )
+        self.visit_url( "%s/user/show_info" % self.url )
         self.check_page_for_string( "Manage User Information" )
         tc.fv( "1", "email", new_email )
         tc.fv( "1", "username", new_username )
         tc.submit( "login_info_button" )
-        self.check_page_for_string( 'The login information has been updated with the changes' )
-        self.check_page_for_string( new_email )
-        self.check_page_for_string( new_username )
+        if check_str1:
+            self.check_page_for_string( check_str1 )
     def change_password( self, password, new_password ):
         self.home()
         self.visit_page( "user/show_info" )
@@ -907,13 +906,14 @@ class TwillTestCase( unittest.TestCase ):
         self.visit_url( "%s/%s" % ( self.url, url ) )
         self.check_page_for_string( 'Default history permissions have been changed.' )
         self.home()
-    def login( self, email='test@bx.psu.edu', password='testuser' ):
+    def login( self, email='test@bx.psu.edu', password='testuser', username='admin-user', webapp='galaxy' ):
         # test@bx.psu.edu is configured as an admin user
         try:
-            self.create( email=email, password=password )
+            self.create( email=email, password=password, username=username, webapp=webapp )
         except:
             self.home()
-            # HACK: don't use panels because late_javascripts() messes up the twill browser and it can't find form fields (and hence user can't be logged in).
+            # HACK: don't use panels because late_javascripts() messes up the twill browser and it 
+            # can't find form fields (and hence user can't be logged in).
             self.visit_url( "%s/user/login?use_panels=False" % self.url )
             tc.fv( '1', 'email', email )
             tc.fv( '1', 'password', password )
@@ -1161,12 +1161,14 @@ class TwillTestCase( unittest.TestCase ):
 
     # Dataset Security stuff
     # Tests associated with users
-    def create_new_account_as_admin( self, email='test4@bx.psu.edu', password='testuser' ):
+    def create_new_account_as_admin( self, email='test4@bx.psu.edu', password='testuser', username='regular-user4' ):
         """Create a new account for another user"""
-        # TODO: fix this so that it uses the form rather than the following URL.
-        self.home()
-        self.visit_url( "%s/user/create?admin_view=True&email=%s&password=%s&confirm=%s&create_user_button=Submit&subscribe=False" \
-                        % ( self.url, email, password, password ) )
+        self.visit_url( "%s/user/create?admin_view=True" % self.url )
+        tc.fv( '1', 'email', email )
+        tc.fv( '1', 'password', password )
+        tc.fv( '1', 'confirm', password )
+        tc.fv( '1', 'username', username )
+        tc.submit( 'create_user_button' )
         try:
             self.check_page_for_string( "Created new user account" )
             previously_created = False

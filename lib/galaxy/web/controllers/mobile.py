@@ -55,7 +55,6 @@ class Mobile( BaseController ):
         elif not user.check_password( password ):
             error = "Invalid password"
         else:
-            trans.handle_user_login( user )
+            trans.handle_user_login( user, 'galaxy' )
             trans.log_event( "User logged in" )
         return error
-        

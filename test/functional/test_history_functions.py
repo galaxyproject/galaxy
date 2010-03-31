@@ -22,7 +22,7 @@ class TestHistory( TwillTestCase ):
         assert anonymous_history is not None, "Problem retrieving anonymous_history from database"
         # Upload a dataset to anonymous_history so it will be set as the current history after login
         self.upload_file( '1.bed', dbkey='hg18' )
-        self.login( email='test1@bx.psu.edu' )
+        self.login( email='test1@bx.psu.edu', username='regular-user1' )
         global regular_user1
         regular_user1 = sa_session.query( galaxy.model.User ) \
                                   .filter( galaxy.model.User.table.c.email=='test1@bx.psu.edu' ) \
@@ -35,21 +35,21 @@ class TestHistory( TwillTestCase ):
         self.login( email=regular_user1.email )
         self.check_history_for_string( name )
         self.logout()
-        self.login( email='test2@bx.psu.edu' )
+        self.login( email='test2@bx.psu.edu', username='regular-user2' )
         global regular_user2
         regular_user2 = sa_session.query( galaxy.model.User ) \
                                   .filter( galaxy.model.User.table.c.email=='test2@bx.psu.edu' ) \
                                   .first()
         assert regular_user2 is not None, 'Problem retrieving user with email "test2@bx.psu.edu" from the database'
         self.logout()
-        self.login( email='test3@bx.psu.edu' )
+        self.login( email='test3@bx.psu.edu', username='regular-user3' )
         global regular_user3
         regular_user3 = sa_session.query( galaxy.model.User ) \
                                   .filter( galaxy.model.User.table.c.email=='test3@bx.psu.edu' ) \
                                   .first()
         assert regular_user3 is not None, 'Problem retrieving user with email "test3@bx.psu.edu" from the database'
         self.logout()
-        self.login( email='test@bx.psu.edu' )
+        self.login( email='test@bx.psu.edu', username='admin-user' )
         global admin_user
         admin_user = sa_session.query( galaxy.model.User ) \
                                .filter( galaxy.model.User.table.c.email=='test@bx.psu.edu' ) \

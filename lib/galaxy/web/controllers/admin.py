@@ -710,7 +710,7 @@ class Admin( BaseController ):
     def create_new_user( self, trans, **kwargs ):
         return trans.response.send_redirect( web.url_for( controller='user',
                                                           action='create',
-                                                          admin_view='True' ) )
+                                                          admin_view=True ) )
         email = ''
         password = ''
         confirm = ''
@@ -956,7 +956,8 @@ class Admin( BaseController ):
         return trans.response.send_redirect( web.url_for( controller='user',
                                                           action='show_info',
                                                           user_id=user.id,
-                                                          admin_view=True, **kwd ) )
+                                                          admin_view=True,
+                                                          **kwd ) )
     @web.expose
     @web.require_admin
     def name_autocomplete_data( self, trans, q=None, limit=None, timestamp=None ):

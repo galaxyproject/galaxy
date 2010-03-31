@@ -4,6 +4,13 @@ from galaxy.model.mapping import context as sa_session
 from base.twilltestcase import *
 import sys
 
+def delete_obj( obj ):
+    sa_session.delete( obj )
+    sa_session.flush()
+def delete_user_roles( user ):
+    for ura in user.roles:
+        sa_session.delete( ura )
+    sa_session.flush()
 def flush( obj ):
     sa_session.add( obj )
     sa_session.flush()
@@ -106,9 +113,15 @@ def get_user_group_associations_by_group( group ):
     return sa_session.query( galaxy.model.UserGroupAssociation ) \
                      .filter( galaxy.model.UserGroupAssociation.table.c.group_id == group.id ) \
                      .all()
+def get_user_info_form_definition():
+    return galaxy.model.FormDefinition.types.USER_INFO
 def get_user_role_associations_by_role( role ):
     return sa_session.query( galaxy.model.UserRoleAssociation ) \
                      .filter( galaxy.model.UserRoleAssociation.table.c.role_id == role.id ) \
                      .all()
+def mark_form_deleted( form ):
+    form.current.deleted = True
+    sa_session.add( form )
+    sa_session.flush()
 def refresh( obj ):
     sa_session.refresh( obj )
