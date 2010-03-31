@@ -424,37 +424,42 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         prev_galaxy_session.is_valid = False
         # Define a new current_session
         self.galaxy_session = self.__create_new_session( prev_galaxy_session, user )
-        # Associated the current user's last accessed history (if exists) with their new session
-        history = None
-        try:
-            users_last_session = user.galaxy_sessions[0]
-            last_accessed = True
-        except:
-            users_last_session = None
-            last_accessed = False
-        if prev_galaxy_session.current_history and prev_galaxy_session.current_history.datasets:
-            if prev_galaxy_session.current_history.user is None or prev_galaxy_session.current_history.user == user:
-                # If the previous galaxy session had a history, associate it with the new
-                # session, but only if it didn't belong to a different user.
-                history = prev_galaxy_session.current_history
-        elif self.galaxy_session.current_history:
-            history = self.galaxy_session.current_history
-        if not history and users_last_session and users_last_session.current_history:
-            history = users_last_session.current_history
-        elif not history:
-            history = self.get_history( create=True )
-        if history not in self.galaxy_session.histories:
-            self.galaxy_session.add_history( history )
-        if history.user is None:
-            history.user = user
-        self.galaxy_session.current_history = history
-        if not last_accessed:
-            # Only set default history permissions if current history is not from a previous session
-            self.app.security_agent.history_set_default_permissions( history, dataset=True, bypass_manage_permission=True )
-        self.sa_session.add_all( ( prev_galaxy_session, self.galaxy_session, history ) )
+        if webapp == 'galaxy':
+            cookie_name = 'galaxysession'
+            # Associated the current user's last accessed history (if exists) with their new session
+            history = None
+            try:
+                users_last_session = user.galaxy_sessions[0]
+                last_accessed = True
+            except:
+                users_last_session = None
+                last_accessed = False
+            if prev_galaxy_session.current_history and prev_galaxy_session.current_history.datasets:
+                if prev_galaxy_session.current_history.user is None or prev_galaxy_session.current_history.user == user:
+                    # If the previous galaxy session had a history, associate it with the new
+                    # session, but only if it didn't belong to a different user.
+                    history = prev_galaxy_session.current_history
+            elif self.galaxy_session.current_history:
+                history = self.galaxy_session.current_history
+            if not history and users_last_session and users_last_session.current_history:
+                history = users_last_session.current_history
+            elif not history:
+                history = self.get_history( create=True )
+            if history not in self.galaxy_session.histories:
+                self.galaxy_session.add_history( history )
+            if history.user is None:
+                history.user = user
+            self.galaxy_session.current_history = history
+            if not last_accessed:
+                # Only set default history permissions if current history is not from a previous session
+                self.app.security_agent.history_set_default_permissions( history, dataset=True, bypass_manage_permission=True )
+            self.sa_session.add_all( ( prev_galaxy_session, self.galaxy_session, history ) )
+        else:
+            cookie_name = 'galaxycommunitysession'
+            self.sa_session.add_all( ( prev_galaxy_session, self.galaxy_session ) )
         self.sa_session.flush()
         # This method is not called from the Galaxy reports, so the cookie will always be galaxysession
-        self.__update_session_cookie( name='galaxysession' )
+        self.__update_session_cookie( name=cookie_name )
     def handle_user_logout( self ):
         """
         Logout the current user:

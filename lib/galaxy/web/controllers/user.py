@@ -29,9 +29,7 @@ class User( BaseController ):
         return trans.fill_template( '/user/index.mako', user=trans.get_user(), webapp=webapp )
     @web.expose
     def login( self, trans, webapp='galaxy', **kwd ):
-        use_panels = kwd.get( 'use_panels', 'True' )
-        # Convert use_panels to Boolean.
-        use_panels = use_panels in [ 'True', 'true', 't', 'T' ]
+        use_panels = util.string_as_bool( kwd.get( 'use_panels', True ) )
         msg = kwd.get( 'msg', '' )
         messagetype = kwd.get( 'messagetype', 'done' )
         if kwd.get( 'login_button', False ):
@@ -43,6 +41,8 @@ class User( BaseController ):
                     refresh_frames = [ 'masthead', 'history', 'tools' ]
                 else:
                     refresh_frames = [ 'masthead', 'history' ]
+            else:
+                refresh_frames = []
             user = trans.sa_session.query( trans.app.model.User ).filter( trans.app.model.User.table.c.email==email ).first()
             if not user:
                 msg = "No such user"
@@ -63,7 +63,11 @@ class User( BaseController ):
                     ( user.email, referer, url_for( '/' ) )
                 if trans.app.config.require_login:
                     msg += '  <a href="%s">Click here</a> to continue to the home page.' % web.url_for( '/static/welcome.html' )
-                return trans.show_ok_message( msg, refresh_frames=refresh_frames, use_panels=use_panels, active_view="user" )
+                return trans.response.send_redirect( web.url_for( controller='user',
+                                                                  action='login',
+                                                                  use_panels=use_panels,
+                                                                  msg=msg,
+                                                                  message_type='done' ) )
         if trans.app.config.require_login:
             if trans.app.config.allow_user_creation:
                 return trans.fill_template( '/user/login.mako',
@@ -99,11 +103,12 @@ class User( BaseController ):
         # Since logging an event requires a session, we'll log prior to ending the session
         trans.log_event( "User logged out" )
         trans.handle_user_logout()
-        msg = "You have been logged out.<br>You can <a href='%s'>go back to the page you were visiting</a> or <a href='%s'>go to the home page</a>." % \
+        msg = "You have been logged out.<br>You can log in again, <a href='%s'>go back to the page you were visiting</a> or <a href='%s'>go to the home page</a>." % \
             ( trans.request.referer, url_for( '/' ) )
-        if trans.app.config.require_login:
-            msg += '  <a href="%s">Click here</a> to return to the login page.' % web.url_for( controller='user', action='login' )
-        return trans.show_ok_message( msg, refresh_frames=refresh_frames, use_panels=True, active_view="user" )
+        return trans.response.send_redirect( web.url_for( controller='user',
+                                                          action='login',
+                                                          msg=msg,
+                                                          message_type='done' ) )
     @web.expose
     def create( self, trans, webapp='galaxy', **kwd ):
         params = util.Params( kwd )
@@ -126,8 +131,24 @@ class User( BaseController ):
                 refresh_frames = [ 'masthead', 'history', 'tools' ]
             else:
                 refresh_frames = [ 'masthead', 'history' ]
+        else:
+            refresh_frames = []
         if not trans.app.config.allow_user_creation and not trans.user_is_admin():
-            return trans.show_error_message( 'User registration is disabled.  Please contact your Galaxy administrator for an account.' )
+            msg = 'User registration is disabled.  Please contact your Galaxy administrator for an account.'
+            return trans.response.send_redirect( web.url_for( controller='user',
+                                                              action='create',
+                                                              webapp=webapp,
+                                                              email=email,
+                                                              password=password,
+                                                              confirm=confirm,
+                                                              username=username,
+                                                              subscribe=subscribe,
+                                                              subscribe_checked=subscribe_checked,
+                                                              admin_view=admin_view,
+                                                              use_panels=use_panels,
+                                                              refresh_frames=refresh_frames,
+                                                              msg=error,
+                                                              messagetype='error' ) )
         # Create the user, save all the user info and login to Galaxy
         if params.get( 'create_user_button', False ):
             # Check email and password validity
@@ -135,7 +156,8 @@ class User( BaseController ):
             if error:
                 return trans.response.send_redirect( web.url_for( controller='user', 
                                                                   action='create',
-                                                                  webapp=webapp,email=email,
+                                                                  webapp=webapp,
+                                                                  email=email,
                                                                   password=password,
                                                                   confirm=confirm,
                                                                   username=username,
@@ -143,6 +165,7 @@ class User( BaseController ):
                                                                   subscribe_checked=subscribe_checked,
                                                                   admin_view=admin_view,
                                                                   use_panels=use_panels,
+                                                                  refresh_frames=refresh_frames,
                                                                   msg=error,
                                                                   messagetype='error' ) )
             # all the values are valid
@@ -162,8 +185,21 @@ class User( BaseController ):
                     mail = os.popen( "%s -t" % trans.app.config.sendmail_path, 'w' )
                     mail.write( "To: %s\nFrom: %s\nSubject: Join Mailing List\n\nJoin Mailing list." % ( trans.app.config.mailing_join_addr,email ) )
                     if mail.close():
-                        return trans.show_warn_message( "Now logged in as " + user.email+". However, subscribing to the mailing list has failed.",
-                                                        refresh_frames=refresh_frames )
+                        msg = "Now logged in as " + user.email + ". However, subscribing to the mailing list has failed."
+                        return trans.response.send_redirect( web.url_for( controller='user', 
+                                                                          action='create',
+                                                                          webapp=webapp,
+                                                                          email=email,
+                                                                          password=password,
+                                                                          confirm=confirm,
+                                                                          username=username,
+                                                                          subscribe=subscribe,
+                                                                          subscribe_checked=subscribe_checked,
+                                                                          admin_view=admin_view,
+                                                                          use_panels=use_panels,
+                                                                          refresh_frames=refresh_frames,
+                                                                          msg=error,
+                                                                          messagetype='warn' ) )
                 if not admin_view:
                     # The handle_user_login() method has a call to the history_set_default_permissions() method
                     # (needed when logging in with a history), user needs to have default permissions set before logging in
@@ -171,16 +207,42 @@ class User( BaseController ):
                     trans.log_event( "User created a new account" )
                     trans.log_event( "User logged in" )
                     # subscribe user to email list
-                    return trans.show_ok_message( "Now logged in as %s.<br><a href='%s'>Return to the home page.</a>" % \
-                                                  ( user.email, url_for( '/' ) ), refresh_frames=refresh_frames, use_panels=True )
+                    msg = "Now logged in as %s.<br><a href='%s'>Return to the home page.</a>" % ( user.email, url_for( '/' ) )
+                    return trans.response.send_redirect( web.url_for( controller='user', 
+                                                                      action='create',
+                                                                      webapp=webapp,
+                                                                      email=email,
+                                                                      password=password,
+                                                                      confirm=confirm,
+                                                                      username=username,
+                                                                      subscribe=subscribe,
+                                                                      subscribe_checked=subscribe_checked,
+                                                                      admin_view=admin_view,
+                                                                      use_panels=True,
+                                                                      refresh_frames=refresh_frames,
+                                                                      msg=msg,
+                                                                      messagetype='done' ) )
                 else:
                     trans.response.send_redirect( web.url_for( controller='admin',
                                                                action='users',
                                                                message='Created new user account (%s)' % user.email,
                                                                status='done' ) )
             else:
-                return trans.show_ok_message( "Now logged in as %s.<br><a href='%s'>Return to the home page.</a>" % \
-                    ( user.email, url_for( '/' ) ), use_panels=False )
+                msg = "Now logged in as %s.<br><a href='%s'>Return to the home page.</a>" % ( user.email, url_for( '/' ) )
+                return trans.response.send_redirect( web.url_for( controller='user', 
+                                                                  action='create',
+                                                                  webapp=webapp,
+                                                                  email=email,
+                                                                  password=password,
+                                                                  confirm=confirm,
+                                                                  username=username,
+                                                                  subscribe=subscribe,
+                                                                  subscribe_checked=subscribe_checked,
+                                                                  admin_view=admin_view,
+                                                                  use_panels=False,
+                                                                  refresh_frames=refresh_frames,
+                                                                  msg=error,
+                                                                  messagetype='done' ) )
         if webapp == 'galaxy':
             user_info_select, user_info_form, widgets = self.__user_info_ui( trans, **kwd )
         else:
@@ -414,6 +476,7 @@ class User( BaseController ):
         else:
             user = trans.user
         if not user:
+            # TODO: handle this without the deprecated exception.
             raise "In show_info, we don't have a valid user"
         email = util.restore_text( params.get( 'email', user.email ) )
         # Do not sanitize passwords, so take from kwd
@@ -594,7 +657,11 @@ class User( BaseController ):
                     trans.sa_session.add( reset_user )
                     trans.sa_session.flush()
                     trans.log_event( "User reset password: %s" % email )
-                    return trans.show_ok_message( "Password has been reset and emailed to: %s.  <a href='%s'>Click here</a> to return to the login form." % ( email, web.url_for( action='login' ) ) )
+                    msg = "Password has been reset and emailed to: %s.  <a href='%s'>Click here</a> to return to the login form." % ( email, web.url_for( action='login' ) )
+                    return trans.response.send_redirect( web.url_for( controller='user',
+                                                                      action='reset_password',
+                                                                      msg=msg,
+                                                                      messagetype='done' ) )
             elif email != None:
                 msg = "The specified user does not exist"
                 messagetype = 'error'
