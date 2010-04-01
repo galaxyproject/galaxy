@@ -66,6 +66,9 @@
 - **Offset Column** contains the offset within the chromosome
 - **P Value Column** contains the (untransformed) p values at that locus - choose multiple columns if needed
 
+NOTE - plotting millions of p values may take tens of minutes depending on 
+how busy the server is - be patient please. 
+
 -----
 
 .. class:: infomark

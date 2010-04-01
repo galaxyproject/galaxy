@@ -37,12 +37,25 @@
 # note no ped file passed so had to remove the -l option
 # for plinkParse.py that makes a heterozygosity report from the ped
 # file - needs fixing...
+# new: importing manhattan/qqplot plotter
+# def doManQQ(input_fname,chrom_col,offset_col,pval_cols,title,grey,ctitle,outdir):
+#    """ draw a qq for pvals and a manhattan plot if chrom/offset <> 0
+#    contains some R scripts as text strings - we substitute defaults into the calls
+#    to make them do our bidding - and save the resulting code for posterity
+#    this can be called externally, I guess...for QC eg?
+#    """
+#
+#    rcmd = '%s%s' % (rcode,rcode2 % (input_fname,chrom_col,offset_col,pval_cols,title,grey))
+#    rlog,flist = RRun(rcmd=rcmd,title=ctitle,outdir=outdir)
+#    return rlog,flist
+  
 
 from optparse import OptionParser
 
 import sys,os,shutil, glob, math, subprocess, time, operator, random, tempfile, copy, string
 from os.path import abspath
 from rgutils import galhtmlprefix, galhtmlpostfix, RRun, timenow, plinke, rexe, runPlink, pruneLD
+import rgManQQ
 
 prog = os.path.split(sys.argv[0])[1]
 vers = '0.4 april 2009 rml'
@@ -55,6 +68,7 @@ keepfrac = 20 # fraction to keep after sorting by each interesting value
 missvals = {'0':'0','N':'N','-9':'-9','-':'-'} # fix me if these change!
 
 mogresize = "x300" # this controls the width for jpeg thumbnails
+
 
 
             

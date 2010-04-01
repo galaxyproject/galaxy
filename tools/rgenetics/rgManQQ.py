@@ -70,8 +70,9 @@ manhattan = function(chrom=NULL,offset=NULL,pvals=NULL, title=NULL, max.y="max",
                            }
 
                 if (max.y=="max") maxy=ceiling(max(d$logp)) else maxy=max.y
-                if (maxy<8) maxy=8
-
+                maxy = max(maxy,1.1*genomewideline)
+                # if (maxy<8) maxy=8
+                # only makes sense if genome wide is assumed - we could have a fine mapping region?  
                 if (annotate) d.annotate=d[as.numeric(substr(d$SNP,3,100)) %in% SNPlist, ]
 
                 plot=qplot(pos,logp,data=d, ylab=expression(-log[10](italic(p))) , colour=factor(CHR))
@@ -83,11 +84,13 @@ manhattan = function(chrom=NULL,offset=NULL,pvals=NULL, title=NULL, max.y="max",
                 plot=plot + opts(title=title)
                 plot=plot+opts(
                         panel.background=theme_blank(), 
-                        panel.grid.minor=theme_blank(),
                         axis.text.x=theme_text(size=size.x.labels, colour="grey50"), 
                         axis.text.y=theme_text(size=size.y.labels, colour="grey50"), 
                         axis.ticks=theme_segment(colour=NA)
                 )
+                #plot = plot + opts(panel.grid.y.minor=theme_blank(),panel.grid.y.major=theme_blank())
+                #plot = plot + opts(panel.grid.major=theme_blank())
+                 
                 if (suggestiveline) plot=plot+geom_hline(yintercept=suggestiveline,colour="blue", alpha=I(1/3))
                 if (genomewideline) plot=plot+geom_hline(yintercept=genomewideline,colour="red")
                 plot
@@ -120,11 +123,11 @@ qq = function(pvector, title=NULL, spartan=F) {
 # instantiate rcode2 string with infile,chromcol,offsetcol,pvalscols,title before saving and running
 
 rcode2 = """rgqqMan = function(infile="%s",chromcolumn=%d, offsetcolumn=%d, pvalscolumns=%s, 
-     title="%s",grey=%d) {
-  d = read.table(infile,head=T,sep='\t')
-  print(paste('###',length(d[,1]),'values read from',infile,'read - now running plots',sep=' '))
-  for (pvalscolumn in pvalscolumns) {
-  if (pvalscolumn > 0) 
+title="%s",grey=%d) {
+d = read.table(infile,head=T,sep='\t')
+print(paste('###',length(d[,1]),'values read from',infile,'read - now running plots',sep=' '))
+for (pvalscolumn in pvalscolumns) {
+if (pvalscolumn > 0) 
      {
      cname = names(d)[pvalscolumn]
      mytitle = paste('p=',cname,', ',title,sep='')
@@ -154,12 +157,24 @@ rgqqMan()
 """
 
 
+def doManQQ(input_fname,chrom_col,offset_col,pval_cols,title,grey,ctitle,outdir):
+    """ draw a qq for pvals and a manhattan plot if chrom/offset <> 0
+    contains some R scripts as text strings - we substitute defaults into the calls
+    to make them do our bidding - and save the resulting code for posterity
+    this can be called externally, I guess...for QC eg?
+    """
+    
+    rcmd = '%s%s' % (rcode,rcode2 % (input_fname,chrom_col,offset_col,pval_cols,title,grey))
+    rlog,flist = RRun(rcmd=rcmd,title=ctitle,outdir=outdir)
+    return rlog,flist
+  
+
 def main():
     u = """<command interpreter="python">
         rgManQQ.py '$input_file' "$name" '$out_html' '$out_html.files_path' '$chrom_col' '$offset_col' '$pval_col'
     </command>
     """
-    print >> sys.stdout,'## rgManQQ.py. cl=',sys.argv
+    print >> sys.stdout,'## rgManQQ.py. cl= \n%s' % ' '.join(['"%s"' % x for x in sys.argv])
     npar = 8
     if len(sys.argv) < npar:
             print >> sys.stdout, '## error - too few command line parameters - wanting %d' % npar
@@ -177,13 +192,13 @@ def main():
     except:
          chrom_col = 0
     try:
-	offset_col = int(sys.argv[6]) + 1
+        offset_col = int(sys.argv[6]) + 1
     except:
         offset_col = 0
     p = sys.argv[7].strip().split(',')
     try:
         p = [int(x)+1 for x in p]
-	pval_cols = 'c(%s)' % ','.join(map(str,p))
+        pval_cols = 'c(%s)' % ','.join(map(str,p))
     except:
         pval_cols = 'c(0)'
     if chrom_col == 1 or offset_col == 1: # was passed as zero - do not do manhattan plots
@@ -192,8 +207,7 @@ def main():
     grey = 0
     if (sys.argv[8].lower() in ['1','true']):
        grey = 1
-    rcmd = '%s%s' % (rcode,rcode2 % (input_fname,chrom_col,offset_col,pval_cols,title,grey))
-    rlog,flist = RRun(rcmd=rcmd,title=ctitle,outdir=outdir)
+    rlog,flist = doManQQ(input_fname,chrom_col,offset_col,pval_cols,title,grey,ctitle,outdir)
     flist.sort()
     html = [galhtmlprefix % progname,]
     html.append('<h1>%s</h1>' % title)
@@ -221,6 +235,7 @@ def main():
     htmlf.write('\n')
     htmlf.close()
     
+  
 
 if __name__ == "__main__":
     main()
