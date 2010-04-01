@@ -665,8 +665,10 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
             step.temp_input_connections = step_dict['input_connections']
             
             # Save step annotation.
-            annotation = sanitize_html( step_dict[ 'annotation' ], 'utf-8', 'text/html' )
-            self.add_item_annotation( trans, step, annotation  )
+            annotation = step_dict[ 'annotation' ]
+            if annotation:
+                annotation = sanitize_html( annotation, 'utf-8', 'text/html' )
+                self.add_item_annotation( trans, step, annotation  )
         # Second pass to deal with connections between steps
         for step in steps:
             # Input connections
