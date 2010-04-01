@@ -299,13 +299,16 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
             # TODO: this is only reasonable as long as import creates a sharing relation.
             return trans.show_error_message( "You can't import this workflow because it is already shared with you.<br>You can %s" % referer_message, use_panels=True )
         else:
-            # TODO: Shouldn't an import provide a copy of a workflow?
-            share = model.StoredWorkflowUserShareAssociation()
-            share.stored_workflow = stored
-            share.user = trans.user
+            # Create imported workflow via copy.
+            imported_stored = model.StoredWorkflow()
+            imported_stored.name = "imported: " + stored.name
+            imported_stored.latest_workflow = stored.latest_workflow
+            imported_stored.user = trans.user
+            # Save new workflow.
             session = trans.sa_session
-            session.add( share )
+            session.add( imported_stored )
             session.flush()
+            
             # Redirect to load galaxy frames.
             return trans.show_ok_message(
                 message="""Workflow "%s" has been imported. <br>You can <a href="%s">start using this workflow</a> or %s.""" 
