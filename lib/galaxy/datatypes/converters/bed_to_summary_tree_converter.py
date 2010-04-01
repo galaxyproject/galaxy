@@ -19,7 +19,7 @@ def main():
     for chrom, chrom_start, chrom_end, name, score in reader:
         st.insert_range(chrom, chrom_start, chrom_end)
     
-    st.write(out_fname)    
+    st.write(out_fname)
 
 if __name__ == "__main__": 
     main()

@@ -1,6 +1,6 @@
 """
 Interval index data provider for the Galaxy track browser.
-Kanwei Li, 2009
+Kanwei Li, 2010
 
 Payload format: [ uid (offset), start, end, name, strand, thick_start, thick_end, blocks ]
 """

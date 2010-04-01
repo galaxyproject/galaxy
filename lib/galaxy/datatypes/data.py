@@ -251,9 +251,10 @@ class Data( object ):
     def find_conversion_destination( self, dataset, accepted_formats, datatypes_registry, **kwd ):
         """Returns ( target_ext, existing converted dataset )"""
         return datatypes_registry.find_conversion_destination_for_dataset_by_extensions( dataset, accepted_formats, **kwd )
-    def convert_dataset(self, trans, original_dataset, target_type, return_output = False, visible = True ):
+    def convert_dataset(self, trans, original_dataset, target_type, return_output = False, visible = True, deps=None):
         """This function adds a job to the queue to convert a dataset to another type. Returns a message about success/failure."""
         converter = trans.app.datatypes_registry.get_converter_by_target_type( original_dataset.ext, target_type )
+        
         if converter is None:
             raise Exception( "A converter does not exist for %s to %s." % ( original_dataset.ext, target_type ) )
         #Generate parameter dictionary
@@ -261,9 +262,11 @@ class Data( object ):
         #determine input parameter name and add to params
         input_name = 'input1'
         for key, value in converter.inputs.items():
-            if value.type == 'data':
+            if value.name in deps:
+                params[value.name] = deps[value.name]
+            elif value.type == 'data':
                 input_name = key
-                break
+            
         params[input_name] = original_dataset
         #Run converter, job is dispatched through Queue
         converted_dataset = converter.execute( trans, incoming = params, set_output_hid = visible )[1]
@@ -481,5 +484,8 @@ def get_file_peek( file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5 ):
     if file_type in [ 'gzipped', 'binary' ]: 
         text = "%s file" % file_type 
     else:
-        text = unicode( '\n'.join( lines ), 'utf-8' )
+        try:
+            text = unicode( '\n'.join( lines ), 'utf-8' )
+        except UnicodeDecodeError:
+            text = "binary/unknown file"
     return text
