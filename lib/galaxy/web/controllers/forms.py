@@ -521,7 +521,7 @@ class Forms( BaseController ):
         return fd, msg
     
     class FieldUI(object):
-        def __init__(self, layout_grids, index, field=None, field_type=None):
+        def __init__(self, trans, layout_grids, index, field=None, field_type=None, form_type=None):
             '''
             This method returns a list of widgets which describes a field. This 
             includes label, helptext, type, & required/optional
@@ -533,8 +533,15 @@ class Forms( BaseController ):
                                          refresh_on_change=True, 
                                          refresh_on_change_values=['SelectField'])
             self.selectbox_options = []
-            for ft in BaseField.form_field_types():
-                self.fieldtype.add_option(ft, ft)
+            # if the form is for defining samples, then use the sample field types
+            # which does not include TextArea & AddressField
+            print >> sys.stderr, 'form_type', form_type
+            if form_type == trans.app.model.FormDefinition.types.SAMPLE:
+                for ft in BaseField.sample_field_types():
+                    self.fieldtype.add_option(ft, ft)
+            else:
+                for ft in BaseField.form_field_types():
+                    self.fieldtype.add_option(ft, ft)
             self.required = SelectField('field_required_'+str(index), display='radio')
             self.required.add_option('Required', 'required')
             self.required.add_option('Optional', 'optional', selected=True)
@@ -544,8 +551,8 @@ class Forms( BaseController ):
                 for index, grid_name in enumerate(layout_grids):
                     self.layout_selectbox.add_option("%i. %s" %(index+1, grid_name), index)            
             if field:
-                self.fill(field, field_type)
-        def fill(self, field, field_type=None):
+                self.fill(trans, field, field_type, form_type)
+        def fill(self, trans, field, field_type=None, form_type=None):
             # label
             self.label.value = field['label']
             # helptext
@@ -558,13 +565,24 @@ class Forms( BaseController ):
                 field['type'] = unicode(field_type)
             if field_type == 'SelectField' and not field['selectlist']:
                 field['selectlist'] = ['', '']
-            for ft in BaseField.form_field_types():
-                if ft == field['type']:
-                    self.fieldtype.add_option(ft, ft, selected=True)
-                    if ft == 'SelectField':
-                        self.selectbox_ui(field)
-                else:
-                    self.fieldtype.add_option(ft, ft)
+            # if the form is for defining samples, then use the sample field types
+            # which does not include TextArea & AddressField
+            if form_type == trans.app.model.FormDefinition.types.SAMPLE:
+                for ft in BaseField.sample_field_types():
+                    if ft == field['type']:
+                        self.fieldtype.add_option(ft, ft, selected=True)
+                        if ft == 'SelectField':
+                            self.selectbox_ui(field)
+                    else:
+                        self.fieldtype.add_option(ft, ft)
+            else:
+                for ft in BaseField.form_field_types():
+                    if ft == field['type']:
+                        self.fieldtype.add_option(ft, ft, selected=True)
+                        if ft == 'SelectField':
+                            self.selectbox_ui(field)
+                    else:
+                        self.fieldtype.add_option(ft, ft)
             # required/optional
             if field['required'] == 'required':
                 self.required = SelectField('field_required_'+str(self.index), display='radio')
@@ -623,9 +641,9 @@ class Forms( BaseController ):
         field_details = []
         for index, field in enumerate( current_form[ 'fields' ] ):
             if current_form['type'] == trans.app.model.FormDefinition.types.SAMPLE:
-                field_ui = self.FieldUI( current_form['layout'], index, field )
+                field_ui = self.FieldUI( trans, current_form['layout'], index, field, form_type=current_form['type'] )
             else:
-                field_ui = self.FieldUI( None, index, field )
+                field_ui = self.FieldUI( trans, None, index, field, form_type=current_form['type'] )
             field_details.append( field_ui.get() )
         return trans.fill_template( '/admin/forms/edit_form.mako',
                                     form_details=form_details,

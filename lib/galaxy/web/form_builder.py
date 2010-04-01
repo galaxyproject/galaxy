@@ -13,6 +13,10 @@ class BaseField(object):
     @staticmethod
     def form_field_types():
         return ['TextField', 'TextArea', 'SelectField', 'CheckboxField', 'AddressField', 'WorkflowField']
+    @staticmethod
+    def sample_field_types():
+        return ['TextField', 'SelectField', 'CheckboxField', 'WorkflowField']
+
 
 class TextField(BaseField):
     """
@@ -443,11 +447,6 @@ class WorkflowField(BaseField):
         self.select_workflow = None
         self.params = params
     def get_html(self):
-        from galaxy import util
-        add_ids = ['none']
-        if self.user:
-            for a in self.user.stored_workflows:
-                add_ids.append(str(a.id))
         self.select_workflow = SelectField(self.name)
         if self.value == 'none':
             self.select_workflow.add_option('Select one', 'none', selected=True)
@@ -456,7 +455,7 @@ class WorkflowField(BaseField):
         if self.user:
             for a in self.user.stored_workflows:
                 if not a.deleted:
-                    if self.value == str(a.id):
+                    if str(self.value) == str(a.id):
                         self.select_workflow.add_option(a.name, str(a.id), selected=True)
                     else:
                         self.select_workflow.add_option(a.name, str(a.id))
