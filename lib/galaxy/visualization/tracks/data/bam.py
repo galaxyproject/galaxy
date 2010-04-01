@@ -1,5 +1,6 @@
 """
 Visualization data provider for BAM format.
+Kanwei Li, 2010
 """
 
 import pkg_resources; pkg_resources.require( "pysam" )
@@ -7,7 +8,7 @@ import pkg_resources; pkg_resources.require( "pysam" )
 from pysam import csamtools
 from math import floor, ceil, log
 import logging
-# log = logging.getLogger(__name__)
+log = logging.getLogger(__name__)
 
 class BamDataProvider( object ):
     """
@@ -36,7 +37,7 @@ class BamDataProvider( object ):
         # Encode reads as list of dictionaries
         results = []
         for read in data:
-            payload = { 'uid': str(read.pos) + str(read.seq), 'start': read.pos, 'end': read.pos + read.rlen, 'name': read.seq }
+            payload = [ str(read.pos) + str(read.seq), read.pos, read.pos + read.rlen, read.seq ]
             results.append(payload)
         bamfile.close()
         return results

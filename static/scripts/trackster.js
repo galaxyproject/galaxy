@@ -89,7 +89,6 @@ $.extend( Drawer.prototype, {
 
 drawer = new Drawer();
     
-    
 var View = function( chrom, title, vis_id, dbkey ) {
     this.vis_id = vis_id;
     this.dbkey = dbkey;
@@ -852,7 +851,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                 }
                 j++;
             }
-        }        
+        }
 
         parent_element.append( new_canvas );
         return new_canvas;
@@ -885,15 +884,12 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
 });
 
 var ReadTrack = function ( name, dataset_id, prefs ) {
-    this.track_type = "ReadTrack";
-    this.tile_cache = new Cache(CACHED_TILES_FEATURE);
-    Track.call( this, name, $("#viewport") );
-    TiledTrack.call( this );
     FeatureTrack.call( this, name, dataset_id, prefs );
+    this.track_type = "ReadTrack";
     
 };
 $.extend( ReadTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
-    draw_tile: function( resolution, tile_index, parent_element, w_scale ) {
+    /*draw_tile: function( resolution, tile_index, parent_element, w_scale ) {
         if (!this.values) {
             return;
         }
@@ -947,5 +943,5 @@ $.extend( ReadTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
 
         parent_element.append( new_canvas );
         return new_canvas;
-    }
+    }*/
 });

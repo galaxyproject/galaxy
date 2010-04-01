@@ -1,10 +1,10 @@
 <tool id="CONVERTER_bam_to_summary_tree_0" name="Convert BAM to Summary Tree" version="1.0.0">
 <!--  <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
-  <command interpreter="python">bam_to_summary_tree_converter.py $input1 $output1</command>
+  <command interpreter="python">bam_to_summary_tree_converter.py $input1 $bai $output1</command>
   <inputs>
     <page>
         <param format="bam" name="input1" type="data" label="Choose BAM file"/>
-        <param format="bai" name="index" type="data" label="BAM index file"/>
+        <param format="bai" name="bai" type="data" label="BAI index file"/>
     </page>
    </inputs>
   <outputs>

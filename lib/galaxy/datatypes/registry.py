@@ -19,6 +19,7 @@ class Registry( object ):
         self.datatype_converters = odict()
         self.datatype_indexers = odict()
         self.converters = []
+        self.converter_deps = {}
         self.available_tracks = []
         self.set_external_metadata_tool = None
         self.indexers = []
@@ -68,6 +69,11 @@ class Registry( object ):
                             # into the calling app's toolbox.
                             converter_config = converter.get( 'file', None )
                             target_datatype = converter.get( 'target_datatype', None )
+                            depends_on = converter.get( 'depends_on', None )
+                            if depends_on and target_datatype:
+                                if extension not in self.converter_deps:
+                                    self.converter_deps[extension] = {}
+                                self.converter_deps[extension][target_datatype] = depends_on.split(',')
                             if converter_config and target_datatype:
                                 self.converters.append( ( converter_config, extension, target_datatype ) )
                         for indexer in elem.findall( 'indexer' ):
@@ -363,9 +369,9 @@ class Registry( object ):
         """Returns ( target_ext, existing converted dataset )"""
         for convert_ext in self.get_converters_by_datatype( dataset.ext ):
             if isinstance( self.get_datatype_by_extension( convert_ext ), accepted_formats ):
-                datasets = dataset.get_converted_files_by_type( convert_ext )
-                if datasets:
-                    ret_data = datasets[0]
+                dataset = dataset.get_converted_files_by_type( convert_ext )
+                if dataset:
+                    ret_data = dataset
                 elif not converter_safe:
                     continue
                 else:

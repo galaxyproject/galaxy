@@ -577,11 +577,54 @@ class DatasetInstance( object ):
     def display_info( self ):
         return self.datatype.display_info( self )
     def get_converted_files_by_type( self, file_type ):
-        valid = []
         for assoc in self.implicitly_converted_datasets:
             if not assoc.deleted and assoc.type == file_type:
-                valid.append( assoc.dataset )
-        return valid
+                return assoc.dataset
+        return None
+    def get_converted_dataset(self, trans, target_ext):
+        """
+        Return converted dataset(s) if they exist. If not converted yet, do so and return None (the first time).
+        If unconvertible, raise exception.
+        """
+        # See if we can convert the dataset
+        if target_ext not in self.get_converter_types():
+            raise ValueError("Conversion from '%s' to '%s' not possible", self.extension, target_ext)
+        
+        # See if converted dataset already exists
+        converted_dataset = self.get_converted_files_by_type( target_ext )
+        if converted_dataset:
+            return converted_dataset
+        
+        # Conversion is possible but hasn't been done yet, run converter.
+        # Check if we have dependencies
+        deps = {}
+        try:
+            fail_dependencies = False
+            depends_on = trans.app.datatypes_registry.converter_deps[self.extension][target_ext]
+            for dependency in depends_on:
+                dep_dataset = self.get_converted_dataset(trans, dependency)
+                if dep_dataset is None or dep_dataset.state != trans.app.model.Job.states.OK:
+                    fail_dependencies = True
+                else:
+                    deps[dependency] = dep_dataset
+            if fail_dependencies:
+                return None
+        except ValueError:
+            log.debug("WTF")
+            raise ValueError("A dependency could not be converted.")
+        except KeyError:
+            pass # No deps
+            
+        assoc = ImplicitlyConvertedDatasetAssociation( parent=self, file_type=target_ext, metadata_safe=False )
+        new_dataset = self.datatype.convert_dataset( trans, self, target_ext, return_output=True, visible=False, deps=deps ).values()[0]
+        new_dataset.hid = self.hid
+        new_dataset.name = self.name
+        trans.sa_session.add( new_dataset )
+        trans.sa_session.flush()
+        assoc.dataset = new_dataset
+        trans.sa_session.add( assoc )
+        trans.sa_session.flush()
+        return None
     def clear_associated_files( self, metadata_safe = False, purge = False ):
         raise 'Unimplemented'
     def get_child_by_designation(self, designation):
@@ -590,7 +633,7 @@ class DatasetInstance( object ):
                 return child
         return None
     def get_converter_types(self):
-        return self.datatype.get_converter_types( self, datatypes_registry)
+        return self.datatype.get_converter_types( self, datatypes_registry )
     def find_conversion_destination( self, accepted_formats, **kwd ):
         """Returns ( target_ext, existing converted dataset )"""
         return self.datatype.find_conversion_destination( self, accepted_formats, datatypes_registry, **kwd )

@@ -44,6 +44,9 @@ class ArrayTreeDataProvider( object ):
             return float(n)            
                 
     def get_data( self, chrom, start, end, **kwargs ):
+        if 'stats' in kwargs:
+            return self.get_stats(chrom)
+            
         f = open( self.dataset.file_name )
         d = FileArrayTreeDict( f )
         

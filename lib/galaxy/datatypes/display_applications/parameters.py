@@ -73,7 +73,7 @@ class DisplayApplicationDataParameter( DisplayApplicationParameter ):
             for ext in self.extensions:
                 rval = data.get_converted_files_by_type( ext )
                 if rval:
-                    return rval[0]
+                    return rval
             assert data.find_conversion_destination( self.formats )[0] is not None, "No conversion path found for data param: %s" % self.name
             return None
         return data

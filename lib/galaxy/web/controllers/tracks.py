@@ -199,78 +199,38 @@ class TracksController( BaseController ):
         if dataset.state != trans.app.model.Job.states.OK:
             return messages.PENDING
         
-        track_type, indexes = dataset.datatype.get_track_type()
-        converted = dict([ (index, self.__dataset_as_type( trans, dataset, index )) for index in indexes ])
-        extra_info = None
-
-        for index, converted_dataset in converted.iteritems():
-            if not converted_dataset:
+        track_type, data_sources = dataset.datatype.get_track_type()
+        for source_type, data_source in data_sources.iteritems():
+            try:
+                converted_dataset = dataset.get_converted_dataset(trans, data_source)
+            except ValueError:
                 return messages.NO_CONVERTER
 
             # Need to check states again for the converted version
+            if not converted_dataset or converted_dataset.state != model.Dataset.states.OK:
+                return messages.PENDING
+                
             if converted_dataset.state == model.Dataset.states.ERROR:
                 return messages.ERROR
-            if converted_dataset.state != model.Dataset.states.OK:
-                return messages.PENDING
-        
-        if len(converted) > 1:
-            # Have to choose between array_tree and other provider
-            summary_tree = SummaryTreeDataProvider( converted['summary_tree'], dataset )
-            freqs = summary_tree.get_summary( chrom, low, high, **kwargs )
-            if freqs is not None:
-                frequencies, max_v, avg_v = freqs
+            
+        extra_info = None
+        if 'index' in data_sources:
+            # Have to choose between indexer and data provider
+            indexer = dataset_type_to_data_provider[data_sources['index']]( dataset.get_converted_dataset(trans, data_sources['index']), dataset )
+            summary = indexer.get_summary( chrom, low, high, **kwargs )
+            if summary is not None:
+                frequencies, max_v, avg_v = summary
                 if frequencies != "no_detail":
-                    return { "dataset_type": "summary_tree", "data": frequencies, "max": max_v, "avg": avg_v }
+                    return { "dataset_type": data_sources['index'], "data": frequencies, "max": max_v, "avg": avg_v }
                 else:
                     kwargs["no_detail"] = True # meh
                     extra_info = "no_detail"
-            dataset_type = "interval_index"
-        else:
-            dataset_type = converted.keys()[0]
-            
-        data_provider = dataset_type_to_data_provider[ dataset_type ]( converted[dataset_type], dataset )
-
-        if 'stats' in kwargs:
-            data = data_provider.get_stats( chrom )
-        else:
-            data = data_provider.get_data( chrom, low, high, **kwargs )
         
+        dataset_type = data_sources['data']
+        data_provider = dataset_type_to_data_provider[ dataset_type ]( dataset.get_converted_dataset(trans, dataset_type), dataset )
+
+        data = data_provider.get_data( chrom, low, high, **kwargs )
         return { "dataset_type": dataset_type, "extra_info": extra_info, "data": data }
-
-    def __dataset_as_type( self, trans, dataset, type ):
-        """
-        Given a dataset, try to find a way to adapt it to a different type. If the
-        dataset is already of that type it is returned, if it can be converted a
-        converted dataset (possibly new) is returned, if it cannot be converted,
-        None is returned.
-        """
-        # Already of correct type
-        if dataset.extension == type:
-            return dataset
-        # See if we can convert the dataset
-        if type not in dataset.get_converter_types():
-            log.debug( "Conversion from '%s' to '%s' not possible", dataset.extension, type )
-            return None
-        # See if converted dataset already exists
-        converted_datasets = [c for c in dataset.get_converted_files_by_type( type ) if c != None]
-        if converted_datasets:
-            if converted_datasets[0].state != 'error':
-                return converted_datasets[0]
-            else:
-                return None
-        
-        # Conversion is possible but hasn't been done yet, run converter here
-        # FIXME: this is largely duplicated from DefaultToolAction
-        assoc = model.ImplicitlyConvertedDatasetAssociation( parent = dataset, file_type = type, metadata_safe = False )
-        new_dataset = dataset.datatype.convert_dataset( trans, dataset, type, return_output = True, visible = False ).values()[0]
-        new_dataset.hid = dataset.hid # Hrrmmm....
-        new_dataset.name = dataset.name
-        trans.sa_session.add( new_dataset )
-        trans.sa_session.flush()
-        assoc.dataset = new_dataset
-        trans.sa_session.add( assoc )
-        trans.sa_session.flush()
-        return new_dataset
     
     @web.json
     def save( self, trans, **kwargs ):
