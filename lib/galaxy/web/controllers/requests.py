@@ -726,8 +726,27 @@ class Requests( BaseController ):
             msg = 'Fill the following fields of the request <b>%s</b> before submitting<br/>' % request.name
             for ef in empty_fields:
                 msg = msg + '<b>' +ef + '</b><br/>'
-            return msg
-        return None
+            return trans.response.send_redirect( web.url_for( controller='requests',
+                                                              action='list',
+                                                              operation='edit',
+                                                              messagetype = 'error',
+                                                              msg=msg,
+                                                              id=trans.security.encode_id(request.id) ))
+        # now check the required fields of all the samples of this request
+        for s in request.samples:
+            for index, field in enumerate(request.type.sample_form.fields):
+                if field['required'] == 'required' and s.values.content[index] in ['', None]:
+                    empty_fields.append((s.name, field['label']))
+        if empty_fields:
+            msg = 'Fill the following fields of the request <b>%s</b> before submitting<br/>' % request.name
+            for sname, ef in empty_fields:
+                msg = msg + '<b>%s</b> field of sample <b>%s</b><br/>' % (ef, sname)
+            return trans.response.send_redirect( web.url_for( controller='requests',
+                                                              action='list',
+                                                              operation='show_request',
+                                                              messagetype = 'error',
+                                                              msg=msg,
+                                                              id=trans.security.encode_id(request.id) ))
     def __save_request(self, trans, request=None, **kwd):
         '''
         This method saves a new request if request_id is None. 
@@ -948,14 +967,8 @@ class Requests( BaseController ):
                                                               status='error',
                                                               message=msg,
                                                               **kwd) )
-        msg = self.__validate(trans, request)
-        if msg:
-            return trans.response.send_redirect( web.url_for( controller='requests',
-                                                              action='list',
-                                                              operation='edit',
-                                                              messagetype = 'error',
-                                                              msg=msg,
-                                                              id=trans.security.encode_id(request.id) ))
+        # check if all the required request and its sample fields have been filled 
+        self.__validate(trans, request)
         # change the request state to 'Submitted'
         comments = "Sequencing request is in progress."
         event = trans.app.model.RequestEvent(request, request.states.SUBMITTED, comments)
