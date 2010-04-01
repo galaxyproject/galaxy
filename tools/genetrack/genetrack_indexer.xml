@@ -1,4 +1,4 @@
-<tool id="bed2genetrack" name="GeneTrack indexer">
+<tool id="bed2genetrack" name="GeneTrack indexer" version="1.0.1">
   
   <description>on a BED file</description>
 
@@ -8,7 +8,7 @@
     
   <inputs>
     
-    <param format="bed" name="input" type="data" help="Input data">
+    <param format="bed6" name="input" type="data" help="Input data">
       <label>Select input bed file</label>
     </param>
     

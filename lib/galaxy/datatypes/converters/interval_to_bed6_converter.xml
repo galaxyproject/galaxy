@@ -1,0 +1,15 @@
+<tool id="CONVERTER_interval_to_bed6_0" name="Convert Genomic Intervals To Strict BED6">
+  <!--  <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
+  <!-- Used on the metadata edit page. -->
+  <command interpreter="python">interval_to_bedstrict_converter.py $output1 $input1 ${input1.metadata.chromCol} ${input1.metadata.startCol} ${input1.metadata.endCol} ${input1.metadata.strandCol} ${input1.metadata.nameCol} ${input1.extension} 6</command>
+  <inputs>
+    <page>
+      <param format="interval" name="input1" type="data" label="Choose intervals"/>
+    </page>
+   </inputs>
+  <outputs>
+    <data format="bed6" name="output1"/>
+  </outputs>
+  <help>
+  </help>
+</tool>

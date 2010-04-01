@@ -536,6 +536,16 @@ class BedStrict( Bed ):
     def sniff( self, filename ):
         return False #NOTE: This would require aggressively validating the entire file
 
+class Bed6( BedStrict ):
+    """Tab delimited data in strict BED format - no non-standard columns allowed; column count forced to 6"""
+
+    file_ext = "bed6"
+
+class Bed12( BedStrict ):
+    """Tab delimited data in strict BED format - no non-standard columns allowed; column count forced to 12"""
+
+    file_ext = "bed12"
+
 class _RemoteCallMixin:
     def _get_remote_call_url( self, redirect_url, site_name, dataset, type, app, base_url ):
         """Retrieve the URL to call out to an external site and retrieve data.

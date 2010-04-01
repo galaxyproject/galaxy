@@ -13,11 +13,14 @@
             <converter file="interval_to_coverage.xml" target_datatype="coverage"/>
             <converter file="bed_to_interval_index_converter.xml" target_datatype="interval_index"/>
             <converter file="bed_to_summary_tree_converter.xml" target_datatype="summary_tree"/>
-            <converter file="bed_to_genetrack_converter.xml" target_datatype="genetrack"/>
             <!-- <display file="ucsc/interval_as_bed.xml" /> -->
             <display file="genetrack.xml" />
         </datatype>
         <datatype extension="bedstrict" type="galaxy.datatypes.interval:BedStrict" />
+        <datatype extension="bed6" type="galaxy.datatypes.interval:Bed6">
+            <converter file="bed_to_genetrack_converter.xml" target_datatype="genetrack"/>
+        </datatype>
+        <datatype extension="bed12" type="galaxy.datatypes.interval:Bed12" />
         <datatype extension="binseq.zip" type="galaxy.datatypes.binary:Binseq" mimetype="application/zip" display_in_upload="true"/>
         <datatype extension="len" type="galaxy.datatypes.chrominfo:ChromInfo" display_in_upload="true">
             <!-- no converters yet -->
@@ -49,6 +52,8 @@
         <datatype extension="interval" type="galaxy.datatypes.interval:Interval" display_in_upload="true">
             <converter file="interval_to_bed_converter.xml" target_datatype="bed"/>
             <converter file="interval_to_bedstrict_converter.xml" target_datatype="bedstrict"/>
+            <converter file="interval_to_bed6_converter.xml" target_datatype="bed6"/>
+            <converter file="interval_to_bed12_converter.xml" target_datatype="bed12"/>
             <indexer file="interval_awk.xml" />
             <!-- <display file="ucsc/interval_as_bed.xml" inherit="True" /> -->
             <display file="genetrack.xml" inherit="True"/>
