@@ -711,69 +711,6 @@ class Admin( BaseController ):
         return trans.response.send_redirect( web.url_for( controller='user',
                                                           action='create',
                                                           admin_view=True ) )
-        email = ''
-        password = ''
-        confirm = ''
-        subscribe = False
-        email_filter = kwargs.get( 'email_filter', 'A' )
-        if 'user_create_button' in kwargs:
-            message = ''
-            status = ''
-            email = kwargs.get( 'email' , None )
-            password = kwargs.get( 'password', None )
-            confirm = kwargs.get( 'confirm', None )
-            subscribe = kwargs.get( 'subscribe', None )
-            if not email:
-                message = 'Enter a valid email address'
-            elif not password:
-                message = 'Enter a valid password'
-            elif not confirm:
-                message = 'Confirm the password'
-            elif len( email ) == 0 or "@" not in email or "." not in email:
-                message = 'Enter a real email address'
-            elif len( email) > 255:
-                message = 'Email address exceeds maximum allowable length'
-            elif trans.sa_session.query( trans.app.model.User ).filter_by( email=email ).first():
-                message = 'User with that email already exists'
-            elif len( password ) < 6:
-                message = 'Use a password of at least 6 characters'
-            elif password != confirm:
-                message = 'Passwords do not match'
-            if message:
-                trans.response.send_redirect( web.url_for( controller='admin',
-                                                           action='users',
-                                                           email_filter=email_filter,
-                                                           message=util.sanitize_text( message ),
-                                                           status='error' ) )
-            else:
-                user = trans.app.model.User( email=email )
-                user.set_password_cleartext( password )
-                if trans.app.config.use_remote_user:
-                    user.external = True
-                trans.sa_session.add( user )
-                trans.sa_session.flush()
-                trans.app.security_agent.create_private_user_role( user )
-                trans.app.security_agent.user_set_default_permissions( user, history=False, dataset=False )
-                message = 'Created new user account (%s)' % user.email
-                status = 'done'
-                #subscribe user to email list
-                if subscribe:
-                    mail = os.popen( "%s -t" % trans.app.config.sendmail_path, 'w' )
-                    mail.write( "To: %s\nFrom: %s\nSubject: Join Mailing List\n\nJoin Mailing list." % ( trans.app.config.mailing_join_addr, email ) )
-                    if mail.close():
-                        message + ". However, subscribing to the mailing list has failed."
-                        status = 'error'
-                trans.response.send_redirect( web.url_for( controller='admin',
-                                                           action='users',
-                                                           email_filter=email_filter,
-                                                           message=util.sanitize_text( message ),
-                                                           status=status ) )
-        return trans.fill_template( '/admin/user/create.mako',
-                                    email_filter=email_filter,
-                                    email=email,
-                                    password=password,
-                                    confirm=confirm,
-                                    subscribe=subscribe )
     @web.expose
     @web.require_admin
     def reset_user_password( self, trans, **kwd ):
@@ -916,7 +853,7 @@ class Admin( BaseController ):
                                                    status='done' ) )
     @web.expose
     @web.require_admin
-    def users( self, trans, **kwargs ):      
+    def users( self, trans, **kwargs ):
         if 'operation' in kwargs:
             operation = kwargs['operation'].lower()
             if operation == "roles":

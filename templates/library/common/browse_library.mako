@@ -30,7 +30,6 @@
            ${render_content()}
        </div>
    </div>
-   ##${render_content()}
 </%def>
 
 ## Render the grid's basic elements. Each of these elements can be subclassed.
