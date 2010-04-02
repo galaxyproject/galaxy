@@ -5,8 +5,8 @@
 
 <h2>Jobs</h2>
 
-%if msg:
-    ${render_msg( msg, messagetype )}
+%if message:
+    ${render_msg( message, status )}
 %endif
 
 <p>

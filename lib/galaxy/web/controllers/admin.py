@@ -263,9 +263,9 @@ class Admin( BaseController ):
     @web.require_admin
     def index( self, trans, **kwd ):
         params = util.Params( kwd )
-        msg = util.restore_text( params.get( 'msg', ''  ) )
-        messagetype = params.get( 'messagetype', 'done' )
-        return trans.fill_template( '/admin/index.mako', msg=msg, messagetype=messagetype )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        return trans.fill_template( '/admin/index.mako', message=message, status=status )
     @web.expose
     @web.require_admin
     def center( self, trans, **kwd ):
@@ -274,17 +274,17 @@ class Admin( BaseController ):
     @web.require_admin
     def reload_tool( self, trans, **kwd ):
         params = util.Params( kwd )
-        msg = util.restore_text( params.get( 'msg', ''  ) )
-        messagetype = params.get( 'messagetype', 'done' )
-        return trans.fill_template( '/admin/reload_tool.mako', toolbox=self.app.toolbox, msg=msg, messagetype=messagetype )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        return trans.fill_template( '/admin/reload_tool.mako', toolbox=self.app.toolbox, message=message, status=status )
     @web.expose
     @web.require_admin
     def tool_reload( self, trans, tool_version=None, **kwd ):
         params = util.Params( kwd )
         tool_id = params.tool_id
         self.app.toolbox.reload( tool_id )
-        msg = 'Reloaded tool: ' + tool_id
-        return trans.fill_template( '/admin/reload_tool.mako', toolbox=self.app.toolbox, msg=msg, messagetype='done' )
+        message = 'Reloaded tool: ' + tool_id
+        return trans.fill_template( '/admin/reload_tool.mako', toolbox=self.app.toolbox, message=message, status='done' )
     
     # Galaxy Role Stuff
     @web.expose
@@ -312,8 +312,8 @@ class Admin( BaseController ):
     @web.require_admin
     def create_role( self, trans, **kwd ):
         params = util.Params( kwd )
-        msg = util.restore_text( params.get( 'msg', ''  ) )
-        messagetype = params.get( 'messagetype', 'done' )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
         if params.get( 'create_role_button', False ):
             name = util.restore_text( params.name )
             description = util.restore_text( params.description )
@@ -321,9 +321,9 @@ class Admin( BaseController ):
             in_groups = util.listify( params.get( 'in_groups', [] ) )
             create_group_for_role = params.get( 'create_group_for_role', 'no' )
             if not name or not description:
-                msg = "Enter a valid name and a description"
+                message = "Enter a valid name and a description"
             elif trans.sa_session.query( trans.app.model.Role ).filter( trans.app.model.Role.table.c.name==name ).first():
-                msg = "A role with that name already exists"
+                message = "A role with that name already exists"
             else:
                 # Create the role
                 role = trans.app.model.Role( name=name, description=description, type=trans.app.model.Role.types.ADMIN )
@@ -340,13 +340,13 @@ class Admin( BaseController ):
                     # Create the group
                     group = trans.app.model.Group( name=name )
                     trans.sa_session.add( group )
-                    msg = "Group '%s' has been created, and role '%s' has been created with %d associated users and %d associated groups" % \
+                    message = "Group '%s' has been created, and role '%s' has been created with %d associated users and %d associated groups" % \
                     ( group.name, role.name, len( in_users ), len( in_groups ) )
                 else:
-                    msg = "Role '%s' has been created with %d associated users and %d associated groups" % ( role.name, len( in_users ), len( in_groups ) )
+                    message = "Role '%s' has been created with %d associated users and %d associated groups" % ( role.name, len( in_users ), len( in_groups ) )
                 trans.sa_session.flush()
-                trans.response.send_redirect( web.url_for( controller='admin', action='roles', message=util.sanitize_text( msg ), status='done' ) )
-            trans.response.send_redirect( web.url_for( controller='admin', action='create_role', msg=util.sanitize_text( msg ), messagetype='error' ) )
+                trans.response.send_redirect( web.url_for( controller='admin', action='roles', message=util.sanitize_text( message ), status='done' ) )
+            trans.response.send_redirect( web.url_for( controller='admin', action='create_role', message=util.sanitize_text( message ), status='error' ) )
         out_users = []
         for user in trans.sa_session.query( trans.app.model.User ) \
                                     .filter( trans.app.model.User.table.c.deleted==False ) \
@@ -362,39 +362,39 @@ class Admin( BaseController ):
                                     out_users=out_users,
                                     in_groups=[],
                                     out_groups=out_groups,
-                                    msg=msg,
-                                    messagetype=messagetype )
+                                    message=message,
+                                    status=status )
     @web.expose
     @web.require_admin
     def rename_role( self, trans, **kwd ):
         params = util.Params( kwd )
-        msg = util.restore_text( params.get( 'msg', ''  ) )
-        messagetype = params.get( 'messagetype', 'done' )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
         role = get_role( trans, params.id )
         if params.get( 'rename_role_button', False ):
             old_name = role.name
             new_name = util.restore_text( params.name )
             new_description = util.restore_text( params.description )
             if not new_name:
-                msg = 'Enter a valid name'
-                return trans.fill_template( '/admin/dataset_security/role/role_rename.mako', role=role, msg=msg, messagetype='error' )
+                message = 'Enter a valid name'
+                return trans.fill_template( '/admin/dataset_security/role/role_rename.mako', role=role, message=message, status='error' )
             elif trans.sa_session.query( trans.app.model.Role ).filter( trans.app.model.Role.table.c.name==new_name ).first():
-                msg = 'A role with that name already exists'
-                return trans.fill_template( '/admin/dataset_security/role/role_rename.mako', role=role, msg=msg, messagetype='error' )
+                message = 'A role with that name already exists'
+                return trans.fill_template( '/admin/dataset_security/role/role_rename.mako', role=role, message=message, status='error' )
             else:
                 role.name = new_name
                 role.description = new_description
                 trans.sa_session.add( role )
                 trans.sa_session.flush()
-                msg = "Role '%s' has been renamed to '%s'" % ( old_name, new_name )
-                return trans.response.send_redirect( web.url_for( action='roles', message=util.sanitize_text( msg ), status='done' ) )
-        return trans.fill_template( '/admin/dataset_security/role/role_rename.mako', role=role, msg=msg, messagetype=messagetype )
+                message = "Role '%s' has been renamed to '%s'" % ( old_name, new_name )
+                return trans.response.send_redirect( web.url_for( action='roles', message=util.sanitize_text( message ), status='done' ) )
+        return trans.fill_template( '/admin/dataset_security/role/role_rename.mako', role=role, message=message, status=status )
     @web.expose
     @web.require_admin
     def manage_users_and_groups_for_role( self, trans, **kwd ):
         params = util.Params( kwd )
-        msg = util.restore_text( params.get( 'msg', ''  ) )
-        messagetype = params.get( 'messagetype', 'done' )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
         role = get_role( trans, params.id )
         if params.get( 'role_members_edit_button', False ):
             in_users = [ trans.sa_session.query( trans.app.model.User ).get( x ) for x in util.listify( params.in_users ) ]
@@ -414,8 +414,8 @@ class Admin( BaseController ):
             in_groups = [ trans.sa_session.query( trans.app.model.Group ).get( x ) for x in util.listify( params.in_groups ) ]
             trans.app.security_agent.set_entity_role_associations( roles=[ role ], users=in_users, groups=in_groups )
             trans.sa_session.refresh( role )
-            msg = "Role '%s' has been updated with %d associated users and %d associated groups" % ( role.name, len( in_users ), len( in_groups ) )
-            trans.response.send_redirect( web.url_for( action='roles', message=util.sanitize_text( msg ), status=messagetype ) )            
+            message = "Role '%s' has been updated with %d associated users and %d associated groups" % ( role.name, len( in_users ), len( in_groups ) )
+            trans.response.send_redirect( web.url_for( action='roles', message=util.sanitize_text( message ), status=status ) )            
         in_users = []
         out_users = []
         in_groups = []
@@ -467,8 +467,8 @@ class Admin( BaseController ):
                                     in_groups=in_groups,
                                     out_groups=out_groups,
                                     library_dataset_actions=library_dataset_actions,
-                                    msg=msg,
-                                    messagetype=messagetype )
+                                    message=message,
+                                    status=status )
     @web.expose
     @web.require_admin
     def mark_role_deleted( self, trans, **kwd ):
@@ -554,39 +554,39 @@ class Admin( BaseController ):
     @web.require_admin
     def rename_group( self, trans, **kwd ):
         params = util.Params( kwd )
-        msg = util.restore_text( params.get( 'msg', ''  ) )
-        messagetype = params.get( 'messagetype', 'done' )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
         group = get_group( trans, params.id )
         if params.get( 'rename_group_button', False ):
             old_name = group.name
             new_name = util.restore_text( params.name )
             if not new_name:
-                msg = 'Enter a valid name'
-                return trans.fill_template( '/admin/dataset_security/group/group_rename.mako', group=group, msg=msg, messagetype='error' )
+                message = 'Enter a valid name'
+                return trans.fill_template( '/admin/dataset_security/group/group_rename.mako', group=group, message=message, status='error' )
             elif trans.sa_session.query( trans.app.model.Group ).filter( trans.app.model.Group.table.c.name==new_name ).first():
-                msg = 'A group with that name already exists'
-                return trans.fill_template( '/admin/dataset_security/group/group_rename.mako', group=group, msg=msg, messagetype='error' )
+                message = 'A group with that name already exists'
+                return trans.fill_template( '/admin/dataset_security/group/group_rename.mako', group=group, message=message, status='error' )
             else:
                 group.name = new_name
                 trans.sa_session.add( group )
                 trans.sa_session.flush()
-                msg = "Group '%s' has been renamed to '%s'" % ( old_name, new_name )
-                return trans.response.send_redirect( web.url_for( action='groups', msg=util.sanitize_text( msg ), messagetype='done' ) )
-        return trans.fill_template( '/admin/dataset_security/group/group_rename.mako', group=group, msg=msg, messagetype=messagetype )
+                message = "Group '%s' has been renamed to '%s'" % ( old_name, new_name )
+                return trans.response.send_redirect( web.url_for( action='groups', message=util.sanitize_text( message ), status='done' ) )
+        return trans.fill_template( '/admin/dataset_security/group/group_rename.mako', group=group, message=message, status=status )
     @web.expose
     @web.require_admin
     def manage_users_and_roles_for_group( self, trans, **kwd ):
         params = util.Params( kwd )
-        msg = util.restore_text( params.get( 'msg', ''  ) )
-        messagetype = params.get( 'messagetype', 'done' )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
         group = get_group( trans, params.id )
         if params.get( 'group_roles_users_edit_button', False ):
             in_roles = [ trans.sa_session.query( trans.app.model.Role ).get( x ) for x in util.listify( params.in_roles ) ]
             in_users = [ trans.sa_session.query( trans.app.model.User ).get( x ) for x in util.listify( params.in_users ) ]
             trans.app.security_agent.set_entity_group_associations( groups=[ group ], roles=in_roles, users=in_users )
             trans.sa_session.refresh( group )
-            msg += "Group '%s' has been updated with %d associated roles and %d associated users" % ( group.name, len( in_roles ), len( in_users ) )
-            trans.response.send_redirect( web.url_for( action='groups', message=util.sanitize_text( msg ), status=messagetype ) )
+            message += "Group '%s' has been updated with %d associated roles and %d associated users" % ( group.name, len( in_roles ), len( in_users ) )
+            trans.response.send_redirect( web.url_for( action='groups', message=util.sanitize_text( message ), status=status ) )
         in_roles = []
         out_roles = []
         in_users = []
@@ -605,29 +605,29 @@ class Admin( BaseController ):
                 in_users.append( ( user.id, user.email ) )
             else:
                 out_users.append( ( user.id, user.email ) )
-        msg += 'Group %s is currently associated with %d roles and %d users' % ( group.name, len( in_roles ), len( in_users ) )
+        message += 'Group %s is currently associated with %d roles and %d users' % ( group.name, len( in_roles ), len( in_users ) )
         return trans.fill_template( '/admin/dataset_security/group/group.mako',
                                     group=group,
                                     in_roles=in_roles,
                                     out_roles=out_roles,
                                     in_users=in_users,
                                     out_users=out_users,
-                                    msg=msg,
-                                    messagetype=messagetype )
+                                    message=message,
+                                    status=status )
     @web.expose
     @web.require_admin
     def create_group( self, trans, **kwd ):
         params = util.Params( kwd )
-        msg = util.restore_text( params.get( 'msg', ''  ) )
-        messagetype = params.get( 'messagetype', 'done' )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
         if params.get( 'create_group_button', False ):
             name = util.restore_text( params.name )
             in_users = util.listify( params.get( 'in_users', [] ) )
             in_roles = util.listify( params.get( 'in_roles', [] ) )
             if not name:
-                msg = "Enter a valid name"
+                message = "Enter a valid name"
             elif trans.sa_session.query( trans.app.model.Group ).filter( trans.app.model.Group.table.c.name==name ).first():
-                msg = "A group with that name already exists"
+                message = "A group with that name already exists"
             else:
                 # Create the group
                 group = trans.app.model.Group( name=name )
@@ -643,9 +643,9 @@ class Admin( BaseController ):
                     gra = trans.app.model.GroupRoleAssociation( group, role )
                     trans.sa_session.add( gra )
                     trans.sa_session.flush()
-                msg = "Group '%s' has been created with %d associated users and %d associated roles" % ( name, len( in_users ), len( in_roles ) )
-                trans.response.send_redirect( web.url_for( controller='admin', action='groups', message=util.sanitize_text( msg ), status='done' ) )
-            trans.response.send_redirect( web.url_for( controller='admin', action='create_group', msg=util.sanitize_text( msg ), messagetype='error' ) )
+                message = "Group '%s' has been created with %d associated users and %d associated roles" % ( name, len( in_users ), len( in_roles ) )
+                trans.response.send_redirect( web.url_for( controller='admin', action='groups', message=util.sanitize_text( message ), status='done' ) )
+            trans.response.send_redirect( web.url_for( controller='admin', action='create_group', message=util.sanitize_text( message ), status='error' ) )
         out_users = []
         for user in trans.sa_session.query( trans.app.model.User ) \
                                     .filter( trans.app.model.User.table.c.deleted==False ) \
@@ -661,8 +661,8 @@ class Admin( BaseController ):
                                     out_users=out_users,
                                     in_roles=[],
                                     out_roles=out_roles,
-                                    msg=msg,
-                                    messagetype=messagetype )
+                                    message=message,
+                                    status=status )
     @web.expose
     @web.require_admin
     def mark_group_deleted( self, trans, **kwd ):
@@ -671,8 +671,8 @@ class Admin( BaseController ):
         group.deleted = True
         trans.sa_session.add( group )
         trans.sa_session.flush()
-        msg = "Group '%s' has been marked as deleted." % group.name
-        trans.response.send_redirect( web.url_for( action='groups', message=util.sanitize_text( msg ), status='done' ) )
+        message = "Group '%s' has been marked as deleted." % group.name
+        trans.response.send_redirect( web.url_for( action='groups', message=util.sanitize_text( message ), status='done' ) )
     @web.expose
     @web.require_admin
     def undelete_group( self, trans, **kwd ):
@@ -681,8 +681,8 @@ class Admin( BaseController ):
         group.deleted = False
         trans.sa_session.add( group )
         trans.sa_session.flush()
-        msg = "Group '%s' has been marked as not deleted." % group.name
-        trans.response.send_redirect( web.url_for( action='groups', message=util.sanitize_text( msg ), status='done' ) )
+        message = "Group '%s' has been marked as not deleted." % group.name
+        trans.response.send_redirect( web.url_for( action='groups', message=util.sanitize_text( message ), status='done' ) )
     @web.expose
     @web.require_admin
     def purge_group( self, trans, **kwd ):
@@ -692,8 +692,8 @@ class Admin( BaseController ):
         group = get_group( trans, params.id )
         if not group.deleted:
             # We should never reach here, but just in case there is a bug somewhere...
-            msg = "Group '%s' has not been deleted, so it cannot be purged." % group.name
-            trans.response.send_redirect( web.url_for( action='groups', message=util.sanitize_text( msg ), status='error' ) )
+            message = "Group '%s' has not been deleted, so it cannot be purged." % group.name
+            trans.response.send_redirect( web.url_for( action='groups', message=util.sanitize_text( message ), status='error' ) )
         # Delete UserGroupAssociations
         for uga in group.users:
             trans.sa_session.delete( uga )
@@ -972,8 +972,8 @@ class Admin( BaseController ):
                                     out_roles=out_roles,
                                     in_groups=in_groups,
                                     out_groups=out_groups,
-                                    msg=message,
-                                    messagetype=status )
+                                    message=message,
+                                    status=status )
     @web.expose
     @web.require_admin
     def memdump( self, trans, ids = 'None', sorts = 'None', pages = 'None', new_id = None, new_sort = None, **kwd ):
@@ -1020,11 +1020,11 @@ class Admin( BaseController ):
     def jobs( self, trans, stop = [], stop_msg = None, cutoff = 180, **kwd ):
         deleted = []
         msg = None
-        messagetype = None
+        status = None
         job_ids = util.listify( stop )
         if job_ids and stop_msg in [ None, '' ]:
             msg = 'Please enter an error message to display to the user describing why the job was terminated'
-            messagetype = 'error'
+            status = 'error'
         elif job_ids:
             if stop_msg[-1] not in string.punctuation:
                 stop_msg += '.'
@@ -1037,7 +1037,7 @@ class Admin( BaseController ):
                 msg += 's'
             msg += ' for deletion: '
             msg += ', '.join( deleted )
-            messagetype = 'done'
+            status = 'done'
         cutoff_time = datetime.utcnow() - timedelta( seconds=int( cutoff ) )
         jobs = trans.sa_session.query( trans.app.model.Job ) \
                                .filter( and_( trans.app.model.Job.table.c.update_time < cutoff_time,
@@ -1053,7 +1053,7 @@ class Admin( BaseController ):
                 last_updated[job.id] = '%s hours' % int( delta.seconds / 60 / 60 )
             else:
                 last_updated[job.id] = '%s minutes' % int( delta.seconds / 60 )
-        return trans.fill_template( '/admin/jobs.mako', jobs = jobs, last_updated = last_updated, cutoff = cutoff, msg = msg, messagetype = messagetype )
+        return trans.fill_template( '/admin/jobs.mako', jobs = jobs, last_updated = last_updated, cutoff = cutoff, msg = msg, status = status )
 
 ## ---- Utility methods -------------------------------------------------------
         

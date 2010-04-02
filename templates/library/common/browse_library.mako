@@ -412,8 +412,8 @@
        %endif
    </ul>
 
-   %if msg:
-       ${render_msg( msg, messagetype )}
+   %if message:
+       ${render_msg( message, status )}
    %endif
 
    %if library.synopsis not in [ 'None', None ]:

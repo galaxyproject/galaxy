@@ -7,8 +7,8 @@
     </script>
 %endif
 
-%if not redirect_url and msg:
-    ${render_msg( msg, messagetype )}
+%if not redirect_url and message:
+    ${render_msg( message, status )}
 %endif
 
 %if not trans.user:

@@ -5,8 +5,8 @@
 
 <% current_user_roles = trans.get_current_user_roles() %>
 
-%if msg:
-    ${render_msg( msg, messagetype )}
+%if message:
+    ${render_msg( message, status )}
 %endif
 
 %if trans.app.security_agent.can_modify_library_item( current_user_roles, library ):

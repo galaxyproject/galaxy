@@ -648,8 +648,11 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesHistory 
             elif 'unshare_user' in kwargs:
                 user = trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( kwargs[ 'unshare_user' ] ) )
                 if not user:
-                    msg = 'History (%s) does not seem to be shared with user (%s)' % ( history.name, user.email )
-                    return trans.fill_template( 'history/sharing.mako', histories=histories, msg=msg, messagetype='error' )
+                    message = 'History (%s) does not seem to be shared with user (%s)' % ( history.name, user.email )
+                    return trans.fill_template( 'history/sharing.mako',
+                                                histories=histories,
+                                                message=message,
+                                                status='error' )
                 husas = trans.sa_session.query( trans.app.model.HistoryUserShareAssociation ).filter_by( user=user, history=history ).all()
                 if husas:
                     for husa in husas:

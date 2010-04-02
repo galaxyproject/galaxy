@@ -3,8 +3,8 @@
 <%namespace file="/requests/sample_state.mako" import="render_sample_state" />
 <%namespace file="/requests/sample_datasets.mako" import="render_sample_datasets" />
 
-%if msg:
-    ${render_msg( msg, messagetype )}
+%if message:
+    ${render_msg( message, status )}
 %endif
 
 <script type="text/javascript">

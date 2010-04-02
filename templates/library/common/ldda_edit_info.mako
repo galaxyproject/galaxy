@@ -33,8 +33,8 @@
     </li>
 </ul>
 
-%if msg:
-    ${render_msg( msg, messagetype )}
+%if message:
+    ${render_msg( message, status )}
 %endif
 
 <%def name="datatype( ldda, file_formats )">

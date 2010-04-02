@@ -39,8 +39,8 @@
     from galaxy.web.form_builder import CheckboxField
     subscribe_check_box = CheckboxField( 'subscribe' )
 %>
-%if not redirect_url and msg:
-    ${render_msg( msg, messagetype )}
+%if not redirect_url and message:
+    ${render_msg( message, status )}
 %endif
 
 ## An admin user may be creating a new user account, in which case we want to display the registration form.

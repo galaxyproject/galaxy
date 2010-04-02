@@ -2,8 +2,8 @@
 <%namespace file="/message.mako" import="render_msg" />
 
 
-%if msg:
-    ${render_msg( msg, messagetype )}
+%if message:
+    ${render_msg( message, status )}
 %endif
 
 <%def name="render_grid( grid_index, grid_name, fields_dict )">
