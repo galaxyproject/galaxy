@@ -1,3 +1,7 @@
+$(document).ready(function() {
+    replace_big_select_inputs();
+});
+
 $.fn.makeAbsolute = function(rebase) {
     return this.each(function() {
         var el = $(this);
@@ -115,13 +119,21 @@ function array_length(an_array) {
     return count;
 }
 
-// Replace dbkey select box with text input box & autocomplete.
-function replace_dbkey_select() {
-    var select_elt = $('select[name=dbkey]');
-    var start_value = select_elt.attr('value');
-    if (select_elt.length !== 0) {
+// Replace any select box with 20+ options with a text input box + autocomplete.
+// TODO: make this work _well_ on pages with multiple forms; currently, value is reverted when any form is submitted -
+// value should be reverted when only the form that element is in is submitted.
+function replace_big_select_inputs() {
+    $('select').each( function() {
+        var select_elt = $(this);
+        // Skip if there are < 20 options.
+        if (select_elt.find('option').length < 20)
+            return;
+
+        // Replace select with text + autocomplete.
+        var start_value = select_elt.attr('value');
+        
         // Set up text input + autocomplete element.
-        var text_input_elt = $("<input id='dbkey-input' type='text'></input>");
+        var text_input_elt = $("<input type='text' class='text-and-autocomplete-select'></input>");
         text_input_elt.attr('size', 40);
         text_input_elt.attr('name', select_elt.attr('name'));
         text_input_elt.click( function() {
@@ -133,61 +145,62 @@ function replace_dbkey_select() {
             $(this).select();
         });
 
-        // Get options for dbkey for autocomplete.
-        var dbkey_options = [];
-        var dbkey_mapping = {};
+        // Get options for select for autocomplete.
+        var select_options = [];
+        var select_mapping = {};
         select_elt.children('option').each( function() {
             // Get text, value for option.
             var text = $(this).text();    
             var value = $(this).attr('value');
-    
+
             // Ignore values that are '?'
             if (value == '?') {
                 return;
             }
-    
+
             // Set options and mapping. Mapping is (i) [from text to value] AND (ii) [from value to value]. This
             // enables a user to type the value directly rather than select the text that represents the value. 
-            dbkey_options.push( text );
-            dbkey_mapping[ text ] = value;
-            dbkey_mapping[ value ] = value;
-    
+            select_options.push( text );
+            select_mapping[ text ] = value;
+            select_mapping[ value ] = value;
+
             // If this is the start value, set value of input element.
             if ( value == start_value ) {
                 text_input_elt.attr('value', text);
             }
         });
+        
+        // Set initial text if it's empty.
         if ( text_input_elt.attr('value') == '' ) {
-            text_input_elt.attr('value', 'Click to Search or Select Build');
+            text_input_elt.attr('value', 'Click to Search or Select');
         }
-
+        
         // Do autocomplete.
         var autocomplete_options = { selectFirst: false, autoFill: false, mustMatch: false, matchContains: true, max: 1000, minChars : 0, hideForLessThanMinChars : false };
-        text_input_elt.autocomplete(dbkey_options, autocomplete_options);
-        
+        text_input_elt.autocomplete(select_options, autocomplete_options);
+
         // Replace select with text input.
-        select_elt.replaceWith(text_input_elt);   
+        select_elt.replaceWith(text_input_elt);
         
-        // When form is submitted, change the text entered into the input to the corresponding value. If text doesn't correspond to value, remove it.
-        $('form').submit( function() {
-            var dbkey_text_input = $('#dbkey-input');
-            if (dbkey_text_input.length !== 0) {
-                // Try to convert text to value.
-                var cur_value = dbkey_text_input.attr('value');
-                var new_value = dbkey_mapping[cur_value];
-                if (new_value !== null && new_value !== undefined) {
-                    dbkey_text_input.attr('value', new_value);
+        // Set trigger to replace text with value when element's form is submitted. If text doesn't correspond to value, default to start value.
+        text_input_elt.parents('form').submit( function() {
+            // Try to convert text to value.
+            var cur_value = text_input_elt.attr('value');
+            var new_value = select_mapping[cur_value];
+            if (new_value !== null && new_value !== undefined) {
+                text_input_elt.attr('value', new_value);
+            } 
+            else {
+                // If there is a non-empty start value, use that; otherwise unknown.
+                if (start_value != "") {
+                    text_input_elt.attr('value', start_value);
                 } else {
-                    // If there is a non-empty start value, use that; otherwise unknown.
-                    if (start_value != "") {
-                        dbkey_text_input.attr('value', start_value);
-                    } else {
-                        dbkey_text_input.attr('value', '?');
-                    }
+                    // This is needed to make the DB key work.
+                    text_input_elt.attr('value', '?');
                 }
             }
         });
-    }
+    });
 }
 
 // Edit and save text asynchronously.

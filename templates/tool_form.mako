@@ -48,10 +48,7 @@ $( function() {
             } );
             $( "#tool_form" ).submit();
         }
-    });
-    
-    // Replace dbkey select with search+select.
-    replace_dbkey_select();
+    });    
 });
 %if not add_frame.debug:
     if( window.name != "galaxy_main" ) {
