@@ -73,6 +73,12 @@ class VisualizationController( BaseController, Sharable, UsesAnnotations, UsesVi
         else:
             # Render grid wrapped in panels
             return trans.fill_template( "visualization/list_published.mako", grid=grid )
+
+    @web.expose
+    @web.require_login( "use Galaxy visualizations", use_panels=True )
+    def index( self, trans, *args, **kwargs ):
+        """ Lists user's saved visualizations. """
+        return self.list( trans, args, kwargs )
     
     @web.expose
     @web.require_login( "use Galaxy visualizations", use_panels=True )
@@ -110,6 +116,61 @@ class VisualizationController( BaseController, Sharable, UsesAnnotations, UsesVi
             visualization.slug = new_slug
             trans.sa_session.flush()
             return visualization.slug
+            
+    @web.expose
+    @web.require_login( "use Galaxy visualizations" )
+    def set_accessible_async( self, trans, id=None, accessible=False ):
+        """ Set visualization's importable attribute and slug. """
+        visualization = self.get_visualization( trans, id )
+
+        # Only set if importable value would change; this prevents a change in the update_time unless attribute really changed.
+        importable = accessible in ['True', 'true', 't', 'T'];
+        if visualization and visualization.importable != importable:
+            if importable:
+                self._make_item_accessible( trans.sa_session, visualization )
+            else:
+                visualization.importable = importable
+            trans.sa_session.flush()
+
+        return
+        
+    @web.expose
+    @web.require_login( "share Galaxy visualizations" )
+    def imp( self, trans, id ):
+        """ Import a visualization into user's workspace. """
+        # Set referer message.
+        referer = trans.request.referer
+        if referer is not "":
+            referer_message = "<a href='%s'>return to the previous page</a>" % referer
+        else:
+            referer_message = "<a href='%s'>go to Galaxy's start page</a>" % url_for( '/' )
+                    
+        # Do import.
+        session = trans.sa_session
+        visualization = self.get_visualization( trans, id, check_ownership=False )
+        if visualization.importable == False:
+            return trans.show_error_message( "The owner of this visualization has disabled imports via this link.<br>You can %s" % referer_message, use_panels=True )
+        elif visualization.user == trans.user:
+            return trans.show_error_message( "You can't import this visualization because you own it.<br>You can %s" % referer_message, use_panels=True )
+        elif visualization.deleted:
+            return trans.show_error_message( "You can't import this visualization because it has been deleted.<br>You can %s" % referer_message, use_panels=True )
+        else:
+            # Create imported visualization via copy. TODO: Visualizations use datasets -- do we need to check to ensure that
+            # datasets can be imported/viewed and/or copy datasets to user?
+            imported_visualization = model.Visualization()
+            imported_visualization.title = "imported: " + visualization.title
+            imported_visualization.latest_revision = visualization.latest_revision
+            imported_visualization.user = trans.user
+            # Save new visualization.
+            session = trans.sa_session
+            session.add( imported_visualization )
+            session.flush()
+            
+            # Redirect to load galaxy frames.
+            return trans.show_ok_message(
+                message="""Visualization "%s" has been imported. <br>You can <a href="%s">start using this visualization</a> or %s.""" 
+                % ( visualization.title, web.url_for( controller='visualization' ), referer_message ), use_panels=True )
+        
 
     @web.expose
     @web.require_login( "share Galaxy visualizations" )
@@ -214,7 +275,7 @@ class VisualizationController( BaseController, Sharable, UsesAnnotations, UsesVi
     @web.require_login("get item content asynchronously")
     def get_item_content_async( self, trans, id ):
         """ Returns item content in HTML format. """
-        pass
+        return "TODO: visualization content"
         
     @web.expose
     @web.require_login( "create visualizations" )

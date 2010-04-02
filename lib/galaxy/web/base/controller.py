@@ -178,7 +178,7 @@ class UsesVisualization( SharableItemSecurity ):
         if not visualization:
             error( "Visualization not found" )
         else:
-            return self.security_check( trans.get_user(), stored, check_ownership, check_accessible )
+            return self.security_check( trans.get_user(), visualization, check_ownership, check_accessible )
         
 class UsesStoredWorkflow( SharableItemSecurity ):
     """ Mixin for controllers that use StoredWorkflow objects. """

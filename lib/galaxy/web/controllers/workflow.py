@@ -294,10 +294,6 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
             return trans.show_error_message( "You can't import this workflow because you own it.<br>You can %s" % referer_message, use_panels=True )
         elif stored.deleted:
             return trans.show_error_message( "You can't import this workflow because it has been deleted.<br>You can %s" % referer_message, use_panels=True )
-        elif session.query( model.StoredWorkflowUserShareAssociation ) \
-                    .filter_by( user=trans.user, stored_workflow=stored ).count() > 0:
-            # TODO: this is only reasonable as long as import creates a sharing relation.
-            return trans.show_error_message( "You can't import this workflow because it is already shared with you.<br>You can %s" % referer_message, use_panels=True )
         else:
             # Create imported workflow via copy.
             imported_stored = model.StoredWorkflow()

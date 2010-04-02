@@ -34,18 +34,21 @@
         ITEM_DATASET : "item_dataset",
         ITEM_WORKFLOW : "item_workflow",
         ITEM_PAGE : "item_page",
+        ITEM_VISUALIZATION : "item_visualization",
         
         // Link dialogs.
         DIALOG_HISTORY_LINK : "link_history",
         DIALOG_DATASET_LINK : "link_dataset",
         DIALOG_WORKFLOW_LINK : "link_workflow",
         DIALOG_PAGE_LINK : "link_page",
+        DIALOG_VISUALIZATION_LINK : "link_visualization",
         
         // Embed dialogs.
         DIALOG_EMBED_HISTORY : "embed_history",
         DIALOG_EMBED_DATASET : "embed_dataset",
         DIALOG_EMBED_WORKFLOW : "embed_workflow",
         DIALOG_EMBED_PAGE : "embed_page",
+        DIALOG_EMBED_VISUALIZATION : "embed_visualization",
         
         // Annotation dialogs.
         DIALOG_HISTORY_ANNOTATE : "history_annotate",
@@ -101,6 +104,11 @@
                 item_plural = "Pages";
                 item_controller = "page";
                 item_class = "Page";
+            case( Galaxy.ITEM_VISUALIZATION ):
+                item_singular = "Visualization";
+                item_plural = "Visualizations";
+                item_controller = "visualization";
+                item_class = "Visualization";
             break;
         }
         
@@ -316,9 +324,10 @@
             );
         }
         
-        // INSERT "GALAXY ITEM" (HISTORY, DATASET, WORKFLOW, PAGE) LINK DIALOG
+        // INSERT "GALAXY ITEM" LINK DIALOG
         if ( dialogType == Galaxy.DIALOG_HISTORY_LINK || dialogType == Galaxy.DIALOG_DATASET_LINK || 
-             dialogType == Galaxy.DIALOG_WORKFLOW_LINK || dialogType == Galaxy.DIALOG_PAGE_LINK ) {
+             dialogType == Galaxy.DIALOG_WORKFLOW_LINK || dialogType == Galaxy.DIALOG_PAGE_LINK || 
+             dialogType == Galaxy.DIALOG_VISUALIZATION_LINK ) {
             // Based on item type, set useful vars.
             var item_info;
             switch(dialogType)
@@ -334,6 +343,9 @@
                     break;
                 case(Galaxy.DIALOG_PAGE_LINK):
                     item_info = get_item_info(Galaxy.ITEM_PAGE);
+                    break;
+                case(Galaxy.DIALOG_VISUALIZATION_LINK):
+                    item_info = get_item_info(Galaxy.ITEM_VISUALIZATION);
                     break;
             }
             
@@ -405,7 +417,7 @@
             });
         }
         // EMBED GALAXY OBJECT DIALOGS
-        if ( dialogType == Galaxy.DIALOG_EMBED_HISTORY || dialogType == Galaxy.DIALOG_EMBED_DATASET || dialogType == Galaxy.DIALOG_EMBED_WORKFLOW || dialogType == Galaxy.DIALOG_EMBED_PAGE ) {
+        if ( dialogType == Galaxy.DIALOG_EMBED_HISTORY || dialogType == Galaxy.DIALOG_EMBED_DATASET || dialogType == Galaxy.DIALOG_EMBED_WORKFLOW || dialogType == Galaxy.DIALOG_EMBED_PAGE || dialogType == Galaxy.DIALOG_EMBED_VISUALIZATION ) {
             // Based on item type, set useful vars.
             var item_info;
             switch(dialogType)
@@ -422,6 +434,9 @@
                 case(Galaxy.DIALOG_EMBED_PAGE):
                     item_info = get_item_info(Galaxy.ITEM_PAGE);
                     break;
+                case(Galaxy.DIALOG_EMBED_VISUALIZATION):
+                    item_info = get_item_info(Galaxy.ITEM_VISUALIZATION);
+                    break;
             }
             
             $.ajax(
@@ -432,7 +447,8 @@
                 success: function(list_html) 
                 {
                     // Can make histories, workflows importable; cannot make datasets importable.
-                    if (dialogType == Galaxy.DIALOG_EMBED_HISTORY || dialogType == Galaxy.DIALOG_EMBED_WORKFLOW)
+                    if (dialogType == Galaxy.DIALOG_EMBED_HISTORY || dialogType == Galaxy.DIALOG_EMBED_WORKFLOW 
+                        || dialogType == Galaxy.DIALOG_EMBED_VISUALIZATION)
                         list_html = list_html + "<div><input id='make-importable' type='checkbox' checked/>" +
                                     "Make the selected " + item_info.plural.toLowerCase() + " accessible so that they can viewed by everyone.</div>";
                     show_modal(
@@ -687,7 +703,10 @@
                 },
                 "Insert Page Link": function() {
                     editor.dialog(Galaxy.DIALOG_PAGE_LINK);
-                }
+                },
+                "Insert Visualization Link": function() {
+                    editor.dialog(Galaxy.DIALOG_VISUALIZATION_LINK);
+                },
             });
             
             //
@@ -708,6 +727,9 @@
                 },
                 "Embed Workflow": function() {
                     editor.dialog(Galaxy.DIALOG_EMBED_WORKFLOW);
+                },
+                "Embed Visualization": function() {
+                    editor.dialog(Galaxy.DIALOG_EMBED_VISUALIZATION);
                 },
                 ##"Embed Page": function() {
                 ##    editor.dialog(Galaxy.DIALOG_EMBED_PAGE);

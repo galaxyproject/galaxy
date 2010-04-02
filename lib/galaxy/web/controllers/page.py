@@ -186,6 +186,25 @@ class PageSelectionGrid( ItemSelectionGrid ):
         key="free-text-search", visible=False, filterable="standard" )
                 )
                 
+class VisualizationSelectionGrid( ItemSelectionGrid ):
+    """ Grid for selecting visualizations. """
+    # Grid definition.
+    title = "Saved Visualizations"
+    model_class = model.Visualization
+    columns = [
+        grids.TextColumn( "Title", key="title", model_class=model.Visualization, filterable="advanced" ),
+        grids.TextColumn( "Type", key="type", model_class=model.Visualization ),
+        grids.IndividualTagsColumn( "Tags", "tags", model.Visualization, model.VisualizationTagAssociation, filterable="advanced", grid_name="VisualizationListGrid" ),
+        grids.SharingStatusColumn( "Sharing", key="sharing", model_class=model.Visualization, filterable="advanced", sortable=False ),
+        grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
+    ]    
+    columns.append( 
+        grids.MulticolFilterColumn(  
+        "Search", 
+        cols_to_filter=[ columns[0], columns[2] ], 
+        key="free-text-search", visible=False, filterable="standard" )
+                )    
+                
 class _PageContentProcessor( _BaseHTMLProcessor ):
     """ Processes page content to produce HTML that is suitable for display. For now, processor renders embedded objects. """
     
@@ -249,7 +268,7 @@ class _PageContentProcessor( _BaseHTMLProcessor ):
         # Default behavior: 
         _BaseHTMLProcessor.unknown_endtag( self, tag )
                 
-class PageController( BaseController, Sharable, UsesAnnotations, UsesHistory, UsesStoredWorkflow, UsesHistoryDatasetAssociation ):
+class PageController( BaseController, Sharable, UsesAnnotations, UsesHistory, UsesStoredWorkflow, UsesHistoryDatasetAssociation, UsesVisualization ):
     
     _page_list = PageListGrid()
     _all_published_list = PageAllPublishedGrid()
@@ -257,6 +276,7 @@ class PageController( BaseController, Sharable, UsesAnnotations, UsesHistory, Us
     _workflow_selection_grid = WorkflowSelectionGrid()
     _datasets_selection_grid = HistoryDatasetAssociationSelectionGrid()
     _page_selection_grid = PageSelectionGrid()
+    _visualization_selection_grid = VisualizationSelectionGrid()
     
     @web.expose
     @web.require_login()  
@@ -626,6 +646,13 @@ class PageController( BaseController, Sharable, UsesAnnotations, UsesHistory, Us
         return self._workflow_selection_grid( trans, **kwargs )
         
     @web.expose
+    @web.require_login("select a visualization from saved visualizations")
+    def list_visualizations_for_selection( self, trans, **kwargs ):
+        """ Returns HTML that enables a user to select one or more visualizations. """
+        # Render the list view
+        return self._visualization_selection_grid( trans, **kwargs )
+        
+    @web.expose
     @web.require_login("select a page from saved pages")
     def list_pages_for_selection( self, trans, **kwargs ):
         """ Returns HTML that enables a user to select one or more pages. """
@@ -685,6 +712,12 @@ class PageController( BaseController, Sharable, UsesAnnotations, UsesHistory, Us
             if workflow:
                 self.get_stored_workflow_steps( trans, workflow )
                 return trans.fill_template( "workflow/embed.mako", item=workflow, item_data=workflow.latest_workflow.steps )
+        elif item_class == model.Visualization:
+            visualization = self.get_visualization( trans, item_id, False, True )
+            visualization.annotation = self.get_item_annotation_str( trans.sa_session, visualization.user, visualization )
+            if visualization:
+                return trans.fill_template( "visualization/embed.mako", item=visualization, item_data=None )
+        
         elif item_class == model.Page:
             pass
         
