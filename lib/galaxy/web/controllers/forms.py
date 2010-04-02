@@ -72,7 +72,8 @@ class Forms( BaseController ):
                     'required': False,
                     'type': BaseField.form_field_types()[0],
                     'selectlist': [],
-                    'layout': 'none' }
+                    'layout': 'none',
+                    'default': '' }
     forms_grid = FormsGrid()
 
     @web.expose
@@ -354,6 +355,7 @@ class Forms( BaseController ):
         required =  params.get( 'field_required_%i' % index, False )
         field_type = util.restore_text( params.get( 'field_type_%i' % index, '' ) )
         layout = params.get( 'field_layout_%i' % index, '' )
+        default = params.get( 'field_default_%i' % index, '' )
         if field_type == 'SelectField':
             selectlist = self.__get_selectbox_options(index, **kwd)
             return {'label': name, 
@@ -362,13 +364,15 @@ class Forms( BaseController ):
                     'required': required,
                     'type': field_type,
                     'selectlist': selectlist,
-                    'layout': layout }
+                    'layout': layout,
+                    'default': default }
         return {'label': name, 
                 'helptext': helptext, 
                 'visible': True,
                 'required': required,
                 'type': field_type,
-                'layout': layout}
+                'layout': layout,
+                'default': default}
     def __get_selectbox_options(self, index, **kwd):
         '''
         This method gets all the options entered by the user for field when
@@ -453,7 +457,8 @@ class Forms( BaseController ):
                                    'required': row[3],
                                    'type': row[4],
                                    'selectlist': options,
-                                   'layout':row[6]})
+                                   'layout':row[6],
+                                   'default': row[7]})
                     layouts.add(row[6])
             else:
                 for row in reader:
@@ -463,7 +468,8 @@ class Forms( BaseController ):
                                    'visible': row[2],
                                    'required': row[3],
                                    'type': row[4],
-                                   'selectlist': options})
+                                   'selectlist': options,
+                                   'default': row[7]})
         except:
             return trans.response.send_redirect( web.url_for( controller='forms',
                                                               action='new',
@@ -549,7 +555,9 @@ class Forms( BaseController ):
             if layout_grids:
                 self.layout_selectbox = SelectField('field_layout_'+str(index))
                 for index, grid_name in enumerate(layout_grids):
-                    self.layout_selectbox.add_option("%i. %s" %(index+1, grid_name), index)            
+                    self.layout_selectbox.add_option("%i. %s" %(index+1, grid_name), index)
+            # default value
+            self.default = TextField('field_default_'+str(index), 40, '')
             if field:
                 self.fill(trans, field, field_type, form_type)
         def fill(self, trans, field, field_type=None, form_type=None):
@@ -557,6 +565,8 @@ class Forms( BaseController ):
             self.label.value = field['label']
             # helptext
             self.helptext.value = field['helptext']
+            # default value
+            self.default.value = field['default']
             # type
             self.fieldtype = SelectField('field_type_'+str(self.index), 
                                          refresh_on_change=True, 
@@ -608,11 +618,13 @@ class Forms( BaseController ):
                 return [( 'Label', self.label ),
                         ( 'Help text', self.helptext ),
                         ( 'Type', self.fieldtype, self.selectbox_options),
+                        ( 'Default value', self.default ),
                         ( '', self.required),
                         ( 'Select the grid layout to place this field', self.layout_selectbox)]
             return [( 'Label', self.label ),
                     ( 'Help text', self.helptext ),
                     ( 'Type', self.fieldtype, self.selectbox_options),
+                    ( 'Default value', self.default ),
                     ( '', self.required)]
         def __repr__(self):
             return str(self.index)+'.'+self.label 

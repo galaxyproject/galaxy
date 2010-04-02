@@ -1348,8 +1348,8 @@ class FormDefinition( object ):
                     # Since we do not have contents, set checkbox value to False
                     value = False
                 else:
-                    # Set other field types to empty string
-                    value = ''
+                    # Set other field types to the default value of the field
+                    value = field['default']
             # create the field widget
             field_widget = eval( field[ 'type' ] )( field_name )
             if field[ 'type' ] == 'TextField':
