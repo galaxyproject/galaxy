@@ -2,7 +2,7 @@
   <description>for testing</description>
   <code file="rgfakePed_code.py"/>
   <command interpreter="python">rgfakePed.py --title '$title1'
-  -o '$out_file1' -p '$out_file1.extra_files_path' -c '$ncases' -n '$ntotal'
+  -o '$out_file1' -p '$out_file1.files_path' -c '$ncases' -n '$ntotal'
   -s '$nsnp'  -w '$lowmaf' -v '$missingValue' -l '$outFormat'
   -d '$mafdist' -m '$missingRate' -M '$mendelRate' </command>
    <inputs>

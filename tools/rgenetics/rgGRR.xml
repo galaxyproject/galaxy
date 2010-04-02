@@ -3,7 +3,7 @@
     <description>Pairwise Allele Sharing</description>
     <command interpreter="python">
          rgGRR.py $i.extra_files_path/$i.metadata.base_name "$i.metadata.base_name"
-        '$out_file1' '$out_file1.extra_files_path' "$title1"  '$n' '$Z'
+        '$out_file1' '$out_file1.files_path' "$title1"  '$n' '$Z'
     </command>
     <inputs>
       <param name="i"  type="data" label="Genotype data file from your current history"

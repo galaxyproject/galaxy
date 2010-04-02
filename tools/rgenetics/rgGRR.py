@@ -1037,6 +1037,10 @@ def doIBS(n=100):
     basename = sys.argv[2]
     outhtml = sys.argv[3]
     newfilepath = sys.argv[4]
+    try:
+	os.makedirs(newfilepath)
+    except:
+	pass
     title = sys.argv[5].translate(ptran)
     logfname = 'Log_%s.txt' % title
     logpath = os.path.join(newfilepath,logfname) # log was a child - make part of html extra_files_path zoo
