@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#!/usr/bin/env python
 """
 Converts SAM data to sorted BAM data.
 usage: sam_to_bam.py [options]

@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#!/usr/bin/env python
 #Guruprasad Ananda
 #MAQ mapper for SOLiD colourspace-reads
 

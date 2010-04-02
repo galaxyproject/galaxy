@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#!/usr/bin/env python
 #Guruprasad Ananda
 """
 Filter based on nucleotide quality (PHRED score).

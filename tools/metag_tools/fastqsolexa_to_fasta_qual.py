@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#!/usr/bin/env python
 
 """
 convert fastqsolexa file to separated sequence and quality files.

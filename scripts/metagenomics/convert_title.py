@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#!/usr/bin/env python
 
 """
 convert nt and wgs data (fasta format) to giNumber_seqLen

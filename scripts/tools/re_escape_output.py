@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#!/usr/bin/env python
 
 """
 Escapes a file into a form suitable for use with tool tests using re_match or re_match_multiline (when -m/--multiline option is used)

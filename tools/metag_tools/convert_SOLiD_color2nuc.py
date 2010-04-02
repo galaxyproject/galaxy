@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#!/usr/bin/env python
 """
 convert SOLiD calor-base data to nucleotide sequence
 example: T011213122200221123032111221021210131332222101

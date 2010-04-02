@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#!/usr/bin/env python
 #Dan Blankenberg
 """
 Takes a Multiple Alignment FASTA file and concatenates 

@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 """
 
 Data Transfer Script: Sequencer to Galaxy

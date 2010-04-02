@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#!/usr/bin/env python
 """
 trim reads based on the quality scores
 input: read file and quality score file

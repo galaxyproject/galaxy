@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#!/usr/bin/env python
 
 from galaxy import eggs
 import sys, tempfile, os

@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#!/usr/bin/env python
 #Guruprasad ANanda
 """
 Fetches substitutions from pairwise alignments.

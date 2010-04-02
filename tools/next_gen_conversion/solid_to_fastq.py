@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#!/usr/bin/env python
 
 """
 Converts SOLiD data to Sanger FASTQ format.

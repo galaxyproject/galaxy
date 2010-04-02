@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#!/usr/bin/env python
 """
 boxplot:
 - box: first quartile and third quartile

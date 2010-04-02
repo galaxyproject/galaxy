@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#!/usr/bin/env python
 #Guruprasad Ananda
 
 import sys, os, zipfile, tempfile

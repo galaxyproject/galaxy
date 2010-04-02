@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 #Guruprasad Ananda
 #Adapted from bx/scripts/maf_mask_cpg.py
 """

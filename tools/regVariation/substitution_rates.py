@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#!/usr/bin/env python
 #guruprasad Ananda
 """
 Estimates substitution rates from pairwise alignments using JC69 model.

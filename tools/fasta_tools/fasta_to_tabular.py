@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#!/usr/bin/env python
 # This code exists in 2 places: ~/datatypes/converters and ~/tools/fasta_tools
 """
 Input: fasta, int

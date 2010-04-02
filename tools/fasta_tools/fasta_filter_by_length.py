@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#!/usr/bin/env python
 """
 Input: fasta, minimal length, maximal length
 Output: fasta
