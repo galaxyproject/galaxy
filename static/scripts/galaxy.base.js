@@ -146,9 +146,11 @@ function replace_dbkey_select() {
                 return;
             }
     
-            // Set options and mapping.
+            // Set options and mapping. Mapping is (i) [from text to value] AND (ii) [from value to value]. This
+            // enables a user to type the value directly rather than select the text that represents the value. 
             dbkey_options.push( text );
             dbkey_mapping[ text ] = value;
+            dbkey_mapping[ value ] = value;
     
             // If this is the start value, set value of input element.
             if ( value == start_value ) {
