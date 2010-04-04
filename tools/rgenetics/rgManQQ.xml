@@ -24,7 +24,7 @@
         help='Select "None" if offset not available or no Manhattan plot required'
         dynamic_options="get_phecols(i,True,'offs')" />
        <param name="grey" type="boolean" checked="false" truevalue="true" falsevalue="false" 
-        label="Grey scale for Manhatten plot (default is colour"/> 
+        label="Grey scale for Manhattan plot (default is colour"/> 
        </page>
     </inputs>
     
@@ -76,7 +76,7 @@ how busy the server is - be patient please.
 **Summary**
 
 This tool will create a qq plot and a Manhattan plot for one or more GWA P value columns from a tabular
-dataset. For Manhatten plots, the data must include the chromosome (eg use 23,24,25 for x,y,mt...) and
+dataset. For Manhattan plots, the data must include the chromosome (eg use 23,24,25 for x,y,mt...) and
 offset. Many analysis files contain the required fields but even without chromosome and offset, a qq plot 
 can be created.
 

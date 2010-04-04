@@ -984,13 +984,18 @@ def subjectRep(froot='cleantest',outfname="srep",newfpath='.',logf = None):
     f.close()
     return res,Tops
 
-def markerRep(froot='cleantest',outfname="mrep",newfpath='.',logf=None ):
+def markerRep(froot='cleantest',outfname="mrep",newfpath='.',logf=None,maplist=None ):
     """by marker (hwe = .hwe, missingness=.lmiss, freq = .frq)
     keep a list of marker order but keep all stats in dicts
     write out a fake xls file for R or SAS etc
     kinda clunky, but..
     TODO: ensure stable if any file not found?
     """
+    mapdict = {}
+    if maplist <> None:
+       rslist = [x[1] for x in maplist]
+       offset = [x[3] for x in maplist]
+       mapdict = dict(zip(rslist,offset))
     hwefile = '%s.hwe' % froot
     lmissfile = '%s.lmiss' % froot
     freqfile = '%s.frq' % froot
@@ -1139,7 +1144,7 @@ def markerRep(froot='cleantest',outfname="mrep",newfpath='.',logf=None ):
     else:
         logf.write('No %s file - assuming not family data\n' % lmendfile)
     # now assemble result list
-    rhead = ['snp','chrom','maf','a1','a2','missfrac','p_hwe_all','logp_hwe_all','p_hwe_unaff','logp_hwe_unaff','N_Mendel']
+    rhead = ['snp','chromosome','offset','maf','a1','a2','missfrac','p_hwe_all','logp_hwe_all','p_hwe_unaff','logp_hwe_unaff','N_Mendel']
     res = []
     fres = []
     for i in xrange(len(markerlist)): # for each snp in found order
@@ -1150,7 +1155,8 @@ def markerRep(froot='cleantest',outfname="mrep",newfpath='.',logf=None ):
         hwe_all = hwedict[rs].get('ALL',('NA','NA')) # hope this doesn't change...
         hwe_unaff = hwedict[rs].get('UNAFF',('NA','NA'))
         nmend = lmenddict.get(rs,'NA')
-        res.append([rs,chrom,maf,a1,a2,f_missing,hwe_all[0],hwe_all[1],hwe_unaff[0],hwe_unaff[1],nmend])
+        offset=mapdict.get(rs,'0')
+        res.append([rs,chrom,offset,maf,a1,a2,f_missing,hwe_all[0],hwe_all[1],hwe_unaff[0],hwe_unaff[1],nmend])
         try:
             fmaf = '%f' % float(maf)
         except:
@@ -1172,7 +1178,7 @@ def markerRep(froot='cleantest',outfname="mrep",newfpath='.',logf=None ):
         except:
             ff_missing = 'NA'
         #fres.append([rs,chrom,fmaf,a1,a2,ff_missing,hwe_all[0],hwe_all[1],hwe_unaff[0],fhwe,inmend])
-        arow = [rs,chrom,fmaf,a1,a2,ff_missing,hwe_all[0],fhweall,hwe_unaff[0],fhweunaff,inmend]
+        arow = [rs,chrom,offset,fmaf,a1,a2,ff_missing,hwe_all[0],fhweall,hwe_unaff[0],fhweunaff,inmend]
         fres.append(arow)
     ntokeep = max(10,len(res)/keepfrac)
     for i,col in enumerate(Tsorts):
@@ -1256,6 +1262,16 @@ if __name__ == "__main__":
        pass
     ofn = basename
     bfn = options.infile
+    try:
+       mapf = '%s.bim' % bfn
+       maplist = file(mapf,'r').readlines()
+       maplist = [x.split() for x in maplist]
+    except:
+       maplist = None
+       alogf.write('## error - cannot open %s to read map - no offsets will be available for output files')
+    #rerla@beast galaxy]$ head test-data/tinywga.bim
+    #22      rs2283802       0       21784722        4       2
+    #22      rs2267000       0       21785366        4       2
     rgbin = os.path.split(rexe)[0] # get our rg bin path
     #plinktasks = [' --freq',' --missing',' --mendel',' --hardy',' --check-sex'] # plink v1 fixes that bug!
     # if we could, do all at once? Nope. Probably never.
@@ -1276,7 +1292,7 @@ if __name__ == "__main__":
     subjects,subjectTops = subjectRep(froot=repout,outfname=asubjf,newfpath=newfpath,
                 logf=alogf) # writes the subject_froot.xls file
     markers,markerTops = markerRep(froot=repout,outfname=amarkf,newfpath=newfpath,
-                logf=alogf) # marker_froot.xls
+                logf=alogf,maplist=maplist) # marker_froot.xls
     nbreaks = 100
     s = '## starting plotpage, newfpath=%s,m=%s,s=%s/n' % (newfpath,markers[:2],subjects[:2])
     alogf.write(s)
