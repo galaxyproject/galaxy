@@ -10,12 +10,6 @@
 <%def name="javascripts()">
     ${parent.javascripts()}
     ${h.js( "galaxy.base", "jquery.autocomplete", "autocomplete_tagging" )}
-    <script type="text/javascript">
-        $(document).ready(function() 
-        {
-            replace_dbkey_select('${data.dbkey}');
-        });
-    </script>
 </%def>
 
 <%def name="datatype( dataset, datatypes )">
@@ -30,8 +24,8 @@
     </select>
 </%def>
 
-%if msg:
-    ${render_msg( msg, messagetype )}
+%if message:
+    ${render_msg( message, status )}
 %endif
 
 <div class="toolForm">

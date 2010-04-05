@@ -8,8 +8,8 @@
     </li>
 </ul>
 
-%if msg:
-    ${render_msg( msg, messagetype )}
+%if message:
+    ${render_msg( message, status )}
 %endif
 
 <div class="toolForm">

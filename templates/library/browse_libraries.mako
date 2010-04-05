@@ -5,8 +5,8 @@
 
 <h2>Data Libraries</h2>
 
-%if msg:
-    ${render_msg( msg, messagetype )}
+%if message:
+    ${render_msg( message, status )}
 %endif
 
 %if not libraries:

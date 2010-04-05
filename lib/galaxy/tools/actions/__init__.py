@@ -107,14 +107,27 @@ class DefaultToolAction( object ):
             Makes a copy of input dictionary from_dict such that all values that are dictionaries
             result in creation of a new dictionary ( a sort of deepcopy ).  We may need to handle 
             other complex types ( e.g., lists, etc ), but not sure... 
+            Yes, we need to handle lists (and now are)... 
             """
             copy_from_dict = {}
             for key, value in from_dict.items():
                 if type( value ).__name__ == 'dict':
                     copy_from_dict[ key ] = make_dict_copy( value )
+                elif isinstance( value, list ):
+                    copy_from_dict[ key ] = make_list_copy( value )
                 else:
                     copy_from_dict[ key ] = value
             return copy_from_dict
+        def make_list_copy( from_list ):
+            new_list = []
+            for value in from_list:
+                if isinstance( value, dict ):
+                    new_list.append( make_dict_copy( value ) )
+                elif isinstance( value, list ):
+                    new_list.append( make_list_copy( value ) )
+                else:
+                    new_list.append( value )
+            return new_list
         def wrap_values( inputs, input_values ):
             # Wrap tool inputs as necessary
             for input in inputs.itervalues():

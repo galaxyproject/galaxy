@@ -235,7 +235,7 @@ class RootController( BaseController, UsesHistory, UsesAnnotations ):
     @web.expose
     def edit(self, trans, id=None, hid=None, **kwd):
         """Allows user to modify parameters of an HDA."""
-        msg = ''
+        message = ''
         error = False
         def __ok_to_edit_metadata( dataset_id ):
             #prevent modifying metadata when dataset is queued or running as input/output
@@ -282,7 +282,7 @@ class RootController( BaseController, UsesHistory, UsesAnnotations ):
                 # The user clicked the Save button on the 'Edit Attributes' form
                 data.name  = params.name
                 data.info  = params.info
-                msg = ''
+                message = ''
                 if __ok_to_edit_metadata( data.id ):
                     # The following for loop will save all metadata_spec items
                     for name, spec in data.datatype.metadata_spec.items():
@@ -304,9 +304,9 @@ class RootController( BaseController, UsesHistory, UsesAnnotations ):
                         annotation = sanitize_html( params.annotation, 'utf-8', 'text/html' )
                         self.add_item_annotation( trans, data, annotation )
                 else:
-                    msg = ' (Metadata could not be changed because this dataset is currently being used as input or output. You must cancel or wait for these jobs to complete before changing metadata.)'
+                    message = ' (Metadata could not be changed because this dataset is currently being used as input or output. You must cancel or wait for these jobs to complete before changing metadata.)'
                 trans.sa_session.flush()
-                return trans.show_ok_message( "Attributes updated%s" % msg, refresh_frames=['history'] )
+                return trans.show_ok_message( "Attributes updated%s" % message, refresh_frames=['history'] )
             elif params.detect:
                 # The user clicked the Auto-detect button on the 'Edit Attributes' form
                 #prevent modifying metadata when dataset is queued or running as input/output
@@ -318,26 +318,26 @@ class RootController( BaseController, UsesHistory, UsesAnnotations ):
                         if spec.get( 'default' ):
                             setattr( data.metadata, name, spec.unwrap( spec.get( 'default' ) ) )
                 if trans.app.config.set_metadata_externally:
-                    msg = 'Attributes have been queued to be updated'
+                    message = 'Attributes have been queued to be updated'
                     trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute( trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming = { 'input1':data } )
                 else:
-                    msg = 'Attributes updated'
+                    message = 'Attributes updated'
                     data.set_meta()
                     data.datatype.after_setting_metadata( data )
                 trans.sa_session.flush()
-                return trans.show_ok_message( msg, refresh_frames=['history'] )
+                return trans.show_ok_message( message, refresh_frames=['history'] )
             elif params.convert_data:
                 target_type = kwd.get("target_type", None)
                 if target_type:
-                    msg = data.datatype.convert_dataset(trans, data, target_type)
-                    return trans.show_ok_message( msg, refresh_frames=['history'] )
+                    message = data.datatype.convert_dataset(trans, data, target_type)
+                    return trans.show_ok_message( message, refresh_frames=['history'] )
             elif params.update_roles_button:
                 if not trans.user:
                     return trans.show_error_message( "You must be logged in if you want to change permissions." )
                 if trans.app.security_agent.can_manage_dataset( current_user_roles, data.dataset ):
                     # The user associated the DATASET_ACCESS permission on the dataset with 1 or more roles.  We
                     # need to ensure that they did not associate roles that would cause accessibility problems.
-                    permissions, in_roles, error, msg = \
+                    permissions, in_roles, error, message = \
                     trans.app.security_agent.derive_roles_from_access( trans, data.dataset.id, 'root', **kwd )
                     a = trans.app.security_agent.get_action( trans.app.security_agent.permitted_actions.DATASET_ACCESS.action )
                     if error:
@@ -345,8 +345,8 @@ class RootController( BaseController, UsesHistory, UsesAnnotations ):
                         permissions[ a ] = data.dataset.get_access_roles( trans )
                     trans.app.security_agent.set_all_dataset_permissions( data.dataset, permissions )
                     trans.sa_session.refresh( data.dataset )
-                    if not msg:
-                        msg = 'Your changes completed successfully.'
+                    if not message:
+                        message = 'Your changes completed successfully.'
                 else:
                     return trans.show_error_message( "You are not authorized to change this dataset's permissions" )
             if "dbkey" in data.datatype.metadata_spec and not data.metadata.dbkey:
@@ -363,17 +363,17 @@ class RootController( BaseController, UsesHistory, UsesAnnotations ):
             ldatatypes.sort()
             all_roles = trans.app.security_agent.get_legitimate_roles( trans, data.dataset, 'root' )
             if error:
-                messagetype = 'error'
+                status = 'error'
             else:
-                messagetype = 'done'
+                status = 'done'
             return trans.fill_template( "/dataset/edit_attributes.mako",
                                         data=data,
                                         data_annotation=self.get_item_annotation_str( trans.sa_session, trans.get_user(), data ),
                                         datatypes=ldatatypes,
                                         current_user_roles=current_user_roles,
                                         all_roles=all_roles,
-                                        msg=msg,
-                                        messagetype=messagetype )
+                                        message=message,
+                                        status=status )
         else:
             return trans.show_error_message( "You do not have permission to edit this dataset's ( id: %s ) information." % str( id ) )
 

@@ -92,8 +92,8 @@ class LibraryAdmin( BaseController ):
     @web.require_admin
     def create_library( self, trans, **kwd ):
         params = util.Params( kwd )
-        msg = util.restore_text( params.get( 'msg', ''  ) )
-        messagetype = params.get( 'messagetype', 'done' )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
         if params.get( 'create_library_button', False ):
             name = util.restore_text( params.get( 'name', 'No name' ) )
             description = util.restore_text( params.get( 'description', '' ) )
@@ -105,14 +105,14 @@ class LibraryAdmin( BaseController ):
             library.root_folder = root_folder
             trans.sa_session.add_all( ( library, root_folder ) )
             trans.sa_session.flush()
-            msg = "The new library named '%s' has been created" % library.name
+            message = "The new library named '%s' has been created" % library.name
             return trans.response.send_redirect( web.url_for( controller='library_common',
                                                               action='browse_library',
                                                               cntrller='library_admin',
                                                               id=trans.security.encode_id( library.id ),
-                                                              msg=util.sanitize_text( msg ),
-                                                              messagetype='done' ) )
-        return trans.fill_template( '/admin/library/new_library.mako', msg=msg, messagetype=messagetype )
+                                                              message=util.sanitize_text( message ),
+                                                              status='done' ) )
+        return trans.fill_template( '/admin/library/new_library.mako', message=message, status=status )
     @web.expose
     @web.require_admin
     def purge_library( self, trans, **kwd ):
@@ -146,20 +146,20 @@ class LibraryAdmin( BaseController ):
             trans.sa_session.add( library_folder )
             trans.sa_session.flush()
         if not library.deleted:
-            msg = "Library '%s' has not been marked deleted, so it cannot be purged" % ( library.name )
+            message = "Library '%s' has not been marked deleted, so it cannot be purged" % ( library.name )
             return trans.response.send_redirect( web.url_for( controller='library_admin',
                                                               action='browse_libraries',
-                                                              message=util.sanitize_text( msg ),
+                                                              message=util.sanitize_text( message ),
                                                               status='error' ) )
         else:
             purge_folder( library.root_folder )
             library.purged = True
             trans.sa_session.add( library )
             trans.sa_session.flush()
-            msg = "Library '%s' and all of its contents have been purged, datasets will be removed from disk via the cleanup_datasets script" % library.name
+            message = "Library '%s' and all of its contents have been purged, datasets will be removed from disk via the cleanup_datasets script" % library.name
             return trans.response.send_redirect( web.url_for( controller='library_admin',
                                                               action='browse_libraries',
-                                                              message=util.sanitize_text( msg ),
+                                                              message=util.sanitize_text( message ),
                                                               status='done' ) )   
     @web.expose
     @web.require_admin
@@ -176,8 +176,8 @@ class LibraryAdmin( BaseController ):
                        'folder': trans.app.model.LibraryFolder,
                        'library_dataset': trans.app.model.LibraryDataset }
         if item_type not in item_types:
-            msg = 'Bad item_type specified: %s' % str( item_type )
-            messagetype = 'error'
+            message = 'Bad item_type specified: %s' % str( item_type )
+            status = 'error'
         else:
             if item_type == 'library_dataset':
                 item_desc = 'Dataset'
@@ -187,18 +187,18 @@ class LibraryAdmin( BaseController ):
             library_item.deleted = True
             trans.sa_session.add( library_item )
             trans.sa_session.flush()
-            msg = util.sanitize_text( "%s '%s' has been marked deleted" % ( item_desc, library_item.name ) )
-            messagetype = 'done'
+            message = util.sanitize_text( "%s '%s' has been marked deleted" % ( item_desc, library_item.name ) )
+            status = 'done'
         if item_type == 'library':
-            return self.browse_libraries( trans, message=msg, status=messagetype )
+            return self.browse_libraries( trans, message=message, status=status )
         else:
             return trans.response.send_redirect( web.url_for( controller='library_common',
                                                               action='browse_library',
                                                               cntrller='library_admin',
                                                               id=library_id,
                                                               show_deleted=show_deleted,
-                                                              msg=msg,
-                                                              messagetype=messagetype ) )
+                                                              message=message,
+                                                              status=status ) )
     @web.expose
     @web.require_admin
     def undelete_library_item( self, trans, library_id, item_id, item_type, **kwd ):
@@ -208,7 +208,7 @@ class LibraryAdmin( BaseController ):
                        'folder': trans.app.model.LibraryFolder,
                        'library_dataset': trans.app.model.LibraryDataset }
         if item_type not in item_types:
-            msg = 'Bad item_type specified: %s' % str( item_type )
+            message = 'Bad item_type specified: %s' % str( item_type )
             status = ERROR
         else:
             if item_type == 'library_dataset':
@@ -217,21 +217,21 @@ class LibraryAdmin( BaseController ):
                 item_desc = item_type.capitalize()
             library_item = trans.sa_session.query( item_types[ item_type ] ).get( trans.security.decode_id( item_id ) )
             if library_item.purged:
-                msg = '%s %s has been purged, so it cannot be undeleted' % ( item_desc, library_item.name )
+                message = '%s %s has been purged, so it cannot be undeleted' % ( item_desc, library_item.name )
                 status = ERROR
             else:
                 library_item.deleted = False
                 trans.sa_session.add( library_item )
                 trans.sa_session.flush()
-                msg = util.sanitize_text( "%s '%s' has been marked undeleted" % ( item_desc, library_item.name ) )
+                message = util.sanitize_text( "%s '%s' has been marked undeleted" % ( item_desc, library_item.name ) )
                 status = SUCCESS
         if item_type == 'library':
-            return self.browse_libraries( trans, message=msg, status=status )
+            return self.browse_libraries( trans, message=message, status=status )
         else:
             return trans.response.send_redirect( web.url_for( controller='library_common',
                                                               action='browse_library',
                                                               cntrller='library_admin',
                                                               id=library_id,
                                                               show_deleted=show_deleted,
-                                                              msg=msg,
-                                                              messagetype=status ) )
+                                                              message=message,
+                                                              status=status ) )

@@ -9,8 +9,8 @@
     </li>
 </ul>
 
-%if msg:
-    ${render_msg( msg, messagetype )}
+%if message:
+    ${render_msg( message, status )}
 %endif
 
 %if cntrller in [ 'library_admin', 'requests_admin' ] or trans.app.security_agent.can_manage_library_item( current_user_roles, folder ):

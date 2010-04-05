@@ -24,7 +24,30 @@ class TestDataSecurity( TwillTestCase ):
         # Logged in as admin_user
         email = 'test3@bx.psu.edu'
         password = 'testuser'
-        previously_created = self.create_new_account_as_admin( email=email, password=password, username='regular-user3' )
+        # Test setting the user name to one that is already taken.  Note that the account must not exist in order
+        # for this test to work as desired, so the email we're passing is important...
+        previously_created, username_taken, invalid_username = self.create_new_account_as_admin( email='diff@you.com',
+                                                                                                 password=password,
+                                                                                                 username='admin-user',
+                                                                                                 webapp='galaxy',
+                                                                                                 referer='' )
+        if not username_taken:
+            raise AssertionError, "The user name (%s) is already being used by another user, but no error was displayed" \
+                % 'admin-user'
+        # Test setting the user name to an invalid one.  Note that the account must not exist in order
+        # for this test to work as desired, so the email we're passing is important...
+        previously_created, username_taken, invalid_username = self.create_new_account_as_admin( email='diff@you.com',
+                                                                                                 password=password,
+                                                                                                 username='h',
+                                                                                                 webapp='galaxy',
+                                                                                                 referer='' )
+        if not invalid_username:
+            raise AssertionError, "The user name (%s) is is invalid, but no error was displayed" % username
+        previously_created, username_taken, invalid_username = self.create_new_account_as_admin( email=email,
+                                                                                                 password=password,
+                                                                                                 username='regular-user3',
+                                                                                                 webapp='galaxy',
+                                                                                                 referer='' )
         # Get the user object for later tests
         global regular_user3
         regular_user3 = get_user( email )

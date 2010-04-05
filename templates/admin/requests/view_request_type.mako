@@ -2,8 +2,8 @@
 <%namespace file="/message.mako" import="render_msg" />
 
 
-%if msg:
-    ${render_msg( msg, messagetype )}
+%if message:
+    ${render_msg( message, status )}
 %endif
 
 <h2>Request Type "${request_type.name}"</h2>

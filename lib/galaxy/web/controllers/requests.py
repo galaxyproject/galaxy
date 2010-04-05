@@ -164,7 +164,7 @@ class Requests( BaseController ):
             elif operation == "events":
                 return self.__request_events( trans, **kwd )
         # if there are one or more requests that has been rejected by the admin
-        # recently, then show a msg as a reminder to the user
+        # recently, then show a message as a reminder to the user
         rlist = trans.sa_session.query( trans.app.model.Request ) \
                                 .filter( trans.app.model.Request.table.c.deleted==False ) \
                                 .filter( trans.app.model.Request.table.c.user_id==trans.user.id )
@@ -182,12 +182,12 @@ class Requests( BaseController ):
         try:
             request = trans.sa_session.query( trans.app.model.Request ).get( trans.security.decode_id(kwd['id']) )
         except:
-            msg = "Invalid request ID"
-            log.warn( msg )
+            message = "Invalid request ID"
+            log.warn( message )
             return trans.response.send_redirect( web.url_for( controller='requests',
                                                               action='list',
                                                               status='error',
-                                                              message=msg,
+                                                              message=message,
                                                               **kwd) )
         events_list = []
         all_events = request.events
@@ -238,8 +238,8 @@ class Requests( BaseController ):
         return request_details   
     def __show_request(self, trans, **kwd):
         params = util.Params( kwd )
-        msg = util.restore_text( params.get( 'msg', ''  ) )
-        messagetype = params.get( 'messagetype', 'done' )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
         add_sample = params.get('add_sample', False)
         try:
             request = trans.sa_session.query( trans.app.model.Request ).get( trans.security.decode_id(kwd['id']) )
@@ -279,7 +279,7 @@ class Requests( BaseController ):
                                     current_samples=current_samples,
                                     sample_copy=self.__copy_sample(current_samples), 
                                     details='hide', edit_mode=util.restore_text( params.get( 'edit_mode', 'False'  ) ),
-                                    msg=msg, messagetype=messagetype )
+                                    message=message, status=status )
     def __library_widgets(self, trans, user, sample_index, libraries, sample=None, **kwd):
         '''
         This method creates the data library & folder selectbox for creating &
@@ -424,8 +424,8 @@ class Requests( BaseController ):
     @web.require_login( "create/submit sequencing requests" )
     def show_request(self, trans, **kwd):
         params = util.Params( kwd )
-        msg = util.restore_text( params.get( 'msg', ''  ) )
-        messagetype = params.get( 'messagetype', 'done' )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
         try:
             request = trans.sa_session.query( trans.app.model.Request ).get( int( params.get( 'request_id', None ) ) )
         except:
@@ -503,28 +503,28 @@ class Requests( BaseController ):
                                         edit_mode=edit_mode)
         elif params.get('save_samples_button', False) == 'Save':
             # check for duplicate sample names
-            msg = ''
+            message = ''
             for index in range(len(current_samples)-len(request.samples)):
                 sample_index = index + len(request.samples)
                 sample_name = current_samples[sample_index]['name']
                 if not sample_name.strip():
-                    msg = 'Please enter the name of sample number %i' % sample_index
+                    message = 'Please enter the name of sample number %i' % sample_index
                     break
                 count = 0
                 for i in range(len(current_samples)):
                     if sample_name == current_samples[i]['name']:
                         count = count + 1
                 if count > 1: 
-                    msg = "This request has <b>%i</b> samples with the name <b>%s</b>.\nSamples belonging to a request must have unique names." % (count, sample_name)
+                    message = "This request has <b>%i</b> samples with the name <b>%s</b>.\nSamples belonging to a request must have unique names." % (count, sample_name)
                     break
-            if msg:
+            if message:
                 return trans.fill_template( '/requests/show_request.mako',
                                             request=request,
                                             request_details=self.request_details(trans, request.id),
                                             current_samples = current_samples,
                                             sample_copy=self.__copy_sample(current_samples), 
                                             details=details, edit_mode=edit_mode,
-                                            messagetype='error', msg=msg)
+                                            status='error', message=message)
             # save all the new/unsaved samples entered by the user
             if edit_mode == 'False':
                 for index in range(len(current_samples)-len(request.samples)):
@@ -542,18 +542,18 @@ class Requests( BaseController ):
                     trans.sa_session.add( s )
                     trans.sa_session.flush()
             else:
-                messagetype = 'done'
-                msg = 'Changes made to the sample(s) are saved. '
+                status = 'done'
+                message = 'Changes made to the sample(s) are saved. '
                 for sample_index in range(len(current_samples)):
                     sample = request.samples[sample_index]
                     sample.name = current_samples[sample_index]['name'] 
                     sample.library = current_samples[sample_index]['library']
                     sample.folder = current_samples[sample_index]['folder']
                     if request.submitted():
-                        bc_msg = self.__validate_barcode(trans, sample, current_samples[sample_index]['barcode'])
-                        if bc_msg:
-                            messagetype = 'error'
-                            msg += bc_msg
+                        bc_message = self.__validate_barcode(trans, sample, current_samples[sample_index]['barcode'])
+                        if bc_message:
+                            status = 'error'
+                            message += bc_message
                         else:
                             sample.bar_code = current_samples[sample_index]['barcode']
                     trans.sa_session.add( sample )
@@ -566,8 +566,8 @@ class Requests( BaseController ):
                                                           action='list',
                                                           operation='show_request',
                                                           id=trans.security.encode_id(request.id),
-                                                          messagetype=messagetype,
-                                                          msg=msg ))
+                                                          status=status,
+                                                          message=message ))
         elif params.get('edit_samples_button', False) == 'Edit samples':
             edit_mode = 'True'
             return trans.fill_template( '/requests/show_request.mako',
@@ -589,15 +589,15 @@ class Requests( BaseController ):
                                         current_samples=current_samples,
                                         sample_copy=self.__copy_sample(current_samples), 
                                         details=details, libraries=libraries,
-                                        edit_mode=edit_mode, messagetype=messagetype, msg=msg)
+                                        edit_mode=edit_mode, status=status, message=message)
 
             
     @web.expose
     @web.require_login( "create/submit sequencing requests" )
     def delete_sample(self, trans, **kwd):
         params = util.Params( kwd )
-        msg = util.restore_text( params.get( 'msg', ''  ) )
-        messagetype = params.get( 'messagetype', 'done' )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
         request = trans.sa_session.query( trans.app.model.Request ).get( int( params.get( 'request_id', 0 ) ) )
         current_samples, details, edit_mode = self.__update_samples( request, **kwd )
         sample_index = int(params.get('sample_id', 0))
@@ -639,34 +639,34 @@ class Requests( BaseController ):
     @web.require_login( "create/submit sequencing requests" )
     def new(self, trans, **kwd):
         params = util.Params( kwd )
-        msg = util.restore_text( params.get( 'msg', ''  ) )
-        messagetype = params.get( 'messagetype', 'done' )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
         if params.get('select_request_type', False) == 'True':
             return trans.fill_template( '/requests/new_request.mako',
                                         select_request_type=self.__select_request_type(trans, 'none'),                                 
                                         widgets=[],                                   
-                                        msg=msg,
-                                        messagetype=messagetype)
+                                        message=message,
+                                        status=status)
         elif params.get('create', False) == 'True':
             if params.get('create_request_button', False) == 'Save' \
                or params.get('create_request_samples_button', False) == 'Add samples':
                 request_type = trans.sa_session.query( trans.app.model.RequestType ).get( int( params.select_request_type ) )
                 if not util.restore_text(params.get('name', '')):
-                    msg = 'Please enter the <b>Name</b> of the request'
+                    message = 'Please enter the <b>Name</b> of the request'
                     kwd['create'] = 'True'
-                    kwd['messagetype'] = 'error'
-                    kwd['msg'] = msg
+                    kwd['status'] = 'error'
+                    kwd['message'] = message
                     kwd['create_request_button'] = None
                     kwd['create_request_samples_button'] = None
                     return trans.response.send_redirect( web.url_for( controller='requests',
                                                                       action='new',
                                                                       **kwd) )
                 request = self.__save_request(trans, None, **kwd)
-                msg = 'The new request named <b>%s</b> has been created' % request.name
+                message = 'The new request named <b>%s</b> has been created' % request.name
                 if params.get('create_request_button', False) == 'Save':
                     return trans.response.send_redirect( web.url_for( controller='requests',
                                                                       action='list',
-                                                                      message=msg ,
+                                                                      message=message ,
                                                                       status='done') )
                 elif params.get('create_request_samples_button', False) == 'Add samples':
                     new_kwd = {}
@@ -675,8 +675,8 @@ class Requests( BaseController ):
                     new_kwd['add_sample'] = True
                     return trans.response.send_redirect( web.url_for( controller='requests',
                                                                       action='list',
-                                                                      msg=msg ,
-                                                                      messagetype='done',
+                                                                      message=message ,
+                                                                      status='done',
                                                                       **new_kwd) )
             else:
                 return self.__show_request_form(trans, **kwd)
@@ -684,16 +684,16 @@ class Requests( BaseController ):
             return self.__show_request_form(trans, **kwd)
     def __show_request_form(self, trans, **kwd):
         params = util.Params( kwd )
-        msg = util.restore_text( params.get( 'msg', ''  ) )
-        messagetype = params.get( 'messagetype', 'done' )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
         try:
             request_type = trans.sa_session.query( trans.app.model.RequestType ).get( int( params.select_request_type ) )
         except:
             return trans.fill_template( '/requests/new_request.mako',
                                         select_request_type=self.__select_request_type(trans, 'none'),                                 
                                         widgets=[],                                   
-                                        msg=msg,
-                                        messagetype=messagetype)
+                                        message=message,
+                                        status=status)
         form_values = None
         select_request_type = self.__select_request_type(trans, request_type.id)
         # list of widgets to be rendered on the request form
@@ -711,8 +711,8 @@ class Requests( BaseController ):
                                     select_request_type=select_request_type,
                                     request_type=request_type,
                                     widgets=widgets,
-                                    msg=msg,
-                                    messagetype=messagetype)
+                                    message=message,
+                                    status=status)
     def __validate(self, trans, request):
         '''
         Validates the request entered by the user 
@@ -723,14 +723,14 @@ class Requests( BaseController ):
             if field['required'] == 'required' and request.values.content[index] in ['', None]:
                 empty_fields.append(field['label'])
         if empty_fields:
-            msg = 'Fill the following fields of the request <b>%s</b> before submitting<br/>' % request.name
+            message = 'Fill the following fields of the request <b>%s</b> before submitting<br/>' % request.name
             for ef in empty_fields:
-                msg = msg + '<b>' +ef + '</b><br/>'
+                message = message + '<b>' +ef + '</b><br/>'
             return trans.response.send_redirect( web.url_for( controller='requests',
                                                               action='list',
                                                               operation='edit',
-                                                              messagetype = 'error',
-                                                              msg=msg,
+                                                              status = 'error',
+                                                              message=message,
                                                               id=trans.security.encode_id(request.id) ))
         # now check the required fields of all the samples of this request
         for s in request.samples:
@@ -738,14 +738,14 @@ class Requests( BaseController ):
                 if field['required'] == 'required' and s.values.content[index] in ['', None]:
                     empty_fields.append((s.name, field['label']))
         if empty_fields:
-            msg = 'Fill the following fields of the request <b>%s</b> before submitting<br/>' % request.name
+            message = 'Fill the following fields of the request <b>%s</b> before submitting<br/>' % request.name
             for sname, ef in empty_fields:
-                msg = msg + '<b>%s</b> field of sample <b>%s</b><br/>' % (ef, sname)
+                message = message + '<b>%s</b> field of sample <b>%s</b><br/>' % (ef, sname)
             return trans.response.send_redirect( web.url_for( controller='requests',
                                                               action='list',
                                                               operation='show_request',
-                                                              messagetype = 'error',
-                                                              msg=msg,
+                                                              status = 'error',
+                                                              message=message,
                                                               id=trans.security.encode_id(request.id) ))
     def __save_request(self, trans, request=None, **kwd):
         '''
@@ -823,8 +823,8 @@ class Requests( BaseController ):
     @web.require_login( "create/submit sequencing requests" )
     def edit(self, trans, **kwd):
         params = util.Params( kwd )
-        msg = util.restore_text( params.get( 'msg', ''  ) )
-        messagetype = params.get( 'messagetype', 'done' )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
         try:
             request = trans.sa_session.query( trans.app.model.Request ).get( int( params.get( 'request_id', None ) ) )
         except:
@@ -839,19 +839,19 @@ class Requests( BaseController ):
              or params.get('edit_samples_button', False) == 'Edit samples':
                 request_type = trans.sa_session.query( trans.app.model.RequestType ).get( int( params.select_request_type ) )
                 if not util.restore_text(params.get('name', '')):
-                    msg = 'Please enter the <b>Name</b> of the request'
-                    kwd['messagetype'] = 'error'
-                    kwd['msg'] = msg
+                    message = 'Please enter the <b>Name</b> of the request'
+                    kwd['status'] = 'error'
+                    kwd['message'] = message
                     kwd['show'] = 'True'
                     return trans.response.send_redirect( web.url_for( controller='requests',
                                                                       action='edit',
                                                                       **kwd) )
                 request = self.__save_request(trans, request, **kwd)
-                msg = 'The changes made to the request named %s has been saved' % request.name
+                message = 'The changes made to the request named %s has been saved' % request.name
                 if params.get('save_changes_request_button', False) == 'Save changes':
                     return trans.response.send_redirect( web.url_for( controller='requests',
                                                                       action='list',
-                                                                      message=msg ,
+                                                                      message=message ,
                                                                       status='done') )
                 elif params.get('edit_samples_button', False) == 'Edit samples':
                     new_kwd = {}
@@ -859,8 +859,8 @@ class Requests( BaseController ):
                     new_kwd['edit_samples_button'] = 'Edit samples'
                     return trans.response.send_redirect( web.url_for( controller='requests',
                                                                       action='show_request',
-                                                                      msg=msg ,
-                                                                      messagetype='done',
+                                                                      message=message ,
+                                                                      status='done',
                                                                       **new_kwd) )
         elif params.get('refresh', False) == 'true':
             return self.__edit_request(trans, id=trans.security.encode_id(request.id), **kwd)
@@ -869,15 +869,15 @@ class Requests( BaseController ):
         try:
             request = trans.sa_session.query( trans.app.model.Request ).get( trans.security.decode_id(kwd['id']) )
         except:
-            msg = "Invalid request ID"
-            log.warn( msg )
+            message = "Invalid request ID"
+            log.warn( message )
             return trans.response.send_redirect( web.url_for( controller='requests',
                                                               action='list',
                                                               status='error',
-                                                              message=msg) )
+                                                              message=message) )
         params = util.Params( kwd )
-        msg = util.restore_text( params.get( 'msg', ''  ) )
-        messagetype = params.get( 'messagetype', 'done' )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
         select_request_type = self.__select_request_type(trans, request.type.id)
         # list of widgets to be rendered on the request form
         widgets = []
@@ -901,8 +901,8 @@ class Requests( BaseController ):
                                     request_type=request.type,
                                     request=request,
                                     widgets=widgets,
-                                    msg=msg,
-                                    messagetype=messagetype)
+                                    message=message,
+                                    status=status)
         return self.__show_request_form(trans)
     def __delete_request(self, trans, **kwd):
         id_list = util.listify( kwd['id'] )
@@ -911,12 +911,12 @@ class Requests( BaseController ):
             try:
                 request = trans.sa_session.query( trans.app.model.Request ).get( trans.security.decode_id(id) )
             except:
-                msg = "Invalid request ID"
-                log.warn( msg )
+                message = "Invalid request ID"
+                log.warn( message )
                 return trans.response.send_redirect( web.url_for( controller='requests',
                                                                   action='list',
                                                                   status='error',
-                                                                  message=msg,
+                                                                  message=message,
                                                                   **kwd) )
             # a request cannot be deleted once its submitted
             if not request.new():
@@ -926,28 +926,28 @@ class Requests( BaseController ):
                 trans.sa_session.add( request )
                 trans.sa_session.flush()
         if not len(delete_failed):
-            msg = '%i request(s) has been deleted.' % len(id_list)
+            message = '%i request(s) has been deleted.' % len(id_list)
             status = 'done'
         else:
-            msg = '%i request(s) has been deleted. %i request %s could not be deleted as they have been submitted.' % (len(id_list)-len(delete_failed), 
+            message = '%i request(s) has been deleted. %i request %s could not be deleted as they have been submitted.' % (len(id_list)-len(delete_failed), 
                                                                                                                len(delete_failed), str(delete_failed))
             status = 'warning'
         return trans.response.send_redirect( web.url_for( controller='requests',
                                                           action='list',
                                                           status=status,
-                                                          message=msg) )
+                                                          message=message) )
     def __undelete_request(self, trans, **kwd):
         id_list = util.listify( kwd['id'] )
         for id in id_list:
             try:
                 request = trans.sa_session.query( trans.app.model.Request ).get( trans.security.decode_id(id) )
             except:
-                msg = "Invalid request ID"
-                log.warn( msg )
+                message = "Invalid request ID"
+                log.warn( message )
                 return trans.response.send_redirect( web.url_for( controller='requests',
                                                                   action='list',
                                                                   status='error',
-                                                                  message=msg,
+                                                                  message=message,
                                                                   **kwd) )
             request.deleted = False
             trans.sa_session.add( request )
@@ -960,12 +960,12 @@ class Requests( BaseController ):
         try:
             request = trans.sa_session.query( trans.app.model.Request ).get( trans.security.decode_id(kwd['id']) )
         except:
-            msg = "Invalid request ID"
-            log.warn( msg )
+            message = "Invalid request ID"
+            log.warn( message )
             return trans.response.send_redirect( web.url_for( controller='requests',
                                                               action='list',
                                                               status='error',
-                                                              message=msg,
+                                                              message=message,
                                                               **kwd) )
         # check if all the required request and its sample fields have been filled 
         self.__validate(trans, request)
@@ -994,11 +994,11 @@ class Requests( BaseController ):
             sample_id = int(params.get('sample_id', False))
             sample = trans.sa_session.query( trans.app.model.Sample ).get( sample_id )
         except:
-            msg = "Invalid sample ID"
+            message = "Invalid sample ID"
             return trans.response.send_redirect( web.url_for( controller='requests',
                                                               action='list',
                                                               status='error',
-                                                              message=msg,
+                                                              message=message,
                                                               **kwd) )
         events_list = []
         all_events = sample.events
@@ -1015,8 +1015,8 @@ class Requests( BaseController ):
     @web.require_login( "create/submit sequencing requests" )
     def show_datatx_page( self, trans, **kwd ):
         params = util.Params( kwd )
-        msg = util.restore_text( params.get( 'msg', ''  ) )
-        messagetype = params.get( 'messagetype', 'done' ) 
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' ) 
         try:
             sample = trans.sa_session.query( trans.app.model.Sample ).get( trans.security.decode_id( kwd['sample_id'] ) )
         except:

@@ -321,7 +321,7 @@
         <script type="text/javascript">
             // Replace dbkey select with search+select.
             jQuery(document).ready( function() {
-                replace_dbkey_select();
+                replace_big_select_inputs();
             });
         </script>
     %elif upload_option == 'import_from_history':

@@ -793,20 +793,39 @@ class TwillTestCase( unittest.TestCase ):
         self.assertTrue( genome_build == dbkey )
 
     # Functions associated with user accounts
-    def create( self, email='test@bx.psu.edu', password='testuser', username='admin-user', webapp='galaxy' ):
+    def create( self, email='test@bx.psu.edu', password='testuser', username='admin-user', webapp='galaxy', referer='' ):
         # HACK: don't use panels because late_javascripts() messes up the twill browser and it 
         # can't find form fields (and hence user can't be logged in).
-        self.visit_url( "%s/user/create?use_panels=False&webapp=%s" % ( self.url, webapp ) )
+        self.visit_url( "%s/user/create?use_panels=False" % self.url )
         tc.fv( '1', 'email', email )
+        tc.fv( '1', 'webapp', webapp )
+        tc.fv( '1', 'referer', referer )
         tc.fv( '1', 'password', password )
         tc.fv( '1', 'confirm', password )
         tc.fv( '1', 'username', username )
         tc.submit( 'create_user_button' )
-        self.check_page_for_string( "now logged in as %s" % email )
-        # Make sure a new private role was created for the user
-        self.visit_url( "%s/user/set_default_permissions" % self.url )
-        self.check_page_for_string( email )
-        self.home()
+        previously_created = False
+        username_taken = False
+        invalid_username = False
+        try:
+            self.check_page_for_string( "Created new user account" )
+        except:
+            try:
+                # May have created the account in a previous test run...
+                self.check_page_for_string( "User with that email already exists" )
+                previously_created = True
+            except:
+                try:
+                    self.check_page_for_string( 'This user name is not available' )
+                    username_taken = True
+                except:
+                    try:
+                        # Note that we're only checking if the usr name is >< 4 chars here...
+                        self.check_page_for_string( 'User name must be at least 4 characters in length' )
+                        invalid_username = True
+                    except:
+                        pass
+        return previously_created, username_taken, invalid_username
     def create_user_with_info( self, email, password, username, user_info_forms, user_info_form_id, user_info_values ):
         '''
         This method registers a new user and also provides use info
@@ -815,7 +834,6 @@ class TwillTestCase( unittest.TestCase ):
             self.visit_url( "%s/user/create?user_info_select=%i&admin_view=False&use_panels=False" % ( self.url, user_info_form_id ) )
         else:
             self.visit_url( "%s/user/create?admin_view=False&use_panels=False" % self.url )
-        ##print self.write_temp_file( self.last_page() )
         self.check_page_for_string( "Create account" )
         tc.fv( "1", "email", email )
         tc.fv( "1", "password", password )
@@ -906,20 +924,20 @@ class TwillTestCase( unittest.TestCase ):
         self.visit_url( "%s/%s" % ( self.url, url ) )
         self.check_page_for_string( 'Default history permissions have been changed.' )
         self.home()
-    def login( self, email='test@bx.psu.edu', password='testuser', username='admin-user', webapp='galaxy' ):
+    def login( self, email='test@bx.psu.edu', password='testuser', username='admin-user', webapp='galaxy', referer='' ):
         # test@bx.psu.edu is configured as an admin user
-        try:
-            self.create( email=email, password=password, username=username, webapp=webapp )
-        except:
-            self.home()
+        previously_created, username_taken, invalid_username = \
+            self.create( email=email, password=password, username=username, webapp=webapp, referer=referer )
+        if previously_created:
+            # The acount has previously been created, so just login.
             # HACK: don't use panels because late_javascripts() messes up the twill browser and it 
             # can't find form fields (and hence user can't be logged in).
             self.visit_url( "%s/user/login?use_panels=False" % self.url )
             tc.fv( '1', 'email', email )
+            tc.fv( '1', 'webapp', webapp )
+            tc.fv( '1', 'referer', referer )
             tc.fv( '1', 'password', password )
-            tc.submit( 'Login' )
-            self.check_page_for_string( "now logged in as %s" %email )
-            self.home()
+            tc.submit( 'login_button' )
     def logout( self ):
         self.home()
         self.visit_page( "user/logout" )
@@ -1161,23 +1179,41 @@ class TwillTestCase( unittest.TestCase ):
 
     # Dataset Security stuff
     # Tests associated with users
-    def create_new_account_as_admin( self, email='test4@bx.psu.edu', password='testuser', username='regular-user4' ):
+    def create_new_account_as_admin( self, email='test4@bx.psu.edu', password='testuser',
+                                     username='regular-user4', webapp='galaxy', referer='' ):
         """Create a new account for another user"""
+        # HACK: don't use panels because late_javascripts() messes up the twill browser and it 
+        # can't find form fields (and hence user can't be logged in).
         self.visit_url( "%s/user/create?admin_view=True" % self.url )
         tc.fv( '1', 'email', email )
+        tc.fv( '1', 'webapp', webapp )
+        tc.fv( '1', 'referer', referer )
         tc.fv( '1', 'password', password )
         tc.fv( '1', 'confirm', password )
         tc.fv( '1', 'username', username )
         tc.submit( 'create_user_button' )
+        previously_created = False
+        username_taken = False
+        invalid_username = False
         try:
             self.check_page_for_string( "Created new user account" )
-            previously_created = False
         except:
-            # May have created the account in a previous test run...
-            self.check_page_for_string( "User with that email already exists" )
-            previously_created = True
-        self.home()
-        return previously_created
+            try:
+                # May have created the account in a previous test run...
+                self.check_page_for_string( "User with that email already exists" )
+                previously_created = True
+            except:
+                try:
+                    self.check_page_for_string( 'This user name is not available' )
+                    username_taken = True
+                except:
+                    try:
+                        # Note that we're only checking if the usr name is >< 4 chars here...
+                        self.check_page_for_string( 'User name must be at least 4 characters in length' )
+                        invalid_username = True
+                    except:
+                        pass
+        return previously_created, username_taken, invalid_username
     def reset_password_as_admin( self, user_id, password='testreset' ):
         """Reset a user password"""
         self.home()

@@ -4,8 +4,8 @@
 
 ##<h2>Import via link</h2>
 
-%if msg:
-    ${render_msg( msg, messagetype )}
+%if message:
+    ${render_msg( message, status )}
 %endif
 
 <h2>Histories that you've shared with others or enabled to be imported</h2>

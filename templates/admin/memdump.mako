@@ -44,8 +44,8 @@
 %>
 </%def>
 
-%if msg:
-    ${render_msg( msg, messagetype )}
+%if message:
+    ${render_msg( message, status )}
 %endif
 
 %if heap is None:

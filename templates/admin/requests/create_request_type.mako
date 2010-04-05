@@ -2,8 +2,8 @@
 <%namespace file="/message.mako" import="render_msg" />
 
 
-%if msg:
-    ${render_msg( msg, messagetype )}
+%if message:
+    ${render_msg( message, status )}
 %endif
 
 <%def name="render_state( element_count, state_name, state_desc )">

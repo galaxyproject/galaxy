@@ -100,28 +100,26 @@
         %>
         <div class="submenu">
         <ul class="loggedout-only" style="${style1}">
-            <li><a href="${h.url_for( controller='/user', action='login' )}">Login</a></li>
+            <li><a target="galaxy_main" href="${h.url_for( controller='/user', action='login' )}">Login</a></li>
             %if app.config.allow_user_creation:
-            <li><a href="${h.url_for( controller='/user', action='create' )}">Register</a></li>
+            <li><a target="galaxy_main" href="${h.url_for( controller='/user', action='create' )}">Register</a></li>
             %endif
         </ul>
         <ul class="loggedin-only" style="${style2}">
             %if app.config.use_remote_user:
                 %if app.config.remote_user_logout_href:
-                    <li><a href="${app.config.remote_user_logout_href}" target="_top">Logout</a></li>
+                    <li><a target="galaxy_main" href="${app.config.remote_user_logout_href}">Logout</a></li>
                 %endif
             %else:
                 <li>Logged in as <span id="user-email">${user_email}</span></li>
                 <li><a target="galaxy_main" href="${h.url_for( controller='/user', action='index' )}">Preferences</a></li>
                 <%
                     if app.config.require_login:
-                        logout_target = ""
                         logout_url = h.url_for( controller='/root', action='index', m_c='user', m_a='logout' )
                     else:
-                        logout_target = ""
                         logout_url = h.url_for( controller='/user', action='logout' )
                 %>
-                <li><a target="${logout_target}" href="${logout_url}">Logout</a></li>
+                <li><a target="_top" href="${logout_url}">Logout</a></li>
             %endif
             <li><hr style="color: inherit; background-color: gray"/></li>
             <li><a target="galaxy_main" href="${h.url_for( controller='/history', action='list' )}">Histories</a></li>

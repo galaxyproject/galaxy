@@ -352,7 +352,7 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistoryDatasetAssoc
                     return open( data.file_name )
             if os.path.exists( data.file_name ):
                 max_peek_size = 1000000 # 1 MB
-                if preview and os.stat( data.file_name ).st_size > max_peek_size:
+                if preview and (not isinstance(data.datatype, datatypes.binary.Binary)) and os.stat( data.file_name ).st_size > max_peek_size:
                     trans.response.set_content_type( "text/html" )
                     return trans.stream_template_mako( "/dataset/large_file.mako",
                                                     truncated_data = open( data.file_name ).read(max_peek_size),

@@ -10,17 +10,17 @@ class Library( BaseController ):
     @web.expose
     def index( self, trans, **kwd ):
         params = util.Params( kwd )
-        msg = util.restore_text( params.get( 'msg', ''  ) )
-        messagetype = params.get( 'messagetype', 'done' )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
         return trans.fill_template( "/library/index.mako",
                                     default_action=params.get( 'default_action', None ),
-                                    msg=msg,
-                                    messagetype=messagetype )
+                                    message=message,
+                                    status=status )
     @web.expose
     def browse_libraries( self, trans, **kwd ):
         params = util.Params( kwd )
-        msg = util.restore_text( params.get( 'msg', ''  ) )
-        messagetype = params.get( 'messagetype', 'done' )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
         current_user_roles = trans.get_current_user_roles()
         all_libraries = trans.sa_session.query( trans.app.model.Library ) \
                                         .filter( trans.app.model.Library.table.c.deleted==False ) \
@@ -32,5 +32,5 @@ class Library( BaseController ):
         return trans.fill_template( '/library/browse_libraries.mako', 
                                     libraries=authorized_libraries,
                                     default_action=params.get( 'default_action', None ),
-                                    msg=msg,
-                                    messagetype=messagetype )
+                                    message=message,
+                                    status=status )

@@ -6,13 +6,6 @@
 <%def name="javascripts()">
    ${parent.javascripts()}
    ${h.js("jquery.autocomplete", "autocomplete_tagging" )}
-    ## Script to replace dbkey select with select+search.
-   <script type="text/javascript">
-       // Replace dbkey select with search+select.
-       jQuery(document).ready( function() {
-           replace_dbkey_select();
-       });
-   </script>
 </%def>
 
 <%def name="stylesheets()">
@@ -33,8 +26,8 @@
     </li>
 </ul>
 
-%if msg:
-    ${render_msg( msg, messagetype )}
+%if message:
+    ${render_msg( message, status )}
 %endif
 
 <%def name="datatype( ldda, file_formats )">

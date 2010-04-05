@@ -10,9 +10,6 @@
             "Saved Histories": function() {
                 galaxy_main.location = "${h.url_for( controller='history', action='list')}";
             },
-            "Shared Histories": function() {
-                galaxy_main.location = "${h.url_for( controller='history', action='list', operation='sharing' )}";
-            },
             "Histories Shared with Me": function() {
                 galaxy_main.location = "${h.url_for( controller='history', action='list_shared')}";
             },

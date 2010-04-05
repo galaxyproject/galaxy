@@ -1,11 +1,13 @@
 <%inherit file="/base.mako"/>
-<%def name="title()">User preferences</%def>
+<%namespace file="/message.mako" import="render_msg" />
 
+%if message:
+    ${render_msg( message, status )}
+%endif
 
-<h2>${_('User preferences')}</h2>
-
-%if user:
-    <p>You are currently logged in as ${user.email}.</p>
+%if trans.user:
+    <h2>${_('User preferences')}</h2>
+    <p>You are currently logged in as ${trans.user.email}.</p>
     <ul>
         %if webapp == 'galaxy':
             <li><a href="${h.url_for( action='show_info' )}">${_('Manage your information')}</a></li>
@@ -14,7 +16,9 @@
         <li><a href="${h.url_for( action='logout' )}">${_('Logout')}</a></li>
     </ul>
 %else:
-    <p>${n_('You are currently not logged in.')}</p>
+    %if not msg:
+        <p>${n_('You are currently not logged in.')}</p>
+    %endif
     <ul>
         <li><a href="${h.url_for( action='login' )}">${_('Login')}</li>
         <li><a href="${h.url_for( action='create' )}">${_('Register')}</a></li>
