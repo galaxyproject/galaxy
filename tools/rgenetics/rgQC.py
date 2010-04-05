@@ -994,7 +994,7 @@ def markerRep(froot='cleantest',outfname="mrep",newfpath='.',logf=None,maplist=N
     mapdict = {}
     if maplist <> None:
        rslist = [x[1] for x in maplist]
-       offset = [x[3] for x in maplist]
+       offset = [(x[0],x[3]) for x in maplist]
        mapdict = dict(zip(rslist,offset))
     hwefile = '%s.hwe' % froot
     lmissfile = '%s.lmiss' % froot
@@ -1009,8 +1009,9 @@ def markerRep(froot='cleantest',outfname="mrep",newfpath='.',logf=None,maplist=N
     lmenddict = {}
     Tops = {}
     Tnames = ['Ranked Marker MAF', 'Ranked Marker Missing Genotype', 'Ranked Marker HWE', 'Ranked Marker Mendel']
-    Tsorts = [2,5,9,10]
+    Tsorts = [3,6,10,11]
     Treverse = [False,True,True,True] # so first values are worse(r)
+    #res.append([rs,chrom,offset,maf,a1,a2,f_missing,hwe_all[0],hwe_all[1],hwe_unaff[0],hwe_unaff[1],nmend])
     #rhead = ['snp','chrom','maf','a1','a2','missfrac','p_hwe_all','logp_hwe_all','p_hwe_unaff','logp_hwe_unaff','N_Mendel']
     # -------------------hwe--------------------------
     #    hwe has SNP TEST  GENO   O(HET)   E(HET) P_HWD
@@ -1057,12 +1058,13 @@ def markerRep(froot='cleantest',outfname="mrep",newfpath='.',logf=None,maplist=N
                     hwedict[rs] = {}
                     markerlist.append(rs)
                 chromlist.append(chrom) # one place to find it?
+                lpvals = 0
                 if ps.upper() <> 'NA' and ps.upper() <> 'NAN': # worth keeping
                     lpvals = '0'
                     if ps <> '1':
                         try:
                             pval = float(ps)
-                            lpvals = '%f6' % -math.log10(pval)
+                            lpvals = '%f' % -math.log10(pval)
                         except:
                             pass
                     hwedict[rs][test] = (ps,lpvals)
@@ -1147,49 +1149,33 @@ def markerRep(froot='cleantest',outfname="mrep",newfpath='.',logf=None,maplist=N
     rhead = ['snp','chromosome','offset','maf','a1','a2','missfrac','p_hwe_all','logp_hwe_all','p_hwe_unaff','logp_hwe_unaff','N_Mendel']
     res = []
     fres = []
-    for i in xrange(len(markerlist)): # for each snp in found order
-        chrom = chromlist[i]
-        rs = markerlist[i]
+    for rs in markerlist: # for each snp in found order
         f_missing = lmissdict.get(rs,'NA')
         maf,a1,a2 = freqdict.get(rs,('NA','NA','NA'))
         hwe_all = hwedict[rs].get('ALL',('NA','NA')) # hope this doesn't change...
         hwe_unaff = hwedict[rs].get('UNAFF',('NA','NA'))
         nmend = lmenddict.get(rs,'NA')
-        offset=mapdict.get(rs,'0')
+        (chrom,offset)=mapdict.get(rs,('?','0'))
         res.append([rs,chrom,offset,maf,a1,a2,f_missing,hwe_all[0],hwe_all[1],hwe_unaff[0],hwe_unaff[1],nmend])
-        try:
-            fmaf = '%f' % float(maf)
-        except:
-            fmaf = 'NA'
-        try:
-            inmend = '%d' % int(nmend)
-        except:
-            inmend = 'NA'
-        try:
-            fhweall = '%f' % float(hwe_all[1]) # the log value
-        except:
-            fhweall = 'NA'
-        try:
-            fhweunaff = '%f' % float(hwe_unaff[1]) # the log value
-        except:
-            fhweunaff = 'NA'
-        try:
-            ff_missing = '%f' % float(f_missing) # the log value
-        except:
-            ff_missing = 'NA'
-        #fres.append([rs,chrom,fmaf,a1,a2,ff_missing,hwe_all[0],hwe_all[1],hwe_unaff[0],fhwe,inmend])
-        arow = [rs,chrom,offset,fmaf,a1,a2,ff_missing,hwe_all[0],fhweall,hwe_unaff[0],fhweunaff,inmend]
-        fres.append(arow)
     ntokeep = max(10,len(res)/keepfrac)
+
+    def msortk(item=None):
+        """
+        deal with non numeric sorting
+        """
+        try:
+           return float(item)
+        except:
+           return item
+
     for i,col in enumerate(Tsorts):
-        fres.sort(key=operator.itemgetter(col))
+        res.sort(key=msortk(lambda x:x[col]))
         if Treverse[i]:
-            fres.reverse()
+            res.reverse()
         repname = Tnames[i]
-        Tops[repname] = fres[0:ntokeep]
-        #Tops[repname] = [map(str,x) for x in Tops[repname]]
+        Tops[repname] = res[0:ntokeep]
         Tops[repname].insert(0,rhead)
-    res.sort()
+    res.sort(key=lambda x: '%s_%10d' % (x[1].ljust(4,'0'),int(x[2]))) # in chrom offset order
     res.insert(0,rhead)
     f = open(outfile,'w')
     f.write('\n'.join(['\t'.join(x) for x in res]))
@@ -1315,10 +1301,6 @@ if __name__ == "__main__":
         dat = subjectTops.get(ttitle,None)
         if not dat:
             dat = markerTops.get(ttitle,None)
-        if not dat:
-            print '## iterating plotpage - cannot find title=%s/ttitle=%s' % (title,ttitle)
-        else:
-            print '## iterating plotpage - found title=%s/ttitle=%s' % (title,ttitle)
         imghref = '%s.jpg' % os.path.splitext(url)[0] # removes .pdf
         thumbnail = os.path.join(newfpath,imghref)
         if not os.path.exists(thumbnail): # for multipage pdfs, mogrify makes multiple jpgs - fugly hack

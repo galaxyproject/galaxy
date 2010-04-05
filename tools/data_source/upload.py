@@ -178,7 +178,7 @@ def add_file( dataset, json_file, output_path ):
         # See if we have a gzipped file, which, if it passes our restrictions, we'll uncompress
         is_gzipped, is_valid = check_gzip( dataset.path )
         if is_gzipped and not is_valid:
-            file_err( 'The uploaded file contains inappropriate content', dataset, json_file )
+            file_err( 'The gzipped uploaded file contains inappropriate content', dataset, json_file )
             return
         elif is_gzipped and is_valid:
             # We need to uncompress the temp_name file, but BAM files must remain compressed in the BGZF format
@@ -206,7 +206,7 @@ def add_file( dataset, json_file, output_path ):
             # See if we have a zip archive
             is_zipped, is_valid, test_ext = check_zip( dataset.path )
             if is_zipped and not is_valid:
-                file_err( 'The uploaded file contains inappropriate content', dataset, json_file )
+                file_err( 'The zipped uploaded file contains inappropriate content', dataset, json_file )
                 return
             elif is_zipped and is_valid:
                 # Currently, we force specific tools to handle this case.  We also require the user
@@ -231,7 +231,7 @@ def add_file( dataset, json_file, output_path ):
                 if len( parts ) > 1:
                     ext = parts[1].strip().lower()
                     if ext not in unsniffable_binary_formats:
-                        file_err( 'The uploaded file contains inappropriate content', dataset, json_file )
+                        file_err( 'The uploaded binary file contains inappropriate content', dataset, json_file )
                         return
                     elif ext in unsniffable_binary_formats and dataset.file_type != ext:
                         err_msg = "You must manually set the 'File Format' to '%s' when uploading %s files." % ( ext.capitalize(), ext )
@@ -240,7 +240,7 @@ def add_file( dataset, json_file, output_path ):
         if not data_type:
             # We must have a text file
             if check_html( dataset.path ):
-                file_err( 'The uploaded file contains inappropriate content', dataset, json_file )
+                file_err( 'The uploaded file contains inappropriate HTML content', dataset, json_file )
                 return
         if data_type != 'binary' and data_type != 'zip':
             # don't convert newlines on data we're only going to symlink

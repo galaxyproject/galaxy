@@ -124,7 +124,14 @@ qq = function(pvector, title=NULL, spartan=F) {
 
 rcode2 = """rgqqMan = function(infile="%s",chromcolumn=%d, offsetcolumn=%d, pvalscolumns=%s, 
 title="%s",grey=%d) {
-d = read.table(infile,head=T,sep='\t')
+rawd = read.table(infile,head=T,sep='\t')
+dn = names(rawd)
+cc = dn[chromcolumn]
+oc = dn[offsetcolumn] 
+nams = c(cc,oc)
+d = rawd[do.call(order,rawd[nams]),]
+# mmmf - suggested by http://onertipaday.blogspot.com/2007/08/sortingordering-dataframe-according.html
+# in case not yet ordered
 print(paste('###',length(d[,1]),'values read from',infile,'read - now running plots',sep=' '))
 for (pvalscolumn in pvalscolumns) {
 if (pvalscolumn > 0) 
