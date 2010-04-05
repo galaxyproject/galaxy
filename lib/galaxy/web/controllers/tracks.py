@@ -61,13 +61,15 @@ class DatasetSelectionGrid( grids.Grid ):
         grids.TextColumn( "Name", key="name", model_class=model.HistoryDatasetAssociation ),
         grids.GridColumn( "Filetype", key="extension" ),
     ]
+    
+    def build_initial_query( self, session ):
+        return session.query( self.model_class ).join( model.History.table).join( model.Dataset.table )
     def apply_default_filter( self, trans, query, **kwargs ):
         if self.available_tracks is None:
              self.available_tracks = trans.app.datatypes_registry.get_available_tracks()
-        return query.select_from(   model.HistoryDatasetAssociation.table \
-                                    .join( model.History.table ) ) \
-                                    .filter( model.History.user == trans.user ) \
-                                    .filter( model.HistoryDatasetAssociation.extension.in_(self.available_tracks) )
+        return query.filter( model.History.user == trans.user ) \
+                    .filter( model.HistoryDatasetAssociation.extension.in_(self.available_tracks) ) \
+                    .filter( model.Dataset.state != "error")
         
 class TracksController( BaseController ):
     """
