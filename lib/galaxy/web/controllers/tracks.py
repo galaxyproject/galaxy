@@ -209,11 +209,13 @@ class TracksController( BaseController ):
                 return messages.NO_CONVERTER
 
             # Need to check states again for the converted version
+            if converted_dataset and converted_dataset.state == model.Dataset.states.ERROR:
+                return messages.ERROR
+                
             if not converted_dataset or converted_dataset.state != model.Dataset.states.OK:
                 return messages.PENDING
                 
-            if converted_dataset.state == model.Dataset.states.ERROR:
-                return messages.ERROR
+            
             
         extra_info = None
         if 'index' in data_sources:

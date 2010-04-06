@@ -345,7 +345,14 @@ class Interval( Tabular ):
     def get_track_resolution( self, dataset, start, end):
         return None
 
-    
+class BedGraph( Interval ):
+    """Tab delimited chrom/start/end/datavalue dataset"""
+
+    file_ext = "bedgraph"
+
+    def get_track_type( self ):
+        return "LineTrack", {"data": "array_tree"}
+
 class Bed( Interval ):
     """Tab delimited data in BED format"""
     file_ext = "bed"

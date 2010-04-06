@@ -19,7 +19,7 @@ class ArrayTreeDataProvider( object ):
             chrom_array_tree = d[chrom]
         except KeyError:
             f.close()
-            return "no data"
+            return None
         
         root_summary = chrom_array_tree.get_summary( 0, chrom_array_tree.levels )
         

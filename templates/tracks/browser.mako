@@ -45,7 +45,7 @@ ${h.css( "history" )}
             </div>
         </div>
         <div id="nav-controls">
-            <form name="chr" id="chr" method="get">
+            <form action="#">
                 <select id="chrom" name="chrom" style="width: 15em;">
                     <option value="">Loading</option>
                 </select>
@@ -68,14 +68,14 @@ ${h.css( "history" )}
     <div class="unified-panel-header" unselectable="on">
         <div class="unified-panel-header-inner">Configuration</div>
     </div>
-    <form action="${h.url_for( action='update_config' )}">
+    <form action="#" onsubmit="view.update_options();return false;">
 ##        <input name="title" id="title" value="${config.title}" />
         <div id="show-hide-move">
             <ul id="sortable-ul"></ul>
         </div>
-        <input type="button" id="refresh-button" value="Refresh" />
+        <input type="submit" id="refresh-button" value="Refresh" />
         <input type="button" id="save-button" value="Save" />
-        <input id="add-track" type="button" value="Add Track" />
+        <input id="add-track" type="button" value="Add Tracks" />
     </form>
 
 </%def>
@@ -187,10 +187,6 @@ ${h.js( 'galaxy.base', 'galaxy.panels', "json2", "jquery", "jquery.event.drag", 
                 var delta_chrom = Math.round(delta / $(document).width() * (view.high - view.low));
                 view.center -= delta_chrom;
                 view.redraw();
-            });
-
-            $("#refresh-button").bind( "click", function(e) {
-                view.update_options();
             });
 
             // Use a popup grid to add more tracks
@@ -311,16 +307,15 @@ ${h.js( 'galaxy.base', 'galaxy.panels', "json2", "jquery", "jquery.event.drag", 
                         del_icon = $('<a href="#" class="icon-button delete" />'),
                         edit_icon = $('<a href="#" class="icon-button edit" />'),
                         body = $('<div class="historyItemBody"></div>'),
-                        li = $('<li class="sortable"></li>').attr("id", "track_" + track_id),
+                        li = $('<li class="sortable"></li>').attr("id", "track_" + track_id + "_li"),
                         div = $('<div class="historyItemContainer historyItem"></div>'),
                         editable = $('<div style="display:none"></div>').attr("id", "track_" + track_id + "_editable");
                     
                     edit_icon.bind("click", function() {
                         $("#track_" + track_id + "_editable").toggle();
                     });
-                    
                     del_icon.bind("click", function() {
-                        li.fadeOut('slow', function() { $(this).remove(); });
+                        $("#track_" + track_id + "_li").fadeOut('slow', function() { $("#track_" + track_id).remove(); });
                         view.remove_track(track);
                         view.update_options();
                     });
@@ -329,7 +324,7 @@ ${h.js( 'galaxy.base', 'galaxy.panels', "json2", "jquery", "jquery.event.drag", 
                     if (track.gen_options) {
                         editable.append(track.gen_options(track_id)).appendTo(body);
                     }
-                    div.append(title).append(body).appendTo(li)
+                    div.append(title).append(body).appendTo(li);
                     $("ul#sortable-ul").append(li);
                 }
             };

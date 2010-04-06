@@ -238,7 +238,7 @@ $.extend( Track.prototype, {
                 } else if (result === "no converter") {
                     track.container_div.addClass("error");
                     track.content_div.text(DATA_NOCONVERTER);
-                } else if ( (result.data && result.data.length === 0) || result === "no data") {
+                } else if (result.data && result.data.length === 0 || result.data === null) {
                     track.container_div.addClass("nodata");
                     track.content_div.text(DATA_NONE);
                 } else if (result === "pending") {
@@ -354,10 +354,10 @@ var LineTrack = function ( name, dataset_id, prefs ) {
     this.dataset_id = dataset_id;
     this.data_cache = new Cache(CACHED_DATA);
     this.tile_cache = new Cache(CACHED_TILES_LINE);
-    this.prefs = { 'min_value': undefined, 'max_value': undefined, 'mode': 'line' };
+    this.prefs = { 'min_value': undefined, 'max_value': undefined, 'mode': 'Line' };
     if (prefs.min_value !== undefined) { this.prefs.min_value = prefs.min_value; }
     if (prefs.max_value !== undefined) { this.prefs.max_value = prefs.max_value; }
-    if (prefs.max_value !== undefined) { this.prefs.mode = prefs.mode; }
+    if (prefs.mode !== undefined) { this.prefs.mode = prefs.mode; }
 };
 $.extend( LineTrack.prototype, TiledTrack.prototype, {
     init: function() {
@@ -431,12 +431,13 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
             canvas = $("<canvas class='tile'></canvas>"),
             key = resolution + "_" + tile_index;
         
-        if (!this.data_cache.get(key)) {
+        if (this.data_cache.get(key) === undefined) {
             this.get_data( resolution, tile_index );
             return;
         }
         
         var data = this.data_cache.get(key);
+        if (data === null) { return; }
         
         canvas.css( {
             position: "absolute",
@@ -467,7 +468,7 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
             var x = data[i][0] - tile_low;
             var y = data[i][1];
             
-            if ( this.prefs.mode == "intensity" ) {
+            if ( this.prefs.mode == "Intensity" ) {
                 // DRAW INTENSITY
                 if (y === null) {
                     continue;
@@ -480,7 +481,7 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
                 }
                 y = 255 - Math.floor( (y - min_value) / vertical_range * 255 );
                 ctx.fillStyle = "rgb(" +y+ "," +y+ "," +y+ ")";
-                ctx.fillRect(x, 0, delta_x_px, 30);
+                ctx.fillRect(x, 0, delta_x_px, this.height_px);
             }
             else {
                 // Missing data causes us to stop drawing
@@ -523,10 +524,11 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
             max_val = (this.prefs.max_value === undefined ? "" : this.prefs.max_value),
             max_input = $('<input></input>').attr("id", maxval).val(max_val),
             mode_label = $('<label></label>').attr("for", mode).text("Display mode:"),
-            mode_val = (this.prefs.mode === undefined ? "line" : this.prefs.mode),
-            mode_input = $('<select id="' +mode+ '"><option value="line" id="mode_line">Line</option><option value="intensity" id="mode_intensity">Intensity</option></select>');
-            $("#" + mode + " #mode_"+mode_val).attr('selected', 'selected');
-        
+            mode_val = (this.prefs.mode === undefined ? "Line" : this.prefs.mode),
+            mode_input = $('<select id="' +mode+ '"><option value="Line" id="mode_Line">Line</option><option value="Intensity" id="mode_Intensity">Intensity</option></select>');
+            
+            mode_input.children("#mode_"+mode_val).attr('selected', 'selected');
+            
         return container.append(min_label).append(min_input).append(max_label).append(max_input).append(mode_label).append(mode_input);
     }, update_options: function(track_id) {
         var min_value = $('#track_' + track_id + '_minval').val(),
@@ -567,7 +569,7 @@ var FeatureTrack = function ( name, dataset_id, prefs ) {
     this.tile_cache = new Cache(CACHED_TILES_FEATURE);
     this.data_cache = new Cache(20);
     
-    this.prefs = { 'block_color': 'black', 'label_color': 'black', 'show_counts': true };
+    this.prefs = { 'block_color': 'black', 'label_color': 'black', 'show_counts': false };
     if (prefs.block_color !== undefined) { this.prefs.block_color = prefs.block_color; }
     if (prefs.label_color !== undefined) { this.prefs.label_color = prefs.label_color; }
     if (prefs.show_counts !== undefined) { this.prefs.show_counts = prefs.show_counts; }
@@ -581,9 +583,6 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                                     high: track.view.max_high, dataset_id: track.dataset_id,
                                     chrom: track.view.chrom, resolution: this.view.resolution }, function (result) {
             track.data_cache.set(key, result);
-            // track.values = result;
-            // track.calc_slots();
-            // track.slots = track.zo_slots;
             track.draw();
         });
     },
@@ -691,7 +690,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
         var k = tile_low + '_' + tile_high;
         var data = this.data_cache.get(k);
         
-        if (!data) {
+        if (data === undefined) {
             this.data_queue[ [tile_low, tile_high] ] = true;
             this.get_data(tile_low, tile_high);
             return;
@@ -866,9 +865,10 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
             label_color_input = $('<input></input>').attr("id", label_color).attr("name", label_color).val(this.prefs.label_color),
             show_count = 'track_' + track_id + '_show_count',
             show_count_label = $('<label></label>').attr("for", show_count).text("Show summary counts"),
-            show_count_input = $('<input type="checkbox" style="float:left;"></input>').attr("id", show_count).attr("name", show_count).attr("checked", this.prefs.show_counts);
+            show_count_input = $('<input type="checkbox" style="float:left;"></input>').attr("id", show_count).attr("name", show_count).attr("checked", this.prefs.show_counts),
+            show_count_div = $('<div></div>').append(show_count_input).append(show_count_label);
             
-        return container.append(block_color_label).append(block_color_input).append(label_color_label).append(label_color_input).append(show_count_input).append(show_count_label);
+        return container.append(block_color_label).append(block_color_input).append(label_color_label).append(label_color_input).append(show_count_div);
     }, update_options: function(track_id) {
         var block_color = $('#track_' + track_id + '_block_color').val(),
             label_color = $('#track_' + track_id + '_label_color').val(),
