@@ -7,5 +7,5 @@
 </div>
 
 <pre>
-${ truncated_data | h }
+${ unicode( truncated_data, 'utf-8' ) | h }
 </pre>
