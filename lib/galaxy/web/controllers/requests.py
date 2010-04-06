@@ -924,6 +924,10 @@ class Requests( BaseController ):
             else:
                 request.deleted = True
                 trans.sa_session.add( request )
+                # delete all the samples belonging to this request
+                for s in request.samples:
+                    s.deleted = True
+                    trans.sa_session.add( s )
                 trans.sa_session.flush()
         if not len(delete_failed):
             message = '%i request(s) has been deleted.' % len(id_list)
@@ -951,6 +955,10 @@ class Requests( BaseController ):
                                                                   **kwd) )
             request.deleted = False
             trans.sa_session.add( request )
+            # undelete all the samples belonging to this request
+            for s in request.samples:
+                s.deleted = False
+                trans.sa_session.add( s )
             trans.sa_session.flush()
         return trans.response.send_redirect( web.url_for( controller='requests',
                                                           action='list',

@@ -385,6 +385,10 @@ class RequestsAdmin( BaseController ):
                                                                   **kwd) )
             request.deleted = True
             trans.sa_session.add( request )
+            # delete all the samples belonging to this request
+            for s in request.samples:
+                s.deleted = True
+                trans.sa_session.add( s )
             trans.sa_session.flush()
         message = '%i request(s) has been deleted.' % len(id_list)
         status = 'done'
@@ -407,6 +411,10 @@ class RequestsAdmin( BaseController ):
                                                                   **kwd) )
             request.deleted = False
             trans.sa_session.add( request )
+            # undelete all the samples belonging to this request
+            for s in request.samples:
+                s.deleted = False
+                trans.sa_session.add( s )
             trans.sa_session.flush()
         return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                           action='list',
