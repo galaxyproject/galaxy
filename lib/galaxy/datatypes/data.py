@@ -262,7 +262,7 @@ class Data( object ):
         #determine input parameter name and add to params
         input_name = 'input1'
         for key, value in converter.inputs.items():
-            if value.name in deps:
+            if (deps) and (value.name in deps):
                 params[value.name] = deps[value.name]
             elif value.type == 'data':
                 input_name = key
