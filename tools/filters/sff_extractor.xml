@@ -1,0 +1,22 @@
+<tool id="Sff_extractor" name="SFF converter" version="1.0.0">
+  <description></description>
+  <command interpreter="python">sff_extract.py -s $out_file1 -q $out_file2 -x $out_file3 $input</command>
+   <inputs>
+    <param format="sff" name="input" type="data" label="Extract from this dataset"/>
+  </inputs>
+  <outputs>
+    <data format="fasta" name="out_file1" />
+    <data format="qual" name="out_file2" />
+    <data format="xml" name="out_file3" />
+  </outputs>
+  <help>
+**What it does**
+
+This tool extracts data from the 454 Sequencer SFF format and creates three files containing the: 
+    Sequences (FASTA),
+    Qualities (QUAL) and 
+    Clippings (XML)
+  </help>
+</tool>
+
+
