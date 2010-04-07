@@ -35,8 +35,8 @@
     </param>
   </inputs>
   <outputs>
-    <data format="fastqsanger" name="out_file1"/>
-    <data format="fastqsanger" name="out_file2">
+    <data format="fastqcssanger" name="out_file1"/>
+    <data format="fastqcssanger" name="out_file2">
         <filter>is_run['paired'] == 'yes'</filter>
     </data>
   </outputs>

@@ -353,7 +353,7 @@ One can use the last column of this dataset to filter out (using Galaxy's **Filt
 
 **Example 3**: Report everything and print total number of differences
 
-If you set the **Print total number of differences?** to **Yes** the tool will print an additional column with the total number of reads where a devinat base is above the quality threshold cutoff. So, seetiing parametrs like this:
+If you set the **Print total number of differences?** to **Yes** the tool will print an additional column with the total number of reads where a devinat base is above the quality threshold. So, seetiing parametrs like this:
 
 .. image:: ../static/images/pileup_parser_help3.png
 
