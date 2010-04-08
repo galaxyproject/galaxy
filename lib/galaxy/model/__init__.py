@@ -1349,7 +1349,7 @@ class FormDefinition( object ):
                     value = False
                 else:
                     # Set other field types to the default value of the field
-                    value = field['default']
+                    value = field.get('default', '')
             # create the field widget
             field_widget = eval( field[ 'type' ] )( field_name )
             if field[ 'type' ] == 'TextField':
