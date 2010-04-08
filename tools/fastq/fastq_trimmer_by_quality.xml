@@ -1,0 +1,112 @@
+<tool id="fastq_quality_trimmer" name="FASTQ Quality Trimmer" version="1.0.0">
+  <description>by sliding window</description>
+  <command interpreter="python">fastq_trimmer_by_quality.py '$input_file' '$output_file' -f '${input_file.extension[len( 'fastq' ):]}' -s '$window_size' 
+    -t '$step_size' -e '$trim_ends' -a '$aggregation_action' -x '$exclude_count' -c '$score_comparison' -q '$quality_score' 
+    #if $keep_zero_length.value:
+        -k
+    #end if
+  </command>
+  <inputs>
+    <param name="input_file" type="data" format="fastqsanger,fastqcssanger" label="FASTQ File"/>
+    <param name="keep_zero_length" label="Keep reads with zero length" type="boolean" truevalue="keep_zero_length" falsevalue="exclude_zero_length" selected="False"/>
+    <param name="trim_ends" type="select" label="Trim ends">
+      <option value="53" selected="True">5' and 3'</option>
+      <option value="5">5' only</option>
+      <option value="3">3' only</option>
+    </param>
+    <param name="window_size" type="integer" value="1" label="Window size"/>
+    <param name="step_size" type="integer" value="1" label="Step Size" />
+    <param name="exclude_count" label="Maximum number of bases to exclude from the window during aggregation" value="0" type="integer" />
+    <param name="aggregation_action" type="select" label="Aggregate action for window">
+      <option value="min" selected="True">min score</option>
+      <option value="max">max score</option>
+      <option value="sum">sum of scores</option>
+      <option value="mean">mean of scores</option>
+    </param>
+    <param name="score_comparison" type="select" label="Trim until aggregate score is">
+      <sanitizer>
+        <valid initial="none">
+            <add value="&lt;&gt;=!"/> <!-- only allow lt, gt, e, le, ge, ne for this parameter; will be single-quote escaped on commandline -->
+        </valid>
+      </sanitizer>
+      <option value="&gt;">&gt;</option>
+      <option value="&gt;=" selected="true">&gt;=</option>
+      <option value="==">==</option>
+      <option value="!=">!=</option>
+      <option value="&lt;">&lt;</option>
+      <option value="&lt;=">&lt;=</option>
+    </param>
+    <param name="quality_score" label="Quality Score" value="0" type="float" />
+  </inputs>
+  <outputs>
+    <data name="output_file" format="input" />
+  </outputs>
+  <tests>
+    <test>
+      <!-- Trim until window size 1 >= 20;both ends -->
+      <param name="input_file" value="sanger_full_range_original_sanger.fastqsanger" ftype="fastqsanger" />
+      <param name="keep_zero_length" value="exclude_zero_length" />
+      <param name="trim_ends" value="53"/>
+      <param name="window_size" value="1"/>
+      <param name="step_size" value="1"/>
+      <param name="exclude_count" value="0"/>
+      <param name="aggregation_action" value="min"/>
+      <param name="score_comparison" value="&gt;="/>
+      <param name="quality_score" value="20"/>
+      <output name="output_file" file="sanger_full_range_quality_trimmed_out_1.fastqsanger" />
+    </test>
+    <test>
+      <!-- Trim until window size 1 >= 20; 5' end only -->
+      <param name="input_file" value="sanger_full_range_original_sanger.fastqsanger" ftype="fastqsanger" />
+      <param name="keep_zero_length" value="exclude_zero_length" />
+      <param name="trim_ends" value="5"/>
+      <param name="window_size" value="1"/>
+      <param name="step_size" value="1"/>
+      <param name="exclude_count" value="0"/>
+      <param name="aggregation_action" value="min"/>
+      <param name="score_comparison" value="&gt;="/>
+      <param name="quality_score" value="20"/>
+      <output name="output_file" file="sanger_full_range_quality_trimmed_out_2.fastqsanger" />
+    </test>
+    <test>
+      <!-- Trim until window size 1 >= 20; 3' end only -->
+      <param name="input_file" value="sanger_full_range_original_sanger.fastqsanger" ftype="fastqsanger" />
+      <param name="keep_zero_length" value="exclude_zero_length" />
+      <param name="trim_ends" value="3"/>
+      <param name="window_size" value="1"/>
+      <param name="step_size" value="1"/>
+      <param name="exclude_count" value="0"/>
+      <param name="aggregation_action" value="min"/>
+      <param name="score_comparison" value="&gt;="/>
+      <param name="quality_score" value="20"/>
+      <output name="output_file" file="sanger_full_range_quality_trimmed_out_3.fastqsanger" />
+    </test>
+    <test>
+      <!-- Trim until window size 2 >= 1;both ends, 1 deviant score -->
+      <param name="input_file" value="sanger_full_range_original_sanger.fastqsanger" ftype="fastqsanger" />
+      <param name="keep_zero_length" value="exclude_zero_length" />
+      <param name="trim_ends" value="53"/>
+      <param name="window_size" value="2"/>
+      <param name="step_size" value="1"/>
+      <param name="exclude_count" value="1"/>
+      <param name="aggregation_action" value="min"/>
+      <param name="score_comparison" value="&gt;="/>
+      <param name="quality_score" value="1"/>
+      <output name="output_file" file="sanger_full_range_original_sanger.fastqsanger" />
+    </test>
+  </tests>
+  <help>
+This tool allows you to trim the ends of reads based upon the aggregate value of quality scores found within a sliding window; a sliding window of size 1 is equivalent to 'simple' trimming of the ends. 
+
+The user specifies the aggregating action (min, max, sum, mean) to perform on the quality score values found within the sliding window to be used with the user defined comparison operation and comparison value.
+
+The user can provide a maximum count of bases that can be excluded from the aggregation within the window. When set, this tool will first check the aggregation of the entire window, then after removing 1 value, then after removing 2 values, up to the number declared. Setting this value to be equal to or greater than the window size will cause no trimming to occur.
+
+-----
+
+.. class:: warningmark
+
+Trimming a color space read will cause any adapter base to be lost.
+
+  </help>
+</tool>
