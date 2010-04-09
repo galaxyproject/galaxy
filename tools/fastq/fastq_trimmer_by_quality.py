@@ -55,6 +55,12 @@ def main():
     if len ( args ) != 2:
         parser.error( "Need to specify an input file and an output file" )
     
+    if options.window_size < 1:
+        parser.error( 'You must specify a strictly positive window size' )
+    
+    if options.window_step < 1:
+        parser.error( 'You must specify a strictly positive step size' )
+    
     #determine an exhaustive list of window indexes that can be excluded from aggregation
     exclude_window_indexes = []
     last_exclude_indexes = []
@@ -76,7 +82,6 @@ def main():
     
     out = fastqWriter( open( args[1], 'wb' ), format = options.format )
     action = ACTION_METHODS[ options.aggregation_action ]
-    window_step = abs( options.window_step )
     
     num_reads = None
     num_reads_excluded = 0
@@ -93,7 +98,7 @@ def main():
                     if exclude_and_compare( action, quality_list[ lwindow_position:lwindow_position + options.window_size ], options.score_comparison, options.quality_score, exclude_window_indexes ):
                         fastq_read = fastq_read.slice( lwindow_position, None )
                         break
-                    lwindow_position += window_step
+                    lwindow_position += options.window_step
             else:
                 rwindow_position = len( quality_list ) #right position of window
                 while True:
@@ -105,7 +110,7 @@ def main():
                     if exclude_and_compare( action, quality_list[ lwindow_position:rwindow_position ], options.score_comparison, options.quality_score, exclude_window_indexes ):
                         fastq_read = fastq_read.slice( None, rwindow_position )
                         break
-                    rwindow_position -= window_step
+                    rwindow_position -= options.window_step
         if options.keep_zero_length or len( fastq_read ):
             out.write( fastq_read )
         else:

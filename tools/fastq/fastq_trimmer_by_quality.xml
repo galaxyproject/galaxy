@@ -94,6 +94,32 @@
       <param name="quality_score" value="1"/>
       <output name="output_file" file="sanger_full_range_original_sanger.fastqsanger" />
     </test>
+    <test>
+      <!-- Trim entire sequences; keep empty reads -->
+      <param name="input_file" value="sanger_full_range_original_sanger.fastqsanger" ftype="fastqsanger" />
+      <param name="keep_zero_length" value="true" />
+      <param name="trim_ends" value="53"/>
+      <param name="window_size" value="1"/>
+      <param name="step_size" value="1"/>
+      <param name="exclude_count" value="0"/>
+      <param name="aggregation_action" value="min"/>
+      <param name="score_comparison" value="&gt;="/>
+      <param name="quality_score" value="999"/>
+      <output name="output_file" file="sanger_full_range_empty_reads.fastqsanger" />
+    </test>
+    <test>
+      <!-- Trim entire sequences; discard empty reads -->
+      <param name="input_file" value="sanger_full_range_original_sanger.fastqsanger" ftype="fastqsanger" />
+      <param name="keep_zero_length"/>
+      <param name="trim_ends" value="53"/>
+      <param name="window_size" value="1"/>
+      <param name="step_size" value="1"/>
+      <param name="exclude_count" value="0"/>
+      <param name="aggregation_action" value="min"/>
+      <param name="score_comparison" value="&gt;="/>
+      <param name="quality_score" value="999"/>
+      <output name="output_file" file="empty_file.dat" />
+    </test>
   </tests>
   <help>
 This tool allows you to trim the ends of reads based upon the aggregate value of quality scores found within a sliding window; a sliding window of size 1 is equivalent to 'simple' trimming of the ends. 
