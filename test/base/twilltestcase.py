@@ -1000,24 +1000,21 @@ class TwillTestCase( unittest.TestCase ):
                 break
         # To help with debugging a tool, print out the form controls when the test fails
         print "form '%s' contains the following controls ( note the values )" % f.name
-        control_names = []
-        hidden_control_names = [] # cannot change these, so ignore or many complex page tool tests will fail
+        controls = {}
         hc_prefix = '<HiddenControl('
         for i, control in enumerate( f.controls ):
            print "control %d: %s" % ( i, str( control ) )
-           if hc_prefix in str(control):
-                hidden_control_names.append(control.name) # cannot do much with these
-           else: 
+           if not hc_prefix in str( control ):
               try:
                 #check if a repeat element needs to be added
                 if control.name not in kwd and control.name.endswith( '_add' ):
                     #control name doesn't exist, could be repeat
                     repeat_startswith = control.name[0:-4]
-                    if repeat_startswith and not [ c_name for c_name in control_names if c_name.startswith( repeat_startswith ) ] and [ c_name for c_name in kwd.keys() if c_name.startswith( repeat_startswith ) ]:
+                    if repeat_startswith and not [ c_name for c_name in controls.keys() if c_name.startswith( repeat_startswith ) ] and [ c_name for c_name in kwd.keys() if c_name.startswith( repeat_startswith ) ]:
                         tc.submit( control.name )
                         return self.submit_form( form_no=form_no, button=button, **kwd )
                 # Check for refresh_on_change attribute, submit a change if required
-                if 'refresh_on_change' in control.attrs.keys():
+                if hasattr( control, 'attrs' ) and 'refresh_on_change' in control.attrs.keys():
                     changed = False
                     item_labels = [ item.attrs[ 'label' ] for item in control.get_items() if item.selected ] #For DataToolParameter, control.value is the HDA id, but kwd contains the filename.  This loop gets the filename/label for the selected values.
                     for value in kwd[ control.name ]:
@@ -1040,19 +1037,14 @@ class TwillTestCase( unittest.TestCase ):
               except Exception, e:
                 log.debug( "In submit_form, continuing, but caught exception: %s" % str( e ) )
                 continue
-              control_names.append( control.name )
+              controls[ control.name ] = control
         # No refresh_on_change attribute found in current form, so process as usual
         for control_name, control_value in kwd.items():
-            if control_name in hidden_control_names:
+            if control_name not in controls:
                 continue # these cannot be handled safely - cause the test to barf out
             if not isinstance( control_value, list ):
                 control_value = [ control_value ]
-            try:
-                control = f.find_control( name=control_name )
-            except:
-                # This assumes we always want the first control of the given name,
-                # which may not be ideal...
-                control = f.find_control( name=control_name, nr=0 )
+            control = controls[ control_name ]
             control.clear()
             if control.is_of_kind( "text" ):
                 tc.fv( f.name, control.name, ",".join( control_value ) )
