@@ -15,129 +15,14 @@
 <meta http-equiv="Pragma" content="no-cache">
 
 ${h.css( "base", "history", "autocomplete_tagging" )}
-${h.js( "jquery", "jquery.tipsy", "galaxy.base", "json2", "jquery.jstore-all", "jquery.autocomplete", "autocomplete_tagging" )}
+${h.js( "jquery", "jquery.tipsy", "galaxy.base", "json2", "class", "jquery.jstore", "jquery.autocomplete", "autocomplete_tagging" )}
 
 <script type="text/javascript">
+
 $(function() {
-    // Load jStore for local storage
-    $.extend(jQuery.jStore.defaults, { project: 'galaxy', flash: '${h.url_for("/static/jStore.Flash.html")}' })
-    $.jStore.load(); // Auto-select best storage
-
-    $.jStore.ready(function(engine) {
-        engine.ready(function() {
-            // Init stuff that requires the local storage to be running
-            initShowHide();
-            setupHistoryItem( $("div.historyItemWrapper") ); 
-        });
-    });
-    
-    // Generate 'collapse all' link
-    $("#top-links > a.toggle").click( function() {
-        $( "div.historyItemBody:visible" ).each( function() {
-            if ( $.browser.mozilla ) {
-                $(this).find( "pre.peek" ).css( "overflow", "hidden" );
-            }
-            $(this).slideUp( "fast" );
-        });
-        $.jStore.remove("history_expand_state");
-    }).show();
-    
-    // History rename functionality.
-    async_save_text("history-name-container", "history-name", "${h.url_for( controller="/history", action="rename_async", id=trans.security.encode_id(history.id) )}", "new_name", 18);
-    
-    // History tagging functionality.
-    var historyTagArea = $('#history-tag-area');
-    $('#history-tag').click( function() 
-    {
-        if ( historyTagArea.is( ":hidden" ) ) {
-            historyTagArea.slideDown("fast");
-        } else {
-            historyTagArea.slideUp("fast");
-        }
-        return false;
-    });
-    
-    // History annotation functionality.
-    var historyAnnotationArea = $('#history-annotation-area');
-    $('#history-annotate').click( function() {
-        if ( historyAnnotationArea.is( ":hidden" ) ) {
-            historyAnnotationArea.slideDown("fast");
-        } else {
-            historyAnnotationArea.slideUp("fast");
-        }
-        return false;
-    });
-    async_save_text("history-annotation-container", "history-annotation", "${h.url_for( controller="/history", action="annotate_async", id=trans.security.encode_id(history.id) )}", "new_annotation", 18, true, 4);
-    
-    // Updater
-    updater({
-        <% updateable = [data for data in reversed( datasets ) if data.visible and data.state not in [ "deleted", "empty", "error", "ok" ]] %>
-        ${ ",".join( map(lambda data: "\"%s\" : \"%s\"" % (data.id, data.state), updateable) ) }
-    });
-    
-    // Navigate to a dataset.
-    %if hda_id:
-        self.location = "#${hda_id}";
-    %endif
-});
-// Functionized so AJAX'd datasets can call them
-function initShowHide() {
-
-    // Load saved state and show as necessary
-    try {
-        var stored = $.jStore.store("history_expand_state");
-        if (stored) {
-            var st = JSON.parse(stored);
-            for (var id in st) {
-                $("#" + id + " div.historyItemBody" ).show();
-            }
-        }
-    } catch(err) {
-        // Something was wrong with values in storage, so clear storage
-        $.jStore.remove("history_expand_state");
-    }
-
-    // If Mozilla, hide scrollbars in hidden items since they cause animation bugs
-    if ( $.browser.mozilla ) {
-        $( "div.historyItemBody" ).each( function() {
-            if ( ! $(this).is( ":visible" ) ) $(this).find( "pre.peek" ).css( "overflow", "hidden" );
-        })
-    }
-}
-// (a) Add show/hide link and delete link to a history item;
-// (b) handle tagging and annotation using jquery.
-function setupHistoryItem( query ) {
-    query.each( function() {
-        var id = this.id;
-        var body = $(this).children( "div.historyItemBody" );
-        var peek = body.find( "pre.peek" )
-        $(this).children( ".historyItemTitleBar" ).find( ".historyItemTitle" ).wrap( "<a href='#'></a>" ).click( function() {
-            if ( body.is(":visible") ) {
-                // Hiding stuff here
-                if ( $.browser.mozilla ) { peek.css( "overflow", "hidden" ) }
-                body.slideUp( "fast" );
-                
-                // Save setting
-                var stored = $.jStore.store("history_expand_state")
-                var prefs = stored ? JSON.parse(stored) : null
-                if (prefs) {
-                    delete prefs[id];
-                    $.jStore.store("history_expand_state", JSON.stringify(prefs));
-                }
-            } else {
-                // Showing stuff here
-                body.slideDown( "fast", function() { 
-                    if ( $.browser.mozilla ) { peek.css( "overflow", "auto" ); } 
-                });
-                
-                // Save setting
-                var stored = $.jStore.store("history_expand_state")
-                var prefs = stored ? JSON.parse(stored) : new Object;
-                prefs[id] = true;
-                $.jStore.store("history_expand_state", JSON.stringify(prefs));
-            }
-            return false;
-        });
+    var historywrapper = $("div.historyItemWrapper");
+    init_history_items(historywrapper);
+    historywrapper.each( function() {
         // Delete link
         $(this).find( "div.historyItemButtons > .delete" ).each( function() {
             var data_id = this.id.split( "-" )[1];
@@ -181,22 +66,19 @@ function setupHistoryItem( query ) {
                 return false;
             });
         });
-        
+
         // Tag handling.
-        $(this).find( "a.icon-button.tags").each( function() 
-        {
+        $(this).find( "a.icon-button.tags").each( function() {
             // Use links parameters but custom URL as ajax URL.
             $(this).click( function() {
                 // Get tag area, tag element.
                 var history_item = $(this).parents(".historyItem");
                 var tag_area = history_item.find(".tag-area");
                 var tag_elt = history_item.find(".tag-elt");
-                
+
                 // Show or hide tag area; if showing tag area and it's empty, fill it.
-                if ( tag_area.is( ":hidden" ) ) 
-                {
-                    if (tag_elt.html() == "" )
-                    {
+                if ( tag_area.is( ":hidden" ) ) {
+                    if (!tag_elt.html()) {
                         // Need to fill tag element.
                         var href_parms = $(this).attr("href").split("?")[1];
                         var ajax_url = "${h.url_for( controller='tag', action='get_tagging_elt_async' )}?" + href_parms;
@@ -209,37 +91,30 @@ function setupHistoryItem( query ) {
                                 tag_area.slideDown("fast");
                             }
                         });
-                    }
-                    else
-                    {
+                    } else {
                         // Tag element is filled; show.
                         tag_area.slideDown("fast");
                     }
-                } 
-                else 
-                {
+                } else {
                     // Hide.
                     tag_area.slideUp("fast");
                 }
                 return false;        
             });
         });
-        
+
         // Annotation handling.
-        $(this).find( "a.icon-button.annotate").each( function() 
-        {
+        $(this).find( "a.icon-button.annotate").each( function() {
             // Use links parameters but custom URL as ajax URL.
             $(this).click( function() {
                 // Get tag area, tag element.
                 var history_item = $(this).parents(".historyItem");
                 var annotation_area = history_item.find(".annotation-area");
                 var annotation_elt = history_item.find(".annotation-elt");
-                
+
                 // Show or hide annotation area; if showing annotation area and it's empty, fill it.
-                if ( annotation_area.is( ":hidden" ) ) 
-                {
-                    if (annotation_elt.html() == "" )
-                    {
+                if ( annotation_area.is( ":hidden" ) ) {
+                    if (!annotation_elt.html()) {
                         // Need to fill annotation element.
                         var href_parms = $(this).attr("href").split("?")[1];
                         var ajax_url = "${h.url_for( controller='dataset', action='get_annotation_async' )}?" + href_parms;
@@ -247,8 +122,9 @@ function setupHistoryItem( query ) {
                             url: ajax_url,
                             error: function() { alert( "Annotations failed" ) },
                             success: function(annotation) {
-                                if (annotation == "")
+                                if (annotation == "") {
                                     annotation = "<i>Describe or add notes to dataset</i>";
+                                }
                                 annotation_elt.html(annotation);
                                 annotation_area.find(".tooltip").tipsy( { gravity: 's' } );
                                 async_save_text(
@@ -258,24 +134,56 @@ function setupHistoryItem( query ) {
                                 annotation_area.slideDown("fast");
                             }
                         });
-                    }
-                    else
-                    {
+                    } else {
                         // Annotation element is filled; show.
                         annotation_area.slideDown("fast");
                     }
-                } 
-                else 
-                {
+                } else {
                     // Hide.
                     annotation_area.slideUp("fast");
                 }
                 return false;        
             });
         });
-        
     });
-};
+    
+    // History rename functionality.
+    async_save_text("history-name-container", "history-name", "${h.url_for( controller="/history", action="rename_async", id=trans.security.encode_id(history.id) )}", "new_name", 18);
+    
+    // History tagging functionality.
+    var historyTagArea = $('#history-tag-area');
+    $('#history-tag').click( function() {
+        if ( historyTagArea.is( ":hidden" ) ) {
+            historyTagArea.slideDown("fast");
+        } else {
+            historyTagArea.slideUp("fast");
+        }
+        return false;
+    });
+    
+    // History annotation functionality.
+    var historyAnnotationArea = $('#history-annotation-area');
+    $('#history-annotate').click( function() {
+        if ( historyAnnotationArea.is( ":hidden" ) ) {
+            historyAnnotationArea.slideDown("fast");
+        } else {
+            historyAnnotationArea.slideUp("fast");
+        }
+        return false;
+    });
+    async_save_text("history-annotation-container", "history-annotation", "${h.url_for( controller="/history", action="annotate_async", id=trans.security.encode_id(history.id) )}", "new_annotation", 18, true, 4);
+    
+    // Updater
+    updater(
+        ${ h.to_json_string( dict([(data.id, data.state) for data in reversed( datasets ) if data.visible and data.state not in [ "deleted", "empty", "error", "ok" ]]) ) }
+    );
+    
+    // Navigate to a dataset.
+    %if hda_id:
+        self.location = "#${hda_id}";
+    %endif
+});
+
 // Looks for changes in dataset state using an async request. Keeps
 // calling itself (via setTimeout) until all datasets are in a terminal
 // state.
@@ -339,18 +247,6 @@ var updater_callback = function ( tracked_datasets ) {
     });
 };
 
-    //TODO: this function is a duplicate of array_length defined in galaxy.base.js ; not sure why it needs to be redefined here (due to streaming?).
-    // Returns the number of keys (elements) in an array/dictionary.
-    var array_length = function(an_array)
-    {
-        if (an_array.length)
-            return an_array.length;
-
-        var count = 0;
-        for (element in an_array)   
-            count++;
-        return count;
-    };
 </script>
 
 <style>

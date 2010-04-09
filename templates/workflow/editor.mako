@@ -31,9 +31,10 @@
             "jquery.event.drag", 
             "jquery.event.drop", 
             "jquery.event.hover",
-            "jquery.form", 
-            "jquery.jstore-all", 
+            "jquery.form",
+            "class",
             "json2",
+            "jquery.jstore",
             "galaxy.base",
             "galaxy.workflow_editor.canvas",
 			"jquery.autocomplete",
@@ -62,8 +63,7 @@
         }
         
         // Load jStore for local storage
-        $.extend(jQuery.jStore.defaults, { project: 'galaxy', flash: '${h.url_for("/static/jStore.Flash.html")}' })
-        $.jStore.load(); // Auto-select best storage
+        $.jStore.init("galaxy"); // Auto-select best storage
         
         // Canvas overview management
         canvas_manager = new CanvasManager( $("#canvas-viewport"), $("#overview") );
@@ -151,24 +151,22 @@
             $('#right-content').hide();  
         };
         
-        $.jStore.ready(function(engine) {
-            engine.ready(function() {
-                // On load, set the size to the pref stored in local storage if it exists
-                overview_size = $.jStore.store("overview-size");
-                if (overview_size) {
-                    $("#overview-border").css( {
-                        width: overview_size,
-                        height: overview_size
-                    });
-                }
-                
-                // Show viewport on load unless pref says it's off
-                if ($.jStore.store("overview-off")) {
-                    hide_overview();
-                } else {
-                    show_overview();
-                }
-            });
+        $.jStore.engineReady(function() {
+            // On load, set the size to the pref stored in local storage if it exists
+            overview_size = $.jStore.store("overview-size");
+            if (overview_size !== undefined) {
+                $("#overview-border").css( {
+                    width: overview_size,
+                    height: overview_size
+                });
+            }
+            
+            // Show viewport on load unless pref says it's off
+            if ($.jStore.store("overview-off")) {
+                hide_overview();
+            } else {
+                show_overview();
+            }
         });
         
         // Stores the size of the overview into local storage when it's resized

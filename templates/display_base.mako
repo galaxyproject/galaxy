@@ -32,29 +32,25 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js( "jquery", "jquery.tipsy", "galaxy.base", "json2", "jquery.autocomplete", "jquery.jstore-all", "autocomplete_tagging" )}
+    ${h.js( "jquery", "jquery.tipsy", "galaxy.base", "json2", "class", "jquery.jstore", "jquery.autocomplete", "autocomplete_tagging" )}
 
     <script type="text/javascript">
-        //
+        
         // Handle click on community tag.
-        //
-        function community_tag_click(tag_name, tag_value) 
-        {
+        function community_tag_click(tag_name, tag_value) {
             <% controller_name = get_controller_name( item ) %>
             var href = '${h.url_for ( controller='/' + controller_name , action='list_published')}';
             href = href + "?f-tags=" + tag_name;
-            if (tag_value != undefined && tag_value != "")
+            if (tag_value != undefined && tag_value != "") {
                 href = href + ":" + tag_value;
+            }
             self.location = href;
         }
         
-        $(document).ready( function() 
-        {
+        $(function() {
             // Set links to Galaxy screencasts to open in overlay.
-            $(this).find("a[href^='http://screencast.g2.bx.psu.edu/']").each( function() 
-            {
-                $(this).click( function() 
-                {
+            $(this).find("a[href^='http://screencast.g2.bx.psu.edu/']").each( function() {
+                $(this).click( function() {
                     var href = $(this).attr('href');
                     show_in_overlay(
                         {
@@ -67,7 +63,8 @@
                     return false;
                 });
             });
-        
+            // Init history boxes
+            init_history_items( $("div.historyItemWrapper") );
         });    
     </script>
 </%def>
@@ -76,14 +73,12 @@
     ${parent.stylesheets()}
     ${h.css( "autocomplete_tagging", "embed_item" )}
     <style type="text/css">
-        .page-body
-        {
+        .page-body {
             padding: 10px;
             ## float: left;
             ## width: 65%;
         }
-        .page-meta
-        {
+        .page-meta {
             float: right;
             width: 27%;
             padding: 0.5em;

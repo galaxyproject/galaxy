@@ -275,6 +275,93 @@ function async_save_text(click_to_edit_elt, text_elt_id, save_url, text_parm_nam
     });
 }
 
+function init_history_items(historywrapper, noinit) {
+
+    var action = function() {
+        // Load saved state and show as necessary
+        try {
+            var stored = $.jStore.store("history_expand_state");
+            if (stored) {
+                for (var id in stored) {
+                    $("#" + id + " div.historyItemBody" ).show();
+                }
+            }
+        } catch(err) {
+            // Something was wrong with values in storage, so clear storage
+            $.jStore.remove("history_expand_state");
+        }
+
+        // If Mozilla, hide scrollbars in hidden items since they cause animation bugs
+        if ( $.browser.mozilla ) {
+            $( "div.historyItemBody" ).each( function() {
+                if ( ! $(this).is( ":visible" ) ) $(this).find( "pre.peek" ).css( "overflow", "hidden" );
+            })
+        }
+        
+        historywrapper.each( function() {
+            var id = this.id;
+            var body = $(this).children( "div.historyItemBody" );
+            var peek = body.find( "pre.peek" )
+            $(this).children( ".historyItemTitleBar" ).find( ".historyItemTitle" ).wrap( "<a href='#'></a>" ).click( function() {
+                if ( body.is(":visible") ) {
+                    // Hiding stuff here
+                    if ( $.browser.mozilla ) { peek.css( "overflow", "hidden" ) }
+                    body.slideUp( "fast" );
+                    
+                    if (!noinit) { // Ignore embedded item actions
+                        // Save setting
+                        var prefs = $.jStore.store("history_expand_state");
+                        if (prefs) {
+                            delete prefs[id];
+                            $.jStore.store("history_expand_state", prefs);
+                        }
+                    }
+                } else {
+                    // Showing stuff here
+                    body.slideDown( "fast", function() { 
+                        if ( $.browser.mozilla ) { peek.css( "overflow", "auto" ); } 
+                    });
+                    
+                    if (!noinit) {
+                        // Save setting
+                        var prefs = $.jStore.store("history_expand_state");
+                        if (prefs === undefined) { prefs = {}; }
+                        prefs[id] = true;
+                        $.jStore.store("history_expand_state", prefs);
+                    }
+                }
+                return false;
+            });
+        });
+        
+        // Generate 'collapse all' link
+        $("#top-links > a.toggle").click( function() {
+            var prefs = $.jStore.store("history_expand_state");
+            if (prefs === undefined) { prefs = {}; }
+            $( "div.historyItemBody:visible" ).each( function() {
+                if ( $.browser.mozilla ) {
+                    $(this).find( "pre.peek" ).css( "overflow", "hidden" );
+                }
+                $(this).slideUp( "fast" );
+                if (prefs) {
+                    delete prefs[$(this).parent().attr("id")];
+                }
+            });
+            $.jStore.store("history_expand_state", prefs);
+        }).show();
+    }
+    
+    if (noinit) {
+        action();
+    } else {
+        // Load jStore for local storage
+        $.jStore.init("galaxy"); // Auto-select best storage
+        $.jStore.engineReady(function() {
+            action();
+        });
+    }
+}
+
 $(document).ready( function() {
     // Links with confirmation
     $( "a[confirm]" ).click( function() {
