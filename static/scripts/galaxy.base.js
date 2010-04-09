@@ -120,10 +120,9 @@ function array_length(an_array) {
 }
 
 // Replace any select box with 20+ options with a text input box + autocomplete.
-// TODO: make this work _well_ on pages with multiple forms; currently, value is reverted when any form is submitted -
-// value should be reverted when only the form that element is in is submitted.
+// TODO: make work with dynamic tool inputs and then can replace all big selects.
 function replace_big_select_inputs() {
-    $('select').each( function() {
+    $('select[name=dbkey]').each( function() {
         var select_elt = $(this);
         // Skip if there are < 20 options.
         if (select_elt.find('option').length < 20)
