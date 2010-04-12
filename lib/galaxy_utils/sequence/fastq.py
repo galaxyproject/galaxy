@@ -60,7 +60,7 @@ class fastqSequencingRead( SequencingRead ):
         else:
             quality = self.quality.rstrip() #decimal scores should have a trailing space
             if quality:
-                return map( int, quality.split( ' ' ) )
+                return [ int( val ) for val in quality.split( ' ' ) if val.strip() ]
             else:
                 return []
     def convert_read_to_format( self, format, force_quality_encoding = None ):
