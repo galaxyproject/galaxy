@@ -181,8 +181,8 @@
       --maxAlignAttempt="None"
       --forwardAlign="None"
       --reverseAlign="None"
-     #end if    
-    #end if    
+     #end if
+    #end if
   </command>
   <inputs>
     <conditional name="refGenomeSource">

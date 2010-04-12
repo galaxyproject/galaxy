@@ -75,18 +75,23 @@ def __main__():
             os.symlink( options.ref_file, fai_index_file_base )
             fai_index_file_path = '%s.fai' % fai_index_file_base
             command = 'samtools faidx %s' % fai_index_file_base
-            proc = subprocess.Popen( args=command, shell=True, cwd=tmp_dir, stderr=subprocess.PIPE )
+            tmp = tempfile.NamedTemporaryFile( dir=tmp_dir ).name
+            tmp_stderr = open( tmp, 'wb' )
+            proc = subprocess.Popen( args=command, shell=True, cwd=tmp_dir, stderr=tmp_stderr.fileno() )
             returncode = proc.wait()
+            tmp_stderr.close()
             # get stderr, allowing for case where it's very large
+            tmp_stderr = open( tmp, 'rb' )
             stderr = ''
             buffsize = 1048576
             try:
                 while True:
-                    stderr += proc.stderr.read( buffsize )
+                    stderr += tmp_stderr.read( buffsize )
                     if not stderr or len( stderr ) % buffsize != 0:
                         break
             except OverflowError:
                 pass
+            tmp_stderr.close()
             if returncode != 0:
                 raise Exception, stderr 
             if len( open( fai_index_file_path ).read().strip() ) == 0:
@@ -104,18 +109,23 @@ def __main__():
         # IMPORTANT NOTE: for some reason the samtools view command gzips the resulting bam file without warning,
         # and the docs do not currently state that this occurs ( very bad ).
         command = 'samtools view -bt %s -o %s %s' % ( fai_index_file_path, tmp_aligns_file_name, options.input1 )
-        proc = subprocess.Popen( args=command, shell=True, cwd=tmp_dir, stderr=subprocess.PIPE )
+        tmp = tempfile.NamedTemporaryFile( dir=tmp_dir ).name
+        tmp_stderr = open( tmp, 'wb' )
+        proc = subprocess.Popen( args=command, shell=True, cwd=tmp_dir, stderr=tmp_stderr.fileno() )
         returncode = proc.wait()
+        tmp_stderr.close()
         # get stderr, allowing for case where it's very large
+        tmp_stderr = open( tmp, 'rb' )
         stderr = ''
         buffsize = 1048576
         try:
             while True:
-                stderr += proc.stderr.read( buffsize )
+                stderr += tmp_stderr.read( buffsize )
                 if not stderr or len( stderr ) % buffsize != 0:
                     break
         except OverflowError:
             pass
+        tmp_stderr.close()
         if returncode != 0:
             raise Exception, stderr
         if len( open( tmp_aligns_file_name ).read() ) == 0:
@@ -133,18 +143,23 @@ def __main__():
         tmp_sorted_aligns_file_name = tmp_sorted_aligns_file.name
         tmp_sorted_aligns_file.close()
         command = 'samtools sort %s %s' % ( tmp_aligns_file_name, tmp_sorted_aligns_file_name )
-        proc = subprocess.Popen( args=command, shell=True, cwd=tmp_dir, stderr=subprocess.PIPE )
+        tmp = tempfile.NamedTemporaryFile( dir=tmp_dir ).name
+        tmp_stderr = open( tmp, 'wb' )
+        proc = subprocess.Popen( args=command, shell=True, cwd=tmp_dir, stderr=tmp_stderr.fileno() )
         returncode = proc.wait()
+        tmp_stderr.close()
         # get stderr, allowing for case where it's very large
+        tmp_stderr = open( tmp, 'rb' )
         stderr = ''
         buffsize = 1048576
         try:
             while True:
-                stderr += proc.stderr.read( buffsize )
+                stderr += tmp_stderr.read( buffsize )
                 if not stderr or len( stderr ) % buffsize != 0:
                     break
         except OverflowError:
             pass
+        tmp_stderr.close()
         if returncode != 0:
             raise Exception, stderr
     except Exception, e:

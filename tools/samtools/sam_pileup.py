@@ -88,36 +88,46 @@ def __main__():
             elif options.ref == 'history':
                 os.symlink( options.ownFile, tmpf1_name )
                 cmdIndex = 'samtools faidx %s' % ( tmpf1_name )
-                proc = subprocess.Popen( args=cmdIndex, shell=True, cwd=tmpDir, stderr=subprocess.PIPE )
+                tmp = tempfile.NamedTemporaryFile( dir=tmpDir ).name
+                tmp_stderr = open( tmp, 'wb' )
+                proc = subprocess.Popen( args=cmdIndex, shell=True, cwd=tmpDir, stderr=tmp_stderr.fileno() )
                 returncode = proc.wait()
+                tmp_stderr.close()
                 # get stderr, allowing for case where it's very large
+                tmp_stderr = open( tmp, 'rb' )
                 stderr = ''
                 buffsize = 1048576
                 try:
                     while True:
-                        stderr += proc.stderr.read( buffsize )
+                        stderr += tmp_stderr.read( buffsize )
                         if not stderr or len( stderr ) % buffsize != 0:
                             break
                 except OverflowError:
                     pass
+                tmp_stderr.close()
                 #did index succeed?
                 if returncode != 0:
                     raise Exception, 'Error creating index file\n' + stderr
                 cmd = cmd % ( opts, tmpf1_name, tmpf0bam_name, options.output1 )
             #perform pileup command
-            proc = subprocess.Popen( args=cmd, shell=True, cwd=tmpDir, stderr=subprocess.PIPE )
+            tmp = tempfile.NamedTemporaryFile( dir=tmpDir ).name
+            tmp_stderr = open( tmp, 'wb' )
+            proc = subprocess.Popen( args=cmd, shell=True, cwd=tmpDir, stderr=tmp_stderr.fileno() )
             returncode = proc.wait()
+            tmp_stderr.close()
             #did it succeed?
             # get stderr, allowing for case where it's very large
+            tmp_stderr = open( tmp, 'rb' )
             stderr = ''
             buffsize = 1048576
             try:
                 while True:
-                    stderr += proc.stderr.read( buffsize )
+                    stderr += tmp_stderr.read( buffsize )
                     if not stderr or len( stderr ) % buffsize != 0:
                         break
             except OverflowError:
                 pass
+            tmp_stderr.close()
             if returncode != 0:
                 raise Exception, stderr
         except Exception, e:

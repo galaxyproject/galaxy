@@ -91,18 +91,23 @@ def __main__():
         indexing_cmds = '-a %s' % indexingAlg
         cmd1 = 'bwa index %s %s' % ( indexing_cmds, ref_file_name )
         try:
-            proc = subprocess.Popen( args=cmd1, shell=True, cwd=tmp_index_dir, stderr=subprocess.PIPE )
+            tmp = tempfile.NamedTemporaryFile( dir=tmp_index_dir ).name
+            tmp_stderr = open( tmp, 'wb' )
+            proc = subprocess.Popen( args=cmd1, shell=True, cwd=tmp_index_dir, stderr=tmp_stderr.fileno() )
             returncode = proc.wait()
+            tmp_stderr.close()
             # get stderr, allowing for case where it's very large
+            tmp_stderr = open( tmp, 'rb' )
             stderr = ''
             buffsize = 1048576
             try:
                 while True:
-                    stderr += proc.stderr.read( buffsize )
+                    stderr += tmp_stderr.read( buffsize )
                     if not stderr or len( stderr ) % buffsize != 0:
                         break
             except OverflowError:
                 pass
+            tmp_stderr.close()
             if returncode != 0:
                 raise Exception, stderr
         except Exception, e:
@@ -166,52 +171,67 @@ def __main__():
         try:
             # align
             try:
-                proc = subprocess.Popen( args=cmd2, shell=True, cwd=tmp_dir, stderr=subprocess.PIPE )
+                tmp = tempfile.NamedTemporaryFile( dir=tmp_dir ).name
+                tmp_stderr = open( tmp, 'wb' )
+                proc = subprocess.Popen( args=cmd2, shell=True, cwd=tmp_dir, stderr=tmp_stderr.fileno() )
                 returncode = proc.wait()
+                tmp_stderr.close()
                 # get stderr, allowing for case where it's very large
+                tmp_stderr = open( tmp, 'rb' )
                 stderr = ''
                 try:
                     while True:
-                        stderr += proc.stderr.read( buffsize )
+                        stderr += tmp_stderr.read( buffsize )
                         if not stderr or len( stderr ) % buffsize != 0:
                             break
                 except OverflowError:
                     pass
+                tmp_stderr.close()
                 if returncode != 0:
                     raise Exception, stderr
             except Exception, e:
                 raise Exception, 'Error aligning sequence. ' + str( e )
             # and again if paired data
             try:
-                if cmd2b: 
-                    proc = subprocess.Popen( args=cmd2b, shell=True, cwd=tmp_dir, stderr=subprocess.PIPE )
+                if cmd2b:
+                    tmp = tempfile.NamedTemporaryFile( dir=tmp_dir ).name
+                    tmp_stderr = open( tmp, 'wb' )
+                    proc = subprocess.Popen( args=cmd2b, shell=True, cwd=tmp_dir, stderr=tmp_stderr.fileno() )
                     returncode = proc.wait()
+                    tmp_stderr.close()
                     # get stderr, allowing for case where it's very large
+                    tmp_stderr = open( tmp, 'rb' )
                     stderr = ''
                     try:
                         while True:
-                            stderr += proc.stderr.read( buffsize )
+                            stderr += tmp_stderr.read( buffsize )
                             if not stderr or len( stderr ) % buffsize != 0:
                                 break
                     except OverflowError:
                         pass
+                    tmp_stderr.close()
                     if returncode != 0:
                         raise Exception, stderr
             except Exception, e:
                 raise Exception, 'Error aligning second sequence. ' + str( e )
             # generate align
             try:
-                proc = subprocess.Popen( args=cmd3, shell=True, cwd=tmp_dir, stderr=subprocess.PIPE )
+                tmp = tempfile.NamedTemporaryFile( dir=tmp_dir ).name
+                tmp_stderr = open( tmp, 'wb' )
+                proc = subprocess.Popen( args=cmd3, shell=True, cwd=tmp_dir, stderr=tmp_stderr.fileno() )
                 returncode = proc.wait()
+                tmp_stderr.close()
                 # get stderr, allowing for case where it's very large
+                tmp_stderr = open( tmp, 'rb' )
                 stderr = ''
                 try:
                     while True:
-                        stderr += proc.stderr.read( buffsize )
+                        stderr += tmp_stderr.read( buffsize )
                         if not stderr or len( stderr ) % buffsize != 0:
                             break
                 except OverflowError:
                     pass
+                tmp_stderr.close()
                 if returncode != 0:
                     raise Exception, stderr
             except Exception, e:

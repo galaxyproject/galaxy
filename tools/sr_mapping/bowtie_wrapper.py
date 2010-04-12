@@ -186,25 +186,34 @@ def __main__():
                                 ( iautoB, ipacked, ibmax, ibmaxdivn, idcv, inodc, 
                                   inoref, options.ioffrate, iftab, intoa, iendian, 
                                   iseed, icutoff, colorspace )
-            except ValueError:
-                indexing_cmds = '%s' % colorspace
+            except ValueError, e:
+                # clean up temp dir
+                if os.path.exists( tmp_index_dir ):
+                    shutil.rmtree( tmp_index_dir )
+                stop_err( 'Something is wrong with the indexing parameters and the indexing and alignment could not be run\n' + str( e ) )
         ref_file = tempfile.NamedTemporaryFile( dir=tmp_index_dir )
         ref_file_name = ref_file.name
         ref_file.close()
         os.symlink( options.ref, ref_file_name )
         cmd1 = 'bowtie-build %s -f %s %s' % ( indexing_cmds, ref_file_name, ref_file_name )
         try:
-            proc = subprocess.Popen( args=cmd1, shell=True, cwd=tmp_index_dir, stderr=subprocess.PIPE, stdout=subprocess.PIPE )
+            tmp = tempfile.NamedTemporaryFile( dir=tmp_index_dir ).name
+            tmp_stderr = open( tmp, 'wb' )
+            proc = subprocess.Popen( args=cmd1, shell=True, cwd=tmp_index_dir, stderr=tmp_stderr.fileno() )
             returncode = proc.wait()
+            tmp_stderr.close()
+            # get stderr, allowing for case where it's very large
+            tmp_stderr = open( tmp, 'rb' )
             stderr = ''
             buffsize = 1048576
             try:
                 while True:
-                    stderr += proc.stderr.read( buffsize )
+                    stderr += tmp_stderr.read( buffsize )
                     if not stderr or len( stderr ) % buffsize != 0:
                         break
             except OverflowError:
                 pass
+            tmp_stderr.close()
             if returncode != 0:
                 raise Exception, stderr
         except Exception, e:
@@ -358,18 +367,23 @@ def __main__():
             else:
                 cmd2 = 'bowtie %s %s %s > %s' % ( aligning_cmds, ref_file_name, options.input1, options.output )
             # align
-            proc = subprocess.Popen( args=cmd2, shell=True, cwd=tmp_index_dir, stderr=subprocess.PIPE )
+            tmp = tempfile.NamedTemporaryFile( dir=tmp_index_dir ).name
+            tmp_stderr = open( tmp, 'wb' )
+            proc = subprocess.Popen( args=cmd2, shell=True, cwd=tmp_index_dir, stderr=tmp_stderr.fileno() )
             returncode = proc.wait()
+            tmp_stderr.close()
             # get stderr, allowing for case where it's very large
+            tmp_stderr = open( tmp, 'rb' )
             stderr = ''
             buffsize = 1048576
             try:
                 while True:
-                    stderr += proc.stderr.read( buffsize )
+                    stderr += tmp_stderr.read( buffsize )
                     if not stderr or len( stderr ) % buffsize != 0:
                         break
             except OverflowError:
                 pass
+            tmp_stderr.close()
             if returncode != 0:
                 raise Exception, stderr
             # check that there are results in the output file

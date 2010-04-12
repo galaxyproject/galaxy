@@ -74,24 +74,33 @@ def __main__():
 
     print megablast_command
 
+    tmp = tempfile.NamedTemporaryFile().name
     try:
-        proc = subprocess.Popen( args=megablast_command, shell=True, stderr=subprocess.PIPE )
+        tmp_stderr = open( tmp, 'wb' )
+        proc = subprocess.Popen( args=megablast_command, shell=True, stderr=tmp_stderr.fileno() )
         returncode = proc.wait()
+        tmp_stderr.close()
         # get stderr, allowing for case where it's very large
+        tmp_stderr = open( tmp, 'rb' )
         stderr = ''
         buffsize = 1048576
         try:
             while True:
-                stderr += proc.stderr.read( buffsize )
+                stderr += tmp_stderr.read( buffsize )
                 if not stderr or len( stderr ) % buffsize != 0:
                     break
         except OverflowError:
             pass
+        tmp_stderr.close()
         if returncode != 0:
             raise Exception, stderr
+        if os.path.exists( tmp ):
+            os.unlink( tmp )
     except Exception, e:
         if os.path.exists( mega_temp_output ):
             os.unlink( mega_temp_output )
+        if os.path.exists( tmp ):
+            os.unlink( tmp )
         stop_err( 'Error indexing reference sequence. ' + str( e ) )
 
     output = open( output_filename, 'w' )
