@@ -21,7 +21,7 @@
     </repeat>
   </inputs>
   <outputs>
-    <data name="output" format="pileup" />
+    <data name="output" format="tabular" />
   </outputs>
   <tests>
     <test>
@@ -30,7 +30,7 @@
       <param name="hinge" value="1,2" />
       <param name="input2" value="column_join_in2.pileup" ftype="pileup" />
       <param name="input" value="column_join_in3.pileup" ftype="pileup" />
-      <output name="output" file="column_join_out1.pileup" ftype="pileup" />
+      <output name="output" file="column_join_out1.pileup" ftype="tabular" />
     </test>
     <test>
       <param name="input1" value="column_join_in4.pileup" ftype="pileup" />
@@ -38,7 +38,7 @@
       <param name="hinge" value="1,2" />
       <param name="input2" value="column_join_in5.pileup" ftype="pileup" />
       <param name="input" value="column_join_in6.pileup" ftype="pileup" />
-      <output name="output" file="column_join_out2.pileup" ftype="pileup" />
+      <output name="output" file="column_join_out2.pileup" ftype="tabular" />
     </test>
     <test>
       <param name="input1" value="column_join_in7.pileup" ftype="pileup" />
@@ -46,7 +46,7 @@
       <param name="hinge" value="1,2" />
       <param name="input2" value="column_join_in8.pileup" ftype="pileup" />
       <param name="input" value="column_join_in9.pileup" ftype="pileup" />
-      <output name="output" file="column_join_out3.pileup" ftype="pileup" />
+      <output name="output" file="column_join_out3.pileup" ftype="tabular" />
     </test>
   </tests>
   <help>

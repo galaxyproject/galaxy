@@ -19,6 +19,32 @@ def stop_err( msg ):
     sys.stderr.write( msg )
     sys.exit()
 
+def hinge_compare( hinge1, hinge2 ):
+    """
+    Compares items like 'chr10' and 'chrM' or 'scaffold2' and scaffold10' so that
+    first part handled as text but last part as number
+    """
+    pat = re.compile( '(?P<text>\D*)(?P<number>\d+)?' )
+    split_hinge1 = hinge1.split( '\t' )
+    split_hinge2 = hinge2.split( '\t' )
+    for i in range( len( split_hinge1 ) ):
+        if split_hinge1[ i ] == split_hinge2[ i ]:
+            continue
+        try:
+            if int( split_hinge1[ i ] ) > int( split_hinge2[ i ] ):
+                return 1
+            else:
+                return -1
+        except ValueError:
+            try:
+                if float( split_hinge1[ i ] ) > float( split_hinge2[ i ] ):
+                    return 1
+                else:
+                    return -1
+            except ValueError:
+                return ref_compare( split_hinge1[ i ], split_hinge2[ i ])
+    return 0
+
 def ref_compare( ref1, ref2 ):
     """
     Compares items like 'chr10' and 'chrM' or 'scaffold2' and scaffold10' so that
@@ -52,35 +78,31 @@ def ref_compare( ref1, ref2 ):
     elif text1 < text2:
         return -1
 
-def ref_pos_sort( infile, outfile ):
+def hinge_sort( infile, outfile, hinge ):
     """Given input file name, sorts logically (text vs. numeric) into provided output file name."""
-    ref_locs = {}
+    hinge_locs = {}
     bad_lines = []
     fin = open( infile, 'rb' )
     line = fin.readline()
     while line.strip():
-        if True:
+        try:
+            hinge_parts = line.split( '\t' )[ :hinge ]
             try:
-                ref_seq, ref_loc = line.split( '\t' )[:2]
-                try:
-                    ref_locs[ ref_seq ][ long( ref_loc ) ] = fin.tell() - len( line.strip() ) - 1
-                except KeyError:
-                    ref_locs[ ref_seq ] = { long( ref_loc ): fin.tell() - len( line.strip() ) - 1 }
-                except ValueError:
-                    bad_lines.append( line )
-            except ValueError:
-                bad_line.append( line )
+                hinge_locs[ '\t'.join( hinge_parts ) ].append( fin.tell() - len( line.strip() ) - 1 )
+            except KeyError:
+                hinge_locs[ '\t'.join( hinge_parts ) ] = [ fin.tell() - len( line.strip() ) - 1 ]
+        except ValueError:
+            bad_line.append( line )
         line = fin.readline()
     fin.close()
-    refs = ref_locs.keys()
-    refs.sort( ref_compare )
     fin = open( infile, 'rb' )
     fout = open( outfile, 'wb' )
-    for ref in refs:
-        locs = ref_locs[ ref ].keys()
-        locs.sort()
+    hinge_locs_sorted = hinge_locs.keys()
+    hinge_locs_sorted.sort( hinge_compare )
+    for hinge_loc in hinge_locs_sorted:
+        locs = hinge_locs[ hinge_loc ]
         for loc in locs:
-            fin.seek( ref_locs[ ref ][ loc ] )
+            fin.seek( loc )
             fout.write( fin.readline() )
     fout.close()
     fin.close()
@@ -90,14 +112,17 @@ def min_chr_pos( chr_pos ):
     if len( chr_pos ) == 0 and ''.join( chr_pos ):
         return ''
     min_loc = len( chr_pos )
-    min_ref_pos = []
+    min_hinge = []
     loc = 0
     for c_pos in chr_pos:
         if c_pos.strip():
+            split_c = c_pos.split( '\t' )
+            
+            
             ref, pos = c_pos.split( '\t' )[:2]
             pos = int( pos )
-            if not min_ref_pos:
-                min_ref_pos = [ ref, pos ]
+            if not min_hinge:
+                min_hinge = split_c
                 min_loc = loc
             else:
                 ref_comp = ref_compare( ref, min_ref_pos[0] )
@@ -126,25 +151,33 @@ def __main__():
         tmp_file = tempfile.NamedTemporaryFile()
         tmp_file_name = tmp_file.name
         tmp_file.close()
-        ref_pos_sort( in_file, tmp_file_name )
+        hinge_sort( in_file, tmp_file_name, hinge )
         tmp_file = open( tmp_file_name, 'rb' )
         tmp_input_files.append( tmp_file )
     # cycle through files, getting smallest line of all files one at a time
     # also have to keep track of vertical position of extra columns
     fout = file( output, 'w' )
-    old_current_chr_pos = ''
+    old_current = ''
     first_line = True
     current_lines = [ f.readline() for f in tmp_input_files ]
     last_lines = ''.join( current_lines ).strip()
     last_loc = -1
+    i = 0
     while last_lines:
         # get the "minimum" hinge, which should come first, and the file location in list
-        current_chr_pos, loc = min_chr_pos( [ '\t'.join( line.split( '\t' )[ :hinge ] ) for line in current_lines ] )
+        hinges = [ '\t'.join( line.split( '\t' )[ :hinge ] ) for line in current_lines ]
+        hinge_dict = {}
+        for i in range( len( hinges ) ):
+            if not hinge_dict.has_key( hinges[ i ] ):
+                hinge_dict[ hinges[ i ] ] = i
+        hinges.sort( hinge_compare )
+        hinges = [ h for h in hinges if h ]
+        current, loc = hinges[0], hinge_dict[ hinges[0] ]
         # first output empty columns for vertical alignment (account for "missing" files)
-        if current_chr_pos != old_current_chr_pos:
+        if current != old_current:
             last_loc = -1
         if loc - last_loc > 1:
-            current_data = [ '' for col in range( ( loc - last_loc - 1 ) * len( cols[ hinge: ] ) ) ]
+            current_data = [ '' for col in range( ( loc - last_loc - 1 ) * len( [ col for col in cols if col > hinge ] ) ) ]
         else:
             current_data = []
         # now output actual data
@@ -154,22 +187,20 @@ def __main__():
                 if col > hinge:
                     current_data.append( split_line[ col - 1 ] )
             current_lines[ loc ] = tmp_input_files[ loc ].readline()
-            if current_chr_pos == old_current_chr_pos:
-                fout.write( '\t%s' % '\t'.join( current_data ) )
+            if current == old_current:
+                if current_data:
+                    fout.write( '\t%s' % '\t'.join( current_data ) )
             else:
                 if not first_line:
                     fout.write( '\n' )
-                fout.write( '%s\t%s' % ( current_chr_pos, '\t'.join( current_data ) ) )
+                fout.write( '%s\t%s' % ( current, '\t'.join( current_data ) ) )
                 first_line = False
-        old_current_chr_pos = current_chr_pos
-        if last_lines == ''.join( current_lines ).strip():
-            break
+        old_current = current
         last_lines = ''.join( current_lines ).strip()
         last_loc = loc
     fout.write( '\n' )
     for f in tmp_input_files:
         os.unlink( f.name )
     fout.close()
-#    sys.stderr.write('******************\n'+file(fout.name, 'r').read()+'\n******************\n')
 
 if __name__ == "__main__" : __main__()
