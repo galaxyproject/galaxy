@@ -915,8 +915,19 @@ class LibraryCommon( BaseController ):
             for entry in os.listdir( full_dir ):
                 # Only import regular files
                 path = os.path.join( full_dir, entry )
-                if os.path.islink( path ) and os.path.isfile( path ) and params.get( 'link_data_only', False ):
-                    # If we're linking instead of copying, link the file the link points to, not the link itself.
+                if os.path.islink( full_dir ) and params.get( 'link_data_only', False ):
+                    # If we're linking instead of copying and the
+                    # sub-"directory" in the import dir is actually a symlink,
+                    # dereference the symlink, but not any of its contents.
+                    link_path = os.readlink( full_dir )
+                    if os.path.isabs( link_path ):
+                        path = os.path.join( link_path, entry )
+                    else:
+                        path = os.path.abspath( os.path.join( link_path, entry ) )
+                elif os.path.islink( path ) and os.path.isfile( path ) and params.get( 'link_data_only', False ):
+                    # If we're linking instead of copying and the "file" in the
+                    # sub-directory of the import dir is actually a symlink,
+                    # dereference the symlink (one dereference only, Vasili).
                     link_path = os.readlink( path )
                     if os.path.isabs( link_path ):
                         path = link_path
