@@ -47,6 +47,7 @@ $(function() {
                             }
                         });
                         %endif
+                        $(".tipsy").remove();
                     }
                 });
                 return false;
