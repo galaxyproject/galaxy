@@ -19,6 +19,9 @@ ${h.js( "jquery", "jquery.tipsy", "galaxy.base", "json2", "class", "jquery.jstor
 
 <script type="text/javascript">
 
+<% TERMINAL_STATES = ["ok", "error", "empty", "deleted", "discarded"] %>
+TERMINAL_STATES = ${ h.to_json_string(TERMINAL_STATES) };
+
 $(function() {
     var historywrapper = $("div.historyItemWrapper");
     init_history_items(historywrapper);
@@ -175,7 +178,7 @@ $(function() {
     
     // Updater
     updater(
-        ${ h.to_json_string( dict([(data.id, data.state) for data in reversed( datasets ) if data.visible and data.state not in [ "deleted", "empty", "error", "ok" ]]) ) }
+        ${ h.to_json_string( dict([(data.id, data.state) for data in reversed( datasets ) if data.visible and data.state not in TERMINAL_STATES]) ) }
     );
     
     // Navigate to a dataset.
@@ -194,18 +197,16 @@ var updater = function ( tracked_datasets ) {
         empty = false;
         break;
     }
-    if ( ! empty ) {
-        // console.log( "Updater running in 3 seconds" );
-        setTimeout( function() { updater_callback( tracked_datasets ) }, 3000 );
-    } else {
-        // console.log( "Updater finished" );
+    if ( !empty ) {
+        setTimeout( function() { updater_callback( tracked_datasets ) }, 4000 );
     }
 };
 var updater_callback = function ( tracked_datasets ) {
     // Build request data
-    var ids = []
-    var states = []
-    var force_history_refresh = false
+    var ids = [],
+        states = [],
+        force_history_refresh = false;
+        
     $.each( tracked_datasets, function ( id, state ) {
         ids.push( id );
         states.push( state );
@@ -221,10 +222,9 @@ var updater_callback = function ( tracked_datasets ) {
                 // Replace HTML
                 var container = $("#historyItemContainer-" + id);
                 container.html( val.html );
-                setupHistoryItem( container.children( ".historyItemWrapper" ) );
-                initShowHide();
-                // If new state was terminal, stop tracking
-                if (( val.state == "ok") || ( val.state == "error") || ( val.state == "empty") || ( val.state == "deleted" ) || ( val.state == "discarded" )) {
+                init_history_items( $("div.historyItemWrapper"), "noinit" );
+                // If new state is terminal, stop tracking
+                if (TERMINAL_STATES.indexOf(val.state) !== -1) {
                     if ( val.force_history_refresh ){
                         force_history_refresh = true;
                     }
