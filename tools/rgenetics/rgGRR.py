@@ -63,7 +63,7 @@ try:
 except NameError:
   from Sets import Set as set
 
-from rgutils import timenow
+from rgutils import timenow,pruneLD,plinke
 import plinkbinJZ
 
 
@@ -187,9 +187,9 @@ SVG_HEADER = '''<?xml version="1.0" standalone="no"?>
      xmlns="http://www.w3.org/2000/svg" version="1.2"
      xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1280 800" onload="init()">
 
-  <script type="text/ecmascript" xlink:href="/static/scripts/tools/rgenetics/checkbox_and_radiobutton.js"/>
-  <script type="text/ecmascript" xlink:href="/static/scripts/tools/rgenetics/helper_functions.js"/>
-  <script type="text/ecmascript" xlink:href="/static/scripts/tools/rgenetics/timer.js"/>
+  <script type="text/ecmascript" xlink:href="/static/scripts/checkbox_and_radiobutton.js"/>
+  <script type="text/ecmascript" xlink:href="/static/scripts/helper_functions.js"/>
+  <script type="text/ecmascript" xlink:href="/static/scripts/timer.js"/>
   <script type="text/ecmascript">
     <![CDATA[
       var checkBoxes = new Array();
@@ -561,7 +561,7 @@ def calcMeanSD(useme):
     return mean,sd
 
 
-def doIBSpy(inpath='',basename='',outdir=None,logf=None,
+def doIBSpy(ped=None,basename='',outdir=None,logf=None,
             nrsSamples=10000,title='title',pdftoo=0,Zcutoff=2.0):
     #def doIBS(pedName, title, nrsSamples=None, pdftoo=False):
     """ started with snpmatrix but GRR uses actual IBS counts and sd's
@@ -574,17 +574,6 @@ def doIBSpy(inpath='',basename='',outdir=None,logf=None,
     svgf = '%s.svg' % (title)
     svg = file(os.path.join(outdir,svgf), 'w')
    
-    bedname = '%s.bed' % (inpath)
-    pedname = '%s.ped' % (inpath)
-    print 'pedname',pedname
-    if os.path.exists(bedname):
-        ped = plinkbinJZ.BPed(inpath)
-        ped.parse(quick=True)
-    elif os.path.exists(pedname):
-        ped = plinkbinJZ.LPed(inpath)
-        ped.parse()
-    else:
-	print >> sys.stdout, '## doIBSpy problem - cannot open %s or %s - cannot run' % (bedname,pedname)
     nMarkers = len(ped._markers)
     if nMarkers < 5:
         print sys.stderr, '### ERROR - %d is too few markers for reliable estimation in %s - terminating' % (nMarkers,PROGNAME)
@@ -1013,6 +1002,61 @@ def doIBSpy(inpath='',basename='',outdir=None,logf=None,
     svg.close()
     return newfiles,explanations,repOut
 
+def makeOpenLDR(ldreduced=None,basename=None,newfpath=None,plinke='plink'):
+    """we stow a thin ldreduced version of the primary file in the files_path for future runs
+    if none there yet - ugh the --thin option will happily return zero snps if only a few
+    """
+    ped = None
+    loglines = []
+    ldbedname = '%s.bed' % ldreduced
+    ldpedname = '%s.ped' % ldreduced
+    bedname = '%s.bed' % basename
+    pedname = '%s.ped' % basename
+    ldbedfn = os.path.join(newfpath,ldbedname)
+    ldpedfn = os.path.join(newfpath,ldpedname)
+    bedfn = os.path.join(newfpath,bedname)
+    pedfn = os.path.join(newfpath,pedname)
+    bmap = os.path.join(newfpath,'%s.bim' % basename)
+    pmap = os.path.join(newfpath,'%s.map' % basename)
+    if os.path.exists(ldbedfn): # joy. already done
+        ped = plinkbinJZ.BPed(os.path.splitext(ldbedfn)[0])
+        ped.parse(quick=True)
+    elif os.path.exists(ldpedfn): # why bother - for completeness I guess
+        ped = plinkbinJZ.LPed(os.path.splitext(ldbedfn)[0])
+        ped.parse()
+    elif os.path.exists(bedfn): # run ld prune and thin and save these for next time
+        nsnp = len(open(bmap,'r').readlines())
+        if nsnp > 100: # if 9 snps --thin 0.1 will happily return 0 snps 
+            plinktasks = [['--bfile',basename,'--indep-pairwise 50 40 0.2','--out %s' % basename],
+            ['--bfile',basename,'--extract %s.prune.in --make-bed --out %s_INDEP' % (basename, basename)],
+            ['--bfile %s_INDEP --thin 0.1 --make-bed --out %s' % (basename,ldreduced)]]
+        else: # no thin stage
+            plinktasks = [['--bfile',basename,'--indep-pairwise 50 40 0.2','--out %s' % basename],
+            ['--bfile',basename,'--extract %s.prune.in --make-bed --out %s' % (basename, ldreduced)]]
+        # subset of ld independent markers for eigenstrat and other requirements
+        vclbase = [plinke,'--noweb']
+        loglines = pruneLD(plinktasks=plinktasks,cd=newfpath,vclbase = vclbase)
+        ped = plinkbinJZ.BPed(os.path.splitext(ldbedfn)[0])
+        ped.parse(quick=True)
+    elif pedname and os.path.exists(pedfn): # screw it - return a bed - quicker to process
+        nsnp = len(open(pmap,'r').readlines())
+        if nsnp > 100:
+            plinktasks = [['--file',basename,'--make-bed','--out',basename],
+                     ['--bfile',basename,'--indep-pairwise 50 40 0.2','--out %s' % basename],
+                     ['--bfile',basename,'--extract %s.prune.in --make-bed --out %s_INDEP' % (basename, basename)],
+                     ['--bfile %s_INDEP --thin 0.1 --recode --out %s' % (bedname,ldreduced),]]
+        else: # no thin step
+            plinktasks = [['--file',basename,'--make-bed','--out',basename],
+                     ['--bfile',basename,'--indep-pairwise 50 40 0.2','--out %s' % basename],
+                     ['--bfile',basename,'--extract %s.prune.in --make-bed --out %s' % (basename, ldreduced)]]
+
+        # subset of ld independent markers for eigenstrat and other requirements
+        vclbase = [plinke,'--noweb']
+        loglines = pruneLD(plinktasks=plinktasks,cd=newfpath,vclbase = vclbase)
+        ped = plinkbinJZ.BPed(os.path.splitext(ldbedfn)[0])
+        ped.parse(quick=True)
+    return ped,loglines
+    
 def doIBS(n=100):
     """parse parameters from galaxy
     expect 'input pbed path' 'basename' 'outpath' 'title' 'logpath' 'n'
@@ -1037,10 +1081,6 @@ def doIBS(n=100):
     basename = sys.argv[2]
     outhtml = sys.argv[3]
     newfilepath = sys.argv[4]
-    try:
-	os.makedirs(newfilepath)
-    except:
-	pass
     title = sys.argv[5].translate(ptran)
     logfname = 'Log_%s.txt' % title
     logpath = os.path.join(newfilepath,logfname) # log was a child - make part of html extra_files_path zoo
@@ -1054,7 +1094,17 @@ def doIBS(n=100):
     except:
         pass
     logf = file(logpath,'w')
-    newfiles,explanations,repOut = doIBSpy(inpath=inpath,basename=basename,outdir=newfilepath,
+    efp,ibase_name = os.path.split(inpath) # need to use these for outputs in files_path
+    ldreduced = '%s_INDEP_THIN' % ibase_name # we store ld reduced and thinned data
+    ped,loglines = makeOpenLDR(ldreduced=ldreduced,basename=ibase_name,newfpath=efp,plinke=plinke)
+    if ped == None:
+        print >> sys.stderr, '## doIBSpy problem - cannot open %s or %s - cannot run' % (bedname,pedname)
+        sys.exit(1)
+    if len(loglines) > 0:
+        logf.write('### first time for this input file - log from creating an ld reduced and thinned data set:\n')
+        logf.write('\n'.join(loglines))
+        logf.write('\n')
+    newfiles,explanations,repOut = doIBSpy(ped=ped,basename=basename,outdir=newfilepath,
                                     logf=logf,nrsSamples=n,title=title,pdftoo=0,Zcutoff=Zcutoff)
     logf.close()
     logfs = file(logpath,'r').readlines()
@@ -1067,6 +1117,7 @@ def doIBS(n=100):
     fixed = ["'%s'" % x for x in sys.argv] # add quotes just in case
     s = 'If you need to rerun this analysis, the command line was\n<pre>%s</pre>\n</div>' % (' '.join(fixed))
     lf.write(s)
+    # various ways of displaying svg - experiments related to missing svg mimetype on test (!)
     #s = """<object data="%s" type="image/svg+xml"  width="%d" height="%d"> 
     #       <embed src="%s" type="image/svg+xml" width="%d" height="%d" /> 
     #       </object>""" % (newfiles[0],PLOT_WIDTH,PLOT_HEIGHT,newfiles[0],PLOT_WIDTH,PLOT_HEIGHT)
@@ -1092,5 +1143,3 @@ def doIBS(n=100):
 
 if __name__ == '__main__':
     doIBS()
-
-

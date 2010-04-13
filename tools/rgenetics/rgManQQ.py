@@ -129,12 +129,12 @@ dn = names(rawd)
 cc = dn[chromcolumn]
 oc = dn[offsetcolumn] 
 nams = c(cc,oc)
-d = rawd[do.call(order,rawd[nams]),]
-# mmmf - suggested by http://onertipaday.blogspot.com/2007/08/sortingordering-dataframe-according.html
-# in case not yet ordered
-print(paste('###',length(d[,1]),'values read from',infile,'read - now running plots',sep=' '))
-for (pvalscolumn in pvalscolumns) {
-if (pvalscolumn > 0) 
+plen = length(d[,1])
+doreorder=True
+print(paste('###',plen,'values read from',infile,'read - now running plots',sep=' '))
+if (plen > 0) {
+  for (pvalscolumn in pvalscolumns) {
+  if (pvalscolumn > 0) 
      {
      cname = names(d)[pvalscolumn]
      mytitle = paste('p=',cname,', ',title,sep='')
@@ -142,6 +142,12 @@ if (pvalscolumn > 0)
      myqqplot = qq(d[,pvalscolumn],title=mytitle)
      print(paste('## qqplot on',cname,'done'))
      if ((chromcolumn > 0) & (offsetcolumn > 0)) {
+         if (doreorder) {
+             d = rawd[do.call(order,rawd[nams]),]
+             # mmmf - suggested by http://onertipaday.blogspot.com/2007/08/sortingordering-dataframe-according.html
+             # in case not yet ordered
+             doreorder = False
+             }
          print(paste('## manhattan on',cname,'starting',chromcolumn,offsetcolumn,pvalscolumn))
          mymanplot= manhattan(chrom=d[,chromcolumn],offset=d[,offsetcolumn],pvals=d[,pvalscolumn],title=mytitle,grey=grey)
          print(paste('## manhattan plot on',cname,'done'))
@@ -157,6 +163,7 @@ if (pvalscolumn > 0)
         print(paste('pvalue column =',pvalscolumn,'Cannot parse it so no plots possible'))
       }
   } # for pvalscolumn
+ } else { print('## Problem - no values available to plot - was there really a chromosome and offset column?') }
 }
 
 rgqqMan() 
