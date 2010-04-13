@@ -1,0 +1,91 @@
+<tool id="cufflinks" name="Cufflinks" version="0.8.2">
+    <description>Transcript assembly, differential expression, and differential regulation for RNA-Seq</description>
+    <command interpreter="python">
+        cufflinks_wrapper.py 
+            --input=$input
+            --assembled-isoforms-output=$assembled_isoforms
+            --transcripts-expression-output=$transcripts_expression
+            --genes-expression-output=$genes_expression
+            --num-threads="4"
+            #if $singlePaired.sPaired == "paired":
+                -r $singlePaired.mean_inner_distance
+            #end if
+    </command>
+    <inputs>
+        <param format="sam" name="input" type="data" label="SAM file of aligned RNA-Seq reads" help=""/>
+        <conditional name="singlePaired">
+            <param name="sPaired" type="select" label="Is this library mate-paired?">
+                <option value="single">Single-end</option>
+                <option value="paired">Paired-end</option>
+            </param>
+            <when value="single">
+                
+            </when>
+            <when value="paired">
+                <param name="mean_inner_distance" type="integer" value="20" label="Mean Inner Distance between Mate Pairs"/>
+            </when>
+        </conditional>
+    </inputs>
+
+    <outputs>
+        <data format="expr" name="genes_expression" />
+        <data format="expr" name="transcripts_expression" />
+        <data format="gtf" name="assembled_isoforms" />
+    </outputs>
+
+    <tests>
+        <test>
+            <param name="sPaired" value="single"/>
+            <param name="input" value="cufflinks_in.sam"/>
+            <param name="mean_inner_distance" value="20"/>
+            <output name="assembled_isoforms" file="cufflinks_out1.gtf"/>
+            <!-- Can't test these right now because .expr files aren't recognized.
+            <output name="genes_expression" file="cufflinks_out3.expr"/>
+            <output name="transcripts_expression" file="cufflinks_out2.expr"/>
+            -->
+        </test>
+    </tests>
+
+    <help>
+**Cufflinks Overview**
+
+Cufflinks_ assembles transcripts, estimates their abundances, and tests for differential expression and regulation in RNA-Seq samples. It accepts aligned RNA-Seq reads and assembles the alignments into a parsimonious set of transcripts. Cufflinks then estimates the relative abundances of these transcripts based on how many reads support each one.  Please cite: Trapnell C, Williams BA, Pertea G, Mortazavi AM, Kwan G, van Baren MJ, Salzberg SL, Wold B, Pachter L. Transcript assembly and abundance estimation from RNA-Seq reveals thousands of new transcripts and switching among isoforms. (manuscript in press)
+
+.. _Cufflinks: http://cufflinks.cbcb.umd.edu/
+        
+------
+
+**Know what you are doing**
+
+.. class:: warningmark
+
+There is no such thing (yet) as an automated gearshift in expression analysis. It is all like stick-shift driving in San Francisco. In other words, running this tool with default parameters will probably not give you meaningful results. A way to deal with this is to **understand** the parameters by carefully reading the `documentation`__ and experimenting. Fortunately, Galaxy makes experimenting easy.
+
+.. __: http://cufflinks.cbcb.umd.edu/manual.html
+
+------
+
+**Input formats**
+
+Cufflinks accepts files in SAM format.
+
+------
+
+**Outputs**
+
+TODO
+    
+-------
+
+**Cufflinks settings**
+
+All of the options have a default value. You can change any of them. Some of the options in Cufflinks have been implemented here.
+
+------
+
+**Cufflinks parameter list**
+
+This is a list of implemented Cufflinks options::
+
+    </help>
+</tool>

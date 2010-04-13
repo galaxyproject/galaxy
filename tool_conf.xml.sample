@@ -225,8 +225,9 @@
    <tool file="metag_tools/megablast_xml_parser.xml" />
    <tool file="sr_mapping/PerM.xml" />
   </section>
-  <section name="NGS: Expression Analysis" id="rnatools">
-   <tool file="tophat/tophat_wrapper.xml" />
+  <section name="NGS: Expression Analysis" id="ngs-rna-tools">
+   <tool file="ngs_rna/tophat_wrapper.xml" />
+   <tool file="ngs_rna/cufflinks_wrapper.xml" />
   </section>
   <section name="NGS: SAM Tools" id="samtools">
    <tool file="samtools/sam_bitwise_flag_filter.xml" />

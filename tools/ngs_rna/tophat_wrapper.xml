@@ -28,7 +28,7 @@
           </param>
           <when value="indexed">
         	<param name="index" type="select" label="Select a reference genome" help="If your genome of interest is not listed, contact the Galaxy team">
-      	      <options from_file="tophat_indices.loc">
+      	      <options from_file="bowtie_indices.loc">
       	        <column name="value" index="1" />
       	        <column name="name" index="0" />
       	      </options>
