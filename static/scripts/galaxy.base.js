@@ -149,10 +149,10 @@ function replace_big_select_inputs() {
         var select_mapping = {};
         select_elt.children('option').each( function() {
             // Get text, value for option.
-            var text = $(this).text();    
+            var text = $(this).text();
             var value = $(this).attr('value');
 
-            // Ignore values that are '?'
+            // HACK: dbkey-specific: ignore values that are '?'
             if (value == '?') {
                 return;
             }
@@ -169,6 +169,13 @@ function replace_big_select_inputs() {
             }
         });
         
+        // HACK: dbkey-specific: add an unspecified option. We need to add this at the end b/c adding it first mucks
+        // up the autocomplete sorting for some reason. (I.e. All options that start with the first character of the
+        // first option are listed before the other, alphabetized options.)
+        select_options.push( "unspecified (?)" );
+        select_mapping[ "unspecified (?)"  ] = "?";
+        select_mapping[ "?" ] = "?";
+                
         // Set initial text if it's empty.
         if ( text_input_elt.attr('value') == '' ) {
             text_input_elt.attr('value', 'Click to Search or Select');
