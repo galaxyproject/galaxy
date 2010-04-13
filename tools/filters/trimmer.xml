@@ -28,6 +28,7 @@
             <option value="38">&amp;</option>
             <option value="37">%</option>
             <option value="94">^</option>
+            <option value="35">&#35;</option>
          </param>   
     </inputs>
     <outputs>
