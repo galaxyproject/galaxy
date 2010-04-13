@@ -4,10 +4,7 @@
     from random import random
     from sys import maxint
     from math import floor
-    from galaxy.tags.tag_handler import TagHandler
     from galaxy.model import Tag, ItemTagAssociation
-    
-    tag_handler = TagHandler()
 %>
 
 ## Render a tagging element if there is a tagged_item.
@@ -92,7 +89,7 @@
     ## Build HTML.
     <% 
         elt_id = int ( floor ( random()*maxint ) ) 
-        community_tags = tag_handler.get_community_tags(trans.sa_session, tagged_item, 10)
+        community_tags = trans.app.tag_handler.get_community_tags( trans, item=tagged_item, limit=10 )
     %>
     ${self.render_tagging_element_html(elt_id=elt_id, tags=community_tags, use_toggle_link=use_toggle_link, editable=False, tag_type="community")}
     

@@ -89,7 +89,7 @@ class User( BaseController ):
             else:
                 refresh_frames = [ 'masthead', 'history' ]
         else:
-            refresh_frames = []
+            refresh_frames = [ 'masthead' ]
         # Since logging an event requires a session, we'll log prior to ending the session
         trans.log_event( "User logged out" )
         trans.handle_user_logout()

@@ -585,6 +585,16 @@ class TwillTestCase( unittest.TestCase ):
             except:
                 pass
         self.home()
+    def check_hda_attribute_info( self, hda_id, check_str1='', check_str2='', check_str3='', check_str4='' ):
+        """Edit history_dataset_association attribute information"""
+        if check_str1:
+            self.check_page_for_string( check_str1 )
+        if check_str2:
+            self.check_page_for_string( check_str2 )
+        if check_str3:
+            self.check_page_for_string( check_str3 )
+        if check_str4:
+            self.check_page_for_string( check_str4 )
     def auto_detect_metadata( self, hda_id ):
         """Auto-detect history_dataset_association metadata"""
         self.home()
@@ -2050,3 +2060,9 @@ class TwillTestCase( unittest.TestCase ):
             else:
                 break
         self.assertNotEqual(count, maxiter)
+
+    # Tests associated with tags
+    def add_tag( self, item_id, item_class, context, new_tag, check_str='' ):
+        self.visit_url( "%s/tag/add_tag_async?item_id=%s&item_class=%s&context=%s&new_tag=%s" % \
+                        ( self.url, item_id, item_class, context, new_tag ) )
+        

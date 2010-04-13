@@ -1,11 +1,11 @@
 import sys, os, atexit
 
 from galaxy import config, jobs, util, tools, web, cloud
-## from galaxy.tracks import store
 from galaxy.web import security
 import galaxy.model
 import galaxy.datatypes.registry
 import galaxy.security
+from galaxy.tags.tag_handler import GalaxyTagHandler
 
 class UniverseApplication( object ):
     """Encapsulates the state of a Universe application"""
@@ -33,6 +33,8 @@ class UniverseApplication( object ):
                                    self.config.database_engine_options )
         # Security helper
         self.security = security.SecurityHelper( id_secret=self.config.id_secret )
+        # Tag handler
+        self.tag_handler = GalaxyTagHandler()
         # Initialize the tools
         self.toolbox = tools.ToolBox( self.config.tool_config, self.config.tool_path, self )
         # Load datatype converters

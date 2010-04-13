@@ -3,7 +3,7 @@ from galaxy.model.orm import *
 
 from galaxy.web.base import controller
 from galaxy.web.framework.helpers import iff
-from galaxy.tags.tag_handler import TagHandler
+from galaxy.tags.tag_handler import GalaxyTagHandler
 from galaxy.web import url_for
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.util.odict import odict
@@ -399,7 +399,7 @@ class CommunityTagsColumn( TextColumn ):
         return query
     def get_filter( self, user, column_filter ):
             # Parse filter to extract multiple tags.
-            tag_handler = TagHandler()
+            tag_handler = GalaxyTagHandler()
             if isinstance( column_filter, list ):
                 # Collapse list of tags into a single string; this is redundant but effective. TODO: fix this by iterating over tags.
                 column_filter = ",".join( column_filter )
@@ -421,7 +421,7 @@ class IndividualTagsColumn( CommunityTagsColumn ):
                                     in_form=True, input_size="20", tag_click_fn="add_tag_to_grid_filter", use_toggle_link=True )
     def get_filter( self, user, column_filter ):
             # Parse filter to extract multiple tags.
-            tag_handler = TagHandler()
+            tag_handler = GalaxyTagHandler()
             if isinstance( column_filter, list ):
                 # Collapse list of tags into a single string; this is redundant but effective. TODO: fix this by iterating over tags.
                 column_filter = ",".join( column_filter )

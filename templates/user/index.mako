@@ -13,10 +13,9 @@
             <li><a href="${h.url_for( action='show_info' )}">${_('Manage your information')}</a></li>
             <li><a href="${h.url_for( action='set_default_permissions' )}">${_('Change default permissions')}</a> for new histories</li>
         %endif
-        <li><a href="${h.url_for( action='logout' )}">${_('Logout')}</a></li>
     </ul>
 %else:
-    %if not msg:
+    %if not message:
         <p>${n_('You are currently not logged in.')}</p>
     %endif
     <ul>

@@ -5,7 +5,7 @@ from galaxy.model.mapping import desc
 from galaxy.model.orm import *
 from galaxy.util.json import *
 from galaxy.util.sanitize_html import sanitize_html
-from galaxy.tags.tag_handler import TagHandler
+from galaxy.tags.tag_handler import GalaxyTagHandler
 from sqlalchemy.sql.expression import ClauseElement
 import webhelpers, logging, operator
 from datetime import datetime
