@@ -106,7 +106,7 @@ class TestFormsAndRequests( TwillTestCase ):
         """Testing address & library creation"""
         # first create a regular user
         self.logout()
-        self.login( email='test1@bx.psu.edu' )
+        self.login( email='test1@bx.psu.edu', username='regular-user1' )
         self.logout()
         self.login( email='test@bx.psu.edu' )
         # first create a library for the request so that it can be submitted later
@@ -191,7 +191,7 @@ class TestFormsAndRequests( TwillTestCase ):
         self.check_page_for_string( name )
         # create address
         self.logout()
-        self.login( email='test1@bx.psu.edu' )
+        self.login( email='test1@bx.psu.edu', username='regular-user1' )
         self.add_user_address( regular_user1.id, address1 )
         global regular_user
         regular_user = sa_session.query( galaxy.model.User ) \
@@ -206,7 +206,7 @@ class TestFormsAndRequests( TwillTestCase ):
         """Testing creating, editing and submitting a request as a regular user"""
         # login as a regular user
         self.logout()
-        self.login( email='test1@bx.psu.edu' )
+        self.login( email='test1@bx.psu.edu', username='regular-user1' )
         # set field values
         fields = ['option1', str(user_address.id), 'field three value'] 
         # create the request
@@ -259,7 +259,7 @@ class TestFormsAndRequests( TwillTestCase ):
         self.home()
         sa_session.refresh( request_one )
         self.logout()
-        self.login( email='test1@bx.psu.edu' )
+        self.login( email='test1@bx.psu.edu', username='regular-user1' )
         # check if the request's state is now set to 'complete'
         self.check_request_grid(state='Complete', request_name=request_one.name)
         assert request_one.state is not request_one.states.COMPLETE, "The state of the request '%s' should be set to '%s'" \

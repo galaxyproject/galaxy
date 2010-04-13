@@ -541,7 +541,6 @@ class Forms( BaseController ):
             self.selectbox_options = []
             # if the form is for defining samples, then use the sample field types
             # which does not include TextArea & AddressField
-            print >> sys.stderr, 'form_type', form_type
             if form_type == trans.app.model.FormDefinition.types.SAMPLE:
                 for ft in BaseField.sample_field_types():
                     self.fieldtype.add_option(ft, ft)

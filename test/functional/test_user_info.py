@@ -162,7 +162,7 @@ class TestUserInfo( TwillTestCase ):
         # Test changing email and user name - first try an invalid user name
         self.edit_login_info( new_email='test12_new@bx.psu.edu',
                               new_username='test12_new',
-                              check_str1='User name must contain only letters, numbers and' )
+                              check_str1="User name must contain only lower-case letters, numbers and '-'" )
         # Now try a valid user name
         self.edit_login_info( new_email='test12_new@bx.psu.edu',
                               new_username='test12-new',

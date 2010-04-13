@@ -1326,7 +1326,7 @@ class FormDefinition( object ):
                 # the user had already filled out this field and the same form is re-rendered 
                 # due to some reason like required fields have been left out.
                 if field[ 'type' ] == 'CheckboxField':
-                    value = CheckboxField.is_checked( util.restore_text( params.get( field_name, False ) ) )
+                    value = CheckboxField.is_checked( params.get( field_name, False ) )
                 else:
                     value = util.restore_text( params.get( field_name, '' ) )
             elif contents:
