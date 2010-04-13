@@ -410,7 +410,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         """
         Update the session cookie to match the current session.
         """
-        self.set_cookie( self.security.encode_session_key( self.galaxy_session.session_key ), name=name )
+        self.set_cookie( self.security.encode_session_key( self.galaxy_session.session_key ), name=name, path=self.app.config.cookie_path )
     def handle_user_login( self, user, webapp ):
         """
         Login a new user (possibly newly created)

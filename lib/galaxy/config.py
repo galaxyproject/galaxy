@@ -38,6 +38,7 @@ class Configuration( object ):
         # Where dataset files are stored
         self.file_path = resolve_path( kwargs.get( "file_path", "database/files" ), self.root )
         self.new_file_path = resolve_path( kwargs.get( "new_file_path", "database/tmp" ), self.root )
+        self.cookie_path = kwargs.get( "cookie_path", "/" )
         # dataset Track files
         self.track_store_path = kwargs.get( "track_store_path", "${extra_files_path}/tracks")
         self.tool_path = resolve_path( kwargs.get( "tool_path", "tools" ), self.root )
