@@ -31,6 +31,7 @@ tool-data/twobit.loc.sample
 DIRS="
 database
 database/files
+database/tools
 database/tmp
 database/compiled_templates
 database/job_working_directory

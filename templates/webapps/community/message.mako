@@ -1,0 +1,1 @@
+<%inherit file="/message.mako"/>

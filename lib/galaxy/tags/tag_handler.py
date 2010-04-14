@@ -258,3 +258,8 @@ class GalaxyTagHandler( TagHandler ):
         self.item_tag_assoc_info["Visualization"] = ItemTagAssocInfo( model.Visualization,
                                                                       model.VisualizationTagAssociation,
                                                                       model.VisualizationTagAssociation.table.c.visualization_id )
+
+class CommunityTagHandler( TagHandler ):
+    def __init__( self ):
+        from galaxy.webapps.community import model
+        TagHandler.__init__( self )
