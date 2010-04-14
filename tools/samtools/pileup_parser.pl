@@ -60,7 +60,7 @@ while (<IN>) {
 	my @qv    = split //, $base_quality;
 	
 	for my $base ( 0 .. @bases - 1 ) {
-		if ( ord( $qv[ $base ] ) - 33 >= $quality_cutoff )
+		if ( ord( $qv[ $base ] ) - 33 >= $quality_cutoff and $bases[ $base ] ne '*')
 		{
 			++$above_qv_bases;
 			
