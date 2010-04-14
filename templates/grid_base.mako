@@ -1,6 +1,5 @@
 <%!
     from galaxy.web.framework.helpers.grids import TextColumn
-    from galaxy.model import History, HistoryDatasetAssociation, User, Role, Group
     import galaxy.util
     def inherit(context):
         if context.get('use_panels'):
