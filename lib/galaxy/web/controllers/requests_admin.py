@@ -362,6 +362,9 @@ class RequestsAdmin( BaseController ):
                             widget=TextField('desc', 40, desc), 
                             helptext='(Optional)'))
         widgets = widgets + request.type.request_form.get_widgets( request.user, request.values.content, **kwd )
+        widgets.append(dict(label='Send email notification once the sequencing request is complete', 
+                            widget=CheckboxField('email_notify', request.notify), 
+                            helptext=''))
         return trans.fill_template( '/admin/requests/edit_request.mako',
                                     select_request_type=select_request_type,
                                     request_type=request.type,
@@ -633,6 +636,9 @@ class RequestsAdmin( BaseController ):
                                              util.restore_text( params.get( 'desc', ''  ) )), 
                             helptext='(Optional)'))
         widgets = widgets + request_type.request_form.get_widgets( user, **kwd )
+        widgets.append(dict(label='Send email notification once the sequencing request is complete', 
+                            widget=CheckboxField('email_notify', False), 
+                            helptext='Email would be sent to the lab admin and the user for whom this request has been created.'))
         return trans.fill_template( '/admin/requests/new_request.mako',
                                     select_request_type=select_request_type,
                                     request_type=request_type,                                    
@@ -694,6 +700,7 @@ class RequestsAdmin( BaseController ):
             user = trans.sa_session.query( trans.app.model.User ).get( int( params.get( 'select_user', '' ) ) )
         name = util.restore_text(params.get('name', ''))
         desc = util.restore_text(params.get('desc', ''))
+        notify = CheckboxField.is_checked( params.get('email_notify', '') )
         # fields
         values = []
         for index, field in enumerate(request_type.request_form.fields):
@@ -728,7 +735,7 @@ class RequestsAdmin( BaseController ):
         trans.sa_session.flush()
         if not request:
             request = trans.app.model.Request(name, desc, request_type, 
-                                              user, form_values)
+                                              user, form_values, notify)
             trans.sa_session.add( request )
             trans.sa_session.flush()
             trans.sa_session.refresh( request )
@@ -745,6 +752,7 @@ class RequestsAdmin( BaseController ):
             request.desc = desc
             request.type = request_type
             request.user = user
+            request.notify = notify
             request.values = form_values
             trans.sa_session.add( request )
             trans.sa_session.flush()
@@ -1183,6 +1191,13 @@ class RequestsAdmin( BaseController ):
                 request_details.append(dict(label=field['label'],
                                             value=request.values.content[index],
                                             helptext=field['helptext']+' ('+req+')'))
+        if request.notify:
+            notify = 'Yes'
+        else:
+            notify = 'No'
+        request_details.append(dict(label='Send email notification once the sequencing request is complete', 
+                                    value=notify, 
+                                    helptext=''))
         return request_details
     def __validate_barcode(self, trans, sample, barcode):
         '''
@@ -1333,6 +1348,15 @@ class RequestsAdmin( BaseController ):
             event = trans.app.model.RequestEvent(request, request.states.COMPLETE, comments)
             trans.sa_session.add( event )
             trans.sa_session.flush()
+            # now that the request is complete send the email notification to the 
+            # the user
+            if request.notify:
+                mail = os.popen("%s -t" % trans.app.config.sendmail_path, 'w')
+                subject = "Galaxy Sample Tracking: '%s' sequencing request in complete." % request.name
+                body = "The '%s' sequencing request (type: %s) is now complete. Datasets from all the samples are now available for analysis or download from the respective data libraries in Galaxy."  % (request.name, request.type.name)
+                email_content = "To: %s\nFrom: no-reply@nowhere.edu\nSubject: %s\n\n%s" % (request.user.email, subject, body)
+                mail.write( email_content )
+                x = mail.close()
     def change_state(self, trans, sample):
         possible_states = sample.request.type.states 
         curr_state = sample.current_state() 

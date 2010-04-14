@@ -209,6 +209,7 @@ class Requests( BaseController ):
         request_details.append(dict(label='Type', 
                                     value=request.type.name, 
                                     helptext=''))
+
         request_details.append(dict(label='State', 
                                     value=request.state(), 
                                     helptext=''))
@@ -235,6 +236,13 @@ class Requests( BaseController ):
                 request_details.append(dict(label=field['label'],
                                             value=request.values.content[index],
                                             helptext=field['helptext']+' ('+req+')'))
+        if request.notify:
+            notify = 'Yes'
+        else:
+            notify = 'No'
+        request_details.append(dict(label='Send email notification once the sequencing request is complete', 
+                                    value=notify, 
+                                    helptext=''))
         return request_details   
     def __show_request(self, trans, **kwd):
         params = util.Params( kwd )
@@ -707,6 +715,9 @@ class Requests( BaseController ):
                                              util.restore_text( params.get( 'desc', ''  ) )), 
                             helptext='(Optional)'))
         widgets = widgets + request_type.request_form.get_widgets( trans.user, **kwd )
+        widgets.append(dict(label='Send email notification once the sequencing request is complete', 
+                            widget=CheckboxField('email_notify', False), 
+                            helptext=''))
         return trans.fill_template( '/requests/new_request.mako',
                                     select_request_type=select_request_type,
                                     request_type=request_type,
@@ -755,6 +766,7 @@ class Requests( BaseController ):
         request_type = trans.sa_session.query( trans.app.model.RequestType ).get( int( params.select_request_type ) )
         name = util.restore_text(params.get('name', ''))
         desc = util.restore_text(params.get('desc', ''))
+        notify = CheckboxField.is_checked( params.get('email_notify', '') )
         # library
         try:
             library = trans.sa_session.query( trans.app.model.Library ).get( int( params.get( 'library_id', None ) ) )
@@ -801,7 +813,7 @@ class Requests( BaseController ):
         trans.sa_session.flush()
         if not request:
             request = trans.app.model.Request(name, desc, request_type, 
-                                              trans.user, form_values)
+                                              trans.user, form_values, notify)
             trans.sa_session.add( request )
             trans.sa_session.flush()
             trans.sa_session.refresh( request )
@@ -816,6 +828,7 @@ class Requests( BaseController ):
             request.type = request_type
             request.user = trans.user
             request.values = form_values
+            request.notify = notify
             trans.sa_session.add( request )
             trans.sa_session.flush()
         return request
@@ -896,6 +909,9 @@ class Requests( BaseController ):
                             widget=TextField('desc', 40, desc), 
                             helptext='(Optional)'))
         widgets = widgets + request.type.request_form.get_widgets( trans.user, request.values.content, **kwd )
+        widgets.append(dict(label='Send email notification once the sequencing request is complete', 
+                            widget=CheckboxField('email_notify', request.notify), 
+                            helptext=''))
         return trans.fill_template( '/requests/edit_request.mako',
                                     select_request_type=select_request_type,
                                     request_type=request.type,

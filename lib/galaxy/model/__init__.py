@@ -1402,12 +1402,13 @@ class Request( object ):
                     REJECTED = 'Rejected',
                     COMPLETE = 'Complete'   )
     def __init__(self, name=None, desc=None, request_type=None, user=None, 
-                 form_values=None):
+                 form_values=None, notify=None):
         self.name = name
         self.desc = desc
         self.type = request_type
         self.values = form_values
         self.user = user
+        self.notify = notify
         self.samples_list = []
     def state(self):
         if self.events:
