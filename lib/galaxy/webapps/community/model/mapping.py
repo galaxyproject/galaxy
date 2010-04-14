@@ -44,11 +44,27 @@ User.table = Table( "galaxy_user", metadata,
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "email", TrimmedString( 255 ), nullable=False ),
-    Column( "username", TrimmedString( 255 ), index=True, unique=True ),
+    Column( "username", String( 255 ), index=True, unique=True, default=False ),
     Column( "password", TrimmedString( 40 ), nullable=False ),
     Column( "external", Boolean, default=False ),
     Column( "deleted", Boolean, index=True, default=False ),
     Column( "purged", Boolean, index=True, default=False ) )
+
+UserRoleAssociation.table = Table( "user_role_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+    Column( "role_id", Integer, ForeignKey( "role.id" ), index=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ) )
+
+Role.table = Table( "role", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "name", String( 255 ), index=True, unique=True ),
+    Column( "description", TEXT ),
+    Column( "type", String( 40 ), index=True ),
+    Column( "deleted", Boolean, index=True, default=False ) )
 
 GalaxySession.table = Table( "galaxy_session", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -121,7 +137,23 @@ assign_mapper( context, User, User.table,
     properties=dict( tools=relation( Tool, order_by=desc( Tool.table.c.update_time ) ),               
                      active_tools=relation( Tool, primaryjoin=( ( Tool.table.c.user_id == User.table.c.id ) & ( not_( Tool.table.c.deleted ) ) ), order_by=desc( Tool.table.c.update_time ) ),
                      galaxy_sessions=relation( GalaxySession, order_by=desc( GalaxySession.table.c.update_time ) ) ) )
- 
+
+assign_mapper( context, UserRoleAssociation, UserRoleAssociation.table,
+    properties=dict(
+        user=relation( User, backref="roles" ),
+        non_private_roles=relation( User, 
+                                    backref="non_private_roles",
+                                    primaryjoin=( ( User.table.c.id == UserRoleAssociation.table.c.user_id ) & ( UserRoleAssociation.table.c.role_id == Role.table.c.id ) & not_( Role.table.c.name == User.table.c.email ) ) ),
+        role=relation( Role )
+    )
+)
+
+assign_mapper( context, Role, Role.table,
+    properties=dict(
+        users=relation( UserRoleAssociation )
+    )
+)
+
 assign_mapper( context, GalaxySession, GalaxySession.table,
     properties=dict( user=relation( User.mapper ) ) )
 

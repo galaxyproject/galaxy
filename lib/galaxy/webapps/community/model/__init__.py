@@ -29,6 +29,26 @@ class User( object ):
         """Check if 'cleartext' matches 'self.password' when hashed."""
         return self.password == new_secure_hash( text_type=cleartext )
 
+class UserRoleAssociation( object ):
+    def __init__( self, user, role ):
+        self.user = user
+        self.role = role
+
+class Role( object ):
+    private_id = None
+    types = Bunch( 
+        PRIVATE = 'private',
+        SYSTEM = 'system',
+        USER = 'user',
+        ADMIN = 'admin',
+        SHARING = 'sharing'
+    )
+    def __init__( self, name="", description="", type="system", deleted=False ):
+        self.name = name
+        self.description = description
+        self.type = type
+        self.deleted = deleted
+
 class GalaxySession( object ):
     def __init__( self, 
                   id=None, 
@@ -49,12 +69,6 @@ class GalaxySession( object ):
         self.session_key = session_key
         self.is_valid = is_valid
         self.prev_session_id = prev_session_id
-        self.histories = []
-    def add_history( self, history, association=None ):
-        if association is None:
-            self.histories.append( GalaxySessionToHistoryAssociation( self, history ) )
-        else:
-            self.histories.append( association )
 
 class Tool( object ):
     def __init__( self, guid=None, name=None, description=None, category=None, version=None, user_id=None, external_filename=None ):

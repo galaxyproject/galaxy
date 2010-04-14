@@ -60,9 +60,9 @@
         %>
         <div class="submenu">
         <ul class="loggedout-only" style="${style1}">
-            <li><a href="${h.url_for( controller='/user', action='login', webapp='community' )}">Login</a></li>
+            <li><a target="galaxy_main" href="${h.url_for( controller='/user', action='login', webapp='community' )}">Login</a></li>
             %if app.config.allow_user_creation:
-            <li><a href="${h.url_for( controller='/user', action='create', webapp='community' )}">Register</a></li>
+            <li><a target="galaxy_main" href="${h.url_for( controller='/user', action='create', webapp='community' )}">Register</a></li>
             %endif
         </ul>
         <ul class="loggedin-only" style="${style2}">

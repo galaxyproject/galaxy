@@ -18,6 +18,18 @@ class Action( object ):
 class RBACAgent:
     """Class that handles galaxy community space security"""
     permitted_actions = Bunch()
+    def associate_components( self, **kwd ):
+        raise 'No valid method of associating provided components: %s' % kwd
+    def associate_user_role( self, user, role ):
+        raise 'No valid method of associating a user with a role'
+    def convert_permitted_action_strings( self, permitted_action_strings ):
+        """
+        When getting permitted actions from an untrusted source like a
+        form, ensure that they match our actual permitted actions.
+        """
+        return filter( lambda x: x is not None, [ self.permitted_actions.get( action_string ) for action_string in permitted_action_strings ] )
+    def create_private_user_role( self, user ):
+        raise "Unimplemented Method"
     def get_action( self, name, default=None ):
         """Get a permitted action by its dict key or action name"""
         for k, v in self.permitted_actions.items():
@@ -29,16 +41,8 @@ class RBACAgent:
         return self.permitted_actions.__dict__.values()
     def get_item_actions( self, action, item ):
         raise 'No valid method of retrieving action (%s) for item %s.' % ( action, item )
-    def create_private_user_role( self, user ):
-        raise "Unimplemented Method"
     def get_private_user_role( self, user ):
         raise "Unimplemented Method"
-    def convert_permitted_action_strings( self, permitted_action_strings ):
-        """
-        When getting permitted actions from an untrusted source like a
-        form, ensure that they match our actual permitted actions.
-        """
-        return filter( lambda x: x is not None, [ self.permitted_actions.get( action_string ) for action_string in permitted_action_strings ] )
 
 class CommunityRBACAgent( RBACAgent ):
     def __init__( self, model, permitted_actions=None ):
@@ -49,7 +53,6 @@ class CommunityRBACAgent( RBACAgent ):
     def sa_session( self ):
         """Returns a SQLAlchemy session"""
         return self.model.context
-
     def allow_action( self, roles, action, item ):
         """
         Method for checking a permission for the current user ( based on roles ) to perform a
@@ -64,9 +67,16 @@ class CommunityRBACAgent( RBACAgent ):
                 ret_val = True
                 break
         return ret_val
-    def get_item_actions( self, action, item ):
-        # item must be one of: Dataset, Library, LibraryFolder, LibraryDataset, LibraryDatasetDatasetAssociation
-        return [ permission for permission in item.actions if permission.action == action.action ]
+    def associate_components( self, **kwd ):
+        if 'user' in kwd:
+            if 'role' in kwd:
+                return self.associate_user_role( kwd['user'], kwd['role'] )
+        raise 'No valid method of associating provided components: %s' % kwd
+    def associate_user_role( self, user, role ):
+        assoc = self.model.UserRoleAssociation( user, role )
+        self.sa_session.add( assoc )
+        self.sa_session.flush()
+        return assoc
     def create_private_user_role( self, user ):
         # Create private role
         role = self.model.Role( name=user.email, description='Private Role for ' + user.email, type=self.model.Role.types.PRIVATE )
@@ -75,6 +85,9 @@ class CommunityRBACAgent( RBACAgent ):
         # Add user to role
         self.associate_components( role=role, user=user )
         return role
+    def get_item_actions( self, action, item ):
+        # item must be one of: Dataset, Library, LibraryFolder, LibraryDataset, LibraryDatasetDatasetAssociation
+        return [ permission for permission in item.actions if permission.action == action.action ]
     def get_private_user_role( self, user, auto_create=False ):
         role = self.sa_session.query( self.model.Role ) \
                               .filter( and_( self.model.Role.table.c.name == user.email, 

@@ -16,18 +16,34 @@ log = logging.getLogger( __name__ )
 
 metadata = MetaData( migrate_engine )
 
-User.table = Table( "galaxy_user", metadata,
+User_table = Table( "galaxy_user", metadata,
     Column( "id", Integer, primary_key=True),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "email", TrimmedString( 255 ), nullable=False ),
-    Column( "username", TrimmedString( 255 ), index=True, unique=True ),
+    Column( "username", String( 255 ), index=True, unique=True, default=False ),
     Column( "password", TrimmedString( 40 ), nullable=False ),
     Column( "external", Boolean, default=False ),
     Column( "deleted", Boolean, index=True, default=False ),
     Column( "purged", Boolean, index=True, default=False ) )
-            
-GalaxySession.table = Table( "galaxy_session", metadata,
+
+UserRoleAssociation_table = Table( "user_role_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+    Column( "role_id", Integer, ForeignKey( "role.id" ), index=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ) )
+
+Role_table = Table( "role", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "name", String( 255 ), index=True, unique=True ),
+    Column( "description", TEXT ),
+    Column( "type", String( 40 ), index=True ),
+    Column( "deleted", Boolean, index=True, default=False ) )
+
+GalaxySession_table = Table( "galaxy_session", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
@@ -40,7 +56,7 @@ GalaxySession.table = Table( "galaxy_session", metadata,
     Column( "prev_session_id", Integer ) # saves a reference to the previous session so we have a way to chain them together
     )
 
-Tool.table = Table( "tool", metadata, 
+Tool_table = Table( "tool", metadata, 
     Column( "id", Integer, primary_key=True ),
     Column( "guid", TrimmedString( 255 ), index=True, unique=True ),
     Column( "create_time", DateTime, default=now ),
@@ -53,7 +69,7 @@ Tool.table = Table( "tool", metadata,
     Column( "external_filename" , TEXT ),
     Column( "deleted", Boolean, default=False ) )
 
-Job.table = Table( "job", metadata,
+Job_table = Table( "job", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
@@ -70,14 +86,14 @@ Job.table = Table( "job", metadata,
     Column( "job_runner_name", String( 255 ) ),
     Column( "job_runner_external_id", String( 255 ) ) )
 
-Tag.table = Table( "tag", metadata,
+Tag_table = Table( "tag", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "type", Integer ),
     Column( "parent_id", Integer, ForeignKey( "tag.id" ) ),
     Column( "name", TrimmedString(255) ), 
     UniqueConstraint( "name" ) )
 
-ToolTagAssociation.table = Table( "tool_tag_association", metadata,
+ToolTagAssociation_table = Table( "tool_tag_association", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "tool_id", Integer, ForeignKey( "tool.id" ), index=True ),
     Column( "tag_id", Integer, ForeignKey( "tag.id" ), index=True ),
@@ -86,7 +102,7 @@ ToolTagAssociation.table = Table( "tool_tag_association", metadata,
     Column( "value", TrimmedString(255), index=True),
     Column( "user_value", TrimmedString(255), index=True) )
 
-ToolAnnotationAssociation.table = Table( "tool_annotation_association", metadata,
+ToolAnnotationAssociation_table = Table( "tool_annotation_association", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "tool_id", Integer, ForeignKey( "tool.id" ), index=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
