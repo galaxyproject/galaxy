@@ -119,6 +119,9 @@
                     else:
                         logout_url = h.url_for( controller='/user', action='logout' )
                 %>
+                %if app.config.get_bool( 'enable_tracks', False ):
+                    <li><a target="galaxy_main" href="${h.url_for( controller='/user', action='dbkeys' )}">Custom Builds</a></li>
+                %endif
                 <li><a target="_top" href="${logout_url}">Logout</a></li>
             %endif
             <li><hr style="color: inherit; background-color: gray"/></li>

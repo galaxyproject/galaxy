@@ -7,6 +7,7 @@ from galaxy import util
 import logging, os, string, re
 from random import choice
 from galaxy.web.form_builder import * 
+from galaxy.util.json import from_json_string, to_json_string
 
 log = logging.getLogger( __name__ )
 
@@ -841,3 +842,56 @@ class User( BaseController ):
                                                           user_id=user_id,
                                                           message='Address <b>%s</b> undeleted' % user_address.desc,
                                                           status='done') )
+    
+    @web.expose
+    @web.require_login()
+    def dbkeys( self, trans, **kwds ):
+        user = trans.get_user()
+        message = None
+        lines_skipped = 0
+        if 'dbkeys' not in user.preferences:
+            dbkeys = {}
+        else:
+            dbkeys = from_json_string(user.preferences['dbkeys'])
+        
+        if 'delete' in kwds:
+            key = kwds.get('key', '')
+            if key and key in dbkeys:
+                del dbkeys[key]
+            
+        elif 'add' in kwds:
+            name     = kwds.get('name', '')
+            key      = kwds.get('key', '')
+            len_file = kwds.get('len_file', None)
+            if getattr(len_file, "file", None): # Check if it's a FieldStorage object
+                len_text = len_file.file.read()
+            else:
+                len_text = kwds.get('len_text', '')
+            if not name or not key or not len_text:
+                message = "You must specify values for all the fields."
+            else:
+                chrom_dict = {}
+                for line in len_text.split("\n"):
+                    lst = line.strip().split()
+                    if not lst or len(lst) < 2:
+                        lines_skipped += 1
+                        continue
+                    chrom, length = lst[0], lst[1]
+                    try:
+                        length = int(length)
+                    except ValueError:
+                        lines_skipped += 1
+                        continue
+                    chrom_dict[chrom] = length
+                dbkeys[key] = { "name": name, "chroms": chrom_dict }
+        
+        user.preferences['dbkeys'] = to_json_string(dbkeys)
+        trans.sa_session.flush()
+        
+        return trans.fill_template( 'user/dbkeys.mako',
+                                    user=user,
+                                    dbkeys=dbkeys,
+                                    message=message,
+                                    lines_skipped=lines_skipped )
+                                    
+                                    

@@ -33,21 +33,25 @@ $(function() {
                 $( '#historyItem-' + data_id + "> div.historyItemTitleBar" ).addClass( "spinner" );
                 $.ajax({
                     url: "${h.url_for( action='delete_async', id='XXX' )}".replace( 'XXX', data_id ),
-                    error: function() { alert( "Delete failed" ) },
-                    success: function() {
-                        %if show_deleted:
-                        var to_update = {};
-                        to_update[data_id] = "none";
-                        updater( to_update );
-                        %else:
-                        $( "#historyItem-" + data_id ).fadeOut( "fast", function() {
-                            $( "#historyItemContainer-" + data_id ).remove();
-                            if ( $( "div.historyItemContainer" ).length < 1 ) {
-                                $( "#emptyHistoryMessage" ).show();
-                            }
-                        });
-                        %endif
-                        $(".tipsy").remove();
+                    error: function() { alert( "Delete failed" ); },
+                    success: function(msg) {
+                        if (msg === "OK") {
+                            %if show_deleted:
+                            var to_update = {};
+                            to_update[data_id] = "none";
+                            updater( to_update );
+                            %else:
+                            $( "#historyItem-" + data_id ).fadeOut( "fast", function() {
+                                $( "#historyItemContainer-" + data_id ).remove();
+                                if ( $( "div.historyItemContainer" ).length < 1 ) {
+                                    $( "#emptyHistoryMessage" ).show();
+                                }
+                            });
+                            %endif
+                            $(".tipsy").remove();
+                        } else {
+                            alert( "Delete failed" );
+                        }
                     }
                 });
                 return false;
