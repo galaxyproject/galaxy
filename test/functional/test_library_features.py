@@ -476,7 +476,8 @@ class TestLibraryFeatures( TwillTestCase ):
     def test_080_mark_dataset_deleted( self ):
         """Testing marking a library dataset as deleted"""
         # Logged in as admin_user
-        self.delete_library_item( self.security.encode_id( library_one.id ),
+        self.delete_library_item( 'library_admin',
+                                  self.security.encode_id( library_one.id ),
                                   self.security.encode_id( ldda_two.library_dataset.id ),
                                   ldda_two.name,
                                   item_type='library_dataset' )
@@ -496,7 +497,8 @@ class TestLibraryFeatures( TwillTestCase ):
     def test_090_mark_folder_deleted( self ):
         """Testing marking a library folder as deleted"""
         # Logged in as admin_user
-        self.delete_library_item( self.security.encode_id( library_one.id ),
+        self.delete_library_item( 'library_admin',
+                                  self.security.encode_id( library_one.id ),
                                   self.security.encode_id( folder_two.id ),
                                   folder_two.name,
                                   item_type='folder' )
@@ -506,7 +508,8 @@ class TestLibraryFeatures( TwillTestCase ):
     def test_095_mark_folder_undeleted( self ):
         """Testing marking a library folder as undeleted"""
         # Logged in as admin_user
-        self.undelete_library_item( self.security.encode_id( library_one.id ),
+        self.undelete_library_item( 'library_admin',
+                                    self.security.encode_id( library_one.id ),
                                     self.security.encode_id( folder_two.id ),
                                     folder_two.name,
                                     item_type='folder' )
@@ -520,11 +523,13 @@ class TestLibraryFeatures( TwillTestCase ):
         """Testing marking a library as deleted"""
         # Logged in as admin_user
         # First mark folder_two as deleted to further test state saving when we undelete the library
-        self.delete_library_item( self.security.encode_id( library_one.id ),
+        self.delete_library_item( 'library_admin',
+                                  self.security.encode_id( library_one.id ),
                                   self.security.encode_id( folder_two.id ),
                                   folder_two.name,
                                   item_type='folder' )
-        self.delete_library_item( self.security.encode_id( library_one.id ),
+        self.delete_library_item( 'library_admin',
+                                  self.security.encode_id( library_one.id ),
                                   self.security.encode_id( library_one.id ),
                                   library_one.name,
                                   item_type='library' )
@@ -533,7 +538,8 @@ class TestLibraryFeatures( TwillTestCase ):
     def test_105_mark_library_undeleted( self ):
         """Testing marking a library as undeleted"""
         # Logged in as admin_user
-        self.undelete_library_item( self.security.encode_id( library_one.id ),
+        self.undelete_library_item( 'library_admin',
+                                    self.security.encode_id( library_one.id ),
                                     self.security.encode_id( library_one.id ),
                                     library_one.name,
                                     item_type='library' )
@@ -545,7 +551,8 @@ class TestLibraryFeatures( TwillTestCase ):
     def test_110_purge_library( self ):
         """Testing purging a library"""
         # Logged in as admin_user
-        self.delete_library_item( self.security.encode_id( library_one.id ),
+        self.delete_library_item( 'library_admin',
+                                  self.security.encode_id( library_one.id ),
                                   self.security.encode_id( library_one.id ),
                                   library_one.name,
                                   item_type='library' )
@@ -612,7 +619,8 @@ class TestLibraryFeatures( TwillTestCase ):
         # TODO: add a functional test to cover adding a library dataset via url_paste here...
         # TODO: Add a functional test to cover checking the space_to_tab checkbox here...
         # Delete and purge the library
-        self.delete_library_item( self.security.encode_id( library_two.id ),
+        self.delete_library_item( 'library_admin',
+                                  self.security.encode_id( library_two.id ),
                                   self.security.encode_id( library_two.id ),
                                   library_two.name,
                                   item_type='library' )
@@ -625,7 +633,8 @@ class TestLibraryFeatures( TwillTestCase ):
         # Purge all libraries
         ##################
         for library in [ library_one, library_two ]:
-            self.delete_library_item( self.security.encode_id( library.id ),
+            self.delete_library_item( 'library_admin',
+                                      self.security.encode_id( library.id ),
                                       self.security.encode_id( library.id ),
                                       library.name,
                                       item_type='library' )

@@ -569,7 +569,8 @@ class TestLibrarySecurity( TwillTestCase ):
         # Purge all libraries
         ##################
         for library in [ library_one, library_two ]:
-            self.delete_library_item( self.security.encode_id( library.id ),
+            self.delete_library_item( 'library_admin',
+                                      self.security.encode_id( library.id ),
                                       self.security.encode_id( library.id ),
                                       library.name,
                                       item_type='library' )

@@ -2014,11 +2014,11 @@ class TwillTestCase( unittest.TestCase ):
                 errmsg += 'Unpacked archive remains in: %s\n' % tmpd
                 raise AssertionError( errmsg )
         shutil.rmtree( tmpd )
-    def delete_library_item( self, library_id, item_id, item_name, item_type='library_dataset' ):
+    def delete_library_item( self, cntrller, library_id, item_id, item_name, item_type='library_dataset' ):
         """Mark a library item as deleted"""
         self.home()
-        self.visit_url( "%s/library_admin/delete_library_item?library_id=%s&item_id=%s&item_type=%s" \
-                        % ( self.url, library_id, item_id, item_type ) )
+        self.visit_url( "%s/library_common/delete_library_item?cntrller=%s&library_id=%s&item_id=%s&item_type=%s" \
+                        % ( self.url, cntrller, library_id, item_id, item_type ) )
         if item_type == 'library_dataset':
             item_desc = 'Dataset'
         else:
@@ -2026,11 +2026,11 @@ class TwillTestCase( unittest.TestCase ):
         check_str = "%s '%s' has been marked deleted" % ( item_desc, item_name )
         self.check_page_for_string( check_str )
         self.home()
-    def undelete_library_item( self, library_id, item_id, item_name, item_type='library_dataset' ):
+    def undelete_library_item( self, cntrller, library_id, item_id, item_name, item_type='library_dataset' ):
         """Mark a library item as deleted"""
         self.home()
-        self.visit_url( "%s/library_admin/undelete_library_item?library_id=%s&item_id=%s&item_type=%s" \
-                        % ( self.url, library_id, item_id, item_type ) )
+        self.visit_url( "%s/library_common/undelete_library_item?cntrller=%s&library_id=%s&item_id=%s&item_type=%s" \
+                        % ( self.url, cntrller, library_id, item_id, item_type ) )
         if item_type == 'library_dataset':
             item_desc = 'Dataset'
         else:
