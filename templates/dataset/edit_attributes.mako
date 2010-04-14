@@ -4,12 +4,12 @@
 <%def name="title()">${_('Edit Dataset Attributes')}</%def>
 
 <%def name="stylesheets()">
-    ${h.css( "base", "autocomplete_tagging" )}
+    ${h.css( "base" )}
 </%def>
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js( "galaxy.base", "jquery.autocomplete", "autocomplete_tagging" )}
+    ${h.js( "galaxy.base" )}
 </%def>
 
 <%def name="datatype( dataset, datatypes )">
@@ -52,22 +52,6 @@
                 <div style="clear: both"></div>
             </div>
             %if trans.get_user() is not None:
-    			<%namespace file="../tagging_common.mako" import="render_individual_tagging_element" />
-                <div class="form-row">
-                    <label>
-                        Tags:
-                    </label>
-                    <div style="float: left; width: 295px; margin-right: 10px; border-style: inset; border-width: 1px; margin-left: 2px">
-                        <style>
-                            .tag-area {
-                                border: none;
-                            }
-                        </style>
-                        ${render_individual_tagging_element(user=trans.get_user(), tagged_item=data, elt_context="edit_attributes.mako", use_toggle_link=False, in_form=True, input_size="30")}
-                    </div>
-                    <div style="clear: both"></div>
-                    <div class="toolParamHelp">Apply tags to make it easy to search for and find items with the same tag.</div>
-                </div>
                 <div class="form-row">                    
                     <label>
                         Annotation / Notes:
