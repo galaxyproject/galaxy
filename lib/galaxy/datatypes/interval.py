@@ -718,10 +718,8 @@ class Gff( Tabular, _RemoteCallMixin ):
                         return False
                     if hdr[5] != '.':
                         try:
-                            score = int(hdr[5])
+                            score = float( hdr[5] )
                         except:
-                            return False
-                        if (score < 0 or score > 1000):
                             return False
                     if hdr[6] not in data.valid_strand:
                         return False
@@ -822,10 +820,8 @@ class Gff3( Gff ):
                             return False
                     if hdr[5] != '.':
                         try:
-                            score = int(hdr[5])
+                            score = float( hdr[5] )
                         except:
-                            return False
-                        if (score < 0 or score > 1000):
                             return False
                     if hdr[6] not in self.valid_gff3_strand:
                         return False
