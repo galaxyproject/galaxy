@@ -123,8 +123,8 @@
                     <li><a target="galaxy_main" href="${h.url_for( controller='/user', action='dbkeys' )}">Custom Builds</a></li>
                 %endif
                 <li><a target="_top" href="${logout_url}">Logout</a></li>
+                <li><hr style="color: inherit; background-color: gray"/></li>
             %endif
-            <li><hr style="color: inherit; background-color: gray"/></li>
             <li><a target="galaxy_main" href="${h.url_for( controller='/history', action='list' )}">Histories</a></li>
             <li><a target="galaxy_main" href="${h.url_for( controller='/dataset', action='list' )}">Datasets</a></li>
             %if app.config.get_bool( 'enable_pages', False ):
