@@ -118,11 +118,14 @@ class User( BaseController ):
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         referer = kwd.get( 'referer', trans.request.referer )
-        if not refresh_frames and webapp == 'galaxy':
-            if trans.app.config.require_login:
-                refresh_frames = [ 'masthead', 'history', 'tools' ]
+        if not refresh_frames:
+            if webapp == 'galaxy':
+                if trans.app.config.require_login:
+                    refresh_frames = [ 'masthead', 'history', 'tools' ]
+                else:
+                    refresh_frames = [ 'masthead', 'history' ]
             else:
-                refresh_frames = [ 'masthead', 'history' ]
+                refresh_frames = [ 'masthead' ]
         error = ''
         if not trans.app.config.allow_user_creation and not trans.user_is_admin():
             error = 'User registration is disabled.  Please contact your Galaxy administrator for an account.'
@@ -162,6 +165,9 @@ class User( BaseController ):
                                                                    action='users',
                                                                    message='Created new user account (%s)' % user.email,
                                                                    status='done' ) )
+                else:
+                    # Must be logging into the community space webapp
+                    trans.handle_user_login( user, webapp )
             if not error:
                 redirect_url = referer
         if error:

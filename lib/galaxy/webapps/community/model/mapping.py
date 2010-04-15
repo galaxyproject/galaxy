@@ -44,7 +44,7 @@ User.table = Table( "galaxy_user", metadata,
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "email", TrimmedString( 255 ), nullable=False ),
-    Column( "username", String( 255 ), index=True, unique=True, default=False ),
+    Column( "username", String( 255 ), index=True ),
     Column( "password", TrimmedString( 40 ), nullable=False ),
     Column( "external", Boolean, default=False ),
     Column( "deleted", Boolean, index=True, default=False ),
@@ -193,7 +193,6 @@ def load_egg_for_url( url ):
 
 def init( file_path, url, engine_options={}, create_tables=False ):
     """Connect mappings to the database"""
-    log.debug("###In init, file_path: %s" % str( file_path ))
     # Connect dataset to the file path
     Tool.file_path = file_path
     # Load the appropriate db module
