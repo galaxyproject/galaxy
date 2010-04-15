@@ -10,8 +10,10 @@
     <p>You are currently logged in as ${trans.user.email}.</p>
     <ul>
         %if webapp == 'galaxy':
-            <li><a href="${h.url_for( action='show_info' )}">${_('Manage your information')}</a></li>
-            <li><a href="${h.url_for( action='set_default_permissions' )}">${_('Change default permissions')}</a> for new histories</li>
+            <li><a href="${h.url_for( controller='user', action='show_info' )}">${_('Manage your information')}</a></li>
+            <li><a href="${h.url_for( controller='user', action='set_default_permissions' )}">${_('Change default permissions')}</a> for new histories</li>
+        %else:
+            <li><a href="${h.url_for( controller='user', action='show_info', webapp='community' )}">${_('Manage your information')}</a></li>
         %endif
     </ul>
 %else:
