@@ -42,7 +42,11 @@
 
 <%def name="grid_javascripts()">
     ${h.js("jquery.autocomplete", "autocomplete_tagging" )}
-    <script type="text/javascript">        
+    <script type="text/javascript">
+        // This is necessary so that, when nested arrays are used in ajax/post/get methods, square brackets ('[]') are
+        // not appended to the identifier of a nested array.
+        jQuery.ajaxSettings.traditional = true;
+        
         ## TODO: generalize and move into galaxy.base.js
         $(document).ready(function() {
             init_grid_elements();
@@ -461,8 +465,8 @@
             operation = operation.toLowerCase();
             
             // Update URL args.
-            url_args['operation'] = operation;
-            url_args['id'] = item_ids;
+            url_args["operation"] = operation;
+            url_args["id"] = item_ids;
             
             // If operation cannot be performed asynchronously, redirect to location. Otherwise do operation.
             var no_async = ( async_ops[operation] === undefined || async_ops[operation] === null);
