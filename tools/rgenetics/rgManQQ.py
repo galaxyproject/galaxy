@@ -129,27 +129,27 @@ dn = names(rawd)
 cc = dn[chromcolumn]
 oc = dn[offsetcolumn] 
 nams = c(cc,oc)
-plen = length(d[,1])
-doreorder=True
+plen = length(rawd[,1])
+doreorder=1
 print(paste('###',plen,'values read from',infile,'read - now running plots',sep=' '))
 if (plen > 0) {
   for (pvalscolumn in pvalscolumns) {
   if (pvalscolumn > 0) 
      {
-     cname = names(d)[pvalscolumn]
+     cname = names(rawd)[pvalscolumn]
      mytitle = paste('p=',cname,', ',title,sep='')
      myfname = chartr(' ','_',cname)
-     myqqplot = qq(d[,pvalscolumn],title=mytitle)
+     myqqplot = qq(rawd[,pvalscolumn],title=mytitle)
      print(paste('## qqplot on',cname,'done'))
      if ((chromcolumn > 0) & (offsetcolumn > 0)) {
          if (doreorder) {
-             d = rawd[do.call(order,rawd[nams]),]
+             rawd = rawd[do.call(order,rawd[nams]),]
              # mmmf - suggested by http://onertipaday.blogspot.com/2007/08/sortingordering-dataframe-according.html
              # in case not yet ordered
-             doreorder = False
+             doreorder = 0
              }
          print(paste('## manhattan on',cname,'starting',chromcolumn,offsetcolumn,pvalscolumn))
-         mymanplot= manhattan(chrom=d[,chromcolumn],offset=d[,offsetcolumn],pvals=d[,pvalscolumn],title=mytitle,grey=grey)
+         mymanplot= manhattan(chrom=rawd[,chromcolumn],offset=rawd[,offsetcolumn],pvals=rawd[,pvalscolumn],title=mytitle,grey=grey)
          print(paste('## manhattan plot on',cname,'done'))
          ggsave(file=paste(myfname,"manhattan.png",sep='_'),mymanplot,width=11,height=8,dpi=100)
          }

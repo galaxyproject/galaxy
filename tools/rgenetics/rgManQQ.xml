@@ -37,7 +37,7 @@
  <test>
  <param name='i' value='smallwgaP.xls' ftype='tabular' >
  </param>
- <param name='name' value='rgManQQ_test1' />
+ <param name='name' value='rgManQQtest1' />
  <param name='pval_col' value='5,7' />
  <param name='chrom_col' value='1' />
  <param name='offset_col' value='2' />

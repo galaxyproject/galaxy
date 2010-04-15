@@ -53,7 +53,7 @@
 
     <param name="infoTrack" type="select" label="Add Hapmap information track to image"
     help="Refseq genes and snp density can be added to the plot if desired for orientation" >
-    <option value="info">Add Information track (Not available - awaiting fix from Haploview authors)</option>
+    <option value="info">Add Information track (DISABLED! Awaiting fix from Haploview authors)</option>
     <option value="noinfo" selected="True">No Information track</option>
     </param>
 

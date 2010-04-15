@@ -63,7 +63,8 @@ try:
 except NameError:
   from Sets import Set as set
 
-from rgutils import timenow,pruneLD,plinke
+from rgutils import timenow,pruneLD,plinke,openOrMakeLDreduced
+
 import plinkbinJZ
 
 
@@ -1002,61 +1003,6 @@ def doIBSpy(ped=None,basename='',outdir=None,logf=None,
     svg.close()
     return newfiles,explanations,repOut
 
-def makeOpenLDR(ldreduced=None,basename=None,newfpath=None,plinke='plink'):
-    """we stow a thin ldreduced version of the primary file in the files_path for future runs
-    if none there yet - ugh the --thin option will happily return zero snps if only a few
-    """
-    ped = None
-    loglines = []
-    ldbedname = '%s.bed' % ldreduced
-    ldpedname = '%s.ped' % ldreduced
-    bedname = '%s.bed' % basename
-    pedname = '%s.ped' % basename
-    ldbedfn = os.path.join(newfpath,ldbedname)
-    ldpedfn = os.path.join(newfpath,ldpedname)
-    bedfn = os.path.join(newfpath,bedname)
-    pedfn = os.path.join(newfpath,pedname)
-    bmap = os.path.join(newfpath,'%s.bim' % basename)
-    pmap = os.path.join(newfpath,'%s.map' % basename)
-    if os.path.exists(ldbedfn): # joy. already done
-        ped = plinkbinJZ.BPed(os.path.splitext(ldbedfn)[0])
-        ped.parse(quick=True)
-    elif os.path.exists(ldpedfn): # why bother - for completeness I guess
-        ped = plinkbinJZ.LPed(os.path.splitext(ldbedfn)[0])
-        ped.parse()
-    elif os.path.exists(bedfn): # run ld prune and thin and save these for next time
-        nsnp = len(open(bmap,'r').readlines())
-        if nsnp > 100: # if 9 snps --thin 0.1 will happily return 0 snps 
-            plinktasks = [['--bfile',basename,'--indep-pairwise 50 40 0.2','--out %s' % basename],
-            ['--bfile',basename,'--extract %s.prune.in --make-bed --out %s_INDEP' % (basename, basename)],
-            ['--bfile %s_INDEP --thin 0.1 --make-bed --out %s' % (basename,ldreduced)]]
-        else: # no thin stage
-            plinktasks = [['--bfile',basename,'--indep-pairwise 50 40 0.2','--out %s' % basename],
-            ['--bfile',basename,'--extract %s.prune.in --make-bed --out %s' % (basename, ldreduced)]]
-        # subset of ld independent markers for eigenstrat and other requirements
-        vclbase = [plinke,'--noweb']
-        loglines = pruneLD(plinktasks=plinktasks,cd=newfpath,vclbase = vclbase)
-        ped = plinkbinJZ.BPed(os.path.splitext(ldbedfn)[0])
-        ped.parse(quick=True)
-    elif pedname and os.path.exists(pedfn): # screw it - return a bed - quicker to process
-        nsnp = len(open(pmap,'r').readlines())
-        if nsnp > 100:
-            plinktasks = [['--file',basename,'--make-bed','--out',basename],
-                     ['--bfile',basename,'--indep-pairwise 50 40 0.2','--out %s' % basename],
-                     ['--bfile',basename,'--extract %s.prune.in --make-bed --out %s_INDEP' % (basename, basename)],
-                     ['--bfile %s_INDEP --thin 0.1 --recode --out %s' % (bedname,ldreduced),]]
-        else: # no thin step
-            plinktasks = [['--file',basename,'--make-bed','--out',basename],
-                     ['--bfile',basename,'--indep-pairwise 50 40 0.2','--out %s' % basename],
-                     ['--bfile',basename,'--extract %s.prune.in --make-bed --out %s' % (basename, ldreduced)]]
-
-        # subset of ld independent markers for eigenstrat and other requirements
-        vclbase = [plinke,'--noweb']
-        loglines = pruneLD(plinktasks=plinktasks,cd=newfpath,vclbase = vclbase)
-        ped = plinkbinJZ.BPed(os.path.splitext(ldbedfn)[0])
-        ped.parse(quick=True)
-    return ped,loglines
-    
 def doIBS(n=100):
     """parse parameters from galaxy
     expect 'input pbed path' 'basename' 'outpath' 'title' 'logpath' 'n'
@@ -1078,6 +1024,7 @@ def doIBS(n=100):
     ts = '%s%s' % (string.punctuation,string.whitespace)
     ptran =  string.maketrans(ts,'_'*len(ts))
     inpath = sys.argv[1]
+    ldpath = os.path.split(inpath)[0]
     basename = sys.argv[2]
     outhtml = sys.argv[3]
     newfilepath = sys.argv[4]
@@ -1095,14 +1042,13 @@ def doIBS(n=100):
         pass
     logf = file(logpath,'w')
     efp,ibase_name = os.path.split(inpath) # need to use these for outputs in files_path
-    ldreduced = '%s_INDEP_THIN' % ibase_name # we store ld reduced and thinned data
-    ped,loglines = makeOpenLDR(ldreduced=ldreduced,basename=ibase_name,newfpath=efp,plinke=plinke)
+    ped,loglines = openOrMakeLDreduced(basename,ldpath,plinke)
     if ped == None:
-        print >> sys.stderr, '## doIBSpy problem - cannot open %s or %s - cannot run' % (bedname,pedname)
+        print >> sys.stderr, '## doIBSpy problem - cannot open %s or %s - cannot run' % (ldreduced,basename)
         sys.exit(1)
     if len(loglines) > 0:
         logf.write('### first time for this input file - log from creating an ld reduced and thinned data set:\n')
-        logf.write('\n'.join(loglines))
+        logf.write(''.join(loglines))
         logf.write('\n')
     newfiles,explanations,repOut = doIBSpy(ped=ped,basename=basename,outdir=newfilepath,
                                     logf=logf,nrsSamples=n,title=title,pdftoo=0,Zcutoff=Zcutoff)

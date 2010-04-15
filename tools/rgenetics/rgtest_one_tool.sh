@@ -6,11 +6,12 @@ case $# in 0) echo "USAGE: ${0##*/} TooltoTest"; exit 1;;
            *)
 esac
 GALAXYROOT=`pwd`
+PATHTOGALAXY='/opt/galaxy' # whatever
 echo "using $GALAXYROOT"
 # change this as needed for your local install
 INPATH="${GALAXYROOT}/test-data"
 BINPATH="${GALAXYROOT}/tool-data/rg/bin"
-TOOLPATH="${GALAXYROOT}/tools/rgenetics"
+TOOLPATH="${PATHTOGALAXY}/tools/rgenetics"
 OROOT="${GALAXYROOT}/test-data/rgtestouts"
 NORMALOROOT="${GALAXYROOT}/test-data"
 case "$1" in
@@ -67,6 +68,8 @@ NPRE=${TOOL}test1
 echo "now doing $TOOL"
 OUTPATH="$OROOT/$TOOL"
 rm -rf $OUTPATH/*
+cmd="$TOOLPATH/$TOOL.py "$INPATH/tinywga" "tinywga" $OUTPATH/${NPRE}.html $OUTPATH "$NPRE" '100' '6'"
+echo "Doing $cmd"
 python $TOOLPATH/$TOOL.py "$INPATH/tinywga" "tinywga" $OUTPATH/${NPRE}.html $OUTPATH "$NPRE" '100' '6' 
 # rgGRR.py $i.extra_files_path/$i.metadata.base_name "$i.metadata.base_name"
 #'$out_file1' '$out_file1.files_path' "$title"  '$n' '$Z' 

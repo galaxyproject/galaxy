@@ -314,7 +314,7 @@ class RootController( BaseController, UsesHistory, UsesAnnotations ):
                     return trans.show_error_message( "This dataset is currently being used as input or output.  You cannot change metadata until the jobs have completed or you have canceled them." )
                 for name, spec in data.metadata.spec.items():
                     # We need to be careful about the attributes we are resetting
-                    if name not in [ 'name', 'info', 'dbkey' ]:
+                    if name not in [ 'name', 'info', 'dbkey', 'base_name' ]:
                         if spec.get( 'default' ):
                             setattr( data.metadata, name, spec.unwrap( spec.get( 'default' ) ) )
                 if trans.app.config.set_metadata_externally:

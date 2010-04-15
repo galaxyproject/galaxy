@@ -84,6 +84,7 @@ def ld():
     outfpath = sys.argv[12]
     infotrack = False # note that otherwise this breaks haploview in headless mode 
     #infotrack = sys.argv[13] == 'info'
+    # this fails in headless mode as at april 2010 with haploview 4.2
     tagr2 = sys.argv[14] or '0.8'
     hmpanels = sys.argv[15] # eg "['CEU','YRI']"
     if hmpanels:

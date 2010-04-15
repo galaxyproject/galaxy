@@ -1264,8 +1264,7 @@ if __name__ == "__main__":
     plinktasks = [['--freq',],['--hwe 0.0', '--missing','--hardy'],
     ['--mendel',],['--check-sex',]]
     vclbase = [options.plinke,'--noweb','--out',basename,'--bfile',bfn,'--mind','1.0','--geno','1.0','--maf','0.0']
-    runPlink(bfn = bfn,ofn = ofn,logf=plogf,plinktasks=plinktasks,cd=newfpath,
-    vclbase=vclbase)
+    runPlink(logf=plogf,plinktasks=plinktasks,cd=newfpath, vclbase=vclbase)
     plinktasks = [['--bfile',bfn,'--indep-pairwise 40 20 0.5','--out %s' % basename],
     ['--bfile',bfn,'--extract %s.prune.in --make-bed --out ldp_%s' % (basename, basename)],
                   ['--bfile ldp_%s --het --out %s' % (basename,basename)]]
