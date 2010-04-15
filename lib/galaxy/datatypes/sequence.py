@@ -163,7 +163,7 @@ class Fastq ( Sequence ):
         seq_counter = 0     # blocks should be 4 lines long
         for line in file( dataset.file_name ):
             line = line.strip()
-            if line and line.startswith( '#' ):
+            if line and line.startswith( '#' ) and not sequences:
                 # We don't count comment lines for sequence data types
                 continue
             if line and line.startswith( '@' ): 
