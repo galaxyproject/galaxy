@@ -93,7 +93,7 @@
       <param name="type_select" value="ten"/>
       <param name="qv_cutoff" value="20" />
       <param name="cvrg_cutoff" value="3" />
-      <param name="snps_only" value="Yes"/>
+      <param name="snps_only" value="Yes"/>q
       <param name="interval" value="Yes" />
        <param name="diff" value="No" />
       <param name="qc_base" value="Yes" />
@@ -183,7 +183,7 @@ where::
        2 Position (1-based)
        3 Reference base at that position
        4 Coverage (# reads aligning over that position)
-       5 Bases within reads where (see Galaxy wiki for more info)
+       5 Bases within reads
        6 Quality values (phred33 scale, see Galaxy wiki for more)
        
 **Ten column pileup**
@@ -210,7 +210,7 @@ where::
        6 SNP quality
        7 Maximum mapping quality
        8 Coverage (# reads aligning over that position)
-       9 Bases within reads where (see Galaxy wiki for more info)
+       9 Bases within reads
       10 Quality values (phred33 scale, see Galaxy wiki for more)
 
 
@@ -255,7 +255,7 @@ where::
        2 Position (1-based)
        3 Reference base at that position
        4 Coverage (# reads aligning over that position)
-       5 Bases within reads where (see Galaxy wiki for more info) 
+       5 Bases within reads where
        6 Quality values (phred33 scale, see Galaxy wiki for more)
        7 Number of A variants
        8 Number of C variants
@@ -289,7 +289,7 @@ where::
        3 End position (1-based)
        4 Reference base at that position
        5 Coverage (# reads aligning over that position)
-       6 Bases within reads where (see Galaxy wiki for more info)
+       6 Bases within reads
        7 Quality values (phred33 scale, see Galaxy wiki for more)
        8 Number of A variants
        9 Number of C variants
