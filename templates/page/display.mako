@@ -29,7 +29,7 @@
                                 container.find(".toggle-contract").show();
 
                                 // Init needed for history items.
-                                init_history_items( container.find("div.historyItemWrapper"), true ); 
+                                init_history_items( container.find("div.historyItemWrapper"), "noinit", "nochanges" ); 
                                 container.find( "div.historyItemBody:visible" ).each( function() {
                                     if ( $.browser.mozilla ) {
                                         $(this).find( "pre.peek" ).css( "overflow", "hidden" );

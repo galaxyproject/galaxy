@@ -8,7 +8,7 @@
     ${h.js( "galaxy.base", "jquery", "json2", "class", "jquery.jstore" )}
     <script type="text/javascript">
         $(function() {
-            init_history_items( $("div.historyItemWrapper") );
+            init_history_items( $("div.historyItemWrapper"), false, "nochanges" );
         });
     </script>
 </%def>

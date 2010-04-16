@@ -155,6 +155,35 @@ $(function() {
         });
     });
     
+    // Trackster links
+    function init_trackster_links() {
+        $("a.trackster").live( "click", function() {
+            var link = $(this),
+                hid = link.attr("id").split("_")[1]; // visualize_{id}
+
+            $.ajax({
+                url: "${h.url_for( controller='tracks', action='list_tracks' )}",
+                data: {'hid': hid},
+                error: function() { alert( "Visualization error" ); },
+                success: function(html) {
+                    show_modal("Add Track &mdash; Select Dataset(s)", html, {
+                        "New Browser": function() {
+                            hide_modal();
+                        },
+                        "Insert": function() {
+                            hide_modal();
+                        },
+                        "Cancel": function() {
+                            hide_modal();
+                        }
+                    });
+                }
+            });
+        });    
+    }
+    
+    init_trackster_links();
+    
     // History rename functionality.
     async_save_text("history-name-container", "history-name", "${h.url_for( controller="/history", action="rename_async", id=trans.security.encode_id(history.id) )}", "new_name", 18);
     

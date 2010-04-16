@@ -12,7 +12,7 @@
 <%def name="stylesheets()">
 ${parent.stylesheets()}
 
-${h.css( "history" )}
+${h.css( "history", "autocomplete_tagging" )}
 <link rel="stylesheet" type="text/css" href="${h.url_for('/static/trackster.css')}" />
 <style type="text/css">
     ul#sortable-ul {
@@ -82,7 +82,7 @@ ${h.css( "history" )}
 
 <%def name="javascripts()">
 ${parent.javascripts()}
-${h.js( 'galaxy.base', 'galaxy.panels', "json2", "jquery", "jquery.event.drag", "jquery.mousewheel", "trackster", "ui.core", "ui.sortable" )}
+${h.js( 'galaxy.base', 'galaxy.panels', "json2", "jquery", "jquery.event.drag", "jquery.autocomplete", "jquery.mousewheel", "trackster", "ui.core", "ui.sortable" )}
 
 <script type="text/javascript">
 
@@ -112,9 +112,10 @@ ${h.js( 'galaxy.base', 'galaxy.panels', "json2", "jquery", "jquery.event.drag", 
                 success: function(form_html) {
                     show_modal("New Track Browser", form_html, {
                         "Cancel": function() { window.location = "/"; },
-                        "Continue": continue_fn
+                        "Continue": function() { $(document).trigger("convert_dbkeys"); continue_fn(); }
                     });
                     $("#new-title").focus();
+                    replace_big_select_inputs();
                 }
             });
         %endif
@@ -194,7 +195,7 @@ ${h.js( 'galaxy.base', 'galaxy.panels', "json2", "jquery", "jquery.event.drag", 
                 $.ajax({
                     url: "${h.url_for( action='list_datasets' )}",
                     data: {},
-                    error: function() { alert( "Grid refresh failed" ) },
+                    error: function() { alert( "Grid refresh failed" ); },
                     success: function(table_html) {
                         show_modal("Add Track &mdash; Select Dataset(s)", table_html, {
                             "Insert": function() {
@@ -271,31 +272,39 @@ ${h.js( 'galaxy.base', 'galaxy.panels', "json2", "jquery", "jquery.event.drag", 
             view.add_label_track( new LabelTrack( $("#top-labeltrack" ) ) );
             view.add_label_track( new LabelTrack( $("#nav-labeltrack" ) ) );
             
-            $.getJSON( "${h.url_for( action='chroms' )}", { dbkey: view.dbkey }, function ( data ) {
-                view.chrom_data = data;
-                var chrom_options = '<option value="">Select Chrom/Contig</option>';
-                for (i in data) {
-                    var chrom = data[i]['chrom']
-                    chrom_options += '<option value="' + chrom + '">' + chrom + '</option>';
-                }
-                $("#chrom").html(chrom_options);
-                $("#chrom").bind( "change", function () {
-                    view.chrom = $("#chrom").val();
-                    var found = $.grep(view.chrom_data, function(v, i) {
-                        return v.chrom === view.chrom;
-                    })[0];
-                    view.max_high = found.len;
-                    view.reset();
-                    view.redraw(true);
-                    
-                    for (var track_id in view.tracks) {
-                        var track = view.tracks[track_id];
-                        if (track.init) {
-                            track.init();
-                        }
+            $.ajax({
+                url: "${h.url_for( action='chroms' )}", 
+                data: { dbkey: view.dbkey },
+                dataType: "json",
+                success: function ( data ) {
+                    view.chrom_data = data;
+                    var chrom_options = '<option value="">Select Chrom/Contig</option>';
+                    for (i in data) {
+                        var chrom = data[i]['chrom']
+                        chrom_options += '<option value="' + chrom + '">' + chrom + '</option>';
                     }
-                    view.redraw();
-                });
+                    $("#chrom").html(chrom_options);
+                    $("#chrom").bind( "change", function () {
+                        view.chrom = $("#chrom").val();
+                        var found = $.grep(view.chrom_data, function(v, i) {
+                            return v.chrom === view.chrom;
+                        })[0];
+                        view.max_high = found.len;
+                        view.reset();
+                        view.redraw(true);
+                    
+                        for (var track_id in view.tracks) {
+                            var track = view.tracks[track_id];
+                            if (track.init) {
+                                track.init();
+                            }
+                        }
+                        view.redraw();
+                    });
+                },
+                error: function() {
+                    alert( "Could not load chroms for this dbkey:", view.dbkey );
+                }
             });
             
             function sidebar_box(track) {

@@ -13,14 +13,15 @@ Problems
    need to support that, but need to make user defined build support better)
 """
 
-import math, re, logging
+import math, re, logging, glob
 log = logging.getLogger(__name__)
 
-from galaxy.util.json import to_json_string
+from galaxy.util.json import to_json_string, from_json_string
 from galaxy.web.base.controller import *
 from galaxy.web.framework import simplejson
 from galaxy.web.framework.helpers import time_ago, grids
 from galaxy.util.bunch import Bunch
+from galaxy.util import dbnames
 
 from galaxy.visualization.tracks.data.array_tree import ArrayTreeDataProvider
 from galaxy.visualization.tracks.data.interval_index import IntervalIndexDataProvider
@@ -78,8 +79,10 @@ class TracksController( BaseController ):
     """
     
     available_tracks = None
+    len_dbkeys = None
     
     @web.expose
+    @web.require_login()
     def index( self, trans ):
         config = {}
         
@@ -88,12 +91,17 @@ class TracksController( BaseController ):
     @web.expose
     @web.require_login()
     def new_browser( self, trans ):
-        dbkeys = [ d.metadata.dbkey for d in trans.get_history().datasets if not d.deleted ]
-        dbkey_set = set( dbkeys )
-        if not dbkey_set:
-            return trans.show_error_message( "Current history has no valid datasets to visualize." )
-        else:
-            return trans.fill_template( "tracks/new_browser.mako", dbkey_set=dbkey_set )
+        if not self.len_dbkeys:
+            len_files = glob.glob(os.path.join( trans.app.config.tool_data_path, 'shared','ucsc','chrom', "*.len" ))
+            len_files = [ os.path.split(f)[1].split(".len")[0] for f in len_files ] # get xxx.len
+            loaded_dbkeys = dbnames
+            self.len_dbkeys = [ (k, v) for k, v in loaded_dbkeys if k in len_files ]
+        
+        user_keys = None
+        user = trans.get_user()
+        if 'dbkeys' in user.preferences:
+            user_keys = from_json_string( user.preferences['dbkeys'] )
+        return trans.fill_template( "tracks/new_browser.mako", user_keys=user_keys, dbkeys=self.len_dbkeys )
             
     @web.json
     @web.require_login()
@@ -150,6 +158,7 @@ class TracksController( BaseController ):
         return trans.fill_template( 'tracks/browser.mako', config=config )
 
     @web.json
+    @web.require_login()
     def chroms(self, trans, dbkey=None ):
         """
         Returns a naturally sorted list of chroms/contigs for the given dbkey
@@ -173,6 +182,12 @@ class TracksController( BaseController ):
         Called by the browser to get a list of valid chromosomes and lengths
         """
         # If there is any dataset in the history of extension `len`, this will use it
+        user = trans.get_user()
+        if 'dbkeys' in user.preferences:
+            user_keys = from_json_string( user.preferences['dbkeys'] )
+            if dbkey in user_keys:
+                return user_keys[dbkey]['chroms']
+            
         db_manifest = trans.db_dataset_for( dbkey )
         if not db_manifest:
             db_manifest = os.path.join( trans.app.config.tool_data_path, 'shared','ucsc','chrom', "%s.len" % dbkey )
@@ -214,8 +229,6 @@ class TracksController( BaseController ):
                 
             if not converted_dataset or converted_dataset.state != model.Dataset.states.OK:
                 return messages.PENDING
-                
-            
             
         extra_info = None
         if 'index' in data_sources:
@@ -235,6 +248,10 @@ class TracksController( BaseController ):
 
         data = data_provider.get_data( chrom, low, high, **kwargs )
         return { "dataset_type": dataset_type, "extra_info": extra_info, "data": data }
+    
+    @web.expose
+    def list_tracks( self, trans, hid ):
+        return None
     
     @web.json
     def save( self, trans, **kwargs ):

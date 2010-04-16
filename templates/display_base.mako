@@ -64,7 +64,7 @@
                 });
             });
             // Init history boxes
-            init_history_items( $("div.historyItemWrapper") );
+            init_history_items( $("div.historyItemWrapper"), false, "nochanges" );
         });    
     </script>
 </%def>

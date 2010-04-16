@@ -119,6 +119,31 @@ function array_length(an_array) {
     return count;
 }
 
+// Alphanumeric/natural sort fn
+function naturalSort(a, b){
+    // setup temp-scope variables for comparison evauluation
+    var re = /(-?[0-9\.]+)/g,
+        x = a.toString().toLowerCase() || '',
+        y = b.toString().toLowerCase() || '',
+        nC = String.fromCharCode(0),
+        xN = x.replace( re, nC + '$1' + nC ).split(nC),
+        yN = y.replace( re, nC + '$1' + nC ).split(nC),
+        xD = (new Date(x)).getTime(),
+        yD = xD ? (new Date(y)).getTime() : null;
+    // natural sorting of dates
+    if ( yD )
+        if ( xD < yD ) return -1;
+        else if ( xD > yD ) return 1;
+    // natural sorting through split numeric strings and default strings
+    for( var cLoc = 0, numS = Math.max(xN.length, yN.length); cLoc < numS; cLoc++ ) {
+        oFxNcL = parseFloat(xN[cLoc]) || xN[cLoc];
+        oFyNcL = parseFloat(yN[cLoc]) || yN[cLoc];
+        if (oFxNcL < oFyNcL) return -1;
+        else if (oFxNcL > oFyNcL) return 1;
+    }
+    return 0;
+}
+
 // Replace any select box with 20+ options with a text input box + autocomplete.
 // TODO: make work with dynamic tool inputs and then can replace all big selects.
 function replace_big_select_inputs() {
@@ -135,6 +160,7 @@ function replace_big_select_inputs() {
         var text_input_elt = $("<input type='text' class='text-and-autocomplete-select'></input>");
         text_input_elt.attr('size', 40);
         text_input_elt.attr('name', select_elt.attr('name'));
+        text_input_elt.attr('id', select_elt.attr('id'));
         text_input_elt.click( function() {
             // Show all. Also provide note that load is happening since this can be slow.
             var cur_value = $(this).attr('value');
@@ -175,11 +201,14 @@ function replace_big_select_inputs() {
         select_options.push( "unspecified (?)" );
         select_mapping[ "unspecified (?)"  ] = "?";
         select_mapping[ "?" ] = "?";
-                
+        
         // Set initial text if it's empty.
         if ( text_input_elt.attr('value') == '' ) {
             text_input_elt.attr('value', 'Click to Search or Select');
         }
+        
+        // Sort option list
+        select_options = select_options.sort(naturalSort);
         
         // Do autocomplete.
         var autocomplete_options = { selectFirst: false, autoFill: false, mustMatch: false, matchContains: true, max: 1000, minChars : 0, hideForLessThanMinChars : false };
@@ -189,7 +218,7 @@ function replace_big_select_inputs() {
         select_elt.replaceWith(text_input_elt);
         
         // Set trigger to replace text with value when element's form is submitted. If text doesn't correspond to value, default to start value.
-        text_input_elt.parents('form').submit( function() {
+        var submit_hook = function() {
             // Try to convert text to value.
             var cur_value = text_input_elt.attr('value');
             var new_value = select_mapping[cur_value];
@@ -205,7 +234,10 @@ function replace_big_select_inputs() {
                     text_input_elt.attr('value', '?');
                 }
             }
-        });
+        };
+        
+        text_input_elt.parents('form').submit( function() { submit_hook(); } );
+        $(document).bind("convert_dbkeys", function() { submit_hook(); } );
     });
 }
 
@@ -282,7 +314,7 @@ function async_save_text(click_to_edit_elt, text_elt_id, save_url, text_parm_nam
     });
 }
 
-function init_history_items(historywrapper, noinit) {
+function init_history_items(historywrapper, noinit, nochanges) {
 
     var action = function() {
         // Load saved state and show as necessary
@@ -309,13 +341,13 @@ function init_history_items(historywrapper, noinit) {
             var id = this.id;
             var body = $(this).children( "div.historyItemBody" );
             var peek = body.find( "pre.peek" )
-            $(this).children( ".historyItemTitleBar" ).find( ".historyItemTitle" ).wrap( "<a href='#'></a>" ).click( function() {
+            $(this).find( ".historyItemTitleBar > .historyItemTitle" ).wrap( "<a href='javascript:void();'></a>" ).click( function() {
                 if ( body.is(":visible") ) {
                     // Hiding stuff here
-                    if ( $.browser.mozilla ) { peek.css( "overflow", "hidden" ) }
+                    if ( $.browser.mozilla ) { peek.css( "overflow", "hidden" ); }
                     body.slideUp( "fast" );
                     
-                    if (!noinit) { // Ignore embedded item actions
+                    if (!nochanges) { // Ignore embedded item actions
                         // Save setting
                         var prefs = $.jStore.store("history_expand_state");
                         if (prefs) {
@@ -329,7 +361,7 @@ function init_history_items(historywrapper, noinit) {
                         if ( $.browser.mozilla ) { peek.css( "overflow", "auto" ); } 
                     });
                     
-                    if (!noinit) {
+                    if (!nochanges) {
                         // Save setting
                         var prefs = $.jStore.store("history_expand_state");
                         if (prefs === undefined) { prefs = {}; }

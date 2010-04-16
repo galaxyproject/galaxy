@@ -91,6 +91,9 @@
                     <a href="${h.url_for( controller='dataset', action='display', dataset_id=dataset_id, to_ext=data.ext )}" title="Save" class="icon-button disk tooltip"></a>
                     %if user_owns_dataset:
                         <a href="${h.url_for( controller='tool_runner', action='rerun', id=data.id )}" target="galaxy_main" title="Run this job again" class="icon-button arrow-circle tooltip"></a>
+                        %if app.config.get_bool( 'enable_tracks', False ) and data.ext in app.datatypes_registry.get_available_tracks():
+                            <a class="icon-button vis-chart tooltip trackster" title="Visualize in Trackster" id="visualize_${hid}"></a>
+                        %endif
                         %if trans.user:
                             <div style="float: right">
                                 <a href="${h.url_for( controller='tag', action='retag', item_class=data.__class__.__name__, item_id=dataset_id )}" target="galaxy_main" title="Edit dataset tags" class="icon-button tags tooltip"></a>
@@ -105,8 +108,12 @@
                                 <strong>Annotation:</strong>
                                 <div id="${dataset_id}-annotation-elt" style="margin: 1px 0px 1px 0px" class="annotation-elt tooltip editable-text" title="Edit dataset annotation"></div>
                             </div>
+                            
                         %endif
                     %endif
+                %if data.peek != "no peek":
+                    <div><pre id="peek${data.id}" class="peek">${_(data.display_peek())}</pre></div>
+                %endif
 		    <div style="clear: both"></div>
                     %for display_app in data.datatype.get_display_types():
                         <% target_frame, display_links = data.datatype.get_display_links( data, display_app, app, request.base ) %>
@@ -121,13 +128,12 @@
             %for display_app in data.get_display_applications( trans ).itervalues():
                 | ${display_app.name} 
                 %for link_app in display_app.links.itervalues():
-                <a target="${link_app.url.get( 'target_frame', '_blank' )}" href="${link_app.get_display_url( data, trans )}">${_(link_app.name)}</a> 
+                    <a target="${link_app.url.get( 'target_frame', '_blank' )}" href="${link_app.get_display_url( data, trans )}">${_(link_app.name)}</a> 
                 %endfor
             %endfor
+    
             </div>
-            %if data.peek != "no peek":
-                <div><pre id="peek${data.id}" class="peek">${_(data.display_peek())}</pre></div>
-            %endif
+            
         %else:
             <div>${_('Error: unknown dataset state "%s".') % data_state}</div>
         %endif

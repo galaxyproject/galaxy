@@ -28,9 +28,7 @@ $(function() {
 
 % if message:
     <div class="errormessagelarge">${message}</div>
-% endif
-
-% if lines_skipped > 0:
+% elif lines_skipped > 0:
     <div class="warningmessagelarge">Skipped ${lines_skipped} lines that could not be parsed</div>
 % endif
 
