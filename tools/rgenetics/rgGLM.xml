@@ -68,7 +68,7 @@
  <param name='maf' value='0.0' />
  <param name='logistic' value='0' />
  <output name='out_file1' file='rgGLMtest1_GLM.xls' ftype='tabular' compare="diff" />
- <output name='logf' file='rgGLMtest1_GLM_log.txt' ftype='txt' compare="diff" lines_diff='33'/>
+ <output name='logf' file='rgGLMtest1_GLM_log.txt' ftype='txt' compare="diff" lines_diff='36'/>
  <output name='gffout' file='rgGLMtest1_GLM_topTable.gff' compare="diff" ftype='gff' />
  </test>
 </tests>

@@ -639,7 +639,7 @@ def doIBSpy(ped=None,basename='',outdir=None,logf=None,
     skip = set()
     ndone = 0     ## How many have been done so far
     
-    logf.write('Calculating %d pairs, updating every %d pairs...\n' % (tot, nprog))
+    logf.write('Calculating %d pairs...\n' % (tot))
     logf.write('Estimated time is %2.2f to %2.2f seconds ...\n' % (estimatedTimeFast, estimatedTimeSlow))
     
     t1sum = 0
@@ -695,10 +695,6 @@ def doIBSpy(ped=None,basename='',outdir=None,logf=None,
         for s2 in xrange(s1+1, nSubjects):
             if s2 in emptyRows:
                 continue
-            if nprog and ndone % nprog == 0 and ndone > 1:
-                dur = time.time() - started
-                pct = float(ndone)/tot*100.0
-                logf.write('%f sec at pair %d of %d (%3.2f%%): %f marker*pairs/sec\n' % (dur, ndone, tot, pct, ndone/dur*nrsSamples))
             t1s = time.time()
 
             (fid2,iid2,did2,mid2,sex2,phe2,iid2,d_sid2,m_sid2) = scache.setdefault(s2, ped.getSubject(s2))
@@ -848,9 +844,7 @@ def doIBSpy(ped=None,basename='',outdir=None,logf=None,
             continue
         outliers = [(scalefactor*int(abs(x[3]))+ int(abs(x[2])),x) for x in outliers] # decorate
         outliers.sort()
-        logf.write('### outliers after decorated sort=%s' % outliers)
         outliers.reverse() # largest deviation first
-        logf.write('### outliers after decorated sort=%s' % outliers)
         outliers = [x[1] for x in outliers] # undecorate
         nrows = len(outliers)
         truncated = 0

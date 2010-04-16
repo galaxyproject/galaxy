@@ -86,8 +86,6 @@ class GenomeGraphs( Tabular ):
                         site_url = site_url.replace('/hgTracks?','/hgGenome?') # for genome graphs
                         internal_url = "%s" % url_for( controller='dataset',
                                 dataset_id=dataset.id, action='display_at', filename='ucsc_' + site_name )
-                        if base_url.startswith( 'https://' ):
-                            base_url = base_url.replace( 'https', 'http', 1 )
                         display_url = "%s%s/display_as?id=%i&display_app=%s&authz_method=display_at" % (base_url, url_for( controller='root' ), dataset.id, type) 
                         display_url = urllib.quote_plus( display_url )
                         # was display_url = urllib.quote_plus( "%s/display_as?id=%i&display_app=%s" % (base_url, dataset.id, type) )
@@ -264,7 +262,7 @@ class Rgenetics(Html):
     stored in extra files path
     """
    
-    MetadataElement( name="base_name", desc="base name for all transformed versions of this genetic dataset", default="rgenetics", 
+    MetadataElement( name="base_name", desc="base name for all transformed versions of this genetic dataset", 
     readonly=True, set_in_upload=True)
     
     composite_type = 'auto_primary_file'
@@ -290,27 +288,15 @@ class Rgenetics(Html):
         """
         cannot do this until we are setting metadata 
         """
-        guessmt = {'.log':'text/plain','.ped':'text/plain', '.map':'text/plain','.out':'text/plain','.in':'text/plain'}
-        def fix(oldpath,newbase):
-           old,e = os.path.splitext(oldpath)
-           head,rest = os.path.split(old)
-           newpath = os.path.join(head,newbase)
-           newpath = '%s%s' % (newpath,e)
-           if oldpath <> newpath:
-               shutil.move(oldpath,newpath)
-           return newpath
         bn = dataset.metadata.base_name
         efp = dataset.extra_files_path
         flist = os.listdir(efp)
-        proper_base = bn
-        rval = ['<html><head><title>Files for Composite Dataset %s</title></head><p/>Composite %s contains the following files:<p/><ul>' % (dataset.name,dataset.name)]
+        rval = ['<html><head><title>Files for Composite Dataset %s</title></head><body><p/>Composite %s contains:<p/><ul>' % (dataset.name,dataset.name)]
         for i,fname in enumerate(flist):
-            newpath = fix(os.path.join(efp,fname),proper_base)
-            sfname = os.path.split(newpath)[-1] 
+            sfname = os.path.split(fname)[-1] 
             f,e = os.path.splitext(fname)
-            mt = guessmt.get(e,'application/binary')
-            rval.append( '<li><a href="%s" mimetype="%s">%s</a></li>' % ( sfname, mt, sfname) )
-        rval.append( '</ul></html>' )
+            rval.append( '<li><a href="%s">%s</a></li>' % ( sfname, sfname) )
+        rval.append( '</ul></body></html>' )
         f = file(dataset.file_name,'w')
         f.write("\n".join( rval ))
         f.write('\n')

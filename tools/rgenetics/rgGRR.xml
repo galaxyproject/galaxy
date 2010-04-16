@@ -29,7 +29,7 @@
   <param name='n' value='100' />
   <param name='Z' value='6' />
   <output name='out_file1' file='rgtestouts/rgGRR/rgGRRtest1.html' ftype='html' compare="diff" lines_diff='30'>
-    <extra_files type="file" name='Log_rgGRRtest1.txt' value="rgtestouts/rgGRR/Log_rgGRRtest1.txt" compare="diff" lines_diff="30"/>
+    <extra_files type="file" name='Log_rgGRRtest1.txt' value="rgtestouts/rgGRR/Log_rgGRRtest1.txt" compare="diff" lines_diff="70"/>
     <extra_files type="file" name='rgGRRtest1.svg' value="rgtestouts/rgGRR/rgGRRtest1.svg" compare="diff" lines_diff="1000" />
     <extra_files type="file" name='rgGRRtest1_table.xls' value="rgtestouts/rgGRR/rgGRRtest1_table.xls" compare="diff" lines_diff="100" />
   </output>
