@@ -31,7 +31,7 @@
  </param>
  <param name='name' value='rgCaCotest1' />
  <output name='out_file1' file='rgCaCotest1_CaCo.xls' ftype='tabular' compare='diff' />
- <output name='logf' file='rgCaCotest1_CaCo_log.txt' ftype='txt' compare='diff' lines_diff='19' />
+ <output name='logf' file='rgCaCotest1_CaCo_log.txt' ftype='txt' compare='diff' lines_diff='20' />
  <output name='gffout' file='rgCaCotest1_CaCo_topTable.gff' ftype='gff' compare='diff' />
  </test>
 </tests>
