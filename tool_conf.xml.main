@@ -70,6 +70,7 @@
     <tool file="filters/compare.xml"/>
     <tool file="new_operations/subtract_query.xml"/>
     <tool file="stats/grouping.xml" />   
+    <tool file="new_operations/column_join.xml"/>
   </section>
   <section name="Extract Features" id="features">
     <tool file="filters/ucsc_gene_bed_to_exon_bed.xml" />
