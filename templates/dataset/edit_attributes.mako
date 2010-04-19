@@ -4,12 +4,12 @@
 <%def name="title()">${_('Edit Dataset Attributes')}</%def>
 
 <%def name="stylesheets()">
-    ${h.css( "base" )}
+    ${h.css( "base", "autocomplete_tagging" )}
 </%def>
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js( "galaxy.base" )}
+    ${h.js( "galaxy.base", "jquery.autocomplete", "autocomplete_tagging" )}
 </%def>
 
 <%def name="datatype( dataset, datatypes )">
