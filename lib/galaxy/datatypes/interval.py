@@ -831,6 +831,10 @@ class Gff3( Gff ):
         except:
             return False
 
+class Gtf( Tabular ):
+    """Tab delimited data in Gtf format"""
+    file_ext = "gtf"
+
 class Wiggle( Tabular, _RemoteCallMixin ):
     """Tab delimited data in wiggle format"""
     file_ext = "wig"
