@@ -21,7 +21,6 @@ from galaxy.web.base.controller import *
 from galaxy.web.framework import simplejson
 from galaxy.web.framework.helpers import time_ago, grids
 from galaxy.util.bunch import Bunch
-from galaxy.util import dbnames
 
 from galaxy.visualization.tracks.data.array_tree import ArrayTreeDataProvider
 from galaxy.visualization.tracks.data.interval_index import IntervalIndexDataProvider
@@ -79,7 +78,7 @@ class TracksController( BaseController ):
     """
     
     available_tracks = None
-    len_dbkeys = None
+    len_files = None
     
     @web.expose
     @web.require_login()
@@ -91,17 +90,17 @@ class TracksController( BaseController ):
     @web.expose
     @web.require_login()
     def new_browser( self, trans ):
-        if not self.len_dbkeys:
+        if not self.len_files:
             len_files = glob.glob(os.path.join( trans.app.config.tool_data_path, 'shared','ucsc','chrom', "*.len" ))
-            len_files = [ os.path.split(f)[1].split(".len")[0] for f in len_files ] # get xxx.len
-            loaded_dbkeys = dbnames
-            self.len_dbkeys = [ (k, v) for k, v in loaded_dbkeys if k in len_files ]
+            self.len_files = [ os.path.split(f)[1].split(".len")[0] for f in len_files ] # get xxx.len
         
-        user_keys = None
+        user_keys = {}
         user = trans.get_user()
         if 'dbkeys' in user.preferences:
             user_keys = from_json_string( user.preferences['dbkeys'] )
-        return trans.fill_template( "tracks/new_browser.mako", user_keys=user_keys, dbkeys=self.len_dbkeys )
+            
+        dbkeys = [ (k, v) for k, v in trans.db_builds if k in self.len_files or k in user_keys ]
+        return trans.fill_template( "tracks/new_browser.mako", dbkeys=dbkeys )
             
     @web.json
     @web.require_login()

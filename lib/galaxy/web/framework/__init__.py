@@ -10,7 +10,7 @@ from Cheetah.Template import Template
 import base
 import pickle
 from galaxy import util
-from galaxy.util.json import to_json_string
+from galaxy.util.json import to_json_string, from_json_string
 
 pkg_resources.require( "simplejson" )
 import simplejson
@@ -657,10 +657,16 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         dbnames = list()
         datasets = self.sa_session.query( self.app.model.HistoryDatasetAssociation ) \
                                   .filter_by( deleted=False, history_id=self.history.id, extension="len" )
-        if datasets.count() > 0:
-            dbnames.append( (util.dbnames.default_value, '--------- User Defined Builds ----------') )
+        
         for dataset in datasets:
             dbnames.append( (dataset.dbkey, dataset.name) )
+            
+        user = self.get_user()
+        if user and 'dbkeys' in user.preferences:
+            user_keys = from_json_string( user.preferences['dbkeys'] )
+            for key, chrom_dict in user_keys.iteritems():
+                dbnames.append((key, "%s (%s) [Custom]" % (chrom_dict['name'], key) ))
+                    
         dbnames.extend( util.dbnames )
         return dbnames
         

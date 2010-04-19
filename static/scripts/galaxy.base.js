@@ -144,13 +144,13 @@ function naturalSort(a, b){
     return 0;
 }
 
-// Replace any select box with 20+ options with a text input box + autocomplete.
+// Replace select box with a text input box + autocomplete.
 // TODO: make work with dynamic tool inputs and then can replace all big selects.
-function replace_big_select_inputs() {
+function replace_big_select_inputs(min_length) {
     $('select[name=dbkey]').each( function() {
         var select_elt = $(this);
-        // Skip if there are < 20 options.
-        if (select_elt.find('option').length < 20)
+        // Skip if # of options < threshold
+        if (min_length !== undefined && select_elt.find('option').length < min_length)
             return;
 
         // Replace select with text + autocomplete.
