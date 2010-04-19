@@ -1,6 +1,7 @@
 from galaxy.web.base.controller import *
 from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy import util
+from galaxy.util.odict import odict
 from galaxy.model.mapping import desc
 from galaxy.model.orm import *
 from galaxy.util.json import *
@@ -336,25 +337,31 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesHistory 
         """
         # Get history
         if id is None:
-            history = trans.history
+            id = trans.history.id
         else:
             id = trans.security.decode_id( id )
-            history = trans.sa_session.query( model.History ).get( id )
-            assert history
-            assert history.user and ( history.user == trans.user ) or ( history == trans.history )
+        # Expunge history from the session to allow us to force a reload
+        # with a bunch of eager loaded joins
+        trans.sa_session.expunge( trans.history )
+        history = trans.sa_session.query( model.History ).options(
+                eagerload_all( 'active_datasets.creating_job_associations.job.workflow_invocation_step.workflow_invocation.workflow' ),
+                eagerload_all( 'active_datasets.children' )
+            ).get( id )
+        assert history
+        assert history.user and ( history.user.id == trans.user.id ) or ( history.id == trans.history.id )
         # Resolve jobs and workflow invocations for the datasets in the history
         # items is filled with items (hdas, jobs, or workflows) that go at the
         # top level
         items = []
         # First go through and group hdas by job, if there is no job they get
         # added directly to items
-        jobs = dict()
+        jobs = odict()
         for hda in history.active_datasets:
             # Follow "copied from ..." association until we get to the original
             # instance of the dataset
             original_hda = hda
-            while original_hda.copied_from_history_dataset_association:
-                original_hda = original_hda.copied_from_history_dataset_association
+            ## while original_hda.copied_from_history_dataset_association:
+            ##     original_hda = original_hda.copied_from_history_dataset_association
             # Check if the job has a creating job, most should, datasets from
             # before jobs were tracked, or from the upload tool before it
             # created a job, may not
@@ -370,7 +377,7 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesHistory 
                 else:
                     jobs[ job ] = [ ( hda, None ) ]
         # Second, go through the jobs and connect to workflows
-        wf_invocations = dict()
+        wf_invocations = odict()
         for job, hdas in jobs.iteritems():
             # Job is attached to a workflow step, follow it to the
             # workflow_invocation and group

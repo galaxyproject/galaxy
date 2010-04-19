@@ -16,6 +16,7 @@
         
         .workflow {
             border: solid gray 1px;
+            margin: 5px 0;
             border-left-width: 5px;
         }
         
@@ -96,9 +97,15 @@ elif entity_name == "WorkflowInvocation":
 <%def name="render_item_job( job, children  )">
 
     <div class="tool toolForm">
-        <div class="header toolFormTitle">Tool: ${trans.app.toolbox.tools_by_id[job.tool_id].name}</div>
+        <%
+            if job.tool_id in trans.app.toolbox.tools_by_id:
+                tool_name = trans.app.toolbox.tools_by_id[job.tool_id].name
+            else:
+                tool_name = "Unknown tool with id '%s'" % job.tool_id       
+        %>
+        <div class="header toolFormTitle">Tool: ${tool_name}</div>
         <div class="body toolFormBody">
-        %for e, c in children:
+        %for e, c in reversed( children ):
             ${render_item( e, c )}
         %endfor
         </div>
@@ -111,7 +118,7 @@ elif entity_name == "WorkflowInvocation":
     <div class="workflow">
         <div class="header">Workflow: ${wf.workflow.name}</div>
         <div class="body">
-        %for e, c in children:
+        %for e, c in reversed( children ):
             ${render_item( e, c )}
         %endfor
         </div>

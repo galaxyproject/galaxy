@@ -31,9 +31,9 @@ class odict(UserDict):
         self._keys = []
 
     def copy(self):
-	    new = odict()
-	    new.update( self )
-	    return new
+        new = odict()
+        new.update( self )
+        return new
 
     def items(self):
         return zip(self._keys, self.values())
@@ -82,3 +82,7 @@ class odict(UserDict):
     def __iter__( self ):
         for key in self._keys: 
             yield key
+    
+    def reverse( self ):
+        self._keys.reverse()
+
