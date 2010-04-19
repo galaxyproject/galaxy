@@ -1,0 +1,142 @@
+<tool id="cuffcompare" name="Cuffcompare" version="0.8.2">
+    <description>compare assembled transcripts to a reference annotation and track Cufflinks transcripts across multiple experiments</description>
+    <command interpreter="python">
+        cuffcompare_wrapper.py 
+            --transcripts-accuracy-output=$transcripts_accuracy
+            --transcripts-combined-output=$transcripts_combined
+            --transcripts-tracking-output=$transcripts_tracking
+            #if $annotation.use_ref_annotation == "Yes":
+                -r $annotation.reference_annotation
+                #if $annotation.ignore_nonoverlapping_reference:
+                    -R
+                #end if
+            #end if
+            $input1
+            $input2
+    </command>
+    <inputs>
+        <param format="gtf" name="input1" type="data" label="SAM file of aligned RNA-Seq reads" help=""/>
+        <param format="gtf" name="input2" type="data" label="SAM file of aligned RNA-Seq reads" help=""/>
+        <conditional name="annotation">
+            <param name="use_ref_annotation" type="select" label="Use Reference Annotation?">
+                <option value="No">No</option>
+                <option value="Yes">Yes</option>
+            </param>
+            <when value="Yes">
+                <param format="gtf" name="reference_annotation" type="data" label="Reference Annotation" help=""/>    
+                <param name="ignore_nonoverlapping_reference" type="boolean" label="Ignore reference transcripts that are not overlapped by any transcript in input files"/>
+            </when>
+            <when value="No">
+            </when>
+        </conditional>
+    </inputs>
+
+    <outputs>
+        <data format="gtf" name="transcripts_combined" />
+        <data format="tracking" name="transcripts_tracking" />
+        <data format="gtf" name="transcripts_accuracy" />
+    </outputs>
+
+    <tests>
+        <test>
+        </test>
+    </tests>
+
+    <help>
+**Cuffcompare Overview**
+
+Cuffcompare is part of Cufflinks_. Cuffcompare helps you: (a) compare your assembled transcripts to a reference annotation and (b) track Cufflinks transcripts across multiple experiments (e.g. across a time course). Please cite: Trapnell C, Williams BA, Pertea G, Mortazavi AM, Kwan G, van Baren MJ, Salzberg SL, Wold B, Pachter L. Transcript assembly and abundance estimation from RNA-Seq reveals thousands of new transcripts and switching among isoforms. (manuscript in press)
+
+.. _Cufflinks: http://cufflinks.cbcb.umd.edu/
+        
+------
+
+**Know what you are doing**
+
+.. class:: warningmark
+
+There is no such thing (yet) as an automated gearshift in expression analysis. It is all like stick-shift driving in San Francisco. In other words, running this tool with default parameters will probably not give you meaningful results. A way to deal with this is to **understand** the parameters by carefully reading the `documentation`__ and experimenting. Fortunately, Galaxy makes experimenting easy.
+
+.. __: http://cufflinks.cbcb.umd.edu/manual.html#cuffcompare
+
+------
+
+**Input format**
+
+Cuffcompare takes Cufflinks' GTF output as input, and optionally can take a "reference" annotation (such as from Ensembl___)
+
+.. ___: http://www.todo.org 
+
+------
+
+**Outputs**
+
+Cuffcompare produces the following output files:
+
+Transcripts Accuracy File:
+
+Cuffcompare reports various statistics related to the "accuracy" of the transcripts in each sample when compared to the reference annotation data. The typical gene finding measures of "sensitivity" and "specificity" (as defined in Burset, M., Guigó, R. : Evaluation of gene structure prediction programs (1996) Genomics, 34 (3), pp. 353-367. doi: 10.1006/geno.1996.0298) are calculated at various levels (nucleotide, exon, intron, transcript, gene) for each input file and reported in this file. The Sn and Sp columns show specificity and sensitivity values at each level, while the fSn and fSp columns are "fuzzy" variants of these same accuracy calculations, allowing for a very small variation in exon boundaries to still be counted as a "match".
+
+Transcripts Combined File:
+
+Cuffcompare reports a GTF file containing the "union" of all transfrags in each sample. If a transfrag is present in both samples, it is thus reported once in the combined gtf. 
+
+Transcripts Tracking File:
+
+This file matches transcripts up between samples. Each row contains a transcript structure that is present in one or more input GTF files. Because the transcripts will generally have different IDs (unless you assembled your RNA-Seq reads against a reference transcriptome), cuffcompare examines the structure of each the transcripts, matching transcripts that agree on the coordinates and order of all of their introns, as well as strand. Matching transcripts are allowed to differ on the length of the first and last exons, since these lengths will naturally vary from sample to sample due to the random nature of sequencing.
+If you ran cuffcompare with the -r option, the first and second columns contain the closest matching reference transcript to the one described by each row.
+
+Here's an example of a line from the tracking file::
+
+  TCONS_00000045 XLOC_000023 Tcea|uc007afj.1	j	\
+     q1:exp.115|exp.115.0|100|3.061355|0.350242|0.350207 \
+     q2:60hr.292|60hr.292.0|100|4.094084|0.000000|0.000000
+
+In this example, a transcript present in the two input files, called exp.115.0 in the first and 60hr.292.0 in the second, doesn't match any reference transcript exactly, but shares exons with uc007afj.1, an isoform of the gene Tcea, as indicated by the class code j. The first three columns are as follows::
+
+  Column number   Column name               Example          Description
+  -----------------------------------------------------------------------
+  1               Cufflinks transfrag id    TCONS_00000045   A unique internal id for the transfrag
+  2               Cufflinks locus id        XLOC_000023      A unique internal id for the locus
+  3               Reference gene id         Tcea             The gene_name attribute of the reference GTF record for this transcript, or '-' if no reference transcript overlaps this Cufflinks transcript
+  4               Reference transcript id   uc007afj.1       The transcript_id attribute of the reference GTF record for this transcript, or '-' if no reference transcript overlaps this Cufflinks transcript
+  5               Class code                c                The type of match between the Cufflinks transcripts in column 6 and the reference transcript. See class codes
+  
+Each of the columns after the fifth have the following format:
+  qJ:gene_id|transcript_id|FMI|FPKM|conf_lo|conf_hi
+
+A transcript need be present in all samples to be reported in the tracking file. A sample not containing a transcript will have a "-" in its entry in the row for that transcript.
+
+Class Codes
+
+If you ran cuffcompare with the -r option, tracking rows will contain the following values. If you did not use -r, the rows will all contain "-" in their class code column::
+
+  Priority	 Code	   Description
+  ---------------------------------
+  1	         =	       Match
+  2	         c	       Contained	
+  3	         j	       New isoform	
+  4	         e	       A single exon transcript overlapping a reference exon and at least 10 bp of a reference intron, indicating a possible pre-mRNA fragment.	
+  5	         i	       A single exon transcript falling entirely with a reference intron	
+  6	         r	       Repeat. Currently determined by looking at the reference sequence and applied to transcripts where at least 50% of the bases are lower case	
+  7	         p	       Possible polymerase run-on fragment	
+  8	         u	       Unknown, intergenic transcript	
+  9	         o	       Unknown, generic overlap with reference	
+  10             .	       (.tracking file only, indicates multiple classifications)
+    
+-------
+
+**Settings**
+
+All of the options have a default value. You can change any of them. Most of the options in Cuffcompare have been implemented here.
+
+------
+
+**Cuffcompare parameter list**
+
+This is a list of implemented Cuffcompare options::
+
+  -r    An optional "reference" annotation GTF. Each sample is matched against this file, and sample isoforms are tagged as overlapping, matching, or novel where appropriate. See the refmap and tmap output file descriptions below.
+  -R    If -r was specified, this option causes cuffcompare to ignore reference transcripts that are not overlapped by any transcript in one of cuff1.gtf,...,cuffN.gtf. Useful for ignoring annotated transcripts that are not present in your RNA-Seq samples and thus adjusting the "sensitivity" calculation in the accuracy report written in the transcripts_accuracy file
+    </help>
+</tool>
