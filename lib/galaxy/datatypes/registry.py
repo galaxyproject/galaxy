@@ -90,20 +90,22 @@ class Registry( object ):
                             mimetype = composite_file.get( 'mimetype', None )
                             self.datatypes_by_extension[extension].add_composite_file( name, optional=optional, mimetype=mimetype )
                         for display_app in elem.findall( 'display' ):
-                            display_file = display_app.get( 'file', None )
-                            assert display_file is not None, "A file must be specified for a datatype display tag."
-                            inherit = galaxy.util.string_as_bool( display_app.get( 'inherit', 'False' ) )
-                            display_app = DisplayApplication.from_file( os.path.join( self.display_applications_path, display_file ), self )
-                            if display_app:
-                                if display_app.id in self.display_applications:
-                                    #if we already loaded this display application, we'll use the first one again
-                                    display_app = self.display_applications[ display_app.id ]
-                                self.log.debug( "Loaded display application '%s' for datatype '%s', inherit=%s" % ( display_app.id, extension, inherit ) )
-                                self.display_applications[ display_app.id ] = display_app #Display app by id
-                                self.datatypes_by_extension[ extension ].add_display_application( display_app )
-                                if inherit and ( self.datatypes_by_extension[extension], display_app ) not in inherit_display_application_by_class:
-                                    #subclass inheritance will need to wait until all datatypes have been loaded
-                                    inherit_display_application_by_class.append( ( self.datatypes_by_extension[extension], display_app ) )
+                            display_file = os.path.join( self.display_applications_path, display_app.get( 'file', None ) )
+                            try:
+                                inherit = galaxy.util.string_as_bool( display_app.get( 'inherit', 'False' ) )
+                                display_app = DisplayApplication.from_file( display_file, self )
+                                if display_app:
+                                    if display_app.id in self.display_applications:
+                                        #if we already loaded this display application, we'll use the first one again
+                                        display_app = self.display_applications[ display_app.id ]
+                                    self.log.debug( "Loaded display application '%s' for datatype '%s', inherit=%s" % ( display_app.id, extension, inherit ) )
+                                    self.display_applications[ display_app.id ] = display_app #Display app by id
+                                    self.datatypes_by_extension[ extension ].add_display_application( display_app )
+                                    if inherit and ( self.datatypes_by_extension[extension], display_app ) not in inherit_display_application_by_class:
+                                        #subclass inheritance will need to wait until all datatypes have been loaded
+                                        inherit_display_application_by_class.append( ( self.datatypes_by_extension[extension], display_app ) )
+                            except:
+                                self.log.exception( "error reading display application from path: %s" % display_file )
                 except Exception, e:
                     self.log.warning( 'Error loading datatype "%s", problem: %s' % ( extension, str( e ) ) )
             # Handle display_application subclass inheritance here:
@@ -290,12 +292,16 @@ class Registry( object ):
             tool_config = elem[0]
             source_datatype = elem[1]
             target_datatype = elem[2]
-            converter = toolbox.load_tool( os.path.join( self.datatype_converters_path, tool_config ) )
-            toolbox.tools_by_id[converter.id] = converter
-            if source_datatype not in self.datatype_converters:
-                self.datatype_converters[source_datatype] = odict()
-            self.datatype_converters[source_datatype][target_datatype] = converter
-            self.log.debug( "Loaded converter: %s", converter.id )
+            converter_path = os.path.join( self.datatype_converters_path, tool_config )
+            try:
+                converter = toolbox.load_tool( converter_path )
+                toolbox.tools_by_id[converter.id] = converter
+                if source_datatype not in self.datatype_converters:
+                    self.datatype_converters[source_datatype] = odict()
+                self.datatype_converters[source_datatype][target_datatype] = converter
+                self.log.debug( "Loaded converter: %s", converter.id )
+            except:
+                self.log.exception( "error reading converter from path: %s" % converter_path )
 
     def load_external_metadata_tool( self, toolbox ):
         """Adds a tool which is used to set external metadata"""
