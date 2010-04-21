@@ -50,12 +50,12 @@ User.table = Table( "galaxy_user", metadata,
     Column( "deleted", Boolean, index=True, default=False ),
     Column( "purged", Boolean, index=True, default=False ) )
 
-UserRoleAssociation.table = Table( "user_role_association", metadata,
+Group.table = Table( "galaxy_group", metadata,
     Column( "id", Integer, primary_key=True ),
-    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
-    Column( "role_id", Integer, ForeignKey( "role.id" ), index=True ),
     Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ) )
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "name", String( 255 ), index=True, unique=True ),
+    Column( "deleted", Boolean, index=True, default=False ) )
 
 Role.table = Table( "role", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -65,6 +65,27 @@ Role.table = Table( "role", metadata,
     Column( "description", TEXT ),
     Column( "type", String( 40 ), index=True ),
     Column( "deleted", Boolean, index=True, default=False ) )
+
+UserGroupAssociation.table = Table( "user_group_association", metadata, 
+    Column( "id", Integer, primary_key=True ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+    Column( "group_id", Integer, ForeignKey( "galaxy_group.id" ), index=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ) )
+
+UserRoleAssociation.table = Table( "user_role_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+    Column( "role_id", Integer, ForeignKey( "role.id" ), index=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ) )
+
+GroupRoleAssociation.table = Table( "group_role_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "group_id", Integer, ForeignKey( "galaxy_group.id" ), index=True ),
+    Column( "role_id", Integer, ForeignKey( "role.id" ), index=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ) )
 
 GalaxySession.table = Table( "galaxy_session", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -138,6 +159,20 @@ assign_mapper( context, User, User.table,
                      active_tools=relation( Tool, primaryjoin=( ( Tool.table.c.user_id == User.table.c.id ) & ( not_( Tool.table.c.deleted ) ) ), order_by=desc( Tool.table.c.update_time ) ),
                      galaxy_sessions=relation( GalaxySession, order_by=desc( GalaxySession.table.c.update_time ) ) ) )
 
+assign_mapper( context, Group, Group.table,
+    properties=dict( users=relation( UserGroupAssociation ) ) )
+
+assign_mapper( context, Role, Role.table,
+    properties=dict(
+        users=relation( UserRoleAssociation ),
+        groups=relation( GroupRoleAssociation )
+    )
+)
+
+assign_mapper( context, UserGroupAssociation, UserGroupAssociation.table,
+    properties=dict( user=relation( User, backref = "groups" ),
+                     group=relation( Group, backref = "members" ) ) )
+
 assign_mapper( context, UserRoleAssociation, UserRoleAssociation.table,
     properties=dict(
         user=relation( User, backref="roles" ),
@@ -148,9 +183,10 @@ assign_mapper( context, UserRoleAssociation, UserRoleAssociation.table,
     )
 )
 
-assign_mapper( context, Role, Role.table,
+assign_mapper( context, GroupRoleAssociation, GroupRoleAssociation.table,
     properties=dict(
-        users=relation( UserRoleAssociation )
+        group=relation( Group, backref="roles" ),
+        role=relation( Role )
     )
 )
 

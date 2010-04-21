@@ -29,10 +29,10 @@ class User( object ):
         """Check if 'cleartext' matches 'self.password' when hashed."""
         return self.password == new_secure_hash( text_type=cleartext )
 
-class UserRoleAssociation( object ):
-    def __init__( self, user, role ):
-        self.user = user
-        self.role = role
+class Group( object ):
+    def __init__( self, name = None ):
+        self.name = name
+        self.deleted = False
 
 class Role( object ):
     private_id = None
@@ -48,6 +48,21 @@ class Role( object ):
         self.description = description
         self.type = type
         self.deleted = deleted
+
+class UserGroupAssociation( object ):
+    def __init__( self, user, group ):
+        self.user = user
+        self.group = group
+
+class UserRoleAssociation( object ):
+    def __init__( self, user, role ):
+        self.user = user
+        self.role = role
+
+class GroupRoleAssociation( object ):
+    def __init__( self, group, role ):
+        self.group = group
+        self.role = role
 
 class GalaxySession( object ):
     def __init__( self, 

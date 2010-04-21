@@ -2,7 +2,7 @@ from galaxy.web.base.controller import *
 from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.model.orm import *
 from galaxy.datatypes import sniff
-from galaxy import util
+from galaxy import model, util
 from galaxy.util.streamball import StreamBall
 import logging, tempfile, zipfile, tarfile, os, sys, subprocess
 from galaxy.web.form_builder import * 

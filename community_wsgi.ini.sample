@@ -46,6 +46,9 @@ use_lint = false
 # NEVER enable this on a public site (even test or QA)
 # use_interactive = true
 
+# this should be a comma-separated list of valid Galaxy users
+#admin_users = user1@example.org,user2@example.org
+
 # Force everyone to log in (disable anonymous access)
 require_login = False
 

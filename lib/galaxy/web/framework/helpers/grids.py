@@ -1,7 +1,5 @@
-from galaxy.model import *
 from galaxy.model.orm import *
-
-from galaxy.web.base import controller
+from galaxy.web.base.controller import *
 from galaxy.web.framework.helpers import iff
 from galaxy.web import url_for
 from galaxy.util.json import from_json_string, to_json_string
@@ -15,6 +13,7 @@ class Grid( object ):
     """
     Specifies the content and format of a grid (data table).
     """
+    webapp = None
     title = ""
     exposed = True
     model_class = None
@@ -43,6 +42,7 @@ class Grid( object ):
                 self.has_multiple_item_operations = True
                 break
     def __call__( self, trans, **kwargs ):
+        webapp = kwargs.get( 'webapp', 'galaxy' )
         status = kwargs.get( 'status', None )
         message = kwargs.get( 'message', None )
         session = trans.sa_session
@@ -193,7 +193,8 @@ class Grid( object ):
         params = cur_filter_dict.copy()
         params['sort'] = sort_key
         params['async'] = ( 'async' in kwargs )
-        trans.log_action( trans.get_user(), unicode( "grid.view"), context, params )
+        params['webapp'] = webapp
+        trans.log_action( trans.get_user(), unicode( "grid.view" ), context, params )
         # Render grid.
         def url( *args, **kwargs ):
             # Only include sort/filter arguments if not linking to another
@@ -214,8 +215,8 @@ class Grid( object ):
                 else:
                     new_kwargs[ 'id' ] = trans.security.encode_id( id )
             return url_for( **new_kwargs )
-        use_panels = ( 'use_panels' in kwargs ) and ( kwargs['use_panels'] == True )
-        async_request = ( ( self.use_async ) and ( 'async' in kwargs ) and ( kwargs['async'] in [ 'True', 'true'] ) )
+        use_panels = ( 'use_panels' in kwargs ) and ( kwargs['use_panels'] in [ True, 'True', 'true' ] )
+        async_request = ( ( self.use_async ) and ( 'async' in kwargs ) and ( kwargs['async'] in [ True, 'True', 'true'] ) )
         return trans.fill_template( iff( async_request, self.async_template, self.template),
                                     grid=self,
                                     query=query,
@@ -232,6 +233,7 @@ class Grid( object ):
                                     message_type = status,
                                     message = message,
                                     use_panels=use_panels,
+                                    webapp=self.webapp,
                                     # Pass back kwargs so that grid template can set and use args without
                                     # grid explicitly having to pass them.
                                     kwargs=kwargs )
@@ -333,7 +335,7 @@ class TextColumn( GridColumn ):
         model_class_key_field = getattr( self.model_class, self.key )
         return func.lower( model_class_key_field ).like( "%" + a_filter.lower() + "%" )
             
-class OwnerAnnotationColumn( TextColumn, controller.UsesAnnotations ):
+class OwnerAnnotationColumn( TextColumn, UsesAnnotations ):
     """ Column that displays and filters item owner's annotations. """
     def __init__( self, col_name, key, model_class, model_annotation_association_class, filterable ):
         GridColumn.__init__( self, col_name, key=key, model_class=model_class, filterable=filterable )
@@ -341,7 +343,7 @@ class OwnerAnnotationColumn( TextColumn, controller.UsesAnnotations ):
         self.model_annotation_association_class = model_annotation_association_class
     def get_value( self, trans, grid, item ):
         """ Returns item annotation. """
-        annotation = self.get_item_annotation_str( trans.sa_session, item.user, item )
+        annotation = self.get_item_annotation_str( trans, item.user, item )
         return iff( annotation, annotation, "" )
     def get_single_filter( self, user, a_filter ):
         """ Filter by annotation and annotation owner. """
@@ -515,7 +517,8 @@ class SharingStatusColumn( GridColumn ):
         return accepted_filters
 
 class GridOperation( object ):
-    def __init__( self, label, key=None, condition=None, allow_multiple=True, allow_popup=True, target=None, url_args=None, async_compatible=False, confirm=None ):
+    def __init__( self, label, key=None, condition=None, allow_multiple=True, allow_popup=True,
+                  target=None, url_args=None, async_compatible=False, confirm=None ):
         self.label = label
         self.key = key
         self.allow_multiple = allow_multiple

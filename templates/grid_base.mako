@@ -3,7 +3,11 @@
     import galaxy.util
     def inherit(context):
         if context.get('use_panels'):
-            return '/webapps/galaxy/base_panels.mako'
+            if context.get('webapp'):
+                webapp = context.get('webapp')
+            else:
+                webapp = 'galaxy'
+            return '/webapps/%s/base_panels.mako' % webapp
         else:
             return '/base.mako'
 %>
@@ -104,16 +108,17 @@
             // Initialize operation buttons.
             $('input[name=operation]:submit').each(function() {
                 $(this).click( function() {
+                   // Get the webapp
+                   var webapp = $("input[name=webapp]").attr("value");
                    // Get operation name.
                    var operation_name = $(this).attr("value");
- 
                    // For some reason, $('input[name=id]:checked').val() does not return all ids for checked boxes.
                    // The code below performs this function.
                    var item_ids = [];
                    $('input[name=id]:checked').each(function() {
                        item_ids[item_ids.length] = $(this).val();
                    });
-                   do_operation(operation_name, item_ids); 
+                   do_operation(webapp, operation_name, item_ids); 
                 });
             });
             
@@ -461,10 +466,11 @@
         }
         
         // Perform a grid operation.
-        function do_operation(operation, item_ids) {
+        function do_operation(webapp, operation, item_ids) {
             operation = operation.toLowerCase();
             
             // Update URL args.
+            url_args["webapp"] = webapp;
             url_args["operation"] = operation;
             url_args["id"] = item_ids;
             
@@ -474,6 +480,7 @@
                 go_to_URL();
             } else {
                 update_grid(true);
+                delete url_args['webapp'];
                 delete url_args['operation'];
                 delete url_args['id'];
             }
@@ -488,6 +495,7 @@
                 var href_parms = href_parms_str.split("&");
                 var operation = null;
                 var id = -1;
+                var webapp = 'galaxy'
                 for (var index = 0; index < href_parms.length; index++) {
                     if (href_parms[index].indexOf('operation') != -1) {
                         // Found operation parm; get operation value. 
@@ -495,11 +503,14 @@
                     } else if (href_parms[index].indexOf('id') != -1) {
                         // Found id parm; get id value.
                         id = href_parms[index].split('=')[1];
+                    } else if (href_parms[index].indexOf('webapp') != -1) {
+                        // Found webapp parm; get webapp value.
+                        webapp = href_parms[index].split('=')[1];
                     }
                 }
                 
                 // Do operation.
-                do_operation(operation, id);
+                do_operation(webapp, operation, id);
                 return false;
             }
             
@@ -763,6 +774,10 @@
 
 ## Render grid table body contents.
 <%def name="render_grid_table_body_contents(grid, show_item_checkboxes=False)">
+        ## Include the webapp value in the form
+        <td style="width: 1.5em;">
+            <input type="hidden" name="webapp" value="${webapp}" />
+        </td>
         <% num_rows_rendered = 0 %>
         %if query.count() == 0:
             ## No results.
@@ -897,4 +912,3 @@
         </tr>
     %endif
 </%def>
-

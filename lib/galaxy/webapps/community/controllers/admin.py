@@ -1,5 +1,6 @@
 from galaxy.web.base.controller import *
-from galaxy import model
+#from galaxy.web.controllers.admin import get_user, get_group, get_role
+from galaxy.webapps.community import model
 from galaxy.model.orm import *
 from galaxy.web.framework.helpers import time_ago, iff, grids
 import logging
@@ -42,8 +43,9 @@ class UserListGrid( grids.Grid ):
                 return self.format( user.galaxy_sessions[ 0 ].update_time )
             return 'never'
 
+    log.debug("####In UserListGrid, in community" )
     # Grid definition
-    webapp = "galaxy"
+    webapp = "community"
     title = "Users"
     model_class = model.User
     template='/admin/user/grid.mako'
@@ -52,7 +54,7 @@ class UserListGrid( grids.Grid ):
         EmailColumn( "Email",
                      key="email",
                      model_class=model.User,
-                     link=( lambda item: dict( operation="information", id=item.id, webapp="galaxy" ) ),
+                     link=( lambda item: dict( operation="information", id=item.id, webapp="community" ) ),
                      attach_popup=True,
                      filterable="advanced" ),
         UserNameColumn( "User Name",
@@ -74,24 +76,20 @@ class UserListGrid( grids.Grid ):
                                                 visible=False,
                                                 filterable="standard" ) )
     global_actions = [
-        grids.GridAction( "Create new user", dict( controller='admin', action='users', operation='create', webapp="galaxy" ) )
+        grids.GridAction( "Create new user",
+                          dict( controller='admin', action='users', operation='create', webapp="community" ) )
     ]
     operations = [
         grids.GridOperation( "Manage Roles and Groups",
                              condition=( lambda item: not item.deleted ),
                              allow_multiple=False,
-                             url_args=dict( webapp="galaxy", action="manage_roles_and_groups_for_user" ) ),
+                             url_args=dict( webapp="community", action="manage_roles_and_groups_for_user" ) ),
         grids.GridOperation( "Reset Password",
                              condition=( lambda item: not item.deleted ),
                              allow_multiple=True,
                              allow_popup=False,
-                             url_args=dict( webapp="galaxy", action="reset_user_password" ) )
+                             url_args=dict( webapp="community", action="reset_user_password" ) )
     ]
-    #TODO: enhance to account for trans.app.config.allow_user_deletion here so that we can eliminate these operations if 
-    # the setting is False
-    #operations.append( grids.GridOperation( "Delete", condition=( lambda item: not item.deleted ), allow_multiple=True ) )
-    #operations.append( grids.GridOperation( "Undelete", condition=( lambda item: item.deleted and not item.purged ), allow_multiple=True ) )
-    #operations.append( grids.GridOperation( "Purge", condition=( lambda item: item.deleted and not item.purged ), allow_multiple=True ) )
     standard_filters = [
         grids.GridColumnFilter( "Active", args=dict( deleted=False ) ),
         grids.GridColumnFilter( "Deleted", args=dict( deleted=True, purged=False ) ),
@@ -135,7 +133,7 @@ class RoleListGrid( grids.Grid ):
             return 0
 
     # Grid definition
-    webapp = "galaxy"
+    webapp = "community"
     title = "Roles"
     model_class = model.Role
     template='/admin/dataset_security/role/grid.mako'
@@ -143,7 +141,7 @@ class RoleListGrid( grids.Grid ):
     columns = [
         NameColumn( "Name",
                     key="name",
-                    link=( lambda item: dict( operation="Manage users and groups", id=item.id, webapp="galaxy" ) ),
+                    link=( lambda item: dict( operation="Manage users and groups", id=item.id, webapp="community" ) ),
                     model_class=model.Role,
                     attach_popup=True,
                     filterable="advanced" ),
@@ -169,24 +167,25 @@ class RoleListGrid( grids.Grid ):
                                                 visible=False,
                                                 filterable="standard" ) )
     global_actions = [
-        grids.GridAction( "Add new role", dict( controller='admin', action='roles', operation='create' ) )
+        grids.GridAction( "Add new role",
+                          dict( controller='admin', action='roles', operation='create', webapp="community" ) )
     ]
     operations = [ grids.GridOperation( "Rename",
                                         condition=( lambda item: not item.deleted ),
                                         allow_multiple=False,
-                                        url_args=dict( webapp="galaxy", action="rename_role" ) ),
+                                        url_args=dict( webapp="community", action="rename_role" ) ),
                    grids.GridOperation( "Delete",
                                         condition=( lambda item: not item.deleted ),
                                         allow_multiple=True,
-                                        url_args=dict( webapp="galaxy", action="mark_role_deleted" ) ),
+                                        url_args=dict( webapp="community", action="mark_role_deleted" ) ),
                    grids.GridOperation( "Undelete",
                                         condition=( lambda item: item.deleted ),
                                         allow_multiple=True,
-                                        url_args=dict( webapp="galaxy", action="undelete_role" ) ),
+                                        url_args=dict( webapp="community", action="undelete_role" ) ),
                    grids.GridOperation( "Purge",
                                         condition=( lambda item: item.deleted ),
                                         allow_multiple=True,
-                                        url_args=dict( webapp="galaxy", action="purge_role" ) ) ]
+                                        url_args=dict( webapp="community", action="purge_role" ) ) ]
     standard_filters = [
         grids.GridColumnFilter( "Active", args=dict( deleted=False ) ),
         grids.GridColumnFilter( "Deleted", args=dict( deleted=True ) ),
@@ -223,7 +222,7 @@ class GroupListGrid( grids.Grid ):
             return 0
 
     # Grid definition
-    webapp = "galaxy"
+    webapp = "community"
     title = "Groups"
     model_class = model.Group
     template='/admin/dataset_security/group/grid.mako'
@@ -231,7 +230,7 @@ class GroupListGrid( grids.Grid ):
     columns = [
         NameColumn( "Name",
                     key="name",
-                    link=( lambda item: dict( operation="Manage users and roles", id=item.id, webapp="galaxy" ) ),
+                    link=( lambda item: dict( operation="Manage users and roles", id=item.id, webapp="community" ) ),
                     model_class=model.Group,
                     attach_popup=True,
                     filterable="advanced" ),
@@ -247,24 +246,25 @@ class GroupListGrid( grids.Grid ):
                                                 visible=False,
                                                 filterable="standard" ) )
     global_actions = [
-        grids.GridAction( "Add new group", dict( controller='admin', action='groups', operation='create', webapp="galaxy" ) )
+        grids.GridAction( "Add new group",
+                          dict( controller='admin', action='groups', operation='create', webapp="community" ) )
     ]
     operations = [ grids.GridOperation( "Rename",
                                         condition=( lambda item: not item.deleted ),
                                         allow_multiple=False,
-                                        url_args=dict( webapp="galaxy", action="rename_group" ) ),
+                                        url_args=dict( webapp="community", action="rename_group" ) ),
                    grids.GridOperation( "Delete",
                                         condition=( lambda item: not item.deleted ),
                                         allow_multiple=True,
-                                        url_args=dict( webapp="galaxy", action="mark_group_deleted" ) ),
+                                        url_args=dict( webapp="community", action="mark_group_deleted" ) ),
                    grids.GridOperation( "Undelete",
                                         condition=( lambda item: item.deleted ),
                                         allow_multiple=True,
-                                        url_args=dict( webapp="galaxy", action="undelete_group" ) ),
+                                        url_args=dict( webapp="community", action="undelete_group" ) ),
                    grids.GridOperation( "Purge",
                                         condition=( lambda item: item.deleted ),
                                         allow_multiple=True,
-                                        url_args=dict( webapp="galaxy", action="purge_group" ) ) ]
+                                        url_args=dict( webapp="community", action="purge_group" ) ) ]
     standard_filters = [
         grids.GridColumnFilter( "Active", args=dict( deleted=False ) ),
         grids.GridColumnFilter( "Deleted", args=dict( deleted=True ) ),
@@ -278,7 +278,7 @@ class GroupListGrid( grids.Grid ):
     def build_initial_query( self, session ):
         return session.query( self.model_class )
 
-class AdminGalaxy( BaseController, Admin ):
+class AdminCommunity( BaseController, Admin ):
     
     user_list_grid = UserListGrid()
     role_list_grid = RoleListGrid()

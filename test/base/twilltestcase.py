@@ -1320,14 +1320,14 @@ class TwillTestCase( unittest.TestCase ):
         """Mark a role as deleted"""
         self.home()
         self.visit_url( "%s/admin/roles?operation=delete&id=%s" % ( self.url, role_id ) )
-        check_str = "Role '%s' has been marked as deleted" % role_name
+        check_str = "Deleted 1 roles:  %s" % role_name
         self.check_page_for_string( check_str )
         self.home()
     def undelete_role( self, role_id, role_name ):
         """Undelete an existing role"""
         self.home()
         self.visit_url( "%s/admin/roles?operation=undelete&id=%s" % ( self.url, role_id ) )
-        check_str = "Role '%s' has been marked as not deleted" % role_name
+        check_str = "Undeleted 1 roles:  %s" % role_name
         self.check_page_for_string( check_str )
         self.home()
     def purge_role( self, role_id, role_name ):
@@ -1335,7 +1335,7 @@ class TwillTestCase( unittest.TestCase ):
         self.home()
         self.visit_url( "%s/admin/roles?operation=purge&id=%s" % ( self.url, role_id ) )
         check_str = "The following have been purged from the database for role '%s': " % role_name
-        check_str += "DefaultUserPermissions, DefaultHistoryPermissions, UserRoleAssociations, GroupRoleAssociations, DatasetPermissionss."
+        check_str = "Purged 1 roles:  %s" % role_name
         self.check_page_for_string( check_str )
         self.home()
     def associate_users_and_groups_with_role( self, role_id, role_name, user_ids=[], group_ids=[] ):
@@ -1393,21 +1393,21 @@ class TwillTestCase( unittest.TestCase ):
         """Mark a group as deleted"""
         self.home()
         self.visit_url( "%s/admin/groups?operation=delete&id=%s" % ( self.url, group_id ) )
-        check_str = "Group '%s' has been marked as deleted" % group_name
+        check_str = "Deleted 1 groups:  %s" % group_name
         self.check_page_for_string( check_str )
         self.home()
     def undelete_group( self, group_id, group_name ):
         """Undelete an existing group"""
         self.home()
         self.visit_url( "%s/admin/groups?operation=undelete&id=%s" % ( self.url, group_id ) )
-        check_str = "Group '%s' has been marked as not deleted" % group_name
+        check_str = "Undeleted 1 groups:  %s" % group_name
         self.check_page_for_string( check_str )
         self.home()
     def purge_group( self, group_id, group_name ):
         """Purge an existing group"""
         self.home()
         self.visit_url( "%s/admin/groups?operation=purge&id=%s" % ( self.url, group_id ) )
-        check_str = "The following have been purged from the database for group '%s': UserGroupAssociations, GroupRoleAssociations." % group_name
+        check_str = "Purged 1 groups:  %s" % group_name
         self.check_page_for_string( check_str )
         self.home()
 

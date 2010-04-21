@@ -72,7 +72,7 @@ class RootController( BaseController, UsesHistory, UsesAnnotations ):
             datasets = self.get_history_datasets( trans, history, show_deleted )
             return trans.stream_template_mako( "root/history.mako",
                                                history = history,
-                                               annotation = self.get_item_annotation_str( trans.sa_session, trans.get_user(), history ),
+                                               annotation = self.get_item_annotation_str( trans, trans.user, history ),
                                                datasets = datasets,
                                                hda_id = hda_id,
                                                show_deleted = show_deleted )
@@ -368,7 +368,7 @@ class RootController( BaseController, UsesHistory, UsesAnnotations ):
                 status = 'done'
             return trans.fill_template( "/dataset/edit_attributes.mako",
                                         data=data,
-                                        data_annotation=self.get_item_annotation_str( trans.sa_session, trans.get_user(), data ),
+                                        data_annotation=self.get_item_annotation_str( trans, trans.user, data ),
                                         datatypes=ldatatypes,
                                         current_user_roles=current_user_roles,
                                         all_roles=all_roles,
@@ -392,7 +392,7 @@ class RootController( BaseController, UsesHistory, UsesAnnotations ):
             if data.parent_id is None and len( data.creating_job_associations ) > 0:
                 # Mark associated job for deletion
                 job = data.creating_job_associations[0].job
-                if job.state in [ model.Job.states.QUEUED, model.Job.states.RUNNING, model.Job.states.NEW ]:
+                if job.state in [ self.app.model.Job.states.QUEUED, self.app.model.Job.states.RUNNING, self.app.model.Job.states.NEW ]:
                     # Are *all* of the job's other output datasets deleted?
                     if job.check_if_output_datasets_deleted():
                         job.mark_deleted()                

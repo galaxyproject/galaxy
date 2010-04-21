@@ -1,3 +1,4 @@
+from galaxy import model
 from galaxy.web.base.controller import *
 from galaxy.web.framework.helpers import time_ago, grids
 from galaxy.util.sanitize_html import sanitize_html, _BaseHTMLProcessor
@@ -406,7 +407,7 @@ class PageController( BaseController, Sharable, UsesAnnotations, UsesHistory, Us
         else:
             page_title = page.title
             page_slug = page.slug
-            page_annotation = self.get_item_annotation_str( trans.sa_session, trans.get_user(), page )
+            page_annotation = self.get_item_annotation_str( trans, trans.user, page )
             if not page_annotation:
                 page_annotation = ""
         return trans.show_form( 
@@ -527,7 +528,7 @@ class PageController( BaseController, Sharable, UsesAnnotations, UsesHistory, Us
         annotations = from_json_string( annotations )
         for annotation_dict in annotations:
             item_id = trans.security.decode_id( annotation_dict[ 'item_id' ] )
-            item_class = self.get_class( annotation_dict[ 'item_class' ] )
+            item_class = self.get_class( trans, annotation_dict[ 'item_class' ] )
             item = trans.sa_session.query( item_class ).filter_by( id=item_id ).first()
             if not item:
                 raise RuntimeError( "cannot find annotated item" )
@@ -693,28 +694,28 @@ class PageController( BaseController, Sharable, UsesAnnotations, UsesHistory, Us
         
     def _get_embed_html( self, trans, item_class, item_id ):
         """ Returns HTML for embedding an item in a page. """
-        item_class = self.get_class( item_class )
+        item_class = self.get_class( trans, item_class )
         if item_class == model.History:
             history = self.get_history( trans, item_id, False, True )
-            history.annotation = self.get_item_annotation_str( trans.sa_session, history.user, history )
+            history.annotation = self.get_item_annotation_str( trans, history.user, history )
             if history:
                 datasets = self.get_history_datasets( trans, history )
                 return trans.fill_template( "history/embed.mako", item=history, item_data=datasets )
         elif item_class == model.HistoryDatasetAssociation:
             dataset = self.get_dataset( trans, item_id, False, True )
-            dataset.annotation = self.get_item_annotation_str( trans.sa_session, dataset.history.user, dataset )
+            dataset.annotation = self.get_item_annotation_str( trans, dataset.history.user, dataset )
             if dataset:
                 data = self.get_data( dataset )
                 return trans.fill_template( "dataset/embed.mako", item=dataset, item_data=data )
         elif item_class == model.StoredWorkflow:
             workflow = self.get_stored_workflow( trans, item_id, False, True )
-            workflow.annotation = self.get_item_annotation_str( trans.sa_session, workflow.user, workflow )
+            workflow.annotation = self.get_item_annotation_str( trans, workflow.user, workflow )
             if workflow:
                 self.get_stored_workflow_steps( trans, workflow )
                 return trans.fill_template( "workflow/embed.mako", item=workflow, item_data=workflow.latest_workflow.steps )
         elif item_class == model.Visualization:
             visualization = self.get_visualization( trans, item_id, False, True )
-            visualization.annotation = self.get_item_annotation_str( trans.sa_session, visualization.user, visualization )
+            visualization.annotation = self.get_item_annotation_str( trans, visualization.user, visualization )
             if visualization:
                 return trans.fill_template( "visualization/embed.mako", item=visualization, item_data=None )
         

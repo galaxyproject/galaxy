@@ -468,7 +468,7 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistoryDatasetAssoc
         dataset = self.get_dataset( trans, slug, False, True )
         if dataset:
             truncated, dataset_data = self.get_data( dataset, preview )
-            dataset.annotation = self.get_item_annotation_str( trans.sa_session, dataset.history.user, dataset )
+            dataset.annotation = self.get_item_annotation_str( trans, dataset.history.user, dataset )
             return trans.fill_template_mako( "/dataset/display.mako", item=dataset, item_data=dataset_data, truncated=truncated )
         else:
             raise web.httpexceptions.HTTPNotFound()
@@ -482,7 +482,7 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistoryDatasetAssoc
             raise web.httpexceptions.HTTPNotFound()
         truncated, dataset_data = self.get_data( dataset, preview=True )
         # Get annotation.
-        dataset.annotation = self.get_item_annotation_str( trans.sa_session, trans.get_user(), dataset )
+        dataset.annotation = self.get_item_annotation_str( trans, trans.user, dataset )
         return trans.stream_template_mako( "/dataset/item_content.mako", item=dataset, item_data=dataset_data, truncated=truncated )
         
     @web.expose
@@ -502,7 +502,7 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistoryDatasetAssoc
         dataset = self.get_dataset( trans, id, False, True )
         if not dataset:
             web.httpexceptions.HTTPNotFound()
-        return self.get_item_annotation_str( trans.sa_session, trans.get_user(), dataset )
+        return self.get_item_annotation_str( trans, trans.user, dataset )
 
     @web.expose
     def display_at( self, trans, dataset_id, filename=None, **kwd ):

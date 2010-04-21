@@ -14,6 +14,7 @@ from galaxy.util.bunch import Bunch
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.util.topsort import topsort, topsort_levels, CycleError
 from galaxy.workflow.modules import *
+from galaxy import model
 from galaxy.model.mapping import desc
 from galaxy.model.orm import *
 
@@ -176,9 +177,9 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
         # Get data for workflow's steps.
         self.get_stored_workflow_steps( trans, stored_workflow )
         # Get annotations.
-        stored_workflow.annotation = self.get_item_annotation_str( trans.sa_session, stored_workflow.user, stored_workflow )
+        stored_workflow.annotation = self.get_item_annotation_str( trans, stored_workflow.user, stored_workflow )
         for step in stored_workflow.latest_workflow.steps:
-            step.annotation = self.get_item_annotation_str( trans.sa_session, stored_workflow.user, step )
+            step.annotation = self.get_item_annotation_str( trans, stored_workflow.user, step )
         return trans.fill_template_mako( "workflow/display.mako", item=stored_workflow, item_data=stored_workflow.latest_workflow.steps )
 
     @web.expose
@@ -192,9 +193,9 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
         # Get data for workflow's steps.
         self.get_stored_workflow_steps( trans, stored )
         # Get annotations.
-        stored.annotation = self.get_item_annotation_str( trans.sa_session, stored.user, stored )
+        stored.annotation = self.get_item_annotation_str( trans, stored.user, stored )
         for step in stored.latest_workflow.steps:
-            step.annotation = self.get_item_annotation_str( trans.sa_session, stored.user, step )
+            step.annotation = self.get_item_annotation_str( trans, stored.user, step )
         return trans.stream_template_mako( "/workflow/item_content.mako", item = stored, item_data = stored.latest_workflow.steps )
                               
     @web.expose
@@ -330,7 +331,7 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
         
         return trans.fill_template( 'workflow/edit_attributes.mako', 
                                     stored=stored, 
-                                    annotation=self.get_item_annotation_str( trans.sa_session, trans.get_user(), stored ) 
+                                    annotation=self.get_item_annotation_str( trans, trans.user, stored ) 
                                     )
     
     @web.expose
@@ -501,7 +502,7 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
         if not id:
             error( "Invalid workflow id" )
         stored = self.get_stored_workflow( trans, id )
-        return trans.fill_template( "workflow/editor.mako", stored=stored, annotation=self.get_item_annotation_str( trans.sa_session, trans.get_user(), stored ) )
+        return trans.fill_template( "workflow/editor.mako", stored=stored, annotation=self.get_item_annotation_str( trans, trans.user, stored ) )
         
     @web.json
     def editor_form_post( self, trans, type='tool', tool_id=None, annotation=None, **incoming ):
@@ -580,7 +581,7 @@ class WorkflowController( BaseController, Sharable, UsesStoredWorkflow, UsesAnno
                 #        as a dictionary not just the values
                 data['upgrade_messages'][step.order_index] = upgrade_message.values()
             # Get user annotation.
-            step_annotation = self.get_item_annotation_obj ( trans.sa_session, trans.get_user(), step )
+            step_annotation = self.get_item_annotation_obj ( trans, trans.user, step )
             annotation_str = ""
             if step_annotation:
                 annotation_str = step_annotation.annotation

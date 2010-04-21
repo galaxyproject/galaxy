@@ -69,9 +69,24 @@ class CommunityRBACAgent( RBACAgent ):
         return ret_val
     def associate_components( self, **kwd ):
         if 'user' in kwd:
-            if 'role' in kwd:
+            if 'group' in kwd:
+                return self.associate_user_group( kwd['user'], kwd['group'] )
+            elif 'role' in kwd:
                 return self.associate_user_role( kwd['user'], kwd['role'] )
+        elif 'role' in kwd:
+            if 'group' in kwd:
+                return self.associate_group_role( kwd['group'], kwd['role'] )
         raise 'No valid method of associating provided components: %s' % kwd
+    def associate_group_role( self, group, role ):
+        assoc = self.model.GroupRoleAssociation( group, role )
+        self.sa_session.add( assoc )
+        self.sa_session.flush()
+        return assoc
+    def associate_user_group( self, user, group ):
+        assoc = self.model.UserGroupAssociation( user, group )
+        self.sa_session.add( assoc )
+        self.sa_session.flush()
+        return assoc
     def associate_user_role( self, user, role ):
         assoc = self.model.UserRoleAssociation( user, role )
         self.sa_session.add( assoc )
@@ -99,6 +114,39 @@ class CommunityRBACAgent( RBACAgent ):
             else:
                 return None
         return role
+    def set_entity_group_associations( self, groups=[], users=[], roles=[], delete_existing_assocs=True ):
+        for group in groups:
+            if delete_existing_assocs:
+                for a in group.roles + group.users:
+                    self.sa_session.delete( a )
+                    self.sa_session.flush()
+            for role in roles:
+                self.associate_components( group=group, role=role )
+            for user in users:
+                self.associate_components( group=group, user=user )
+    def set_entity_role_associations( self, roles=[], users=[], groups=[], delete_existing_assocs=True ):
+        for role in roles:
+            if delete_existing_assocs:
+                for a in role.users + role.groups:
+                    self.sa_session.delete( a )
+                    self.sa_session.flush()
+            for user in users:
+                self.associate_components( user=user, role=role )
+            for group in groups:
+                self.associate_components( group=group, role=role )
+    def set_entity_user_associations( self, users=[], roles=[], groups=[], delete_existing_assocs=True ):
+        for user in users:
+            if delete_existing_assocs:
+                for a in user.non_private_roles + user.groups:
+                    self.sa_session.delete( a )
+                    self.sa_session.flush()
+            self.sa_session.refresh( user )
+            for role in roles:
+                # Make sure we are not creating an additional association with a PRIVATE role
+                if role not in user.roles:
+                    self.associate_components( user=user, role=role )
+            for group in groups:
+                self.associate_components( user=user, group=group )
 
 def get_permitted_actions( filter=None ):
     '''Utility method to return a subset of RBACAgent's permitted actions'''

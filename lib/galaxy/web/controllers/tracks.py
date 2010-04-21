@@ -16,6 +16,7 @@ Problems
 import math, re, logging, glob
 log = logging.getLogger(__name__)
 
+from galaxy import model
 from galaxy.util.json import to_json_string, from_json_string
 from galaxy.web.base.controller import *
 from galaxy.web.framework import simplejson

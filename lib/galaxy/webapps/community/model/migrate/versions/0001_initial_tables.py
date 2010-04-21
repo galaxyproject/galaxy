@@ -27,12 +27,12 @@ User_table = Table( "galaxy_user", metadata,
     Column( "deleted", Boolean, index=True, default=False ),
     Column( "purged", Boolean, index=True, default=False ) )
 
-UserRoleAssociation_table = Table( "user_role_association", metadata,
+Group_table = Table( "galaxy_group", metadata,
     Column( "id", Integer, primary_key=True ),
-    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
-    Column( "role_id", Integer, ForeignKey( "role.id" ), index=True ),
     Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ) )
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "name", String( 255 ), index=True, unique=True ),
+    Column( "deleted", Boolean, index=True, default=False ) )
 
 Role_table = Table( "role", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -42,6 +42,27 @@ Role_table = Table( "role", metadata,
     Column( "description", TEXT ),
     Column( "type", String( 40 ), index=True ),
     Column( "deleted", Boolean, index=True, default=False ) )
+
+UserGroupAssociation_table = Table( "user_group_association", metadata, 
+    Column( "id", Integer, primary_key=True ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+    Column( "group_id", Integer, ForeignKey( "galaxy_group.id" ), index=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ) )
+
+UserRoleAssociation_table = Table( "user_role_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+    Column( "role_id", Integer, ForeignKey( "role.id" ), index=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ) )
+
+GroupRoleAssociation_table = Table( "group_role_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "group_id", Integer, ForeignKey( "galaxy_group.id" ), index=True ),
+    Column( "role_id", Integer, ForeignKey( "role.id" ), index=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ) )
 
 GalaxySession_table = Table( "galaxy_session", metadata,
     Column( "id", Integer, primary_key=True ),

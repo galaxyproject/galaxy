@@ -1,7 +1,7 @@
 from galaxy.web.base.controller import *
 from galaxy.model.orm import *
 from galaxy.datatypes import sniff
-from galaxy import util
+from galaxy import model, util
 import logging, os, sys
 from galaxy.web.form_builder import * 
 from galaxy.tools.parameters.basic import parameter_types 

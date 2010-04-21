@@ -5,13 +5,14 @@
     %if not admin_view:
         <ul class="manage-table-actions">
             <li>
-                <a class="action-button"  href="${h.url_for( controller='user', action='index' )}">
+                <a class="action-button"  href="${h.url_for( controller='user', action='index', webapp=webapp )}">
                 <span>User preferences</span></a>
             </li>
         </ul>
     %endif
     <div class="toolForm">
         <form name="login_info" id="login_info" action="${h.url_for( controller='user', action='edit_info', user_id=user.id, admin_view=admin_view )}" method="post" >
+            <input type="hidden" name="webapp" value="${webapp}" size="40"/>
             <div class="toolFormTitle">Login Information</div>
             <div class="form-row">
                 <label>Email address:</label>
@@ -35,6 +36,7 @@
     <p></p>
     <div class="toolForm">
         <form name="change_password" id="change_password" action="${h.url_for( controller='user', action='edit_info', user_id=user.id, admin_view=admin_view )}" method="post" >
+            <input type="hidden" name="webapp" value="${webapp}" size="40"/>
             <div class="toolFormTitle">Change Password</div>
             %if not admin_view:
                 <div class="form-row">

@@ -2,7 +2,7 @@ import sys, os, operator, string, shutil, re, socket, urllib, time, logging
 from cgi import escape, FieldStorage
 
 from galaxy.web.base.controller import *
-from galaxy.webapps.community.base.controller import *
+from galaxy.webapps.community import model
 from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.model.orm import *
 

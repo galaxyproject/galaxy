@@ -103,8 +103,9 @@ class User( BaseController ):
                                     status='done',
                                     active_view="user" )
     @web.expose
-    def create( self, trans, webapp='galaxy', redirect_url='', refresh_frames=[], **kwd ):
+    def create( self, trans, redirect_url='', refresh_frames=[], **kwd ):
         params = util.Params( kwd )
+        webapp = params.get( 'webapp', 'galaxy' )
         use_panels = util.string_as_bool( kwd.get( 'use_panels', True ) )
         email = util.restore_text( params.get( 'email', '' ) )
         # Do not sanitize passwords, so take from kwd
@@ -165,7 +166,7 @@ class User( BaseController ):
                                                                    action='users',
                                                                    message='Created new user account (%s)' % user.email,
                                                                    status='done' ) )
-                else:
+                elif not admin_view:
                     # Must be logging into the community space webapp
                     trans.handle_user_login( user, webapp )
             if not error:

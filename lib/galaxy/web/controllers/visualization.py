@@ -1,3 +1,4 @@
+from galaxy import model
 from galaxy.web.base.controller import *
 from galaxy.web.framework.helpers import time_ago, grids, iff
 from galaxy.util.sanitize_html import sanitize_html
@@ -366,7 +367,7 @@ class VisualizationController( BaseController, Sharable, UsesAnnotations, UsesVi
             if visualization.slug is None:
                 self.create_item_slug( trans.sa_session, visualization )
             visualization_slug = visualization.slug
-            visualization_annotation = self.get_item_annotation_str( trans.sa_session, trans.get_user(), visualization )
+            visualization_annotation = self.get_item_annotation_str( trans, trans.user, visualization )
             if not visualization_annotation:
                 visualization_annotation = ""
         return trans.show_form( 

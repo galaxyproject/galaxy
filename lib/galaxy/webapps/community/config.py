@@ -79,15 +79,12 @@ class Configuration( object ):
         for path in self.root, self.file_path, self.template_path:
             if not os.path.isdir( path ):
                 raise ConfigurationError("Directory does not exist: %s" % path )
-    def is_admin_user( self,user ):
+    def is_admin_user( self, user ):
         """
         Determine if the provided user is listed in `admin_users`.
-        
-        NOTE: This is temporary, admin users will likely be specified in the
-              database in the future.
         """
         admin_users = self.get( "admin_users", "" ).split( "," )
-        return ( user is not None and user.email in admin_users )
+        return user is not None and user.email in admin_users
 
 def get_database_engine_options( kwargs ):
     """

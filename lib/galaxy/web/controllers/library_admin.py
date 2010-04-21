@@ -1,5 +1,5 @@
 import sys
-from galaxy import util
+from galaxy import model, util
 from galaxy.web.base.controller import *
 from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.model.orm import *

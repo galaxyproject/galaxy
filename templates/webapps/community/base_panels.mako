@@ -26,7 +26,7 @@
         <td class="${cls}" style="${style}"><a target="${target}" href="${href}">${display}</a></td>
     </%def>
 
-    ${tab( "admin", "Admin", h.url_for( controller='/webapps/community/admin', action='index' ), extra_class="admin-only", visible=( trans.user and app.config.is_admin_user( trans.user ) ) )}
+    ${tab( "admin", "Admin", h.url_for( controller='/admin', action='index', webapp='community' ), extra_class="admin-only", visible=( trans.user and app.config.is_admin_user( trans.user ) ) )}
     
     <td class="tab">
         <a>Help</a>

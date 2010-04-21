@@ -1,6 +1,6 @@
 from galaxy.web.base.controller import *
 from galaxy.web.framework.helpers import time_ago, iff, grids
-from galaxy import util
+from galaxy import model, util
 from galaxy.util.odict import odict
 from galaxy.model.mapping import desc
 from galaxy.model.orm import *
@@ -490,9 +490,9 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesHistory 
         # Get datasets.
         datasets = self.get_history_datasets( trans, history )
         # Get annotations.
-        history.annotation = self.get_item_annotation_str( trans.sa_session, history.user, history )
+        history.annotation = self.get_item_annotation_str( trans, history.user, history )
         for dataset in datasets:
-            dataset.annotation = self.get_item_annotation_str( trans.sa_session, history.user, dataset )
+            dataset.annotation = self.get_item_annotation_str( trans, history.user, dataset )
         return trans.stream_template_mako( "/history/item_content.mako", item = history, item_data = datasets )
                        
     @web.expose
@@ -613,9 +613,9 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesHistory 
         # Get datasets.
         datasets = self.get_history_datasets( trans, history )
         # Get annotations.
-        history.annotation = self.get_item_annotation_str( trans.sa_session, history.user, history )
+        history.annotation = self.get_item_annotation_str( trans, history.user, history )
         for dataset in datasets:
-            dataset.annotation = self.get_item_annotation_str( trans.sa_session, history.user, dataset )
+            dataset.annotation = self.get_item_annotation_str( trans, history.user, dataset )
         return trans.stream_template_mako( "history/display.mako",
                                           item = history, item_data = datasets )
                                           
