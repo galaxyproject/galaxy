@@ -8,7 +8,7 @@ transfer process using the user interface.
 
 Usage:
 
-python data_transfer.py <data_transfer_xml>
+python data_transfer.py <data_transfer_xml> <config_id_secret>
 
 
 """
@@ -57,7 +57,7 @@ log.addHandler(fh)
 
 class DataTransfer(object):
     
-    def __init__(self, msg):
+    def __init__(self, msg, config_id_secret):
         log.info(msg)
         self.dom = xml.dom.minidom.parseString(msg)
         self.host = self.get_value(self.dom, 'data_host')
@@ -67,6 +67,7 @@ class DataTransfer(object):
         self.library_id = self.get_value(self.dom, 'library_id')
         self.folder_id = self.get_value(self.dom, 'folder_id')
         self.dataset_files = []
+        self.config_id_secret = config_id_secret
         count=0
         while True:
            index = self.get_value_index(self.dom, 'index', count)
@@ -137,7 +138,7 @@ class DataTransfer(object):
         '''
         log.error(traceback.format_exc())
         log.error('FATAL ERROR.'+msg)
-        self.update_status('Error.', 'All', msg)
+        self.update_status('Error', 'All', msg+"\n"+traceback.format_exc())
         sys.exit(1)
         
     def transfer_files(self):
@@ -175,18 +176,24 @@ class DataTransfer(object):
         This method adds the dataset file to the target data library & folder
         by opening the corresponding url in Galaxy server running.  
         '''
-        self.update_status(Sample.transfer_status.ADD_TO_LIBRARY)
-        galaxyweb = GalaxyWebInterface(self.server_host, self.server_port, 
-                                       self.datatx_email, self.datatx_password)
-        galaxyweb.add_to_library(self.server_dir, self.library_id, self.folder_id)
-        galaxyweb.logout()
-
+        try:
+            self.update_status(Sample.transfer_status.ADD_TO_LIBRARY)
+            log.debug("dir:%s, lib:%s, folder:%s" % (self.server_dir, str(self.library_id), str(self.folder_id)))
+            galaxyweb = GalaxyWebInterface(self.server_host, self.server_port, 
+                                           self.datatx_email, self.datatx_password,
+                                           self.config_id_secret)
+            galaxyweb.add_to_library(self.server_dir, self.library_id, self.folder_id)
+            galaxyweb.logout()
+        except Exception, e:
+            log.debug(e)
+            self.error_and_exit(str(e))
+            
     def update_status(self, status, dataset_index='All', msg=''):
         '''
         Update the data transfer status for this dataset in the database
         '''
         try:
-            log.debug('Setting status "%s" for sample "%s"' % ( status, str(dataset_index) ) )
+            log.debug('Setting status "%s" for dataset "%s"' % ( status, str(dataset_index) ) )
             df = from_json_string(self.galaxydb.get_sample_dataset_files(self.sample_id))
             if dataset_index == 'All':
                 for dataset in self.dataset_files:
@@ -240,7 +247,7 @@ if __name__ == '__main__':
     #
     # Start the daemon
     #
-    dt = DataTransfer(sys.argv[1])
+    dt = DataTransfer(sys.argv[1], sys.argv[2])
     dt.start()
     sys.exit(0)
 

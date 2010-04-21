@@ -1680,7 +1680,7 @@ class RequestsAdmin( BaseController ):
                                virtual_host=trans.app.config.amqp['virtual_host'], 
                                insist=False)    
         chan = conn.channel()
-        msg = amqp.Message(data, 
+        msg = amqp.Message(data.replace('\n', '').replace('\r', ''), 
                            content_type='text/plain', 
                            application_headers={'msg_type': 'data_transfer'})
         msg.properties["delivery_mode"] = 2

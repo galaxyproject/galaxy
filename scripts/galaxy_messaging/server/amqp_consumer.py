@@ -37,6 +37,7 @@ fh.setFormatter(formatter)
 log.addHandler(fh)
 
 global dbconnstr
+global config
 
 def get_value(dom, tag_name):
     '''
@@ -64,17 +65,20 @@ def get_value_index(dom, tag_name, index):
     return rc
 
 def recv_callback(msg):
+    global config
     # check the meesage type.
     msg_type = msg.properties['application_headers'].get('msg_type')
     log.debug('\nMESSAGE RECVD: '+str(msg_type))
     if msg_type == 'data_transfer':
         log.debug('DATA TRANSFER')
         # fork a new process to transfer datasets
-        transfer_script = "scripts/galaxy_messaging/server/data_transfer.py"
-        cmd = ( "python",
-                transfer_script,
-                msg.body  )
-        pid = subprocess.Popen(cmd).pid
+        transfer_script = os.path.join(os.getcwd(),
+                                       "scripts/galaxy_messaging/server/data_transfer.py")
+        cmd = '%s "%s" "%s" "%s"' % ("python", 
+                                     transfer_script, 
+                                     msg.body, 
+                                     config.get("app:main", "id_secret") )
+        pid = subprocess.Popen(cmd, shell=True).pid
         log.debug('Started process (%i): %s' % (pid, str(cmd)))
     elif msg_type == 'sample_state_update':
         log.debug('SAMPLE STATE UPDATE')
@@ -95,6 +99,7 @@ def main():
     if len(sys.argv) < 2:
         print 'Usage: python amqp_consumer.py <Galaxy config file>'
         return
+    global config
     config = ConfigParser.ConfigParser()
     config.read(sys.argv[1])
     global dbconnstr
