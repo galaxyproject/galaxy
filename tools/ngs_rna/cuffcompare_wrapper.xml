@@ -15,15 +15,15 @@
             $input2
     </command>
     <inputs>
-        <param format="gtf" name="input1" type="data" label="SAM file of aligned RNA-Seq reads" help=""/>
-        <param format="gtf" name="input2" type="data" label="SAM file of aligned RNA-Seq reads" help=""/>
+        <param format="gtf" name="input1" type="data" label="GTF file produced by Cufflinks" help=""/>
+        <param format="gtf" name="input2" type="data" label="GTF file produced by Cufflinks" help=""/>
         <conditional name="annotation">
-            <param name="use_ref_annotation" type="select" label="Use Reference Annotation?">
+            <param name="use_ref_annotation" type="select" label="Use Reference Annotation">
                 <option value="No">No</option>
                 <option value="Yes">Yes</option>
             </param>
             <when value="Yes">
-                <param format="gtf" name="reference_annotation" type="data" label="Reference Annotation" help=""/>    
+                <param format="gtf" name="reference_annotation" type="data" label="Reference Annotation" help="Make sure your annotation file is in GTF format and that Galaxy knows that your file is GTF--not GFF."/>    
                 <param name="ignore_nonoverlapping_reference" type="boolean" label="Ignore reference transcripts that are not overlapped by any transcript in input files"/>
             </when>
             <when value="No">
@@ -32,9 +32,9 @@
     </inputs>
 
     <outputs>
-        <data format="gtf" name="transcripts_combined" />
-        <data format="tracking" name="transcripts_tracking" />
-        <data format="gtf" name="transcripts_accuracy" />
+        <data format="gtf" name="transcripts_combined" label="Cuffcompare on data ${input1.hid} and data ${input2.hid}: combined transcripts"/>
+        <data format="tracking" name="transcripts_tracking" label="Cuffcompare on data ${input1.hid} and data ${input2.hid}: transcript tracking"/>
+        <data format="gtf" name="transcripts_accuracy" label="Cuffcompare on data ${input1.hid} and data ${input2.hid}: transcript accuracy"/>
     </outputs>
 
     <tests>

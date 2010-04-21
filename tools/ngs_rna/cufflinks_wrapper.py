@@ -56,7 +56,7 @@ def __main__():
     if options.min_mapqual:
         cmd += ( " -Q %i" % int ( options.min_mapqual ) )
     if options.GTF:
-        cmd += ( " -G %i" % options.GTF )
+        cmd += ( " -G %s" % options.GTF )
     if options.num_importance_samples:
         cmd += ( " --num-importance-samples %i" % int ( options.num_importance_samples ) )
     if options.max_mle_iterations:

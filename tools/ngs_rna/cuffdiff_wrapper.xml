@@ -1,0 +1,117 @@
+<tool id="cuffdiff" name="Cuffdiff" version="0.8.2">
+    <description>find significant changes in transcript expression, splicing, and promoter use</description>
+    <command interpreter="python">
+        cuffdiff_wrapper.py
+            --FDR=$fdr
+            --num-threads="4"
+            --min-mapqual=$min_mapqual
+            --min-alignment-count=$min_alignment_count
+
+            --isoforms_fpkm_tracking_output=$isoforms_fpkm_tracking
+            --genes_fpkm_tracking_output=$genes_fpkm_tracking
+            --cds_fpkm_tracking_output=$cds_fpkm_tracking
+            --tss_groups_fpkm_tracking_output=$tss_groups_fpkm_tracking
+            --isoforms_exp_output=$isoforms_exp
+            --genes_exp_output=$genes_exp
+            --tss_groups_exp_output=$tss_groups_exp
+            --cds_exp_fpkm_tracking_output=$cds_exp_fpkm_tracking
+            --splicing_diff_output=$splicing_diff
+            --cds_diff_output=$cds_diff
+            --promoters_diff_output=$promoters_diff
+            
+            --inputA=$gtf_input
+            --input1=$aligned_reads1
+            --input2=$aligned_reads2
+    </command>
+    <inputs>
+        <param format="gtf" name="gtf_input" type="data" label="Transcripts" help="A transcript GTF file produced by cufflinks, cuffcompare, or other source."/>
+        <param format="sam" name="aligned_reads1" type="data" label="SAM file of aligned RNA-Seq reads" help=""/>
+        <param format="sam" name="aligned_reads2" type="data" label="SAM file of aligned RNA-Seq reads" help=""/>
+        <param name="fdr" type="float" value="0.05" label="False Discovery Rate" help="The allowed false discovery rate."/>
+        <param name="min_mapqual" type="integer" value="0" label="Min SAM Mapping Quality" help="Instructs Cufflinks to ignore alignments with a SAM mapping quality lower than this number."/>
+        <param name="min_alignment_count" type="integer" value="0" label="Min Alignment Count" help="The minimum number of alignments in a locus for needed to conduct significance testing on changes in that locus observed between samples."/>
+        <conditional name="singlePaired">
+            <param name="sPaired" type="select" label="Is this library mate-paired?">
+                <option value="single">Single-end</option>
+                <option value="paired">Paired-end</option>
+            </param>
+            <when value="single"></when>
+            <when value="paired">
+                <param name="mean_inner_distance" type="integer" value="20" label="Mean Inner Distance between Mate Pairs"/>
+                <param name="inner_distance_std_dev" type="integer" value="20" label="Standard Deviation for Inner Distance between Mate Pairs"/>
+            </when>
+        </conditional>
+    </inputs>
+
+    <outputs>
+        <data format="tabular" name="isoforms_exp" label="Cuffdiff on data ${gtf_input.hid}, data ${aligned_reads1.hid}, and data ${aligned_reads2.hid}: isoform expression"/>
+        <data format="tabular" name="genes_exp" label="Cuffdiff on data ${gtf_input.hid}, data ${aligned_reads1.hid}, and data ${aligned_reads2.hid}: gene expression"/>
+        <data format="tabular" name="tss_groups_exp" label="Cuffdiff on data ${gtf_input.hid}, data ${aligned_reads1.hid}, and data ${aligned_reads2.hid}: TSS groups expression"/>
+        <data format="tabular" name="cds_exp_fpkm_tracking" label="Cuffdiff on data ${gtf_input.hid}, data ${aligned_reads1.hid}, and data ${aligned_reads2.hid}: CDS Expression FPKM Tracking"/>
+        <data format="tabular" name="splicing_diff" label="Cuffdiff on data ${gtf_input.hid}, data ${aligned_reads1.hid}, and data ${aligned_reads2.hid}: splicing diff"/>
+        <data format="tabular" name="cds_diff" label="Cuffdiff on data ${gtf_input.hid}, data ${aligned_reads1.hid}, and data ${aligned_reads2.hid}: CDS diff"/>
+        <data format="tabular" name="promoters_diff" label="Cuffdiff on data ${gtf_input.hid}, data ${aligned_reads1.hid}, and data ${aligned_reads2.hid}: promoters diff"/>
+        <data format="tabular" name="tss_groups_fpkm_tracking" label="Cuffdiff on data ${gtf_input.hid}, data ${aligned_reads1.hid}, and data ${aligned_reads2.hid}: TSS groups FPKM tracking" />
+        <data format="tabular" name="cds_fpkm_tracking" label="Cuffdiff on data ${gtf_input.hid}, data ${aligned_reads1.hid}, and data ${aligned_reads2.hid}: CDS FPKM tracking"/>
+        <data format="tabular" name="genes_fpkm_tracking" label="Cuffdiff on data ${gtf_input.hid}, data ${aligned_reads1.hid}, and data ${aligned_reads2.hid}: gene FPKM tracking"/>
+        <data format="tabular" name="isoforms_fpkm_tracking" label="Cuffdiff on data ${gtf_input.hid}, data ${aligned_reads1.hid}, and data ${aligned_reads2.hid}: isoform FPKM tracking"/>        
+    </outputs>
+
+    <tests>
+        <test>
+        </test>
+    </tests>
+
+    <help>
+**Cuffdiff Overview**
+
+Cuffdiff is part of Cufflinks_. Cuffdiff find significant changes in transcript expression, splicing, and promoter use. Please cite: Trapnell C, Williams BA, Pertea G, Mortazavi AM, Kwan G, van Baren MJ, Salzberg SL, Wold B, Pachter L. Transcript assembly and abundance estimation from RNA-Seq reveals thousands of new transcripts and switching among isoforms. (manuscript in press)
+
+.. _Cufflinks: http://cufflinks.cbcb.umd.edu/
+        
+------
+
+**Know what you are doing**
+
+.. class:: warningmark
+
+There is no such thing (yet) as an automated gearshift in expression analysis. It is all like stick-shift driving in San Francisco. In other words, running this tool with default parameters will probably not give you meaningful results. A way to deal with this is to **understand** the parameters by carefully reading the `documentation`__ and experimenting. Fortunately, Galaxy makes experimenting easy.
+
+.. __: http://cufflinks.cbcb.umd.edu/manual.html#cuffdiff
+
+------
+
+**Input format**
+
+Cuffcompare takes Cufflinks or Cuffcompare GTF files as input along with two SAM files containing the fragment alignments for two or more samples.
+
+.. ___: http://www.todo.org 
+
+------
+
+**Outputs**
+
+TODO
+    
+-------
+
+**Settings**
+
+All of the options have a default value. You can change any of them. Most of the options in Cuffdiff have been implemented here.
+
+------
+
+**Cuffdiff parameter list**
+
+This is a list of implemented Cuffdiff options::
+
+  -m INT                         This is the expected (mean) inner distance between mate pairs. For, example, for paired end runs with fragments selected at 300bp, where each end is 50bp, you should set -r to be 200. The default is 45bp.
+  -s INT                         The standard deviation for the distribution on inner distances between mate pairs. The default is 20bp.
+  -Q	                         Instructs Cufflinks to ignore alignments with a SAM mapping quality lower than this number. The default is 0.
+  -c INT                         The minimum number of alignments in a locus for needed to conduct significance testing on changes in that locus observed between samples. If no testing is performed, changes in the locus are deemed not signficant, and the locus' observed changes don't contribute to correction for multiple testing. The default is 1,000 fragment alignments (up to 2,000 paired reads).
+  --FDR FLOAT                    The allowed false discovery rate. The default is 0.05.
+  --num-importance-samples INT   Sets the number of importance samples generated for each locus during abundance estimation. Default: 1000
+  --max-mle-iterations INT       Sets the number of iterations allowed during maximum likelihood estimation of abundances. Default: 5000
+  
+    </help>
+</tool>
