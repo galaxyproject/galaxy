@@ -125,7 +125,11 @@ class Configuration( object ):
             self.enable_cloud_execution = string_as_bool( kwargs.get( 'enable_cloud_execution', 'False' ) )
         # Galaxy messaging (AMQP) configuration options
         self.amqp = {}
-        for k, v in global_conf_parser.items("galaxy_amqp"):
+        try:
+            amqp_config = global_conf_parser.items("galaxy_amqp")
+        except ConfigParser.NoSectionError:
+            amqp_config = {}
+        for k, v in amqp_config:
             self.amqp[k] = v
     def get( self, key, default ):
         return self.config_dict.get( key, default )
