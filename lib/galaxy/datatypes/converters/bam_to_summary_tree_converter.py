@@ -19,7 +19,7 @@ def main():
     
     st = SummaryTree(block_size=100, levels=4, draw_cutoff=100, detail_cutoff=20)
     for read in bamfile.fetch():
-        st.insert_range(read.rname, read.mpos, read.pos + read.rlen)
+        st.insert_range(bamfile.getrname(read.rname), read.pos, read.pos + read.rlen)
     
     st.write(out_fname)
 

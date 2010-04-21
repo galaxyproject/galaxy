@@ -12,7 +12,7 @@ var DENSITY = 1000,
     DATA_LOADING = "Loading data...",
     CACHED_TILES_FEATURE = 10,
     CACHED_TILES_LINE = 30,
-    CACHED_DATA = 20,
+    CACHED_DATA = 5,
     CONTEXT = $("<canvas></canvas>").get(0).getContext("2d"),
     RIGHT_STRAND, LEFT_STRAND;
     
@@ -227,7 +227,9 @@ $.extend( Track.prototype, {
         track.tile_cache.clear();
         track.data_cache.clear();
         track.content_div.css( "height", "30px" );
-        track.content_div.text(DATA_LOADING);
+        if (!track.content_div.text()) {
+            track.content_div.text(DATA_LOADING);
+        }
         track.container_div.removeClass("nodata error pending");
 
         if (track.view.chrom) {
@@ -640,10 +642,16 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                 feature_end = feature[2],
                 feature_name = feature[3];
             f_start = Math.floor( (feature_start - max_low) * w_scale );
-            if (!no_detail) {
-                f_start -= dummy_canvas.measureText(feature_name).width;
-            }
             f_end = Math.ceil( (feature_end - max_low) * w_scale );
+                        
+            if (!no_detail) {
+                var text_len = dummy_canvas.measureText(feature_name).width;
+                if (f_start - text_len < 0) {
+                    f_end += text_len;
+                } else {
+                    f_start -= text_len;
+                }
+            }
             
             var j = 0;
             // Try to fit the feature to the first slot that doesn't overlap any other features in that slot
@@ -795,9 +803,15 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                         thick_start = Math.floor( Math.max(0, (feature_ts - tile_low) * w_scale) );
                         thick_end = Math.ceil( Math.min(width, (feature_te - tile_low) * w_scale) );
                     }
-                    if (feature_start > tile_low) {
+                    if (feature_name !== undefined && feature_start > tile_low) {
                         ctx.fillStyle = label_color;
-                        ctx.fillText(feature_name, f_start - 1 + left_offset, y_center + 8);
+                        if (tile_index === 0 && f_start - ctx.measureText(feature_name).width < 0) {
+                            ctx.textAlign = "left";
+                            ctx.fillText(feature_name, f_end + 2 + left_offset, y_center + 8);
+                        } else {
+                            ctx.textAlign = "right";
+                            ctx.fillText(feature_name, f_start - 2 + left_offset, y_center + 8);
+                        }
                         ctx.fillStyle = block_color;
                     }
                     if (feature_blocks) {
@@ -851,7 +865,6 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                 j++;
             }
         }
-
         parent_element.append( new_canvas );
         return new_canvas;
     }, gen_options: function(track_id) {

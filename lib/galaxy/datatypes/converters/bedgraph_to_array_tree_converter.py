@@ -34,7 +34,7 @@ class BedGraphReader:
                 chrom = feature[0]
                 chrom_start = int(feature[1])
                 chrom_end = int(feature[2])
-                score = int(feature[3])
+                score = float(feature[3])
                 return chrom, chrom_start, chrom_end, None, score
 def main():
    

@@ -34,7 +34,6 @@ ${h.css( "history", "autocomplete_tagging" )}
     <div id="viewport-container" style="overflow-x: hidden; overflow-y: auto;">
         <div id="viewport"></div>
     </div>
-    
 </div>
 <div id="nav-container" style="width:100%;">
     <div id="nav-labeltrack"></div>
@@ -161,8 +160,7 @@ ${h.js( 'galaxy.base', 'galaxy.panels', "json2", "jquery", "jquery.event.drag", 
 
             // To adjust the size of the viewport to fit the fixed-height footer
             var refresh = function( e ) {
-                $("#content").height( $(window).height() - $("#nav-container").height() - $("#masthead").height());
-                $("#viewport-container").height( $("#content").height() - $("#top-labeltrack").height() - $("#nav-labeltrack").height() );
+                $("#viewport-container").height( $(window).height() - 120 );
                 $("#nav-container").width( $("#center").width() );
                 view.redraw();
             };
@@ -176,7 +174,7 @@ ${h.js( 'galaxy.base', 'galaxy.panels', "json2", "jquery", "jquery.event.drag", 
                 this.current_height = e.clientY;
                 this.current_x = e.offsetX;
             }).bind( "drag", function( e ) {
-                var container = $(this).parent();
+                var container = $(this);
                 var delta = e.offsetX - this.current_x;
                 var new_scroll = container.scrollTop() - (e.clientY - this.current_height);
                 if ( new_scroll < container.get(0).scrollHeight - container.height() ) {

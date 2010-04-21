@@ -611,7 +611,6 @@ class DatasetInstance( object ):
             if fail_dependencies:
                 return None
         except ValueError:
-            log.debug("WTF")
             raise ValueError("A dependency could not be converted.")
         except KeyError:
             pass # No deps

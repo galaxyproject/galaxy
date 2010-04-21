@@ -26,7 +26,8 @@ class IntervalIndexDataProvider( object ):
             payload = [ offset, start, end ]
             if "no_detail" not in kwargs:
                 length = len(feature)
-                payload.append(feature[3]) # name
+                if length >= 4:
+                    payload.append(feature[3]) # name
                 if length >= 6: # strand
                     payload.append(feature[5])
                 

@@ -18,7 +18,7 @@ $(function() {
     $(".db_hide").each(function() {
         var pre = $(this);
         pre.hide();
-        pre.siblings("span").wrap( "<a href='javascript:void();'></a>" ).click( function() {
+        pre.siblings("span").wrap( "<a href='javascript:void(0);'></a>" ).click( function() {
             pre.toggle();
         });     
     });

@@ -341,7 +341,7 @@ function init_history_items(historywrapper, noinit, nochanges) {
             var id = this.id;
             var body = $(this).children( "div.historyItemBody" );
             var peek = body.find( "pre.peek" )
-            $(this).find( ".historyItemTitleBar > .historyItemTitle" ).wrap( "<a href='javascript:void();'></a>" ).click( function() {
+            $(this).find( ".historyItemTitleBar > .historyItemTitle" ).wrap( "<a href='javascript:void(0);'></a>" ).click( function() {
                 if ( body.is(":visible") ) {
                     // Hiding stuff here
                     if ( $.browser.mozilla ) { peek.css( "overflow", "hidden" ); }

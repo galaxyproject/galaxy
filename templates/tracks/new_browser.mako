@@ -1,4 +1,4 @@
-<form id="new-browser-form" action="javascript:void();" method="post" onsubmit="return false;">
+<form id="new-browser-form" action="javascript:void(0);" method="post" onsubmit="return false;">
     <div class="form-row">
         <label for="new-title">Browser name:</label>
         <div class="form-row-input">
