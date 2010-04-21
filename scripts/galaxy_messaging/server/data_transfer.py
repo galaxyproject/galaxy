@@ -8,28 +8,36 @@ transfer process using the user interface.
 
 Usage:
 
-python data_transfer.py <sequencer_host> 
-                        <username> 
-                        <password> 
-                        <source_file> 
-                        <sample_id>
-                        <dataset_index>
-                        <library_id>
-                        <folder_id>
+python data_transfer.py <data_transfer_xml>
+
+
 """
 import ConfigParser
 import sys, os, time, traceback
 import optparse
 import urllib,urllib2, cookielib, shutil
 import logging, time
+import xml.dom.minidom
+
+sp = sys.path[0]
+
 from galaxydb_interface import GalaxyDbInterface
+
+assert sys.version_info[:2] >= ( 2, 4 )
+new_path = [ sp ]
+new_path.extend( sys.path ) 
+sys.path = new_path
+
+from galaxyweb_interface import GalaxyWebInterface
 
 assert sys.version_info[:2] >= ( 2, 4 )
 new_path = [ os.path.join( os.getcwd(), "lib" ) ]
 new_path.extend( sys.path[1:] ) # remove scripts/ from the path
 sys.path = new_path
 
+
 from galaxy.util.json import from_json_string, to_json_string
+from galaxy.model import Sample
 from galaxy import eggs
 import pkg_resources
 pkg_resources.require( "pexpect" )
@@ -38,28 +46,39 @@ import pexpect
 pkg_resources.require( "simplejson" )
 import simplejson
 
-logging.basicConfig(filename=sys.stderr, level=logging.DEBUG, 
-                    format="%(asctime)s [%(levelname)s] %(message)s")
-
-class DataTransferException(Exception):
-    def __init__(self, value):
-        self.msg = value
-    def __str__(self):
-        return repr(self.msg)
+log = logging.getLogger("datatx_"+str(os.getpid()))
+log.setLevel(logging.DEBUG)
+fh = logging.FileHandler("data_transfer.log")
+fh.setLevel(logging.DEBUG)
+formatter = logging.Formatter("%(asctime)s - %(name)s - %(message)s")
+fh.setFormatter(formatter)
+log.addHandler(fh)
 
 
 class DataTransfer(object):
     
-    def __init__(self, host, username, password, remote_file, sample_id, 
-                 dataset_index, library_id, folder_id):
-        self.host = host
-        self.username = username
-        self.password = password
-        self.remote_file = remote_file
-        self.sample_id = sample_id
-        self.dataset_index = dataset_index
-        self.library_id = library_id
-        self.folder_id = folder_id
+    def __init__(self, msg):
+        log.info(msg)
+        self.dom = xml.dom.minidom.parseString(msg)
+        self.host = self.get_value(self.dom, 'data_host')
+        self.username = self.get_value(self.dom, 'data_user')
+        self.password = self.get_value(self.dom, 'data_password')
+        self.sample_id = self.get_value(self.dom, 'sample_id')
+        self.library_id = self.get_value(self.dom, 'library_id')
+        self.folder_id = self.get_value(self.dom, 'folder_id')
+        self.dataset_files = []
+        count=0
+        while True:
+           index = self.get_value_index(self.dom, 'index', count)
+           file = self.get_value_index(self.dom, 'file', count)
+           name = self.get_value_index(self.dom, 'name', count)
+           if file:
+               self.dataset_files.append(dict(name=name,
+                                              index=int(index),
+                                              file=file)) 
+           else:
+               break
+           count=count+1
         try:
             # Retrieve the upload user login information from the config file
             config = ConfigParser.ConfigParser()
@@ -75,11 +94,13 @@ class DataTransfer(object):
             os.mkdir(self.server_dir)
             if not os.path.exists(self.server_dir):
                 raise Exception
+            # connect to db
+            self.galaxydb = GalaxyDbInterface(self.database_connection)
         except:
-            logging.error(traceback.format_exc())
-            logging.error('FATAL ERROR')
+            log.error(traceback.format_exc())
+            log.error('FATAL ERROR')
             if self.database_connection:
-                self.update_status('Error')
+                self.error_and_exit('Error')
             sys.exit(1)
      
     def start(self):
@@ -88,13 +109,13 @@ class DataTransfer(object):
         to the data library & finally updates the data transfer status in the db
         '''
         # datatx
-        self.transfer_file()
+        self.transfer_files()
         # add the dataset to the given library
         self.add_to_library()
         # update the data transfer status in the db
-        self.update_status('Complete')
+        self.update_status(Sample.transfer_status.COMPLETE)
         # cleanup
-        self.cleanup()    
+        #self.cleanup()    
         sys.exit(0)
         
     def cleanup(self):
@@ -114,34 +135,39 @@ class DataTransfer(object):
         This method is called any exception is raised. This prints the traceback 
         and terminates this script
         '''
-        logging.error(traceback.format_exc())
-        logging.error('FATAL ERROR.'+msg)
-        self.update_status('Error.'+msg)
+        log.error(traceback.format_exc())
+        log.error('FATAL ERROR.'+msg)
+        self.update_status('Error.', 'All', msg)
         sys.exit(1)
         
-    def transfer_file(self):
+    def transfer_files(self):
         '''
         This method executes a scp process using pexpect library to transfer
         the dataset file from the remote sequencer to the Galaxy server
         '''
         def print_ticks(d):
             pass
-        try:
-            cmd = "scp %s@%s:%s %s" % ( self.username,
-                                        self.host,
-                                        self.remote_file,
-                                        self.server_dir)
-            logging.debug(cmd)
-            output = pexpect.run(cmd, events={'.ssword:*': self.password+'\r\n', 
-                                              pexpect.TIMEOUT:print_ticks}, 
-                                              timeout=10)
-            logging.debug(output)
-            if not os.path.exists(os.path.join(self.server_dir, os.path.basename(self.remote_file))):
-                raise DataTransferException('Could not find the local file after transfer (%s)' % os.path.join(self.server_dir, os.path.basename(self.remote_file)))
-        except DataTransferException, (e):
-            self.error_and_exit(e.msg)
-        except:
-            self.error_and_exit()
+        for i, df in enumerate(self.dataset_files):
+            self.update_status(Sample.transfer_status.TRANSFERRING, df['index'])
+            try:
+                cmd = "scp %s@%s:%s %s/%s" % ( self.username,
+                                            self.host,
+                                            df['file'],
+                                            self.server_dir,
+                                            df['name'])
+                log.debug(cmd)
+                output = pexpect.run(cmd, events={'.ssword:*': self.password+'\r\n', 
+                                                  pexpect.TIMEOUT:print_ticks}, 
+                                                  timeout=10)
+                log.debug(output)
+                path = os.path.join(self.server_dir, os.path.basename(df['file']))
+                if not os.path.exists(path):
+                    msg = 'Could not find the local file after transfer (%s)' % path
+                    log.error(msg)
+                    raise Exception(msg)
+            except Exception, e:
+                msg = traceback.format_exc()
+                self.update_status('Error', df['index'], msg)
 
         
     def add_to_library(self):
@@ -149,73 +175,72 @@ class DataTransfer(object):
         This method adds the dataset file to the target data library & folder
         by opening the corresponding url in Galaxy server running.  
         '''
-        try:
-            logging.debug('Adding %s to library...' % os.path.basename(self.remote_file))
-            # create url
-            base_url =  "http://%s:%s" % (self.server_host, self.server_port)
-            # login 
-            url = "%s/user/login?email=%s&password=%s" % (base_url, self.datatx_email, self.datatx_password)
-            cj = cookielib.CookieJar()
-            opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
-            f = opener.open(url)
-            if f.read().find("ogged in as "+self.datatx_email) == -1:
-                # if the user doesnt exist, create the user
-                url = "%s/user/create?email=%s&username=%s&password=%s&confirm=%s&create_user_button=Submit" % ( base_url, self.datatx_email, self.datatx_email, self.datatx_password, self.datatx_password )
-                f = opener.open(url)
-                if f.read().find("ogged in as "+self.datatx_email) == -1:
-                    raise DataTransferException("The "+self.datatx_email+" user could not login to Galaxy")
-            # after login, add dataset to the library
-            params = urllib.urlencode(dict( cntrller='library_admin',
-                                            tool_id='upload1',
-                                            tool_state='None',
-                                            library_id=self.library_id,
-                                            folder_id=self.folder_id,
-                                            upload_option='upload_directory',
-                                            file_type='auto',
-                                            server_dir=os.path.basename(self.server_dir),
-                                            dbkey='',
-                                            runtool_btn='Upload to library'))
-            #url = "http://localhost:8080/library_common/upload_library_dataset?cntrller=library_admin&tool_id=upload1&tool_state=None&library_id=adb5f5c93f827949&folder_id=adb5f5c93f827949&upload_option=upload_directory&file_type=auto&server_dir=003&dbkey=%3F&message=&runtool_btn=Upload+to+library"
-            #url = base_url+"/library_common/upload_library_dataset?library_id=adb5f5c93f827949&tool_id=upload1&file_type=auto&server_dir=datatx_22858&dbkey=%3F&upload_option=upload_directory&folder_id=529fd61ab1c6cc36&cntrller=library_admin&tool_state=None&runtool_btn=Upload+to+library"
-            url = base_url+"/library_common/upload_library_dataset"
-            logging.debug(url)
-            logging.debug(params)
-            f = opener.open(url, params)
-            if f.read().find("Data Library") == -1:
-                raise DataTransferException("Dataset could not be uploaded to the data library")
-            # finally logout
-            f = opener.open(base_url+'/user/logout')
-            if f.read().find("You have been logged out.") == -1:
-                raise DataTransferException("The "+self.datatx_email+" user could not logout of Galaxy")
-        except DataTransferException, (e):
-            self.error_and_exit(e.msg)
-        except:
-            self.error_and_exit()
+        self.update_status(Sample.transfer_status.ADD_TO_LIBRARY)
+        galaxyweb = GalaxyWebInterface(self.server_host, self.server_port, 
+                                       self.datatx_email, self.datatx_password)
+        galaxyweb.add_to_library(self.server_dir, self.library_id, self.folder_id)
+        galaxyweb.logout()
 
-    def update_status(self, status):
+    def update_status(self, status, dataset_index='All', msg=''):
         '''
         Update the data transfer status for this dataset in the database
         '''
         try:
-            galaxy = GalaxyDbInterface(self.database_connection)
-            df = from_json_string(galaxy.get_sample_dataset_files(self.sample_id))
-            logging.debug(df)
-            df[self.dataset_index][1] = status
-            galaxy.set_sample_dataset_files(self.sample_id, to_json_string(df))
-            logging.debug("######################\n"+str(from_json_string(galaxy.get_sample_dataset_files(self.sample_id))[self.dataset_index]))
+            log.debug('Setting status "%s" for sample "%s"' % ( status, str(dataset_index) ) )
+            df = from_json_string(self.galaxydb.get_sample_dataset_files(self.sample_id))
+            if dataset_index == 'All':
+                for dataset in self.dataset_files:
+                    df[dataset['index']]['status'] = status
+                    if status == 'Error':
+                        df[dataset['index']]['error_msg'] = msg
+                    else:
+                        df[dataset['index']]['error_msg'] = ''
+                        
+            else:
+                df[dataset_index]['status'] = status
+                if status == 'Error':
+                    df[dataset_index]['error_msg'] = msg
+                else:
+                    df[dataset_index]['error_msg'] = ''
+
+            self.galaxydb.set_sample_dataset_files(self.sample_id, to_json_string(df))
+            log.debug('done.')
         except:
-            logging.error(traceback.format_exc())
-            logging.error('FATAL ERROR')
+            log.error(traceback.format_exc())
+            log.error('FATAL ERROR')
             sys.exit(1)
+            
+    def get_value(self, dom, tag_name):
+        '''
+        This method extracts the tag value from the xml message
+        '''
+        nodelist = dom.getElementsByTagName(tag_name)[0].childNodes
+        rc = ""
+        for node in nodelist:
+            if node.nodeType == node.TEXT_NODE:
+                rc = rc + node.data
+        return rc
+    
+    def get_value_index(self, dom, tag_name, index):
+        '''
+        This method extracts the tag value from the xml message
+        '''
+        try:
+            nodelist = dom.getElementsByTagName(tag_name)[index].childNodes
+        except:
+            return None
+        rc = ""
+        for node in nodelist:
+            if node.nodeType == node.TEXT_NODE:
+                rc = rc + node.data
+        return rc
 
 if __name__ == '__main__':
-    logging.info('STARTING %i %s' % (os.getpid(), str(sys.argv)))
-    logging.info('daemonized %i' % os.getpid())
+    log.info('STARTING %i %s' % (os.getpid(), str(sys.argv)))
     #
     # Start the daemon
-    #    
-    dt = DataTransfer(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4],
-                      int(sys.argv[5]), int(sys.argv[6]), sys.argv[7], sys.argv[8])
+    #
+    dt = DataTransfer(sys.argv[1])
     dt.start()
     sys.exit(0)
 

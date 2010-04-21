@@ -53,29 +53,44 @@ $(document).ready(function(){
 <div class="toolForm">
     %if len(dataset_files):
 ##    <form name="get_data" action="${h.url_for( controller='requests_admin', action='get_data', sample_id=sample.id)}" method="post" >
+        <div class="form-row">
+        <h4>Sample Dataset(s)</h4>
+        %if sample.untransferred_dataset_files():
             <div class="form-row">
-            <h4>Sample Dataset(s)</h4>
-            <div class="form-row">
-                <table class="grid">
-                <thead>
-                    <tr>
-                        <th>Dataset File</th>
-                        <th>Transfer Status</th>
-                        <th></th>
-                    </tr>
-                <thead>
-                    <tbody>
-                        %for dataset_index, dataset_file in enumerate(dataset_files):
-                            ${sample_dataset_files( dataset_index, dataset_file[0], dataset_file[1] )}
-                        %endfor
-                    </tbody>
-                </table>
-            </div>
-            </div>
+                <ul class="manage-table-actions">
+                    <li>
+                        <a class="action-button" href="${h.url_for( controller='requests_admin', action='get_data', start_transfer_button=True, sample_id=sample.id )}">
+                        <span>Start transfer</span></a>
+                    </li>
+                </ul>
+             </div>
+         %endif
+        <div class="form-row">
+            <table class="grid">
+            <thead>
+                <tr>
+                    <th>Dataset File</th>
+                    <th>Transfer Status</th>
+                    <th></th>
+                </tr>
+            <thead>
+                <tbody>
+                    %for dataset_index, dataset_file in enumerate(dataset_files):
+                        ${sample_dataset_files( dataset_index, dataset_file['name'], dataset_file['status'] )}
+                    %endfor
+                </tbody>
+            </table>
+        </div>
+        </div>
+
 ##    </form>
 ##</div>
+
+
+<br/>
 <br/>
 %endif
+
 ##<div class="toolForm">
     <form name="get_data" action="${h.url_for( controller='requests_admin', action='get_data', sample_id=sample.id)}" method="post" >
         <div class="form-row">
@@ -102,24 +117,24 @@ $(document).ready(function(){
                         navigate away from this page. Once the transfer is complete
                         the dataset(s) will show up on this page.
                     </div>
-                    <input type="submit" name="start_transfer_button" value="Transfer"/>
+                    <input type="submit" name="select_files_button" value="Select"/>
                 </div>
             </div>
         </div>
     </form>
 </div>
 
-<%def name="sample_dataset_files( dataset_index, dataset_file, status )">
+<%def name="sample_dataset_files( dataset_index, dataset_name, status )">
     <tr>
         <td>
-##            <label class="msg_head"><a href="${h.url_for( controller='requests_admin', action='show_dataset_file', sample_id=trans.security.encode_id(sample.id), dataset_index=dataset_index )}">${dataset_file.split('/')[-1]}</a></label>
-            <div class="msg_head"><u>${dataset_file.split('/')[-1]}</u></div>
-            <div class="msg_body">
-                ${dataset_file}
-            </div>
+            <label class="msg_head"><a href="${h.url_for( controller='requests_admin', action='dataset_details', sample_id=trans.security.encode_id(sample.id), dataset_index=dataset_index )}">${dataset_name}</a></label>
+##            <div class="msg_head"><u>${dataset_file.split('/')[-1]}</u></div>
+##            <div class="msg_body">
+##                ${dataset_file}
+##            </div>
         </td>
         <td>
-            %if status == sample.transfer_status.IN_PROGRESS: 
+            %if status not in [sample.transfer_status.NOT_STARTED, sample.transfer_status.COMPLETE]: 
                 <i>${status}</i>
             %else:
                 ${status}

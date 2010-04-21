@@ -287,7 +287,7 @@ upload1 = local:///
 # to be set up with a user account and other parameters listed below. The 'host'
 # and 'port' fields should point to where the RabbitMQ server is running. 
 
-#[galaxy:amqp]
+[galaxy_amqp]
 #host = 127.0.0.1
 #port = 5672
 #userid = galaxy

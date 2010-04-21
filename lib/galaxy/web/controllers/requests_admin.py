@@ -12,6 +12,7 @@ from sqlalchemy.sql.expression import func, and_
 from sqlalchemy.sql import select
 import pexpect
 import ConfigParser, threading, time
+from amqplib import client_0_8 as amqp
 
 log = logging.getLogger( __name__ )
 
@@ -64,7 +65,6 @@ class RequestsGrid( grids.Grid ):
                          .filter( self.event_class.table.c.id.in_(select(columns=[func.max(self.event_class.table.c.id)],
                                                                                   from_obj=self.event_class.table,
                                                                                   group_by=self.event_class.table.c.request_id)))
-                #print column_filter, q
             return q
         def get_accepted_filters( self ):
             """ Returns a list of accepted filters for this column. """
@@ -1509,8 +1509,11 @@ class RequestsAdmin( BaseController ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' ) 
-        folder_path = util.restore_text( params.get( 'folder_path', ''  ) )
+        folder_path = util.restore_text( params.get( 'folder_path', 
+                                                     sample.request.type.datatx_info['data_dir']  ) )
         files_list = util.listify( params.get( 'files_list', ''  ) ) 
+        if params.get( 'start_transfer_button', False ) == 'True':
+            return self.__start_datatx(trans, sample)
         if not folder_path:
             return trans.fill_template( '/admin/requests/get_data.mako',
                                         sample=sample, files=[], 
@@ -1544,31 +1547,42 @@ class RequestsAdmin( BaseController ):
                                         dataset_files=sample.dataset_files,
                                         folder_path=folder_path )
         elif params.get( 'remove_dataset_button', False ):
+            # get the filenames from the remote host
+            files = self.__get_files(trans, sample, folder_path)
             dataset_index = int(params.get( 'dataset_index', 0 ))
             del sample.dataset_files[dataset_index]
             trans.sa_session.add( sample )
             trans.sa_session.flush()
             return trans.fill_template( '/admin/requests/get_data.mako', 
-                                        sample=sample, 
-                                        dataset_files=sample.dataset_files)
-        elif params.get( 'start_transfer_button', False ):
+                                        sample=sample, files=files,
+                                        dataset_files=sample.dataset_files,
+                                        folder_path=folder_path)
+        elif params.get( 'select_files_button', False ):
             folder_files = []
             if len(files_list):
                 for f in files_list:
+                    filepath = os.path.join(folder_path, f)
                     if f[-1] == os.sep:
                         # the selected item is a folder so transfer all the 
                         # folder contents 
-                        self.__get_files_in_dir(trans, sample, os.path.join(folder_path, f))
+                        self.__get_files_in_dir(trans, sample, filepath)
                     else:
-                        sample.dataset_files.append([os.path.join(folder_path, f),
-                                                     sample.transfer_status.NOT_STARTED])
+                        sample.dataset_files.append(dict(filepath=filepath,
+                                                         status=sample.transfer_status.NOT_STARTED,
+                                                         name=filepath.split('/')[-1],
+                                                         error_msg='',
+                                                         size=sample.dataset_size(filepath)))
                         trans.sa_session.add( sample )
                         trans.sa_session.flush()
-                return self.__start_datatx(trans, sample)
             return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                               action='show_datatx_page', 
                                                               sample_id=trans.security.encode_id(sample.id),
                                                               folder_path=folder_path))
+
+        return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                          action='show_datatx_page', 
+                                                          sample_id=trans.security.encode_id(sample.id),
+                                                          folder_path=folder_path))
 
     def __setup_datatx_user(self, trans, library, folder):
         '''
@@ -1620,7 +1634,62 @@ class RequestsAdmin( BaseController ):
             trans.sa_session.add( dp )
             trans.sa_session.flush()
         return datatx_user
-    
+
+    def __send_message(self, trans, datatx_info, sample):
+        '''
+        This method creates the xml message and sends it to the rabbitmq server
+        '''
+        # first create the xml message based on the following template
+        xml = \
+            ''' <data_transfer>
+                    <data_host>%(DATA_HOST)s</data_host>
+                    <data_user>%(DATA_USER)s</data_user>
+                    <data_password>%(DATA_PASSWORD)s</data_password>
+                    <sample_id>%(SAMPLE_ID)s</sample_id>
+                    <library_id>%(LIBRARY_ID)s</library_id>
+                    <folder_id>%(FOLDER_ID)s</folder_id>
+                    %(DATASETS)s
+                </data_transfer>'''
+        dataset_xml = \
+            '''<dataset>
+                   <index>%(INDEX)s</index>
+                   <name>%(NAME)s</name>
+                   <file>%(FILE)s</file>
+               </dataset>'''
+        datasets = ''
+        for index, dataset in enumerate(sample.dataset_files):
+            if dataset['status'] == sample.transfer_status.NOT_STARTED:
+                datasets = datasets + dataset_xml % dict(INDEX=str(index),
+                                                         NAME=dataset['name'],
+                                                         FILE=dataset['filepath'])
+                sample.dataset_files[index]['status'] = sample.transfer_status.IN_QUEUE
+
+        trans.sa_session.add( sample )
+        trans.sa_session.flush()
+        data = xml % dict(DATA_HOST=datatx_info['host'],
+                          DATA_USER=datatx_info['username'],
+                          DATA_PASSWORD=datatx_info['password'],
+                          SAMPLE_ID=str(sample.id),
+                          LIBRARY_ID=str(sample.library.id),
+                          FOLDER_ID=str(sample.folder.id),
+                          DATASETS=datasets)
+        # now send this message 
+        conn = amqp.Connection(host=trans.app.config.amqp['host']+":"+trans.app.config.amqp['port'], 
+                               userid=trans.app.config.amqp['userid'], 
+                               password=trans.app.config.amqp['password'], 
+                               virtual_host=trans.app.config.amqp['virtual_host'], 
+                               insist=False)    
+        chan = conn.channel()
+        msg = amqp.Message(data, 
+                           content_type='text/plain', 
+                           application_headers={'msg_type': 'data_transfer'})
+        msg.properties["delivery_mode"] = 2
+        chan.basic_publish(msg,
+                           exchange=trans.app.config.amqp['exchange'],
+                           routing_key=trans.app.config.amqp['routing_key'])
+        chan.close()
+        conn.close()
+
     def __start_datatx(self, trans, sample):
         # data transfer user
         datatx_user = self.__setup_datatx_user(trans, sample.library, sample.folder)
@@ -1635,6 +1704,11 @@ class RequestsAdmin( BaseController ):
                                                               sample_id=trans.security.encode_id(sample.id),
                                                               status='error',
                                                               message=message))
+        self.__send_message(trans, datatx_info, sample)
+        return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                          action='show_datatx_page', 
+                                                          sample_id=trans.security.encode_id(sample.id),
+                                                          folder_path=datatx_info['data_dir']))
         error_message = ''
         transfer_script = "scripts/galaxy_messaging/server/data_transfer.py"
         for index, dataset in enumerate(sample.dataset_files):
@@ -1670,6 +1744,33 @@ class RequestsAdmin( BaseController ):
                                                           action='show_datatx_page', 
                                                           sample_id=trans.security.encode_id(sample.id),
                                                           folder_path=os.path.dirname(dfile)))
+        
+    @web.expose
+    @web.require_admin
+    def dataset_details( self, trans, **kwd ):
+        try:
+            sample = trans.sa_session.query( trans.app.model.Sample ).get( trans.security.decode_id(kwd['sample_id']) )
+        except:
+            return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                              action='list',
+                                                              status='error',
+                                                              message="Invalid sample ID" ) )
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' ) 
+        dataset_index = int( params.get( 'dataset_index', ''  ) )
+        if params.get('save', '') == 'Save':
+            sample.dataset_files[dataset_index]['name'] = util.restore_text( params.get( 'name', 
+                                                                                         sample.dataset_files[dataset_index]['name']  ) )
+            trans.sa_session.add( sample )
+            trans.sa_session.flush()
+            status = 'done'
+            message = 'Saved the changes made to the dataset.'
+        return trans.fill_template( '/admin/requests/dataset.mako', 
+                                    sample=sample,
+                                    dataset_index=dataset_index,
+                                    message=message,
+                                    status=status)
 ##
 #### Request Type Stuff ###################################################
 ##

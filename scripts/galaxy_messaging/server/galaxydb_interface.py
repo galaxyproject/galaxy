@@ -20,8 +20,8 @@ pkg_resources.require( "SQLAlchemy >= 0.4" )
 from sqlalchemy import *
 from sqlalchemy.orm import sessionmaker
 
-logging.basicConfig(level=logging.DEBUG)
-log = logging.getLogger( 'GalaxyDbInterface' )
+#logging.basicConfig(level=logging.DEBUG)
+#log = logging.getLogger( 'GalaxyDbInterface' )
 
 class GalaxyDbInterface(object):
     
@@ -53,9 +53,8 @@ class GalaxyDbInterface(object):
             x = result.fetchone()
             if x:
                 sample_id = x[0]
-                log.debug('Sample ID: %i' % sample_id)
+                #log.debug('Sample ID: %i' % sample_id)
                 return sample_id
-        log.warning('This sample %s %s does not belong to any sample in the database.' % (field_name, value))
         return -1
         
     def current_state(self, sample_id):
@@ -74,16 +73,16 @@ class GalaxyDbInterface(object):
         subsubquery = select(columns=[self.sample_table.c.request_id], 
                              whereclause=self.sample_table.c.id==sample_id)
         self.request_id = subsubquery.execute().fetchall()[0][0]
-        log.debug('REQUESTID: %i' % self.request_id)
+        #log.debug('REQUESTID: %i' % self.request_id)
         subquery = select(columns=[self.request_table.c.request_type_id], 
                           whereclause=self.request_table.c.id==self.request_id)
         request_type_id = subquery.execute().fetchall()[0][0]
-        log.debug('REQUESTTYPEID: %i' % request_type_id)
+        #log.debug('REQUESTTYPEID: %i' % request_type_id)
         query = select(columns=[self.state_table.c.id, self.state_table.c.name], 
                        whereclause=self.state_table.c.request_type_id==request_type_id,
                        order_by=self.state_table.c.id.asc())
         states = query.execute().fetchall()
-        log.debug('POSSIBLESTATES: '+ str(states))
+        #log.debug('POSSIBLESTATES: '+ str(states))
         return states
     
     def change_state(self, sample_id, new_state=None):
@@ -100,7 +99,7 @@ class GalaxyDbInterface(object):
                 new_state_id = state_id
         if new_state_id == -1:
             return
-        log.debug('Updating sample_id %i state to %s' % (sample_id, new_state))
+        #log.debug('Updating sample_id %i state to %s' % (sample_id, new_state))
         i = self.event_table.insert()
         i.execute(update_time=datetime.utcnow(), 
                   create_time=datetime.utcnow(),
@@ -120,7 +119,7 @@ class GalaxyDbInterface(object):
                 break
         if request_complete:
             request_state = 'Complete'
-            log.debug('Updating request_id %i state to "%s"' % (self.request_id, request_state))
+            #log.debug('Updating request_id %i state to "%s"' % (self.request_id, request_state))
             i = self.request_event_table.insert()
             i.execute(update_time=datetime.utcnow(), 
                       create_time=datetime.utcnow(),

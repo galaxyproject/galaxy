@@ -35,7 +35,9 @@ def handle_scan(states, amqp_config, barcode):
                                virtual_host=amqp_config['virtual_host'], 
                                insist=False)    
         chan = conn.channel()
-        msg = amqp.Message(data)
+        msg = amqp.Message(data, 
+                           content_type='text/plain', 
+                           application_headers={'msg_type': 'sample_state_update'})
         msg.properties["delivery_mode"] = 2
         chan.basic_publish(msg,
                            exchange=amqp_config['exchange'],

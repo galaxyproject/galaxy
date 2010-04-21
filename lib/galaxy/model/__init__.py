@@ -18,6 +18,7 @@ from galaxy.web.form_builder import *
 import logging
 log = logging.getLogger( __name__ )
 from sqlalchemy.orm import object_session
+import pexpect
 
 datatypes_registry = galaxy.datatypes.registry.Registry() #Default Value Required for unit tests
 
@@ -1455,7 +1456,9 @@ class RequestType( object ):
     
 class Sample( object ):
     transfer_status = Bunch( NOT_STARTED = 'Not started',
-                             IN_PROGRESS = 'In progress',
+                             IN_QUEUE = 'In queue',
+                             TRANSFERRING = 'Transferring dataset',
+                             ADD_TO_LIBRARY = 'Adding to data library',
                              COMPLETE = 'Complete',
                              ERROR = 'Error')
     def __init__(self, name=None, desc=None, request=None, form_values=None, 
@@ -1474,22 +1477,33 @@ class Sample( object ):
         return None
     def untransferred_dataset_files(self):
         count = 0
-        for df, status in self.dataset_files:
-            if status == self.transfer_status.NOT_STARTED:
+        for df in self.dataset_files:
+            if df['status'] == self.transfer_status.NOT_STARTED:
                 count = count + 1
         return count
     def inprogress_dataset_files(self):
         count = 0
-        for df, status in self.dataset_files:
-            if status == self.transfer_status.IN_PROGRESS:
+        for df in self.dataset_files:
+            if df['status'] not in [self.transfer_status.NOT_STARTED, self.transfer_status.COMPLETE]:
                 count = count + 1
         return count
     def transferred_dataset_files(self):
         count = 0
-        for df, status in self.dataset_files:
-            if status == self.transfer_status.COMPLETE:
+        for df in self.dataset_files:
+            if df['status'] == self.transfer_status.COMPLETE:
                 count = count + 1
         return count
+    def dataset_size(self, filepath):
+        def print_ticks(d):
+            pass
+        datatx_info = self.request.type.datatx_info
+        cmd  = 'ssh %s@%s "du -sh %s"' % ( datatx_info['username'],
+                                          datatx_info['host'],
+                                          filepath)
+        output = pexpect.run(cmd, events={'.ssword:*': datatx_info['password']+'\r\n', 
+                                          pexpect.TIMEOUT:print_ticks}, 
+                                          timeout=10)
+        return output.split('\t')[0]
 
 class SampleState( object ):
     def __init__(self, name=None, desc=None, request_type=None):

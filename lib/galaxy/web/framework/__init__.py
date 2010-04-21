@@ -32,6 +32,7 @@ pkg_resources.require( "SQLAlchemy >= 0.4" )
 from sqlalchemy import and_
 
 pkg_resources.require( "pexpect" )
+pkg_resources.require( "amqplib" )
 
 import logging
 log = logging.getLogger( __name__ )
