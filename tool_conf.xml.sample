@@ -79,6 +79,7 @@
     <tool file="fastx_toolkit/fastq_to_fasta.xml" />
     <tool file="filters/wiggle_to_simple.xml" />
     <tool file="filters/sff_extractor.xml" />
+    <tool file="filters/gtf2bedgraph.xml" />
   </section>
   <section name="Extract Features" id="features">
     <tool file="filters/ucsc_gene_bed_to_exon_bed.xml" />
