@@ -161,7 +161,7 @@ class DataTransfer(object):
                                                   pexpect.TIMEOUT:print_ticks}, 
                                                   timeout=10)
                 log.debug(output)
-                path = os.path.join(self.server_dir, os.path.basename(df['file']))
+                path = os.path.join(self.server_dir, os.path.basename(df['name']))
                 if not os.path.exists(path):
                     msg = 'Could not find the local file after transfer (%s)' % path
                     log.error(msg)
