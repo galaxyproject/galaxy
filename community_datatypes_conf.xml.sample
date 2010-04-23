@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<datatypes>
+    <registration>
+        <datatype extension="tool" type="galaxy.webapps.community.datatypes:Tool" model="galaxy.webapps.community.model:Tool"/>
+    </registration>
+    <sniffers>
+        <sniffer type="galaxy.webapps.community.datatypes:Tool"/>
+    </sniffers>
+</datatypes>

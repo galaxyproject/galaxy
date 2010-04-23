@@ -4,7 +4,7 @@ Galaxy Community Space data model classes
 Naming: try to use class names that have a distinct plural form so that
 the relationship cardinalities are obvious (e.g. prefer Dataset to Data)
 """
-import os.path, os, errno, sys, codecs, operator, tempfile, logging
+import os.path, os, errno, sys, codecs, operator, tempfile, logging, tarfile
 from galaxy.util.bunch import Bunch
 from galaxy import util
 from galaxy.util.hash_util import *
@@ -86,93 +86,43 @@ class GalaxySession( object ):
         self.prev_session_id = prev_session_id
 
 class Tool( object ):
-    def __init__( self, guid=None, name=None, description=None, category=None, version=None, user_id=None, external_filename=None ):
+    file_path = '/tmp'
+    def __init__( self, guid=None, tool_id=None, name=None, description=None, user_description=None, category=None, version=None, user_id=None, external_filename=None ):
         self.guid = guid
+        self.tool_id = tool_id
         self.name = name or "Unnamed tool"
         self.description = description
+        self.user_description = user_description
         self.category = category
         self.version = version or "1.0.0"
         self.user_id = user_id
         self.external_filename = external_filename
+    def get_file_name( self ):
+        if not self.external_filename:
+            assert self.id is not None, "ID must be set before filename used (commit the object)"
+            dir = os.path.join( self.file_path, 'tools', *directory_hash_id( self.id ) )
+            # Create directory if it does not exist
+            if not os.path.exists( dir ):
+                os.makedirs( dir )
+            # Return filename inside hashed directory
+            filename = os.path.join( dir, "tool_%d.dat" % self.id )
+        else:
+            filename = self.external_filename
+        # Make filename absolute
+        return os.path.abspath( filename )
+    def set_file_name( self, filename ):
+        if not filename:
+            self.external_filename = None
+        else:
+            self.external_filename = filename
+    file_name = property( get_file_name, set_file_name )
+    def create_from_datatype( self, datatype_bunch ):
+        self.tool_id = datatype_bunch.id
+        self.name = datatype_bunch.name
+        self.version = datatype_bunch.version
+        self.description = datatype_bunch.description
+        self.user_id = datatype_bunch.user
 
-class Job( object ):
-    """
-    A job represents a request to run a tool given input datasets, tool 
-    parameters, and output datasets.
-    """
-    states = Bunch( NEW = 'new',
-                    UPLOAD = 'upload',
-                    WAITING = 'waiting',
-                    QUEUED = 'queued',
-                    RUNNING = 'running',
-                    OK = 'ok',
-                    ERROR = 'error',
-                    DELETED = 'deleted' )
-    def __init__( self ):
-        self.session_id = None
-        self.tool_id = None
-        self.tool_version = None
-        self.command_line = None
-        self.param_filename = None
-        self.parameters = []
-        self.input_datasets = []
-        self.output_datasets = []
-        self.output_library_datasets = []
-        self.state = Job.states.NEW
-        self.info = None
-        self.job_runner_name = None
-        self.job_runner_external_id = None
-    def add_parameter( self, name, value ):
-        self.parameters.append( JobParameter( name, value ) )
-    def add_input_dataset( self, name, dataset ):
-        self.input_datasets.append( JobToInputDatasetAssociation( name, dataset ) )
-    def add_output_dataset( self, name, dataset ):
-        self.output_datasets.append( JobToOutputDatasetAssociation( name, dataset ) )
-    def add_output_library_dataset( self, name, dataset ):
-        self.output_library_datasets.append( JobToOutputLibraryDatasetAssociation( name, dataset ) )
-    def set_state( self, state ):
-        self.state = state
-        # For historical reasons state propogates down to datasets
-        for da in self.output_datasets:
-            da.dataset.state = state
-    def get_param_values( self, app ):
-        """
-        Read encoded parameter values from the database and turn back into a
-        dict of tool parameter values.
-        """
-        param_dict = dict( [ ( p.name, p.value ) for p in self.parameters ] )
-        tool = app.toolbox.tools_by_id[self.tool_id]
-        param_dict = tool.params_from_strings( param_dict, app )
-        return param_dict
-    def check_if_output_datasets_deleted( self ):
-        """
-        Return true if all of the output datasets associated with this job are
-        in the deleted state
-        """
-        for dataset_assoc in self.output_datasets:
-            dataset = dataset_assoc.dataset
-            # only the originator of the job can delete a dataset to cause
-            # cancellation of the job, no need to loop through history_associations
-            if not dataset.deleted:
-                return False
-        return True
-    def mark_deleted( self ):
-        """
-        Mark this job as deleted, and mark any output datasets as discarded.
-        """
-        self.state = Job.states.DELETED
-        self.info = "Job output deleted by user before job completed."
-        for dataset_assoc in self.output_datasets:
-            dataset = dataset_assoc.dataset
-            dataset.deleted = True
-            dataset.state = dataset.states.DISCARDED
-            for dataset in dataset.dataset.history_associations:
-                # propagate info across shared datasets
-                dataset.deleted = True
-                dataset.blurb = 'deleted'
-                dataset.peek = 'Job deleted'
-                dataset.info = 'Job output deleted by user before job completed'
-        
 class Tag ( object ):
     def __init__( self, id=None, type=None, parent_id=None, name=None ):
         self.id = id
@@ -182,6 +132,12 @@ class Tag ( object ):
     def __str__ ( self ):
         return "Tag(id=%s, type=%i, parent_id=%s, name=%s)" %  ( self.id, self.type, self.parent_id, self.name )
     
+class Category( object ):
+    def __init__( self, id=None, name=None, description=None ):
+        self.id = id
+        self.name = name
+        self.description = description
+
 class ItemTagAssociation ( object ):
     def __init__( self, id=None, user=None, item_id=None, tag_id=None, user_tname=None, value=None ):
         self.id = id
@@ -198,6 +154,12 @@ class ToolTagAssociation ( ItemTagAssociation ):
 class ToolAnnotationAssociation( object ):
     pass
 
+class ToolCategoryAssociation( object ):
+    def __init__( self, id=None, tool=None, category=None ):
+        self.id = id
+        self.tool = tool
+        self.category = category
+
 ## ---- Utility methods -------------------------------------------------------
 
 def directory_hash_id( id ):
@@ -207,7 +169,7 @@ def directory_hash_id( id ):
     if l < 4:
         return [ "000" ]
     # Pad with zeros until a multiple of three
-    padded = ( ( 3 - len( s ) % 3 ) * "0" ) + s
+    padded = ( ( ( 3 - len( s ) ) % 3 ) * "0" ) + s
     # Drop the last three digits -- 1000 files per directory
     padded = padded[:-3]
     # Break into chunks of three

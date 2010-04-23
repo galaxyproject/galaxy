@@ -1,5 +1,6 @@
 import sys, config
 import galaxy.webapps.community.model
+import galaxy.webapps.community.datatypes
 from galaxy.web import security
 from galaxy.tags.tag_handler import CommunityTagHandler
 
@@ -11,6 +12,9 @@ class UniverseApplication( object ):
         self.config = config.Configuration( **kwargs )
         self.config.check()
         config.configure_logging( self.config )
+        # Set up datatypes registry
+        self.datatypes_registry = galaxy.webapps.community.datatypes.Registry( self.config.root, self.config.datatypes_config )
+        galaxy.model.set_datatypes_registry( self.datatypes_registry )
         # Determine the database url
         if self.config.database_connection:
             db_url = self.config.database_connection

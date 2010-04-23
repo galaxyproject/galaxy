@@ -22,7 +22,7 @@ log_level = DEBUG
 #database_connection = postgres:///community_test?host=/var/run/postgresql
 
 # Where dataset files are saved
-file_path = database/files
+file_path = database/community_files
 # Temporary storage for additional datasets, this should be shared through the cluster
 new_file_path = database/tmp
 

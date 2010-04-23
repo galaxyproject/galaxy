@@ -103,32 +103,28 @@ GalaxySession.table = Table( "galaxy_session", metadata,
 Tool.table = Table( "tool", metadata, 
     Column( "id", Integer, primary_key=True ),
     Column( "guid", TrimmedString( 255 ), index=True, unique=True ),
+    Column( "tool_id", TrimmedString( 255 ), index=True, unique=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "name", TrimmedString( 255 ), index=True, unique=True ),
+    Column( "name", TrimmedString( 255 ), index=True ),
     Column( "description" , TEXT ),
-    Column( "category", TrimmedString( 255 ), index=True ),
+    Column( "user_description" , TEXT ),
     Column( "version", TrimmedString( 255 ) ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "external_filename" , TEXT ),
     Column( "deleted", Boolean, default=False ) )
 
-Job.table = Table( "job", metadata,
+Category.table = Table( "category", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "name", TrimmedString( 255 ), index=True, unique=True ),
+    Column( "description" , TEXT ) )
+
+ToolCategoryAssociation.table = Table( "tool_category_association", metadata,
+    Column( "id", Integer, primary_key=True ),
     Column( "tool_id", Integer, ForeignKey( "tool.id" ), index=True ),
-    Column( "state", String( 64 ), index=True ),
-    Column( "info", TrimmedString( 255 ) ),
-    Column( "command_line", TEXT ), 
-    Column( "param_filename", String( 1024 ) ),
-    Column( "runner_name", String( 255 ) ),
-    Column( "stdout", TEXT ),
-    Column( "stderr", TEXT ),
-    Column( "traceback", TEXT ),
-    Column( "session_id", Integer, ForeignKey( "galaxy_session.id" ), index=True, nullable=True ),
-    Column( "job_runner_name", String( 255 ) ),
-    Column( "job_runner_external_id", String( 255 ) ) )
+    Column( "category_id", Integer, ForeignKey( "category.id" ), index=True ) )
 
 Tag.table = Table( "tag", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -193,10 +189,6 @@ assign_mapper( context, GroupRoleAssociation, GroupRoleAssociation.table,
 assign_mapper( context, GalaxySession, GalaxySession.table,
     properties=dict( user=relation( User.mapper ) ) )
 
-assign_mapper( context, Job, Job.table, 
-    properties=dict( galaxy_session=relation( GalaxySession ),
-                     tool=relation( Tool ) ) )
-
 assign_mapper( context, Tag, Tag.table,
     properties=dict( children=relation(Tag, backref=backref( 'parent', remote_side=[Tag.table.c.id] ) ) ) )
 
@@ -207,7 +199,22 @@ assign_mapper( context, ToolAnnotationAssociation, ToolAnnotationAssociation.tab
     properties=dict( tool=relation( Tool ), user=relation( User ) ) )
 
 assign_mapper( context, Tool, Tool.table, 
-  properties = dict( user=relation( User.mapper ) ) )
+    properties = dict(
+        categories=relation( ToolCategoryAssociation ),
+        user=relation( User.mapper )
+    )
+)
+
+assign_mapper( context, Category, Category.table,
+    properties=dict( tools=relation( ToolCategoryAssociation ) ) )
+
+assign_mapper( context, ToolCategoryAssociation, ToolCategoryAssociation.table,
+    properties=dict(
+        category=relation(Category),
+        tool=relation(Tool)
+    )
+)
+
 
 def guess_dialect_for_url( url ):
     return (url.split(':', 1))[0]

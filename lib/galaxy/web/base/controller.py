@@ -304,7 +304,7 @@ Deprecated: `BaseController` used to be available under the name `Root`
 class ControllerUnavailable( Exception ):
     pass
 
-class Admin():
+class Admin( object ):
     # Override these
     user_list_grid = None
     role_list_grid = None

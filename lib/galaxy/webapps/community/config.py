@@ -61,6 +61,7 @@ class Configuration( object ):
         self.screencasts_url = kwargs.get( 'screencasts_url', None )
         self.log_events = False
         self.cloud_controller_instance = False
+        self.datatypes_config = kwargs.get( 'datatypes_config_file', 'community_datatypes_conf.xml' )
         # Parse global_conf and save the parser
         global_conf = kwargs.get( 'global_conf', None )
         global_conf_parser = ConfigParser.ConfigParser()

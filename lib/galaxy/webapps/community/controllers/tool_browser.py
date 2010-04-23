@@ -1,5 +1,4 @@
 import sys, os, operator, string, shutil, re, socket, urllib, time, logging
-from cgi import escape, FieldStorage
 
 from galaxy.web.base.controller import *
 from galaxy.webapps.community import model
@@ -27,18 +26,14 @@ class ToolListGrid( grids.Grid ):
     title = "Tools"
     model_class = model.Tool
     template='/webapps/community/tool/grid.mako'
-    default_sort_key = "category"
+    default_sort_key = "name"
     columns = [
         NameColumn( "Name",
                     key="name",
                     model_class=model.Tool,
+                    link=( lambda item: dict( operation="Edit Tool", id=item.id, webapp="community" ) ),
                     attach_popup=False,
                     filterable="advanced" ),
-        CategoryColumn( "Category",
-                        key="category",
-                        model_class=model.Tool,
-                        attach_popup=False,
-                        filterable="advanced" ),
         # Columns that are valid for filtering but are not visible.
         grids.DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" )
     ]
@@ -48,7 +43,7 @@ class ToolListGrid( grids.Grid ):
                                                 visible=False,
                                                 filterable="standard" ) )
     global_actions = [
-        grids.GridAction( "Upload tool", dict( controller='tool_browwser', action='upload' ) )
+        grids.GridAction( "Upload tool", dict( controller='upload', action='upload', type='tool' ) )
     ]
     operations = [
         grids.GridOperation( "View versions", condition=( lambda item: not item.deleted ), allow_multiple=False )
@@ -57,7 +52,7 @@ class ToolListGrid( grids.Grid ):
         grids.GridColumnFilter( "Deleted", args=dict( deleted=True ) ),
         grids.GridColumnFilter( "All", args=dict( deleted='All' ) )
     ]
-    default_filter = dict( name="All", category="All", deleted="False" )
+    default_filter = dict( name="All", deleted="False" )
     num_rows_per_page = 50
     preserve_state = False
     use_paging = True
@@ -84,6 +79,10 @@ class ToolBrowserController( BaseController ):
                 return trans.response.send_redirect( web.url_for( controller='tool_browser',
                                                                   action='browse_tool',
                                                                   **kwargs ) )
+            elif operation == "edit tool":
+                return trans.response.send_redirect( web.url_for( controller='tool_browser',
+                                                                  action='edit_tool',
+                                                                  **kwargs ) )
         # Render the list view
         return self.tool_list_grid( trans, **kwargs )
     @web.expose
@@ -96,5 +95,32 @@ class ToolBrowserController( BaseController ):
                                     message=message,
                                     status=status )
     @web.expose
-    def upload( self, trans, **kwargs ):
-        pass
+    def edit_tool( self, trans, id=None, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        # Get the tool
+        tool = None
+        if id is not None:
+            encoded_id = id
+            id = trans.app.security.decode_id( id )
+            tool = trans.sa_session.query( trans.model.Tool ).get( id )
+        if tool is None:
+            return trans.response.send_redirect( web.url_for( controller='tool_browser',
+                                                              action='browse_tools',
+                                                              message='Please select a Tool to edit (the tool ID provided was invalid)',
+                                                              status='error' ) )
+        if params.save_button and ( params.file_data != '' or params.url != '' ):
+            # TODO: call the upload method in the upload controller.
+            message = 'Uploading new version not implemented'
+            status = 'error'
+        elif params.save_button:
+            tool.user_description = params.description
+            tool.category = params.category
+        categories = trans.sa_session.query( trans.model.Category ).order_by( trans.model.Category.table.c.name ).all()
+        return trans.fill_template( '/webapps/community/tool/edit_tool.mako',
+                                    encoded_id = encoded_id,
+                                    tool=tool,
+                                    categories=categories,
+                                    message=message,
+                                    status=status )
