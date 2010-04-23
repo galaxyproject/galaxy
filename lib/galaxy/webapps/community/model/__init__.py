@@ -123,6 +123,15 @@ class Tool( object ):
         self.description = datatype_bunch.description
         self.version = datatype_bunch.version
         self.user_id = datatype_bunch.user.id
+    def set_categories( self, trans, categories, delete_existing_assocs=True ):
+        if delete_existing_assocs:
+            for a in self.categories:
+                trans.sa_session.delete( a )
+                trans.sa_session.flush()
+        for category in categories:
+            if not isinstance( category, Category ):
+                category = trans.sa_session.query( Category ).get( int( category ) )
+            self.categories.append( ToolCategoryAssociation( self, category ) )
 
 class Tag ( object ):
     def __init__( self, id=None, type=None, parent_id=None, name=None ):

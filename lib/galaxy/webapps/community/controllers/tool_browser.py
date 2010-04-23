@@ -117,7 +117,7 @@ class ToolBrowserController( BaseController ):
         elif params.save_button:
             tool.user_description = util.restore_text( params.description )
             categories = []
-            set_tool_category_associations( trans, tool, util.listify( params.category ) )
+            tool.set_categories( trans, util.listify( params.category ) )
             trans.sa_session.add( tool )
             trans.sa_session.flush()
             return trans.response.send_redirect( web.url_for( controller='tool_browser',
@@ -131,18 +131,3 @@ class ToolBrowserController( BaseController ):
                                     categories=categories,
                                     message=message,
                                     status=status )
-
-## ---- Utility methods -------------------------------------------------------
-
-# It may make sense to create something like the security controller to do
-# this, but seems unnecessary for this single operation
-
-def set_tool_category_associations( trans, tool, categories, delete_existing_assocs=True ):
-    if delete_existing_assocs:
-        for a in tool.categories:
-            trans.sa_session.delete( a )
-            trans.sa_session.flush()
-    for category in categories:
-        if not isinstance( category, trans.model.Category ):
-            category = trans.sa_session.query( trans.model.Category ).get( int( category ) )
-        tool.categories.append( trans.model.ToolCategoryAssociation( tool, category ) )
