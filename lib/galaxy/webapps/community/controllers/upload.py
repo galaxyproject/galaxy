@@ -41,6 +41,7 @@ class UploadController( BaseController ):
                 try:
                     meta = datatype.verify( uploaded_file )
                     meta.user = trans.user
+                    meta.guid = trans.app.security.get_new_guid()
                     obj = datatype.create_model_object( meta )
                     trans.sa_session.add( obj )
                     trans.sa_session.flush()
@@ -57,7 +58,8 @@ class UploadController( BaseController ):
                     status = 'error'
                 uploaded_file.close()
         selected_upload_type = params.get( 'type', 'tool' )
-        return trans.fill_template( '/webapps/community/upload/upload.mako', message=message,
-                                                                             status=status,
-                                                                             selected_upload_type=selected_upload_type,
-                                                                             upload_types=trans.app.datatypes_registry.get_datatypes_for_select_list() )
+        return trans.fill_template( '/webapps/community/upload/upload.mako',
+                                    message=message,
+                                    status=status,
+                                    selected_upload_type=selected_upload_type,
+                                    upload_types=trans.app.datatypes_registry.get_datatypes_for_select_list() )

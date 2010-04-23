@@ -74,11 +74,19 @@
                   <span>Security</span>
                 </div>
                 <div class="toolSectionBody">
-                  <div class="toolSectionBg">
-                    <div class="toolTitle"><a href="${h.url_for( controller='admin', action='users', webapp='community' )}" target="galaxy_main">Manage users</a></div>
-                    <div class="toolTitle"><a href="${h.url_for( controller='admin', action='groups', webapp='community' )}" target="galaxy_main">Manage groups</a></div>
-                    <div class="toolTitle"><a href="${h.url_for( controller='admin', action='roles', webapp='community' )}" target="galaxy_main">Manage roles</a></div>
-                  </div>
+                    <div class="toolSectionBg">
+                        <div class="toolTitle"><a href="${h.url_for( controller='admin', action='users', webapp='community' )}" target="galaxy_main">Manage users</a></div>
+                        <div class="toolTitle"><a href="${h.url_for( controller='admin', action='groups', webapp='community' )}" target="galaxy_main">Manage groups</a></div>
+                        <div class="toolTitle"><a href="${h.url_for( controller='admin', action='roles', webapp='community' )}" target="galaxy_main">Manage roles</a></div>
+                    </div>
+                </div>
+                <div class="toolSectionTitle">
+                  <span>Tools</span>
+                </div>
+                <div class="toolSectionBody">
+                    <div class="toolSectionBg">
+                        <div class="toolTitle"><a href="${h.url_for( controller='tool_browser', action='browse_tools', webapp='community' )}" target="galaxy_main">Manage tools</a></div>
+                    </div>
                 </div>
             </div>
         </div>    
@@ -87,7 +95,7 @@
 
 <%def name="center_panel()">
     <%
-        center_url = h.url_for( action='center' )
+        center_url = h.url_for( action='center', webapp='community' )
     %>
     <iframe name="galaxy_main" id="galaxy_main" frameborder="0" style="position: absolute; width: 100%; height: 100%;" src="${center_url}"> </iframe>
 </%def>

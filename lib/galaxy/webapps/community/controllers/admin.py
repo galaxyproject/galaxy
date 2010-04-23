@@ -43,7 +43,6 @@ class UserListGrid( grids.Grid ):
                 return self.format( user.galaxy_sessions[ 0 ].update_time )
             return 'never'
 
-    log.debug("####In UserListGrid, in community" )
     # Grid definition
     webapp = "community"
     title = "Users"

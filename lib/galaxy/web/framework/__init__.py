@@ -268,7 +268,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         galaxy_session_requires_flush = False
         if secure_id:
             # Decode the cookie value to get the session_key
-            session_key = self.security.decode_session_key( secure_id )
+            session_key = self.security.decode_guid( secure_id )
             try:
                 # Make sure we have a valid UTF-8 string 
                 session_key = session_key.encode( 'utf8' )
@@ -365,7 +365,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         
         Caller is responsible for flushing the returned session.
         """
-        session_key = self.security.get_new_session_key()
+        session_key = self.security.get_new_guid()
         galaxy_session = self.app.model.GalaxySession(
             session_key=session_key,
             is_valid=True, 
@@ -411,7 +411,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         """
         Update the session cookie to match the current session.
         """
-        self.set_cookie( self.security.encode_session_key( self.galaxy_session.session_key ), name=name, path=self.app.config.cookie_path )
+        self.set_cookie( self.security.encode_guid( self.galaxy_session.session_key ), name=name, path=self.app.config.cookie_path )
     def handle_user_login( self, user, webapp ):
         """
         Login a new user (possibly newly created)

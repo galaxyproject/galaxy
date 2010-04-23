@@ -330,7 +330,11 @@ class Admin( object ):
     @web.expose
     @web.require_admin
     def center( self, trans, **kwd ):
-        return trans.fill_template( '/admin/center.mako' )
+        webapp = kwd.get( 'webapp', 'galaxy' )
+        if webapp == 'galaxy':
+            return trans.fill_template( '/webapps/galaxy/admin/center.mako' )
+        else:
+            return trans.fill_template( '/webapps/community/admin/center.mako' )
     @web.expose
     @web.require_admin
     def reload_tool( self, trans, **kwd ):

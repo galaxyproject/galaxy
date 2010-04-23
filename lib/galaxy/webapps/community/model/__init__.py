@@ -93,7 +93,6 @@ class Tool( object ):
         self.name = name or "Unnamed tool"
         self.description = description
         self.user_description = user_description
-        self.category = category
         self.version = version or "1.0.0"
         self.user_id = user_id
         self.external_filename = external_filename
@@ -117,11 +116,13 @@ class Tool( object ):
             self.external_filename = filename
     file_name = property( get_file_name, set_file_name )
     def create_from_datatype( self, datatype_bunch ):
+        # TODO: ensure guid is unique and generate a new one if not.
+        self.guid = datatype_bunch.guid
         self.tool_id = datatype_bunch.id
         self.name = datatype_bunch.name
-        self.version = datatype_bunch.version
         self.description = datatype_bunch.description
-        self.user_id = datatype_bunch.user
+        self.version = datatype_bunch.version
+        self.user_id = datatype_bunch.user.id
 
 class Tag ( object ):
     def __init__( self, id=None, type=None, parent_id=None, name=None ):
