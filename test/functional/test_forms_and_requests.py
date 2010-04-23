@@ -2,6 +2,7 @@ import galaxy.model
 from galaxy.model.orm import *
 from galaxy.model.mapping import context as sa_session
 from base.twilltestcase import *
+from base.test_db_util import *
 
 not_logged_in_as_admin_security_msg = 'You must be logged in as an administrator to access this feature.'
 logged_in_as_admin_security_msg = 'You must be an administrator to access this feature.'
@@ -37,7 +38,80 @@ def get_latest_form(form_name):
 
 
 class TestFormsAndRequests( TwillTestCase ):
-    def test_000_create_form( self ):
+    def test_000_initiate_users( self ):
+        """Ensuring all required user accounts exist"""
+        self.logout()
+        self.login( email='test1@bx.psu.edu', username='regular-user1' )
+        global regular_user1
+        regular_user1 = get_user( 'test1@bx.psu.edu' )
+        assert regular_user1 is not None, 'Problem retrieving user with email "test1@bx.psu.edu" from the database'
+        global regular_user1_private_role
+        regular_user1_private_role = get_private_role( regular_user1 )
+        self.logout()
+        self.login( email='test2@bx.psu.edu', username='regular-user2' )
+        global regular_user2
+        regular_user2 = get_user( 'test2@bx.psu.edu' )
+        assert regular_user2 is not None, 'Problem retrieving user with email "test2@bx.psu.edu" from the database'
+        global regular_user2_private_role
+        regular_user2_private_role = get_private_role( regular_user2 )
+        self.logout()
+        self.login( email='test3@bx.psu.edu', username='regular-user3' )
+        global regular_user3
+        regular_user3 = get_user( 'test3@bx.psu.edu' )
+        assert regular_user3 is not None, 'Problem retrieving user with email "test3@bx.psu.edu" from the database'
+        global regular_user3_private_role
+        regular_user3_private_role = get_private_role( regular_user3 )
+        self.logout()
+        self.login( email='test@bx.psu.edu', username='admin-user' )
+        global admin_user
+        admin_user = get_user( 'test@bx.psu.edu' )
+        assert admin_user is not None, 'Problem retrieving user with email "test@bx.psu.edu" from the database'
+        global admin_user_private_role
+        admin_user_private_role = get_private_role( admin_user )
+    def test_005_create_required_groups_and_roles( self ):
+        """Testing creating all required groups and roles for this script"""
+        # Logged in as admin_user
+        # Create role_one
+        name = 'Role One'
+        description = "This is Role One's description"
+        user_ids = [ str( admin_user.id ), str( regular_user1.id ), str( regular_user3.id ) ]
+        self.create_role( name=name,
+                          description=description,
+                          in_user_ids=user_ids,
+                          in_group_ids=[],
+                          create_group_for_role='no',
+                          private_role=admin_user.email )
+        # Get the role object for later tests
+        global role_one
+        role_one = get_role_by_name( name )
+        # Create group_one
+        name = 'Group One'
+        self.create_group( name=name, in_user_ids=[ str( regular_user1.id ) ], in_role_ids=[ str( role_one.id ) ] )
+        # Get the group object for later tests
+        global group_one
+        group_one = get_group_by_name( name )
+        assert group_one is not None, 'Problem retrieving group named "Group One" from the database'
+        # NOTE: To get this to work with twill, all select lists on the ~/admin/role page must contain at least
+        # 1 option value or twill throws an exception, which is: ParseError: OPTION outside of SELECT
+        # Due to this bug in twill, we create the role, we bypass the page and visit the URL in the
+        # associate_users_and_groups_with_role() method.
+        #
+        #create role_two
+        name = 'Role Two'
+        description = 'This is Role Two'
+        user_ids = [ str( admin_user.id ) ]
+        group_ids = [ str( group_one.id ) ]
+        private_role = admin_user.email
+        self.create_role( name=name,
+                          description=description,
+                          in_user_ids=user_ids,
+                          in_group_ids=group_ids,
+                          private_role=private_role )
+        # Get the role object for later tests
+        global role_two
+        role_two = get_role_by_name( name )
+        assert role_two is not None, 'Problem retrieving role named "Role Two" from the database'
+    def test_010_create_form( self ):
         """Testing creating a new form and editing it"""
         self.logout()
         self.login( email='test@bx.psu.edu' )
@@ -58,7 +132,7 @@ class TestFormsAndRequests( TwillTestCase ):
         self.check_page_for_string( new_name )
         self.check_page_for_string( new_desc )
         form_one_name = new_name
-    def test_005_add_form_fields( self ):
+    def test_015_add_form_fields( self ):
         """Testing adding fields to a form definition"""
         fields = [dict(name='Test field name one',
                        desc='Test field description one',
@@ -78,7 +152,7 @@ class TestFormsAndRequests( TwillTestCase ):
                             field_index=len(form_one.fields), fields=fields)
         form_one_latest = get_latest_form(form_one_name)
         assert len(form_one_latest.fields) == len(form_one.fields)+len(fields)
-    def test_015_create_sample_form( self ):
+    def test_020_create_sample_form( self ):
         """Testing creating another form (for samples)"""
         global form_two_name
         desc = "This is Form Two's description"
@@ -90,7 +164,7 @@ class TestFormsAndRequests( TwillTestCase ):
         self.check_page_for_string( form_two_name )
         self.check_page_for_string( desc )
         self.check_page_for_string( formtype )
-    def test_020_create_request_type( self ):
+    def test_025_create_request_type( self ):
         """Testing creating a new requestype"""
         request_form = get_latest_form(form_one_name)
         sample_form = get_latest_form(form_two_name)
@@ -102,93 +176,77 @@ class TestFormsAndRequests( TwillTestCase ):
                                  .order_by( desc( galaxy.model.RequestType.table.c.create_time ) ) \
                                  .first()
         assert request_type is not None, 'Problem retrieving request type named "%s" from the database' % request_type_name
-    def test_025_create_address_and_library( self ):
+        # Set permissions
+        permissions_in = [ k for k, v in galaxy.model.RequestType.permitted_actions.items() ]
+        permissions_out = []
+        # Role one members are: admin_user, regular_user1, regular_user3.  Each of these users will be permitted for
+        # REQUEST_TYPE_ACCESS on this request_type
+        self.request_type_permissions(self.security.encode_id( request_type.id ),
+                                      request_type.name,
+                                      str( role_one.id ),
+                                      permissions_in,
+                                      permissions_out )
+        # Make sure the request_type is not accessible by regular_user2 since regular_user2 does not have Role1.
+        self.logout()
+        self.login( email=regular_user2.email )
+        self.visit_url( '%s/requests/new?create=True&select_request_type=%i' % (self.url, request_type.id) )
+        try:
+            self.check_page_for_string( 'There are no request types created for a new request.' )
+            raise AssertionError, 'The request_type %s is accessible by %s when it should be restricted' % ( request_type.name, regular_user2.email )
+        except:
+            pass
+        self.logout()
+        self.login( email=admin_user.email )
+        
+    def test_030_create_address_and_library( self ):
         """Testing address & library creation"""
-        # first create a regular user
-        self.logout()
-        self.login( email='test1@bx.psu.edu', username='regular-user1' )
-        self.logout()
-        self.login( email='test@bx.psu.edu' )
         # first create a library for the request so that it can be submitted later
-        lib_name = 'TestLib001'
-        self.create_library( lib_name, '' )
-        self.visit_page( 'library_admin/browse_libraries' )
-        self.check_page_for_string( lib_name )
+        name = "TestLib001"
+        description = "TestLib001 description"
+        synopsis = "TestLib001 synopsis"
+        self.create_library( name=name, description=description, synopsis=synopsis )
         # Get the library object for later tests
         global library_one
-        library_one = sa_session.query( galaxy.model.Library ) \
-                                .filter( and_( galaxy.model.Library.table.c.name==lib_name,
-                                               galaxy.model.Library.table.c.deleted==False ) ) \
-                                .first()
-        assert library_one is not None, 'Problem retrieving library named "%s" from the database' % lib_name
-        global admin_user
-        admin_user = sa_session.query( galaxy.model.User ) \
-                               .filter( galaxy.model.User.table.c.email=='test@bx.psu.edu' ) \
-                               .first()
-        assert admin_user is not None, 'Problem retrieving user with email "test@bx.psu.edu" from the database'
-        # Get the admin user's private role for later use
-        global admin_user_private_role
-        admin_user_private_role = None
-        for role in admin_user.all_roles():
-            if role.name == admin_user.email and role.description == 'Private Role for %s' % admin_user.email:
-                admin_user_private_role = role
-                break
-        if not admin_user_private_role:
-            raise AssertionError( "Private role not found for user '%s'" % admin_user.email )
-        global regular_user1
-        regular_user1 = sa_session.query( galaxy.model.User ) \
-                                  .filter( galaxy.model.User.table.c.email=='test1@bx.psu.edu' ) \
-                                  .first()
-        assert regular_user1 is not None, 'Problem retrieving user with email "test1@bx.psu.edu" from the database'
-        # Get the regular user's private role for later use
-        global regular_user1_private_role
-        regular_user1_private_role = None
-        for role in regular_user1.all_roles():
-            if role.name == regular_user1.email and role.description == 'Private Role for %s' % regular_user1.email:
-                regular_user1_private_role = role
-                break
-        if not regular_user1_private_role:
-            raise AssertionError( "Private role not found for user '%s'" % regular_user1.email )
-        # Set permissions on the library, sort for later testing
+        library_one = get_library( name, description, synopsis )
+        assert library_one is not None, 'Problem retrieving library named "%s" from the database' % name
+        # Make sure library_one is public
+        assert 'access library' not in [ a.action for a in library_one.actions ], 'Library %s is not public when first created' % library_one.name
+        # Set permissions on the library, sort for later testing.
         permissions_in = [ k for k, v in galaxy.model.Library.permitted_actions.items() ]
         permissions_out = []
-        name = 'Role for testing forms'
-        description = "This is Role Ones description"
-        user_ids=[ str( admin_user.id ), str( regular_user1.id ) ]
-        self.create_role( name=name,
-                          description=description,
-                          in_user_ids=user_ids,
-                          in_group_ids=[],
-                          create_group_for_role='yes',
-                          private_role=admin_user.email )
-        # Get the role object for later tests
-        global role_one
-        role_one = sa_session.query( galaxy.model.Role ).filter( galaxy.model.Role.table.c.name==name ).first()
-        assert role_one is not None, 'Problem retrieving role named "Role for testing forms" from the database'
-        # Role one members are: admin_user, regular_user1.  Each of these users will be permitted to
-        # LIBRARY_ADD, LIBRARY_MODIFY, LIBRARY_MANAGE for library items.
+        # Role one members are: admin_user, regular_user1, regular_user3.  Each of these users will be permitted for
+        # LIBRARY_ACCESS, LIBRARY_ADD, LIBRARY_MODIFY, LIBRARY_MANAGE on this library and it's contents.
         self.library_permissions( self.security.encode_id( library_one.id ),
                                   library_one.name,
                                   str( role_one.id ),
                                   permissions_in,
                                   permissions_out )
-        # create a folder in the library
+        # Make sure the library is accessible by admin_user
+        self.visit_url( '%s/library/browse_libraries' % self.url )
+        self.check_page_for_string( library_one.name )
+        # Make sure the library is not accessible by regular_user2 since regular_user2 does not have Role1.
+        self.logout()
+        self.login( email=regular_user2.email )
+        self.visit_url( '%s/library/browse_libraries' % self.url )
+        try:
+            self.check_page_for_string( library_one.name )
+            raise AssertionError, 'Library %s is accessible by %s when it should be restricted' % ( library_one.name, regular_user2.email )
+        except:
+            pass
+        self.logout()
+        self.login( email=admin_user.email )
+        # create folder
         root_folder = library_one.root_folder
-        name = "Folder One"
+        name = "Root Folder's Folder One"
+        description = "This is the root folder's Folder One"
         self.add_folder( 'library_admin',
                          self.security.encode_id( library_one.id ),
                          self.security.encode_id( root_folder.id ),
                          name=name,
-                         description='' )
+                         description=description )
         global folder_one
-        folder_one = sa_session.query( galaxy.model.LibraryFolder ) \
-                               .filter( and_( galaxy.model.LibraryFolder.table.c.parent_id==root_folder.id,
-                                              galaxy.model.LibraryFolder.table.c.name==name ) ) \
-                               .first()
+        folder_one = get_folder( root_folder.id, name, description )
         assert folder_one is not None, 'Problem retrieving library folder named "%s" from the database' % name
-        self.home()
-        self.visit_url( '%s/library_common/browse_library?cntrller=library_admin&id=%s' % ( self.url, self.security.encode_id( library_one.id ) ) )
-        self.check_page_for_string( name )
         # create address
         self.logout()
         self.login( email='test1@bx.psu.edu', username='regular-user1' )
@@ -202,7 +260,7 @@ class TestFormsAndRequests( TwillTestCase ):
                                  .filter( and_( galaxy.model.UserAddress.table.c.desc==address1[ 'short_desc' ],
                                                 galaxy.model.UserAddress.table.c.deleted==False ) ) \
                                  .first()    
-    def test_030_create_request( self ):
+    def test_035_create_request( self ):
         """Testing creating, editing and submitting a request as a regular user"""
         # login as a regular user
         self.logout()
@@ -240,7 +298,7 @@ class TestFormsAndRequests( TwillTestCase ):
         # check if the request's state is now set to 'submitted'
         assert request_one.state is not request_one.states.SUBMITTED, "The state of the request '%s' should be set to '%s'" \
             % ( request_one.name, request_one.states.SUBMITTED )
-    def test_035_request_lifecycle( self ):
+    def test_040_request_lifecycle( self ):
         """Testing request lifecycle as it goes through all the states"""
         # goto admin manage requests page
         self.logout()
@@ -264,7 +322,7 @@ class TestFormsAndRequests( TwillTestCase ):
         self.check_request_grid(state='Complete', request_name=request_one.name)
         assert request_one.state is not request_one.states.COMPLETE, "The state of the request '%s' should be set to '%s'" \
             % ( request_one.name, request_one.states.COMPLETE )
-    def test_040_admin_create_request_on_behalf_of_regular_user( self ):
+    def test_045_admin_create_request_on_behalf_of_regular_user( self ):
         """Testing creating and submitting a request as an admin on behalf of a regular user"""
         self.logout()
         self.login( email='test@bx.psu.edu' )
@@ -301,7 +359,7 @@ class TestFormsAndRequests( TwillTestCase ):
         # check if both the requests is showing in the 'All' filter
         self.check_request_admin_grid(state='All', request_name=request_one.name)
         self.check_request_admin_grid(state='All', request_name=request_two.name)
-    def test_045_reject_request( self ):
+    def test_050_reject_request( self ):
         '''Testing rejecting a request'''
         self.logout()
         self.login( email='test@bx.psu.edu' )
@@ -312,7 +370,7 @@ class TestFormsAndRequests( TwillTestCase ):
         # check if the request's state is now set to 'submitted'
         assert request_two.state is not request_two.states.REJECTED, "The state of the request '%s' should be set to '%s'" \
             % ( request_two.name, request_two.states.REJECTED )
-    def test_050_reset_data_for_later_test_runs( self ):
+    def test_055_reset_data_for_later_test_runs( self ):
         """Reseting data to enable later test runs to pass"""
         # TODO: RC: add whatever is missing from this method that should be marked
         # deleted or purged so that later test runs will correctly test features if the

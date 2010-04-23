@@ -1526,6 +1526,21 @@ class TwillTestCase( unittest.TestCase ):
             tc.fv("1", "state_desc_%i" % index, state[1])
         tc.submit( "save_request_type" )
         self.check_page_for_string( "Request type <b>%s</b> has been created" % name )
+    def request_type_permissions( self, request_type_id, request_type_name, role_ids_str, permissions_in, permissions_out ):
+        # role_ids_str must be a comma-separated string of role ids
+        url = "requests_admin/manage_request_types?operation=permissions&id=%s&update_roles_button=Save" % ( request_type_id )
+        for po in permissions_out:
+            key = '%s_out' % po
+            url ="%s&%s=%s" % ( url, key, role_ids_str )
+        for pi in permissions_in:
+            key = '%s_in' % pi
+            url ="%s&%s=%s" % ( url, key, role_ids_str )
+        self.home()
+        self.visit_url( "%s/%s" % ( self.url, url ) )
+        print url
+        check_str = "Permissions updated for request type '%s'" % request_type_name
+        self.check_page_for_string( check_str )
+        self.home()
     def create_request( self, request_type_id, name, desc, fields ):
         self.home()
         self.visit_url( "%s/requests/new?create=True&select_request_type=%i" % ( self.url, 
