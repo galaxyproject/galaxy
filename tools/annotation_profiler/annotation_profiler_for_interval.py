@@ -18,12 +18,13 @@ except:
 assert sys.version_info[:2] >= ( 2, 4 )
 
 class CachedRangesInFile:
-    fmt = '<I'
-    fmt_size = struct.calcsize( fmt )
-    def __init__( self, filename ):
+    DEFAULT_STRUCT_FORMAT = '<I'
+    def __init__( self, filename, profiler_info ):
         self.file_size = os.stat( filename ).st_size
         self.file = open( filename, 'rb' )
         self.filename = filename
+        self.fmt = profiler_info.get( 'profiler_struct_format', self.DEFAULT_STRUCT_FORMAT )
+        self.fmt_size = int( profiler_info.get( 'profiler_struct_size', struct.calcsize( self.fmt ) ) )
         self.length = int( self.file_size / self.fmt_size / 2 )
         self._cached_ranges = [ None for i in xrange( self.length ) ]
     def __getitem__( self, i ):
@@ -43,9 +44,9 @@ class CachedRangesInFile:
         return self.length
 
 class RegionCoverage:
-    def __init__( self, filename_base ):
+    def __init__( self, filename_base, profiler_info ):
         try:
-            self._coverage = CachedRangesInFile( "%s.covered" % filename_base )
+            self._coverage = CachedRangesInFile( "%s.covered" % filename_base, profiler_info )
         except Exception, e:
             #print "Error loading coverage file %s: %s" % ( "%s.covered" % filename_base, e )
             self._coverage = []
@@ -89,12 +90,14 @@ class RegionCoverage:
         return coverage, region_count, start_index
 
 class CachedCoverageReader:
-    def __init__( self, base_file_path, buffer = 10, table_names = None ):
+    def __init__( self, base_file_path, buffer = 10, table_names = None, profiler_info = None ):
         self._base_file_path = base_file_path
         self._buffer = buffer #number of chromosomes to keep in memory at a time
         self._coverage = {}
-        if table_names is None: table_names = os.listdir( self._base_file_path )
+        if table_names is None: table_names = [ table_dir for table_dir in os.listdir( self._base_file_path ) if os.path.isdir( os.path.join( self._base_file_path, table_dir ) ) ]
         for tablename in table_names: self._coverage[tablename] = {}
+        if profiler_info is None: profiler_info = {}
+        self._profiler_info = profiler_info
     def iter_table_coverage_by_region( self, chrom, start, end ):
         for tablename, coverage, regions in self.iter_table_coverage_regions_by_region( chrom, start, end ):
             yield tablename, coverage
@@ -107,7 +110,7 @@ class CachedCoverageReader:
                 if len( chromosomes ) >= self._buffer:
                     #randomly remove one chromosome from this table
                     del chromosomes[ chromosomes.keys().pop( random.randint( 0, self._buffer - 1 ) ) ]
-                chromosomes[chrom] = RegionCoverage( os.path.join ( self._base_file_path, tablename, chrom ) )
+                chromosomes[chrom] = RegionCoverage( os.path.join ( self._base_file_path, tablename, chrom ), self._profiler_info )
             coverage, regions, index = chromosomes[chrom].get_coverage_regions_index_overlap( start, end )
             yield tablename, coverage, regions, index
 
@@ -240,19 +243,35 @@ def profile_summary( interval_filename, chrom_col, start_col, end_col, out_filen
             print "%s has max length of %s, exceeded by %s%s." % ( chrom, chrom_lengths.get( chrom ), ", ".join( map( str, regions[:3] ) ), extra_region_info )
 
 class ChromosomeLengths:
-    def __init__( self, filename ):
+    def __init__( self, profiler_info ):
         self.chroms = {}
-        try:
-            for line in open( filename ):
-                try:
-                    fields = line.strip().split( "\t" )
-                    self.chroms[fields[0]] = int( fields[1] )
-                except:
-                    continue
-        except:
-            pass
+        self.default_bitset_size = int( profiler_info.get( 'bitset_size', bx.bitset.MAX ) )
+        chroms = profiler_info.get( 'chromosomes', None )
+        if chroms:
+            for chrom in chroms.split( ',' ):
+                for fields in chrom.rsplit( '=', 1 ):
+                    if len( fields ) == 2:
+                        self.chroms[ fields[0] ] = int( fields[1] )
+                    else:
+                        self.chroms[ fields[0] ] = self.default_bitset_size
     def get( self, name ):
-        return self.chroms.get( name, bx.bitset.MAX )
+        return self.chroms.get( name, self.default_bitset_size )
+
+def parse_profiler_info( filename ):
+    profiler_info = {}
+    try:
+        for line in open( filename ):
+            fields = line.rstrip( '\n\r' ).split( '\t', 1 )
+            if len( fields ) == 2:
+                if fields[0] in profiler_info:
+                    if not isinstance( profiler_info[ fields[0] ], list ):
+                        profiler_info[ fields[0] ] = [ profiler_info[ fields[0] ] ]
+                    profiler_info[ fields[0] ].append( fields[1] )
+                else:
+                    profiler_info[ fields[0] ] = fields[1]
+    except:
+        pass #likely missing file
+    return profiler_info
 
 def __main__():
     parser = optparse.OptionParser()
@@ -294,16 +313,10 @@ def __main__():
         help='Path to profiled data for this organism'
     )
     parser.add_option(
-        '-l','--lengths',
-        dest='lengths',
-        type='str',default='test-data/shared/ucsc/hg18.len',
-        help='Path to chromosome lengths data for this organism'
-    )
-    parser.add_option(
         '-t','--table_names',
         dest='table_names',
         type='str',default='None',
-        help='Path to profiled data for this organism'
+        help='Table names requested'
     )
     parser.add_option(
         '-i','--input',
@@ -327,14 +340,19 @@ def __main__():
     
     options, args = parser.parse_args()
     
+    #get profiler_info
+    profiler_info = parse_profiler_info( os.path.join( options.path, 'profiler_info.txt' ) )
+    
     table_names = options.table_names.split( "," )
     if table_names == ['None']: table_names = None
-    coverage_reader = CachedCoverageReader( options.path, buffer = options.buffer, table_names = table_names )
+    coverage_reader = CachedCoverageReader( options.path, buffer = options.buffer, table_names = table_names, profiler_info = profiler_info )
     
     if options.summary:
-        profile_summary( options.interval_filename, options.chrom_col - 1, options.start_col - 1, options.end_col -1, options.out_filename, options.keep_empty, coverage_reader, ChromosomeLengths( options.lengths ) )
+        profile_summary( options.interval_filename, options.chrom_col - 1, options.start_col - 1, options.end_col -1, options.out_filename, options.keep_empty, coverage_reader, ChromosomeLengths( profiler_info ) )
     else:
         profile_per_interval( options.interval_filename, options.chrom_col - 1, options.start_col - 1, options.end_col -1, options.out_filename, options.keep_empty, coverage_reader )
     
+    #print out data version info
+    print 'Data version (%s:%s:%s)' % ( profiler_info.get( 'dbkey', 'unknown' ), profiler_info.get( 'profiler_hash', 'unknown' ), profiler_info.get( 'dump_time', 'unknown' ) )
 
 if __name__ == "__main__": __main__()

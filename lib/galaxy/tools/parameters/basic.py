@@ -960,8 +960,11 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
                 if filter.get( 'type' ) == 'data_meta':
                     if filter.get( 'data_ref' ) not in self.filtered:
                         self.filtered[filter.get( 'data_ref' )] = {}
-                    self.filtered[filter.get( 'data_ref' )][filter.get( 'meta_key' )] = { 'value': filter.get( 'value' ), 'options':[] }
-                    recurse_option_elems( self.filtered[filter.get( 'data_ref' )][filter.get( 'meta_key' )]['options'], filter.find( 'options' ).findall( 'option' ) )
+                    if filter.get( 'meta_key' ) not in self.filtered[filter.get( 'data_ref' )]:
+                        self.filtered[filter.get( 'data_ref' )][filter.get( 'meta_key' )] = {}
+                    if filter.get( 'value' ) not in self.filtered[filter.get( 'data_ref' )][filter.get( 'meta_key' )]:
+                        self.filtered[filter.get( 'data_ref' )][filter.get( 'meta_key' )][filter.get( 'value' )] = []
+                    recurse_option_elems( self.filtered[filter.get( 'data_ref' )][filter.get( 'meta_key' )][filter.get( 'value' )], filter.find( 'options' ).findall( 'option' ) )
         else:
             recurse_option_elems( self.options, elem.find( 'options' ).findall( 'option' ) )
     
@@ -974,8 +977,9 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
                     dataset = dataset.dataset
                 if dataset:
                     for meta_key, meta_dict in filter_value.iteritems():
-                        if dataset.metadata.spec[meta_key].param.to_string( dataset.metadata.get( meta_key ) ) == meta_dict['value']:
-                            options.extend( meta_dict['options'] )
+                        check_meta_val = dataset.metadata.spec[meta_key].param.to_string( dataset.metadata.get( meta_key ) )
+                        if check_meta_val in meta_dict:
+                            options.extend( meta_dict[check_meta_val] )
             return options
         return self.options
     

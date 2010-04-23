@@ -1,6 +1,6 @@
 <tool id="Annotation_Profiler_0" name="Profile Annotations" Version="1.0.0">
   <description>for a set of genomic intervals</description>
-  <command interpreter="python">annotation_profiler_for_interval.py -i $input1 -c ${input1.metadata.chromCol} -s ${input1.metadata.startCol} -e ${input1.metadata.endCol} -o $out_file1 $keep_empty -p ${GALAXY_DATA_INDEX_DIR}/annotation_profiler/$dbkey $summary -l ${chromInfo} -b 3 -t $table_names</command>
+  <command interpreter="python">annotation_profiler_for_interval.py -i $input1 -c ${input1.metadata.chromCol} -s ${input1.metadata.startCol} -e ${input1.metadata.endCol} -o $out_file1 $keep_empty -p ${GALAXY_DATA_INDEX_DIR}/annotation_profiler/$dbkey $summary -b 3 -t $table_names</command>
   <inputs>
     <param format="interval" name="input1" type="data" label="Choose Intervals">
       <validator type="dataset_metadata_in_file" filename="annotation_profiler_valid_builds.txt" metadata_name="dbkey" metadata_column="0" message="Profiling is not currently available for this species."/>
@@ -41,7 +41,7 @@
    <help>
 **What it does**
 
-Takes an input set of intervals and for each interval determines the base coverage of the interval by a set of features (tables) available from UCSC.
+Takes an input set of intervals and for each interval determines the base coverage of the interval by a set of features (tables) available from UCSC. Genomic regions from the input feature data have been merged by overlap / direct adjacency (e.g. a table having ranges of: 1-10, 6-12, 12-20 and 25-28 results in two merged ranges of: 1-20 and 25-28).
 
 By default, this tool will check the coverage of your intervals against all available features; you may, however, choose to select only those tables that you want to include. Selecting a section heading will effectively cause all of its children to be selected.
 

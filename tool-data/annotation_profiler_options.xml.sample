@@ -1,4 +1,4 @@
-<filter type="meta_key" name="dbkey" value="hg18">
+<filter type="data_meta" data_ref="input1" meta_key="dbkey" value="hg18">
   <options>
     <option name="Mapping and Sequencing Tracks" value="group-map">
         <option name="STS Markers" value="stsMap"/>
