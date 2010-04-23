@@ -623,8 +623,7 @@ class Requests( BaseController ):
                                     details=details,
                                     edit_mode=edit_mode)
     def __select_request_type(self, trans, rtid):
-        requesttype_list = trans.sa_session.query( trans.app.model.RequestType )\
-                                           .order_by( trans.app.model.RequestType.name.asc() )
+        requesttype_list = trans.user.accessible_request_types(trans)
         rt_ids = ['none']
         for rt in requesttype_list:
             if not rt.deleted:

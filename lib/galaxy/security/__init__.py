@@ -24,7 +24,10 @@ class RBACAgent:
         LIBRARY_ACCESS = Action( "access library", "Restrict access to this library to only role members", "restrict" ),
         LIBRARY_ADD = Action( "add library item", "Role members can add library items to this library item", "grant" ),
         LIBRARY_MODIFY = Action( "modify library item", "Role members can modify this library item", "grant" ),
-        LIBRARY_MANAGE = Action( "manage library permissions", "Role members can manage roles associated with permissions on this library item", "grant" )
+        LIBRARY_MANAGE = Action( "manage library permissions", "Role members can manage roles associated with permissions on this library item", "grant" ),
+        # Request type permissions
+        REQUEST_TYPE_ACCESS = Action( "access request_type", "Restrict access to this request_type to only role members", "restrict" )
+        
     )
     def get_action( self, name, default=None ):
         """Get a permitted action by its dict key or action name"""
@@ -754,6 +757,39 @@ class GalaxyRBACAgent( RBACAgent ):
             else:
                 hidden_folder_ids = '%d' % sub_folder.id
         return False, hidden_folder_ids
+    #
+    # RequestType Permissions
+    #
+    def can_access_request_type( self, roles, request_type ):
+        action = self.permitted_actions.REQUEST_TYPE_ACCESS
+        request_type_actions = []
+        for permission in request_type.actions:
+            if permission.action == action.action:
+                request_type_actions.append(permission)
+        if not request_type_actions:
+            return action.model == 'restrict'
+        ret_val = False
+        for item_action in item_actions:
+            if item_action.role in roles:
+                ret_val = True
+                break
+        return ret_val
+    def set_request_type_permissions( self, request_type, permissions={} ):
+        # Set new permissions on request_type, eliminating all current permissions
+        for role_assoc in request_type.actions:
+            self.sa_session.delete( role_assoc )
+        # Add the new permissions on request_type
+        item_class = self.model.RequestType
+        permission_class = self.model.RequestTypePermissions
+        for action, roles in permissions.items():
+            if isinstance( action, Action ):
+                action = action.action
+            for role_assoc in [ permission_class( action, request_type, role ) for role in roles ]:
+                self.sa_session.add( role_assoc )
+        self.sa_session.flush()
+
+
+
 
 class HostAgent( RBACAgent ):
     """

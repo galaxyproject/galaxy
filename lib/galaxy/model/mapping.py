@@ -628,6 +628,14 @@ RequestType.table = Table('request_type', metadata,
     Column( "datatx_info", JSONType() ),
     Column( "deleted", Boolean, index=True, default=False ) )
 
+RequestTypePermissions.table = Table( "request_type_permissions", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "action", TEXT ),
+    Column( "request_type_id", Integer, ForeignKey( "request_type.id" ), nullable=True, index=True ),
+    Column( "role_id", Integer, ForeignKey( "role.id" ), index=True ) )
+
 FormValues.table = Table('form_values', metadata,
     Column( "id", Integer, primary_key=True),
     Column( "create_time", DateTime, default=now ),
@@ -922,6 +930,13 @@ assign_mapper( context, RequestType, RequestType.table,
                                 sample_form=relation( FormDefinition,
                                                       primaryjoin=( RequestType.table.c.sample_form_id == FormDefinition.table.c.id ) ),
                               ) )
+
+assign_mapper( context, RequestTypePermissions, RequestTypePermissions.table,
+    properties=dict(
+        request_type=relation( RequestType, backref="actions" ),
+        role=relation( Role, backref="request_type_actions" )
+    )
+)
 
 assign_mapper( context, FormDefinition, FormDefinition.table,
                properties=dict( current=relation( FormDefinitionCurrent,

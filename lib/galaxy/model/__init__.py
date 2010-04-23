@@ -73,6 +73,18 @@ class User( object ):
             if can_show:
                 libraries[ library ] = hidden_folder_ids
         return libraries
+    def accessible_request_types(self, trans):
+        # get all permitted libraries for this user
+        all_rt_list = trans.sa_session.query( trans.app.model.RequestType ) \
+                                      .filter( trans.app.model.RequestType.table.c.deleted == False ) \
+                                      .order_by( trans.app.model.RequestType.name )
+        roles = self.all_roles()
+        rt_list = []
+        for rt in all_rt_list:
+            for permission in rt.actions:
+                if permission.role.id in [r.id for r in roles]:
+                   rt_list.append(rt) 
+        return list(set(rt_list))
     
 class Job( object ):
     """
@@ -1445,6 +1457,7 @@ class RequestEvent( object ):
         self.comment = comment
         
 class RequestType( object ):
+    permitted_actions = get_permitted_actions( filter='REQUEST_TYPE' )
     def __init__(self, name=None, desc=None, request_form=None, sample_form=None,
                  datatx_info=None):
         self.name = name
@@ -1452,6 +1465,12 @@ class RequestType( object ):
         self.request_form = request_form
         self.sample_form = sample_form
         self.datatx_info = datatx_info
+        
+class RequestTypePermissions( object ):
+    def __init__( self, action, request_type, role ):
+        self.action = action
+        self.request_type = request_type
+        self.role = role
     
 class Sample( object ):
     transfer_status = Bunch( NOT_STARTED = 'Not started',

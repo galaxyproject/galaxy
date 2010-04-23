@@ -36,7 +36,7 @@
         ${tab( "libraries", "Data Libraries", h.url_for( controller='/library', action='index' ))}
     %endif
     
-    %if trans.user and trans.request_types():
+    %if trans.user and trans.user.accessible_request_types(trans):
         <td class="tab">
             <a>Lab</a>
             <div class="submenu">

@@ -195,7 +195,8 @@ class RequestTypeGrid( grids.Grid ):
                                                 visible=False,
                                                 filterable="standard" ) )
     operations = [
-        #grids.GridOperation( "Update", allow_multiple=False, condition=( lambda item: not item.deleted  )  ),
+        grids.GridOperation( "Permissions", allow_multiple=False, condition=( lambda item: not item.deleted  )  ),
+        #grids.GridOperation( "Clone", allow_multiple=False, condition=( lambda item: not item.deleted  )  ),
         grids.GridOperation( "Delete", allow_multiple=True, condition=( lambda item: not item.deleted  )  ),
         grids.GridOperation( "Undelete", condition=( lambda item: item.deleted ) ),    
     ]
@@ -258,6 +259,7 @@ class RequestsAdmin( BaseController ):
         '''
         List all request made by the current user
         '''
+        #self.__sample_datasets(trans, **kwd)
         if 'operation' in kwd:
             operation = kwd['operation'].lower()
             if not kwd.get( 'id', None ):
@@ -534,8 +536,7 @@ class RequestsAdmin( BaseController ):
 #---- Request Creation ----------------------------------------------------------
 #    
     def __select_request_type(self, trans, rtid):
-        requesttype_list = trans.sa_session.query( trans.app.model.RequestType )\
-                                           .order_by( trans.app.model.RequestType.name.asc() )
+        requesttype_list = trans.user.accessible_request_types(trans)
         rt_ids = ['none']
         for rt in requesttype_list:
             if not rt.deleted:
@@ -1771,6 +1772,25 @@ class RequestsAdmin( BaseController ):
                                     dataset_index=dataset_index,
                                     message=message,
                                     status=status)
+        
+#    def __sample_datasets(self, trans, **kwd):
+#        samples = trans.sa_session.query( trans.app.model.Sample ).all()
+#        for s in samples:
+#            if s.dataset_files:
+#                newdf = []
+#                for df in s.dataset_files:
+#                    if type(s.dataset_files[0]) == type([1,2]):
+#                        filepath = df[0]
+#                        status = df[1]
+#                        newdf.append(dict(filepath=filepath,
+#                                          status=status,
+#                                          name=filepath.split('/')[-1],
+#                                          error_msg='',
+#                                          size='Unknown'))
+#                        s.dataset_files = newdf
+#                        trans.sa_session.add( s )
+#                        trans.sa_session.flush()
+#                
 ##
 #### Request Type Stuff ###################################################
 ##
@@ -1792,8 +1812,10 @@ class RequestsAdmin( BaseController ):
                 return self.__delete_request_type( trans, **kwd )
             elif operation == "undelete":
                 return self.__undelete_request_type( trans, **kwd )
-#            elif operation == "update":
-#                return self.__edit_request( trans, **kwd )
+            elif operation == "clone":
+                return self.__clone_request_type( trans, **kwd )
+            elif operation == "permissions":
+                return self.__show_request_type_permissions( trans, **kwd )
         # Render the grid view
         return self.requesttype_grid( trans, **kwd )
     def __view_request_type(self, trans, **kwd):
@@ -1992,3 +2014,30 @@ class RequestsAdmin( BaseController ):
                                                           action='manage_request_types',
                                                           message='%i request type(s) has been undeleted' % len(id_list),
                                                           status='done') )
+    def __show_request_type_permissions(self, trans, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        try:
+            rt = trans.sa_session.query( trans.app.model.RequestType ).get( trans.security.decode_id(kwd['id']) )
+        except:
+            return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                              action='manage_request_types',
+                                                              status='error',
+                                                              message="Invalid requesttype ID") )
+        roles = trans.sa_session.query( trans.app.model.Role ) \
+                                .filter( trans.app.model.Role.table.c.deleted==False ) \
+                                .order_by( trans.app.model.Role.table.c.name )
+        if params.get( 'update_roles_button', False ):
+            permissions = {}
+            for k, v in trans.app.model.RequestType.permitted_actions.items():
+                in_roles = [ trans.sa_session.query( trans.app.model.Role ).get( x ) for x in util.listify( params.get( k + '_in', [] ) ) ]
+                permissions[ trans.app.security_agent.get_action( v.action ) ] = in_roles
+            trans.app.security_agent.set_request_type_permissions( rt, permissions )
+            trans.sa_session.refresh( rt )
+            message = "Permissions updated for request type '%s'" % rt.name
+        return trans.fill_template( '/admin/requests/request_type_permissions.mako',
+                                    request_type=rt,
+                                    roles=roles,
+                                    status=status,
+                                    message=message)
