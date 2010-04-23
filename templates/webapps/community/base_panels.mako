@@ -92,7 +92,7 @@
     <div class="title" style="position: absolute; top: 0; left: 0;">
         <a href="${app.config.get( 'logo_url', '/' )}">
         <img border="0" src="${h.url_for('/static/images/galaxyIcon_noText.png')}" style="width: 26px; vertical-align: top;">
-        Galaxy
+        Galaxy Community
         %if app.config.brand:
             <span class='brand'>/ ${app.config.brand}</span>
         %endif

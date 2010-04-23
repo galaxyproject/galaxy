@@ -119,7 +119,8 @@ Category.table = Table( "category", metadata,
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "name", TrimmedString( 255 ), index=True, unique=True ),
-    Column( "description" , TEXT ) )
+    Column( "description" , TEXT ),
+    Column( "deleted", Boolean, index=True, default=False ) )
 
 ToolCategoryAssociation.table = Table( "tool_category_association", metadata,
     Column( "id", Integer, primary_key=True ),

@@ -134,10 +134,10 @@ class Tag ( object ):
         return "Tag(id=%s, type=%i, parent_id=%s, name=%s)" %  ( self.id, self.type, self.parent_id, self.name )
     
 class Category( object ):
-    def __init__( self, id=None, name=None, description=None ):
-        self.id = id
+    def __init__( self, name=None, description=None, deleted=False ):
         self.name = name
         self.description = description
+        self.deleted = deleted
 
 class ItemTagAssociation ( object ):
     def __init__( self, id=None, user=None, item_id=None, tag_id=None, user_tname=None, value=None ):
@@ -156,8 +156,7 @@ class ToolAnnotationAssociation( object ):
     pass
 
 class ToolCategoryAssociation( object ):
-    def __init__( self, id=None, tool=None, category=None ):
-        self.id = id
+    def __init__( self, tool=None, category=None ):
         self.tool = tool
         self.category = category
 

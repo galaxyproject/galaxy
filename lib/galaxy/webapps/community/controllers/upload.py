@@ -49,12 +49,15 @@ class UploadController( BaseController ):
                         os.link( uploaded_file.name, obj.file_name )
                     except OSError:
                         shutil.copy( uploaded_file.name, obj.file_name )
-                    message = 'Uploaded %s' % meta.message
+                    return trans.response.send_redirect( web.url_for( controller='tool_browser',
+                                                                      action='edit_tool',
+                                                                      message='Uploaded %s' % meta.message,
+                                                                      status='done' ) )
                 except datatypes.DatatypeVerificationError, e:
                     message = str( e )
                     status = 'error'
                 except sqlalchemy.exc.IntegrityError:
-                    message = 'A tool with the same ID already exists.  If you are trying to update this tool to a new version, please ... ??? ...  Otherwise, please choose a new ID.'
+                    message = 'A tool with the same ID already exists.  If you are trying to update this tool to a new version, please use the upload form on the "Edit Tool" page.  Otherwise, please choose a new ID.'
                     status = 'error'
                 uploaded_file.close()
         selected_upload_type = params.get( 'type', 'tool' )

@@ -88,6 +88,15 @@
                         <div class="toolTitle"><a href="${h.url_for( controller='tool_browser', action='browse_tools', webapp='community' )}" target="galaxy_main">Manage tools</a></div>
                     </div>
                 </div>
+                <div class="toolSectionPad"></div>
+                <div class="toolSectionTitle">
+                  <span>Community</span>
+                </div>
+                <div class="toolSectionBody">
+                  <div class="toolSectionBg">
+                    <div class="toolTitle"><a href="${h.url_for( controller='admin', action='categories', webapp='community' )}" target="galaxy_main">Manage categories</a></div>
+                  </div>
+                </div>
             </div>
         </div>    
     </div>

@@ -25,7 +25,7 @@
     <div class="form-row">
         <label>Categories:</label>
         <div class="form-row-input">
-            <select name="category" multiple size=5>
+            <select name="category" multiple size=5 style="min-width: 250px;">
                 %for category in categories:
                     %if category.id in [ tool_category.id for tool_category in tool.categories ]:
                         <option value="${category.id}" selected>${category.name}</option>
@@ -39,7 +39,7 @@
     </div>
     <div class="form-row">
         <label>Description:</label>
-        <div class="form-row-input"><textarea name="description" rows="5" cols="35"></textarea></div>
+        <div class="form-row-input"><textarea name="description" rows="5" cols="35">${tool.user_description}</textarea></div>
         <div style="clear: both"></div>
     </div>
     <div class="form-row">
