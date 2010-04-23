@@ -113,9 +113,8 @@ $(document).ready(function(){
                 </div>
                 <div class="form-row">
                     <div class="toolParamHelp" style="clear: both;">
-                        After clicking <b>Transfer</b> do <i>not</i> close this page or 
-                        navigate away from this page. Once the transfer is complete
-                        the dataset(s) will show up on this page.
+                        After selecting dataset(s), be sure to click on the <b>Start transfer</b> button. 
+                        Once the transfer is complete the dataset(s) will show up on this page.
                     </div>
                     <input type="submit" name="select_files_button" value="Select"/>
                 </div>

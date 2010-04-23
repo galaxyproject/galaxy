@@ -372,15 +372,20 @@ class TestFormsAndRequests( TwillTestCase ):
             % ( request_two.name, request_two.states.REJECTED )
     def test_055_reset_data_for_later_test_runs( self ):
         """Reseting data to enable later test runs to pass"""
-        # TODO: RC: add whatever is missing from this method that should be marked
-        # deleted or purged so that later test runs will correctly test features if the
-        # database has not be purged.
-        #
         # Logged in as admin_user
+        # remove the request_type permissions
+        rt_actions = sa_session.query( galaxy.model.RequestTypePermissions ) \
+                               .filter(and_(galaxy.model.RequestTypePermissions.table.c.request_type_id==request_type.id) ) \
+                               .order_by( desc( galaxy.model.RequestTypePermissions.table.c.create_time ) ) \
+                               .all()
+        for a in rt_actions:
+            sa_session.delete( a )
+        sa_session.flush()
+        
         ##################
         # Eliminate all non-private roles
         ##################
-        for role in [ role_one ]:
+        for role in [ role_one, role_two ]:
             self.mark_role_deleted( self.security.encode_id( role.id ), role.name )
             self.purge_role( self.security.encode_id( role.id ), role.name )
             # Manually delete the role from the database
