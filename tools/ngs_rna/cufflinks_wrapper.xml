@@ -50,9 +50,9 @@
     </inputs>
 
     <outputs>
-        <data format="expr" name="genes_expression" label="Cufflinks on data ${input.hid}: gene expression"/>
-        <data format="expr" name="transcripts_expression" label="Cufflinks on data ${input.hid}: transcript expression"/>
-        <data format="gtf" name="assembled_isoforms" label="Cufflinks on data ${input.hid}: assembled transcripts"/>
+        <data format="expr" name="genes_expression" label="${tool.name} on ${on_string}: gene expression"/>
+        <data format="expr" name="transcripts_expression" label="${tool.name} on ${on_string}: transcript expression"/>
+        <data format="gtf" name="assembled_isoforms" label="${tool.name} on ${on_string}: assembled transcripts"/>
     </outputs>
 
     <tests>

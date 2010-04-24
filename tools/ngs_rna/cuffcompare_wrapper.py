@@ -33,11 +33,13 @@ def __main__():
     if options.ignore_nonoverlap:
         cmd += " -R "
         
+    # Output/debugging.
+    print cmd
+        
     # Add input files.
     if type(args) is list:
         args = " ".join(args)
     cmd += " " + args
-    print cmd
     
     # Run command.
     try:

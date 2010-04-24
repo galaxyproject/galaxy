@@ -44,17 +44,17 @@
     </inputs>
 
     <outputs>
-        <data format="tabular" name="isoforms_exp" label="Cuffdiff on data ${gtf_input.hid}, data ${aligned_reads1.hid}, and data ${aligned_reads2.hid}: isoform expression"/>
-        <data format="tabular" name="genes_exp" label="Cuffdiff on data ${gtf_input.hid}, data ${aligned_reads1.hid}, and data ${aligned_reads2.hid}: gene expression"/>
-        <data format="tabular" name="tss_groups_exp" label="Cuffdiff on data ${gtf_input.hid}, data ${aligned_reads1.hid}, and data ${aligned_reads2.hid}: TSS groups expression"/>
-        <data format="tabular" name="cds_exp_fpkm_tracking" label="Cuffdiff on data ${gtf_input.hid}, data ${aligned_reads1.hid}, and data ${aligned_reads2.hid}: CDS Expression FPKM Tracking"/>
-        <data format="tabular" name="splicing_diff" label="Cuffdiff on data ${gtf_input.hid}, data ${aligned_reads1.hid}, and data ${aligned_reads2.hid}: splicing diff"/>
-        <data format="tabular" name="cds_diff" label="Cuffdiff on data ${gtf_input.hid}, data ${aligned_reads1.hid}, and data ${aligned_reads2.hid}: CDS diff"/>
-        <data format="tabular" name="promoters_diff" label="Cuffdiff on data ${gtf_input.hid}, data ${aligned_reads1.hid}, and data ${aligned_reads2.hid}: promoters diff"/>
-        <data format="tabular" name="tss_groups_fpkm_tracking" label="Cuffdiff on data ${gtf_input.hid}, data ${aligned_reads1.hid}, and data ${aligned_reads2.hid}: TSS groups FPKM tracking" />
-        <data format="tabular" name="cds_fpkm_tracking" label="Cuffdiff on data ${gtf_input.hid}, data ${aligned_reads1.hid}, and data ${aligned_reads2.hid}: CDS FPKM tracking"/>
-        <data format="tabular" name="genes_fpkm_tracking" label="Cuffdiff on data ${gtf_input.hid}, data ${aligned_reads1.hid}, and data ${aligned_reads2.hid}: gene FPKM tracking"/>
-        <data format="tabular" name="isoforms_fpkm_tracking" label="Cuffdiff on data ${gtf_input.hid}, data ${aligned_reads1.hid}, and data ${aligned_reads2.hid}: isoform FPKM tracking"/>        
+        <data format="tabular" name="isoforms_exp" label="${tool.name} on ${on_string}: isoform expression"/>
+        <data format="tabular" name="genes_exp" label="${tool.name} on ${on_string}: gene expression"/>
+        <data format="tabular" name="tss_groups_exp" label="${tool.name} on ${on_string}: TSS groups expression"/>
+        <data format="tabular" name="cds_exp_fpkm_tracking" label="${tool.name} on ${on_string}: CDS Expression FPKM Tracking"/>
+        <data format="tabular" name="splicing_diff" label="${tool.name} on ${on_string}: splicing diff"/>
+        <data format="tabular" name="cds_diff" label="${tool.name} on ${on_string}: CDS diff"/>
+        <data format="tabular" name="promoters_diff" label="${tool.name} on ${on_string}: promoters diff"/>
+        <data format="tabular" name="tss_groups_fpkm_tracking" label="${tool.name} on ${on_string}: TSS groups FPKM tracking" />
+        <data format="tabular" name="cds_fpkm_tracking" label="${tool.name} on ${on_string}: CDS FPKM tracking"/>
+        <data format="tabular" name="genes_fpkm_tracking" label="${tool.name} on ${on_string}: gene FPKM tracking"/>
+        <data format="tabular" name="isoforms_fpkm_tracking" label="${tool.name} on ${on_string}: isoform FPKM tracking"/>        
     </outputs>
 
     <tests>

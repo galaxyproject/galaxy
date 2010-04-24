@@ -55,9 +55,9 @@
     </inputs>
     
     <outputs>
-	    <data format="sam" name="accepted_hits"/>
-        <data format="wig" name="coverage" />
-        <data format="bed" name="junctions" />
+	    <data format="sam" name="accepted_hits" label="${tool.name} on ${on_string}: accepted_hits"/>
+        <data format="wig" name="coverage" label="${tool.name} on ${on_string}: coverage"/>
+        <data format="bed" name="junctions" label="${tool.name} on ${on_string}: splice junctions"/>
     </outputs>
     
     <tests>

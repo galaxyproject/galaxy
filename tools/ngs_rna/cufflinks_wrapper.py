@@ -62,9 +62,11 @@ def __main__():
     if options.max_mle_iterations:
         cmd += ( " --max-mle-iterations %i" % int ( options.max_mle_iterations ) )
         
+    # Output/debugging.
+    print cmd
+        
     # Add input files.
     cmd += " " + options.input
-    print cmd
     
     # Run command.
     try:

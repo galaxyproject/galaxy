@@ -32,9 +32,9 @@
     </inputs>
 
     <outputs>
-        <data format="gtf" name="transcripts_combined" label="Cuffcompare on data ${input1.hid} and data ${input2.hid}: combined transcripts"/>
-        <data format="tracking" name="transcripts_tracking" label="Cuffcompare on data ${input1.hid} and data ${input2.hid}: transcript tracking"/>
-        <data format="gtf" name="transcripts_accuracy" label="Cuffcompare on data ${input1.hid} and data ${input2.hid}: transcript accuracy"/>
+        <data format="gtf" name="transcripts_combined" label="${tool.name} on ${on_string}: combined transcripts"/>
+        <data format="tracking" name="transcripts_tracking" label="${tool.name} on ${on_string}: transcript tracking"/>
+        <data format="gtf" name="transcripts_accuracy" label="${tool.name} on ${on_string}: transcript accuracy"/>
     </outputs>
 
     <tests>
