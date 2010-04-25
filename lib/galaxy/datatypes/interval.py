@@ -235,7 +235,7 @@ class Interval( Tabular ):
                         # if our URL scheme is https.  Making this work
                         # requires additional hackery in your upstream proxy.
                         # If UCSC ever supports https, remove this hack.
-                        internal_url = "%s" % url_for( controller='dataset', dataset_id=dataset.id, action='display_at', filename='ucsc_' + site_name )
+                        internal_url = "%s" % url_for( controller='/dataset', dataset_id=dataset.id, action='display_at', filename='ucsc_' + site_name )
                         if base_url.startswith( 'https://' ):
                             base_url = base_url.replace( 'https', 'http', 1 )
                         display_url = urllib.quote_plus( "%s%s/display_as?id=%i&display_app=%s&authz_method=display_at" % (base_url, url_for( controller='root' ), dataset.id, type) )

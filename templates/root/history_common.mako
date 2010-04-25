@@ -1,6 +1,6 @@
 <% _=n_ %>
 ## Render the dataset `data` as history item, using `hid` as the displayed id
-<%def name="render_dataset( data, hid, show_deleted_on_refresh = False, user_owns_dataset = True )">
+<%def name="render_dataset( data, hid, show_deleted_on_refresh = False, for_editing = True )">
     <a name="${trans.security.encode_id( data.id )}"></a>
     <%
         if data.state in ['no state','',None]:
@@ -29,16 +29,28 @@
                 ## links should be enough. However the number of datasets being uploaded
                 ## at a time is usually small so the impact of these images is also small.
                 <img src="${h.url_for('/static/images/eye_icon_grey.png')}" width='16' height='16' alt='display data' title='display data' class='button display' border='0'>
-                %if user_owns_dataset:
+                %if for_editing:
                     <img src="${h.url_for('/static/images/pencil_icon_grey.png')}" width='16' height='16' alt='edit attributes' title='edit attributes' class='button edit' border='0'>
                 %endif
             %else:
-                <a class="icon-button display tooltip" title="Display data in browser" href="${h.url_for( controller='dataset', action='display', dataset_id=trans.security.encode_id( data.id ), preview=True, filename='' )}" target="galaxy_main"></a>
-                %if user_owns_dataset:
+                <% 
+                    dataset_id = trans.security.encode_id( data.id )
+                    if for_editing:
+                        display_url = h.url_for( controller='dataset', action='display', dataset_id=dataset_id, preview=True, filename='' )
+                    else:
+                        display_url = h.url_for( controller='dataset', action='display_by_username_and_slug',
+                                    username=data.history.user.username, slug=dataset_id )
+                %>
+                <a class="icon-button display tooltip" title="Display data in browser" href="${display_url}"
+                %if for_editing:
+                    target="galaxy_main"
+                %endif
+                ></a>
+                %if for_editing:
                     <a class="icon-button edit tooltip" title="Edit attributes" href="${h.url_for( controller='root', action='edit', id=data.id )}" target="galaxy_main"></a>
                 %endif
             %endif
-            %if user_owns_dataset:
+            %if for_editing:
                 <a class="icon-button delete tooltip" title="Delete" href="${h.url_for( action='delete', id=data.id, show_deleted_on_refresh=show_deleted_on_refresh )}" id="historyItemDeleter-${data.id}"></a>
             %endif
         </div>
@@ -89,7 +101,7 @@
                 <% dataset_id=trans.security.encode_id( data.id ) %>
                 %if data.has_data:
                     <a href="${h.url_for( controller='dataset', action='display', dataset_id=dataset_id, to_ext=data.ext )}" title="Save" class="icon-button disk tooltip"></a>
-                    %if user_owns_dataset:
+                    %if for_editing:
                         <a href="${h.url_for( controller='tool_runner', action='rerun', id=data.id )}" target="galaxy_main" title="Run this job again" class="icon-button arrow-circle tooltip"></a>
                         %if app.config.get_bool( 'enable_tracks', False ) and data.ext in app.datatypes_registry.get_available_tracks():
                             <a class="icon-button vis-chart tooltip trackster" title="Visualize in Trackster" id="visualize_${hid}"></a>
@@ -110,6 +122,10 @@
                             </div>
                             
                         %endif
+                    %else:
+                        ## When displaying datasets for viewing, this is often needed to prevent peek from overlapping
+                        ## icons.
+                        <div style="clear: both"></div>
                     %endif
                 %if data.peek != "no peek":
                     <div><pre id="peek${data.id}" class="peek">${_(data.display_peek())}</pre></div>

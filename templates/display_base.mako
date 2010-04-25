@@ -114,7 +114,7 @@
 
 <%def name="render_item_header( item )">
     <h3>Galaxy ${get_class_display_name( item.__class__ )} '${get_item_name( item )| h}'</h3>
-    %if hasattr( item, "annotation"):
+    %if hasattr( item, "annotation") and item.annotation is not None:
         <div class="annotation">Annotation: ${item.annotation}</div>
     %endif
     <hr/>

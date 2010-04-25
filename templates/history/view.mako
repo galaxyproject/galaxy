@@ -64,11 +64,6 @@
 </%def>
 
 <%def name="center_panel()">
-    ## For now, turn off inline editing so that view is external only.
-    <% 
-        user_owns_history = False
-    %>
-    
     ## Get URL to other histories owned by user that owns this history.
     <%
         ##TODO: is there a better way to create this URL? Can't use 'f-username' as a key b/c it's not a valid identifier.
@@ -84,9 +79,7 @@
         <div style="overflow: auto; height: 100%;">
             ## Render view of history.
             <div id="top-links" class="historyLinks" style="padding: 0px 0px 5px 0px">
-                %if not user_owns_history:
                     <a href="${h.url_for( action='imp', id=trans.security.encode_id(history.id) )}">import and start using history</a> |
-                %endif
                 <a href="${get_history_link( history )}">${_('refresh')}</a> 
                 %if show_deleted:
                 | <a href="${h.url_for('history', show_deleted=False)}">${_('hide deleted')}</a> 
@@ -95,9 +88,6 @@
             </div>
 
             <div id="history-name-area" class="historyLinks" style="color: gray; font-weight: bold; padding: 0px 0px 5px 0px">
-                %if user_owns_history:
-                    <div style="float: right"><a id="history-rename" title="Rename" class="icon-button edit" target="galaxy_main" href="${h.url_for( controller='history', action='rename' )}"></a></div>
-                %endif
                 <div id="history-name">${history.get_display_name()}</div>
             </div>
 
@@ -118,7 +108,7 @@
                 %for data in datasets:
                     %if data.visible:
                         <div class="historyItemContainer visible-right-border" id="historyItemContainer-${data.id}">
-                            ${render_dataset( data, data.hid, show_deleted_on_refresh = show_deleted, user_owns_dataset=user_owns_history )}
+                            ${render_dataset( data, data.hid, show_deleted_on_refresh = show_deleted, for_editing=False )}
                         </div>
                     %endif
                 %endfor

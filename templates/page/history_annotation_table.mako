@@ -50,7 +50,7 @@
 	                ##<td valign="top" class="annotation">Describe this step: why was it done? what data does it produce?</td>
 	                <td>
 	                    <div class="historyItemContainer" id="historyItemContainer-${data.id}">
-	                        ${render_dataset( data, data.hid, show_deleted_on_refresh = show_deleted, user_owns_dataset = False )}
+	                        ${render_dataset( data, data.hid, show_deleted_on_refresh = show_deleted, for_editing = False )}
 	                    </div>
 	                </td>
 	            </tr>

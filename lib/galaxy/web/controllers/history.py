@@ -590,11 +590,9 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesHistory 
             error( "Either you are not allowed to view this history or the owner of this history has not made it accessible." )
         # View history.
         datasets = self.get_history_datasets( trans, history_to_view )
-        user_owns_history = ( trans.get_user() == history_to_view.user )
         return trans.stream_template_mako( "history/view.mako",
                                            history = history_to_view,
                                            datasets = datasets,
-                                           user_owns_history = user_owns_history,
                                            show_deleted = False )
                                            
     @web.expose

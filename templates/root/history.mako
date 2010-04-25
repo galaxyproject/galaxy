@@ -387,7 +387,7 @@ div.form-row {
     %for data in reversed( datasets ):
         %if data.visible:
             <div class="historyItemContainer" id="historyItemContainer-${data.id}">
-                ${render_dataset( data, data.hid, show_deleted_on_refresh = show_deleted, user_owns_dataset = True )}
+                ${render_dataset( data, data.hid, show_deleted_on_refresh = show_deleted, for_editing = True )}
             </div>
         %endif
     %endfor

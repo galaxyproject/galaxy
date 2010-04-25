@@ -38,7 +38,12 @@
 </%def>
 
 <%def name="render_item_links( history )">
-    <a href="${h.url_for( controller='/history', action='imp', id=trans.security.encode_id(history.id) )}" class="icon-button import tooltip" title="Import history"></a>
+    <a 
+        href="${h.url_for( controller='/history', action='imp', id=trans.security.encode_id(history.id) )}"     
+        class="icon-button import" 
+        ## Needed to overwide initial width so that link is floated left appropriately.
+        style="width: 100%"
+        title="Import history">Import history</a>
 </%def>
 
 <%def name="render_item( history, datasets )">
@@ -60,10 +65,14 @@
                     %if data.visible:
                         <td>
                             <div class="historyItemContainer visible-right-border" id="historyItemContainer-${data.id}">
-                                ${render_dataset( data, data.hid, show_deleted_on_refresh = show_deleted, user_owns_dataset=user_owns_history )}
+                                ${render_dataset( data, data.hid, show_deleted_on_refresh = show_deleted, for_editing=False )}
                             </div>
                         </td>
-                        <td class="annotation">${data.annotation}</td>
+                        <td class="annotation">
+                        %if hasattr( data, "annotation") and data.annotation is not None:
+                            ${data.annotation}
+                        %endif
+                        </td>
                     %endif
                 </tr>
             %endfor
