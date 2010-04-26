@@ -127,29 +127,28 @@
                         ## icons.
                         <div style="clear: both"></div>
                     %endif
+    		    <div style="clear: both"></div>
+                        %for display_app in data.datatype.get_display_types():
+                            <% target_frame, display_links = data.datatype.get_display_links( data, display_app, app, request.base ) %>
+                            %if len( display_links ) > 0:
+                                | ${data.datatype.get_display_label(display_app)}
+                %for display_name, display_link in display_links:
+                    <a target="${target_frame}" href="${display_link}">${_(display_name)}</a> 
+                %endfor
+                            %endif
+                        %endfor
+                    %endif
+                %for display_app in data.get_display_applications( trans ).itervalues():
+                    | ${display_app.name} 
+                    %for link_app in display_app.links.itervalues():
+                        <a target="${link_app.url.get( 'target_frame', '_blank' )}" href="${link_app.get_display_url( data, trans )}">${_(link_app.name)}</a> 
+                    %endfor
+                %endfor
+    
+                </div>
                 %if data.peek != "no peek":
                     <div><pre id="peek${data.id}" class="peek">${_(data.display_peek())}</pre></div>
-                %endif
-		    <div style="clear: both"></div>
-                    %for display_app in data.datatype.get_display_types():
-                        <% target_frame, display_links = data.datatype.get_display_links( data, display_app, app, request.base ) %>
-                        %if len( display_links ) > 0:
-                            | ${data.datatype.get_display_label(display_app)}
-            %for display_name, display_link in display_links:
-                <a target="${target_frame}" href="${display_link}">${_(display_name)}</a> 
-            %endfor
-                        %endif
-                    %endfor
-                %endif
-            %for display_app in data.get_display_applications( trans ).itervalues():
-                | ${display_app.name} 
-                %for link_app in display_app.links.itervalues():
-                    <a target="${link_app.url.get( 'target_frame', '_blank' )}" href="${link_app.get_display_url( data, trans )}">${_(link_app.name)}</a> 
-                %endfor
-            %endfor
-    
-            </div>
-            
+                %endif            
         %else:
             <div>${_('Error: unknown dataset state "%s".') % data_state}</div>
         %endif
