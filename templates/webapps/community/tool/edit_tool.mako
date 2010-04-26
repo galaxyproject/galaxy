@@ -18,7 +18,7 @@
 %endif
 
 <form id="tool_edit_form" name="tool_edit_form" action="${h.url_for( controller='tool_browser', action='edit_tool' )}" enctype="multipart/form-data" method="post">
-<input type="hidden" name="id" value="${encoded_id}"/>
+<input type="hidden" name="id" value="${trans.app.security.encode_id( tool.id )}"/>
 <div class="toolForm">
     <div class="toolFormTitle">Edit Tool</div>
     <div class="toolFormBody">

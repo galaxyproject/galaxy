@@ -1,4 +1,4 @@
-import sys, os, operator, string, shutil, re, socket, urllib, time, logging
+import sys, os, operator, string, shutil, re, socket, urllib, time, logging, mimetypes
 
 from galaxy.web.base.controller import *
 from galaxy.webapps.community import model
@@ -31,7 +31,7 @@ class ToolListGrid( grids.Grid ):
         NameColumn( "Name",
                     key="name",
                     model_class=model.Tool,
-                    link=( lambda item: dict( operation="Edit Tool", id=item.id, webapp="community" ) ),
+                    link=( lambda item: dict( operation="View Tool", id=item.id, webapp="community" ) ),
                     attach_popup=False,
                     filterable="advanced" ),
         # Columns that are valid for filtering but are not visible.
@@ -79,6 +79,10 @@ class ToolBrowserController( BaseController ):
                 return trans.response.send_redirect( web.url_for( controller='tool_browser',
                                                                   action='browse_tool',
                                                                   **kwargs ) )
+            elif operation == "view tool":
+                return trans.response.send_redirect( web.url_for( controller='tool_browser',
+                                                                  action='view_tool',
+                                                                  **kwargs ) )
             elif operation == "edit tool":
                 return trans.response.send_redirect( web.url_for( controller='tool_browser',
                                                                   action='edit_tool',
@@ -95,6 +99,25 @@ class ToolBrowserController( BaseController ):
                                     message=message,
                                     status=status )
     @web.expose
+    def view_tool( self, trans, id=None, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        # Get the tool
+        tool = None
+        if id is not None:
+            id = trans.app.security.decode_id( id )
+            tool = trans.sa_session.query( trans.model.Tool ).get( id )
+        if tool is None:
+            return trans.response.send_redirect( web.url_for( controller='tool_browser',
+                                                              action='browse_tools',
+                                                              message='Please select a Tool to edit (the tool ID provided was invalid)',
+                                                              status='error' ) )
+        return trans.fill_template( '/webapps/community/tool/view_tool.mako',
+                                    tool=tool,
+                                    message=message,
+                                    status=status )
+    @web.expose
     def edit_tool( self, trans, id=None, **kwd ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
@@ -102,13 +125,17 @@ class ToolBrowserController( BaseController ):
         # Get the tool
         tool = None
         if id is not None:
-            encoded_id = id
             id = trans.app.security.decode_id( id )
             tool = trans.sa_session.query( trans.model.Tool ).get( id )
         if tool is None:
             return trans.response.send_redirect( web.url_for( controller='tool_browser',
                                                               action='browse_tools',
                                                               message='Please select a Tool to edit (the tool ID provided was invalid)',
+                                                              status='error' ) )
+        if tool.user_id != trans.user.id:
+            return trans.response.send_redirect( web.url_for( controller='tool_browser',
+                                                              action='view_tool',
+                                                              message='You are not the owner of this tool and therefore cannot edit it',
                                                               status='error' ) )
         if params.save_button and ( params.file_data != '' or params.url != '' ):
             # TODO: call the upload method in the upload controller.
@@ -126,8 +153,26 @@ class ToolBrowserController( BaseController ):
                                                               status='done' ) )
         categories = trans.sa_session.query( trans.model.Category ).order_by( trans.model.Category.table.c.name ).all()
         return trans.fill_template( '/webapps/community/tool/edit_tool.mako',
-                                    encoded_id = encoded_id,
                                     tool=tool,
                                     categories=categories,
                                     message=message,
                                     status=status )
+    @web.expose
+    def download_tool( self, trans, id=None, **kwd ):
+        params = util.Params( kwd )
+        tool = None
+        # Get the tool
+        tool = None
+        if id is not None:
+            id = trans.app.security.decode_id( id )
+            tool = trans.sa_session.query( trans.model.Tool ).get( id )
+        if tool is None:
+            return trans.response.send_redirect( web.url_for( controller='tool_browser',
+                                                              action='browse_tools',
+                                                              message='Please select a Tool to edit (the tool ID provided was invalid)',
+                                                              status='error' ) )
+
+        trans.response.set_content_type(tool.mimetype)
+        trans.response.headers['Content-Length'] = int( os.stat( tool.file_name ).st_size )
+        trans.response.headers['Content-Disposition'] = 'attachment; filename=%s' % tool.download_file_name
+        return open( tool.file_name )

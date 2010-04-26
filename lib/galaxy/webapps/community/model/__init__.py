@@ -4,7 +4,7 @@ Galaxy Community Space data model classes
 Naming: try to use class names that have a distinct plural form so that
 the relationship cardinalities are obvious (e.g. prefer Dataset to Data)
 """
-import os.path, os, errno, sys, codecs, operator, tempfile, logging, tarfile
+import os.path, os, errno, sys, codecs, operator, tempfile, logging, tarfile, mimetypes
 from galaxy.util.bunch import Bunch
 from galaxy import util
 from galaxy.util.hash_util import *
@@ -96,6 +96,7 @@ class Tool( object ):
         self.version = version or "1.0.0"
         self.user_id = user_id
         self.external_filename = external_filename
+        self.__extension = None
     def get_file_name( self ):
         if not self.external_filename:
             assert self.id is not None, "ID must be set before filename used (commit the object)"
@@ -132,6 +133,34 @@ class Tool( object ):
             if not isinstance( category, Category ):
                 category = trans.sa_session.query( Category ).get( int( category ) )
             self.categories.append( ToolCategoryAssociation( self, category ) )
+    @property
+    def extension( self ):
+        # if instantiated via a query, this unmapped property won't exist
+        if '_Tool__extension' not in dir( self ):
+            self.__extension = None
+        if self.__extension is None:
+            head = open( self.file_name, 'rb' ).read( 4 )
+            try:
+                assert head[:3] == 'BZh'
+                assert int( head[-1] ) in range( 0, 10 )
+                self.__extension = 'tar.bz2'
+            except AssertionError:
+                pass
+        if self.__extension is None:
+            try:
+                assert head[:2] == '\037\213'
+                self.__extension = 'tar.gz'
+            except:
+                pass
+        if self.__extension is None:
+            self.__extension = 'tar'
+        return self.__extension
+    @property
+    def download_file_name( self ):
+        return '%s_%s.%s' % ( self.tool_id, self.version, self.extension )
+    @property
+    def mimetype( self ):
+        return mimetypes.guess_type( self.download_file_name )[0]
 
 class Tag ( object ):
     def __init__( self, id=None, type=None, parent_id=None, name=None ):

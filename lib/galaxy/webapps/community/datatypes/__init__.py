@@ -99,7 +99,7 @@ class Tool( object ):
     def verify( self, file ):
         msg = ''
         try:
-            tar = tarfile.TarFile( fileobj = file )
+            tar = tarfile.open( file.name )
         except tarfile.ReadError:
             raise DatatypeVerificationError( 'The tool file is not a readable tar file' )
         xml_names = filter( lambda x: x.lower().endswith( '.xml' ), tar.getnames() )

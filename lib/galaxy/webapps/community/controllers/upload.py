@@ -51,6 +51,7 @@ class UploadController( BaseController ):
                         shutil.copy( uploaded_file.name, obj.file_name )
                     return trans.response.send_redirect( web.url_for( controller='tool_browser',
                                                                       action='edit_tool',
+                                                                      id=trans.app.security.encode_id( obj.id ),
                                                                       message='Uploaded %s' % meta.message,
                                                                       status='done' ) )
                 except datatypes.DatatypeVerificationError, e:
