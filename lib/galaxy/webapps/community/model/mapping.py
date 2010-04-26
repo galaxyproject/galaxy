@@ -112,7 +112,7 @@ Tool.table = Table( "tool", metadata,
     Column( "version", TrimmedString( 255 ) ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "external_filename" , TEXT ),
-    Column( "deleted", Boolean, default=False ) )
+    Column( "deleted", Boolean, index=True, default=False ) )
 
 Category.table = Table( "category", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -126,6 +126,18 @@ ToolCategoryAssociation.table = Table( "tool_category_association", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "tool_id", Integer, ForeignKey( "tool.id" ), index=True ),
     Column( "category_id", Integer, ForeignKey( "category.id" ), index=True ) )
+
+Event.table = Table( 'event', metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "state", TrimmedString( 255 ), index=True ),
+    Column( "comment", TEXT ) )
+
+ToolEventAssociation.table = Table( "tool_event_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "tool_id", Integer, ForeignKey( "tool.id" ), index=True ),
+    Column( "event_id", Integer, ForeignKey( "event.id" ), index=True ) )
 
 Tag.table = Table( "tag", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -202,7 +214,17 @@ assign_mapper( context, ToolAnnotationAssociation, ToolAnnotationAssociation.tab
 assign_mapper( context, Tool, Tool.table, 
     properties = dict(
         categories=relation( ToolCategoryAssociation ),
+        events=relation( ToolEventAssociation ),
         user=relation( User.mapper )
+        ) )
+
+assign_mapper( context, Event, Event.table,
+               properties=None )
+
+assign_mapper( context, ToolEventAssociation, ToolEventAssociation.table,
+    properties=dict(
+        tool=relation( Tool ),
+        event=relation( Event )
     )
 )
 
@@ -211,8 +233,8 @@ assign_mapper( context, Category, Category.table,
 
 assign_mapper( context, ToolCategoryAssociation, ToolCategoryAssociation.table,
     properties=dict(
-        category=relation(Category),
-        tool=relation(Tool)
+        category=relation( Category ),
+        tool=relation( Tool )
     )
 )
 

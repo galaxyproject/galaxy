@@ -1,8 +1,8 @@
 from galaxy.web.base.controller import *
-#from galaxy.web.controllers.admin import get_user, get_group, get_role
 from galaxy.webapps.community import model
 from galaxy.model.orm import *
 from galaxy.web.framework.helpers import time_ago, iff, grids
+from common import get_categories, get_category
 import logging
 log = logging.getLogger( __name__ )
 
@@ -294,7 +294,7 @@ class CategoryListGrid( grids.Grid ):
     webapp = "community"
     title = "Categories"
     model_class = model.Category
-    template='/webapps/community/admin/category/grid.mako'
+    template='/webapps/community/category/grid.mako'
     default_sort_key = "name"
     columns = [
         NameColumn( "Name",
@@ -346,13 +346,131 @@ class CategoryListGrid( grids.Grid ):
     def build_initial_query( self, session ):
         return session.query( self.model_class )
 
+# States for passing messages
+SUCCESS, INFO, WARNING, ERROR = "done", "info", "warning", "error"
+
+class ToolListGrid( grids.Grid ):
+    class NameColumn( grids.TextColumn ):
+        def get_value( self, trans, grid, tool ):
+            return tool.name
+    class CategoryColumn( grids.TextColumn ):
+        def get_value( self, trans, grid, tool ):
+            if tool.categories:
+                rval = ''
+                for tca in tool.categories:
+                    rval = '%s%s<br/>' % ( rval, tca.category.name )
+                return rval
+            return 'not set'
+    class StateColumn( grids.GridColumn ):
+        def get_value( self, trans, grid, tool ):
+            state = tool.state()
+            if state == tool.states.NEW:
+                return '<div class="count-box state-color-queued">%s</div>' % state
+            if state == tool.states.WAITING:
+                return '<div class="count-box state-color-running">%s</div>' % state
+            if state == tool.states.APPROVED:
+                return '<div class="count-box state-color-ok">%s</div>' % state
+            if state == tool.states.REJECTED or state == tool.states.ERROR:
+                return '<div class="count-box state-color-error">%s</div>' % state
+            return state
+        def get_accepted_filters( self ):
+            """ Returns a list of accepted filters for this column."""
+            accepted_filter_labels_and_vals = [ model.Tool.states.NEW,
+                                                model.Tool.states.WAITING,
+                                                model.Tool.states.APPROVED,
+                                                model.Tool.states.REJECTED,
+                                                model.Tool.states.DELETED,
+                                                "All" ]
+            accepted_filters = []
+            for val in accepted_filter_labels_and_vals:
+                label = val.lower()
+                args = { self.key: val }
+                accepted_filters.append( grids.GridColumnFilter( label, args ) )
+            return accepted_filters
+    class UserColumn( grids.TextColumn ):
+        def get_value( self, trans, grid, tool ):
+            return tool.user.email
+    # Grid definition
+    title = "Tools"
+    model_class = model.Tool
+    template='/webapps/community/tool/grid.mako'
+    default_sort_key = "name"
+    columns = [
+        NameColumn( "Name",
+                    key="name",
+                    model_class=model.Tool,
+                    link=( lambda item: dict( operation="Edit Tool", id=item.id, webapp="community" ) ),
+                    attach_popup=True,
+                    filterable="advanced" ),
+        CategoryColumn( "Category",
+                    key="category",
+                    model_class=model.Category,
+                    attach_popup=False,
+                    filterable="advanced" ),
+        StateColumn( "State",
+                     key="state",
+                     model_class=model.Event,
+                     attach_popup=False,
+                     filterable="advanced" ),
+        # Columns that are valid for filtering but are not visible.
+        grids.DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" )
+    ]
+    columns.append( grids.MulticolFilterColumn( "Search", 
+                                                cols_to_filter=[ columns[0], columns[1] ], 
+                                                key="free-text-search",
+                                                visible=False,
+                                                filterable="standard" ) )
+    global_actions = [
+        grids.GridAction( "Upload tool", dict( controller='upload', action='upload', type='tool' ) )
+    ]
+    operations = [
+        grids.GridOperation( "Add to category",
+                             condition=( lambda item: not item.deleted ),
+                             allow_multiple=False,
+                             url_args=dict( controller="common", action="add_category", cntrller="admin", webapp="community" ) ),
+        grids.GridOperation( "Remove from category",
+                             condition=( lambda item: not item.deleted ),
+                             allow_multiple=False,
+                             url_args=dict( controller="common", action="remove_category", cntrller="admin", webapp="community" ) ),
+        grids.GridOperation( "View versions", condition=( lambda item: not item.deleted ), allow_multiple=False )
+    ]
+    standard_filters = [
+        grids.GridColumnFilter( "Deleted", args=dict( deleted=True ) ),
+        grids.GridColumnFilter( "All", args=dict( deleted='All' ) )
+    ]
+    default_filter = dict( name="All", deleted="False" )
+    num_rows_per_page = 50
+    preserve_state = False
+    use_paging = True
+    def build_initial_query( self, session ):
+        return session.query( self.model_class )
+    def apply_default_filter( self, trans, query, **kwargs ):
+        return query.filter( self.model_class.deleted==False )
+
 class AdminCommunity( BaseController, Admin ):
     
     user_list_grid = UserListGrid()
     role_list_grid = RoleListGrid()
     group_list_grid = GroupListGrid()
     category_list_grid = CategoryListGrid()
+    tool_list_grid = ToolListGrid()
 
+    @web.expose
+    @web.require_admin
+    def browse_tools( self, trans, **kwargs ):
+        if 'operation' in kwargs:
+            operation = kwargs['operation'].lower()
+            if operation == "browse":
+                return trans.response.send_redirect( web.url_for( controller='tool_browser',
+                                                                  action='browse_tool',
+                                                                  **kwargs ) )
+            elif operation == "edit tool":
+                return trans.response.send_redirect( web.url_for( controller='common',
+                                                                  action='edit_tool',
+                                                                  cntrller='admin',
+                                                                  **kwargs ) )
+        # Render the list view
+        return self.tool_list_grid( trans, **kwargs )
     @web.expose
     @web.require_admin
     def categories( self, trans, **kwargs ):
@@ -401,7 +519,7 @@ class AdminCommunity( BaseController, Admin ):
                                                        webapp=webapp,
                                                        message=util.sanitize_text( message ),
                                                        status='error' ) )
-        return trans.fill_template( '/webapps/community/admin/category/category_create.mako',
+        return trans.fill_template( '/webapps/community/category/create_category.mako',
                                     webapp=webapp,
                                     message=message,
                                     status=status )
@@ -442,7 +560,7 @@ class AdminCommunity( BaseController, Admin ):
                                                                   webapp=webapp,
                                                                   message=util.sanitize_text( message ),
                                                                   status='done' ) )
-        return trans.fill_template( '/webapps/community/admin/category/category_rename.mako',
+        return trans.fill_template( '/webapps/community/category/rename_category.mako',
                                     category=category,
                                     webapp=webapp,
                                     message=message,
@@ -546,14 +664,3 @@ class AdminCommunity( BaseController, Admin ):
                                                    webapp=webapp,
                                                    message=util.sanitize_text( message ),
                                                    status='done' ) )
-
-## ---- Utility methods -------------------------------------------------------
-
-def get_category( trans, id ):
-    """Get a User from the database by id."""
-    # Load user from database
-    id = trans.security.decode_id( id )
-    category = trans.sa_session.query( trans.model.Category ).get( id )
-    if not category:
-        return trans.show_error_message( "Category not found for id (%s)" % str( id ) )
-    return category

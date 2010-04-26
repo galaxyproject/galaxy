@@ -4,6 +4,7 @@ from galaxy.web.base.controller import *
 from galaxy.webapps.community import model
 from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.model.orm import *
+from common import *
 
 log = logging.getLogger( __name__ )
 
@@ -13,15 +14,41 @@ SUCCESS, INFO, WARNING, ERROR = "done", "info", "warning", "error"
 class ToolListGrid( grids.Grid ):
     class NameColumn( grids.TextColumn ):
         def get_value( self, trans, grid, tool ):
-            if tool.name:
-                return tool.name
-            return 'not set'
+            return tool.name
     class CategoryColumn( grids.TextColumn ):
         def get_value( self, trans, grid, tool ):
-            if tool.category:
-                return tool.category
+            if tool.categories:
+                return tool.categories
             return 'not set'
-
+    class StateColumn( grids.GridColumn ):
+        def get_value( self, trans, grid, tool ):
+            state = tool.state()
+            if state == tool.states.NEW:
+                return '<div class="count-box state-color-queued">%s</div>' % state
+            if state == tool.states.WAITING:
+                return '<div class="count-box state-color-running">%s</div>' % state
+            if state == tool.states.APPROVED:
+                return '<div class="count-box state-color-ok">%s</div>' % state
+            if state == tool.states.REJECTED or state == tool.states.ERROR:
+                return '<div class="count-box state-color-error">%s</div>' % state
+            return state
+        def get_accepted_filters( self ):
+            """ Returns a list of accepted filters for this column."""
+            accepted_filter_labels_and_vals = [ model.Tool.states.NEW,
+                                                model.Tool.states.WAITING,
+                                                model.Tool.states.APPROVED,
+                                                model.Tool.states.REJECTED,
+                                                model.Tool.states.DELETED,
+                                                "All" ]
+            accepted_filters = []
+            for val in accepted_filter_labels_and_vals:
+                label = val.lower()
+                args = { self.key: val }
+                accepted_filters.append( grids.GridColumnFilter( label, args ) )
+            return accepted_filters
+    class UserColumn( grids.TextColumn ):
+        def get_value( self, trans, grid, tool ):
+            return tool.user.email
     # Grid definition
     title = "Tools"
     model_class = model.Tool
@@ -31,9 +58,15 @@ class ToolListGrid( grids.Grid ):
         NameColumn( "Name",
                     key="name",
                     model_class=model.Tool,
-                    link=( lambda item: dict( operation="View Tool", id=item.id, webapp="community" ) ),
-                    attach_popup=False,
+                    link=( lambda item: dict( operation="Edit Tool", id=item.id, webapp="community" ) ),
+                    attach_popup=True,
                     filterable="advanced" ),
+        CategoryColumn( "Category",
+                        key="category",
+                        model_class=model.Category,
+                        link=( lambda item: dict( operation="View Tool", id=item.id, webapp="community" ) ),
+                        attach_popup=False,
+                        filterable="advanced" ),
         # Columns that are valid for filtering but are not visible.
         grids.DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" )
     ]
@@ -46,6 +79,14 @@ class ToolListGrid( grids.Grid ):
         grids.GridAction( "Upload tool", dict( controller='upload', action='upload', type='tool' ) )
     ]
     operations = [
+        grids.GridOperation( "Add to category",
+                             condition=( lambda item: not item.deleted ),
+                             allow_multiple=False,
+                             url_args=dict( controller="common", action="add_category", webapp="community" ) ),
+        grids.GridOperation( "Remove from category",
+                             condition=( lambda item: not item.deleted ),
+                             allow_multiple=False,
+                             url_args=dict( controller="common", action="remove_category", webapp="community" ) ),
         grids.GridOperation( "View versions", condition=( lambda item: not item.deleted ), allow_multiple=False )
     ]
     standard_filters = [
@@ -84,8 +125,9 @@ class ToolBrowserController( BaseController ):
                                                                   action='view_tool',
                                                                   **kwargs ) )
             elif operation == "edit tool":
-                return trans.response.send_redirect( web.url_for( controller='tool_browser',
+                return trans.response.send_redirect( web.url_for( controller='common',
                                                                   action='edit_tool',
+                                                                  cntrller='tool_browser',
                                                                   **kwargs ) )
         # Render the list view
         return self.tool_list_grid( trans, **kwargs )
@@ -96,65 +138,6 @@ class ToolBrowserController( BaseController ):
         status = params.get( 'status', 'done' )
         return trans.fill_template( '/webapps/community/tool/browse_tool.mako', 
                                     tools=tools,
-                                    message=message,
-                                    status=status )
-    @web.expose
-    def view_tool( self, trans, id=None, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        # Get the tool
-        tool = None
-        if id is not None:
-            id = trans.app.security.decode_id( id )
-            tool = trans.sa_session.query( trans.model.Tool ).get( id )
-        if tool is None:
-            return trans.response.send_redirect( web.url_for( controller='tool_browser',
-                                                              action='browse_tools',
-                                                              message='Please select a Tool to edit (the tool ID provided was invalid)',
-                                                              status='error' ) )
-        return trans.fill_template( '/webapps/community/tool/view_tool.mako',
-                                    tool=tool,
-                                    message=message,
-                                    status=status )
-    @web.expose
-    def edit_tool( self, trans, id=None, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        # Get the tool
-        tool = None
-        if id is not None:
-            id = trans.app.security.decode_id( id )
-            tool = trans.sa_session.query( trans.model.Tool ).get( id )
-        if tool is None:
-            return trans.response.send_redirect( web.url_for( controller='tool_browser',
-                                                              action='browse_tools',
-                                                              message='Please select a Tool to edit (the tool ID provided was invalid)',
-                                                              status='error' ) )
-        if tool.user_id != trans.user.id:
-            return trans.response.send_redirect( web.url_for( controller='tool_browser',
-                                                              action='view_tool',
-                                                              message='You are not the owner of this tool and therefore cannot edit it',
-                                                              status='error' ) )
-        if params.save_button and ( params.file_data != '' or params.url != '' ):
-            # TODO: call the upload method in the upload controller.
-            message = 'Uploading new version not implemented'
-            status = 'error'
-        elif params.save_button:
-            tool.user_description = util.restore_text( params.description )
-            categories = []
-            tool.set_categories( trans, util.listify( params.category ) )
-            trans.sa_session.add( tool )
-            trans.sa_session.flush()
-            return trans.response.send_redirect( web.url_for( controller='tool_browser',
-                                                              action='browse_tools',
-                                                              message='Saved categories and description for %s' % tool.name,
-                                                              status='done' ) )
-        categories = trans.sa_session.query( trans.model.Category ).order_by( trans.model.Category.table.c.name ).all()
-        return trans.fill_template( '/webapps/community/tool/edit_tool.mako',
-                                    tool=tool,
-                                    categories=categories,
                                     message=message,
                                     status=status )
     @web.expose

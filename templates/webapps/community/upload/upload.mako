@@ -46,6 +46,21 @@
         <div style="clear: both"></div>
     </div>
     <div class="form-row">
+        <label>Category</label>
+        <div class="form-row-input">
+            <select name="category_id">
+                %for category in categories:
+                    %if category.id in selected_categories:
+                        <option value="${trans.security.encode_id( category.id )}" selected>${category.name}</option>
+                    %else:
+                        <option value="${trans.security.encode_id( category.id )}">${category.name}</option>
+                    %endif
+                %endfor
+            </select>
+        </div>
+        <div style="clear: both"></div>
+    </div>
+    <div class="form-row">
         <label>URL:</label>
         <div class="form-row-input"><input type="text" name="url" style="width: 100%;"/></div>
         <div class="toolParamHelp" style="clear: both;">

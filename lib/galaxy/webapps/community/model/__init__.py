@@ -87,6 +87,12 @@ class GalaxySession( object ):
 
 class Tool( object ):
     file_path = '/tmp'
+    states = Bunch( NEW = 'new',
+                    ERROR = 'error',
+                    DELETED = 'deleted',
+                    WAITING = 'waiting for approval',
+                    APPROVED = 'approved',
+                    REJECTED = 'rejected' )
     def __init__( self, guid=None, tool_id=None, name=None, description=None, user_description=None, category=None, version=None, user_id=None, external_filename=None ):
         self.guid = guid
         self.tool_id = tool_id
@@ -124,15 +130,27 @@ class Tool( object ):
         self.description = datatype_bunch.description
         self.version = datatype_bunch.version
         self.user_id = datatype_bunch.user.id
-    def set_categories( self, trans, categories, delete_existing_assocs=True ):
-        if delete_existing_assocs:
-            for a in self.categories:
-                trans.sa_session.delete( a )
-                trans.sa_session.flush()
-        for category in categories:
-            if not isinstance( category, Category ):
-                category = trans.sa_session.query( Category ).get( int( category ) )
-            self.categories.append( ToolCategoryAssociation( self, category ) )
+    def state( self ):
+        if self.events:
+            return self.events[0].event.state
+        return None
+    def last_comment( self ):
+        if self.events:
+            if self.events[0].comment:
+                return self.events[0].comment
+            else:
+                return ''
+        return 'No comment'
+    def is_new( self ):
+        return self.state() == self.states.NEW
+    def is_error( self ):
+        return self.state() == self.states.ERROR
+    def is_deleted( self ):
+        return self.state() == self.states.DELETED
+    def is_approved( self ):
+        return self.state() == self.states.APPROVED
+    def is_rejected( self ):
+        return self.state() == self.states.REJECTED
     @property
     def extension( self ):
         # if instantiated via a query, this unmapped property won't exist
@@ -162,6 +180,27 @@ class Tool( object ):
     def mimetype( self ):
         return mimetypes.guess_type( self.download_file_name )[0]
 
+class Event( object ):
+    def __init__( self, state=None, comment='' ):
+        self.state = state
+        self.comment = comment
+
+class ToolEventAssociation( object ):
+    def __init__( self, tool=None, event=None ):
+        self.tool = tool
+        self.event = event
+
+class Category( object ):
+    def __init__( self, name=None, description=None, deleted=False ):
+        self.name = name
+        self.description = description
+        self.deleted = deleted
+
+class ToolCategoryAssociation( object ):
+    def __init__( self, tool=None, category=None ):
+        self.tool = tool
+        self.category = category
+
 class Tag ( object ):
     def __init__( self, id=None, type=None, parent_id=None, name=None ):
         self.id = id
@@ -170,12 +209,6 @@ class Tag ( object ):
         self.name = name
     def __str__ ( self ):
         return "Tag(id=%s, type=%i, parent_id=%s, name=%s)" %  ( self.id, self.type, self.parent_id, self.name )
-    
-class Category( object ):
-    def __init__( self, name=None, description=None, deleted=False ):
-        self.name = name
-        self.description = description
-        self.deleted = deleted
 
 class ItemTagAssociation ( object ):
     def __init__( self, id=None, user=None, item_id=None, tag_id=None, user_tname=None, value=None ):
@@ -192,11 +225,6 @@ class ToolTagAssociation ( ItemTagAssociation ):
 
 class ToolAnnotationAssociation( object ):
     pass
-
-class ToolCategoryAssociation( object ):
-    def __init__( self, tool=None, category=None ):
-        self.tool = tool
-        self.category = category
 
 ## ---- Utility methods -------------------------------------------------------
 

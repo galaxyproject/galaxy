@@ -89,7 +89,19 @@ Tool_table = Table( "tool", metadata,
     Column( "version", TrimmedString( 255 ) ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "external_filename" , TEXT ),
-    Column( "deleted", Boolean, default=False ) )
+    Column( "deleted", Boolean, index=True, default=False ) )
+
+Event_table = Table( 'event', metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "state", TrimmedString( 255 ), index=True ),
+    Column( "comment", TEXT ) )
+
+ToolEventAssociation_table = Table( "tool_event_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "tool_id", Integer, ForeignKey( "tool.id" ), index=True ),
+    Column( "event_id", Integer, ForeignKey( "event.id" ), index=True ) )
 
 Category_table = Table( "category", metadata,
     Column( "id", Integer, primary_key=True ),

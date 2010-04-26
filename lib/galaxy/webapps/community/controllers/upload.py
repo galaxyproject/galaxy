@@ -1,9 +1,9 @@
 import sys, os, shutil, logging, urllib2
-
 from galaxy.web.base.controller import *
 from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.model.orm import *
 from galaxy.webapps.community import datatypes
+from common import get_categories, get_category
 
 log = logging.getLogger( __name__ )
 
@@ -17,6 +17,7 @@ class UploadController( BaseController ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
+        category_ids = util.listify( params.get( 'category_id', '' ) )
         uploaded_file = None
         if params.file_data == '' and params.url.strip() == '':
             message = 'No files were entered on the upload form.'
@@ -35,22 +36,36 @@ class UploadController( BaseController ):
         if params.upload_button and uploaded_file:
             datatype = trans.app.datatypes_registry.get_datatype_by_extension( params.upload_type )
             if datatype is None:
-                message = 'An unknown filetype was selected.  This should not be possble, please report the error.'
+                message = 'An unknown file type was selected.  This should not be possible, please report the error.'
                 status = 'error'
             else:
                 try:
+                    # Initialize the tool object
                     meta = datatype.verify( uploaded_file )
                     meta.user = trans.user
                     meta.guid = trans.app.security.get_new_guid()
                     obj = datatype.create_model_object( meta )
                     trans.sa_session.add( obj )
+                    if isinstance( obj, trans.app.model.Tool ):
+                        if category_ids:
+                            for category_id in category_ids:
+                                category = trans.app.model.Category.get( trans.security.decode_id( category_id ) )
+                                # Initialize the tool category
+                                tca = trans.app.model.ToolCategoryAssociation( obj, category )
+                                trans.sa_session.add( tca )
+                        # Initialize the tool event
+                        event = trans.app.model.Event( trans.app.model.Tool.states.NEW )
+                        tea = trans.app.model.ToolEventAssociation( obj, event )
+                        trans.sa_session.add_all( ( event, tea ) )
                     trans.sa_session.flush()
                     try:
                         os.link( uploaded_file.name, obj.file_name )
                     except OSError:
                         shutil.copy( uploaded_file.name, obj.file_name )
-                    return trans.response.send_redirect( web.url_for( controller='tool_browser',
+                    # We're setting cntrller to 'tool_browser' since that is the only controller from which we can upload
+                    return trans.response.send_redirect( web.url_for( controller='common',
                                                                       action='edit_tool',
+                                                                      cntrller='tool_browser',
                                                                       id=trans.app.security.encode_id( obj.id ),
                                                                       message='Uploaded %s' % meta.message,
                                                                       status='done' ) )
@@ -62,8 +77,11 @@ class UploadController( BaseController ):
                     status = 'error'
                 uploaded_file.close()
         selected_upload_type = params.get( 'type', 'tool' )
+        selected_categories = [ trans.security.decode_id( id ) for id in category_ids ]
         return trans.fill_template( '/webapps/community/upload/upload.mako',
                                     message=message,
                                     status=status,
                                     selected_upload_type=selected_upload_type,
-                                    upload_types=trans.app.datatypes_registry.get_datatypes_for_select_list() )
+                                    upload_types=trans.app.datatypes_registry.get_datatypes_for_select_list(),
+                                    selected_categories=selected_categories,
+                                    categories=get_categories( trans ) )
