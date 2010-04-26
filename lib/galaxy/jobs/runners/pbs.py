@@ -378,7 +378,7 @@ class PBSJobRunner( object ):
                 try:
                     # recheck to make sure it wasn't a communication problem
                     self.check_single_job( pbs_server_name, job_id )
-                    log.warning( "(%s/%s) job was not in state check list, but was found with individual state check" )
+                    log.warning( "(%s/%s) job was not in state check list, but was found with individual state check" % ( galaxy_job_id, job_id ) )
                     new_watched.append( pbs_job_state )
                 except:
                     errno, text = pbs.error()
