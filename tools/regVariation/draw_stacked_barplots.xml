@@ -1,0 +1,59 @@
+<tool id="draw_stacked_barplots" name="Draw Stacked Bar Plots" version="1.0.0">
+  <description>for different categories and different criteria</description>
+  
+  <command interpreter="perl">
+  	draw_stacked_barplots.pl $inputFile1 $outputFile1
+  </command>
+
+  <inputs>
+  	<param format="tabular" name="inputFile1" type="data" label="Select the input file"/>
+  </inputs>
+  
+  <outputs>
+    <data format="pdf" name="outputFile1"/>
+  </outputs>
+
+  <tests>
+  	<test>
+  		<param name="inputFile1" value="categories_criteria.tabular" />
+    	<output name="outputFile1" file="statcked_bars_plot.pdf" />     
+  	</test>
+  </tests>
+
+  <help> 
+
+.. class:: infomark
+
+**What it does**
+
+This program draws, in a pdf file, a stacked bars plot for different categories of data and for different criteria. For each criterion a stacked bar is
+drawn, such that the height of each stacked sub-bar represents the number of elements in each category satisfying that criterion.
+
+- The input consists of a TABULAR format file, where the left column represents the names of categories and the other columns are headed by the names of criteria, such that each data value in the file represents the number of elements in a certain category satisfying a certain criterion:
+ 
+- The output is a PDF file containing a stacked bars plot representing the number of elements in each category satisfying each criterion. The drawing is done using R code.  
+
+**Example**
+
+Let us suppose that the input file represent the number of significant motifs in each motif category for each window size::
+
+ 						10bp	20bp	40bp	80bp	160bp	320bp	640bp	1280bp
+	Deletion_Hotspots			2	3	4	4	5	6	7	7
+	Dna_Pol_Pause/Frameshift_Hotspots	8	10	14	17	18	15	19	20
+	Indel_Hotspots				1	1	1	2	1	0	0	0
+	Insertion_Hotspots			0	0	1	2	2	2	2	5
+	Topoisomerase_Cleavage_Sites		2	3	5	4	3	3	4	4
+	Translin_Targets			0	0	2	2	3	3	3	2
+	VDJ_Recombination_Signals		0	0	1	1	1	2	2	2
+	X-like_Sites				4	4	4	5	6	7	7	10
+
+
+Runnig the program will give the following output::
+
+	The stacked bars plot representing the data in the input file.
+
+.. image:: ../static/operation_icons/stacked_bars_plot.png
+
+  </help>  
+  
+</tool>

@@ -1,0 +1,78 @@
+<tool id="categorize_elements_satisfying_criteria" name="Categorize Elements" version="1.0.0">
+  <description>satisfying criteria</description>
+  
+  <command interpreter="perl">
+  	categorize_elements_satisfying_criteria.pl $inputFile1 $inputFile2 $outputFile1
+  </command>
+
+  <inputs>
+  	<param format="tabular" name="inputFile1" type="data" label="Select file containing categories and their elements"/>
+  	<param format="tabular" name="inputFile2" type="data" label="Select file containing criteria and elements data"/>
+  </inputs>
+  
+  <outputs>
+    <data format="tabular" name="outputFile1"/>
+  </outputs>
+
+  <tests>
+  	<test>
+  		<param name="inputFile1" value="categories.tabular" ftype="tabular" />
+  		<param name="inputFile2" value="criteria_elements_data.tabular" ftype="tabular" />
+    	<output name="outputFile1" file="categorized_elements.tabular" />
+  	</test>
+  </tests>
+  
+  	
+  <help> 
+
+.. class:: infomark
+
+**What it does**
+
+The program takes as input a set of categories, such that each category contains many elements. It also takes a table relating elements with criteria, such that each element is assigned a number representing the number of times the element satisfies a certain criterion. 
+
+- The first input is a TABULAR format file, such that the left column represents the names of categories and, all other columns represent the names of elements in each category.
+- The second input is a TABULAR format file relating elements with criteria, such that the first line represents the names of criteria and the left column represents the names of elements.
+- The output is a TABULAR format file relating catergories with criteria, such that each categoy is assigned a number representing the total number of times its elements satisfies a certain criterion.. Each category is assigned as many numbers as criteria.
+
+
+**Example**
+
+Let the first input file be a group of motif categories as follows::
+
+	Deletion_Hotspots		deletionHoptspot1		deletionHoptspot2		deletionHoptspot3	
+	Dna_Pol_Pause_Frameshift	dnaPolPauseFrameshift1		dnaPolPauseFrameshift2		dnaPolPauseFrameshift3		dnaPolPauseFrameshift4
+	Indel_Hotspots			indelHotspot1			
+	Insertion_Hotspots		insertionHotspot1		insertionHotspot2		
+	Topoisomerase_Cleavage_Sites	topoisomeraseCleavageSite1	topoisomeraseCleavageSite2	topoisomeraseCleavageSite3	
+
+
+And let the second input file represent the number of times each motif occurs in a certain window size of indel flanking regions, as follows::
+
+					10bp	20bp	40bp	
+	deletionHoptspot1		1	1	2
+	deletionHoptspot2		1	1	1
+	deletionHoptspot3		0	0	0
+	dnaPolPauseFrameshift1		1	1	1
+	dnaPolPauseFrameshift2		0	2	1
+	dnaPolPauseFrameshift3		0	0	0
+	dnaPolPauseFrameshift4		0	1	2
+	indelHotspot1			0	0	0
+	insertionHotspot1		0	0	1
+	insertionHotspot2		1	1	1
+	topoisomeraseCleavageSite1	1	1	1
+	topoisomeraseCleavageSite2	1	2	1
+	topoisomeraseCleavageSite3	0	0	2
+
+Running the program will give the total number of times the motifs of each category occur in every window size of indel flanking regions::
+
+					10bp	20bp	40bp
+	Deletion_Hotspots		2	2	3
+	Dna_Pol_Pause_Frameshift	1	4	4
+	Indel_Hotspots			0	0	0
+	Insertion_Hotspots		1	1	2
+	Topoisomerase_Cleavage_Sites	2	3	4
+
+    </help> 
+    
+</tool>

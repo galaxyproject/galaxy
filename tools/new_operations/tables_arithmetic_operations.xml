@@ -1,0 +1,105 @@
+<tool id="tables_arithmetic_operations" name="Arithmetic Operations " version="1.0.0">
+  <description>on tables</description>
+  
+  <command interpreter="perl">
+  	tables_arithmetic_operations.pl $inputFile1 $inputFile2 $inputArithmeticOperation3 $outputFile1
+  </command>
+
+  <inputs>
+  	<param format="tabular" name="inputFile1" type="data" label="Select the first input tabular file"/>
+  	<param format="tabular" name="inputFile2" type="data" label="Select the second input tabular file"/>
+  	
+    <param name="inputArithmeticOperation3" type="select" label="Choose the arithmetic operation:">
+    	<option value="Addition">Addition</option>
+      	<option value="Subtraction">Subtraction</option>
+      	<option value="Multiplication">Multiplication</option>
+      	<option value="Division">Division</option>
+    </param>
+  </inputs>
+  
+  <outputs>
+    <data format="tabular" name="outputFile1"/>
+  </outputs>
+  
+  <tests>
+  	<test>
+  		<param name="inputFile1" value="numericalTable1.tabular" />
+  		<param name="inputFile2" value="numericalTable1.tabular" />
+    	<param name="inputArithmeticOperation3" value="Addition" />
+    	<output name="outputFile1" file="table_addition_result.tabular" />
+  	</test>
+  	
+  	<test>
+  		<param name="inputFile1" value="numericalTable1.tabular" />
+  		<param name="inputFile2" value="numericalTable1.tabular" />
+    	<param name="inputArithmeticOperation3" value="Subtraction" />
+    	<output name="outputFile1" file="table_subtraction_result.tabular" />
+  	</test>
+  	
+  	<test>
+  		<param name="inputFile1" value="numericalTable1.tabular" />
+  		<param name="inputFile2" value="numericalTable1.tabular" />
+    	<param name="inputArithmeticOperation3" value="Multiplication" />
+    	<output name="outputFile1" file="table_multiplication_result.tabular" />
+  	</test>
+  	
+  	<test>
+  		<param name="inputFile1" value="numericalTable1.tabular" />
+  		<param name="inputFile2" value="numericalTable1.tabular" />
+    	<param name="inputArithmeticOperation3" value="Division" />
+    	<output name="outputFile1" file="table_division_result.tabular" />
+  	</test>
+  	
+  </tests>
+  
+  
+  <help> 
+
+.. class:: infomark
+
+**What it does**
+
+This program implements arithmetic operations on tabular files data. The program takes three inputs:
+
+- The first input is a TABULAR format file containing numbers only.
+- The second input is a TABULAR format file containing numbers only.
+- The third input is an arithmetic operation: +, -, x, or / for addition, subtraction, multiplication, or division, respectively. 
+- The output file is a TABULAR format file containing the result of implementing the arithmetic operation on both input files.
+
+
+Notes: 
+
+- The two files must have the same number of columns and the same number of rows.
+- The output file has the same number of columns and the same number of rows as each of the two input files.
+- In case of division, none of the values in the second input file could be 0, otherwise the program will stop and report an error.
+
+**Example**
+
+Let us have the first input file as follows::
+
+	5	4	0
+	10	11	12
+	1	3	1
+	1	2	1
+	2	0	4
+	
+And the second input file as follows::
+
+	5	4	4
+	2	5	8
+	1	2	1
+	3	2	5
+	2	4	4
+
+Running the program and choosing "Addition" as an arithmetic operation will give the following output::
+
+	10	8	4
+	12	16	20
+	2	5	2
+	4	4	6
+	4	4	8
+
+
+  </help>  
+  
+</tool>

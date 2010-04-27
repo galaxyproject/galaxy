@@ -1,0 +1,66 @@
+<tool id="delete_overlapping_indels" name="Delete Overlapping Indels" version="1.0.0">
+  <description>from a chromosome indels file</description>
+  
+  <command interpreter="perl">
+  	delete_overlapping_indels.pl $inputFile1 $inputIndelStartColumnNumber2 $inputIndelEndColumnNumber3 $outputFile1
+  </command>
+
+  <inputs>
+  	<param format="tabular" name="inputFile1" type="data" label="Select indels file"/>
+  	<param type="data_column" name="inputIndelStartColumnNumber2" data_ref="inputFile1" accept_default="true" label="Choose the indel start coordinate column number" />
+    <param type="data_column" name="inputIndelEndColumnNumber3" data_ref="inputFile1" accept_default="true" label="Choose the the indel end coordinate column number" />
+  </inputs>
+  
+  <outputs>
+    <data format="tabular" name="outputFile1"/>
+  </outputs>
+  
+  <tests>
+  	<test>
+  		<param name="inputFile1" value="indels1.tabular" />
+    	<param name="inputIndelStartColumnNumber2" value="5" />
+    	<param name="inputIndelEndColumnNumber3" value="6" />
+    	<output name="outputFile1" file="non_overlapping_indels1.tabular" />     
+  	</test>
+  </tests>
+  
+  <help> 
+
+.. class:: infomark
+
+**What it does**
+
+This program detects overlapping indels in a chromosome and keeps all non-overlapping indels. As for overlapping indels, the first encountered one is kept and all others are removed. 
+It requires three inputs: 
+
+- The first input is a TABULAR format file containing coordinates of indels in blocks extracted from multi-alignment.
+- The second input is an integer number representing the number of the column where indel start coordinates are stored in the input file.
+- The third input is an integer number representing the number of the column where indel end coordinates are stored in the input file.
+- The output is a TABULAR format file containing all non-overlapping indels in the input file, and the first encountered indel of overlapping ones.
+
+Note: The number of the first column is 1.
+
+
+**Example**
+
+Let us have the following insertions in the human genome. The start and end coordinates of insertions are on columns 5 and 6 respectively::
+
+	3	hg18.chr22_insert	3	hg18.chr22	14508610	14508612	3924	-	panTro2.chr2b	132518950	132518951	3910	+	rheMac2.chr17	14311798	14311799	3896	+
+	7	hg18.chr22_insert	13	hg18.chr22	14513678	14513690	348	-	panTro2.chr2b	132517876	132517877	321	+	rheMac2.chr17	14274462	14274463	337	+
+	7	hg18.chr22_insert	6	hg18.chr22	14513688	14513699	348	-	panTro2.chr2b	132517879	132517880	321	+	rheMac2.chr17	14274465	14274466	337	+
+	25	hg18.chr22_insert	9	hg18.chr22	14529501	14529509	385	-	panTro2.chr22	14528775	14528776	376	-	rheMac2.chr9	42869449	42869450	375	-
+	36	hg18.chr22_insert	4	hg18.chr22	14566316	14566319	540	-	panTro2.chr2b	132492077	132492078	533	+	rheMac2.chr10	59230438	59230439	533	-
+	40	hg18.chr22_insert	7	hg18.chr22	14508610	14508616	2337	-	panTro2.chr2b	132487750	132487751	2313	+	rheMac2.chr10	59128305	59128306	2332	+
+	41	hg18.chr22_insert	4	hg18.chr22	14571556	14571559	2483	-	panTro2.chr2b	132485878	132485879	2481	+	rheMac2.chr10	59126094	59126095	2508	+
+
+By removing the overlapping indels which, we get::
+
+	3	hg18.chr22_insert	3	hg18.chr22	14508610	14508612	3924	-	panTro2.chr2b	132518950	132518951	3910	+	rheMac2.chr17	14311798	14311799	3896	+
+	7	hg18.chr22_insert	13	hg18.chr22	14513678	14513690	348	-	panTro2.chr2b	132517876	132517877	321	+	rheMac2.chr17	14274462	14274463	337	+
+	25	hg18.chr22_insert	9	hg18.chr22	14529501	14529509	385	-	panTro2.chr22	14528775	14528776	376	-	rheMac2.chr9	42869449	42869450	375	-
+	36	hg18.chr22_insert	4	hg18.chr22	14566316	14566319	540	-	panTro2.chr2b	132492077	132492078	533	+	rheMac2.chr10	59230438	59230439	533	-
+	41	hg18.chr22_insert	4	hg18.chr22	14571556	14571559	2483	-	panTro2.chr2b	132485878	132485879	2481	+	rheMac2.chr10	59126094	59126095	2508	+
+
+  </help>  
+  
+</tool>

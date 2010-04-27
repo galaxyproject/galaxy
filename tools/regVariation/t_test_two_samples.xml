@@ -1,0 +1,160 @@
+<tool id="t_test_two_samples" name="T Test for Two Samples" version="1.0.0">
+  <description></description>
+  
+  <command interpreter="perl">
+  	t_test_two_samples.pl $inputFile1 $inputFile2 $inputTestSidedness3 $inputStandardDeviationEquality4 $outputFile1
+  </command>
+
+  <inputs>
+  	<param format="tabular" name="inputFile1" type="data" label="Select the first sample tabular file"/>
+  	<param format="tabular" name="inputFile2" type="data" label="Select the second sample tabular file"/>
+  	
+    <param name="inputTestSidedness3" type="select" label="Choose the test sidedness:">
+    	<option value="two-sided">Two-sided</option>
+      	<option value="one-sided:_m1_less_than_m2">One-sided: m1 less than m2</option>
+      	<option value="one-sided:_m1_greater_than_m2">One-sided: m1 greater than m2</option>
+    </param>
+    
+    <param name="inputStandardDeviationEquality4" type="select" label="Choose the standard deviation equality status of the two populations:">
+    	<option value="equal">Equal</option>
+      	<option value="unequal">Unequal</option>
+    </param>
+  </inputs>
+  
+  <outputs>
+    <data format="text" name="outputFile1"/>
+  </outputs>
+  
+  <tests>
+  	<test>
+  		<param name="inputFile1" value="sample1.tabular" ftype="tabular" />
+  		<param name="inputFile2" value="sample2.tabular" ftype="tabular" />
+    	<param name="inputTestSidedness3" value="Two-sided" />
+    	<param name="inputStandardDeviationEquality4" value="Equal" />
+    	<output name="outputFile1" file="t_test_result1.text" />
+  	</test>
+  	
+  	<test>
+  		<param name="inputFile1" value="sample1.tabular" ftype="tabular" />
+  		<param name="inputFile2" value="sample2.tabular" ftype="tabular" />
+    	<param name="inputTestSidedness3" value="Two-sided" />
+    	<param name="inputStandardDeviationEquality4" value="Unequal" />
+    	<output name="outputFile1" file="t_test_result2.text" />
+  	</test>
+  	
+  	<test>
+  		<param name="inputFile1" value="sample1.tabular" ftype="tabular" />
+  		<param name="inputFile2" value="sample2.tabular" ftype="tabular" />
+    	<param name="inputTestSidedness3" value="One-sided: m1 less than m2" />
+    	<param name="inputStandardDeviationEquality4" value="Equal" />
+    	<output name="outputFile1" file="t_test_result3.text" />
+  	</test>
+  	
+  	<test>
+  		<param name="inputFile1" value="sample1.tabular" ftype="tabular" />
+  		<param name="inputFile2" value="sample2.tabular" ftype="tabular" />
+    	<param name="inputTestSidedness3" value="One-sided: m1 less than m2" />
+    	<param name="inputStandardDeviationEquality4" value="Unequal" />
+    	<output name="outputFile1" file="t_test_result4.text" />
+  	</test>
+  	
+  	<test>
+  		<param name="inputFile1" value="sample1.tabular" ftype="tabular" />
+  		<param name="inputFile2" value="sample2.tabular" ftype="tabular"/>
+    	<param name="inputTestSidedness3" value="One-sided: m1 greater than m2" />
+    	<param name="inputStandardDeviationEquality4" value="Equal" />
+    	<output name="outputFile1" file="t_test_result5.text" />
+  	</test>
+  	
+  	<test>
+  		<param name="inputFile1" value="sample1.tabular" ftype="tabular" />
+  		<param name="inputFile2" value="sample2.tabular" ftype="tabular" />
+    	<param name="inputTestSidedness3" value="One-sided: m1 greater than m2" />
+    	<param name="inputStandardDeviationEquality4" value="Unequal" />
+    	<output name="outputFile1" file="t_test_result6.text" />
+  	</test>
+  </tests>
+
+
+  <help> 
+
+.. class:: infomark
+
+**What it does**
+
+This program implements the non-pooled t-test for two samples where the alternative hypothesis is two-sided or one-sided. The program takes four inputs:
+
+- The first input file is a TABULAR format file representing the first sample and consisting of one column only.
+- The second input file is a TABULAR format file representing the first sample and consisting of one column only.
+- The third input is the sidedness of the t-test: either two-sided or, one-sided with m1 less than m2 or, one-sided with m1 greater than m2. 
+- The fourth input is the equality status of the standard deviations of both populations.
+- The output file is a TXT file representing the result of the two-sample t-test.
+
+
+**Example**
+
+Let us have the first input file representing the first sample as follows::
+
+	5
+	4
+	8
+	6
+	7
+	2
+	1
+	1
+	0
+	6
+	4
+	5
+	7
+	5
+	3
+	2
+	5
+	8
+	7
+	6
+	4
+
+And the second input file representing the second sample as follows::
+
+	2
+	3
+	5
+	1
+	2
+	7
+	5
+	4
+	3
+	2
+	7
+	6
+	0
+	8
+	4
+	6
+	9
+	2
+	4
+	5
+	6
+
+Runnig the program and choosing "Two-sided" and "Equal" as parameters will give the following output::
+
+	Two Sample t-test
+
+	data:  sample1 and sample2 
+	t = -0.3247, df = 40, p-value = 0.7471
+	alternative hypothesis: true difference in means is not equal to 0 
+	95 percent confidence interval:
+ 	-1.720030  1.243839 
+	sample estimates:
+	mean of x mean of y 
+ 	4.333333  4.571429 
+
+
+  </help>  
+  
+</tool>

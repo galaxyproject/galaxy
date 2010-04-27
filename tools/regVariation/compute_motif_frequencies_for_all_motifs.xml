@@ -1,0 +1,72 @@
+<tool id="compute_motif_frequencies_for_all_motifs" name="Compute Motif Frequencies For All Motifs" version="1.0.0">
+  <description>motif by motif</description>
+  
+  <command interpreter="perl">
+  	compute_motif_frequencies_for_all_motifs.pl $inputFile1 $inputFile2 $inputWindowSize3 $outputFile1
+  </command>
+
+  <inputs>
+  	<param format="tabular" name="inputFile1" type="data" label="Select the motifs file"/>
+  	<param format="tabular" name="inputFile2" type="data" label="Select the indel flanking sequences windows file"/>
+    <param type="integer" name="inputWindowSize3" size="6" value="0" label="What is the number of 10bp windows in which the motif frequencies will be computed?" help="'0' = one window only"/>
+  </inputs>
+  
+  <outputs>
+    <data format="tabular" name="outputFile1"/>
+  </outputs>
+
+  <tests>
+  	<test>
+  		<param name="inputFile1" value="motifs2.tabular" />
+  		<param name="inputFile2" value="flankingSequencesWindows10_2.tabular" />
+    	<param name="inputWindowSize3" value="0" />
+    	<output name="outputFile1" file="motifFrequencies_every_indels0.tabular" />
+  	</test>
+  	
+  	<test>
+  		<param name="inputFile1" value="motifs2.tabular" />
+  		<param name="inputFile2" value="flankingSequencesWindows10_2.tabular" />
+    	<param name="inputWindowSize3" value="4" />
+    	<output name="outputFile1" file="motifFrequencies_every_indels4.tabular" /> 
+  	</test>
+  </tests>
+
+  <help> 
+
+.. class:: infomark
+
+**What it does**
+
+This program computes the frequencies of each motif at a window size, determined by the user, in both upstream and downstream sequences flanking indels in all chromosomes.
+
+- The first input is a TABULAR format file containing the motif names and sequences, one line per motif, such that the file consists of two columns: 
+
+ - The left column represents the motif names
+ - The right column represents the motif sequence, as follows::
+ 
+ 	dnaPolPauseFrameshift1	GAG
+	dnaPolPauseFrameshift2	ACG
+	xSites1			CCG
+
+- The second input is a TABULAR format file representing the windows of both upstream  and downstream flanking sequences. It consists of multiple left columns representing the windows of the upstream flanking sequences, followed by one column representing the indels, then followed by multiple right columns representing the windows of the downstream flanking sequences, as follows::
+
+	cgaggtcagg	agatcgagac	catcctggct	aacatggtga	aatcccgtct	ctactaaaaa	indel	aaatttatat	ttataaacaa	ttttaataca	cctatgttta	ttatacattt
+	GCCAGTTTAT	GGTCTAACAA	GGAGAGAAAC	AGGGGGCTGA	AGGGGTTTCT	TAACCTCCAG	indel	TTCCGGGCTC	TGTCCCTAAC	CCCCAGCTAG	GTAAGTGGCA	AAGCACTTCT
+	CAGTGGGACC	AAGCACTGAA	CCACTTTGGG	GAGAATCTCA	CACTGGGGCC	CTCTGACACC	indel	tatatatttt	tttttttttt	tttttttttt	tttttttttg	agatggtgtc
+	AGAGCAGCAG	CACCCACTTT	TGCAGTGTGT	GACGTTGGTG	GAGCCATCGA	AGTCTGTGCT	indel	GAGCCCTCCC	CAGTGCTCCG	AGGAGCTGCT	GTTCCCCCTG	GAGCTCAGAA
+
+- The third input is an integer number representing the number of windows to be considered starting from the indel and leftward for the upstream flanking sequence and, starting from the indel and rightward for the downstream flanking sequence.
+
+- The output is a TABULAR format file consisting of three columns: 
+
+ - The left column represents the motif name
+ - The middle column represents the motif frequency in the specified windows of the upstream sequence flanking an indel
+ - The right column represents the motif frequency in the specified windows of the downstream sequence flanking an indel
+ 
+ There is line per indel in the output file, such that the total number of lines in the output file = number of motifs x number of indels.
+
+Note: The number of windows entered by the user must be a positive integer >= 1. if negative integer or 0 is entered by the user, the program will consider it as 1.
+	
+  </help>  
+  
+</tool>

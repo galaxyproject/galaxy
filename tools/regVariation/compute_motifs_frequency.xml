@@ -1,0 +1,109 @@
+<tool id="compute_motifs_frequency" name="Compute Motif Frequencies" version="1.0.0">
+  <description>in indel falnking regions</description>
+  
+  
+  <command interpreter="perl">
+    compute_motifs_frequency.pl $inputFile1 $inputFile2 $inputNumber3 $outputFile1 $outputFile2
+  </command>
+  
+  
+  <inputs>
+ 
+    <param format="tabular" name="inputFile1" type="data" label="Select motifs file"/>
+
+    <param format="tabular" name="inputFile2" type="data" label="Select indel flanking regions file from your history"/>
+      
+    <param type="integer" name="inputNumber3" size="5" value="0" label="What is the size of each window?" help="'0' = all the upstream flanking sequence will be one window only, and the same for the downstream flanking sequence."/>
+        
+  </inputs>
+  
+  
+  <outputs>
+    <data format="tabular" name="outputFile1"/>
+    <data format="tabular" name="outputFile2"/>
+  </outputs>
+  
+  <tests>
+  	<test>
+  		<param name="inputFile1" value="motifs1.tabular" />
+  		<param name="inputFile2" value="indelsFlankingSequences1.tabular" />
+    	<param name="inputNumber3" value="0" />
+    	<output name="outputFile1" file="flankingSequencesWindows0.tabular" />
+    	<output name="outputFile2" file="motifFrequencies0.tabular" />    
+  	</test>
+  	
+  	<test>
+  		<param name="inputFile1" value="motifs1.tabular" />
+  		<param name="inputFile2" value="indelsFlankingSequences1.tabular" />
+    	<param name="inputNumber3" value="10" />
+    	<output name="outputFile1" file="flankingSequencesWindows10.tabular" /> 
+    	<output name="outputFile2" file="motifFrequencies10.tabular" />    
+  	</test>
+  </tests>
+
+   
+   <help>
+
+.. class:: infomark
+
+**What it does**
+
+This program computes the frequency of motifs in the flanking regions of indels found in a chromosome or a genome.
+Each indel has an upstream flanking sequence and a downstream flanking one. Each of the upstream and downstream flanking 
+sequences will be divided into a certain number of windows according to the window size input by the user. 
+The frequency of a motif in a certain window in one of the two flanking sequences is the total sum of occurrences of 
+that motif in that window of that flanking sequence over all indels. The indel flanking regions file will be taken
+from your history or it will be uploaded, whereas the motifs file should be uploaded.
+
+- The first input file is the motifs file and it is a tabular file consisting of two columns:
+
+ - the first column represents the motif name
+ - the second column represents the motif sequence, as follows::
+  
+	dnaPolPauseFrameshift1	GAG
+	dnaPolPauseFrameshift2	ACG
+	xSites1			CCG
+
+- The second input file is the indels flanking regions file and it is a tabular file consisting of five columns:
+
+ - the first column represents the indel start coordinate
+ - the second column represents the indel end coordinate
+ - the third column represents the indel length
+ - the fourth column represents the upstream flanking sequence
+ - the fifth column represents the upstream flanking sequence, as follows::
+  
+  	16694766   16694768   3   GTGGGTCCTGCCCAGCCTCTGCCTCAGAGGGAAGAGTAGAGAACTGGG   AGAGCAGGTCCTTAGGGAGCCCGAGGAAGTCCCTGACGCCAGCTGTTCTCGCGGACGAA
+	25169542   25169545   4   caagcccacaagccttcagaccatagcaCGGGCTCCAGAGGTGTGAGG   CAGGTCAGGTGCTTTAGAAGTCAAAAACTCTCAGTAAGGCAAATCACCCCCTATCTCCT
+	41929580   41929585   6   ggctgtcgtatggaatctggggctcaggactctgtcccatttctctaa   accattctgcTTCAACCCAGACACTGACTGTTTTCCAAATTTACTTGTTTGTTTGTTTT
+
+
+-----
+
+.. class:: warningmark
+
+**Notes**
+
+- The lengths of the upstream flanking sequences must be equal for all indels.
+- The lengths of the downstream flanking sequences must be equal for all indels.
+- If the length of the upstream flanking sequence L is not an integer multiple of the window size S, in other words if L/S = m + r where m is the result of division and r is the remainder, then the upstream flanking sequence will be divided into m windows only starting from the indel, and the rest of the sequence will not be considered. The same rule applies to the downstream flanking sequence. 
+
+-----
+
+The **output** of this program is two files:
+
+- The first output file is a tabular file and represents the windows of both upstream  and downstream flanking sequences. It consists of multiple left columns representing the windows of the upstream flanking sequence, followed by one column representing the indels, then followed by multiple right columns representing the windows of the downstream flanking sequence, as follows::
+
+	cgaggtcagg	agatcgagac	catcctggct	aacatggtga	aatcccgtct	ctactaaaaa	indel	aaatttatat	ttataaacaa	ttttaataca	cctatgttta	ttatacattt
+	GCCAGTTTAT	GGTCTAACAA	GGAGAGAAAC	AGGGGGCTGA	AGGGGTTTCT	TAACCTCCAG	indel	TTCCGGGCTC	TGTCCCTAAC	CCCCAGCTAG	GTAAGTGGCA	AAGCACTTCT
+	CAGTGGGACC	AAGCACTGAA	CCACTTTGGG	GAGAATCTCA	CACTGGGGCC	CTCTGACACC	indel	tatatatttt	tttttttttt	tttttttttt	tttttttttg	agatggtgtc
+	AGAGCAGCAG	CACCCACTTT	TGCAGTGTGT	GACGTTGGTG	GAGCCATCGA	AGTCTGTGCT	indel	GAGCCCTCCC	CAGTGCTCCG	AGGAGCTGCT	GTTCCCCCTG	GAGCTCAGAA
+
+- The second output file is a tabular file and represents the motif frequencies in every window of every flanking sequence. The first column on the left represents the names of motifs. The other columns represent the frequencies of motifs in the windows that correspond to the ones in the first output file, as follows::
+
+	dnaPolPauseFrameshift1	2	3	1	0	1	2	indel	0	2	2	1	3
+	dnaPolPauseFrameshift2	2	3	1	0	1	2	indel	0	2	2	1	3
+	xSites1			3	2	0	1	1	2	indel	1	1	3	2	3
+	
+  </help>
+   
+</tool>

@@ -51,6 +51,7 @@
     <tool file="filters/tailWrapper.xml" />
     <tool file="filters/trimmer.xml" />
     <tool file="stats/dna_filtering.xml" />
+    <tool file="new_operations/tables_arithmetic_operations.xml" />
   </section>
   <section name="Filter and Sort" id="filter">
     <tool file="stats/filtering.xml" />
@@ -125,6 +126,8 @@
     <tool file="stats/gsummary.xml" />
     <tool file="filters/uniq.xml" /> 
     <tool file="stats/cor.xml" /> 
+    <tool file="regVariation/t_test_two_samples.xml" />
+    <tool file="regVariation/compute_q_values.xml" />
   </section>
   <section name="Graph/Display Data" id="plots">
     <tool file="plotting/histogram2.xml" />
@@ -148,6 +151,11 @@
     <tool file="regVariation/substitution_rates.xml" />
     <tool file="regVariation/microsats_alignment_level.xml" />
     <tool file="regVariation/microsats_mutability.xml" />
+    <tool file="regVariation/delete_overlapping_indels.xml" />
+    <tool file="regVariation/compute_motifs_frequency.xml" />
+    <tool file="regVariation/compute_motif_frequencies_for_all_motifs.xml" />
+    <tool file="regVariation/categorize_elements_satisfying_criteria.xml" />s
+    <tool file="regVariation/draw_stacked_barplots.xml" />
   </section>
   <section name="Multiple regression" id="multReg">
     <tool file="regVariation/linear_regression.xml" />

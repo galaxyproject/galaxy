@@ -1,0 +1,155 @@
+<tool id="compute_q_values" name="Compute q-values" version="1.0.0">
+  <description>based on multiple simultaneous tests p-values</description>
+  
+  <command interpreter="perl">
+  	compute_q_values.pl $inputFile1 $inputLambda2 $inputPI0_method3 $inputFDR_level4 $inputRobust5 $outputFile1 $outputFile2
+  </command>
+
+  <inputs>
+  	<param format="tabular" name="inputFile1" type="data" label="Select the p-values file"/>
+  	
+  	<param type="text" name="inputLambda2" size="100" value="sequence_from_0_to_0.95_increment_0.05" label="What is the lambda value?" help="Either choose the default sequence or one deciaml value between 0 and 1"/>
+  	
+  	<param name="inputPI0_method3" type="select" label="Choose the PI method:">
+    	<option value="smoother">smoother</option>
+      	<option value="bootstrap">bootstrap</option>
+    </param>
+    
+    <param type="float" name="inputFDR_level4" size="5" value="" label="What is the FDR level?" help="The FDR level must be between 0 and 1"/>
+    
+    <param name="inputRobust5" type="select" label="Do you want to make the estimate more robust:" help="Choose TRUE for small p-values">
+  		<option value="FALSE">FALSE</option>
+    	<option value="TRUE">TRUE</option>
+    </param>
+  </inputs>
+  
+  <outputs>
+    <data format="tabular" name="outputFile1"/>
+    <data format="pdf" name="outputFile2"/>
+  </outputs>
+
+  <tests>
+  	<test>
+  		<param name="inputFile1" value="p_values.tabular" ftype="tabular" />
+    	<param name="inputLambda2" value="sequence_from_0_to_0.95_increment_0.05" />
+    	<param name="inputPI0_method3" value="smoother" />
+    	<param name="inputFDR_level4" value="0.05" />
+    	<param name="inputRobust5" value="FALSE" />
+    	<output name="outputFile1" file="q_values.tabular" />
+    	<output name="outputFile1" file="p_q_hists_Q_plots.pdf" />
+  		</test>
+  </tests>
+  	
+  <help> 
+
+.. class:: infomark
+
+**What it does**
+
+This program computes the q-values based on the p-values of multiple simultaneous tests. The q-valules are computed using a specific R package, created by John Storey and Alan Dabney, called "qvalue". The program takes five inputs:
+ 
+- The first input is a TABULAR format file consisting of one column only that represents the p-values of multiple simultaneous tests, one line for every p-value. 
+- The second input is the lambda parameter. The user can choose either the default: seq(0, 0.95, 0.05) or a decimal number between 0.0 and 1.0.
+- The third input is PI method which is either "smoother" or "bootstrap".
+- The fourth input is the FDR (false discovery rate) level which is a decimal number between 0.0 and 1.0.
+- The fifth input is either TRUE or FALSE for the estimate robustness. 
+
+The program gives two outputs:
+
+- The first output is a TABULAR format file consisting of three columns: 
+
+ - the left column represents the p-values of multiple simultaneous tests, one line for every p-value
+ - the middle column represents the q-values corresponding to the p-values
+ - the third column represent the significance values, either 1 for significant or 0 for non-significant 
+
+- The second output is a PDF format file consisting of three pages: 
+
+ - the first page represents the p-values histogram
+ - the second page represents the q-values histogram
+ - the third page represents the four Q-plots as introduced in the "qvalue" package manual.
+  
+
+**Example**
+
+Let us have the first input file of p-values as follows::
+
+	0.140627492
+	0.432249886
+	0.122120877
+	0.142010182
+	0.012909858
+	0.000142807
+	0.039841941
+	0.035173303
+	0.011340057
+	1.01E-05
+	0.212738282
+	0.091256284
+	0.547375415
+	0.189589833
+	6.18E-12
+	0.001235875
+	1.10E-05
+	9.75E-07
+	2.13E-18
+	2.54E-16
+	1.20E-19
+	9.76E-14
+	0.359181534
+	0.03661672
+	0.400459987
+	0.387436466
+	0.342075061
+	0.904129283
+	0.031152635
+
+Runnig the program will give the following output::
+
+	pi0: 0.140311054	
+
+	FDR level: 0.05
+
+	p-value		q-value		significant
+	0.1406275	0.02889212	1
+	0.4322499	0.06514199	0
+	0.1221209	0.02760624	1
+	0.1420102	0.02889212	1
+	0.01290986	0.00437754	1
+	0.000142807	6.46E-05	1
+	0.03984194	0.01013235	1
+	0.0351733	0.009932946	1
+	0.01134006	0.004194811	1
+	1.01E-05	5.59E-06	1
+	0.2127383	0.03934711	1
+	0.09125628	0.02184257	1
+	0.5473754	0.07954578	0
+	0.1895898	0.03673547	1
+	6.18E-12	5.03E-12	1
+	0.001235875	0.00050288	1
+	1.10E-05	5.59E-06	1
+	9.75E-07	6.61E-07	1
+	2.13E-18	4.33E-18	1
+	2.54E-16	3.45E-16	1
+	1.20E-19	4.88E-19	1
+	9.76E-14	9.93E-14	1
+	0.3591815	0.06089654	0
+	0.03661672	0.009932946	1
+	0.40046	0.0626723	0
+	0.3874365	0.0626723	0
+	0.3420751	0.06051785	0
+	0.9041293	0.1268593	0
+	0.03115264	0.009750824	1
+	
+	
+.. image:: ../static/operation_icons/p_hist.png
+
+
+.. image:: ../static/operation_icons/q_hist.png
+
+
+.. image:: ../static/operation_icons/Q_plots.png
+
+
+  </help>  
+  
+</tool>
