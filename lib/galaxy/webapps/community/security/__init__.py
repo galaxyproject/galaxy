@@ -163,6 +163,11 @@ class CommunityRBACAgent( RBACAgent ):
             self.sa_session.refresh( tool )
             for category in categories:
                 self.associate_components( tool=tool, category=category )
+    def can_edit_item( self, user, item ):
+        # We currently assume the current user can edit the item if they are the owner (i.e., they
+        # uploaded the item), and the item is in a NEW state.
+        return user and user==item.user and item.is_new()
+
 def get_permitted_actions( filter=None ):
     '''Utility method to return a subset of RBACAgent's permitted actions'''
     if filter is None:

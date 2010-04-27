@@ -48,8 +48,11 @@ class CommunityCommon( BaseController ):
                                                               message='Select a tool to view',
                                                               status='error' ) )
         tool = get_tool( trans, id )
+        categories = [ tca.category for tca in tool.categories ]
         return trans.fill_template( '/webapps/community/tool/view_tool.mako',
                                     tool=tool,
+                                    categories=categories,
+                                    cntrller=cntrller,
                                     message=message,
                                     status=status )
     @web.expose

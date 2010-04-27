@@ -399,7 +399,7 @@ class ToolListGrid( grids.Grid ):
         NameColumn( "Name",
                     key="name",
                     model_class=model.Tool,
-                    link=( lambda item: dict( operation="View Tool", id=item.id, webapp="community" ) ),
+                    link=( lambda item: dict( operation="View Tool", id=item.id, cntrller='admin', webapp="community" ) ),
                     attach_popup=True,
                     filterable="advanced" ),
         CategoryColumn( "Category",
@@ -461,7 +461,8 @@ class AdminCommunity( BaseController, Admin ):
             operation = kwargs['operation'].lower()
             if operation == "browse":
                 return trans.response.send_redirect( web.url_for( controller='tool',
-                                                                  action='browse_tool',
+                                                                  action='browse_tools',
+                                                                  cntrller='admin',
                                                                   **kwargs ) )
             elif operation == "edit tool":
                 return trans.response.send_redirect( web.url_for( controller='common',

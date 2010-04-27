@@ -1,5 +1,12 @@
 <%namespace file="/message.mako" import="render_msg" />
 
+<%
+    from galaxy.web.framework.helpers import time_ago
+    
+    if cntrller in [ 'tool' ]:
+        can_edit = trans.app.security_agent.can_edit_item( trans.user, tool )
+%>
+
 <%!
    def inherit(context):
        if context.get('use_panels'):
@@ -11,39 +18,54 @@
 
 <%def name="title()">View Tool</%def>
 
+<h2>View ${tool.name} <em>${tool.description}</em></h2>
+
 %if message:
     ${render_msg( message, status )}
 %endif
 
 <div class="toolForm">
-    <div class="toolFormTitle">${tool.name} <em>${tool.description}</em> ${tool.version} (ID: ${tool.tool_id})</div>
+    <div class="toolFormTitle">${tool.name}
+        <a id="tool-${tool.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
+        <div popupmenu="tool-${tool.id}-popup">
+            %if cntrller=='admin' or can_edit:
+                <a class="action-button" href="${h.url_for( controller='common', action='edit_tool', id=trans.app.security.encode_id( tool.id ), cntrller=cntrller )}">Edit tool</a>
+            %endif
+            <a class="action-button" href="${h.url_for( controller='tool', action='download_tool', id=trans.app.security.encode_id( tool.id ) )}">Download tool</a>
+        </div>
+    </div>
     <div class="toolFormBody">
-    <div class="form-row">
-        Uploaded by <a href="${h.url_for(controller='tool', action='user_tools')}">${tool.user.username}</a> on ${tool.create_time.strftime('%B %d, %Y')}
-        <div style="clear: both"></div>
-    </div>
-    <div class="form-row">
-        <label>Categories:</label>
-        %for category in [ tca.category for tca in tool.categories ]:
-            ${category.name}
-        %endfor
-        <div style="clear: both"></div>
-    </div>
-    <div class="form-row">
-        <label>Description:</label>
-        ${tool.user_description}
-        <div style="clear: both"></div>
-    </div>
-    <div class="form-row">
-        <label>Download:</label>
-        <a href="${h.url_for(controller='tool', action='download_tool', id=trans.app.security.encode_id( tool.id ))}"><img src="${h.url_for('/static/images/silk/page_white_compressed.png')}"> ${tool.tool_id}_${tool.version}</a>
-        <div style="clear: both"></div>
-    </div>
-    %if trans.user.id == tool.user_id:
         <div class="form-row">
-            <em>This is your tool.  You may <a href="${h.url_for(controller='tool', action='edit_tool', id=trans.app.security.encode_id( tool.id ) )}">edit it</a>.</em>
+            <label>Description:</label>
+            ${tool.user_description}
             <div style="clear: both"></div>
         </div>
-    %endif
+        <div class="form-row">
+            <label>Tool Id:</label>
+            ${tool.tool_id}
+            <div style="clear: both"></div>
+        </div>
+        <div class="form-row">
+            <label>Version:</label>
+            ${tool.version}
+            <div style="clear: both"></div>
+        </div>
+        <div class="form-row">
+            <label>Uploaded by:</label>
+            ${tool.user.username}
+            <div style="clear: both"></div>
+        </div>
+        <div class="form-row">
+            <label>Date uploaded:</label>
+            ${time_ago( tool.create_time )}
+            <div style="clear: both"></div>
+        </div>
+        <div class="form-row">
+            <label>Categories:</label>
+            %for category in categories:
+                ${category.name}
+            %endfor
+            <div style="clear: both"></div>
+        </div>
     </div>
 </div>

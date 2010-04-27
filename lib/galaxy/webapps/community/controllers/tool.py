@@ -61,7 +61,7 @@ class ToolListGrid( grids.Grid ):
         NameColumn( "Name",
                     key="name",
                     model_class=model.Tool,
-                    link=( lambda item: dict( operation="View Tool", id=item.id, webapp="community" ) ),
+                    link=( lambda item: dict( operation="View Tool", id=item.id, cntrller='tool', webapp="community" ) ),
                     attach_popup=True,
                     filterable="advanced" ),
         CategoryColumn( "Category",
@@ -86,6 +86,14 @@ class ToolListGrid( grids.Grid ):
         grids.GridAction( "Upload tool", dict( controller='upload', action='upload', type='tool' ) )
     ]
     operations = [
+        grids.GridOperation( "Download tool",
+                             condition=( lambda item: not item.deleted ),
+                             allow_multiple=False,
+                             url_args=dict( controller="tool", action="download_tool", cntrller="tool", webapp="community" ) ),
+        grids.GridOperation( "Upload a new version",
+                             condition=( lambda item: not item.deleted ),
+                             allow_multiple=False,
+                             url_args=dict( controller="common", action="upload_new_tool_version", cntrller="tool", webapp="community" ) ),
         grids.GridOperation( "Edit information",
                              condition=( lambda item: not item.deleted ),
                              allow_multiple=False,
@@ -93,12 +101,8 @@ class ToolListGrid( grids.Grid ):
         grids.GridOperation( "Manage categories",
                              condition=( lambda item: not item.deleted ),
                              allow_multiple=False,
-                             url_args=dict( controller="common", action="manage_categories", cntrller="tool", webapp="community" ) ),
-        grids.GridOperation( "Upload a new version",
-                             condition=( lambda item: not item.deleted ),
-                             allow_multiple=False,
-                             url_args=dict( controller="common", action="upload_new_tool_version", cntrller="tool", webapp="community" ) ),
-    ]
+                             url_args=dict( controller="common", action="manage_categories", cntrller="tool", webapp="community" ) )
+        ]
     standard_filters = [
         grids.GridColumnFilter( "Deleted", args=dict( deleted=True ) ),
         grids.GridColumnFilter( "All", args=dict( deleted='All' ) )
@@ -129,6 +133,7 @@ class ToolBrowserController( BaseController ):
             if operation == "browse":
                 return trans.response.send_redirect( web.url_for( controller='tool',
                                                                   action='browse_tool',
+                                                                  cntrller='tool',
                                                                   **kwargs ) )
             elif operation == "view tool":
                 return trans.response.send_redirect( web.url_for( controller='common',
@@ -139,6 +144,10 @@ class ToolBrowserController( BaseController ):
                 return trans.response.send_redirect( web.url_for( controller='common',
                                                                   action='edit_tool',
                                                                   cntrller='tool',
+                                                                  **kwargs ) )
+            elif operation == "download tool":
+                return trans.response.send_redirect( web.url_for( controller='tool',
+                                                                  action='download_tool',
                                                                   **kwargs ) )
         # Render the list view
         return self.tool_list_grid( trans, **kwargs )
@@ -152,21 +161,16 @@ class ToolBrowserController( BaseController ):
                                     message=message,
                                     status=status )
     @web.expose
-    def download_tool( self, trans, id=None, **kwd ):
+    def download_tool( self, trans, **kwd ):
         params = util.Params( kwd )
-        tool = None
-        # Get the tool
-        tool = None
-        if id is not None:
-            id = trans.app.security.decode_id( id )
-            tool = trans.sa_session.query( trans.model.Tool ).get( id )
-        if tool is None:
+        id = params.get( 'id', None )
+        if not id:
             return trans.response.send_redirect( web.url_for( controller='tool',
                                                               action='browse_tools',
-                                                              message='Please select a Tool to edit (the tool ID provided was invalid)',
+                                                              message='Select a tool to download',
                                                               status='error' ) )
-
-        trans.response.set_content_type(tool.mimetype)
+        tool = get_tool( trans, id )
+        trans.response.set_content_type( tool.mimetype )
         trans.response.headers['Content-Length'] = int( os.stat( tool.file_name ).st_size )
         trans.response.headers['Content-Disposition'] = 'attachment; filename=%s' % tool.download_file_name
         return open( tool.file_name )
