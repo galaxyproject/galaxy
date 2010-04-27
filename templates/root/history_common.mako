@@ -47,7 +47,7 @@
                 %endif
                 ></a>
                 %if for_editing:
-                    <a class="icon-button edit tooltip" title="Edit attributes" href="${h.url_for( controller='root', action='edit', id=trans.security.encode_id( data.id ) )}" target="galaxy_main"></a>
+                    <a class="icon-button edit tooltip" title="Edit attributes" href="${h.url_for( controller='root', action='edit', id=data.id )}" target="galaxy_main"></a>
                 %endif
             %endif
             %if for_editing:

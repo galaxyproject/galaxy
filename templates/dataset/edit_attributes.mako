@@ -32,7 +32,7 @@
     <div class="toolFormTitle">${_('Edit Attributes')}</div>
     <div class="toolFormBody">
         <form name="edit_attributes" action="${h.url_for( controller='root', action='edit' )}" method="post">
-            <input type="hidden" name="id" value="${trans.security.encode_id( data.id )}"/>
+            <input type="hidden" name="id" value="${data.id}"/>
             <div class="form-row">
                 <label>
                     Name:
