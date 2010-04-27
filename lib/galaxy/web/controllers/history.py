@@ -178,7 +178,8 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesHistory 
             if operation == "share or publish":
                 return self.sharing( trans, **kwargs )
             if operation == "rename" and kwargs.get('id', None): # Don't call rename if no ids
-                del kwargs['name'] # Remove ajax name param that rename method uses
+                if 'name' in kwargs:
+                    del kwargs['name'] # Remove ajax name param that rename method uses
                 return self.rename( trans, **kwargs )
             history_ids = util.listify( kwargs.get( 'id', [] ) )
             # Display no message by default
