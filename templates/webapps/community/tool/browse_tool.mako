@@ -29,7 +29,7 @@
         </thead>
         <tbody>   
             <tr class="formRow id="toolRow">
-                <td><a href="${h.url_for( controller='tool_browser', action='browse', id=trans.security.encode_id( tool.id ) )}">${tool.name}</a></td>
+                <td><a href="${h.url_for( controller='tool', action='browse', id=trans.security.encode_id( tool.id ) )}">${tool.name}</a></td>
                 <td>${tool.description}</td>
             </tr>             
         </tbody>

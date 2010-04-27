@@ -76,7 +76,7 @@ def app_factory( global_conf, **kwargs ):
     add_controllers( webapp, app )
     # These two routes handle our simple needs at the moment
     webapp.add_route( '/:controller/:action', action='index' )
-    webapp.add_route( '/:action', controller='tool_browser', action='index' )
+    webapp.add_route( '/:action', controller='tool', action='index' )
     webapp.finalize_config()
     # Wrap the webapp in some useful middleware
     if kwargs.get( 'middleware', True ):

@@ -461,7 +461,7 @@ class AdminCommunity( BaseController, Admin ):
         if 'operation' in kwargs:
             operation = kwargs['operation'].lower()
             if operation == "browse":
-                return trans.response.send_redirect( web.url_for( controller='tool_browser',
+                return trans.response.send_redirect( web.url_for( controller='tool',
                                                                   action='browse_tool',
                                                                   **kwargs ) )
             elif operation == "edit tool":

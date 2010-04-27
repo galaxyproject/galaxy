@@ -62,10 +62,10 @@ class UploadController( BaseController ):
                         os.link( uploaded_file.name, obj.file_name )
                     except OSError:
                         shutil.copy( uploaded_file.name, obj.file_name )
-                    # We're setting cntrller to 'tool_browser' since that is the only controller from which we can upload
+                    # We're setting cntrller to 'tool' since that is the only controller from which we can upload
                     return trans.response.send_redirect( web.url_for( controller='common',
                                                                       action='edit_tool',
-                                                                      cntrller='tool_browser',
+                                                                      cntrller='tool',
                                                                       id=trans.app.security.encode_id( obj.id ),
                                                                       message='Uploaded %s' % meta.message,
                                                                       status='done' ) )
