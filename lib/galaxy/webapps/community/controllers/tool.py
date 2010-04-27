@@ -89,19 +89,7 @@ class ToolListGrid( grids.Grid ):
         grids.GridOperation( "Download tool",
                              condition=( lambda item: not item.deleted ),
                              allow_multiple=False,
-                             url_args=dict( controller="tool", action="download_tool", cntrller="tool", webapp="community" ) ),
-        grids.GridOperation( "Upload a new version",
-                             condition=( lambda item: not item.deleted ),
-                             allow_multiple=False,
-                             url_args=dict( controller="common", action="upload_new_tool_version", cntrller="tool", webapp="community" ) ),
-        grids.GridOperation( "Edit information",
-                             condition=( lambda item: not item.deleted ),
-                             allow_multiple=False,
-                             url_args=dict( controller="common", action="edit_tool", cntrller="tool", webapp="community" ) ),
-        grids.GridOperation( "Manage categories",
-                             condition=( lambda item: not item.deleted ),
-                             allow_multiple=False,
-                             url_args=dict( controller="common", action="manage_categories", cntrller="tool", webapp="community" ) )
+                             url_args=dict( controller="tool", action="download_tool", cntrller="tool", webapp="community" ) )
         ]
     standard_filters = [
         grids.GridColumnFilter( "Deleted", args=dict( deleted=True ) ),

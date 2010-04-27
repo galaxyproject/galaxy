@@ -29,7 +29,9 @@
         <a id="tool-${tool.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
         <div popupmenu="tool-${tool.id}-popup">
             %if cntrller=='admin' or can_edit:
-                <a class="action-button" href="${h.url_for( controller='common', action='edit_tool', id=trans.app.security.encode_id( tool.id ), cntrller=cntrller )}">Edit tool</a>
+                <a class="action-button" href="${h.url_for( controller='common', action='edit_tool', id=trans.app.security.encode_id( tool.id ), cntrller=cntrller )}">Edit information</a>
+                <a class="action-button" href="${h.url_for( controller='common', action='manage_categories', id=trans.app.security.encode_id( tool.id ), cntrller=cntrller )}">Manage categories</a>
+                <a class="action-button" href="${h.url_for( controller='common', action='upload_new_tool_version', id=trans.app.security.encode_id( tool.id ), cntrller=cntrller )}">Upload a new version</a>
             %endif
             <a class="action-button" href="${h.url_for( controller='tool', action='download_tool', id=trans.app.security.encode_id( tool.id ) )}">Download tool</a>
         </div>
