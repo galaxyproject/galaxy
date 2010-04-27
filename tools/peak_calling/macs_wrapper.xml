@@ -9,19 +9,19 @@
     <param name="experiment_name" type="text" value="MACS in Galaxy" size="50" label="Experiment Name"/>
     <conditional name="input_type">
       <param name="input_type_selector" type="select" label="Paired End Sequencing">
-        <option value="paired_end">Paired End (requires elandmultipet format)</option>
+        <option value="paired_end">Paired End (requires elandmulti format)</option>
         <option value="single_end" selected="true">Single End</option>
       </param>
       <when value="paired_end">
-        <param name="input_chipseq_file1" type="data" format="elandmultipet" label="ChIP-Seq Tag File 1" />
-        <param name="input_chipseq_file2" type="data" format="elandmultipet" label="ChIP-Seq Tag File 2" />
-        <param name="input_control_file1" type="data" format="elandmultipet" optional="True" label="ChIP-Seq Control File 1" />
-        <param name="input_control_file2" type="data" format="elandmultipet" optional="True" label="ChIP-Seq Control File 2" />
+        <param name="input_chipseq_file1" type="data" format="elandmulti" label="ChIP-Seq Tag File 1" />
+        <param name="input_chipseq_file2" type="data" format="elandmulti" label="ChIP-Seq Tag File 2" />
+        <param name="input_control_file1" type="data" format="elandmulti" optional="True" label="ChIP-Seq Control File 1" />
+        <param name="input_control_file2" type="data" format="elandmulti" optional="True" label="ChIP-Seq Control File 2" />
         <param name="petdist" type="integer" label="Best distance between Pair-End Tags" value="200"/>
       </when>
       <when value="single_end">
-        <param name="input_chipseq_file1" type="data" format="bed,sam,bam" label="ChIP-Seq Tag File" />
-        <param name="input_control_file1" type="data" format="bed,sam,bam" optional="True" label="ChIP-Seq Control File" />
+        <param name="input_chipseq_file1" type="data" format="bed,sam,bam,eland,elandmulti" label="ChIP-Seq Tag File" />
+        <param name="input_control_file1" type="data" format="bed,sam,bam,eland,elandmulti" optional="True" label="ChIP-Seq Control File" />
       </when>
     </conditional>
     <param name="gsize" type="float" label="Effective genome size" value="2.7e+9" help="default: 2.7e+9"/>
@@ -101,11 +101,13 @@ import simplejson
 #else:
 #set $__options['xls_to_interval'] = False
 #end if
-#set $__options['format'] = $input_type['input_chipseq_file1'].extension.upper()
-##treatment/tag input files
+##treatment/tag input files and format
 #set $__options['input_chipseq'] = [ str( $input_type['input_chipseq_file1'] ) ]
 #if  $input_type['input_type_selector'] == 'paired_end':
 #set $_hole = __options['input_chipseq'].append( str( $input_type['input_chipseq_file2'] ) )
+#set $__options['format'] = 'ELANDMULTIPET'
+#else:
+#set $__options['format'] = $input_type['input_chipseq_file1'].extension.upper()
 #end if
 ##control/input files
 #set $__options['input_control'] = []

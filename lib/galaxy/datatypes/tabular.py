@@ -420,3 +420,15 @@ class Pileup( Tabular ):
             return True
         except:
             return False
+
+class Eland( Tabular ):
+    file_ext = 'eland'
+    
+    def sniff( self, filename ):
+        return False
+
+class ElandMulti( Tabular ):
+    file_ext = 'elandmulti'
+    
+    def sniff( self, filename ):
+        return False
