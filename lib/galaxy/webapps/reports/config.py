@@ -36,6 +36,7 @@ class Configuration( object ):
         self.bugs_email = kwargs.get( 'bugs_email', "mailto:galaxy-bugs@bx.psu.edu" )
         self.blog_url = kwargs.get( 'blog_url', "http://g2.trac.bx.psu.edu/blog" )
         self.screencasts_url = kwargs.get( 'screencasts_url', "http://g2.trac.bx.psu.edu/wiki/ScreenCasts" )
+        self.cookie_path = kwargs.get( "cookie_path", "/" )
         #Parse global_conf
         global_conf = kwargs.get( 'global_conf', None )
         global_conf_parser = ConfigParser.ConfigParser()
