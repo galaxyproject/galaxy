@@ -6,6 +6,9 @@ from common import get_categories, get_category
 import logging
 log = logging.getLogger( __name__ )
 
+# States for passing messages
+SUCCESS, INFO, WARNING, ERROR = "done", "info", "warning", "error"
+
 class UserListGrid( grids.Grid ):
     class EmailColumn( grids.TextColumn ):
         def get_value( self, trans, grid, user ):
@@ -346,9 +349,6 @@ class CategoryListGrid( grids.Grid ):
     def build_initial_query( self, session ):
         return session.query( self.model_class )
 
-# States for passing messages
-SUCCESS, INFO, WARNING, ERROR = "done", "info", "warning", "error"
-
 class ToolListGrid( grids.Grid ):
     class NameColumn( grids.TextColumn ):
         def get_value( self, trans, grid, tool ):
@@ -399,7 +399,7 @@ class ToolListGrid( grids.Grid ):
         NameColumn( "Name",
                     key="name",
                     model_class=model.Tool,
-                    link=( lambda item: dict( operation="Edit Tool", id=item.id, webapp="community" ) ),
+                    link=( lambda item: dict( operation="View Tool", id=item.id, webapp="community" ) ),
                     attach_popup=True,
                     filterable="advanced" ),
         CategoryColumn( "Category",
@@ -424,15 +424,14 @@ class ToolListGrid( grids.Grid ):
         grids.GridAction( "Upload tool", dict( controller='upload', action='upload', type='tool' ) )
     ]
     operations = [
-        grids.GridOperation( "Add to category",
+        grids.GridOperation( "Edit information",
                              condition=( lambda item: not item.deleted ),
                              allow_multiple=False,
-                             url_args=dict( controller="common", action="add_category", cntrller="admin", webapp="community" ) ),
-        grids.GridOperation( "Remove from category",
+                             url_args=dict( controller="common", action="edit_tool", cntrller="admin", webapp="community" ) ),
+        grids.GridOperation( "Manage categories",
                              condition=( lambda item: not item.deleted ),
                              allow_multiple=False,
-                             url_args=dict( controller="common", action="remove_category", cntrller="admin", webapp="community" ) ),
-        grids.GridOperation( "View versions", condition=( lambda item: not item.deleted ), allow_multiple=False )
+                             url_args=dict( controller="common", action="manage_categories", cntrller="admin", webapp="community" ) )
     ]
     standard_filters = [
         grids.GridColumnFilter( "Deleted", args=dict( deleted=True ) ),
@@ -467,6 +466,11 @@ class AdminCommunity( BaseController, Admin ):
             elif operation == "edit tool":
                 return trans.response.send_redirect( web.url_for( controller='common',
                                                                   action='edit_tool',
+                                                                  cntrller='admin',
+                                                                  **kwargs ) )
+            elif operation == "view tool":
+                return trans.response.send_redirect( web.url_for( controller='common',
+                                                                  action='view_tool',
                                                                   cntrller='admin',
                                                                   **kwargs ) )
         # Render the list view

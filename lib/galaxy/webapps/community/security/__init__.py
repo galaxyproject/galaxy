@@ -76,6 +76,8 @@ class CommunityRBACAgent( RBACAgent ):
         elif 'role' in kwd:
             if 'group' in kwd:
                 return self.associate_group_role( kwd['group'], kwd['role'] )
+        elif 'tool' in kwd:
+            return self.associate_tool_category( kwd['tool'], kwd['category'] )
         raise 'No valid method of associating provided components: %s' % kwd
     def associate_group_role( self, group, role ):
         assoc = self.model.GroupRoleAssociation( group, role )
@@ -89,6 +91,11 @@ class CommunityRBACAgent( RBACAgent ):
         return assoc
     def associate_user_role( self, user, role ):
         assoc = self.model.UserRoleAssociation( user, role )
+        self.sa_session.add( assoc )
+        self.sa_session.flush()
+        return assoc
+    def associate_tool_category( self, tool, category ):
+        assoc = self.model.ToolCategoryAssociation( tool, category )
         self.sa_session.add( assoc )
         self.sa_session.flush()
         return assoc
@@ -147,7 +154,15 @@ class CommunityRBACAgent( RBACAgent ):
                     self.associate_components( user=user, role=role )
             for group in groups:
                 self.associate_components( user=user, group=group )
-
+    def set_entity_category_associations( self, tools=[], categories=[], delete_existing_assocs=True ):
+        for tool in tools:
+            if delete_existing_assocs:
+                for a in tool.categories:
+                    self.sa_session.delete( a )
+                    self.sa_session.flush()
+            self.sa_session.refresh( tool )
+            for category in categories:
+                self.associate_components( tool=tool, category=category )
 def get_permitted_actions( filter=None ):
     '''Utility method to return a subset of RBACAgent's permitted actions'''
     if filter is None:

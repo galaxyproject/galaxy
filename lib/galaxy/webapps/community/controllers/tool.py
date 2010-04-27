@@ -18,7 +18,10 @@ class ToolListGrid( grids.Grid ):
     class CategoryColumn( grids.TextColumn ):
         def get_value( self, trans, grid, tool ):
             if tool.categories:
-                return tool.categories
+                rval = ''
+                for tca in tool.categories:
+                    rval = '%s%s<br/>' % ( rval, tca.category.name )
+                return rval
             return 'not set'
     class StateColumn( grids.GridColumn ):
         def get_value( self, trans, grid, tool ):
@@ -58,15 +61,19 @@ class ToolListGrid( grids.Grid ):
         NameColumn( "Name",
                     key="name",
                     model_class=model.Tool,
-                    link=( lambda item: dict( operation="Edit Tool", id=item.id, webapp="community" ) ),
+                    link=( lambda item: dict( operation="View Tool", id=item.id, webapp="community" ) ),
                     attach_popup=True,
                     filterable="advanced" ),
         CategoryColumn( "Category",
-                        key="category",
-                        model_class=model.Category,
-                        link=( lambda item: dict( operation="View Tool", id=item.id, webapp="community" ) ),
-                        attach_popup=False,
-                        filterable="advanced" ),
+                    key="category",
+                    model_class=model.Category,
+                    attach_popup=False,
+                    filterable="advanced" ),
+        StateColumn( "State",
+                     key="state",
+                     model_class=model.Event,
+                     attach_popup=False,
+                     filterable="advanced" ),
         # Columns that are valid for filtering but are not visible.
         grids.DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" )
     ]
@@ -79,15 +86,18 @@ class ToolListGrid( grids.Grid ):
         grids.GridAction( "Upload tool", dict( controller='upload', action='upload', type='tool' ) )
     ]
     operations = [
-        grids.GridOperation( "Add to category",
+        grids.GridOperation( "Edit information",
                              condition=( lambda item: not item.deleted ),
                              allow_multiple=False,
-                             url_args=dict( controller="common", action="add_category", webapp="community" ) ),
-        grids.GridOperation( "Remove from category",
+                             url_args=dict( controller="common", action="edit_tool", cntrller="tool", webapp="community" ) ),
+        grids.GridOperation( "Manage categories",
                              condition=( lambda item: not item.deleted ),
                              allow_multiple=False,
-                             url_args=dict( controller="common", action="remove_category", webapp="community" ) ),
-        grids.GridOperation( "View versions", condition=( lambda item: not item.deleted ), allow_multiple=False )
+                             url_args=dict( controller="common", action="manage_categories", cntrller="tool", webapp="community" ) ),
+        grids.GridOperation( "Upload a new version",
+                             condition=( lambda item: not item.deleted ),
+                             allow_multiple=False,
+                             url_args=dict( controller="common", action="upload_new_tool_version", cntrller="tool", webapp="community" ) ),
     ]
     standard_filters = [
         grids.GridColumnFilter( "Deleted", args=dict( deleted=True ) ),
@@ -117,17 +127,18 @@ class ToolBrowserController( BaseController ):
         if 'operation' in kwargs:
             operation = kwargs['operation'].lower()
             if operation == "browse":
-                return trans.response.send_redirect( web.url_for( controller='tool_browser',
+                return trans.response.send_redirect( web.url_for( controller='tool',
                                                                   action='browse_tool',
                                                                   **kwargs ) )
             elif operation == "view tool":
-                return trans.response.send_redirect( web.url_for( controller='tool_browser',
+                return trans.response.send_redirect( web.url_for( controller='common',
                                                                   action='view_tool',
+                                                                  cntrller='tool',
                                                                   **kwargs ) )
             elif operation == "edit tool":
                 return trans.response.send_redirect( web.url_for( controller='common',
                                                                   action='edit_tool',
-                                                                  cntrller='tool_browser',
+                                                                  cntrller='tool',
                                                                   **kwargs ) )
         # Render the list view
         return self.tool_list_grid( trans, **kwargs )
@@ -150,7 +161,7 @@ class ToolBrowserController( BaseController ):
             id = trans.app.security.decode_id( id )
             tool = trans.sa_session.query( trans.model.Tool ).get( id )
         if tool is None:
-            return trans.response.send_redirect( web.url_for( controller='tool_browser',
+            return trans.response.send_redirect( web.url_for( controller='tool',
                                                               action='browse_tools',
                                                               message='Please select a Tool to edit (the tool ID provided was invalid)',
                                                               status='error' ) )
