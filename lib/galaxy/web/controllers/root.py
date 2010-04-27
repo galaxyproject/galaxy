@@ -253,7 +253,8 @@ class RootController( BaseController, UsesHistory, UsesAnnotations ):
             history = trans.get_history()
             # TODO: hid handling
             data = history.datasets[ int( hid ) - 1 ]
-        elif id is not None: 
+        elif id is not None:
+            id = trans.security.decode_id( id ) 
             data = trans.sa_session.query( self.app.model.HistoryDatasetAssociation ).get( id )
         else:
             trans.log_event( "Problem loading dataset id %s with history id %s." % ( str( id ), str( hid ) ) )
