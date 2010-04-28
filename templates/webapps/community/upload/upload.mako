@@ -48,7 +48,7 @@
     <div class="form-row">
         <label>Category</label>
         <div class="form-row-input">
-            <select name="category_id">
+            <select name="category_id" multiple>
                 %for category in categories:
                     %if category.id in selected_categories:
                         <option value="${trans.security.encode_id( category.id )}" selected>${category.name}</option>
@@ -76,6 +76,7 @@
 </div>
 <div class="toolHelp">
     <div class="toolHelpBody">
-        <p><strong>Tool Files</strong></p>
+        <p><strong>Creating tool files</strong></p>
+        <p>Help coming...</p>
     </div>
 </div>

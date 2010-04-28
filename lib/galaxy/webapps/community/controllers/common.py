@@ -21,19 +21,49 @@ class CommunityCommon( BaseController ):
                                                               status='error' ) )
         tool = get_tool( trans, id )
         if params.get( 'edit_tool_button', False ):
-            tool.user_description = util.restore_text( params.description )
+            if params.get( 'in_categories', False ):
+                in_categories = [ trans.sa_session.query( trans.app.model.Category ).get( x ) for x in util.listify( params.in_categories ) ]
+                trans.app.security_agent.set_entity_category_associations( tools=[ tool ], categories=in_categories )
+            else:
+                # There must not be any categories associated with the tool
+                trans.app.security_agent.set_entity_category_associations( tools=[ tool ], categories=[] )
+            if params.get( 'description', False ):
+                tool.user_description = util.restore_text( params.get( 'description', '' ) )
             trans.sa_session.add( tool )
             trans.sa_session.flush()
+            message="Tool '%s' description and category associations have been saved" % tool.name
             return trans.response.send_redirect( web.url_for( controller='common',
                                                               action='edit_tool',
                                                               cntrller=cntrller,
                                                               id=id,
-                                                              message="The information was updated",
+                                                              message=message,
                                                               status='done' ) )
+        elif params.get( 'approval_button', False ):
+            # Move the state from NEW to WAITING
+            event = trans.app.model.Event( state=trans.app.model.Tool.states.WAITING )
+            tea = trans.app.model.ToolEventAssociation( tool, event )
+            trans.sa_session.add_all( ( event, tea ) )
+            trans.sa_session.flush()
+            message = "Tool '%s' has been submitted for approval and can no longer be modified" % ( tool.name )
+            return trans.response.send_redirect( web.url_for( controller='common',
+                                                              action='view_tool',
+                                                              cntrller=cntrller,
+                                                              id=id,
+                                                              message=message,
+                                                              status='done' ) )
+        in_categories = []
+        out_categories = []
+        for category in get_categories( trans ):
+            if category in [ x.category for x in tool.categories ]:
+                in_categories.append( ( category.id, category.name ) )
+            else:
+                out_categories.append( ( category.id, category.name ) )
         return trans.fill_template( '/webapps/community/tool/edit_tool.mako',
                                     cntrller=cntrller,
-                                    id=id,
                                     tool=tool,
+                                    id=id,
+                                    in_categories=in_categories,
+                                    out_categories=out_categories,
                                     message=message,
                                     status=status )
     @web.expose
@@ -52,43 +82,6 @@ class CommunityCommon( BaseController ):
         return trans.fill_template( '/webapps/community/tool/view_tool.mako',
                                     tool=tool,
                                     categories=categories,
-                                    cntrller=cntrller,
-                                    message=message,
-                                    status=status )
-    @web.expose
-    def manage_categories( self, trans, cntrller, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        id = params.get( 'id', None )
-        if not id:
-            return trans.response.send_redirect( web.url_for( controller=cntrller,
-                                                              action='browse_tools',
-                                                              message='Select a tool to manage categories',
-                                                              status='error' ) )
-        tool = get_tool( trans, id )
-        if params.get( 'manage_categories_button', False ):
-            in_categories = [ trans.sa_session.query( trans.app.model.Category ).get( x ) for x in util.listify( params.in_categories ) ]
-            trans.app.security_agent.set_entity_category_associations( tools=[ tool ], categories=in_categories )
-            trans.sa_session.refresh( tool )
-            message = "Tool '%s' has been updated with %d associated categories" % ( tool.name, len( in_categories ) )
-            trans.response.send_redirect( web.url_for( controller='common',
-                                                       action='manage_categories',
-                                                       cntrller=cntrller,
-                                                       id=id,
-                                                       message=util.sanitize_text( message ),
-                                                       status=status ) )            
-        in_categories = []
-        out_categories = []
-        for category in get_categories( trans ):
-            if category in [ x.category for x in tool.categories ]:
-                in_categories.append( ( category.id, category.name ) )
-            else:
-                out_categories.append( ( category.id, category.name ) )
-        return trans.fill_template( '/webapps/community/tool/manage_categories.mako',
-                                    tool=tool,
-                                    in_categories=in_categories,
-                                    out_categories=out_categories,
                                     cntrller=cntrller,
                                     message=message,
                                     status=status )

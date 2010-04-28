@@ -38,11 +38,6 @@
     </div>
     <div class="toolFormBody">
         <div class="form-row">
-            <label>Description:</label>
-            ${tool.user_description}
-            <div style="clear: both"></div>
-        </div>
-        <div class="form-row">
             <label>Tool Id:</label>
             ${tool.tool_id}
             <div style="clear: both"></div>
@@ -50,6 +45,11 @@
         <div class="form-row">
             <label>Version:</label>
             ${tool.version}
+            <div style="clear: both"></div>
+        </div>
+        <div class="form-row">
+            <label>Description:</label>
+            ${tool.user_description}
             <div style="clear: both"></div>
         </div>
         <div class="form-row">

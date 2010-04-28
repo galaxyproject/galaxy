@@ -132,12 +132,18 @@ class Tool( object ):
         self.user_id = datatype_bunch.user.id
     def state( self ):
         if self.events:
-            return self.events[0].event.state
+            # Sort the events in ascending order by update_time
+            events = sort_by_attr( [ tca.event for tca in self.events ], 'update_time' )
+            # Get the last event that occurred
+            return events[-1].state
         return None
     def last_comment( self ):
         if self.events:
-            if self.events[0].comment:
-                return self.events[0].comment
+            # Sort the events in ascending order by update_time
+            events = sort_by_attr( [ tca.event for tca in self.events ], 'update_time' )
+            # Get the last event that occurred
+            if events[-1].comment:
+                return events[-1].comment
             else:
                 return ''
         return 'No comment'
@@ -227,6 +233,22 @@ class ToolAnnotationAssociation( object ):
     pass
 
 ## ---- Utility methods -------------------------------------------------------
+
+def sort_by_attr( seq, attr ):
+    """
+    Sort the sequence of objects by object's attribute
+    Arguments:
+    seq  - the list or any sequence (including immutable one) of objects to sort.
+    attr - the name of attribute to sort by
+    """
+    # Use the "Schwartzian transform"
+    # Create the auxiliary list of tuples where every i-th tuple has form
+    # (seq[i].attr, i, seq[i]) and sort it. The second item of tuple is needed not
+    # only to provide stable sorting, but mainly to eliminate comparison of objects
+    # (which can be expensive or prohibited) in case of equal attribute values.
+    intermed = map( None, map( getattr, seq, ( attr, ) * len( seq ) ), xrange( len( seq ) ), seq )
+    intermed.sort()
+    return map( operator.getitem, intermed, ( -1, ) * len( intermed ) )
 
 def directory_hash_id( id ):
     s = str( id )

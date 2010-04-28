@@ -54,7 +54,7 @@ class UploadController( BaseController ):
                                 tca = trans.app.model.ToolCategoryAssociation( obj, category )
                                 trans.sa_session.add( tca )
                         # Initialize the tool event
-                        event = trans.app.model.Event( trans.app.model.Tool.states.NEW )
+                        event = trans.app.model.Event( state=trans.app.model.Tool.states.NEW )
                         tea = trans.app.model.ToolEventAssociation( obj, event )
                         trans.sa_session.add_all( ( event, tea ) )
                     trans.sa_session.flush()

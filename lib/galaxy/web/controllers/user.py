@@ -319,6 +319,9 @@ class User( BaseController ):
             error = "Passwords do not match"
         return error
     def __validate( self, trans, params, email, password, confirm, username, webapp ):
+        # If coming from the community webapp, we'll require a public user name
+        if webapp == 'community' and not username:
+            return "A public user name is required"
         error = self.__validate_email( trans, email )
         if not error:
             error = self.__validate_password( trans, password, confirm )

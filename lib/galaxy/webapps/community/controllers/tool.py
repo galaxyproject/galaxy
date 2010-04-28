@@ -82,9 +82,6 @@ class ToolListGrid( grids.Grid ):
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
-    global_actions = [
-        grids.GridAction( "Upload tool", dict( controller='upload', action='upload', type='tool' ) )
-    ]
     operations = [
         grids.GridOperation( "Download tool",
                              condition=( lambda item: not item.deleted ),

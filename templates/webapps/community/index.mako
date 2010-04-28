@@ -28,18 +28,20 @@
                   <span>Tools</span>
                 </div>
                 <div class="toolSectionBody">
-                  <div class="toolSectionBg">
-                    <div class="toolTitle"><a href="${h.url_for( controller='tool', action='browse_tools' )}" target="galaxy_main">Browse tools</a></div>
-                  </div>
-                </div>
-                <div class="toolSectionPad"></div>
-                <div class="toolSectionTitle">
-                  <span>Forum</span>
+                    <div class="toolSectionBg">
+                        <div class="toolTitle"><a href="${h.url_for( controller='tool', action='browse_tools' )}" target="galaxy_main">Browse tools</a></div>
+                    </div>
                 </div>
                 <div class="toolSectionBody">
-                  <div class="toolSectionBg">
-                    <div class="toolTitle"><a href="${h.url_for( controller='forum', action='browse_forums' )}" target="galaxy_main">Forums</a></div>
-                  </div>
+                    <div class="toolSectionBg">
+                        <div class="toolTitle">
+                            %if trans.user:
+                                <a href="${h.url_for( controller='upload', action='upload', type='tool' )}" target="galaxy_main">Upload a tool</a>
+                            %else:
+                                Login to upload
+                            %endif
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>    
