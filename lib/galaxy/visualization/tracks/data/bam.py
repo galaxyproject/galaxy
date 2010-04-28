@@ -33,12 +33,36 @@ class BamDataProvider( object ):
             if chrom.startswith( 'chr' ):
                 data = bamfile.fetch( start=start, end=end, reference=chrom[3:] )
             else:
-                raise
+                return None
         # Encode reads as list of dictionaries
         results = []
+        paired_pending = {}
         for read in data:
-            payload = [ str(read.pos) + str(read.seq), read.pos, read.pos + read.rlen, read.seq ]
-            results.append(payload)
+            qname = read.qname
+            if read.is_proper_pair:
+                if qname in paired_pending: # one in dict is always first
+                    pair = paired_pending[qname]
+                    results.append( [ qname, pair['start'], read.pos + read.rlen, read.seq, [pair['start'], pair['end'], pair['seq']], [read.pos, read.pos + read.rlen, read.seq] ] )
+                    # results.append( [read.qname, pair['start'], read.pos + read.rlen, qname, [pair['start'], pair['end']], [read.pos, read.pos + read.rlen] ] )
+                    del paired_pending[qname]
+                else:
+                    paired_pending[qname] = { 'start': read.pos, 'end': read.pos + read.rlen, 'seq': read.seq, 'mate_start': read.mpos, 'rlen': read.rlen }
+            else:
+                results.append( [qname, read.pos, read.pos + read.rlen, read.seq] )
+        # take care of reads whose mates are out of range
+        for qname, read in paired_pending.iteritems():
+            if read['mate_start'] < read['start']:
+                start = read['mate_start']
+                end = read['end']
+                r1 = [read['mate_start'], read['mate_start']  + read['rlen']]
+                r2 = [read['start'], read['end'], read['seq']]
+            else:
+                start = read['start']
+                end = read['mate_start'] + read['rlen']
+                r1 = [read['start'], read['end'], read['seq']]
+                r2 = [read['mate_start'], read['mate_start'] + read['rlen']]
+
+            results.append( [ qname, start, end, read['seq'], r1, r2 ] )
+            
         bamfile.close()
         return results
-            

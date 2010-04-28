@@ -54,8 +54,10 @@ class SummaryTree:
                         self.chrom_stats[chrom]["detail_level"] = level
                         break
                 else:
-                    self.chrom_stats[chrom]["max"] = max_val
-                    self.chrom_stats[chrom]["avg"] = float(max_val) / len(blocks[level])
+                    self.chrom_stats[chrom][level] = {}
+                    self.chrom_stats[chrom][level]["delta"] = self.block_size ** level
+                    self.chrom_stats[chrom][level]["max"] = max_val
+                    self.chrom_stats[chrom][level]["avg"] = float(max_val) / len(blocks[level])
                     cur_best = level
             
             self.chrom_blocks[chrom] = dict([ (key, value) for key, value in blocks.iteritems() if key >= cur_best ])

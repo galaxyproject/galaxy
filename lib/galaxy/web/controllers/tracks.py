@@ -236,12 +236,12 @@ class TracksController( BaseController ):
             indexer = dataset_type_to_data_provider[data_sources['index']]( dataset.get_converted_dataset(trans, data_sources['index']), dataset )
             summary = indexer.get_summary( chrom, low, high, **kwargs )
             if summary is not None:
-                frequencies, max_v, avg_v = summary
-                if frequencies != "no_detail":
-                    return { "dataset_type": data_sources['index'], "data": frequencies, "max": max_v, "avg": avg_v }
-                else:
+                if summary == "no_detail":
                     kwargs["no_detail"] = True # meh
                     extra_info = "no_detail"
+                else:
+                    frequencies, max_v, avg_v, delta = summary
+                    return { "dataset_type": data_sources['index'], "data": frequencies, "max": max_v, "avg": avg_v, "delta": delta }
         
         dataset_type = data_sources['data']
         data_provider = dataset_type_to_data_provider[ dataset_type ]( dataset.get_converted_dataset(trans, dataset_type), dataset )

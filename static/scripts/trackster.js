@@ -3,7 +3,7 @@
 */
 var DEBUG = false;
 
-var DENSITY = 1000,
+var DENSITY = 200,
     FEATURE_LEVELS = 10,
     DATA_ERROR = "There was an error in indexing this dataset.",
     DATA_NOCONVERTER = "A converter for this dataset is not installed. Please check your datatypes_conf.xml file.",
@@ -271,16 +271,15 @@ $.extend( TiledTrack.prototype, Track.prototype, {
             range = high - low,
             resolution = this.view.resolution;
             
-        
         if (DEBUG) { $("#debug").text(resolution + " " + this.view.zoom_res); }
 
-        var parent_element = $("<div style='position: relative;'></div>");
-            this.content_div.children( ":first" ).remove();
-            this.content_div.append( parent_element );
+        var parent_element = $("<div style='position: relative;'></div>"),
+            w_scale = this.content_div.width() / range,
+            tile_element;
 
-        var w_scale = this.content_div.width() / range;
-
-        var tile_element;
+        this.content_div.children( ":first" ).remove();
+        this.content_div.append( parent_element ),
+        this.max_height = 0;
         // Index of first tile that overlaps visible region
         var tile_index = Math.floor( low / resolution / DENSITY );
         while ( ( tile_index * DENSITY * resolution ) < high ) {
@@ -298,6 +297,7 @@ $.extend( TiledTrack.prototype, Track.prototype, {
                 // Our responsibility to move the element to the new parent
                 parent_element.append( cached );
                 this.max_height = Math.max( this.max_height, cached.height() );
+                this.content_div.css("height", this.max_height + "px");
             } else {
                 this.delayed_draw(this, key, low, high, tile_index, resolution, parent_element, w_scale);
             }
@@ -311,7 +311,7 @@ $.extend( TiledTrack.prototype, Track.prototype, {
                 if ( tile_element ) {
                     track.tile_cache.set(key, tile_element);
                     track.max_height = Math.max( track.max_height, tile_element.height() );
-                    track.content_div.css( "height", track.max_height + "px");
+                    track.content_div.css("height", track.max_height + "px");
                 }
             }
         }, 50);
@@ -679,12 +679,30 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
         return highest_slot;
         
     },
+    rect_or_text: function( ctx, w_scale, px_per_char, tile_low, tile_high, feature_start, name, x, x_len, y_center ) {
+        ctx.textAlign = "center";
+        var gap = Math.round(w_scale / 2);
+        if (name !== undefined && w_scale > px_per_char) {
+            ctx.fillStyle = "#555";
+            ctx.fillRect(x, y_center + 1, x_len, 9);
+            ctx.fillStyle = "#eee";
+            for (var c = 0, str_len = name.length; c < str_len; c++) {
+                if (feature_start + c >= tile_low && feature_start + c <= tile_high) {
+                    var c_start = Math.floor( Math.max(0, (feature_start + c - tile_low) * w_scale) );
+                    ctx.fillText(name[c], c_start + this.left_offset + gap, y_center + 9);
+                }
+            }
+        } else {
+            ctx.fillStyle = "#555";
+            ctx.fillRect(x, y_center + 4, x_len, 3);
+        }
+    },
     draw_tile: function( resolution, tile_index, parent_element, w_scale ) {
         var tile_low = tile_index * DENSITY * resolution,
             tile_high = ( tile_index + 1 ) * DENSITY * resolution,
             tile_span = DENSITY * resolution;
         // console.log("drawing " + tile_index);
-        var data, slots, required_height;
+        var slots, required_height;
 
         /*for (var k in this.data_cache.obj_cache) {
             var k_split = k.split("_"), k_low = k_split[0], k_high = k_split[1];
@@ -696,23 +714,22 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
         
         // var k = this.view.low + '_' + this.view.high;
         var k = tile_low + '_' + tile_high;
-        var data = this.data_cache.get(k);
+        var result = this.data_cache.get(k);
         
-        if (data === undefined) {
+        if (result === undefined) {
             this.data_queue[ [tile_low, tile_high] ] = true;
             this.get_data(tile_low, tile_high);
             return;
         }
         
-        if (data.dataset_type == "array_tree") {
+        if (result.dataset_type === "summary_tree") {
             required_height = 30;
-            // Blah
         } else {
             // Calculate new slots incrementally for this new chunk of data and update height if necessary
-            var no_detail = (data.extra_info === "no_detail");
+            var no_detail = (result.extra_info === "no_detail");
             
             var y_scale = ( no_detail ? this.vertical_nodetail_px : this.vertical_detail_px );
-            required_height = this.incremental_slots( this.view.zoom_res, data.data, no_detail ) * y_scale + 15;
+            required_height = this.incremental_slots( this.view.zoom_res, result.data, no_detail ) * y_scale + 15;
             parent_element.parent().css("height", Math.max(this.height_px, required_height) + "px");
             slots = this.inc_slots[this.view.zoom_res];
         }
@@ -732,20 +749,21 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
         new_canvas.get(0).width = width + left_offset;
         new_canvas.get(0).height = required_height;
         // console.log(( tile_low - this.view.low ) * w_scale, tile_index, w_scale);
-        var ctx = new_canvas.get(0).getContext("2d");
+        var ctx = new_canvas.get(0).getContext("2d"),
+            px_per_char = ctx.measureText("A").width;
         ctx.fillStyle = this.prefs.block_color;
         ctx.font = this.default_font;
         ctx.textAlign = "right";
-        var min_color = 55,
-            color_span = 255 - min_color,
-            color_cutoff = color_span*2/3; // Where text switches from black to white
-            
         
-        if (data.dataset_type == "summary_tree") {            
-            var points = data.data;
-            var max = data.max;
-            var avg = data.avg;
-            if (data.data.length > 2) {
+        if (result.dataset_type == "summary_tree") {
+            var color,
+                min_color = 55,
+                color_span = 255 - min_color,
+                color_cutoff = color_span*2/3, // Where text switches from black to white
+                points = result.data,
+                max = result.max,
+                avg = result.avg;
+            if (points.length > 2) {
                 var delta_x_px = Math.ceil((points[1][0] - points[0][0]) * w_scale);
             } else {
                 var delta_x_px = 50; // Arbitrary, fix
@@ -756,7 +774,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                 var y = points[i][1];
             
                 if (!y) { continue; }
-                var color = Math.floor( color_span - (y / max) * color_span );
+                color = Math.floor( color_span - (y / max) * color_span );
                 ctx.fillStyle = "rgb(" +color+ "," +color+ "," +color+ ")";
                 ctx.fillRect(x + left_offset, 0, delta_x_px, 20);
 
@@ -770,11 +788,12 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                     ctx.fillText(points[i][1], x + left_offset + (delta_x_px/2), 12);
                 }
             }
+            
             parent_element.append( new_canvas );
             return new_canvas;
         }
         
-        var data = data.data;
+        var data = result.data;
         var j = 0;
         for (var i = 0, len = data.length; i < len; i++) {
             var feature = data[i],
@@ -785,80 +804,118 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                 
             if (feature_start <= tile_high && feature_end >= tile_low) {
                 var f_start = Math.floor( Math.max(0, (feature_start - tile_low) * w_scale) ),
-                    f_end   = Math.ceil( Math.min(width, (feature_end - tile_low) * w_scale) ),
+                    f_end   = Math.ceil( Math.min(width, Math.max(0, (feature_end - tile_low) * w_scale)) ),
                     y_center = slots[feature_uid] * y_scale;
-                
-                // console.log(feature_uid, feature_start, feature_end, f_start, f_end, y_center);
-                if (no_detail) {
-                    ctx.fillRect(f_start + left_offset, y_center + 5, f_end - f_start, 1);
-                } else {
-                    // Showing labels, blocks, details
-                    var feature_strand = feature[4],
-                        feature_ts = feature[5],
-                        feature_te = feature[6],
-                        feature_blocks = feature[7];
                     
-                    var thickness, y_start, thick_start = null, thick_end = null;
-                    if (feature_ts && feature_te) {
-                        thick_start = Math.floor( Math.max(0, (feature_ts - tile_low) * w_scale) );
-                        thick_end = Math.ceil( Math.min(width, (feature_te - tile_low) * w_scale) );
-                    }
-                    if (feature_name !== undefined && feature_start > tile_low) {
-                        ctx.fillStyle = label_color;
-                        if (tile_index === 0 && f_start - ctx.measureText(feature_name).width < 0) {
-                            ctx.textAlign = "left";
-                            ctx.fillText(feature_name, f_end + 2 + left_offset, y_center + 8);
-                        } else {
-                            ctx.textAlign = "right";
-                            ctx.fillText(feature_name, f_start - 2 + left_offset, y_center + 8);
-                        }
-                        ctx.fillStyle = block_color;
-                    }
-                    if (feature_blocks) {
-                        // Draw introns
-                        if (feature_strand) {
-                            if (feature_strand == "+") {
-                                ctx.fillStyle = RIGHT_STRAND;
-                            } else if (feature_strand == "-") {
-                                ctx.fillStyle = LEFT_STRAND;
-                            }
-                            ctx.fillRect(f_start + left_offset, y_center, f_end - f_start, 10);
-                            ctx.fillStyle = block_color;
-                        }
+                if (result.dataset_type === "bai") {
+                    ctx.fillStyle = "#555";
+                    if (feature[4] instanceof Array) {
+                        var b1_start = Math.floor( Math.max(0, (feature[4][0] - tile_low) * w_scale) ),
+                            b1_end   = Math.ceil( Math.min(width, Math.max(0, (feature[4][1] - tile_low) * w_scale)) ),
+                            b2_start = Math.floor( Math.max(0, (feature[5][0] - tile_low) * w_scale) ),
+                            b2_end   = Math.ceil( Math.min(width, Math.max(0, (feature[5][1] - tile_low) * w_scale)) );
                         
-                        for (var k = 0, k_len = feature_blocks.length; k < k_len; k++) {
-                            var block = feature_blocks[k],
-                                block_start = Math.floor( Math.max(0, (block[0] - tile_low) * w_scale) ),
-                                block_end = Math.ceil( Math.min(width, (block[1] - tile_low) * w_scale) );
-                            if (block_start > block_end) { continue; }
-                            // Draw the block
-                            thickness = 5;
-                            y_start = 3;
-                            ctx.fillRect(block_start + left_offset, y_center + y_start, block_end - block_start, thickness);
-                            
-                            // Draw thick regions: check if block intersects with thick region
-                            if (thick_start !== undefined && !(block_start > thick_end || block_end < thick_start) ) {
-                                thickness = 9;
-                                y_start = 1;
-                                var block_thick_start = Math.max(block_start, thick_start),
-                                    block_thick_end = Math.min(block_end, thick_end);
-                                ctx.fillRect(block_thick_start + left_offset, y_center + y_start, block_thick_end - block_thick_start, thickness);
-
-                            }
+                        if (feature[4][1] >= tile_low && feature[4][0] <= tile_high) {
+                            this.rect_or_text(ctx, w_scale, px_per_char, tile_low, tile_high, feature[4][0], feature[4][2], b1_start + left_offset, b1_end - b1_start, y_center);
+                        }
+                        if (feature[5][1] >= tile_low && feature[5][0] <= tile_high) {
+                            this.rect_or_text(ctx, w_scale, px_per_char, tile_low, tile_high, feature[5][0], feature[5][2], b2_start + left_offset, b2_end - b2_start, y_center);
+                        }
+                        if (b2_start > b1_end) {
+                            ctx.fillStyle = "#999";
+                            ctx.fillRect(b1_end + left_offset, y_center + 5, b2_start - b1_end, 1);
                         }
                     } else {
-                        // If there are no blocks, we treat the feature as one big exon
-                        thickness = 9;
-                        y_start = 1;
-                        ctx.fillRect(f_start + left_offset, y_center + y_start, f_end - f_start, thickness);
-                        if ( feature.strand ) {
-                            if (feature.strand == "+") {
-                                ctx.fillStyle = RIGHT_STRAND_INV;
-                            } else if (feature.strand == "-") {
-                                ctx.fillStyle = LEFT_STRAND_INV;
+                        ctx.fillStyle = "#555";
+                        this.rect_or_text(ctx, w_scale, px_per_char, tile_low, tile_high, feature_start, feature_name, f_start + left_offset, f_end - f_start, y_center);
+                    }
+                    if (!no_detail && feature_start > tile_low) {
+                        // Draw label
+                        ctx.fillStyle = this.prefs.label_color;
+                        if (tile_index === 0 && f_start - ctx.measureText(feature_name).width < 0) {
+                            ctx.textAlign = "left";
+                            ctx.fillText(feature_uid, f_end + 2 + left_offset, y_center + 8);
+                        } else {
+                            ctx.textAlign = "right";
+                            ctx.fillText(feature_uid, f_start - 2 + left_offset, y_center + 8);
+                        }
+                        ctx.fillStyle = "#555";
+                    }
+                        
+                } else if (result.dataset_type === "interval_index") {
+                    
+                    // console.log(feature_uid, feature_start, feature_end, f_start, f_end, y_center);
+                    if (no_detail) {
+                        ctx.fillRect(f_start + left_offset, y_center + 5, f_end - f_start, 1);
+                    } else {
+                        // Showing labels, blocks, details
+                        var feature_strand = feature[4],
+                            feature_ts = feature[5],
+                            feature_te = feature[6],
+                            feature_blocks = feature[7];
+                    
+                        var thickness, y_start, thick_start = null, thick_end = null;
+                        if (feature_ts && feature_te) {
+                            thick_start = Math.floor( Math.max(0, (feature_ts - tile_low) * w_scale) );
+                            thick_end = Math.ceil( Math.min(width, Math.max(0, (feature_te - tile_low) * w_scale)) );
+                        }
+                        if (feature_name !== undefined && feature_start > tile_low) {
+                            ctx.fillStyle = label_color;
+                            if (tile_index === 0 && f_start - ctx.measureText(feature_name).width < 0) {
+                                ctx.textAlign = "left";
+                                ctx.fillText(feature_name, f_end + 2 + left_offset, y_center + 8);
+                            } else {
+                                ctx.textAlign = "right";
+                                ctx.fillText(feature_name, f_start - 2 + left_offset, y_center + 8);
                             }
-                            ctx.fillRect(f_start + left_offset, y_center, f_end - f_start, 10);
-                            ctx.fillStyle = prefs.block_color;
+                            ctx.fillStyle = block_color;
+                        }
+                        if (feature_blocks) {
+                            // Draw introns
+                            if (feature_strand) {
+                                if (feature_strand == "+") {
+                                    ctx.fillStyle = RIGHT_STRAND;
+                                } else if (feature_strand == "-") {
+                                    ctx.fillStyle = LEFT_STRAND;
+                                }
+                                ctx.fillRect(f_start + left_offset, y_center, f_end - f_start, 10);
+                                ctx.fillStyle = block_color;
+                            }
+                        
+                            for (var k = 0, k_len = feature_blocks.length; k < k_len; k++) {
+                                var block = feature_blocks[k],
+                                    block_start = Math.floor( Math.max(0, (block[0] - tile_low) * w_scale) ),
+                                    block_end = Math.ceil( Math.min(width, Math.max((block[1] - tile_low) * w_scale)) );
+                                if (block_start > block_end) { continue; }
+                                // Draw the block
+                                thickness = 5;
+                                y_start = 3;
+                                ctx.fillRect(block_start + left_offset, y_center + y_start, block_end - block_start, thickness);
+                            
+                                // Draw thick regions: check if block intersects with thick region
+                                if (thick_start !== undefined && !(block_start > thick_end || block_end < thick_start) ) {
+                                    thickness = 9;
+                                    y_start = 1;
+                                    var block_thick_start = Math.max(block_start, thick_start),
+                                        block_thick_end = Math.min(block_end, thick_end);
+                                    ctx.fillRect(block_thick_start + left_offset, y_center + y_start, block_thick_end - block_thick_start, thickness);
+
+                                }
+                            }
+                        } else {
+                            // If there are no blocks, we treat the feature as one big exon
+                            thickness = 9;
+                            y_start = 1;
+                            ctx.fillRect(f_start + left_offset, y_center + y_start, f_end - f_start, thickness);
+                            if ( feature.strand ) {
+                                if (feature.strand == "+") {
+                                    ctx.fillStyle = RIGHT_STRAND_INV;
+                                } else if (feature.strand == "-") {
+                                    ctx.fillStyle = LEFT_STRAND_INV;
+                                }
+                                ctx.fillRect(f_start + left_offset, y_center, f_end - f_start, 10);
+                                ctx.fillStyle = prefs.block_color;
+                            }
                         }
                     }
                 }
@@ -899,62 +956,9 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
 var ReadTrack = function ( name, dataset_id, prefs ) {
     FeatureTrack.call( this, name, dataset_id, prefs );
     this.track_type = "ReadTrack";
+    this.vertical_detail_px = 10;
+    this.vertical_nodetail_px = 5;
     
 };
 $.extend( ReadTrack.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
-    /*draw_tile: function( resolution, tile_index, parent_element, w_scale ) {
-        if (!this.values) {
-            return;
-        }
-        var tile_low = tile_index * DENSITY * resolution,
-            tile_high = ( tile_index + 1 ) * DENSITY * resolution,
-            tile_span = DENSITY * resolution;
-        // console.log("drawing " + tile_index);
-        // Once we zoom in enough, show name labels
-        var data, slots, required_height;
-            required_height = this.height_px;
-            slots = this.zo_slots;
-            data = this.values;
-        
-        // console.log(tile_low, tile_high, tile_length, w_scale);
-        var width = Math.ceil( tile_span * w_scale ),
-            new_canvas = $("<canvas class='tile'></canvas>");
-
-        new_canvas.css({
-            position: "absolute",
-            top: 0,
-            left: ( tile_low - this.view.low ) * w_scale - this.left_offset
-        });
-        new_canvas.get(0).width = width + this.left_offset;
-        new_canvas.get(0).height = required_height;
-        // console.log(( tile_low - this.view.low ) * w_scale, tile_index, w_scale);
-        var ctx = new_canvas.get(0).getContext("2d");
-        ctx.fillStyle = this.prefs.block_color;
-        ctx.font = this.default_font;
-        ctx.textAlign = "right";
-        var px_per_char = ctx.measureText("A").width;
-        
-        var j = 0;
-        for (var i = 0, len = data.length; i < len; i++) {
-            var feature = data[i];
-            if (feature.start <= tile_high && feature.end >= tile_low) {
-                var f_start = Math.floor( Math.max(0, (feature.start - tile_low) * w_scale) ),
-                    f_end   = Math.ceil( Math.min(width, (feature.end - tile_low) * w_scale) ),
-                    y_center = slots[feature.uid] * this.vertical_detail_px;
-                
-                var thickness, y_start, thick_start = null, thick_end = null;
-                if (w_scale > px_per_char) {
-                    for (var c = 0, str_len = feature.name.length; c < str_len; c++) {
-                        var c_start = Math.floor( Math.max(0, (feature.start + c - tile_low) * w_scale) );
-                        ctx.fillText(feature.name[c], c_start + this.left_offset, y_center + 8);
-                    }
-                } else {
-                    ctx.fillRect(f_start + this.left_offset, y_center + 4, f_end - f_start, 3);
-                }
-            }
-        }        
-
-        parent_element.append( new_canvas );
-        return new_canvas;
-    }*/
 });

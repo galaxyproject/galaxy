@@ -38,6 +38,6 @@ class SummaryTreeDataProvider( object ):
         if results == "detail":
             return None
         elif results == "draw":
-            return "no_detail", None, None
+            return "no_detail"
         else:
-            return results, stats["max"], stats["avg"]
+            return results, stats[level]["max"], stats[level]["avg"], stats[level]["delta"]
