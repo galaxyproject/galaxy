@@ -29,7 +29,8 @@
                 </div>
                 <div class="toolSectionBody">
                     <div class="toolSectionBg">
-                        <div class="toolTitle"><a href="${h.url_for( controller='tool', action='browse_tools' )}" target="galaxy_main">Browse tools</a></div>
+                        <div class="toolTitle"><a href="${h.url_for( controller='tool', action='browse_tool_categories' )}" target="galaxy_main">Browse tools by category</a></div>
+                        <div class="toolTitle"><a href="${h.url_for( controller='tool', action='browse_tools' )}" target="galaxy_main">Browse all tools</a></div>
                     </div>
                 </div>
                 <div class="toolSectionBody">
@@ -53,7 +54,7 @@
         if trans.app.config.require_login and not trans.user:
             center_url = h.url_for( controller='user', action='login', message=message, status=status )
         else:
-            center_url = h.url_for( controller='tool', action='browse_tools', message=message, status=status )
+            center_url = h.url_for( controller='tool', action='browse_tool_categories', message=message, status=status )
     %>
     <iframe name="galaxy_main" id="galaxy_main" frameborder="0" style="position: absolute; width: 100%; height: 100%;" src="${center_url}"> </iframe>
 </%def>

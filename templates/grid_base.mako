@@ -801,8 +801,12 @@
                 %for column in grid.columns:
                     %if column.visible:
                         <%
+                            # Get filter params for generating filter links
+                            filter_params = {}
+                            for k, v in cur_filter_dict.items():
+                                filter_params['f-' + k] = v
                             # Link
-                            link = column.get_link( trans, grid, item )
+                            link = column.get_link( trans, grid, item, filter_params )
                             if link:
                                 href = url( **link )
                             else:
@@ -827,10 +831,9 @@
                                     cls = "menubutton"
                                 if column.attach_popup and href:
                                     cls = "menubutton split"
-
                             %>
                             %if href:
-                                <td><div id="${id}" class="${cls}" style="float: left;"><a class="label" href="${href}">${v}</a></td>
+                                <td><div id="${id}" class="${cls}" style="float: left;"><a class="label" href="${href}">${v}</a></div></td>
                             %else:
                                 <td><div id="${id}" class="${cls}"><label for="${encoded_id}">${v}</label></div></td>
                             %endif

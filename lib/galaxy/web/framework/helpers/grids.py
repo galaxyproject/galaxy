@@ -290,7 +290,9 @@ class GridColumn( object ):
         if self.format:
             value = self.format( value )
         return value
-    def get_link( self, trans, grid, item ):
+    def get_link( self, trans, grid, item, filter_params ):
+        # FIXME: filter_params is only here so we can do grid filtering from
+        # column links.  remove once a better way is created.
         if self.link and self.link( item ):
             return self.link( item )
         return None
@@ -447,7 +449,7 @@ class OwnerColumn( TextColumn ):
 
 class PublicURLColumn( TextColumn ):
     """ Column displays item's public URL based on username and slug. """
-    def get_link( self, trans, grid, item ):
+    def get_link( self, trans, grid, item, filter_params ):
         if item.user.username and item.slug:
             return dict( action='display_by_username_and_slug', username=item.user.username, slug=item.slug )
         elif not item.user.username:
@@ -483,7 +485,7 @@ class SharingStatusColumn( GridColumn ):
         if item.published:
             sharing_statuses.append( "Published" )
         return ", ".join( sharing_statuses )
-    def get_link( self, trans, grid, item ):
+    def get_link( self, trans, grid, item, filter_params ):
         if not item.deleted and ( item.users_shared_with or item.importable or item.published ):
             return dict( operation="share or publish", id=item.id )
         return None

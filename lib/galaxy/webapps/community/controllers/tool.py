@@ -20,9 +20,33 @@ class ToolListGrid( grids.Grid ):
             if tool.categories:
                 rval = ''
                 for tca in tool.categories:
-                    rval = '%s%s<br/>' % ( rval, tca.category.name )
+                    rval += '%s<br/>\n' % tca.category.name
                 return rval
             return 'not set'
+        def filter( self, trans, user, query, column_filter ):
+            # Category.name conflicts with Tool.name, so we have to make our own filter
+            def get_single_filter( filter ):
+                return func.lower( model.Category.name ).like( "%" + filter.lower() + "%" )
+            if column_filter == 'All':
+                pass
+            elif isinstance( column_filter, list ):
+                clause_list = []
+                for filter in column_filter:
+                    clause_list.append( get_single_filter( filter ) )
+                query = query.filter( or_( *clause_list ) )
+            else:
+                query = query.filter( get_single_filter( column_filter ) )
+            return query
+        def get_link( self, trans, grid, tool, filter_params ):
+            if tool.categories:
+                filter_params['f-category'] = []
+                for tca in tool.categories:
+                    filter_params['f-category'].append( tca.category.name )
+                if len( filter_params['f-category'] ) == 1:
+                    filter_params['f-category'] = filter_params['f-category'][0]
+                filter_params['advanced-search'] = 'True'
+                return filter_params
+            return None
     class StateColumn( grids.GridColumn ):
         def get_value( self, trans, grid, tool ):
             state = tool.state()
@@ -51,7 +75,11 @@ class ToolListGrid( grids.Grid ):
             return accepted_filters
     class UserColumn( grids.TextColumn ):
         def get_value( self, trans, grid, tool ):
-            return tool.user.email
+            return tool.user.username
+        def get_link( self, trans, grid, tool, filter_params ):
+            filter_params['f-username'] = tool.user.username
+            filter_params['advanced-search'] = 'True'
+            return filter_params
     # Grid definition
     title = "Tools"
     model_class = model.Tool
@@ -64,9 +92,14 @@ class ToolListGrid( grids.Grid ):
                     link=( lambda item: dict( operation="View Tool", id=item.id, cntrller='tool', webapp="community" ) ),
                     attach_popup=True,
                     filterable="advanced" ),
-        CategoryColumn( "Category",
-                    key="category",
-                    model_class=model.Category,
+        CategoryColumn( "Categories",
+                        key="category",
+                        model_class=model.Tool,
+                        attach_popup=False,
+                        filterable="advanced" ),
+        UserColumn( "Uploaded By",
+                    key="username",
+                    model_class=model.User,
                     attach_popup=False,
                     filterable="advanced" ),
         StateColumn( "State",
@@ -92,6 +125,48 @@ class ToolListGrid( grids.Grid ):
         grids.GridColumnFilter( "Deleted", args=dict( deleted=True ) ),
         grids.GridColumnFilter( "All", args=dict( deleted='All' ) )
     ]
+    default_filter = dict( name="All", deleted="False", username="All" )
+    num_rows_per_page = 50
+    preserve_state = False
+    use_paging = True
+    def build_initial_query( self, session ):
+        return session.query( self.model_class ).outerjoin( model.ToolCategoryAssociation ).outerjoin( model.Category )
+    def apply_default_filter( self, trans, query, **kwargs ):
+        return query.filter( self.model_class.deleted==False )
+
+class ToolCategoryListGrid( grids.Grid ):
+    class NameColumn( grids.TextColumn ):
+        def get_value( self, trans, grid, category ):
+            return category.name
+    class DescriptionColumn( grids.TextColumn ):
+        def get_value( self, trans, grid, category ):
+            return category.description
+    # Grid definition
+    title = "Tool Categories"
+    model_class = model.Category
+    template='/webapps/community/category/grid.mako'
+    default_sort_key = "name"
+    columns = [
+        NameColumn( "Name",
+                    key="name",
+                    model_class=model.Category,
+                    link=( lambda item: dict( operation="Browse Category", id=item.id, webapp="community" ) ),
+                    attach_popup=False,
+                    filterable="advanced" ),
+        DescriptionColumn( "Description",
+                        key="description",
+                        model_class=model.Category,
+                        attach_popup=False,
+                        filterable="advanced" )
+    ]
+    columns.append( grids.MulticolFilterColumn( "Search", 
+                                                cols_to_filter=[ columns[0], columns[1] ], 
+                                                key="free-text-search",
+                                                visible=False,
+                                                filterable="standard" ) )
+    standard_filters = [
+        grids.GridColumnFilter( "All", args=dict( deleted='All' ) )
+    ]
     default_filter = dict( name="All", deleted="False" )
     num_rows_per_page = 50
     preserve_state = False
@@ -103,6 +178,7 @@ class ToolListGrid( grids.Grid ):
 
 class ToolBrowserController( BaseController ):
     
+    tool_category_list_grid = ToolCategoryListGrid()
     tool_list_grid = ToolListGrid()
     
     @web.expose
@@ -111,6 +187,20 @@ class ToolBrowserController( BaseController ):
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         return trans.fill_template( '/webapps/community/index.mako', message=message, status=status )
+    @web.expose
+    def browse_tool_categories( self, trans, **kwargs ):
+        if 'operation' in kwargs:
+            operation = kwargs['operation'].lower()
+            if operation == "browse category":
+                category_id = int( trans.app.security.decode_id( kwargs['id'] ) )
+                category = trans.sa_session.query( model.Category ).get( category_id )
+                del kwargs['id']
+                del kwargs['operation']
+                kwargs['f-category'] = category.name
+                return trans.response.send_redirect( web.url_for( controller='tool',
+                                                                  action='browse_tools',
+                                                                  **kwargs ) )
+        return self.tool_category_list_grid( trans, **kwargs )
     @web.expose
     def browse_tools( self, trans, **kwargs ):
         if 'operation' in kwargs:
