@@ -43,9 +43,18 @@ class ToolRunner( BaseController ):
             return trans.response.send_redirect( url_for( "/static/welcome.html" ) )
         # Load the tool
         toolbox = self.get_toolbox()
-        tool = toolbox.tools_by_id.get( tool_id, None )
+        #Backwards compatibility for datasource tools that have default tool_id configured, but which are now using only GALAXY_URL
+        if isinstance( tool_id, list ):
+            tool_ids = tool_id
+        else:
+            tool_ids = [ tool_id ]
+        for tool_id in tool_ids:
+            tool = toolbox.tools_by_id.get( tool_id, None )
+            if tool:
+                break
         # No tool matching the tool id, display an error (shouldn't happen)
         if not tool:
+            tool_id = ','.join( tool_ids )
             log.error( "index called with tool id '%s' but no such tool exists", tool_id )
             trans.log_event( "Tool id '%s' does not exist" % tool_id )
             return "Tool '%s' does not exist, kwd=%s " % (tool_id, kwd)

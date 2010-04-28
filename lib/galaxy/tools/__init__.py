@@ -1583,6 +1583,15 @@ class Tool:
 
 class DataSourceTool( Tool ):
     tool_type = 'data_source'
+    
+    def _build_GALAXY_URL_parameter( self ):
+        return ToolParameter.build( self, ElementTree.XML( '<param name="GALAXY_URL" type="baseurl" value="/tool_runner?tool_id=%s" />' % self.id ) )
+    
+    def parse_inputs( self, root ):
+        Tool.parse_inputs( self, root )
+        if 'GALAXY_URL' not in self.inputs:
+            self.inputs[ 'GALAXY_URL' ] = self._build_GALAXY_URL_parameter()
+    
     def exec_before_job( self, app, inp_data, out_data, param_dict={} ):
         #TODO: Allow for a generic way for all Tools to have output dataset properties be set to input parameter values
         #as defined in a tool XML
@@ -1646,6 +1655,12 @@ class DataSourceTool( Tool ):
         self.sa_session.add( data )
         self.sa_session.flush()
 
+class AsyncDataSourceTool( DataSourceTool ):
+    tool_type = 'data_source_async'
+    
+    def _build_GALAXY_URL_parameter( self ):
+        return ToolParameter.build( self, ElementTree.XML( '<param name="GALAXY_URL" type="baseurl" value="/async/%s" />' % self.id ) )
+
 class DataDestinationTool( Tool ):
     tool_type = 'data_destination'
 
@@ -1665,7 +1680,7 @@ class SetMetadataTool( Tool ):
 
 #load tool_type to ToolClass mappings
 tool_types = {}
-for tool_class in [ Tool, DataDestinationTool, SetMetadataTool, DataSourceTool ]:
+for tool_class in [ Tool, DataDestinationTool, SetMetadataTool, DataSourceTool, AsyncDataSourceTool ]:
     tool_types[ tool_class.tool_type ] = tool_class
 
 # ---- Utility classes to be factored out -----------------------------------
