@@ -3,20 +3,34 @@
     <command interpreter="python">
         cuffcompare_wrapper.py 
             --transcripts-accuracy-output=$transcripts_accuracy
-            --transcripts-combined-output=$transcripts_combined
-            --transcripts-tracking-output=$transcripts_tracking
+            #if $second_gtf.use_second_gtf == "Yes":
+                --transcripts-combined-output=$transcripts_combined
+                --transcripts-tracking-output=$transcripts_tracking
+            #end if
             #if $annotation.use_ref_annotation == "Yes":
                 -r $annotation.reference_annotation
                 #if $annotation.ignore_nonoverlapping_reference:
                     -R
                 #end if
             #end if
-            $input1
-            $input2
+            -1 $input1
+            #if $second_gtf.use_second_gtf == "Yes":
+                -2 $second_gtf.input2
+            #end if
     </command>
     <inputs>
         <param format="gtf" name="input1" type="data" label="GTF file produced by Cufflinks" help=""/>
-        <param format="gtf" name="input2" type="data" label="GTF file produced by Cufflinks" help=""/>
+        <conditional name="second_gtf">
+            <param name="use_second_gtf" type="select" label="Use Another GTF file producted by Cufflinks?">
+                <option value="No">No</option>
+                <option value="Yes">Yes</option>
+            </param>
+            <when value="Yes">
+                <param format="gtf" name="input2" type="data" label="GTF file produced by Cufflinks" help=""/>
+            </when>
+            <when value="No">
+            </when>
+        </conditional>
         <conditional name="annotation">
             <param name="use_ref_annotation" type="select" label="Use Reference Annotation">
                 <option value="No">No</option>

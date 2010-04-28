@@ -13,6 +13,8 @@ def __main__():
     parser.add_option( '-R', action="store_true", dest='ignore_nonoverlap', help='If -r was specified, this option causes cuffcompare to ignore reference transcripts that are not overlapped by any transcript in one of cuff1.gtf,...,cuffN.gtf. Useful for ignoring annotated transcripts that are not present in your RNA-Seq samples and thus adjusting the "sensitivity" calculation in the accuracy report written in the transcripts accuracy file' )
     
     # Wrapper / Galaxy options.
+    parser.add_option( '-1', dest='input1')
+    parser.add_option( '-2', dest='input2')
     parser.add_option( '-A', '--transcripts-accuracy-output', dest='transcripts_accuracy_output_file', help='' )
     parser.add_option( '-B', '--transcripts-combined-output', dest='transcripts_combined_output_file', help='' )
     parser.add_option( '-C', '--transcripts-tracking-output', dest='transcripts_tracking_output_file', help='' )
@@ -37,9 +39,10 @@ def __main__():
     print cmd
         
     # Add input files.
-    if type(args) is list:
-        args = " ".join(args)
-    cmd += " " + args
+    cmd += " %s" % options.input1
+    two_inputs = ( options.input2 != None)
+    if two_inputs:
+        cmd += " %s" % options.input2
     
     # Run command.
     try:
@@ -76,8 +79,11 @@ def __main__():
     try:
         try:
             shutil.copyfile( tmp_output_dir + "/cc_output", options.transcripts_accuracy_output_file )
-            shutil.copyfile( tmp_output_dir + "/cc_output.combined.gtf", options.transcripts_combined_output_file )
-            shutil.copyfile( tmp_output_dir + "/cc_output.tracking", options.transcripts_tracking_output_file )
+            if two_inputs:
+                shutil.copyfile( tmp_output_dir + "/cc_output.combined.gtf", options.transcripts_combined_output_file )
+                shutil.copyfile( tmp_output_dir + "/cc_output.tracking", options.transcripts_tracking_output_file )
+            
+            # TODO: also copy *.tmap, *.refmap to outputs?
         except Exception, e:
             stop_err( 'Error in cuffcompare:\n' + str( e ) ) 
     finally:
