@@ -20,7 +20,7 @@
             var out_select = '#' + action + '_out_select';
             return !$( in_select + ' option:selected' ).remove().appendTo( out_select );
         });
-        $( 'form#edit_role_associations' ).submit( function() {
+        $( 'form#request_type_permissions' ).submit( function() {
             $( '.in_select option' ).each(function( i ) {
                 $( this ).attr( "selected", "selected" );
             });
