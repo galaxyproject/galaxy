@@ -45,24 +45,24 @@ $().ready(function() {
 
 <%def name="title()">Edit Tool</%def>
 
-<h2>Edit ${tool.name} <em>${tool.description}</em></h2>
+<h2>Edit Tool: ${tool.name} <em>${tool.description}</em></h2>
 
 %if message:
     ${render_msg( message, status )}
 %endif
 
 %if cntrller == 'admin' or ( tool.is_new() and trans.user == tool.user ):
-    <div class="toolForm">
-        <div class="toolFormTitle">${tool.name}
-            <a id="tool-${tool.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
-            <div popupmenu="tool-${tool.id}-popup">
-                <a class="action-button" href="${h.url_for( controller='common', action='view_tool', id=trans.app.security.encode_id( tool.id ), cntrller=cntrller )}">View information</a>
-                <a class="action-button" href="${h.url_for( controller='common', action='manage_categories', id=trans.app.security.encode_id( tool.id ), cntrller=cntrller )}">Manage categories</a>
-                <a class="action-button" href="${h.url_for( controller='common', action='upload_new_tool_version', id=trans.app.security.encode_id( tool.id ), cntrller=cntrller )}">Upload a new version</a>
-                <a class="action-button" href="${h.url_for( controller='tool', action='download_tool', id=trans.app.security.encode_id( tool.id ) )}">Download tool</a>
+    <form id="edit_tool" name="edit_tool" action="${h.url_for( controller='common', action='edit_tool' )}" method="post">
+        <div class="toolForm">
+            <div class="toolFormTitle">${tool.name}
+                <a id="tool-${tool.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
+                <div popupmenu="tool-${tool.id}-popup">
+                    <a class="action-button" href="${h.url_for( controller='common', action='view_tool', id=trans.app.security.encode_id( tool.id ), cntrller=cntrller )}">View information</a>
+                    <a class="action-button" href="${h.url_for( controller='common', action='manage_categories', id=trans.app.security.encode_id( tool.id ), cntrller=cntrller )}">Manage categories</a>
+                    <a class="action-button" href="${h.url_for( controller='common', action='upload_new_tool_version', id=trans.app.security.encode_id( tool.id ), cntrller=cntrller )}">Upload a new version</a>
+                    <a class="action-button" href="${h.url_for( controller='tool', action='download_tool', id=trans.app.security.encode_id( tool.id ) )}">Download tool</a>
+                </div>
             </div>
-        </div>
-        <form id="edit_tool" name="edit_tool" action="${h.url_for( controller='common', action='edit_tool' )}" method="post">
             <div class="toolFormBody">
                 <input type="hidden" name="id" value="${trans.app.security.encode_id( tool.id )}"/>
                 <input type="hidden" name="cntrller" value="${cntrller}"/>
@@ -85,6 +85,9 @@ $().ready(function() {
                     <input type="submit" id="edit_tool_button" name="edit_tool_button" value="Save">
                 </div>
             </div>
+        </div>
+        <p/>
+        <div class="toolForm">
             <div class="toolFormTitle">Manage categories</div>
             <div class="toolFormBody">
                 <div class="form-row">
@@ -103,7 +106,10 @@ $().ready(function() {
                     <input type="submit" id="edit_tool_button" name="edit_tool_button" value="Save"/>
                 </div>
             </div>
-        </form>
+        </div>
+    </form>
+    <p/>
+    <div class="toolForm">
         %if tool.is_new():
             <div class="toolFormTitle">Get approval for publishing</div>
             <div class="toolFormBody">
@@ -113,11 +119,13 @@ $().ready(function() {
                     <div class="form-row">
                         <input type="submit" name="approval_button" value="Submit for approval"/>
                     </div>
-                    <div class="toolParamHelp" style="clear: both;">
-                        Tools must be approved before they are made available to others in the community.  After you have submitted
-                        your tool to be published, you will no longer be able to modify it, so make sure to save the information in
-                        each of the forms above before submitting for approval.
-                    </div>  
+                    <div class="form-row">
+                        <div class="toolParamHelp" style="clear: both;">
+                            Tools must be approved before they are made available to others in the community.  After you have submitted
+                            your tool to be published, you will no longer be able to modify it, so make sure the information above is
+                            correct and has been saved before submitting for approval.
+                        </div>  
+                    </div>
                 </form>
             </div>
         %endif

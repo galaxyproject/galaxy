@@ -1,4 +1,4 @@
-import sys, os, operator, string, shutil, re, socket, urllib, time, logging, mimetypes
+import os, logging, urllib, tarfile
 
 from galaxy.web.base.controller import *
 from galaxy.webapps.community import model
@@ -249,3 +249,17 @@ class ToolBrowserController( BaseController ):
         trans.response.headers['Content-Length'] = int( os.stat( tool.file_name ).st_size )
         trans.response.headers['Content-Disposition'] = 'attachment; filename=%s' % tool.download_file_name
         return open( tool.file_name )
+    @web.expose
+    def view_tool_file( self, trans, **kwd ):
+        params = util.Params( kwd )
+        id = params.get( 'id', None )
+        if not id:
+            return trans.response.send_redirect( web.url_for( controller='tool',
+                                                              action='browse_tools',
+                                                              message='Select a tool to download',
+                                                              status='error' ) )
+        tool = get_tool( trans, id )
+        tool_file_name = urllib.unquote_plus( kwd['file_name'] )
+        tool_file = tarfile.open( tool.file_name ).extractfile( tool_file_name )
+        trans.response.set_content_type( 'text/plain' )
+        return tool_file

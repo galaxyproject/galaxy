@@ -2,6 +2,7 @@
 
 <%
     from galaxy.web.framework.helpers import time_ago
+    from urllib import quote_plus
     
     if cntrller in [ 'tool' ]:
         can_edit = trans.app.security_agent.can_edit_item( trans.user, tool )
@@ -16,9 +17,37 @@
 %>
 <%inherit file="${inherit(context)}"/>
 
+<%def name="stylesheets()">
+    ${parent.stylesheets()}
+    <style type="text/css">
+    ul.fileBrowser,
+    ul.toolFile {
+        margin-left: 0;
+        padding-left: 0;
+        list-style: none;
+    }
+    ul.fileBrowser {
+        margin-left: 20px;
+    }
+    .fileBrowser li,
+    .toolFile li {
+        padding-left: 20px;
+        background-repeat: no-repeat;
+        background-position: 0;
+        min-height: 20px;
+    }
+    .toolFile li {
+        background-image: url( ${h.url_for( '/static/images/silk/page_white_compressed.png' )} );
+    }
+    .fileBrowser li {
+        background-image: url( ${h.url_for( '/static/images/silk/page_white.png' )} );
+    }
+    </style>
+</%def>
+
 <%def name="title()">View Tool</%def>
 
-<h2>View ${tool.name} <em>${tool.description}</em></h2>
+<h2>View Tool: ${tool.name} <em>${tool.description}</em></h2>
 
 %if message:
     ${render_msg( message, status )}
@@ -68,6 +97,24 @@
                 ${category.name}
             %endfor
             <div style="clear: both"></div>
+        </div>
+    </div>
+</div>
+
+<p/>
+
+<div class="toolForm">
+    <div class="toolFormTitle">Tool Contents</div>
+    <div class="toolFormBody">
+        <div class="form-row">
+            <ul class="toolFile">
+                <li><a href="${h.url_for( controller='tool', action='download_tool', id=trans.app.security.encode_id( tool.id ) )}">${tool.download_file_name}</a></li>
+                <ul class="fileBrowser">
+                    %for name in tool_file_contents:
+                        <li><a href="${h.url_for( controller='tool', action='view_tool_file', id=trans.app.security.encode_id( tool.id ), file_name=quote_plus( name ) )}">${name}</a></li>
+                    %endfor
+                </ul>
+            </ul>
         </div>
     </div>
 </div>

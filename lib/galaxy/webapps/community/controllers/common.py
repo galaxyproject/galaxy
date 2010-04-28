@@ -1,3 +1,4 @@
+import tarfile
 from galaxy.web.base.controller import *
 #from galaxy.web.controllers.admin import get_user, get_group, get_role
 from galaxy.webapps.community import model
@@ -79,8 +80,10 @@ class CommunityCommon( BaseController ):
                                                               status='error' ) )
         tool = get_tool( trans, id )
         categories = [ tca.category for tca in tool.categories ]
+        tool_file_contents = tarfile.open( tool.file_name, 'r' ).getnames()
         return trans.fill_template( '/webapps/community/tool/view_tool.mako',
                                     tool=tool,
+                                    tool_file_contents=tool_file_contents,
                                     categories=categories,
                                     cntrller=cntrller,
                                     message=message,

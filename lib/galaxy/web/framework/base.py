@@ -7,6 +7,7 @@ import types
 import logging
 import os.path
 import sys
+import tarfile
 
 from Cookie import SimpleCookie
 
@@ -135,6 +136,12 @@ class WebApplication( object ):
         elif isinstance( body, types.FileType ):
             # Stream the file back to the browser
             return send_file( start_response, trans, body )
+        elif isinstance( body, tarfile.ExFileObject ):
+            # Stream the tarfile member back to the browser
+            body = iterate_file( body )
+            start_response( trans.response.wsgi_status(), 
+                            trans.response.wsgi_headeritems() )
+            return body
         else:
             start_response( trans.response.wsgi_status(), 
                             trans.response.wsgi_headeritems() )
