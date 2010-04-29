@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import optparse, os, shutil, sys, tempfile
+import optparse, os, shutil, subprocess, sys, tempfile, fileinput
 
 def stop_err( msg ):
     sys.stderr.write( "%s\n" % msg )
@@ -9,72 +9,184 @@ def stop_err( msg ):
 def __main__():
     #Parse Command Line
     parser = optparse.OptionParser()
-    parser.add_option( '-1', '--input1', dest='input1', help='The (forward or single-end) reads file in Sanger FASTQ format' )
-    parser.add_option( '-2', '--input2', dest='input2', help='The reverse reads file in Sanger FASTQ format' )
-    parser.add_option( '-a', '--min-anchor-length', dest='min_anchor_length', 
-                        help='The "anchor length". TopHat will report junctions spanned by reads with at least this many bases on each side of the junction.' )
-    parser.add_option( '-i', '--min-intron-length', dest='min_intron_length', 
-                        help='The minimum intron length. TopHat will ignore donor/acceptor pairs closer than this many bases apart.' )
-    parser.add_option( '-I', '--max-intron-length', dest='max_intron_length', 
-                        help='The maximum intron length. When searching for junctions ab initio, TopHat will ignore donor/acceptor pairs farther than this many bases apart, except when such a pair is supported by a split segment alignment of a long read.' )
-    parser.add_option( '-s', '--solexa-quals', dest='solexa_quals', help='Use the Solexa scale for quality values in FASTQ files.' )
-    parser.add_option( '-S', '--solexa.3-quals', dest='solexa_quals', 
-                        help='As of the Illumina GA pipeline version 1.3, quality scores are encoded in Phred-scaled base-64. Use this option for FASTQ files from pipeline 1.3 or later.' )
     parser.add_option( '-p', '--num-threads', dest='num_threads', help='Use this many threads to align reads. The default is 1.' )
     parser.add_option( '-C', '--coverage-output', dest='coverage_output_file', help='Coverage output file; formate is WIG.' )
     parser.add_option( '-J', '--junctions-output', dest='junctions_output_file', help='Junctions output file; formate is BED.' )
     parser.add_option( '-H', '--hits-output', dest='accepted_hits_output_file', help='Accepted hits output file; formate is SAM.' )
-    parser.add_option( '-D', '--indexes-dir', dest='indexes_directory', help='Indexes directory; location of .ebwt and .fa files.' )
+    parser.add_option( '', '--own-file', dest='own_file', help='' )
+    parser.add_option( '-D', '--indexes-path', dest='index_path', help='Indexes directory; location of .ebwt and .fa files.' )
     parser.add_option( '-r', '--mate-inner-dist', dest='mate_inner_dist', help='This is the expected (mean) inner distance between mate pairs. \
                                                                                 For, example, for paired end runs with fragments selected at 300bp, \
                                                                                 where each end is 50bp, you should set -r to be 200. There is no default, \
                                                                                 and this parameter is required for paired end runs.')
+    parser.add_option( '', '--mate-std-dev', dest='mate_std_dev', help='Standard deviation of distribution on inner distances between male pairs.' )
+    parser.add_option( '-a', '--min-anchor-length', dest='min_anchor_length', 
+                        help='The "anchor length". TopHat will report junctions spanned by reads with at least this many bases on each side of the junction.' )
+    parser.add_option( '-m', '--splice-mismatches', dest='splice_mismatches', help='The maximum number of mismatches that can appear in the anchor region of a spliced alignment.' )
+    parser.add_option( '-i', '--min-intron-length', dest='min_intron_length', 
+                        help='The minimum intron length. TopHat will ignore donor/acceptor pairs closer than this many bases apart.' )
+    parser.add_option( '-I', '--max-intron-length', dest='max_intron_length', 
+                        help='The maximum intron length. When searching for junctions ab initio, TopHat will ignore donor/acceptor pairs farther than this many bases apart, except when such a pair is supported by a split segment alignment of a long read.' )
+    parser.add_option( '-F', '--junction_filter', dest='junction_filter', help='Filter out junctions supported by too few alignments (number of reads divided by average depth of coverage)' )
+    parser.add_option( '-g', '--max_multihits', dest='max_multihits', help='Maximum number of alignments to be allowed' )
+    parser.add_option( '', '--microexon-search', action="store_true", dest='microexon_search', help='With this option, the pipeline will attempt to find alignments incident to microexons. Works only for reads 50bp or longer.')
+    parser.add_option( '', '--closure-search', action="store_true", dest='closure_search', help='Enables the mate pair closure-based search for junctions. Closure-based search should only be used when the expected inner distance between mates is small (<= 50bp)')
+    parser.add_option( '', '--no-closure-search', action="store_false", dest='closure_search' )
+    parser.add_option( '', '--coverage-search', action="store_true", dest='coverage_search', help='Enables the coverage based search for junctions. Use when coverage search is disabled by default (such as for reads 75bp or longer), for maximum sensitivity.')
+    parser.add_option( '', '--no-coverage-search', action="store_false", dest='coverage_search' )
+    parser.add_option( '', '--min-segment-intron', dest='min_segment_intron', help='Minimum intron length that may be found during split-segment search' )
+    parser.add_option( '', '--max-segment-intron', dest='max_segment_intron', help='Maximum intron length that may be found during split-segment search' )
+    parser.add_option( '', '--min-closure-exon', dest='min_closure_exon', help='Minimum length for exonic hops in potential splice graph' )
+    parser.add_option( '', '--min-closure-intron', dest='min_closure_intron', help='Minimum intron length that may be found during closure search' )
+    parser.add_option( '', '--max-closure-intron', dest='max_closure_intron', help='Maximum intron length that may be found during closure search' )
+    parser.add_option( '', '--min-coverage-intron', dest='min_coverage_intron', help='Minimum intron length that may be found during coverage search' )
+    parser.add_option( '', '--max-coverage-intron', dest='max_coverage_intron', help='Maximum intron length that may be found during coverage search' )
+    parser.add_option( '', '--seg-mismatches', dest='seg_mismatches', help='Number of mismatches allowed in each segment alignment for reads mapped independently' )
+    parser.add_option( '', '--seg-length', dest='seg_length', help='Minimum length of read segments' )
+    
+    # Wrapper options.
+    parser.add_option( '-1', '--input1', dest='input1', help='The (forward or single-end) reads file in Sanger FASTQ format' )
+    parser.add_option( '-2', '--input2', dest='input2', help='The reverse reads file in Sanger FASTQ format' )
+    parser.add_option( '', '--single-paired', dest='single_paired', help='' )
+    parser.add_option( '', '--settings', dest='settings', help='' )
+    
     (options, args) = parser.parse_args()
     
-    # Make temp directory for output.
+    #sys.stderr.write('*'*50+'\n'+str(options)+'\n'+'*'*50+'\n')
+    
+    # Creat bowtie index if necessary.
+    tmp_index_dir = tempfile.mkdtemp()
+    if options.own_file != 'None':
+        index_path = os.path.join( tmp_index_dir, os.path.split( options.own_file )[1] )
+        cmd_index = 'bowtie-build -f %s %s' % ( options.own_file, index_path )
+        try:
+            tmp = tempfile.NamedTemporaryFile( dir=tmp_index_dir ).name
+            tmp_stderr = open( tmp, 'wb' )
+            proc = subprocess.Popen( args=cmd_index, shell=True, cwd=tmp_index_dir, stderr=tmp_stderr.fileno() )
+            returncode = proc.wait()
+            tmp_stderr.close()
+            # get stderr, allowing for case where it's very large
+            tmp_stderr = open( tmp, 'rb' )
+            stderr = ''
+            buffsize = 1048576
+            try:
+                while True:
+                    stderr += tmp_stderr.read( buffsize )
+                    if not stderr or len( stderr ) % buffsize != 0:
+                        break
+            except OverflowError:
+                pass
+            tmp_stderr.close()
+            if returncode != 0:
+                raise Exception, stderr
+        except Exception, e:
+            if os.path.exists( tmp_index_dir ):
+                shutil.rmtree( tmp_index_dir )
+            stop_err( 'Error indexing reference sequence\n' + str( e ) )
+    else:
+        index_path = options.index_path
+    
+    # Build tophat command.
     tmp_output_dir = tempfile.mkdtemp()
-    
-    # Build command.
-    
-    # Base.
-    cmd = "tophat -o %s " % ( tmp_output_dir )
-    
-    # Add options.
-    if options.mate_inner_dist:
-        cmd += ( " -r %i" % int ( options.mate_inner_dist ) )
-        
-    # Add index prefix.
-    cmd += " " + options.indexes_directory
-        
-    # Add input files.
-    cmd += " " + options.input1
-    if options.mate_inner_dist:
-        # Using paired-end reads.
-        cmd += " " + options.input2
-        
-    # Route program output to file.
-    cmd += " > %s" % tmp_output_dir + "/std_out.txt"
-    # Route program error output to file.
-    cmd += " 2> %s" % tmp_output_dir + "/std_err.txt"
-
-    # Run.
+    cmd = 'tophat -o %s %s %s %s'
+    reads = options.input1
+    if options.input2 != 'None':
+        reads += ' ' + options.input2
+    opts = '-p %s' % options.num_threads
+    if options.single_paired == 'paired':
+        opts += ' -r %s' % options.mate_inner_dist
+    if options.settings == 'preSet':
+        cmd = cmd % ( tmp_output_dir, opts, index_path, reads )
+    else:
+        try:
+            if int( options.min_anchor_length ) >= 3:
+                opts += ' -a %s' % options.min_anchor_length
+            else:
+                raise Exception, 'Minimum anchor length must be 3 or greater'
+            opts += ' -m %s' % options.splice_mismatches
+            opts += ' -i %s' % options.min_intron_length
+            opts += ' -I %s' % options.max_intron_length
+            if float( options.junction_filter ) != 0.0:
+                opts += ' -F %s' % options.junction_filter
+            opts += ' -g %s' % options.max_multihits
+            if options.coverage_search:
+                opts += ' --coverage-search --min-coverage-intron %s --max-coverage-intron %s' % ( options.min_coverage_intron, options.max_coverage_intron )
+            else:
+                opts += ' --no-coverage-search'
+            if options.closure_search:
+                opts += ' --closure-search --min-closure-exon %s --min-closure-intron %s --max-closure-intron %s'  % ( options.min_closure_exon, options.min_closure_intron, options.max_closure_intron ) 
+            else:
+                opts += ' --no-closure-search'
+            if options.microexon_search:
+                opts += ' --microexon-search'
+            if options.single_paired == 'paired':
+                opts += ' --mate-std-dev %s' % options.mate_std_dev
+            cmd = cmd % ( tmp_output_dir, opts, index_path, reads )
+        except Exception, e:
+            # Clean up temp dirs
+            if os.path.exists( tmp_index_dir ):
+                shutil.rmtree( tmp_index_dir )
+            if os.path.exists( tmp_output_dir ):
+                shutil.rmtree( tmp_output_dir )
+            stop_err( 'Something is wrong with the alignment parameters and the alignment could not be run\n' + str( e ) )
+    print cmd
+            
+    # Run
     try:
-        os.system( cmd )
+        tmp_out = tempfile.NamedTemporaryFile( dir=tmp_output_dir ).name
+        tmp_stdout = open( tmp_out, 'wb' )
+        tmp_err = tempfile.NamedTemporaryFile( dir=tmp_output_dir ).name
+        tmp_stderr = open( tmp_err, 'wb' )
+        proc = subprocess.Popen( args=cmd, shell=True, cwd=tmp_output_dir, stdout=tmp_stdout, stderr=tmp_stderr )
+        returncode = proc.wait()
+        tmp_stderr.close()
+        # get stderr, allowing for case where it's very large
+        tmp_stderr = open( tmp_err, 'rb' )
+        stderr = ''
+        buffsize = 1048576
+        try:
+            while True:
+                stderr += tmp_stderr.read( buffsize )
+                if not stderr or len( stderr ) % buffsize != 0:
+                    break
+        except OverflowError:
+            pass
+        tmp_stdout.close()
+        tmp_stderr.close()
+        if returncode != 0:
+            raise Exception, stderr
     except Exception, e:
+        # Clean up temp dirs
+        if os.path.exists( tmp_output_dir ):
+            shutil.rmtree( tmp_output_dir )
         stop_err( 'Error in tophat:\n' + str( e ) )
         
     # TODO: look for errors in program output.
         
-    # Copy output files from tmp directory to specified files.
+    # Postprocessing: copy output files from tmp directory to specified files. Also need to remove header lines from SAM file.
     try:
-        shutil.copyfile( tmp_output_dir + "/coverage.wig", options.coverage_output_file )
-        shutil.copyfile( tmp_output_dir + "/junctions.bed", options.junctions_output_file )
-        shutil.copyfile( tmp_output_dir + "/accepted_hits.sam", options.accepted_hits_output_file )
-    except Exception, e:
-        stop_err( 'Error in tophat:\n' + str( e ) ) 
-
-    # Clean up temp dirs
-    if os.path.exists( tmp_output_dir ):
-        shutil.rmtree( tmp_output_dir )
+        try:
+            shutil.copyfile( tmp_output_dir + "/coverage.wig", options.coverage_output_file )
+            shutil.copyfile( tmp_output_dir + "/junctions.bed", options.junctions_output_file )
+            
+            # Remove headers from SAM file in place.
+            in_header = True # Headers always at start of file.
+            for line in fileinput.input( tmp_output_dir + "/accepted_hits.sam", inplace=1 ):
+                if in_header and line.startswith("@"):
+                    continue
+                else:
+                    in_header = False
+                    sys.stdout.write( line )
+                    
+            # Copy SAM File.
+            shutil.copyfile( tmp_output_dir + "/accepted_hits.sam", options.accepted_hits_output_file )
+        except Exception, e:
+            stop_err( 'Error in tophat:\n' + str( e ) ) 
+    finally:
+        # Clean up temp dirs
+        if os.path.exists( tmp_index_dir ):
+            shutil.rmtree( tmp_index_dir )
+        if os.path.exists( tmp_output_dir ):
+            shutil.rmtree( tmp_output_dir )
 
 if __name__=="__main__": __main__()

@@ -1,24 +1,104 @@
-<tool id="tophat" name="Tophat" version="1.0.13">
+<tool id="tophat" name="Tophat" version="1.0.0">
     <description>Find splice junctions using RNA-seq data</description>
     <command interpreter="python">
-        tophat_wrapper.py 
+        tophat_wrapper.py
+            ## Change this to accomodate the number of threads you have available.
             --num-threads="4"
-            --coverage-output=$coverage 
-            --junctions-output=$junctions 
+            
+            ## Provide outputs.
+            --coverage-output=$coverage
+            --junctions-output=$junctions
             --hits-output=$accepted_hits
+            
+            ## Handle reference file.
             #if $refGenomeSource.genomeSource == "history":
-                --indexes-dir=$refGenomeSource.ownFile
+                --own-file=$refGenomeSource.ownFile
+                --indexes-path="None"
             #else:
-                --indexes-dir=$refGenomeSource.index.value
+                --own-file="None"
+                --indexes-path=$refGenomeSource.index.value
             #end if
+            
+            ## Are reads single-end or paired?
+            --single-paired=$singlePaired.sPaired
+            
+            ## First input file always required.
+            --input1=$singlePaired.input1
+            
+            ## Set parms based on whether reads are single-end or paired.
             #if $singlePaired.sPaired == "single":
-                --input1=$singlePaired.input1
                 --input2="None"
-            #else:
-                -r $singlePaired.mean_inner_distance
-                --input1=$singlePaired.input1
-                --input2=$singlePaired.input2
-            #end if
+                 -r "None"
+                 --settings=$singlePaired.sParams.sSettingsType
+                 #if $singlePaired.sParams.sSettingsType == "full":
+                   --mate-std-dev="None"
+                   -a $singlePaired.sParams.anchor_length
+                   -m $singlePaired.sParams.splice_mismatches
+                   -i $singlePaired.sParams.min_intron_length
+                   -I $singlePaired.sParams.max_intron_length
+                   -F $singlePaired.sParams.junction_filter
+                   -g $singlePaired.sParams.max_multihits
+                   --min-segment-intron $singlePaired.sParams.min_segment_intron
+                   --max-segment-intron $singlePaired.sParams.max_segment_intron
+                   --seg-mismatches=$singlePaired.sParams.seg_mismatches
+                   --seg-length=$singlePaired.sParams.seg_length
+                   #if $singlePaired.sParams.closure_search.use_search == "Yes":
+                        --closure-search
+                        --min-closure-exon $singlePaired.sParams.closure_search.min_closure_exon
+                        --min-closure-intron $singlePaired.sParams.closure_search.min_closure_intron
+                        --max-closure-intron $singlePaired.sParams.closure_search.max_closure_intron
+                   #else:
+                        --no-closure-search
+                   #end if
+                   #if $singlePaired.sParams.coverage_search.use_search == "Yes":
+                        --coverage-search
+                        --min-coverage-intron $singlePaired.sParams.coverage_search.min_coverage_intron
+                        --max-coverage-intron $singlePaired.sParams.coverage_search.max_coverage_intron
+                   #else:
+                        --no-coverage-search
+                   #end if
+                   ## No idea why the type conversion is necessary, but it seems to be.
+                   #if str ($singlePaired.sParams.microexon_search) == "Yes":
+                        --microexon-search
+                   #end if
+                 #end if
+             #else:
+                 --input2=$singlePaired.input2
+                 -r $singlePaired.mate_inner_distance
+                 --settings=$singlePaired.pParams.pSettingsType
+                 #if $singlePaired.pParams.pSettingsType == "full":
+                   --mate-std-dev=$singlePaired.pParams.mate_std_dev
+                   -a $singlePaired.pParams.anchor_length
+                   -m $singlePaired.pParams.splice_mismatches
+                   -i $singlePaired.pParams.min_intron_length
+                   -I $singlePaired.pParams.max_intron_length
+                   -F $singlePaired.pParams.junction_filter
+                   -g $singlePaired.pParams.max_multihits
+                   --min-segment-intron $singlePaired.pParams.min_segment_intron
+                   --max-segment-intron $singlePaired.pParams.max_segment_intron
+                   --seg-mismatches=$singlePaired.pParams.seg_mismatches
+                   --seg-length=$singlePaired.pParams.seg_length
+                   #if $singlePaired.pParams.closure_search.use_search == "Yes":
+                        --closure-search
+                        --min-closure-exon $singlePaired.pParams.closure_search.min_closure_exon
+                        --min-closure-intron $singlePaired.pParams.closure_search.min_closure_intron
+                        --max-closure-intron $singlePaired.pParams.closure_search.max_closure_intron
+                   #else:
+                        --no-closure-search
+                   #end if
+                   #if $singlePaired.pParams.coverage_search.use_search == "Yes":
+                        --coverage-search
+                        --min-coverage-intron $singlePaired.pParams.coverage_search.min_coverage_intron
+                        --max-coverage-intron $singlePaired.pParams.coverage_search.max_coverage_intron
+                   #else:
+                        --no-coverage-search
+                   #end if
+                   ## No idea why the type conversion is necessary, but it seems to be.
+                   #if str ($singlePaired.pParams.microexon_search) == "Yes":
+                        --microexon-search
+                   #end if
+                 #end if
+             #end if
     </command>
     <inputs>
         <conditional name="refGenomeSource">
@@ -27,56 +107,219 @@
             <option value="history">Use one from the history</option>
           </param>
           <when value="indexed">
-        	<param name="index" type="select" label="Select a reference genome" help="If your genome of interest is not listed, contact the Galaxy team">
-      	      <options from_file="bowtie_indices.loc">
-      	        <column name="value" index="1" />
-      	        <column name="name" index="0" />
-      	      </options>
-      	    </param>
-      	  </when>
+            <param name="index" type="select" label="Select a reference genome" help="If your genome of interest is not listed, contact the Galaxy team">
+              <options from_file="bowtie_indices.loc">
+                <column name="value" index="1" />
+                <column name="name" index="0" />
+              </options>
+            </param>
+          </when>
           <when value="history">
             <param name="ownFile" type="data" format="fasta" metadata_name="dbkey" label="Select the reference genome" />
           </when>  <!-- history -->
-     	</conditional>  <!-- refGenomeSource -->
+        </conditional>  <!-- refGenomeSource -->
         <conditional name="singlePaired">
             <param name="sPaired" type="select" label="Is this library mate-paired?">
-                <option value="single">Single-end</option>
-                <option value="paired">Paired-end</option>
+              <option value="single">Single-end</option>
+              <option value="paired">Paired-end</option>
             </param>
             <when value="single">
-                <param format="fastqsanger" name="input1" type="data" label="RNA-Seq FASTQ file" help="Must have Sanger-scaled quality values with ASCII offset 33"/>
+              <param format="fastqsanger" name="input1" type="data" label="RNA-Seq FASTQ file" help="Must have Sanger-scaled quality values with ASCII offset 33"/>
+              <conditional name="sParams">
+                <param name="sSettingsType" type="select" label="TopHat settings to use" help="You can use the default settings or set custom values for any of Tophat's parameters.">
+                  <option value="preSet">Use Defaults</option>
+                  <option value="full">Full parameter list</option>
+                </param>
+                <when value="preSet" />
+                <!-- Full/advanced parms. -->
+                <when value="full">
+                  <param name="anchor_length" type="integer" value="8" label="Anchor length (at least 3)" help="Report junctions spanned by reads with at least this many bases on each side of the junction." />
+                  <param name="splice_mismatches" type="integer" value="0" label="Maximum number of mismatches that can appear in the anchor region of spliced alignment" />
+                  <param name="min_intron_length" type="integer" value="70" label="The minimum intron length" help="TopHat will ignore donor/acceptor pairs closer than this many bases apart." />
+                  <param name="max_intron_length" type="integer" value="500000" label="The maximum intron length" help="When searching for junctions ab initio, TopHat will ignore donor/acceptor pairs farther than this many bases apart, except when such a pair is supported by a split segment alignment of a long read." />
+                  <param name="junction_filter" type="float" value="0.15" label="Minimum isoform fraction: filter out junctions supported by too few alignments (number of reads divided by average depth of coverage)" help="0.0 to 1.0 (0 to turn off)" />
+                  <param name="max_multihits" type="integer" value="40" label="Maximum number of alignments to be allowed" />
+                  <param name="min_segment_intron" type="integer" value="50" label="Minimum intron length that may be found during split-segment (default) search" />
+                  <param name="max_segment_intron" type="integer" value="500000" label="Maximum intron length that may be found during split-segment (default) search" />
+                  <param name="seg_mismatches" type="integer" value="2" label="Number of mismatches allowed in each segment alignment for reads mapped independently" />
+                  <param name="seg_length" type="integer" value="25" label="Minimum length of read segments" />
+                  <!-- Closure search. -->
+                  <conditional name="closure_search">
+                    <param name="use_search" type="select" label="Use Closure Search">
+                      <option value="No">No</option>
+                      <option value="Yes">Yes</option>
+                    </param>
+                    <when value="Yes">
+                        <param name="min_closure_exon" type="integer" value="50" label="During closure search for paired end reads, exonic hops in the potential splice graph must be at least this long. The default is 50." />
+                        <param name="min_closure_intron" type="integer" value="50" label="Minimum intron length that may be found during closure search" />
+                        <param name="max_closure_intron" type="integer" value="5000" label="Maximum intron length that may be found during closure search" />
+                    </when>
+                    <when value="No" />
+                  </conditional>
+                  <!-- Coverage search. -->
+                  <conditional name="coverage_search">
+                    <param name="use_search" type="select" label="Use Coverage Search">
+                      <option value="No">No</option>
+                      <option value="Yes">Yes</option>
+                    </param>
+                    <when value="Yes">
+                        <param name="min_coverage_intron" type="integer" value="50" label="Minimum intron length that may be found during coverage search" />
+                        <param name="max_coverage_intron" type="integer" value="20000" label="Maximum intron length that may be found during coverage search" />
+                    </when>
+                    <when value="No" />
+                  </conditional>     
+                  <param name="microexon_search" type="select" label="Use Microexon Search" help="With this option, the pipeline will attempt to find alignments incident to microexons. Works only for reads 50bp or longer.">
+                    <option value="No">No</option>
+                    <option value="Yes">Yes</option>
+                  </param>
+                </when>  <!-- full -->
+              </conditional>  <!-- sParams -->
             </when>
             <when value="paired">
-                <param format="fastqsanger" name="input1" type="data" label="RNA-Seq FASTQ file" help="Must have Sanger-scaled quality values with ASCII offset 33"/>
-                <param format="fastqsanger" name="input2" type="data" label="RNA-Seq FASTQ file" help="Must have Sanger-scaled quality values with ASCII offset 33"/>
-                <param format="fastqsanger" name="mean_inner_distance" type="integer" value="20" label="Mean Inner Distance between Mate Pairs"/>
+              <param format="fastqsanger" name="input1" type="data" label="RNA-Seq FASTQ file" help="Must have Sanger-scaled quality values with ASCII offset 33"/>
+              <param format="fastqsanger" name="input2" type="data" label="RNA-Seq FASTQ file" help="Must have Sanger-scaled quality values with ASCII offset 33"/>
+              <param name="mate_inner_distance" type="integer" value="20" label="Mean Inner Distance between Mate Pairs" />
+              <conditional name="pParams">
+                <param name="pSettingsType" type="select" label="TopHat settings to use" help="For most mapping needs use Commonly used settings. If you want full control use Full parameter list">
+                  <option value="preSet">Commonly used</option>
+                  <option value="full">Full parameter list</option>
+                </param>
+                <when value="preSet" />
+                <!-- Full/advanced parms. -->
+                <when value="full">
+                    <param name="mate_std_dev" type="integer" value="20" label="Std. Dev for Distance between Mate Pairs"  help="The standard deviation for the distribution on inner distances between mate pairs."/>
+                  <param name="anchor_length" type="integer" value="8" label="Anchor length (at least 3)" help="Report junctions spanned by reads with at least this many bases on each side of the junction." />
+                  <param name="splice_mismatches" type="integer" value="0" label="Maximum number of mismatches that can appear in the anchor region of spliced alignment" />
+                  <param name="min_intron_length" type="integer" value="70" label="The minimum intron length" help="TopHat will ignore donor/acceptor pairs closer than this many bases apart." />
+                  <param name="max_intron_length" type="integer" value="500000" label="The maximum intron length" help="When searching for junctions ab initio, TopHat will ignore donor/acceptor pairs farther than this many bases apart, except when such a pair is supported by a split segment alignment of a long read." />
+                  <param name="junction_filter" type="float" value="0.15" label="Minimum isoform fraction: filter out junctions supported by too few alignments (number of reads divided by average depth of coverage)" help="0.0 to 1.0 (0 to turn off)" />
+                  <param name="max_multihits" type="integer" value="40" label="Maximum number of alignments to be allowed" />
+                  <param name="min_segment_intron" type="integer" value="50" label="Minimum intron length that may be found during split-segment (default) search" />
+                  <param name="max_segment_intron" type="integer" value="500000" label="Maximum intron length that may be found during split-segment (default) search" />
+                  <param name="seg_mismatches" type="integer" value="2" label="Number of mismatches allowed in each segment alignment for reads mapped independently" />
+                  <param name="seg_length" type="integer" value="25" label="Minimum length of read segments" />
+                  <!-- Closure search. -->
+                  <conditional name="closure_search">
+                    <param name="use_search" type="select" label="Use Closure Search">
+                      <option value="No">No</option>
+                      <option value="Yes">Yes</option>
+                    </param>
+                    <when value="Yes">
+                        <param name="min_closure_exon" type="integer" value="50" label="During closure search for paired end reads, exonic hops in the potential splice graph must be at least this long. The default is 50." />
+                        <param name="min_closure_intron" type="integer" value="50" label="Minimum intron length that may be found during closure search" />
+                        <param name="max_closure_intron" type="integer" value="5000" label="Maximum intron length that may be found during closure search" />
+                    </when>
+                    <when value="No" />
+                  </conditional>
+                  <!-- Coverage search. -->
+                  <conditional name="coverage_search">
+                    <param name="use_search" type="select" label="Use Coverage Search">
+                      <option value="No">No</option>
+                      <option value="Yes">Yes</option>
+                    </param>
+                    <when value="Yes">
+                        <param name="min_coverage_intron" type="integer" value="50" label="Minimum intron length that may be found during coverage search" />
+                        <param name="max_coverage_intron" type="integer" value="20000" label="Maximum intron length that may be found during coverage search" />
+                    </when>
+                    <when value="No" />
+                  </conditional>     
+                  <param name="microexon_search" type="select" label="Use Microexon Search" help="With this option, the pipeline will attempt to find alignments incident to microexons. Works only for reads 50bp or longer.">
+                    <option value="No">No</option>
+                    <option value="Yes">Yes</option>
+                  </param>
+                </when>  <!-- full -->
+              </conditional>  <!-- pParams -->
             </when>
         </conditional>
     </inputs>
-    
+
     <outputs>
-	    <data format="sam" name="accepted_hits" label="${tool.name} on ${on_string}: accepted_hits"/>
-        <data format="wig" name="coverage" label="${tool.name} on ${on_string}: coverage"/>
+        <data format="sam" name="accepted_hits" label="${tool.name} on ${on_string}: accepted_hits"/>
+        <data format="bedgraph" name="coverage" label="${tool.name} on ${on_string}: coverage"/>
         <data format="bed" name="junctions" label="${tool.name} on ${on_string}: splice junctions"/>
     </outputs>
-    
+
     <tests>
-        <test>
+<!--        <test>
             <param name="genomeSource" value="indexed"/>
-            <param name="index" value="test_ref"/>
+            <param name="index" value="equCab2chrM"/>
+            <param name="sPaired" value="single"/>
+            <param name="input1" ftype="fastqsanger" value="tophat_in1.fq"/>
+            <param name="sSettingsType" value="preSet"/>
+-->            <!-- 
+            Can't test this right now because first lines of file are run-specific.
+            <output name="accepted_hits" file="tophat_out1.sam"/>
+            -->
+<!--            <output name="coverage" file="tophat_out2.wig"/>
+            <output name="junctions" file="tophat_out3.bed"/>
+        </test>
+-->     
+        <!-- Test using test data: paired-end reads, index from history. -->
+        <test>
+            <param name="genomeSource" value="history"/>
+            <param name="ownFile" ftype="fasta" value="tophat_in3.fa"/>
             <param name="sPaired" value="paired"/>
             <param name="input1" ftype="fastqsanger" value="tophat_in1.fq"/>
             <param name="input2" ftype="fastqsanger" value="tophat_in2.fq"/>
-            <param name="mean_inner_distance" value="20"/>
-            <!-- 
-                Can't test this right now because first lines of file are run-specific.
+            <param name="mate_inner_distance" value="20"/>
+            <param name="pSettingsType" value="preSet"/>
             <output name="accepted_hits" file="tophat_out1.sam"/>
-            -->
             <output name="coverage" file="tophat_out2.wig"/>
             <output name="junctions" file="tophat_out3.bed"/>
         </test>
-    </tests>
-    
+<!--        <test>
+            <param name="genomeSource" value="history"/>
+            <param name="ownFile" value="phiX.fasta"/>
+            <param name="sPaired" value="single"/>
+            <param name="input1" ftype="fastqsanger" value="tophat_in1.fq"/>
+            <param name="sSettingsType" value="full"/>
+            <param name="anchor_length" value="8"/>
+            <param name="splice_mismatches" value="0"/>
+            <param name="min_intron_length" value="70"/>
+            <param name="max_intron_length" value="500000"/>
+            <param name="quals_scale" value="default"/>
+            <param name="junction_filter" value="0.15"/>
+            <param name="max_multihits" value="40"/>
+            <param name="min_segment_intron" value="50" />
+            <param name="max_segment_intron" value="500000" />
+            <param name="seg_mismatches" value="2"/>
+            <param name="seg_length" value="25"/>
+-->            <!-- 
+            Can't test this right now because first lines of file are run-specific.
+            <output name="accepted_hits" file="tophat_out1.sam"/>
+            -->
+<!--            <output name="coverage" file="tophat_out2.wig"/>
+            <output name="junctions" file="tophat_out3.bed"/>
+        </test>
+        <test>
+            <param name="genomeSource" value="indexed"/>
+            <param name="index" value="equCab2chrM"/>
+            <param name="sPaired" value="paired"/>
+            <param name="input1" ftype="fastqsanger" value="tophat_in1.fq"/>
+            <param name="input2" ftype="fastqsanger" value="tophat_in2.fq"/>
+            <param name="mate_inner_distance" value="20"/>
+            <param name="pSettingsType" value="full"/>
+            <param name="mate_std_dev" value="20"/>
+            <param name="anchor_length" value="8"/>
+            <param name="splice_mismatches" value="0"/>
+            <param name="min_intron_length" value="70"/>
+            <param name="max_intron_length" value="500000"/>
+            <param name="quals_scale" value="default"/>
+            <param name="junction_filter" value="0.15"/>
+            <param name="max_multihits" value="40"/>
+            <param name="min_coverage_intron" value="50" />
+            <param name="max_coverage_intron" value="20000" />
+            <param name="seg_mismatches" value="2"/>
+            <param name="seg_length" value="25"/>
+-->            <!-- 
+            Can't test this right now because first lines of file are run-specific.
+            <output name="accepted_hits" file="tophat_out1.sam"/>
+            -->
+<!--            <output name="coverage" file="tophat_out2.wig"/>
+            <output name="junctions" file="tophat_out3.bed"/>
+        </test>
+-->    </tests>
+
     <help>
 **Tophat Overview**
 
@@ -104,11 +347,15 @@ Tophat accepts files in Sanger FASTQ format. Use the FASTQ Groomer to prepare yo
 
 **Outputs**
 
-Tophat produces three output files::
+Tophat produces three output files:
 
-  coverage.wig -- coverage of reads
-  accepted_hits.sam -- reads that were mapped onto genome
-  junctions.bed -- splice junctions identified by Tophat
+- coverage.wig -- A UCSC BedGraph_ wigglegram track, showing the depth of coverage at each position, including the spliced read alignments.
+- accepted_hits.sam -- A list of read alignments in SAM_ format.
+- junctions.bed -- A UCSC BED_ track of junctions reported by TopHat. Each junction consists of two connected BED blocks, where each block is as long as the maximal overhang of any read spanning the junction. The score is the number of alignments spanning the junction.
+  
+.. _BedGraph: http://genome.ucsc.edu/goldenPath/help/bedgraph.html
+.. _SAM: http://samtools.sourceforge.net/
+.. _BED: http://genome.ucsc.edu/FAQ/FAQformat.html#format1
     
 -------
 
@@ -122,8 +369,35 @@ All of the options have a default value. You can change any of them. Some of the
 
 This is a list of implemented Tophat options::
 
-  -r                This is the expected (mean) inner distance between mate pairs. For, example, for paired end runs with fragments 
-                    selected at 300bp, where each end is 50bp, you should set -r to be 200. There is no default, and this parameter 
-                    is required for paired end runs.
+  -r                                This is the expected (mean) inner distance between mate pairs. For, example, for paired end runs with fragments 
+                                    selected at 300bp, where each end is 50bp, you should set -r to be 200. There is no default, and this parameter 
+                                    is required for paired end runs.
+  --mate-std-dev INT	            The standard deviation for the distribution on inner distances between mate pairs. The default is 20bp.
+  -a/--min-anchor-length INT	    The "anchor length". TopHat will report junctions spanned by reads with at least this many bases on each side of the junction. Note that individual spliced     
+                                    alignments may span a junction with fewer than this many bases on one side. However, every junction involved in spliced alignments is supported by at least one 
+                                    read with this many bases on each side.	 This must be at least 3 and the default is 8.
+  -m/--splice-mismatches INT	    The maximum number of mismatches that may appear in the "anchor" region of a spliced alignment. The default is 0.
+  -i/--min-intron-length INT	    The minimum intron length. TopHat will ignore donor/acceptor pairs closer than this many bases apart. The default is 70.
+  -I/--max-intron-length INT	    The maximum intron length. When searching for junctions ab initio, TopHat will ignore donor/acceptor pairs farther than this many bases apart, except when such a pair is supported by a split segment alignment of a long read. The default is 500000.
+  -F/--min-isoform-fraction 0.0-1.0 TopHat filters out junctions supported by too few alignments. Suppose a junction spanning two exons, is supported by S reads. Let the average depth of coverage of 
+                                    exon A be D, and assume that it is higher than B. If S / D is less than the minimum isoform fraction, the junction is not reported. A value of zero disables the 
+                                    filter. The default is 0.15.
+  -g/--max-multihits INT        Instructs TopHat to allow up to this many alignments to the reference for a given read, and suppresses all alignments for reads with more than this many 
+                                    alignments. The default is 40.
+  --no-closure-search	            Disables the mate pair closure-based search for junctions. Currently, has no effect - closure search is off by default.
+  --closure-search	            Enables the mate pair closure-based search for junctions. Closure-based search should only be used when the expected inner distance between mates is small (about or less than 50bp)
+  --no-coverage-search	            Disables the coverage based search for junctions.
+  --coverage-search	                Enables the coverage based search for junctions. Use when coverage search is disabled by default (such as for reads 75bp or longer), for maximum sensitivity.
+  --microexon-search	            With this option, the pipeline will attempt to find alignments incident to microexons. Works only for reads 50bp or longer.
+  --butterfly-search	            TopHat will use a slower but potentially more sensitive algorithm to find junctions in addition to its standard search. Consider using this if you expect that your experiment produced a lot of reads from pre-mRNA, that fall within the introns of your transcripts.
+  --segment-mismatches	            Read segments are mapped independently, allowing up to this many mismatches in each segment alignment. The default is 2.
+  --segment-length	            Each read is cut up into segments, each at least this long. These segments are mapped independently. The default is 25.
+  --min-closure-exon	            During closure search for paired end reads, exonic hops in the potential splice graph must be at least this long. The default is 50.
+  --min-closure-intron	            The minimum intron length that may be found during closure search. The default is 50.
+  --max-closure-intron	            The maximum intron length that may be found during closure search. The default is 5000.
+  --min-coverage-intron	            The minimum intron length that may be found during coverage search. The default is 50.
+  --max-coverage-intron	            The maximum intron length that may be found during coverage search. The default is 20000.
+  --min-segment-intron	            The minimum intron length that may be found during split-segment search. The default is 50.
+  --max-segment-intron	            The maximum intron length that may be found during split-segment search. The default is 500000.
     </help>
 </tool>
