@@ -94,7 +94,7 @@ def __main__():
             tmp_stderr.close()
             if returncode != 0:
                 raise Exception, stderr 
-            if len( open( fai_index_file_path ).read().strip() ) == 0:
+            if os.path.getsize( fai_index_file_path ) == 0:
                 raise Exception, 'Index file empty, there may be an error with your reference file or settings.'
         except Exception, e:
             #clean up temp files
