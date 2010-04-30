@@ -6,6 +6,12 @@
     
     if cntrller in [ 'tool' ]:
         can_edit = trans.app.security_agent.can_edit_item( trans.user, tool )
+        can_upload_new_version = trans.app.security_agent.can_upload_new_version( trans.user, tool, versions )
+
+    visible_versions = []
+    for version in versions:
+        if version.is_approved() or version.is_archived() or version.user == trans.user:
+            visible_versions.append( version )
 %>
 
 <%!
@@ -49,6 +55,30 @@
 
 <h2>View Tool: ${tool.name} <em>${tool.description}</em></h2>
 
+%if tool.is_approved():
+    <b><i>This is the latest approved version of this tool</i></b>
+%elif tool.is_deleted():
+    <font color="red"><b><i>This is a deleted version of this tool</i></b></font>
+%elif tool.is_archived():
+    <font color="red"><b><i>This is an archived version of this tool</i></b></font>
+%elif tool.is_new():
+    <font color="red"><b><i>This is an unsubmitted version of this tool</i></b></font>
+%elif tool.is_waiting():
+    <font color="red"><b><i>This version of this tool is awaiting administrative approval</i></b></font>
+%elif tool.is_rejected():
+    <font color="red"><b><i>This version of this tool has been rejected by an administrator</i></b></font>
+%endif
+<p/>
+
+%if cntrller=='admin' and tool.is_waiting():
+    <p>
+       <ul class="manage-table-actions">
+            <li><a class="action-button" href="${h.url_for( controller='admin', action='set_tool_state', state=trans.model.Tool.states.APPROVED, id=trans.security.encode_id( tool.id ), cntrller=cntrller )}"><span>Approve</span></a></li>
+            <li><a class="action-button" href="${h.url_for( controller='admin', action='set_tool_state', state=trans.model.Tool.states.REJECTED, id=trans.security.encode_id( tool.id ), cntrller=cntrller )}"><span>Reject</span></a></li>
+       </ul>
+    </p>
+%endif
+
 %if message:
     ${render_msg( message, status )}
 %endif
@@ -59,7 +89,8 @@
         <div popupmenu="tool-${tool.id}-popup">
             %if cntrller=='admin' or can_edit:
                 <a class="action-button" href="${h.url_for( controller='common', action='edit_tool', id=trans.app.security.encode_id( tool.id ), cntrller=cntrller )}">Edit information</a>
-                <a class="action-button" href="${h.url_for( controller='common', action='manage_categories', id=trans.app.security.encode_id( tool.id ), cntrller=cntrller )}">Manage categories</a>
+            %endif
+            %if cntrller=='admin' or can_upload_new_version:
                 <a class="action-button" href="${h.url_for( controller='common', action='upload_new_tool_version', id=trans.app.security.encode_id( tool.id ), cntrller=cntrller )}">Upload a new version</a>
             %endif
             <a class="action-button" href="${h.url_for( controller='tool', action='download_tool', id=trans.app.security.encode_id( tool.id ) )}">Download tool</a>
@@ -93,11 +124,30 @@
         </div>
         <div class="form-row">
             <label>Categories:</label>
-            %for category in categories:
-                ${category.name}
-            %endfor
+            %if categories:
+                %for category in categories:
+                    ${category.name}
+                %endfor
+            %else:
+                none set
+            %endif
             <div style="clear: both"></div>
         </div>
+        %if len( visible_versions ) > 1:
+            <div class="form-row">
+                <label>All Versions:</label>
+                <ul>
+                    %for version in visible_versions:
+                        %if version == tool:
+                            <li><strong>${version.version} (this version)</strong></li>
+                        %else:
+                            <li><a href="${h.url_for( controller='common', action='view_tool', id=trans.app.security.encode_id( version.id ), cntrller=cntrller )}">${version.version}</a></li>
+                        %endif
+                    %endfor
+                </ul>
+                <div style="clear: both"></div>
+            </div>
+        %endif
     </div>
 </div>
 

@@ -92,7 +92,8 @@ class Tool( object ):
                     DELETED = 'deleted',
                     WAITING = 'waiting for approval',
                     APPROVED = 'approved',
-                    REJECTED = 'rejected' )
+                    REJECTED = 'rejected',
+                    ARCHIVED = 'archived' )
     def __init__( self, guid=None, tool_id=None, name=None, description=None, user_description=None, category=None, version=None, user_id=None, external_filename=None ):
         self.guid = guid
         self.tool_id = tool_id
@@ -153,10 +154,14 @@ class Tool( object ):
         return self.state() == self.states.ERROR
     def is_deleted( self ):
         return self.state() == self.states.DELETED
+    def is_waiting( self ):
+        return self.state() == self.states.WAITING
     def is_approved( self ):
         return self.state() == self.states.APPROVED
     def is_rejected( self ):
         return self.state() == self.states.REJECTED
+    def is_archived( self ):
+        return self.state() == self.states.ARCHIVED
     @property
     def extension( self ):
         # if instantiated via a query, this unmapped property won't exist

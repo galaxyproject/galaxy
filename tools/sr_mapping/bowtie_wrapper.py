@@ -387,8 +387,8 @@ def __main__():
             if returncode != 0:
                 raise Exception, stderr
             # check that there are results in the output file
-            if len( open( options.output, 'rb' ).read().strip() ) == 0:
-                raise Exception, 'The output file is empty, there may be an error with your input file or settings.'
+            if os.path.getsize( options.output ) == 0:
+                raise Exception, 'The output file is empty, there may be an error with your input file or settings.' + '\nextra: ' + str(extra)
         except Exception, e:
             stop_err( 'Error aligning sequence. ' + str( e ) )
     finally:

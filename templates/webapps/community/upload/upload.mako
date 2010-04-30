@@ -22,6 +22,9 @@
     <div class="toolFormBody">
     ## TODO: nginx
     <form id="upload_form" name="upload_form" action="${h.url_for( controller='upload', action='upload' )}" enctype="multipart/form-data" method="post">
+    %if replace_id is not None:
+        <input type='hidden' name="replace_id" value="${replace_id}"/>
+    %endif
     <div class="form-row">
         <label>Upload Type</label>
         <div class="form-row-input">

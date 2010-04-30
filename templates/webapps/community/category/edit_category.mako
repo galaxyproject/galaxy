@@ -8,7 +8,7 @@
 <div class="toolForm">
     <div class="toolFormTitle">Change category name and description</div>
     <div class="toolFormBody">
-        <form name="library" action="${h.url_for( controller='admin', action='rename_category' )}" method="post" >
+        <form name="library" action="${h.url_for( controller='admin', action='edit_category' )}" method="post" >
             <div class="form-row">
                 <input  name="webapp" type="hidden" value="${webapp}" size=40"/>
                 <label>Name:</label>
@@ -37,7 +37,7 @@
                 <div style="clear: both"></div>
             </div>
             <div class="form-row">
-                <input type="submit" name="rename_category_button" value="Save"/>
+                <input type="submit" name="edit_category_button" value="Save"/>
             </div>
         </form>
     </div>

@@ -103,9 +103,10 @@ GalaxySession.table = Table( "galaxy_session", metadata,
 Tool.table = Table( "tool", metadata, 
     Column( "id", Integer, primary_key=True ),
     Column( "guid", TrimmedString( 255 ), index=True, unique=True ),
-    Column( "tool_id", TrimmedString( 255 ), index=True, unique=True ),
+    Column( "tool_id", TrimmedString( 255 ), index=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "newer_version_id", Integer, ForeignKey( "tool.id" ), nullable=True ),
     Column( "name", TrimmedString( 255 ), index=True ),
     Column( "description" , TEXT ),
     Column( "user_description" , TEXT ),
@@ -164,8 +165,8 @@ ToolAnnotationAssociation.table = Table( "tool_annotation_association", metadata
 # With the tables defined we can define the mappers and setup the 
 # relationships between the model objects.
 assign_mapper( context, User, User.table, 
-    properties=dict( tools=relation( Tool, order_by=desc( Tool.table.c.update_time ) ),               
-                     active_tools=relation( Tool, primaryjoin=( ( Tool.table.c.user_id == User.table.c.id ) & ( not_( Tool.table.c.deleted ) ) ), order_by=desc( Tool.table.c.update_time ) ),
+    properties=dict( tools=relation( Tool, primaryjoin=( Tool.table.c.user_id == User.table.c.id ), order_by=( Tool.table.c.name ) ),               
+                     active_tools=relation( Tool, primaryjoin=( ( Tool.table.c.user_id == User.table.c.id ) & ( not_( Tool.table.c.deleted ) ) ), order_by=( Tool.table.c.name ) ),
                      galaxy_sessions=relation( GalaxySession, order_by=desc( GalaxySession.table.c.update_time ) ) ) )
 
 assign_mapper( context, Group, Group.table,
@@ -215,7 +216,11 @@ assign_mapper( context, Tool, Tool.table,
     properties = dict(
         categories=relation( ToolCategoryAssociation ),
         events=relation( ToolEventAssociation ),
-        user=relation( User.mapper )
+        user=relation( User.mapper ),
+        older_version=relation(
+            Tool,
+            primaryjoin=( Tool.table.c.newer_version_id == Tool.table.c.id ),
+            backref=backref( "newer_version", primaryjoin=( Tool.table.c.newer_version_id == Tool.table.c.id ), remote_side=[Tool.table.c.id] ) )
         ) )
 
 assign_mapper( context, Event, Event.table,
@@ -237,7 +242,6 @@ assign_mapper( context, ToolCategoryAssociation, ToolCategoryAssociation.table,
         tool=relation( Tool )
     )
 )
-
 
 def guess_dialect_for_url( url ):
     return (url.split(':', 1))[0]

@@ -8,7 +8,7 @@ from galaxy.web.form_builder import SelectField
 import logging
 log = logging.getLogger( __name__ )
 
-class CommunityCommon( BaseController ):
+class CommonController( BaseController ):
     @web.expose
     def edit_tool( self, trans, cntrller, **kwd ):
         params = util.Params( kwd )
@@ -81,9 +81,11 @@ class CommunityCommon( BaseController ):
         tool = get_tool( trans, id )
         categories = [ tca.category for tca in tool.categories ]
         tool_file_contents = tarfile.open( tool.file_name, 'r' ).getnames()
+        versions = get_versions( trans, tool )
         return trans.fill_template( '/webapps/community/tool/view_tool.mako',
                                     tool=tool,
                                     tool_file_contents=tool_file_contents,
+                                    versions=versions,
                                     categories=categories,
                                     cntrller=cntrller,
                                     message=message,
@@ -100,22 +102,78 @@ class CommunityCommon( BaseController ):
                                                               message='Select a tool to to upload a new version',
                                                               status='error' ) )
         tool = get_tool( trans, id )
-        if params.save_button and ( params.file_data != '' or params.url != '' ):
-            # TODO: call the upload method in the upload controller.
-            message = 'Uploading new version not implemented'
-            status = 'error'
+        return trans.response.send_redirect( web.url_for( controller='upload',
+                                                          action='upload',
+                                                          message=message,
+                                                          status=status,
+                                                          replace_id=id ) )
+    @web.expose
+    def browse_category( self, trans, cntrller, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        id = params.get( 'id', None )
+        if not id:
+            return trans.response.send_redirect( web.url_for( controller=cntrller,
+                                                              action='browse_categories',
+                                                              message='Select a category',
+                                                              status='error' ) )
+        category = get_category( trans, id )
+        # If request came from the tool controller, then we need to filter by the state of the
+        # tool in addition to the category.
+        if cntrller == 'tool':
+            tool_id = get_approved_tools( trans, category=category )
+        else:
+            # If request came from the admin controller, we don't filter on tool state.
+            tool_id = [ tca.tool.id for tca in category.tools ]
+        if not tool_id:
+            tool_id = 'None'
         return trans.response.send_redirect( web.url_for( controller=cntrller,
                                                           action='browse_tools',
-                                                          message='Not yet implemented, sorry...',
-                                                          status='error' ) )
+                                                          tool_id=tool_id ) )
+    @web.expose
+    def browse_tools_by_user( self, trans, cntrller, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        id = params.get( 'id', None )
+        if not id:
+            return trans.response.send_redirect( web.url_for( controller=cntrller,
+                                                              action='browse_tools',
+                                                              message='Select a user',
+                                                              status='error' ) )
+        user = get_user( trans, id )
+        # If request came from the tool controller, then we need to filter by the state of the
+        # tool if the user is not viewing his own tools
+        if cntrller == 'tool':
+            tool_id = get_approved_tools( trans, user=user )
+        else:
+            # If request came from the admin controller, we don't filter on tool state.
+            tool_id = [ tool.id for tool in user.tools ]
+        if not tool_id:
+            tool_id = 'None'
+        return trans.response.send_redirect( web.url_for( controller=cntrller,
+                                                          action='browse_tools_by_user',
+                                                          tool_id=tool_id ) )
 
 ## ---- Utility methods -------------------------------------------------------
 
+def get_versions( trans, tool ):
+    versions = [tool]
+    this_tool = tool
+    while tool.newer_version:
+        versions.insert( 0, tool.newer_version )
+        tool = tool.newer_version
+    tool = this_tool
+    while tool.older_version:
+        versions.append( tool.older_version[0] )
+        tool = tool.older_version[0]
+    return versions
 def get_categories( trans ):
     """Get all categories from the database"""
     return trans.sa_session.query( trans.model.Category ) \
                            .filter( trans.model.Category.table.c.deleted==False ) \
-                           .order_by( trans.model.Category.table.c.name )
+                           .order_by( trans.model.Category.table.c.name ).all()
 def get_unassociated_categories( trans, obj ):
     """Get all categories from the database that are not associated with obj"""
     # TODO: we currently assume we are setting a tool category, so this method may need
@@ -142,4 +200,33 @@ def set_categories( trans, obj, category_ids, delete_existing_assocs=True ):
         obj.categories.append( trans.model.ToolCategoryAssociation( obj, category ) )
 def get_tool( trans, id ):
     return trans.sa_session.query( trans.model.Tool ).get( trans.app.security.decode_id( id ) )
-
+def get_tools( trans ):
+    return trans.sa_session.query( trans.model.Tool ).order_by( trans.model.Tool.name )
+def get_approved_tools( trans, category=None, user=None ):
+    tool_id = []
+    if category:
+        # Return only the approved tools in the category
+        for tca in category.tools:
+            tool = tca.tool
+            if tool.is_approved():
+                tool_id.append( tool.id )
+    elif user:
+        if trans.user == user:
+            # If the current user is browsing his own tools, then don't filter on state
+            tool_id = [ tool.id for tool in user.tools ]
+        else:
+            # The current user is viewing all tools uploaded by another user, so show only
+            # approved tools
+            for tool in user.active_tools:
+                if tool.is_approved():
+                    tool_id.append( tool.id )
+    else:
+        # Return all approved tools
+        for tool in get_tools( trans ):
+            if tool.is_approved():
+                tool_id.append( tool.id )
+    return tool_id
+def get_event( trans, id ):
+    return trans.sa_session.query( trans.model.Event ).get( trans.security.decode_id( id ) )
+def get_user( trans, id ):
+    return trans.sa_session.query( trans.model.User ).get( trans.security.decode_id( id ) )
