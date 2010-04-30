@@ -18,6 +18,11 @@ def __main__():
     parser.add_option( '-A', '--transcripts-accuracy-output', dest='transcripts_accuracy_output_file', help='' )
     parser.add_option( '-B', '--transcripts-combined-output', dest='transcripts_combined_output_file', help='' )
     parser.add_option( '-C', '--transcripts-tracking-output', dest='transcripts_tracking_output_file', help='' )
+    parser.add_option( '', '--input1-tmap-output', dest='input1_tmap_output_file', help='' )
+    parser.add_option( '', '--input1-refmap-output', dest='input1_refmap_output_file', help='' )
+    parser.add_option( '', '--input2-tmap-output', dest='input2_tmap_output_file', help='' )
+    parser.add_option( '', '--input2-refmap-output', dest='input2_refmap_output_file', help='' )
+    
     
     (options, args) = parser.parse_args()
     
@@ -35,17 +40,22 @@ def __main__():
     if options.ignore_nonoverlap:
         cmd += " -R "
         
-    # Output/debugging.
-    print cmd
-        
     # Add input files.
-    cmd += " %s" % options.input1
+        
+    # Need to symlink inputs so that output files are written to temp directory.
+    print options.input1
+    input1_file_name = tmp_output_dir + "/input1"
+    os.symlink( options.input1,  input1_file_name )
+    cmd += " %s" % input1_file_name
     two_inputs = ( options.input2 != None)
     if two_inputs:
-        cmd += " %s" % options.input2
+        input2_file_name = tmp_output_dir + "/input2"
+        os.symlink( options.input2, input2_file_name )
+        cmd += " %s" % input2_file_name
+    print cmd
     
     # Run command.
-    try:
+    try:        
         tmp_name = tempfile.NamedTemporaryFile( dir=tmp_output_dir ).name
         tmp_stderr = open( tmp_name, 'wb' )
         proc = subprocess.Popen( args=cmd, shell=True, cwd=tmp_output_dir, stderr=tmp_stderr.fileno() )
@@ -79,16 +89,18 @@ def __main__():
     try:
         try:
             shutil.copyfile( tmp_output_dir + "/cc_output", options.transcripts_accuracy_output_file )
+            shutil.copyfile( tmp_output_dir + "/input1.tmap", options.input1_tmap_output_file )
+            shutil.copyfile( tmp_output_dir + "/input1.refmap", options.input1_refmap_output_file )
             if two_inputs:
                 shutil.copyfile( tmp_output_dir + "/cc_output.combined.gtf", options.transcripts_combined_output_file )
                 shutil.copyfile( tmp_output_dir + "/cc_output.tracking", options.transcripts_tracking_output_file )
-            
-            # TODO: also copy *.tmap, *.refmap to outputs?
+                shutil.copyfile( tmp_output_dir + "/input2.tmap", options.input2_tmap_output_file )
+                shutil.copyfile( tmp_output_dir + "/input2.refmap", options.input2_refmap_output_file )
         except Exception, e:
             stop_err( 'Error in cuffcompare:\n' + str( e ) ) 
     finally:
         # Clean up temp dirs
-        if os.path.exists( tmp_output_dir ):
+        if not os.path.exists( tmp_output_dir ):
             shutil.rmtree( tmp_output_dir )
 
 if __name__=="__main__": __main__()
