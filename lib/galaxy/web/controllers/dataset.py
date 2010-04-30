@@ -307,10 +307,14 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistoryDatasetAssoc
         composite_extensions.append('html') # for archiving composite datatypes
         # DEPRECATION: We still support unencoded ids for backward compatibility
         try:
-            dataset_id = int( dataset_id )
-        except ValueError:
-            dataset_id = trans.security.decode_id( dataset_id )
-        data = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( dataset_id )
+            data = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( trans.security.decode_id( dataset_id ) )
+            if data is None:
+                raise ValueError( 'Invalid reference dataset id: %s.' % dataset_id )
+        except:
+            try:
+                data = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( int( dataset_id ) )
+            except:
+                data = None
         if not data:
             raise paste.httpexceptions.HTTPRequestRangeNotSatisfiable( "Invalid reference dataset id: %s." % str( dataset_id ) )
         current_user_roles = trans.get_current_user_roles()
