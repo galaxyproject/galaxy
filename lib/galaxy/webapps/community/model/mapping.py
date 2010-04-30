@@ -164,8 +164,8 @@ ToolAnnotationAssociation.table = Table( "tool_annotation_association", metadata
 # With the tables defined we can define the mappers and setup the 
 # relationships between the model objects.
 assign_mapper( context, User, User.table, 
-    properties=dict( tools=relation( Tool, order_by=desc( Tool.table.c.update_time ) ),               
-                     active_tools=relation( Tool, primaryjoin=( ( Tool.table.c.user_id == User.table.c.id ) & ( not_( Tool.table.c.deleted ) ) ), order_by=desc( Tool.table.c.update_time ) ),
+    properties=dict( tools=relation( Tool, primaryjoin=( Tool.table.c.user_id == User.table.c.id ), order_by=( Tool.table.c.name ) ),               
+                     active_tools=relation( Tool, primaryjoin=( ( Tool.table.c.user_id == User.table.c.id ) & ( not_( Tool.table.c.deleted ) ) ), order_by=( Tool.table.c.name ) ),
                      galaxy_sessions=relation( GalaxySession, order_by=desc( GalaxySession.table.c.update_time ) ) ) )
 
 assign_mapper( context, Group, Group.table,
@@ -237,7 +237,6 @@ assign_mapper( context, ToolCategoryAssociation, ToolCategoryAssociation.table,
         tool=relation( Tool )
     )
 )
-
 
 def guess_dialect_for_url( url ):
     return (url.split(':', 1))[0]

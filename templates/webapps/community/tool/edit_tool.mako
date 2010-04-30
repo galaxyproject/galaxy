@@ -123,7 +123,7 @@ $().ready(function() {
                         <div class="toolParamHelp" style="clear: both;">
                             Tools must be approved before they are made available to others in the community.  After you have submitted
                             your tool to be published, you will no longer be able to modify it, so make sure the information above is
-                            correct and has been saved before submitting for approval.
+                            correct and and save any changes before submitting for approval.
                         </div>  
                     </div>
                 </form>

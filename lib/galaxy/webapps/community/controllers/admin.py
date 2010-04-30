@@ -2,7 +2,7 @@ from galaxy.web.base.controller import *
 from galaxy.webapps.community import model
 from galaxy.model.orm import *
 from galaxy.web.framework.helpers import time_ago, iff, grids
-from common import get_categories, get_category
+from common import get_categories, get_category, get_tools, get_event, get_tool
 import logging
 log = logging.getLogger( __name__ )
 
@@ -200,7 +200,7 @@ class RoleListGrid( grids.Grid ):
         return None
     def build_initial_query( self, session ):
         return session.query( self.model_class )
-    def apply_default_filter( self, trans, query, **kwargs ):
+    def apply_default_filter( self, trans, query, **kwd ):
         return query.filter( model.Role.type != model.Role.types.PRIVATE )
 
 class GroupListGrid( grids.Grid ):
@@ -280,34 +280,31 @@ class GroupListGrid( grids.Grid ):
     def build_initial_query( self, session ):
         return session.query( self.model_class )
 
-class CategoryListGrid( grids.Grid ):
+class ManageCategoryListGrid( grids.Grid ):
     class NameColumn( grids.TextColumn ):
         def get_value( self, trans, grid, category ):
             return category.name
     class DescriptionColumn( grids.TextColumn ):
         def get_value( self, trans, grid, category ):
             return category.description
-    class StatusColumn( grids.GridColumn ):
-        def get_value( self, trans, grid, category ):
-            if category.deleted:
-                return "deleted"
-            return ""
 
     # Grid definition
     webapp = "community"
-    title = "Categories"
+    title = "Manage Categories"
     model_class = model.Category
     template='/webapps/community/category/grid.mako'
     default_sort_key = "name"
     columns = [
         NameColumn( "Name",
                     key="name",
-                    link=( lambda item: dict( operation="Edit category", id=item.id, webapp="community" ) ),
+                    link=( lambda item: dict( operation="Edit", id=item.id, webapp="community" ) ),
                     model_class=model.Category,
-                    attach_popup=True,
+                    attach_popup=False,
                     filterable="advanced" ),
-        DescriptionColumn( "Description", attach_popup=False ),
-        StatusColumn( "Status", attach_popup=False ),
+        DescriptionColumn( "Description",
+                           model_class=model.Category,
+                           attach_popup=False,
+                           filterable="advanced" ),
         # Columns that are valid for filtering but are not visible.
         grids.DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" )
     ]
@@ -318,13 +315,9 @@ class CategoryListGrid( grids.Grid ):
                                                 filterable="standard" ) )
     global_actions = [
         grids.GridAction( "Add new category",
-                          dict( controller='admin', action='categories', operation='create', webapp="community" ) )
+                          dict( controller='admin', action='manage_categories', operation='create', webapp="community" ) )
     ]
-    operations = [ grids.GridOperation( "Rename",
-                                        condition=( lambda item: not item.deleted ),
-                                        allow_multiple=False,
-                                        url_args=dict( webapp="community", action="rename_category" ) ),
-                   grids.GridOperation( "Delete",
+    operations = [ grids.GridOperation( "Delete",
                                         condition=( lambda item: not item.deleted ),
                                         allow_multiple=True,
                                         url_args=dict( webapp="community", action="mark_category_deleted" ) ),
@@ -349,16 +342,77 @@ class CategoryListGrid( grids.Grid ):
     def build_initial_query( self, session ):
         return session.query( self.model_class )
 
+class ToolsByCategoryListGrid( grids.Grid ):
+    class NameColumn( grids.TextColumn ):
+        def get_value( self, trans, grid, category ):
+            return category.name
+    class DescriptionColumn( grids.TextColumn ):
+        def get_value( self, trans, grid, category ):
+            return category.description
+    class ToolsColumn( grids.TextColumn ):
+        def get_value( self, trans, grid, category ):
+            if category.tools:
+                return len( category.tools )
+            return 0
+
+    # Grid definition
+    webapp = "community"
+    title = "Tools by Category"
+    model_class = model.Category
+    template='/webapps/community/category/grid.mako'
+    default_sort_key = "name"
+    columns = [
+        NameColumn( "Name",
+                    key="name",
+                    link=( lambda item: dict( operation="Browse Category", id=item.id, webapp="community" ) ),
+                    model_class=model.Category,
+                    attach_popup=True,
+                    filterable="advanced" ),
+        DescriptionColumn( "Description",
+                           model_class=model.Category,
+                           attach_popup=False,
+                           filterable="advanced" ),
+        ToolsColumn( "Tools",
+                     model_class=model.Category,
+                     attach_popup=False,
+                     filterable="advanced" ),
+        # Columns that are valid for filtering but are not visible.
+        grids.DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" )
+    ]
+    columns.append( grids.MulticolFilterColumn( "Search",
+                                                cols_to_filter=[ columns[0], columns[1], columns[2] ],
+                                                key="free-text-search",
+                                                visible=False,
+                                                filterable="standard" ) )
+    standard_filters = [
+        grids.GridColumnFilter( "Active", args=dict( deleted=False ) ),
+        grids.GridColumnFilter( "Deleted", args=dict( deleted=True ) ),
+        grids.GridColumnFilter( "All", args=dict( deleted='All' ) )
+    ]
+    num_rows_per_page = 50
+    preserve_state = False
+    use_paging = True
+    def get_current_item( self, trans ):
+        return None
+    def build_initial_query( self, session ):
+        return session.query( self.model_class )
+
 class ToolListGrid( grids.Grid ):
     class NameColumn( grids.TextColumn ):
         def get_value( self, trans, grid, tool ):
             return tool.name
+    class VersionColumn( grids.TextColumn ):
+        def get_value( self, trans, grid, tool ):
+            return tool.version
+    class DescriptionColumn( grids.TextColumn ):
+        def get_value( self, trans, grid, tool ):
+            return tool.description
     class CategoryColumn( grids.TextColumn ):
         def get_value( self, trans, grid, tool ):
             if tool.categories:
                 rval = ''
                 for tca in tool.categories:
-                    rval = '%s%s<br/>' % ( rval, tca.category.name )
+                    rval += '<a href="browse_category?id=%s">%s</a><br/>\n' % ( trans.security.encode_id( tca.category.id ), tca.category.name ) 
                 return rval
             return 'not set'
     class StateColumn( grids.GridColumn ):
@@ -389,7 +443,7 @@ class ToolListGrid( grids.Grid ):
             return accepted_filters
     class UserColumn( grids.TextColumn ):
         def get_value( self, trans, grid, tool ):
-            return tool.user.email
+            return '<a href="browse_tools_by_user?operation=browse&id=%s">%s</a>' % ( trans.security.encode_id( tool.user.id ), tool.user.username )
     # Grid definition
     title = "Tools"
     model_class = model.Tool
@@ -402,27 +456,34 @@ class ToolListGrid( grids.Grid ):
                     link=( lambda item: dict( operation="View Tool", id=item.id, cntrller='admin', webapp="community" ) ),
                     attach_popup=True,
                     filterable="advanced" ),
+        VersionColumn( "Version",
+                        model_class=model.Tool,
+                        attach_popup=False,
+                        filterable="advanced" ),
+        DescriptionColumn( "Description",
+                        model_class=model.Tool,
+                        attach_popup=False,
+                        filterable="advanced" ),
         CategoryColumn( "Category",
-                    key="category",
                     model_class=model.Category,
                     attach_popup=False,
                     filterable="advanced" ),
-        StateColumn( "State",
-                     key="state",
+        StateColumn( "Status",
                      model_class=model.Event,
-                     attach_popup=False,
-                     filterable="advanced" ),
+                     attach_popup=False ),
+        UserColumn( "Uploaded By",
+                    key="username",
+                    model_class=model.User,
+                    attach_popup=False,
+                    filterable="advanced" ),
         # Columns that are valid for filtering but are not visible.
-        grids.DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" )
+        grids.DeletedColumn( "Deleted", model_class=model.Tool, key="deleted", visible=False, filterable="advanced" )
     ]
     columns.append( grids.MulticolFilterColumn( "Search", 
                                                 cols_to_filter=[ columns[0], columns[1] ], 
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
-    global_actions = [
-        grids.GridAction( "Upload tool", dict( controller='upload', action='upload', type='tool' ) )
-    ]
     operations = [
         grids.GridOperation( "Edit information",
                              condition=( lambda item: not item.deleted ),
@@ -443,57 +504,156 @@ class ToolListGrid( grids.Grid ):
     use_paging = True
     def build_initial_query( self, session ):
         return session.query( self.model_class )
-    def apply_default_filter( self, trans, query, **kwargs ):
+    def apply_default_filter( self, trans, query, **kwd ):
+        tool_id = kwd.get( 'tool_id', False )
+        if tool_id:
+            if str( tool_id ).lower() in [ '', 'none' ]:
+                # Return an empty query since the current user cannot view any
+                # tools (possibly due to state not being approved, etc).
+                return query.filter( model.Tool.id == None )
+            tool_id = util.listify( tool_id )
+            query = query.filter( or_( *map( lambda id: self.model_class.id == id, tool_id ) ) )
         return query.filter( self.model_class.deleted==False )
 
-class AdminCommunity( BaseController, Admin ):
+class AdminController( BaseController, Admin ):
     
     user_list_grid = UserListGrid()
     role_list_grid = RoleListGrid()
     group_list_grid = GroupListGrid()
-    category_list_grid = CategoryListGrid()
+    manage_category_list_grid = ManageCategoryListGrid()
+    tools_by_category_list_grid = ToolsByCategoryListGrid()
     tool_list_grid = ToolListGrid()
 
     @web.expose
     @web.require_admin
-    def browse_tools( self, trans, **kwargs ):
-        if 'operation' in kwargs:
-            operation = kwargs['operation'].lower()
-            if operation == "browse":
-                return trans.response.send_redirect( web.url_for( controller='tool',
-                                                                  action='browse_tools',
-                                                                  cntrller='admin',
-                                                                  **kwargs ) )
-            elif operation == "edit tool":
+    def browse_tools( self, trans, **kwd ):
+        if 'operation' in kwd:
+            operation = kwd['operation'].lower()
+            if operation == "edit tool":
                 return trans.response.send_redirect( web.url_for( controller='common',
                                                                   action='edit_tool',
                                                                   cntrller='admin',
-                                                                  **kwargs ) )
+                                                                  **kwd ) )
             elif operation == "view tool":
                 return trans.response.send_redirect( web.url_for( controller='common',
                                                                   action='view_tool',
                                                                   cntrller='admin',
-                                                                  **kwargs ) )
+                                                                  **kwd ) )
         # Render the list view
-        return self.tool_list_grid( trans, **kwargs )
+        return self.tool_list_grid( trans, **kwd )
     @web.expose
     @web.require_admin
-    def categories( self, trans, **kwargs ):
-        if 'operation' in kwargs:
-            operation = kwargs['operation'].lower()
-            if operation == "create":
-                return self.create_category( trans, **kwargs )
-            if operation == "delete":
-                return self.mark_category_deleted( trans, **kwargs )
-            if operation == "undelete":
-                return self.undelete_category( trans, **kwargs )
-            if operation == "purge":
-                return self.purge_category( trans, **kwargs )
-            if operation == "rename":
-                return self.rename_category( trans, **kwargs )
+    def browse_tools_by_category( self, trans, **kwd ):
+        if 'operation' in kwd:
+            operation = kwd['operation'].lower()
+            if operation == "browse category":
+                return self.browse_category( trans, id=kwd['id'] )
         # Render the list view
-        return self.category_list_grid( trans, **kwargs )
-
+        return self.tools_by_category_list_grid( trans, **kwd )
+    @web.expose
+    @web.require_admin
+    def browse_tools_by_user( self, trans, **kwd ):
+        # TODO: move this to the common controller as it is in the tool controller as well...
+        if 'operation' in kwd:
+            operation = kwd['operation'].lower()
+            if operation == "browse":
+                return trans.response.send_redirect( web.url_for( controller='common',
+                                                                  action='browse_tools_by_user',
+                                                                  cntrller='admin',
+                                                                  **kwd ) )
+            elif operation == "browse category":
+                return trans.response.send_redirect( web.url_for( controller='common',
+                                                                  action='browse_category',
+                                                                  cntrller='admin',
+                                                                  **kwd ) )
+            elif operation == "view tool":
+                return trans.response.send_redirect( web.url_for( controller='common',
+                                                                  action='view_tool',
+                                                                  cntrller='admin',
+                                                                  **kwd ) )
+            elif operation == "edit tool":
+                return trans.response.send_redirect( web.url_for( controller='common',
+                                                                  action='edit_tool',
+                                                                  cntrller='admin',
+                                                                  **kwd ) )
+            elif operation == "download tool":
+                return trans.response.send_redirect( web.url_for( controller='tool',
+                                                                  action='download_tool',
+                                                                  **kwd ) )
+    @web.expose
+    @web.require_admin
+    def browse_tools_by_user( self, trans, **kwd ):
+        # TODO: move this to the common controller as it is in the tool controller as well...
+        if 'operation' in kwd:
+            operation = kwd['operation'].lower()
+            if operation == "browse":
+                return trans.response.send_redirect( web.url_for( controller='admin',
+                                                                  action='browse_tools_by_user',
+                                                                  **kwd ) )
+            elif operation == "browse category":
+                return trans.response.send_redirect( web.url_for( controller='common',
+                                                                  action='browse_category',
+                                                                  cntrller='admin',
+                                                                  **kwd ) )
+            elif operation == "view tool":
+                return trans.response.send_redirect( web.url_for( controller='common',
+                                                                  action='view_tool',
+                                                                  cntrller='admin',
+                                                                  **kwd ) )
+            elif operation == "edit tool":
+                return trans.response.send_redirect( web.url_for( controller='common',
+                                                                  action='edit_tool',
+                                                                  cntrller='admin',
+                                                                  **kwd ) )
+            elif operation == "download tool":
+                return trans.response.send_redirect( web.url_for( controller='tool',
+                                                                  action='download_tool',
+                                                                  **kwd ) )
+    @web.expose
+    @web.require_admin
+    def manage_categories( self, trans, **kwd ):
+        if 'operation' in kwd:
+            operation = kwd['operation'].lower()
+            if operation == "create":
+                return self.create_category( trans, **kwd )
+            if operation == "delete":
+                return self.mark_category_deleted( trans, **kwd )
+            if operation == "undelete":
+                return self.undelete_category( trans, **kwd )
+            if operation == "purge":
+                return self.purge_category( trans, **kwd )
+            if operation == "edit":
+                return self.edit_category( trans, **kwd )
+        # Render the list view
+        return self.manage_category_list_grid( trans, **kwd )
+    @web.expose
+    @web.require_admin
+    def browse_tools_by_state( self, trans, state=None, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        if state is None:
+            id = params.get( 'id', None )
+            if not id:
+                return trans.response.send_redirect( web.url_for( controller=cntrller,
+                                                                  action='browse_tools',
+                                                                  message='Select a status',
+                                                                  status='error' ) )
+            event = get_event( trans, id )
+            state = event.state
+        tool_id = get_tools_by_state( trans, state )
+        if not tool_id:
+            tool_id = 'None'
+        return trans.response.send_redirect( web.url_for( controller='admin',
+                                                          action='browse_tools',
+                                                          tool_id=tool_id ) )
+    @web.expose
+    @web.require_admin
+    def browse_category( self, trans, **kwd ):
+        return trans.response.send_redirect( web.url_for( controller='common',
+                                                          action='browse_category',
+                                                          cntrller='admin',
+                                                          **kwd ) )
     @web.expose
     @web.require_admin
     def create_category( self, trans, **kwd ):
@@ -515,7 +675,7 @@ class AdminCommunity( BaseController, Admin ):
                 message = "Category '%s' has been created" % category.name
                 trans.sa_session.flush()
                 trans.response.send_redirect( web.url_for( controller='admin',
-                                                           action='categories',
+                                                           action='manage_categories',
                                                            webapp=webapp,
                                                            message=util.sanitize_text( message ),
                                                            status='done' ) )
@@ -530,42 +690,69 @@ class AdminCommunity( BaseController, Admin ):
                                     status=status )
     @web.expose
     @web.require_admin
-    def rename_category( self, trans, **kwd ):
+    def set_tool_state( self, trans, state, **kwd ):
         params = util.Params( kwd )
         webapp = params.get( 'webapp', 'galaxy' )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         id = params.get( 'id', None )
         if not id:
-            message = "No category ids received for renaming"
+            message = "No tool id received for setting status"
+            status = 'error'
+        else:
+            tool = get_tool( trans, id )
+            event = trans.model.Event( state )
+            # Flush so we an get an id
+            trans.sa_session.add( event )
+            trans.sa_session.flush()
+            tea = trans.model.ToolEventAssociation( tool, event )
+            trans.sa_session.add( tea )
+            trans.sa_session.flush()
+            message = "State of tool '%s' is now %s" % ( tool.name, state )
+        trans.response.send_redirect( web.url_for( controller='admin',
+                                                   action='browse_tools',
+                                                   webapp=webapp,
+                                                   message=message,
+                                                   status=status ) )
+    @web.expose
+    @web.require_admin
+    def edit_category( self, trans, **kwd ):
+        params = util.Params( kwd )
+        webapp = params.get( 'webapp', 'galaxy' )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        id = params.get( 'id', None )
+        if not id:
+            message = "No category ids received for editing"
             trans.response.send_redirect( web.url_for( controller='admin',
-                                                       action='categories',
+                                                       action='manage_categories',
                                                        webapp=webapp,
                                                        message=message,
                                                        status='error' ) )
         category = get_category( trans, id )
-        if params.get( 'rename_category_button', False ):
+        if params.get( 'edit_category_button', False ):
             old_name = category.name
             new_name = util.restore_text( params.name )
             new_description = util.restore_text( params.description )
-            if not new_name:
-                message = 'Enter a valid name'
-                status = 'error'
-            elif trans.sa_session.query( trans.app.model.Category ).filter( trans.app.model.Category.table.c.name==new_name ).first():
-                message = 'A category with that name already exists'
-                status = 'error'
+            if old_name != new_name:
+                if not new_name:
+                    message = 'Enter a valid name'
+                    status = 'error'
+                elif trans.sa_session.query( trans.app.model.Category ).filter( trans.app.model.Category.table.c.name==new_name ).first():
+                    message = 'A category with that name already exists'
+                    status = 'error'
             else:
                 category.name = new_name
                 category.description = new_description
                 trans.sa_session.add( category )
                 trans.sa_session.flush()
-                message = "Category '%s' has been renamed to '%s'" % ( old_name, new_name )
+                message = "The information has been saved for category '%s'" % ( new_name )
                 return trans.response.send_redirect( web.url_for( controller='admin',
-                                                                  action='categories',
+                                                                  action='manage_categories',
                                                                   webapp=webapp,
                                                                   message=util.sanitize_text( message ),
                                                                   status='done' ) )
-        return trans.fill_template( '/webapps/community/category/rename_category.mako',
+        return trans.fill_template( '/webapps/community/category/edit_category.mako',
                                     category=category,
                                     webapp=webapp,
                                     message=message,
@@ -579,7 +766,7 @@ class AdminCommunity( BaseController, Admin ):
         if not id:
             message = "No category ids received for deleting"
             trans.response.send_redirect( web.url_for( controller='admin',
-                                                       action='categories',
+                                                       action='manage_categories',
                                                        webapp=webapp,
                                                        message=message,
                                                        status='error' ) )
@@ -592,7 +779,7 @@ class AdminCommunity( BaseController, Admin ):
             trans.sa_session.flush()
             message += " %s " % category.name
         trans.response.send_redirect( web.url_for( controller='admin',
-                                                   action='categories',
+                                                   action='manage_categories',
                                                    webapp=webapp,
                                                    message=util.sanitize_text( message ),
                                                    status='done' ) )
@@ -605,7 +792,7 @@ class AdminCommunity( BaseController, Admin ):
         if not id:
             message = "No category ids received for undeleting"
             trans.response.send_redirect( web.url_for( controller='admin',
-                                                       action='categories',
+                                                       action='manage_categories',
                                                        webapp=webapp,
                                                        message=message,
                                                        status='error' ) )
@@ -617,7 +804,7 @@ class AdminCommunity( BaseController, Admin ):
             if not category.deleted:
                 message = "Category '%s' has not been deleted, so it cannot be undeleted." % category.name
                 trans.response.send_redirect( web.url_for( controller='admin',
-                                                           action='categories',
+                                                           action='manage_categories',
                                                            webapp=webapp,
                                                            message=util.sanitize_text( message ),
                                                            status='error' ) )
@@ -628,7 +815,7 @@ class AdminCommunity( BaseController, Admin ):
             undeleted_categories += " %s" % category.name
         message = "Undeleted %d categories: %s" % ( count, undeleted_categories )
         trans.response.send_redirect( web.url_for( controller='admin',
-                                                   action='categories',
+                                                   action='manage_categories',
                                                    webapp=webapp,
                                                    message=util.sanitize_text( message ),
                                                    status='done' ) )
@@ -644,7 +831,7 @@ class AdminCommunity( BaseController, Admin ):
         if not id:
             message = "No category ids received for purging"
             trans.response.send_redirect( web.url_for( controller='admin',
-                                                       action='categories',
+                                                       action='manage_categories',
                                                        webapp=webapp,
                                                        message=util.sanitize_text( message ),
                                                        status='error' ) )
@@ -655,7 +842,7 @@ class AdminCommunity( BaseController, Admin ):
             if not category.deleted:
                 message = "Category '%s' has not been deleted, so it cannot be purged." % category.name
                 trans.response.send_redirect( web.url_for( controller='admin',
-                                                           action='categories',
+                                                           action='manage_categories',
                                                            webapp=webapp,
                                                            message=util.sanitize_text( message ),
                                                            status='error' ) )
@@ -665,7 +852,42 @@ class AdminCommunity( BaseController, Admin ):
             trans.sa_session.flush()
             message += " %s " % category.name
         trans.response.send_redirect( web.url_for( controller='admin',
-                                                   action='categories',
+                                                   action='manage_categories',
                                                    webapp=webapp,
                                                    message=util.sanitize_text( message ),
                                                    status='done' ) )
+
+## ---- Utility methods -------------------------------------------------------
+
+def get_tools_by_state( trans, state ):
+    # TODO: this can be written so that it is much cleaner and faster
+    tool_id = []
+    if state == trans.model.Tool.states.NEW:
+        for tool in get_tools( trans ):
+            if tool.is_new():
+                tool_id.append( tool.id )
+    elif state == trans.model.Tool.states.ERROR:
+        for tool in get_tools( trans ):
+            if tool.is_error():
+                tool_id.append( tool.id )
+    elif state == trans.model.Tool.states.DELETED:
+        for tool in get_tools( trans ):
+            if tool.is_deleted():
+                tool_id.append( tool.id )
+    elif state == trans.model.Tool.states.WAITING:
+        for tool in get_tools( trans ):
+            if tool.is_waiting():
+                tool_id.append( tool.id )
+    elif state == trans.model.Tool.states.APPROVED:
+        for tool in get_tools( trans ):
+            if tool.is_approved():
+                tool_id.append( tool.id )
+    elif state == trans.model.Tool.states.REJECTED:
+        for tool in get_tools( trans ):
+            if tool.is_rejected():
+                tool_id.append( tool.id )
+    elif state == trans.model.Tool.states.ARCHIVED:
+        for tool in get_tools( trans ):
+            if tool.is_archived():
+                tool_id.append( tool.id )
+    return tool_id

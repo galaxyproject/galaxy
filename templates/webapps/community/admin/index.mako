@@ -54,7 +54,6 @@
     </style>
 </%def>
 
-
 <%def name="init()">
 <%
     self.has_left_panel=True
@@ -71,31 +70,33 @@
         <div class="toolMenu">
             <div class="toolSectionList">
                 <div class="toolSectionTitle">
-                  <span>Security</span>
-                </div>
-                <div class="toolSectionBody">
-                    <div class="toolSectionBg">
-                        <div class="toolTitle"><a href="${h.url_for( controller='admin', action='users', webapp='community' )}" target="galaxy_main">Manage users</a></div>
-                        <div class="toolTitle"><a href="${h.url_for( controller='admin', action='groups', webapp='community' )}" target="galaxy_main">Manage groups</a></div>
-                        <div class="toolTitle"><a href="${h.url_for( controller='admin', action='roles', webapp='community' )}" target="galaxy_main">Manage roles</a></div>
-                    </div>
-                </div>
-                <div class="toolSectionTitle">
                   <span>Tools</span>
                 </div>
                 <div class="toolSectionBody">
                     <div class="toolSectionBg">
-                        <div class="toolTitle"><a href="${h.url_for( controller='admin', action='browse_tools', webapp='community' )}" target="galaxy_main">Manage tools</a></div>
+                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='admin', action='browse_tools_by_state', state=trans.model.Tool.states.WAITING, webapp='community' )}">Tools awaiting approval</a></div>
+                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='admin', action='browse_tools_by_category' )}">Browse by category</a></div>
+                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='admin', action='browse_tools', webapp='community' )}">Browse all tools</a></div>
                     </div>
                 </div>
                 <div class="toolSectionPad"></div>
                 <div class="toolSectionTitle">
-                  <span>Community</span>
+                  <span>Categories</span>
                 </div>
                 <div class="toolSectionBody">
                   <div class="toolSectionBg">
-                    <div class="toolTitle"><a href="${h.url_for( controller='admin', action='categories', webapp='community' )}" target="galaxy_main">Manage categories</a></div>
+                    <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='admin', action='manage_categories', webapp='community' )}">Manage categories</a></div>
                   </div>
+                </div>
+                <div class="toolSectionTitle">
+                  <span>Security</span>
+                </div>
+                <div class="toolSectionBody">
+                    <div class="toolSectionBg">
+                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='admin', action='users', webapp='community' )}">Manage users</a></div>
+                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='admin', action='groups', webapp='community' )}">Manage groups</a></div>
+                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='admin', action='roles', webapp='community' )}">Manage roles</a></div>
+                    </div>
                 </div>
             </div>
         </div>    

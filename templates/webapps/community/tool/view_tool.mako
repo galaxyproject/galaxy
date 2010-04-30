@@ -49,6 +49,14 @@
 
 <h2>View Tool: ${tool.name} <em>${tool.description}</em></h2>
 
+%if cntrller=='admin' and tool.is_waiting():
+    <p>
+       <ul class="manage-table-actions">
+            <li><a class="action-button" href="${h.url_for( controller='admin', action='set_tool_state', state=trans.model.Tool.states.APPROVED, id=trans.security.encode_id( tool.id ), cntrller=cntrller )}"><span>Approve</span></a></li>
+       </ul>
+    </p>
+%endif
+
 %if message:
     ${render_msg( message, status )}
 %endif

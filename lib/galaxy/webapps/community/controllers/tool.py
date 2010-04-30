@@ -15,38 +15,111 @@ class ToolListGrid( grids.Grid ):
     class NameColumn( grids.TextColumn ):
         def get_value( self, trans, grid, tool ):
             return tool.name
+    class VersionColumn( grids.TextColumn ):
+        def get_value( self, trans, grid, tool ):
+            return tool.version
+    class DescriptionColumn( grids.TextColumn ):
+        def get_value( self, trans, grid, tool ):
+            return tool.description
     class CategoryColumn( grids.TextColumn ):
         def get_value( self, trans, grid, tool ):
             if tool.categories:
                 rval = ''
                 for tca in tool.categories:
-                    rval += '%s<br/>\n' % tca.category.name
+                    rval += '<a href="browse_category?id=%s">%s</a><br/>\n' % ( trans.security.encode_id( tca.category.id ), tca.category.name ) 
                 return rval
             return 'not set'
-        def filter( self, trans, user, query, column_filter ):
-            # Category.name conflicts with Tool.name, so we have to make our own filter
-            def get_single_filter( filter ):
-                return func.lower( model.Category.name ).like( "%" + filter.lower() + "%" )
-            if column_filter == 'All':
-                pass
-            elif isinstance( column_filter, list ):
-                clause_list = []
-                for filter in column_filter:
-                    clause_list.append( get_single_filter( filter ) )
-                query = query.filter( or_( *clause_list ) )
-            else:
-                query = query.filter( get_single_filter( column_filter ) )
-            return query
-        def get_link( self, trans, grid, tool, filter_params ):
+    class UserColumn( grids.TextColumn ):
+        def get_value( self, trans, grid, tool ):
+            return '<a href="browse_tools_by_user?operation=browse&id=%s">%s</a>' % ( trans.security.encode_id( tool.user.id ), tool.user.username )
+    # Grid definition
+    title = "Tools"
+    model_class = model.Tool
+    template='/webapps/community/tool/grid.mako'
+    default_sort_key = "name"
+    columns = [
+        NameColumn( "Name",
+                    key="name",
+                    model_class=model.Tool,
+                    link=( lambda item: dict( operation="View Tool", id=item.id, cntrller='tool', webapp="community" ) ),
+                    attach_popup=True,
+                    filterable="advanced" ),
+        VersionColumn( "Version",
+                        model_class=model.Tool,
+                        attach_popup=False,
+                        filterable="advanced" ),
+        DescriptionColumn( "Description",
+                        model_class=model.Tool,
+                        attach_popup=False,
+                        filterable="advanced" ),
+        CategoryColumn( "Categories",
+                        model_class=model.Category,
+                        attach_popup=False,
+                        filterable="advanced" ),
+        UserColumn( "Uploaded By",
+                    key="username",
+                    model_class=model.User,
+                    attach_popup=False,
+                    filterable="advanced" ),
+        # Columns that are valid for filtering but are not visible.
+        grids.DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" )
+    ]
+    columns.append( grids.MulticolFilterColumn( "Search", 
+                                                cols_to_filter=[ columns[0], columns[1] ], 
+                                                key="free-text-search",
+                                                visible=False,
+                                                filterable="standard" ) )
+    operations = [
+        grids.GridOperation( "Download tool",
+                             condition=( lambda item: not item.deleted ),
+                             allow_multiple=False,
+                             url_args=dict( controller="tool", action="download_tool", cntrller="tool", webapp="community" ) )
+        ]
+    standard_filters = [
+        grids.GridColumnFilter( "Deleted", args=dict( deleted=True ) ),
+        grids.GridColumnFilter( "All", args=dict( deleted='All' ) )
+    ]
+    default_filter = dict( name="All", deleted="False", username="All" )
+    num_rows_per_page = 50
+    preserve_state = False
+    use_paging = True
+    def build_initial_query( self, session ):
+        return session.query( self.model_class )
+    def apply_default_filter( self, trans, query, **kwd ):
+        def filter_query( query, tool_id ):
+            if str( tool_id ).lower() in [ '', 'none' ]:
+                # Return an empty query since the current user cannot view any
+                # tools (possibly due to state not being approved, etc).
+                return query.filter( model.Tool.id == None )
+            tool_id = util.listify( tool_id )
+            query = query.filter( or_( *map( lambda id: self.model_class.id == id, tool_id ) ) )
+            return query.filter( self.model_class.deleted==False )
+        tool_id = kwd.get( 'tool_id', False )
+        if not tool_id:
+            # Display only approved tools
+            tool_id = get_approved_tools( trans )
+            if not tool_id:
+                tool_id = 'None'
+        return filter_query( query, tool_id )
+
+class ToolsByUserListGrid( grids.Grid ):
+    class NameColumn( grids.TextColumn ):
+        def get_value( self, trans, grid, tool ):
+            return tool.name
+    class VersionColumn( grids.TextColumn ):
+        def get_value( self, trans, grid, tool ):
+            return tool.version
+    class DescriptionColumn( grids.TextColumn ):
+        def get_value( self, trans, grid, tool ):
+            return tool.description
+    class CategoryColumn( grids.TextColumn ):
+        def get_value( self, trans, grid, tool ):
             if tool.categories:
-                filter_params['f-category'] = []
+                rval = ''
                 for tca in tool.categories:
-                    filter_params['f-category'].append( tca.category.name )
-                if len( filter_params['f-category'] ) == 1:
-                    filter_params['f-category'] = filter_params['f-category'][0]
-                filter_params['advanced-search'] = 'True'
-                return filter_params
-            return None
+                    rval += '<a href="browse_category?id=%s">%s</a><br/>\n' % ( trans.security.encode_id( tca.category.id ), tca.category.name ) 
+                return rval
+            return 'not set'
     class StateColumn( grids.GridColumn ):
         def get_value( self, trans, grid, tool ):
             state = tool.state()
@@ -75,13 +148,9 @@ class ToolListGrid( grids.Grid ):
             return accepted_filters
     class UserColumn( grids.TextColumn ):
         def get_value( self, trans, grid, tool ):
-            return tool.user.username
-        def get_link( self, trans, grid, tool, filter_params ):
-            filter_params['f-username'] = tool.user.username
-            filter_params['advanced-search'] = 'True'
-            return filter_params
+            return '<a href="browse_tools_by_user?operation=browse&id=%s">%s</a>' % ( trans.security.encode_id( tool.user.id ), tool.user.username )
     # Grid definition
-    title = "Tools"
+    title = "Tools By User"
     model_class = model.Tool
     template='/webapps/community/tool/grid.mako'
     default_sort_key = "name"
@@ -92,21 +161,26 @@ class ToolListGrid( grids.Grid ):
                     link=( lambda item: dict( operation="View Tool", id=item.id, cntrller='tool', webapp="community" ) ),
                     attach_popup=True,
                     filterable="advanced" ),
-        CategoryColumn( "Categories",
-                        key="category",
+        VersionColumn( "Version",
                         model_class=model.Tool,
                         attach_popup=False,
                         filterable="advanced" ),
+        DescriptionColumn( "Description",
+                        model_class=model.Tool,
+                        attach_popup=False,
+                        filterable="advanced" ),
+        CategoryColumn( "Categories",
+                        model_class=model.Category,
+                        attach_popup=False,
+                        filterable="advanced" ),
+        StateColumn( "Status",
+                     model_class=model.Event,
+                     attach_popup=False ),
         UserColumn( "Uploaded By",
                     key="username",
                     model_class=model.User,
                     attach_popup=False,
                     filterable="advanced" ),
-        StateColumn( "State",
-                     key="state",
-                     model_class=model.Event,
-                     attach_popup=False,
-                     filterable="advanced" ),
         # Columns that are valid for filtering but are not visible.
         grids.DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" )
     ]
@@ -130,18 +204,44 @@ class ToolListGrid( grids.Grid ):
     preserve_state = False
     use_paging = True
     def build_initial_query( self, session ):
-        return session.query( self.model_class ).outerjoin( model.ToolCategoryAssociation ).outerjoin( model.Category )
-    def apply_default_filter( self, trans, query, **kwargs ):
-        return query.filter( self.model_class.deleted==False )
+        return session.query( self.model_class )
+    def apply_default_filter( self, trans, query, **kwd ):
+        def filter_query( query, tool_id ):
+            if str( tool_id ).lower() in [ '', 'none' ]:
+                # Return an empty query since the current user cannot view any
+                # tools (possibly due to state not being approved, etc).
+                return query.filter( model.Tool.id == None )
+            tool_id = util.listify( tool_id )
+            query = query.filter( or_( *map( lambda id: self.model_class.id == id, tool_id ) ) )
+            return query.filter( self.model_class.deleted==False )
+        tool_id = kwd.get( 'tool_id', False )
+        if not tool_id:
+            # Display only approved tools
+            tool_id = get_approved_tools( trans )
+            if not tool_id:
+                tool_id = 'None'
+        return filter_query( query, tool_id )
 
-class ToolCategoryListGrid( grids.Grid ):
+class CategoryListGrid( grids.Grid ):
     class NameColumn( grids.TextColumn ):
         def get_value( self, trans, grid, category ):
             return category.name
     class DescriptionColumn( grids.TextColumn ):
         def get_value( self, trans, grid, category ):
             return category.description
+    class ToolsColumn( grids.TextColumn ):
+        def get_value( self, trans, grid, category ):
+            if category.tools:
+                viewable_tools = 0
+                for tca in category.tools:
+                    tool = tca.tool
+                    if tool.is_approved():
+                        viewable_tools += 1
+                return viewable_tools
+            return 0
+
     # Grid definition
+    webapp = "community"
     title = "Tool Categories"
     model_class = model.Category
     template='/webapps/community/category/grid.mako'
@@ -157,7 +257,13 @@ class ToolCategoryListGrid( grids.Grid ):
                         key="description",
                         model_class=model.Category,
                         attach_popup=False,
-                        filterable="advanced" )
+                        filterable="advanced" ),
+        ToolsColumn( "Tools",
+                     model_class=model.Tool,
+                     attach_popup=False,
+                     filterable="advanced" ),
+        # Columns that are valid for filtering but are not visible.
+        grids.DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" )
     ]
     columns.append( grids.MulticolFilterColumn( "Search", 
                                                 cols_to_filter=[ columns[0], columns[1] ], 
@@ -165,21 +271,23 @@ class ToolCategoryListGrid( grids.Grid ):
                                                 visible=False,
                                                 filterable="standard" ) )
     standard_filters = [
+        grids.GridColumnFilter( "Active", args=dict( deleted=False ) ),
+        grids.GridColumnFilter( "Deleted", args=dict( deleted=True ) ),
         grids.GridColumnFilter( "All", args=dict( deleted='All' ) )
     ]
-    default_filter = dict( name="All", deleted="False" )
     num_rows_per_page = 50
     preserve_state = False
     use_paging = True
     def build_initial_query( self, session ):
         return session.query( self.model_class )
-    def apply_default_filter( self, trans, query, **kwargs ):
+    def apply_default_filter( self, trans, query, **kwd ):
         return query.filter( self.model_class.deleted==False )
 
-class ToolBrowserController( BaseController ):
-    
-    tool_category_list_grid = ToolCategoryListGrid()
+class ToolController( BaseController ):
+
     tool_list_grid = ToolListGrid()
+    tools_by_user_list_grid = ToolsByUserListGrid()
+    category_list_grid = CategoryListGrid()
     
     @web.expose
     def index( self, trans, **kwd ):
@@ -188,53 +296,84 @@ class ToolBrowserController( BaseController ):
         status = params.get( 'status', 'done' )
         return trans.fill_template( '/webapps/community/index.mako', message=message, status=status )
     @web.expose
-    def browse_tool_categories( self, trans, **kwargs ):
-        if 'operation' in kwargs:
-            operation = kwargs['operation'].lower()
+    def browse_categories( self, trans, **kwd ):
+        if 'operation' in kwd:
+            operation = kwd['operation'].lower()
             if operation == "browse category":
-                category_id = int( trans.app.security.decode_id( kwargs['id'] ) )
-                category = trans.sa_session.query( model.Category ).get( category_id )
-                del kwargs['id']
-                del kwargs['operation']
-                kwargs['f-category'] = category.name
-                return trans.response.send_redirect( web.url_for( controller='tool',
-                                                                  action='browse_tools',
-                                                                  **kwargs ) )
-        return self.tool_category_list_grid( trans, **kwargs )
-    @web.expose
-    def browse_tools( self, trans, **kwargs ):
-        if 'operation' in kwargs:
-            operation = kwargs['operation'].lower()
-            if operation == "browse":
-                return trans.response.send_redirect( web.url_for( controller='tool',
-                                                                  action='browse_tool',
+                return self.browse_category( trans, id=kwd['id'] )
+            elif operation == "view tool":
+                return trans.response.send_redirect( web.url_for( controller='common',
+                                                                  action='view_category',
                                                                   cntrller='tool',
-                                                                  **kwargs ) )
+                                                                  **kwd ) )
+            elif operation == "edit tool":
+                return trans.response.send_redirect( web.url_for( controller='common',
+                                                                  action='edit_category',
+                                                                  cntrller='tool',
+                                                                  **kwd ) )
+        # Render the list view
+        return self.category_list_grid( trans, **kwd )
+    @web.expose
+    def browse_category( self, trans, **kwd ):
+        return trans.response.send_redirect( web.url_for( controller='common',
+                                                          action='browse_category',
+                                                          cntrller='tool',
+                                                          **kwd ) )
+    @web.expose
+    def browse_tools( self, trans, **kwd ):
+        if 'operation' in kwd:
+            operation = kwd['operation'].lower()
+            if operation == "browse category":
+                return trans.response.send_redirect( web.url_for( controller='common',
+                                                                  action='browse_category',
+                                                                  cntrller='tool',
+                                                                  **kwd ) )
             elif operation == "view tool":
                 return trans.response.send_redirect( web.url_for( controller='common',
                                                                   action='view_tool',
                                                                   cntrller='tool',
-                                                                  **kwargs ) )
+                                                                  **kwd ) )
             elif operation == "edit tool":
                 return trans.response.send_redirect( web.url_for( controller='common',
                                                                   action='edit_tool',
                                                                   cntrller='tool',
-                                                                  **kwargs ) )
+                                                                  **kwd ) )
             elif operation == "download tool":
                 return trans.response.send_redirect( web.url_for( controller='tool',
                                                                   action='download_tool',
-                                                                  **kwargs ) )
+                                                                  **kwd ) )
         # Render the list view
-        return self.tool_list_grid( trans, **kwargs )
+        return self.tool_list_grid( trans, **kwd )
     @web.expose
-    def browse_tool( self, trans, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        return trans.fill_template( '/webapps/community/tool/browse_tool.mako', 
-                                    tools=tools,
-                                    message=message,
-                                    status=status )
+    def browse_tools_by_user( self, trans, **kwd ):
+        if 'operation' in kwd:
+            operation = kwd['operation'].lower()
+            if operation == "browse":
+                return trans.response.send_redirect( web.url_for( controller='common',
+                                                                  action='browse_tools_by_user',
+                                                                  cntrller='tool',
+                                                                  **kwd ) )
+            elif operation == "browse category":
+                return trans.response.send_redirect( web.url_for( controller='common',
+                                                                  action='browse_category',
+                                                                  cntrller='tool',
+                                                                  **kwd ) )
+            elif operation == "view tool":
+                return trans.response.send_redirect( web.url_for( controller='common',
+                                                                  action='view_tool',
+                                                                  cntrller='tool',
+                                                                  **kwd ) )
+            elif operation == "edit tool":
+                return trans.response.send_redirect( web.url_for( controller='common',
+                                                                  action='edit_tool',
+                                                                  cntrller='tool',
+                                                                  **kwd ) )
+            elif operation == "download tool":
+                return trans.response.send_redirect( web.url_for( controller='tool',
+                                                                  action='download_tool',
+                                                                  **kwd ) )
+        # Render the list view
+        return self.tools_by_user_list_grid( trans, **kwd )
     @web.expose
     def download_tool( self, trans, **kwd ):
         params = util.Params( kwd )
