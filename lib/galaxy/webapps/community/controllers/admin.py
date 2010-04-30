@@ -18,13 +18,6 @@ class UserListGrid( grids.Grid ):
             if user.username:
                 return user.username
             return 'not set'
-    class StatusColumn( grids.GridColumn ):
-        def get_value( self, trans, grid, user ):
-            if user.purged:
-                return "purged"
-            elif user.deleted:
-                return "deleted"
-            return ""
     class GroupsColumn( grids.GridColumn ):
         def get_value( self, trans, grid, user ):
             if user.groups:
@@ -45,6 +38,16 @@ class UserListGrid( grids.Grid ):
             if user.galaxy_sessions:
                 return self.format( user.galaxy_sessions[ 0 ].update_time )
             return 'never'
+    class StatusColumn( grids.GridColumn ):
+        def get_value( self, trans, grid, user ):
+            if user.purged:
+                return "purged"
+            elif user.deleted:
+                return "deleted"
+            return ""
+    class ToolsColumn( grids.TextColumn ):
+        def get_value( self, trans, grid, user ):
+            return '<a href="browse_tools_by_user?operation=browse&id=%s">%s</a>' % ( trans.security.encode_id( user.id ), str( len( user.tools ) ) )
 
     # Grid definition
     webapp = "community"
@@ -69,6 +72,10 @@ class UserListGrid( grids.Grid ):
         ExternalColumn( "External", attach_popup=False ),
         LastLoginColumn( "Last Login", format=time_ago ),
         StatusColumn( "Status", attach_popup=False ),
+        ToolsColumn( "Uploaded Tools",
+                     model_class=model.User,
+                     attach_popup=False,
+                     filterable="advanced" ),
         # Columns that are valid for filtering but are not visible.
         grids.DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" )
     ]
@@ -488,11 +495,7 @@ class ToolListGrid( grids.Grid ):
         grids.GridOperation( "Edit information",
                              condition=( lambda item: not item.deleted ),
                              allow_multiple=False,
-                             url_args=dict( controller="common", action="edit_tool", cntrller="admin", webapp="community" ) ),
-        grids.GridOperation( "Manage categories",
-                             condition=( lambda item: not item.deleted ),
-                             allow_multiple=False,
-                             url_args=dict( controller="common", action="manage_categories", cntrller="admin", webapp="community" ) )
+                             url_args=dict( controller="common", action="edit_tool", cntrller="admin", webapp="community" ) )
     ]
     standard_filters = [
         grids.GridColumnFilter( "Deleted", args=dict( deleted=True ) ),
@@ -553,7 +556,6 @@ class AdminController( BaseController, Admin ):
     @web.expose
     @web.require_admin
     def browse_tools_by_user( self, trans, **kwd ):
-        # TODO: move this to the common controller as it is in the tool controller as well...
         if 'operation' in kwd:
             operation = kwd['operation'].lower()
             if operation == "browse":
@@ -580,35 +582,8 @@ class AdminController( BaseController, Admin ):
                 return trans.response.send_redirect( web.url_for( controller='tool',
                                                                   action='download_tool',
                                                                   **kwd ) )
-    @web.expose
-    @web.require_admin
-    def browse_tools_by_user( self, trans, **kwd ):
-        # TODO: move this to the common controller as it is in the tool controller as well...
-        if 'operation' in kwd:
-            operation = kwd['operation'].lower()
-            if operation == "browse":
-                return trans.response.send_redirect( web.url_for( controller='admin',
-                                                                  action='browse_tools_by_user',
-                                                                  **kwd ) )
-            elif operation == "browse category":
-                return trans.response.send_redirect( web.url_for( controller='common',
-                                                                  action='browse_category',
-                                                                  cntrller='admin',
-                                                                  **kwd ) )
-            elif operation == "view tool":
-                return trans.response.send_redirect( web.url_for( controller='common',
-                                                                  action='view_tool',
-                                                                  cntrller='admin',
-                                                                  **kwd ) )
-            elif operation == "edit tool":
-                return trans.response.send_redirect( web.url_for( controller='common',
-                                                                  action='edit_tool',
-                                                                  cntrller='admin',
-                                                                  **kwd ) )
-            elif operation == "download tool":
-                return trans.response.send_redirect( web.url_for( controller='tool',
-                                                                  action='download_tool',
-                                                                  **kwd ) )
+        # Render the list view
+        return self.tool_list_grid( trans, **kwd )
     @web.expose
     @web.require_admin
     def manage_categories( self, trans, **kwd ):
@@ -860,7 +835,6 @@ class AdminController( BaseController, Admin ):
 ## ---- Utility methods -------------------------------------------------------
 
 def get_tools_by_state( trans, state ):
-    # TODO: this can be written so that it is much cleaner and faster
     tool_id = []
     if state == trans.model.Tool.states.NEW:
         for tool in get_tools( trans ):
