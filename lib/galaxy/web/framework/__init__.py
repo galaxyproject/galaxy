@@ -66,7 +66,7 @@ def json( func ):
     decorator.exposed = True
     return decorator
 
-def require_login( verb="perform this action", use_panels=False ):
+def require_login( verb="perform this action", use_panels=False, webapp='galaxy' ):
     def argcatcher( func ):
         def decorator( self, trans, *args, **kwargs ):
             if trans.get_user():
@@ -74,7 +74,7 @@ def require_login( verb="perform this action", use_panels=False ):
             else:
                 return trans.show_error_message(
                     'You must be <a target="_top" href="%s">logged in</a> to %s</div>.'
-                    % ( url_for( controller='user', action='login' ), verb ), use_panels=use_panels )      
+                    % ( url_for( controller='user', action='login', webapp=webapp ), verb ), use_panels=use_panels )      
         return decorator
     return argcatcher
     

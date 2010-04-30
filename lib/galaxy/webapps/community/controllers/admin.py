@@ -2,7 +2,7 @@ from galaxy.web.base.controller import *
 from galaxy.webapps.community import model
 from galaxy.model.orm import *
 from galaxy.web.framework.helpers import time_ago, iff, grids
-from common import get_categories, get_category, get_tools, get_event, get_tool
+from common import get_categories, get_category, get_tools, get_event, get_tool, get_versions
 import logging
 log = logging.getLogger( __name__ )
 
@@ -670,12 +670,18 @@ class AdminController( BaseController, Admin ):
         webapp = params.get( 'webapp', 'galaxy' )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
+        redirect = params.get( 'no_redirect', True )
         id = params.get( 'id', None )
         if not id:
             message = "No tool id received for setting status"
             status = 'error'
         else:
             tool = get_tool( trans, id )
+            if state == trans.app.model.Tool.states.APPROVED:
+                # If we're approving a tool, all previous versions must be set to archived
+                for version in get_versions( trans, tool ):
+                    if version != tool and version.is_approved():
+                        self.set_tool_state( trans, trans.app.model.Tool.states.ARCHIVED, id=trans.app.security.encode_id( version.id ), redirect='False' )
             event = trans.model.Event( state )
             # Flush so we an get an id
             trans.sa_session.add( event )
@@ -684,11 +690,12 @@ class AdminController( BaseController, Admin ):
             trans.sa_session.add( tea )
             trans.sa_session.flush()
             message = "State of tool '%s' is now %s" % ( tool.name, state )
-        trans.response.send_redirect( web.url_for( controller='admin',
-                                                   action='browse_tools',
-                                                   webapp=webapp,
-                                                   message=message,
-                                                   status=status ) )
+        if redirect:
+            trans.response.send_redirect( web.url_for( controller='admin',
+                                                       action='browse_tools',
+                                                       webapp=webapp,
+                                                       message=message,
+                                                       status=status ) )
     @web.expose
     @web.require_admin
     def edit_category( self, trans, **kwd ):

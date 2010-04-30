@@ -81,9 +81,11 @@ class CommonController( BaseController ):
         tool = get_tool( trans, id )
         categories = [ tca.category for tca in tool.categories ]
         tool_file_contents = tarfile.open( tool.file_name, 'r' ).getnames()
+        versions = get_versions( trans, tool )
         return trans.fill_template( '/webapps/community/tool/view_tool.mako',
                                     tool=tool,
                                     tool_file_contents=tool_file_contents,
+                                    versions=versions,
                                     categories=categories,
                                     cntrller=cntrller,
                                     message=message,
@@ -100,14 +102,11 @@ class CommonController( BaseController ):
                                                               message='Select a tool to to upload a new version',
                                                               status='error' ) )
         tool = get_tool( trans, id )
-        if params.save_button and ( params.file_data != '' or params.url != '' ):
-            # TODO: call the upload method in the upload controller.
-            message = 'Uploading new version not implemented'
-            status = 'error'
-        return trans.response.send_redirect( web.url_for( controller=cntrller,
-                                                          action='browse_tools',
-                                                          message='Not yet implemented, sorry...',
-                                                          status='error' ) )
+        return trans.response.send_redirect( web.url_for( controller='upload',
+                                                          action='upload',
+                                                          message=message,
+                                                          status=status,
+                                                          replace_id=id ) )
     @web.expose
     def browse_category( self, trans, cntrller, **kwd ):
         params = util.Params( kwd )
@@ -159,11 +158,22 @@ class CommonController( BaseController ):
 
 ## ---- Utility methods -------------------------------------------------------
 
+def get_versions( trans, tool ):
+    versions = [tool]
+    this_tool = tool
+    while tool.newer_version:
+        versions.insert( 0, tool.newer_version )
+        tool = tool.newer_version
+    tool = this_tool
+    while tool.older_version:
+        versions.append( tool.older_version[0] )
+        tool = tool.older_version[0]
+    return versions
 def get_categories( trans ):
     """Get all categories from the database"""
     return trans.sa_session.query( trans.model.Category ) \
                            .filter( trans.model.Category.table.c.deleted==False ) \
-                           .order_by( trans.model.Category.table.c.name )
+                           .order_by( trans.model.Category.table.c.name ).all()
 def get_unassociated_categories( trans, obj ):
     """Get all categories from the database that are not associated with obj"""
     # TODO: we currently assume we are setting a tool category, so this method may need

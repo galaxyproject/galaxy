@@ -167,6 +167,12 @@ class CommunityRBACAgent( RBACAgent ):
         # We currently assume the current user can edit the item if they are the owner (i.e., they
         # uploaded the item), and the item is in a NEW state.
         return user and user==item.user and item.is_new()
+    def can_upload_new_version( self, user, item, versions ):
+        state_ok = True
+        for version in versions:
+            if version.is_new() or version.is_approved():
+                state_ok = False
+        return user and user==item.user and state_ok
 
 def get_permitted_actions( filter=None ):
     '''Utility method to return a subset of RBACAgent's permitted actions'''
