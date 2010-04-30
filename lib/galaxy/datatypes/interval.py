@@ -831,9 +831,12 @@ class Gff3( Gff ):
         except:
             return False
 
-class Gtf( Tabular ):
+class Gtf( Gff ):
     """Tab delimited data in Gtf format"""
     file_ext = "gtf"
+    
+    def sniff( self, filename ):
+        return False
 
 class Wiggle( Tabular, _RemoteCallMixin ):
     """Tab delimited data in wiggle format"""
