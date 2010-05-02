@@ -196,10 +196,15 @@ class TestHistory( TwillTestCase ):
         self.disable_access_via_link( self.security.encode_id( history3.id ),
                                      check_str='Anyone can view and import this history',
                                      check_str_after_submit='Make History Accessible via Link' )
-        # Try importing history3 after disabling access via link.
+        # Try importing history3 after disabling access via link. To do this, need to login as regular user 2, who cannot access
+        # history via sharing or via link.
+        self.logout()
+        self.login( email=regular_user2.email )
         self.import_history_via_url( self.security.encode_id( history3.id ),
                                      admin_user.email,
-                                     check_str_after_submit='The owner of this history has disabled imports via this link.' )
+                                     check_str_after_submit='History is not accessible to current user' )
+        self.logout()
+        self.login( email=admin_user.email )
         # Test sharing history3 with an invalid user
         self.share_current_history( 'jack@jill.com',
                                     check_str_after_submit='jack@jill.com is not a valid Galaxy user.' )

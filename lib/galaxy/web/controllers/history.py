@@ -513,7 +513,6 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesHistory 
         """Import another user's history via a shared URL"""
         msg = ""
         user = trans.get_user()
-        user_history = trans.get_history()
         # Set referer message
         if 'referer' in kwd:
             referer = kwd['referer']
@@ -527,11 +526,9 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesHistory 
         # Do import.
         if not id:
             return trans.show_error_message( "You must specify a history you want to import.<br>You can %s." % referer_message, use_panels=True )
-        import_history = self.get_history( trans, id, check_ownership=False )
+        import_history = self.get_history( trans, id, check_ownership=False, check_accessible=True )
         if not import_history:
             return trans.show_error_message( "The specified history does not exist.<br>You can %s." % referer_message, use_panels=True )
-        if not import_history.importable:
-            return trans.show_error_message( "The owner of this history has disabled imports via this link.<br>You can %s." % referer_message, use_panels=True )
         if user:
             if import_history.user_id == user.id:
                 return trans.show_error_message( "You cannot import your own history.<br>You can %s." % referer_message, use_panels=True )
@@ -548,8 +545,8 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesHistory 
             new_history.add_galaxy_session( galaxy_session, association=association )
             trans.sa_session.add( new_history )
             trans.sa_session.flush()
-            if not user_history.datasets:
-                trans.set_history( new_history )
+            # Set imported history to be user's current history.
+            trans.set_history( new_history )
             return trans.show_ok_message(
                 message="""History "%s" has been imported. <br>You can <a href="%s">start using this history</a> or %s.""" 
                 % ( new_history.name, web.url_for( '/' ), referer_message ), use_panels=True )
