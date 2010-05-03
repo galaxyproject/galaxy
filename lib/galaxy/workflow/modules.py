@@ -96,7 +96,7 @@ class InputDataModule( WorkflowModule ):
         module.state = dict( name="Input Dataset" )
         return module
     @classmethod
-    def from_dict( Class, trans, d ):
+    def from_dict( Class, trans, d, secure=False ):
         module = Class( trans )
         state = from_json_string( d["tool_state"] )
         module.state = dict( name=state.get( "name", "Input Dataset" ) )
@@ -172,11 +172,11 @@ class ToolModule( WorkflowModule ):
         module.state = module.tool.new_state( trans, all_pages=True )
         return module
     @classmethod
-    def from_dict( Class, trans, d ):
+    def from_dict( Class, trans, d, secure=False ):
         tool_id = d['tool_id']
         module = Class( trans, tool_id )
         module.state = DefaultToolState()
-        module.state.decode( d["tool_state"], module.tool, module.trans.app )
+        module.state.decode( d["tool_state"], module.tool, module.trans.app, secure=False )
         module.errors = d.get( "tool_errors", None )
         return module
         
@@ -199,8 +199,8 @@ class ToolModule( WorkflowModule ):
         return self.tool.name
     def get_tool_id( self ):
         return self.tool_id
-    def get_state( self ):
-        return self.state.encode( self.tool, self.trans.app )
+    def get_state( self, secure=True ):
+        return self.state.encode( self.tool, self.trans.app, secure=secure )
     def get_errors( self ):
         return self.errors
     def get_tooltip( self ):
@@ -278,13 +278,13 @@ class WorkflowModuleFactory( object ):
         """
         assert type in self.module_types
         return self.module_types[type].new( trans, tool_id )
-    def from_dict( self, trans, d ):
+    def from_dict( self, trans, d, **kwargs ):
         """
         Return module initialized from the data in dictionary `d`.
         """
         type = d['type']
         assert type in self.module_types
-        return self.module_types[type].from_dict( trans, d )    
+        return self.module_types[type].from_dict( trans, d, **kwargs )    
     def from_workflow_step( self, trans, step ):
         """
         Return module initializd from the WorkflowStep object `step`.

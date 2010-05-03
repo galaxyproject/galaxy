@@ -66,6 +66,15 @@ def json( func ):
     decorator.exposed = True
     return decorator
 
+def json_pretty( func ):
+    def decorator( self, trans, *args, **kwargs ):
+        trans.response.set_content_type( "text/javascript" )
+        return simplejson.dumps( func( self, trans, *args, **kwargs ), indent=4, sort_keys=True )
+    if not hasattr(func, '_orig'):
+        decorator._orig = func
+    decorator.exposed = True
+    return decorator
+
 def require_login( verb="perform this action", use_panels=False, webapp='galaxy' ):
     def argcatcher( func ):
         def decorator( self, trans, *args, **kwargs ):

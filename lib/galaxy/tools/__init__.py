@@ -203,7 +203,7 @@ class DefaultToolState( object ):
     def __init__( self ):
         self.page = 0
         self.inputs = None
-    def encode( self, tool, app ):
+    def encode( self, tool, app, secure=True ):
         """
         Convert the data to a string
         """
@@ -213,18 +213,22 @@ class DefaultToolState( object ):
         value["__page__"] = self.page
         value = simplejson.dumps( value )
         # Make it secure
-        a = hmac_new( app.config.tool_secret, value )
-        b = binascii.hexlify( value )
-        return "%s:%s" % ( a, b )      
-    def decode( self, value, tool, app ):
+        if secure:
+            a = hmac_new( app.config.tool_secret, value )
+            b = binascii.hexlify( value )
+            return "%s:%s" % ( a, b )
+        else:
+            return value
+    def decode( self, value, tool, app, secure=True ):
         """
         Restore the state from a string
         """
-        # Extract and verify hash
-        a, b = value.split( ":" )
-        value = binascii.unhexlify( b )
-        test = hmac_new( app.config.tool_secret, value )
-        assert a == test
+        if secure:
+            # Extract and verify hash
+            a, b = value.split( ":" )
+            value = binascii.unhexlify( b )
+            test = hmac_new( app.config.tool_secret, value )
+            assert a == test
         # Restore from string
         values = json_fix( simplejson.loads( value ) )
         self.page = values.pop( "__page__" )

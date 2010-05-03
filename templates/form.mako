@@ -60,7 +60,11 @@
                   </label>
                 %endif
                   <div class="form-row-input">
-                      <input type="${input.type}" name="${input.name}" value="${input.value}" size="40">
+                      %if input.type == 'textarea':
+                          <textarea name="${input.name}" cols="40">${input.value}</textarea>
+                      %else:
+                          <input type="${input.type}" name="${input.name}" value="${input.value}" size="40">
+                      %endif      
                   </div>
                   %if input.error:
                   <div class="form-row-error-message">${input.error}</div>
