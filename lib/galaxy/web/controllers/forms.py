@@ -565,7 +565,7 @@ class Forms( BaseController ):
             # helptext
             self.helptext.value = field['helptext']
             # default value
-            self.default.value = field.get('default', TextField('field_default_'+str(index), 40, ''))
+            self.default.value = field.get('default', '')
             # type
             self.fieldtype = SelectField('field_type_'+str(self.index), 
                                          refresh_on_change=True, 
