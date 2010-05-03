@@ -72,7 +72,7 @@ class DatasetSelectionGrid( grids.Grid ):
                     .filter( model.HistoryDatasetAssociation.extension.in_(self.available_tracks) ) \
                     .filter( model.Dataset.state != "error")
         
-class TracksController( BaseController ):
+class TracksController( BaseController, UsesVisualization ):
     """
     Controller for track browser interface. Handles building a new browser from
     datasets in the current history, and display of the resulting browser.
@@ -158,8 +158,7 @@ class TracksController( BaseController ):
         return trans.fill_template( 'tracks/browser.mako', config=config )
 
     @web.json
-    @web.require_login()
-    def chroms(self, trans, dbkey=None ):
+    def chroms(self, trans, vis_id=None ):
         """
         Returns a naturally sorted list of chroms/contigs for the given dbkey
         """
@@ -171,18 +170,26 @@ class TracksController( BaseController ):
 
         def split_by_number(s):
             return [ check_int(c) for c in re.split('([0-9]+)', s) ]
-
-        chroms = self._chroms( trans, dbkey )
+            
+        # Get visualization and config.
+        visualization = self.get_visualization( trans, vis_id, check_ownership=False, check_accessible=True )
+        visualization.config = self.get_visualization_config( trans, visualization )
+        if visualization is None:
+            raise web.httpexceptions.HTTPNotFound()
+            
+        # Get chroms data.
+        chroms = self._chroms( trans, visualization )
         to_sort = [{ 'chrom': chrom, 'len': length } for chrom, length in chroms.iteritems()]
         to_sort.sort(lambda a,b: cmp( split_by_number(a['chrom']), split_by_number(b['chrom']) ))
         return to_sort
 
-    def _chroms( self, trans, dbkey ):
+    def _chroms( self, trans, visualization ):
         """
         Called by the browser to get a list of valid chromosomes and lengths
         """
         # If there is any dataset in the history of extension `len`, this will use it
-        user = trans.get_user()
+        user = visualization.user
+        dbkey = visualization.config['dbkey']
         if 'dbkeys' in user.preferences:
             user_keys = from_json_string( user.preferences['dbkeys'] )
             if dbkey in user_keys:

@@ -675,6 +675,11 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         """
         Returns the db_file dataset associated/needed by `dataset`, or `None`.
         """
+        
+        # If no history, return None.
+        if self.history is None:
+            return None
+        
         datasets = self.sa_session.query( self.app.model.HistoryDatasetAssociation ) \
                                   .filter_by( deleted=False, history_id=self.history.id, extension="len" )
         for ds in datasets:

@@ -208,7 +208,8 @@ class UsesVisualization( SharableItemSecurity ):
                 if dbkey is None: dbkey = dataset.dbkey # Hack for backward compat
             
             ## TODO: chrom needs to be able to be set; right now it's empty.
-            config = { "title": visualization.title, "vis_id": id, "tracks": tracks, "chrom": "", "dbkey": dbkey }
+            config = { "title": visualization.title, "vis_id": trans.security.encode_id( visualization.id ), 
+                        "tracks": tracks, "chrom": "", "dbkey": dbkey }
             
         return config
         

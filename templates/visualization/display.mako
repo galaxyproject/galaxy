@@ -124,7 +124,7 @@
                 $.ajax({
                     ## JG: added controller name
                     url: "${h.url_for( controller='/tracks', action='chroms' )}", 
-                    data: { dbkey: view.dbkey },
+                    data: { vis_id: view.vis_id },
                     dataType: "json",
                     success: function ( data ) {
                         view.chrom_data = data;

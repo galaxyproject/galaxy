@@ -272,7 +272,7 @@ ${h.js( 'galaxy.base', 'galaxy.panels', "json2", "jquery", "jquery.event.drag", 
             
             $.ajax({
                 url: "${h.url_for( action='chroms' )}", 
-                data: { dbkey: view.dbkey },
+                data: { vis_id: view.vis_id },
                 dataType: "json",
                 success: function ( data ) {
                     view.chrom_data = data;
