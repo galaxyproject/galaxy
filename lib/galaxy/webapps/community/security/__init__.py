@@ -170,7 +170,7 @@ class CommunityRBACAgent( RBACAgent ):
     def can_upload_new_version( self, user, item, versions ):
         state_ok = True
         for version in versions:
-            if version.is_new() or version.is_approved():
+            if version.is_new() or version.is_waiting():
                 state_ok = False
         return user and user==item.user and state_ok
 

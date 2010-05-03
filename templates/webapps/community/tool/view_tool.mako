@@ -125,9 +125,11 @@
         <div class="form-row">
             <label>Categories:</label>
             %if categories:
-                %for category in categories:
-                    ${category.name}
-                %endfor
+                <ul>
+                    %for category in categories:
+                        <li>${category.name}</li>
+                    %endfor
+                </ul>
             %else:
                 none set
             %endif

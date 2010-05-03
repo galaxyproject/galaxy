@@ -402,3 +402,9 @@ class ToolController( BaseController ):
         tool_file = tarfile.open( tool.file_name ).extractfile( tool_file_name )
         trans.response.set_content_type( 'text/plain' )
         return tool_file
+    @web.expose
+    def help( self, trans, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        return trans.fill_template( '/webapps/community/tool/help.mako', message=message, status=status, **kwd )

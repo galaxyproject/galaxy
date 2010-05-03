@@ -39,7 +39,7 @@
             </select>
         </div>
         <div class="toolParamHelp" style="clear: both;">
-            Need help creating a tool file?  See help below.
+            Need help creating a tool file?  See the <a href="${h.url_for( controller='tool', action='help' )}">Tool Help</a> page.
         </div>
         <div style="clear: both"></div>
     </div>
@@ -75,11 +75,5 @@
         <input type="submit" class="primary-button" name="upload_button" value="Upload">
     </div>
     </form>
-    </div>
-</div>
-<div class="toolHelp">
-    <div class="toolHelpBody">
-        <p><strong>Creating tool files</strong></p>
-        <p>Help coming...</p>
     </div>
 </div>
