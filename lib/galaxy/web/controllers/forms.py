@@ -469,7 +469,7 @@ class Forms( BaseController ):
                                    'required': row[3],
                                    'type': row[4],
                                    'selectlist': options,
-                                   'default': row[7]})
+                                   'default': row[6]})
         except:
             return trans.response.send_redirect( web.url_for( controller='forms',
                                                               action='new',
@@ -565,7 +565,7 @@ class Forms( BaseController ):
             # helptext
             self.helptext.value = field['helptext']
             # default value
-            self.default.value = field['default']
+            self.default.value = field.get('default', TextField('field_default_'+str(index), 40, ''))
             # type
             self.fieldtype = SelectField('field_type_'+str(self.index), 
                                          refresh_on_change=True, 

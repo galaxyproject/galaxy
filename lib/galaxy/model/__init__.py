@@ -1448,6 +1448,12 @@ class Request( object ):
         return self.state() == self.states.NEW
     def complete(self):
         return self.state() == self.states.COMPLETE
+    def sequence_run_ready(self):
+        samples = []
+        for s in self.samples:
+            if not s.library:
+                samples.append(s.name)
+        return samples
 
     
 class RequestEvent( object ):

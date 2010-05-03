@@ -108,6 +108,12 @@ $(document).ready(function(){
     document.onkeypress = stopRKey
 </script> 
 
+%if request.submitted():
+    <% samples_not_ready = request.sequence_run_ready() %>
+    %if samples_not_ready:
+        ${render_msg( "Select a target library and folder for all the samples before starting the sequence run", "warning" )}
+    %endif
+%endif
 
 %if request.rejected():
     ${render_msg( "Reason for rejection: "+request.last_comment(), "warning" )}
