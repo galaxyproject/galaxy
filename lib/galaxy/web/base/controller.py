@@ -7,6 +7,7 @@ from galaxy import config, tools, web, util
 from galaxy.web import error, form, url_for
 from galaxy.model.orm import *
 from galaxy.workflow.modules import *
+from galaxy.web.framework import simplejson
 
 from Cheetah.Template import Template
 
@@ -164,6 +165,7 @@ class UsesHistoryDatasetAssociation:
         
 class UsesVisualization( SharableItemSecurity ):
     """ Mixin for controllers that use Visualization objects. """
+    
     def get_visualization( self, trans, id, check_ownership=True, check_accessible=False ):
         """ Get a Visualization from the database by id, verifying ownership. """
         # Load workflow from database
@@ -173,6 +175,42 @@ class UsesVisualization( SharableItemSecurity ):
             error( "Visualization not found" )
         else:
             return self.security_check( trans.get_user(), visualization, check_ownership, check_accessible )
+            
+    def get_visualization_config( self, trans, visualization ):
+        """ Returns a visualization's configuration. Only works for trackster visualizations right now. """
+
+        config = None
+        if visualization.type == 'trackster':
+            # Trackster config; taken from tracks/browser
+            latest_revision = visualization.latest_revision
+            tracks = []
+        
+            try:
+                dbkey = latest_revision.config['dbkey']
+            except KeyError:
+                dbkey = None
+        
+            hda_query = trans.sa_session.query( trans.model.HistoryDatasetAssociation )
+            for t in visualization.latest_revision.config['tracks']:
+                dataset_id = t['dataset_id']
+                try:
+                    prefs = t['prefs']
+                except KeyError:
+                    prefs = {}
+                dataset = hda_query.get( dataset_id )
+                track_type, _ = dataset.datatype.get_track_type()
+                tracks.append( {
+                    "track_type": track_type,
+                    "name": dataset.name,
+                    "dataset_id": dataset.id,
+                    "prefs": simplejson.dumps(prefs),
+                } )
+                if dbkey is None: dbkey = dataset.dbkey # Hack for backward compat
+            
+            ## TODO: chrom needs to be able to be set; right now it's empty.
+            config = { "title": visualization.title, "vis_id": id, "tracks": tracks, "chrom": "", "dbkey": dbkey }
+            
+        return config
         
 class UsesStoredWorkflow( SharableItemSecurity ):
     """ Mixin for controllers that use StoredWorkflow objects. """

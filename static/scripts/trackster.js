@@ -17,22 +17,22 @@ var DENSITY = 200,
     RIGHT_STRAND, LEFT_STRAND;
     
 var right_img = new Image();
-right_img.src = "../images/visualization/strand_right.png";
+right_img.src = "/static/images/visualization/strand_right.png";
 right_img.onload = function() {
     RIGHT_STRAND = CONTEXT.createPattern(right_img, "repeat");
 };
 var left_img = new Image();
-left_img.src = "../images/visualization/strand_left.png";
+left_img.src = "/static/images/visualization/strand_left.png";
 left_img.onload = function() {
     LEFT_STRAND = CONTEXT.createPattern(left_img, "repeat");
 };
 var right_img_inv = new Image();
-right_img_inv.src = "../images/visualization/strand_right_inv.png";
+right_img_inv.src = "/static/images/visualization/strand_right_inv.png";
 right_img_inv.onload = function() {
     RIGHT_STRAND_INV = CONTEXT.createPattern(right_img_inv, "repeat");
 };
 var left_img_inv = new Image();
-left_img_inv.src = "../images/visualization/strand_left_inv.png";
+left_img_inv.src = "/static/images/visualization/strand_left_inv.png";
 left_img_inv.onload = function() {
     LEFT_STRAND_INV = CONTEXT.createPattern(left_img_inv, "repeat");
 };

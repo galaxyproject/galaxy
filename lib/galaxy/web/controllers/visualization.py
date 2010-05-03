@@ -256,9 +256,13 @@ class VisualizationController( BaseController, Sharable, UsesAnnotations, UsesVi
         visualization = trans.sa_session.query( model.Visualization ).filter_by( user=user, slug=slug, deleted=False ).first()
         if visualization is None:
             raise web.httpexceptions.HTTPNotFound()
+        
         # Security check raises error if user cannot access visualization.
-        self.security_check( trans.get_user(), visualization, False, True)    
-        return trans.fill_template_mako( "visualization/display.mako", item=visualization, item_data=None, content_only=True )
+        self.security_check( trans.get_user(), visualization, False, True)
+        
+        # Display.
+        visualization_config = self.get_visualization_config( trans, visualization )    
+        return trans.fill_template_mako( "visualization/display.mako", item=visualization, item_data=visualization_config, content_only=True )
         
     @web.expose
     @web.json
