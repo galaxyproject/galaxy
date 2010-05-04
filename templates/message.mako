@@ -66,21 +66,21 @@
 ##
 
 <%def name="center_panel()">
-    ${render_large_message( message, message_type )}
+    ${render_large_message( message, status )}
 </%def>
 
 <%def name="body()">
-    ${render_large_message( message, message_type )}
+    ${render_large_message( message, status )}
 </%def>
 
 ## Render large message.
-<%def name="render_large_message( message, message_type )">
-    <div class="${message_type}messagelarge" style="margin: 1em">${_(message)}</div>
+<%def name="render_large_message( message, status )">
+    <div class="${status}messagelarge" style="margin: 1em">${_(message)}</div>
 </%def>
 
 ## Render a message
-<%def name="render_msg( msg, messagetype='done' )">
-    <div class="${messagetype}message">${_(msg)}</div>
+<%def name="render_msg( msg, status='done' )">
+    <div class="${status}message">${_(msg)}</div>
     <br/>
 </%def>
 

@@ -26,12 +26,12 @@ class ToolListGrid( grids.Grid ):
             if tool.categories:
                 rval = ''
                 for tca in tool.categories:
-                    rval += '<a href="browse_category?id=%s">%s</a><br/>\n' % ( trans.security.encode_id( tca.category.id ), tca.category.name ) 
+                    rval += '<a href="browse_category?id=%s&webapp=community">%s</a><br/>\n' % ( trans.security.encode_id( tca.category.id ), tca.category.name ) 
                 return rval
             return 'not set'
     class UserColumn( grids.TextColumn ):
         def get_value( self, trans, grid, tool ):
-            return '<a href="browse_tools_by_user?operation=browse&id=%s">%s</a>' % ( trans.security.encode_id( tool.user.id ), tool.user.username )
+            return '<a href="browse_tools_by_user?operation=browse&id=%s&webapp=community">%s</a>' % ( trans.security.encode_id( tool.user.id ), tool.user.username )
     # Grid definition
     title = "Tools"
     model_class = model.Tool
@@ -39,33 +39,44 @@ class ToolListGrid( grids.Grid ):
     default_sort_key = "name"
     columns = [
         NameColumn( "Name",
-                    key="name",
+                     # TODO: we cannot currently sort by columns since the grid may be filtered by tool ids
+                     # and it is not clear if / how that will work.  We need to be able to send to the grid helper
+                     # the list of ids on which to filter when sorting on the column.
+                    #key="name",
                     model_class=model.Tool,
                     link=( lambda item: dict( operation="View Tool", id=item.id, cntrller='tool', webapp="community" ) ),
-                    attach_popup=True,
-                    filterable="advanced" ),
+                    attach_popup=True
+                    #filterable="advanced" 
+                    ),
         VersionColumn( "Version",
                         model_class=model.Tool,
                         attach_popup=False,
                         filterable="advanced" ),
         DescriptionColumn( "Description",
-                        model_class=model.Tool,
-                        attach_popup=False,
-                        filterable="advanced" ),
+                           #key="description",
+                           model_class=model.Tool,
+                           attach_popup=False
+                           #filterable="advanced" 
+                           ),
         CategoryColumn( "Categories",
                         model_class=model.Category,
                         attach_popup=False,
                         filterable="advanced" ),
         UserColumn( "Uploaded By",
-                    key="username",
+                    #key="username",
                     model_class=model.User,
-                    attach_popup=False,
-                    filterable="advanced" ),
+                    attach_popup=False
+                    #filterable="advanced" 
+                    ),
         # Columns that are valid for filtering but are not visible.
-        grids.DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" )
+        grids.DeletedColumn( "Deleted",
+                             key="deleted",
+                             visible=False,
+                             filterable="advanced" )
     ]
     columns.append( grids.MulticolFilterColumn( "Search", 
-                                                cols_to_filter=[ columns[0], columns[1] ], 
+                                                #cols_to_filter=[ columns[0], columns[2], columns[4] ],
+                                                cols_to_filter=[],
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
@@ -86,21 +97,15 @@ class ToolListGrid( grids.Grid ):
     def build_initial_query( self, session ):
         return session.query( self.model_class )
     def apply_default_filter( self, trans, query, **kwd ):
-        def filter_query( query, tool_id ):
-            if str( tool_id ).lower() in [ '', 'none' ]:
-                # Return an empty query since the current user cannot view any
-                # tools (possibly due to state not being approved, etc).
-                return query.filter( model.Tool.id == None )
-            tool_id = util.listify( tool_id )
-            query = query.filter( or_( *map( lambda id: self.model_class.id == id, tool_id ) ) )
-            return query.filter( self.model_class.deleted==False )
-        tool_id = kwd.get( 'tool_id', False )
-        if not tool_id:
+        ids = kwd.get( 'ids', False )
+        if not ids:
             # Display only approved tools
-            tool_id = get_approved_tools( trans )
-            if not tool_id:
-                tool_id = 'None'
-        return filter_query( query, tool_id )
+            ids = get_approved_tools( trans )
+        if not ids or str( ids ).lower() == 'none':
+            return query.filter( trans.model.Tool.id == None )
+        ids = util.listify( ids )
+        query = query.filter( or_( *map( lambda id: self.model_class.id == id, ids ) ) )
+        return query
 
 class ToolsByUserListGrid( grids.Grid ):
     class NameColumn( grids.TextColumn ):
@@ -117,7 +122,7 @@ class ToolsByUserListGrid( grids.Grid ):
             if tool.categories:
                 rval = ''
                 for tca in tool.categories:
-                    rval += '<a href="browse_category?id=%s">%s</a><br/>\n' % ( trans.security.encode_id( tca.category.id ), tca.category.name ) 
+                    rval += '<a href="browse_category?id=%s&webapp=community">%s</a><br/>\n' % ( trans.security.encode_id( tca.category.id ), tca.category.name ) 
                 return rval
             return 'not set'
     class StateColumn( grids.GridColumn ):
@@ -148,7 +153,7 @@ class ToolsByUserListGrid( grids.Grid ):
             return accepted_filters
     class UserColumn( grids.TextColumn ):
         def get_value( self, trans, grid, tool ):
-            return '<a href="browse_tools_by_user?operation=browse&id=%s">%s</a>' % ( trans.security.encode_id( tool.user.id ), tool.user.username )
+            return '<a href="browse_tools_by_user?operation=browse&id=%s&webapp=community">%s</a>' % ( trans.security.encode_id( tool.user.id ), tool.user.username )
     # Grid definition
     title = "Tools By User"
     model_class = model.Tool
@@ -156,19 +161,24 @@ class ToolsByUserListGrid( grids.Grid ):
     default_sort_key = "name"
     columns = [
         NameColumn( "Name",
-                    key="name",
+                     # TODO: we cannot currently sort by columns since the grid may be filtered by tool ids
+                     # and it is not clear if / how that will work.  We need to be able to send to the grid helper
+                     # the list of ids on which to filter when sorting on the column.
+                    #key="name",
                     model_class=model.Tool,
                     link=( lambda item: dict( operation="View Tool", id=item.id, cntrller='tool', webapp="community" ) ),
-                    attach_popup=True,
-                    filterable="advanced" ),
+                    attach_popup=True
+                    #filterable="advanced" 
+                    ),
         VersionColumn( "Version",
                         model_class=model.Tool,
-                        attach_popup=False,
-                        filterable="advanced" ),
+                        attach_popup=False ),
         DescriptionColumn( "Description",
-                        model_class=model.Tool,
-                        attach_popup=False,
-                        filterable="advanced" ),
+                           #key="description",
+                           model_class=model.Tool,
+                           attach_popup=False
+                           #filterable="advanced" 
+                           ),
         CategoryColumn( "Categories",
                         model_class=model.Category,
                         attach_popup=False,
@@ -177,15 +187,20 @@ class ToolsByUserListGrid( grids.Grid ):
                      model_class=model.Event,
                      attach_popup=False ),
         UserColumn( "Uploaded By",
-                    key="username",
+                    #key="username",
                     model_class=model.User,
-                    attach_popup=False,
-                    filterable="advanced" ),
+                    attach_popup=False
+                    #filterable="advanced" 
+                    ),
         # Columns that are valid for filtering but are not visible.
-        grids.DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" )
+        grids.DeletedColumn( "Deleted",
+                             key="deleted",
+                             visible=False,
+                             filterable="advanced" )
     ]
     columns.append( grids.MulticolFilterColumn( "Search", 
-                                                cols_to_filter=[ columns[0], columns[1] ], 
+                                                #cols_to_filter=[ columns[0], columns[2], columns[5] ],
+                                                cols_to_filter=[],
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
@@ -199,30 +214,24 @@ class ToolsByUserListGrid( grids.Grid ):
         grids.GridColumnFilter( "Deleted", args=dict( deleted=True ) ),
         grids.GridColumnFilter( "All", args=dict( deleted='All' ) )
     ]
-    default_filter = dict( name="All", deleted="False", username="All" )
+    default_filter = dict( name="All", deleted="False" )
     num_rows_per_page = 50
     preserve_state = False
     use_paging = True
     def build_initial_query( self, session ):
         return session.query( self.model_class )
     def apply_default_filter( self, trans, query, **kwd ):
-        def filter_query( query, tool_id ):
-            if str( tool_id ).lower() in [ '', 'none' ]:
-                # Return an empty query since the current user cannot view any
-                # tools (possibly due to state not being approved, etc).
-                return query.filter( model.Tool.id == None )
-            tool_id = util.listify( tool_id )
-            query = query.filter( or_( *map( lambda id: self.model_class.id == id, tool_id ) ) )
-            return query.filter( self.model_class.deleted==False )
-        tool_id = kwd.get( 'tool_id', False )
-        if not tool_id:
+        ids = kwd.get( 'ids', False )
+        if not ids:
             # Display only approved tools
-            tool_id = get_approved_tools( trans )
-            if not tool_id:
-                tool_id = 'None'
-        return filter_query( query, tool_id )
+            ids = get_approved_tools( trans )
+        if not ids or str( ids ).lower() == 'none':
+            return query.filter( trans.model.Tool.id == None )
+        ids = util.listify( ids )
+        query = query.filter( or_( *map( lambda id: self.model_class.id == id, ids ) ) )
+        return query
 
-class CategoryListGrid( grids.Grid ):
+class ToolsByCategoryListGrid( grids.Grid ):
     class NameColumn( grids.TextColumn ):
         def get_value( self, trans, grid, category ):
             return category.name
@@ -242,28 +251,36 @@ class CategoryListGrid( grids.Grid ):
 
     # Grid definition
     webapp = "community"
-    title = "Tool Categories"
+    title = "Tools by Category"
     model_class = model.Category
     template='/webapps/community/category/grid.mako'
     default_sort_key = "name"
     columns = [
         NameColumn( "Name",
-                    key="name",
+                     # TODO: we cannot currently sort by columns since the grid may be filtered by tool ids
+                     # and it is not clear if / how that will work.  We need to be able to send to the grid helper
+                     # the list of ids on which to filter when sorting on the column.
+                    #key="name",
                     model_class=model.Category,
                     link=( lambda item: dict( operation="Browse Category", id=item.id, webapp="community" ) ),
-                    attach_popup=False,
-                    filterable="advanced" ),
+                    attach_popup=False
+                    #filterable="advanced"
+                    ),
         DescriptionColumn( "Description",
-                        key="description",
-                        model_class=model.Category,
-                        attach_popup=False,
-                        filterable="advanced" ),
+                           #key="description",
+                           model_class=model.Category,
+                           attach_popup=False
+                           #filterable="advanced"
+                           ),
         ToolsColumn( "Tools",
                      model_class=model.Tool,
                      attach_popup=False,
                      filterable="advanced" ),
         # Columns that are valid for filtering but are not visible.
-        grids.DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" )
+        grids.DeletedColumn( "Deleted",
+                             key="deleted",
+                             visible=False,
+                             filterable="advanced" )
     ]
     columns.append( grids.MulticolFilterColumn( "Search", 
                                                 cols_to_filter=[ columns[0], columns[1] ], 
@@ -280,14 +297,12 @@ class CategoryListGrid( grids.Grid ):
     use_paging = True
     def build_initial_query( self, session ):
         return session.query( self.model_class )
-    def apply_default_filter( self, trans, query, **kwd ):
-        return query.filter( self.model_class.deleted==False )
 
 class ToolController( BaseController ):
 
     tool_list_grid = ToolListGrid()
     tools_by_user_list_grid = ToolsByUserListGrid()
-    category_list_grid = CategoryListGrid()
+    tools_by_category_list_grid = ToolsByCategoryListGrid()
     
     @web.expose
     def index( self, trans, **kwd ):
@@ -312,7 +327,7 @@ class ToolController( BaseController ):
                                                                   cntrller='tool',
                                                                   **kwd ) )
         # Render the list view
-        return self.category_list_grid( trans, **kwd )
+        return self.tools_by_category_list_grid( trans, **kwd )
     @web.expose
     def browse_category( self, trans, **kwd ):
         return trans.response.send_redirect( web.url_for( controller='common',

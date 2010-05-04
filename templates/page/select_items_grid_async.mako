@@ -6,4 +6,4 @@ ${render_grid_table_body_contents( grid, show_item_checkboxes=True )}
 *****
 ${num_pages}
 *****
-${render_message( message, message_type )}
+${render_message( message, status )}

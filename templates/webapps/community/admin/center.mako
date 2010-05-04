@@ -6,7 +6,36 @@
 
 <p>The menu on the left provides the following features</p>
 <ul>
-    <li><strong>Security</strong> - see the <strong>Data Security and Data Libraries</strong> section below for details
+    <li>
+        <strong>Tools</strong>
+        <p/>
+        <ul>
+            <li>
+                <strong>Tools awaiting approval</strong>
+            </li>
+            <p/>
+            <li>
+                <strong>Browse by category</strong>
+            </li>
+            <p/>
+            <li>
+                <strong>Browse all tools</strong>
+            </li>
+            <p/>
+        </ul>
+    </li>
+    <li>
+        <strong>Categories</strong>
+        <p/>
+        <ul>
+            <li>
+                <strong>Manage categories</strong>
+            </li>
+            <p/>
+        </ul>
+    </li>
+    <li>
+        <strong>Security</strong>
         <p/>
         <ul>
             <li>
@@ -29,13 +58,5 @@
         </ul>
     </li>
     <p/>
-    <li><strong>Tools</strong>
-        <p/>
-        <ul>
-            <li>
-                <strong>Manage tools</strong> - coming soon...
-            </li>
-        </ul>
-    </li>
 </ul>
 <br/>

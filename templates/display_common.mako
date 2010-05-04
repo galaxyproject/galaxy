@@ -129,10 +129,10 @@
 </%def>
 
 ## Render message.
-<%def name="render_message( message, message_type )">
+<%def name="render_message( message, status )">
     %if message:
         <p>
-            <div class="${message_type}message transient-message">${util.restore_text( message )}</div>
+            <div class="${status}message transient-message">${util.restore_text( message )}</div>
             <div style="clear: both"></div>
         </p>
     %endif

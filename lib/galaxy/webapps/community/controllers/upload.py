@@ -60,28 +60,26 @@ class UploadController( BaseController ):
                     obj = datatype.create_model_object( meta )
                     trans.sa_session.add( obj )
                     if isinstance( obj, trans.app.model.Tool ):
-                        existing = trans.sa_session.query( trans.app.model.Tool ).filter_by( tool_id = meta.id ).all()
+                        existing = trans.sa_session.query( trans.app.model.Tool ).filter_by( tool_id = meta.id ).first()
                         if existing and replace_id is None:
                             raise UploadError( 'A tool with the same ID already exists.  If you are trying to update this tool to a new version, please use the upload form on the "Edit Tool" page.  Otherwise, please choose a new ID.' )
                         elif existing:
-                            replace_version = trans.sa_session.query( trans.app.model.Tool ).get( int( trans.app.security.decode_id( replace_id ) ) )
+                            replace_version = trans.sa_session.query( trans.app.model.Tool ).get( trans.security.decode_id( replace_id ) )
                             if replace_version.newer_version:
                                 # If the user has picked an old version, switch to the newest version
                                 replace_version = get_versions( trans, replace_version )[0]
-                            if trans.user != replace_version.user:
-                                raise UploadError( 'You are not the owner of this tool and may not upload new versions of it.' )
                             if replace_version.tool_id != meta.id:
-                                raise UploadError( 'The new tool id (%s) does not match the old tool id (%s).  Please check the tool XML file' % ( meta.id, replace_version.tool_id ) )
+                                raise UploadError( 'The new tool id (%s) does not match the old tool id (%s).  Check the tool XML file' % ( meta.id, replace_version.tool_id ) )
                             for old_version in get_versions( trans, replace_version ):
                                 if old_version.version == meta.version:
-                                    raise UploadError( 'The new version (%s) matches an old version.  Please check your version in the tool XML file' % meta.version )
+                                    raise UploadError( 'The new version (%s) matches an old version.  Check your version in the tool XML file' % meta.version )
                                 if old_version.is_new():
-                                    raise UploadError( 'There is an existing version of this tool which is unsubmitted.  Please either <a href="%s">submit or delete it</a> before uploading a new version.' % url_for( controller='common',
-                                                                                                                                                                                                                        action='view_tool',
-                                                                                                                                                                                                                        cntrller='tool',
-                                                                                                                                                                                                                        id=trans.app.security.encode_id( old_version.id ) ) )
+                                    raise UploadError( 'There is an existing version of this tool which has not yet been submitted for approval, so either <a href="%s">submit or delete it</a> before uploading a new version.' % url_for( controller='common',
+                                                                                                                                                                                                                                            action='view_tool',
+                                                                                                                                                                                                                                            cntrller='tool',
+                                                                                                                                                                                                                                            id=trans.security.encode_id( old_version.id ) ) )
                                 if old_version.is_waiting():
-                                    raise UploadError( 'There is an existing version of this tool which is waiting for administrative approval.  Please contact an administrator for help.' )
+                                    raise UploadError( 'There is an existing version of this tool which is waiting for administrative approval, so contact an administrator for help.' )
                             # Defer setting the id since the newer version id doesn't exist until the new Tool object is flushed
                         if category_ids:
                             for category_id in category_ids:
@@ -91,12 +89,15 @@ class UploadController( BaseController ):
                                 trans.sa_session.add( tca )
                         # Initialize the tool event
                         event = trans.app.model.Event( state=trans.app.model.Tool.states.NEW )
+                        # Flush to get an event id
+                        trans.sa_session.add( event )
+                        trans.sa_session.flush()
                         tea = trans.app.model.ToolEventAssociation( obj, event )
-                        trans.sa_session.add_all( ( event, tea ) )
-                    trans.sa_session.flush()
+                        trans.sa_session.add( tea )
                     if replace_version and replace_id:
                         replace_version.newer_version_id = obj.id
-                        trans.sa_session.flush()
+                        trans.sa_session.add( replace_version )
+                    trans.sa_session.flush()
                     try:
                         os.link( uploaded_file.name, obj.file_name )
                     except OSError:
@@ -117,10 +118,10 @@ class UploadController( BaseController ):
             old_version = None
             for old_version in get_versions( trans, replace_version ):
                 if old_version.is_new():
-                    message = 'There is an existing version of this tool which is unsubmitted.  Please either submit or delete it before uploading a new version.'
+                    message = 'There is an existing version of this tool which has not been submitted for approval, so either submit or delete it before uploading a new version.'
                     break
                 if old_version.is_waiting():
-                    message = 'There is an existing version of this tool which is waiting for administrative approval.  Please contact an administrator for help.'
+                    message = 'There is an existing version of this tool which is waiting for administrative approval, so contact an administrator for help.'
                     break
             else:
                 old_version = None

@@ -591,7 +591,7 @@ class UniverseWebTransaction( base.DefaultWebTransaction ):
         `refresh_frames`: names of frames in the interface that should be 
                           refreshed when the message is displayed
         """
-        return self.fill_template( "message.mako", message_type=type, message=message, refresh_frames=refresh_frames, cont=cont, use_panels=use_panels, active_view=active_view )
+        return self.fill_template( "message.mako", status=type, message=message, refresh_frames=refresh_frames, cont=cont, use_panels=use_panels, active_view=active_view )
     def show_error_message( self, message, refresh_frames=[], use_panels=False, active_view="" ):
         """
         Convenience method for displaying an error message. See `show_message`.

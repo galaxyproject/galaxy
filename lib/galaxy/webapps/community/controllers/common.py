@@ -91,6 +91,35 @@ class CommonController( BaseController ):
                                     message=message,
                                     status=status )
     @web.expose
+    def delete_tool( self, trans, cntrller, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        id = params.get( 'id', None )
+        if not id:
+            message='Select a tool to delete'
+            status='error'
+        else:
+            tool = get_tool( trans, id )
+            # Create a new event
+            event = trans.model.Event( state=trans.model.Tool.states.DELETED )
+            # Flush so we can get an event id
+            trans.sa_session.add( event )
+            trans.sa_session.flush()
+            # Associate the tool with the event
+            tea = trans.model.ToolEventAssociation( tool=tool, event=event )
+            # Delete the tool, keeping state for categories, events and versions
+            tool.deleted = True
+            trans.sa_session.add_all( ( tool, tea ) )
+            trans.sa_session.flush()
+            # TODO: What if the tool has versions, should they all be deleted?
+            message = "Tool '%s' has been marked deleted"
+            status = 'done'
+        return trans.response.send_redirect( web.url_for( controller=cntrller,
+                                                          action='browse_tools',
+                                                          message=message,
+                                                          status=status ) )
+    @web.expose
     def upload_new_tool_version( self, trans, cntrller, **kwd ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
@@ -122,15 +151,15 @@ class CommonController( BaseController ):
         # If request came from the tool controller, then we need to filter by the state of the
         # tool in addition to the category.
         if cntrller == 'tool':
-            tool_id = get_approved_tools( trans, category=category )
+            ids = get_approved_tools( trans, category=category )
         else:
             # If request came from the admin controller, we don't filter on tool state.
-            tool_id = [ tca.tool.id for tca in category.tools ]
-        if not tool_id:
-            tool_id = 'None'
+            ids = [ tca.tool.id for tca in category.tools ]
+        if not ids:
+            ids = 'none'
         return trans.response.send_redirect( web.url_for( controller=cntrller,
                                                           action='browse_tools',
-                                                          tool_id=tool_id ) )
+                                                          ids=ids ) )
     @web.expose
     def browse_tools_by_user( self, trans, cntrller, **kwd ):
         params = util.Params( kwd )
@@ -146,15 +175,21 @@ class CommonController( BaseController ):
         # If request came from the tool controller, then we need to filter by the state of the
         # tool if the user is not viewing his own tools
         if cntrller == 'tool':
-            tool_id = get_approved_tools( trans, user=user )
+            ids = get_tools_uploaded_by( trans, user )
         else:
-            # If request came from the admin controller, we don't filter on tool state.
-            tool_id = [ tool.id for tool in user.tools ]
-        if not tool_id:
-            tool_id = 'None'
+            # If request came from the admin controller we don't filter on tool state.
+            ids = [ tool.id for tool in user.tools ]
+        if not ids:
+            ids = 'none'
+        if cntrller == 'tool' and user != trans.user:
+            # If the user is browsing someone else's tools, then we do not want to
+            # use the BrowseToolsByUser list grid since it includes a status column.
+            return trans.response.send_redirect( web.url_for( controller=cntrller,
+                                                              action='browse_tools',
+                                                              ids=ids ) ) 
         return trans.response.send_redirect( web.url_for( controller=cntrller,
                                                           action='browse_tools_by_user',
-                                                          tool_id=tool_id ) )
+                                                          ids=ids ) )
 
 ## ---- Utility methods -------------------------------------------------------
 
@@ -202,30 +237,33 @@ def get_tool( trans, id ):
     return trans.sa_session.query( trans.model.Tool ).get( trans.app.security.decode_id( id ) )
 def get_tools( trans ):
     return trans.sa_session.query( trans.model.Tool ).order_by( trans.model.Tool.name )
-def get_approved_tools( trans, category=None, user=None ):
-    tool_id = []
+def get_approved_tools( trans, category=None ):
+    # TODO: write this as a query using eagerload - will be much faster.
+    ids = []
     if category:
         # Return only the approved tools in the category
         for tca in category.tools:
             tool = tca.tool
             if tool.is_approved():
-                tool_id.append( tool.id )
-    elif user:
-        if trans.user == user:
-            # If the current user is browsing his own tools, then don't filter on state
-            tool_id = [ tool.id for tool in user.tools ]
-        else:
-            # The current user is viewing all tools uploaded by another user, so show only
-            # approved tools
-            for tool in user.active_tools:
-                if tool.is_approved():
-                    tool_id.append( tool.id )
+                ids.append( tool.id )
     else:
         # Return all approved tools
         for tool in get_tools( trans ):
             if tool.is_approved():
-                tool_id.append( tool.id )
-    return tool_id
+                ids.append( tool.id )
+    return ids
+def get_tools_uploaded_by( trans, user ):
+    # TODO: write this as a query using eagerload - will be much faster.
+    ids = []
+    if trans.user == user:
+        # If the current user is browsing his own tools, then don't filter on state
+        ids = [ tool.id for tool in user.tools ]
+    else:
+        # The current user is viewing tools uploaded by another user, so show only approved tools
+        for tool in user.active_tools:
+            if tool.is_approved():
+                ids.append( tool.id )
+    return ids
 def get_event( trans, id ):
     return trans.sa_session.query( trans.model.Event ).get( trans.security.decode_id( id ) )
 def get_user( trans, id ):

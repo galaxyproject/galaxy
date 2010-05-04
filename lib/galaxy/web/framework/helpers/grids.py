@@ -134,13 +134,16 @@ class Grid( object ):
                             column_filter = unicode(column_filter)
                         extra_url_args[ "f-" + column.key ] = column_filter.encode("utf-8")
         # Process sort arguments.
-        sort_key = sort_order = None
+        sort_key = None
+        sort_order = None
         if 'sort' in kwargs:
             sort_key = kwargs['sort']
         elif base_sort_key:
             sort_key = base_sort_key
         encoded_sort_key = sort_key
         if sort_key:
+            # TODO: what if the model object of the grid column being sorted is not
+            # the same object as self.model_class?
             if sort_key.startswith( "-" ):
                 sort_key = sort_key[1:]
                 sort_order = 'desc'
@@ -230,10 +233,10 @@ class Grid( object ):
                                     current_item=current_item,
                                     ids = kwargs.get( 'id', [] ),
                                     url = url,
-                                    message_type = status,
+                                    status = status,
                                     message = message,
                                     use_panels=use_panels,
-                                    webapp=self.webapp,
+                                    webapp=webapp,
                                     # Pass back kwargs so that grid template can set and use args without
                                     # grid explicitly having to pass them.
                                     kwargs=kwargs )
@@ -290,9 +293,7 @@ class GridColumn( object ):
         if self.format:
             value = self.format( value )
         return value
-    def get_link( self, trans, grid, item, filter_params ):
-        # FIXME: filter_params is only here so we can do grid filtering from
-        # column links.  remove once a better way is created.
+    def get_link( self, trans, grid, item ):
         if self.link and self.link( item ):
             return self.link( item )
         return None
@@ -449,7 +450,7 @@ class OwnerColumn( TextColumn ):
 
 class PublicURLColumn( TextColumn ):
     """ Column displays item's public URL based on username and slug. """
-    def get_link( self, trans, grid, item, filter_params ):
+    def get_link( self, trans, grid, item ):
         if item.user.username and item.slug:
             return dict( action='display_by_username_and_slug', username=item.user.username, slug=item.slug )
         elif not item.user.username:
@@ -485,7 +486,7 @@ class SharingStatusColumn( GridColumn ):
         if item.published:
             sharing_statuses.append( "Published" )
         return ", ".join( sharing_statuses )
-    def get_link( self, trans, grid, item, filter_params ):
+    def get_link( self, trans, grid, item ):
         if not item.deleted and ( item.users_shared_with or item.importable or item.published ):
             return dict( operation="share or publish", id=item.id )
         return None

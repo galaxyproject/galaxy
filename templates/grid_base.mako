@@ -508,12 +508,10 @@
                         webapp = href_parms[index].split('=')[1];
                     }
                 }
-                
                 // Do operation.
                 do_operation(webapp, operation, id);
                 return false;
             }
-            
         }
         
         // Navigate window to the URL defined by url_args. This method should be used to short-circuit grid AJAXing.
@@ -678,7 +676,7 @@
         <tr>
             <td width="75%">${self.render_grid_header( grid )}</td>
             <td></td>
-            <td width="25%" id="grid-message" valign="top">${render_message( message, message_type )}</td>
+            <td width="25%" id="grid-message" valign="top">${render_message( message, status )}</td>
         </tr>
     </table>
 
@@ -774,10 +772,6 @@
 
 ## Render grid table body contents.
 <%def name="render_grid_table_body_contents(grid, show_item_checkboxes=False)">
-        ## Include the webapp value in the form
-        <td style="width: 1.5em;">
-            <input type="hidden" name="webapp" value="${webapp}" />
-        </td>
         <% num_rows_rendered = 0 %>
         %if query.count() == 0:
             ## No results.
@@ -801,12 +795,8 @@
                 %for column in grid.columns:
                     %if column.visible:
                         <%
-                            # Get filter params for generating filter links
-                            filter_params = {}
-                            for k, v in cur_filter_dict.items():
-                                filter_params['f-' + k] = v
                             # Link
-                            link = column.get_link( trans, grid, item, filter_params )
+                            link = column.get_link( trans, grid, item )
                             if link:
                                 href = url( **link )
                             else:
@@ -831,6 +821,7 @@
                                     cls = "menubutton"
                                 if column.attach_popup and href:
                                     cls = "menubutton split"
+
                             %>
                             %if href:
                                 <td><div id="${id}" class="${cls}" style="float: left;"><a class="label" href="${href}">${v}</a></div></td>
@@ -915,3 +906,4 @@
         </tr>
     %endif
 </%def>
+

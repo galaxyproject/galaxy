@@ -85,16 +85,21 @@
 
 <div class="toolForm">
     <div class="toolFormTitle">${tool.name}
-        <a id="tool-${tool.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
-        <div popupmenu="tool-${tool.id}-popup">
-            %if cntrller=='admin' or can_edit:
-                <a class="action-button" href="${h.url_for( controller='common', action='edit_tool', id=trans.app.security.encode_id( tool.id ), cntrller=cntrller )}">Edit information</a>
-            %endif
-            %if cntrller=='admin' or can_upload_new_version:
-                <a class="action-button" href="${h.url_for( controller='common', action='upload_new_tool_version', id=trans.app.security.encode_id( tool.id ), cntrller=cntrller )}">Upload a new version</a>
-            %endif
-            <a class="action-button" href="${h.url_for( controller='tool', action='download_tool', id=trans.app.security.encode_id( tool.id ) )}">Download tool</a>
-        </div>
+        %if not tool.deleted:
+            <a id="tool-${tool.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
+            <div popupmenu="tool-${tool.id}-popup">
+                %if cntrller=='admin' or can_edit:
+                    <a class="action-button" href="${h.url_for( controller='common', action='edit_tool', id=trans.app.security.encode_id( tool.id ), cntrller=cntrller )}">Edit information</a>
+                %endif
+                <a class="action-button" href="${h.url_for( controller='tool', action='download_tool', id=trans.app.security.encode_id( tool.id ) )}">Download tool</a>
+                %if cntrller=='admin' or trans.user==tool.user:
+                    <a class="action-button" href="${h.url_for( controller='common', action='delete_tool', id=trans.app.security.encode_id( tool.id ), cntrller=cntrller )}">Delete tool</a>
+                %endif
+                %if cntrller=='admin' or can_upload_new_version:
+                    <a class="action-button" href="${h.url_for( controller='common', action='upload_new_tool_version', id=trans.app.security.encode_id( tool.id ), cntrller=cntrller )}">Upload a new version</a>
+                %endif
+            </div>
+        %endif
     </div>
     <div class="toolFormBody">
         <div class="form-row">

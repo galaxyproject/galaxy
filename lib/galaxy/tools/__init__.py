@@ -837,7 +837,7 @@ class Tool:
                     assert isinstance( out_data, odict )
                     return 'tool_executed.mako', dict( out_data=out_data )
                 except:
-                    return 'message.mako', dict( message_type='error', message='odict not returned from tool execution', refresh_frames=[] )
+                    return 'message.mako', dict( status='error', message='odict not returned from tool execution', refresh_frames=[] )
             # Otherwise move on to the next page
             else:
                 state.page += 1
@@ -890,7 +890,7 @@ class Tool:
                     self.sa_session.add( data )
                     self.sa_session.flush()
         # It's unlikely the user will ever see this.
-        return 'message.mako', dict( message_type='error', message='Your upload was interrupted.  If this was uninentional, please retry it.', refresh_frames=[], cont=None )
+        return 'message.mako', dict( status='error', message='Your upload was interrupted.  If this was uninentional, please retry it.', refresh_frames=[], cont=None )
 
     def update_state( self, trans, inputs, state, incoming, prefix="", context=None,
                       update_only=False, old_errors={}, item_callback=None ):

@@ -94,7 +94,8 @@ class Tool( object ):
                     APPROVED = 'approved',
                     REJECTED = 'rejected',
                     ARCHIVED = 'archived' )
-    def __init__( self, guid=None, tool_id=None, name=None, description=None, user_description=None, category=None, version=None, user_id=None, external_filename=None ):
+    def __init__( self, guid=None, tool_id=None, name=None, description=None, user_description=None, 
+                  category=None, version=None, user_id=None, external_filename=None ):
         self.guid = guid
         self.tool_id = tool_id
         self.name = name or "Unnamed tool"
@@ -103,6 +104,7 @@ class Tool( object ):
         self.version = version or "1.0.0"
         self.user_id = user_id
         self.external_filename = external_filename
+        self.deleted = False
         self.__extension = None
     def get_file_name( self ):
         if not self.external_filename:

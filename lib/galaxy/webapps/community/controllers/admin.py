@@ -47,7 +47,7 @@ class UserListGrid( grids.Grid ):
             return ""
     class ToolsColumn( grids.TextColumn ):
         def get_value( self, trans, grid, user ):
-            return '<a href="browse_tools_by_user?operation=browse&id=%s">%s</a>' % ( trans.security.encode_id( user.id ), str( len( user.tools ) ) )
+            return '<a href="browse_tools_by_user?operation=browse&id=%s&webapp=community">%s</a>' % ( trans.security.encode_id( user.id ), str( len( user.tools ) ) )
 
     # Grid definition
     webapp = "community"
@@ -77,7 +77,10 @@ class UserListGrid( grids.Grid ):
                      attach_popup=False,
                      filterable="advanced" ),
         # Columns that are valid for filtering but are not visible.
-        grids.DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" )
+        grids.DeletedColumn( "Deleted",
+                             key="deleted",
+                             visible=False,
+                             filterable="advanced" )
     ]
     columns.append( grids.MulticolFilterColumn( "Search", 
                                                 cols_to_filter=[ columns[0], columns[1] ], 
@@ -168,7 +171,10 @@ class RoleListGrid( grids.Grid ):
         UsersColumn( "Users", attach_popup=False ),
         StatusColumn( "Status", attach_popup=False ),
         # Columns that are valid for filtering but are not visible.
-        grids.DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" )
+        grids.DeletedColumn( "Deleted",
+                             key="deleted",
+                             visible=False,
+                             filterable="advanced" )
     ]
     columns.append( grids.MulticolFilterColumn( "Search", 
                                                 cols_to_filter=[ columns[0], columns[1], columns[2] ], 
@@ -238,16 +244,20 @@ class GroupListGrid( grids.Grid ):
     default_sort_key = "name"
     columns = [
         NameColumn( "Name",
-                    key="name",
+                    #key="name",
                     link=( lambda item: dict( operation="Manage users and roles", id=item.id, webapp="community" ) ),
                     model_class=model.Group,
-                    attach_popup=True,
-                    filterable="advanced" ),
+                    attach_popup=True
+                    #filterable="advanced"
+                    ),
         UsersColumn( "Users", attach_popup=False ),
         RolesColumn( "Roles", attach_popup=False ),
         StatusColumn( "Status", attach_popup=False ),
         # Columns that are valid for filtering but are not visible.
-        grids.DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" )
+        grids.DeletedColumn( "Deleted",
+                             key="deleted",
+                             visible=False,
+                             filterable="advanced" )
     ]
     columns.append( grids.MulticolFilterColumn( "Search", 
                                                 cols_to_filter=[ columns[0], columns[1], columns[2] ], 
@@ -309,14 +319,18 @@ class ManageCategoryListGrid( grids.Grid ):
                     attach_popup=False,
                     filterable="advanced" ),
         DescriptionColumn( "Description",
+                           key="description",
                            model_class=model.Category,
                            attach_popup=False,
                            filterable="advanced" ),
         # Columns that are valid for filtering but are not visible.
-        grids.DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" )
+        grids.DeletedColumn( "Deleted",
+                             key="deleted",
+                             visible=False,
+                             filterable="advanced" )
     ]
     columns.append( grids.MulticolFilterColumn( "Search",
-                                                cols_to_filter=[ columns[0], columns[1], columns[2] ],
+                                                cols_to_filter=[ columns[0], columns[1] ],
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
@@ -370,24 +384,34 @@ class ToolsByCategoryListGrid( grids.Grid ):
     default_sort_key = "name"
     columns = [
         NameColumn( "Name",
-                    key="name",
-                    link=( lambda item: dict( operation="Browse Category", id=item.id, webapp="community" ) ),
+                     # TODO: we cannot currently sort by columns since the grid may be filtered by tool ids
+                     # and it is not clear if / how that will work.  We need to be able to send to the grid helper
+                     # the list of ids on which to filter when sorting on the column.
+                    #key="name",
                     model_class=model.Category,
-                    attach_popup=True,
-                    filterable="advanced" ),
+                    link=( lambda item: dict( operation="Browse Category", id=item.id, webapp="community" ) ),
+                    attach_popup=False
+                    #filterable="advanced" 
+                    ),
         DescriptionColumn( "Description",
+                           #key="description",
                            model_class=model.Category,
-                           attach_popup=False,
-                           filterable="advanced" ),
+                           attach_popup=False
+                           #filterable="advanced" 
+                           ),
         ToolsColumn( "Tools",
-                     model_class=model.Category,
+                     model_class=model.Tool,
                      attach_popup=False,
                      filterable="advanced" ),
         # Columns that are valid for filtering but are not visible.
-        grids.DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" )
+        grids.DeletedColumn( "Deleted",
+                             key="deleted",
+                             visible=False,
+                             filterable="advanced" )
     ]
     columns.append( grids.MulticolFilterColumn( "Search",
-                                                cols_to_filter=[ columns[0], columns[1], columns[2] ],
+                                                #cols_to_filter=[ columns[0], columns[1] ],
+                                                cols_to_filter=[],
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
@@ -399,10 +423,17 @@ class ToolsByCategoryListGrid( grids.Grid ):
     num_rows_per_page = 50
     preserve_state = False
     use_paging = True
-    def get_current_item( self, trans ):
-        return None
     def build_initial_query( self, session ):
         return session.query( self.model_class )
+    def apply_default_filter( self, trans, query, **kwd ):
+        ids = kwd.get( 'ids', False )
+        if ids:
+            if str( ids ).lower() == 'none':
+                # No tools for display
+                return query.filter( model.Tool.id == None )
+            ids = util.listify( ids )
+            query = query.filter( or_( *map( lambda id: self.model_class.id == id, ids ) ) )
+        return query
 
 class ToolListGrid( grids.Grid ):
     class NameColumn( grids.TextColumn ):
@@ -419,7 +450,7 @@ class ToolListGrid( grids.Grid ):
             if tool.categories:
                 rval = ''
                 for tca in tool.categories:
-                    rval += '<a href="browse_category?id=%s">%s</a><br/>\n' % ( trans.security.encode_id( tca.category.id ), tca.category.name ) 
+                    rval += '<a href="browse_category?id=%s&webapp=community">%s</a><br/>\n' % ( trans.security.encode_id( tca.category.id ), tca.category.name ) 
                 return rval
             return 'not set'
     class StateColumn( grids.GridColumn ):
@@ -450,7 +481,7 @@ class ToolListGrid( grids.Grid ):
             return accepted_filters
     class UserColumn( grids.TextColumn ):
         def get_value( self, trans, grid, tool ):
-            return '<a href="browse_tools_by_user?operation=browse&id=%s">%s</a>' % ( trans.security.encode_id( tool.user.id ), tool.user.username )
+            return '<a href="browse_tools_by_user?operation=browse&id=%s&webapp=community">%s</a>' % ( trans.security.encode_id( tool.user.id ), tool.user.username )
     # Grid definition
     title = "Tools"
     model_class = model.Tool
@@ -458,19 +489,25 @@ class ToolListGrid( grids.Grid ):
     default_sort_key = "name"
     columns = [
         NameColumn( "Name",
-                    key="name",
+                     # TODO: we cannot currently sort by columns since the grid may be filtered by tool ids
+                     # and it is not clear if / how that will work.  We need to be able to send to the grid helper
+                     # the list of ids on which to filter when sorting on the column.
+                    #key="name",
+                    link=( lambda item: dict( operation="View Tool", id=item.id, cntrller="admin", webapp="community" ) ),
                     model_class=model.Tool,
-                    link=( lambda item: dict( operation="View Tool", id=item.id, cntrller='admin', webapp="community" ) ),
-                    attach_popup=True,
-                    filterable="advanced" ),
+                    attach_popup=True
+                    #filterable="advanced"
+                    ),
         VersionColumn( "Version",
                         model_class=model.Tool,
                         attach_popup=False,
                         filterable="advanced" ),
         DescriptionColumn( "Description",
-                        model_class=model.Tool,
-                        attach_popup=False,
-                        filterable="advanced" ),
+                           #key="description",
+                           model_class=model.Tool,
+                           attach_popup=False
+                           #filterable="advanced"
+                           ),
         CategoryColumn( "Category",
                     model_class=model.Category,
                     attach_popup=False,
@@ -479,15 +516,19 @@ class ToolListGrid( grids.Grid ):
                      model_class=model.Event,
                      attach_popup=False ),
         UserColumn( "Uploaded By",
-                    key="username",
                     model_class=model.User,
                     attach_popup=False,
                     filterable="advanced" ),
         # Columns that are valid for filtering but are not visible.
-        grids.DeletedColumn( "Deleted", model_class=model.Tool, key="deleted", visible=False, filterable="advanced" )
+        grids.DeletedColumn( "Deleted",
+                             model_class=model.Tool,
+                             key="deleted",
+                             visible=False,
+                             filterable="advanced" )
     ]
     columns.append( grids.MulticolFilterColumn( "Search", 
-                                                cols_to_filter=[ columns[0], columns[1] ], 
+                                                #cols_to_filter=[ columns[0], columns[2], columns[5] ],
+                                                cols_to_filter=[],
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
@@ -499,7 +540,7 @@ class ToolListGrid( grids.Grid ):
     ]
     standard_filters = [
         grids.GridColumnFilter( "Deleted", args=dict( deleted=True ) ),
-        grids.GridColumnFilter( "All", args=dict( deleted='All' ) )
+        grids.GridColumnFilter( "All", args=dict( deleted='All' ) ),
     ]
     default_filter = dict( name="All", deleted="False" )
     num_rows_per_page = 50
@@ -508,15 +549,14 @@ class ToolListGrid( grids.Grid ):
     def build_initial_query( self, session ):
         return session.query( self.model_class )
     def apply_default_filter( self, trans, query, **kwd ):
-        tool_id = kwd.get( 'tool_id', False )
-        if tool_id:
-            if str( tool_id ).lower() in [ '', 'none' ]:
-                # Return an empty query since the current user cannot view any
-                # tools (possibly due to state not being approved, etc).
+        ids = kwd.get( 'ids', False )
+        if ids:
+            if str( ids ).lower() == 'none':
+                # No tools for display
                 return query.filter( model.Tool.id == None )
-            tool_id = util.listify( tool_id )
-            query = query.filter( or_( *map( lambda id: self.model_class.id == id, tool_id ) ) )
-        return query.filter( self.model_class.deleted==False )
+            ids = util.listify( ids )
+            query = query.filter( or_( *map( lambda id: self.model_class.id == id, ids ) ) )
+        return query
 
 class AdminController( BaseController, Admin ):
     
@@ -616,12 +656,12 @@ class AdminController( BaseController, Admin ):
                                                                   status='error' ) )
             event = get_event( trans, id )
             state = event.state
-        tool_id = get_tools_by_state( trans, state )
-        if not tool_id:
-            tool_id = 'None'
+        ids = get_tools_by_state( trans, state )
+        if not ids:
+            ids = 'none'
         return trans.response.send_redirect( web.url_for( controller='admin',
                                                           action='browse_tools',
-                                                          tool_id=tool_id ) )
+                                                          ids=ids ) )
     @web.expose
     @web.require_admin
     def browse_category( self, trans, **kwd ):
@@ -681,7 +721,10 @@ class AdminController( BaseController, Admin ):
                 # If we're approving a tool, all previous versions must be set to archived
                 for version in get_versions( trans, tool ):
                     if version != tool and version.is_approved():
-                        self.set_tool_state( trans, trans.app.model.Tool.states.ARCHIVED, id=trans.app.security.encode_id( version.id ), redirect='False' )
+                        self.set_tool_state( trans,
+                                             trans.app.model.Tool.states.ARCHIVED,
+                                             id=trans.security.encode_id( version.id ),
+                                             redirect='False' )
             event = trans.model.Event( state )
             # Flush so we an get an id
             trans.sa_session.add( event )
@@ -842,33 +885,34 @@ class AdminController( BaseController, Admin ):
 ## ---- Utility methods -------------------------------------------------------
 
 def get_tools_by_state( trans, state ):
-    tool_id = []
+    # TODO: write this as a query using eagerload - will be much faster.
+    ids = []
     if state == trans.model.Tool.states.NEW:
         for tool in get_tools( trans ):
             if tool.is_new():
-                tool_id.append( tool.id )
+                ids.append( tool.id )
     elif state == trans.model.Tool.states.ERROR:
         for tool in get_tools( trans ):
             if tool.is_error():
-                tool_id.append( tool.id )
+                ids.append( tool.id )
     elif state == trans.model.Tool.states.DELETED:
         for tool in get_tools( trans ):
             if tool.is_deleted():
-                tool_id.append( tool.id )
+                ids.append( tool.id )
     elif state == trans.model.Tool.states.WAITING:
         for tool in get_tools( trans ):
             if tool.is_waiting():
-                tool_id.append( tool.id )
+                ids.append( tool.id )
     elif state == trans.model.Tool.states.APPROVED:
         for tool in get_tools( trans ):
             if tool.is_approved():
-                tool_id.append( tool.id )
+                ids.append( tool.id )
     elif state == trans.model.Tool.states.REJECTED:
         for tool in get_tools( trans ):
             if tool.is_rejected():
-                tool_id.append( tool.id )
+                ids.append( tool.id )
     elif state == trans.model.Tool.states.ARCHIVED:
         for tool in get_tools( trans ):
             if tool.is_archived():
-                tool_id.append( tool.id )
-    return tool_id
+                ids.append( tool.id )
+    return ids

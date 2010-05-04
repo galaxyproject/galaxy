@@ -51,16 +51,21 @@ $().ready(function() {
     ${render_msg( message, status )}
 %endif
 
-%if cntrller == 'admin' or ( tool.is_new() and trans.user == tool.user ):
+%if cntrller == 'admin' or trans.user == tool.user:
     <form id="edit_tool" name="edit_tool" action="${h.url_for( controller='common', action='edit_tool' )}" method="post">
         <div class="toolForm">
             <div class="toolFormTitle">${tool.name}
-                <a id="tool-${tool.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
-                <div popupmenu="tool-${tool.id}-popup">
-                    <a class="action-button" href="${h.url_for( controller='common', action='view_tool', id=trans.app.security.encode_id( tool.id ), cntrller=cntrller )}">View information</a>
-                    <a class="action-button" href="${h.url_for( controller='common', action='upload_new_tool_version', id=trans.app.security.encode_id( tool.id ), cntrller=cntrller )}">Upload a new version</a>
-                    <a class="action-button" href="${h.url_for( controller='tool', action='download_tool', id=trans.app.security.encode_id( tool.id ) )}">Download tool</a>
-                </div>
+                %if not tool.deleted:
+                    <a id="tool-${tool.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
+                    <div popupmenu="tool-${tool.id}-popup">
+                        <a class="action-button" href="${h.url_for( controller='common', action='view_tool', id=trans.app.security.encode_id( tool.id ), cntrller=cntrller )}">View information</a>
+                        <a class="action-button" href="${h.url_for( controller='tool', action='download_tool', id=trans.app.security.encode_id( tool.id ) )}">Download tool</a>
+                        <a class="action-button" href="${h.url_for( controller='common', action='delete_tool', id=trans.app.security.encode_id( tool.id ), cntrller=cntrller )}">Delete tool</a>
+                        %if not tool.is_new() and not tool.is_waiting():
+                            <a class="action-button" href="${h.url_for( controller='common', action='upload_new_tool_version', id=trans.app.security.encode_id( tool.id ), cntrller=cntrller )}">Upload a new version</a>
+                        %endif
+                    </div>
+                %endif
             </div>
             <div class="toolFormBody">
                 <input type="hidden" name="id" value="${trans.app.security.encode_id( tool.id )}"/>
