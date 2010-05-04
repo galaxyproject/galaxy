@@ -96,7 +96,7 @@ class InputDataModule( WorkflowModule ):
         module.state = dict( name="Input Dataset" )
         return module
     @classmethod
-    def from_dict( Class, trans, d, secure=False ):
+    def from_dict( Class, trans, d, secure=True ):
         module = Class( trans )
         state = from_json_string( d["tool_state"] )
         module.state = dict( name=state.get( "name", "Input Dataset" ) )
@@ -172,11 +172,11 @@ class ToolModule( WorkflowModule ):
         module.state = module.tool.new_state( trans, all_pages=True )
         return module
     @classmethod
-    def from_dict( Class, trans, d, secure=False ):
+    def from_dict( Class, trans, d, secure=True ):
         tool_id = d['tool_id']
         module = Class( trans, tool_id )
         module.state = DefaultToolState()
-        module.state.decode( d["tool_state"], module.tool, module.trans.app, secure=False )
+        module.state.decode( d["tool_state"], module.tool, module.trans.app, secure=secure )
         module.errors = d.get( "tool_errors", None )
         return module
         
