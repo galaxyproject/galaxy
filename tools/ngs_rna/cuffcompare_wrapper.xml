@@ -50,21 +50,21 @@
     </inputs>
 
     <outputs>
-        <data format="tmap" name="input1_tmap" label="${tool.name} on ${on_string}: data ${input1.hid} tmap file"/>
-        <data format="refmap" name="input1_refmap" label="${tool.name} on ${on_string}: data ${input1.hid} refmap file"/>
-        <data format="tmap" name="input2_tmap" label="${tool.name} on ${on_string}: data ${second_gtf.input2.hid} tmap file">
+        <data format="tabular" name="input1_tmap" label="${tool.name} on ${on_string}: data ${input1.hid} tmap file"/>
+        <data format="tabular" name="input1_refmap" label="${tool.name} on ${on_string}: data ${input1.hid} refmap file"/>
+        <data format="tabular" name="input2_tmap" label="${tool.name} on ${on_string}: data ${second_gtf.input2.hid} tmap file">
             <filter>second_gtf['use_second_gtf'] == "Yes"</filter>
         </data>
-        <data format="refmap" name="input2_refmap" label="${tool.name} on ${on_string}: data ${second_gtf.input2.hid} refmap file">
+        <data format="tabular" name="input2_refmap" label="${tool.name} on ${on_string}: data ${second_gtf.input2.hid} refmap file">
             <filter>second_gtf['use_second_gtf'] == "Yes"</filter>
         </data>
         <data format="gtf" name="transcripts_combined" label="${tool.name} on ${on_string}: combined transcripts">
             <filter>second_gtf['use_second_gtf'] == "Yes"</filter>
         </data>
-        <data format="tracking" name="transcripts_tracking" label="${tool.name} on ${on_string}: transcript tracking">
+        <data format="tabular" name="transcripts_tracking" label="${tool.name} on ${on_string}: transcript tracking">
             <filter>second_gtf['use_second_gtf'] == "Yes"</filter>
         </data>
-        <data format="gtf" name="transcripts_accuracy" label="${tool.name} on ${on_string}: transcript accuracy"/>
+        <data format="txt" name="transcripts_accuracy" label="${tool.name} on ${on_string}: transcript accuracy"/>
     </outputs>
 
     <tests>
