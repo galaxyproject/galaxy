@@ -352,7 +352,6 @@ var LineTrack = function ( name, dataset_id, prefs ) {
     TiledTrack.call( this );
     
     this.height_px = 100;
-    this.container_div.addClass( "line-track" );
     this.dataset_id = dataset_id;
     this.data_cache = new Cache(CACHED_DATA);
     this.tile_cache = new Cache(CACHED_TILES_LINE);
@@ -369,6 +368,8 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
         track.vertical_range = undefined;
         this.init_each({  stats: true, chrom: track.view.chrom, low: null, high: null,
                                 dataset_id: track.dataset_id }, function(result) {
+            
+            track.container_div.addClass( "line-track" );
             data = result.data;
             if ( isNaN(parseFloat(track.prefs.min_value)) || isNaN(parseFloat(track.prefs.max_value)) ) {
                 track.prefs.min_value = data.min;
@@ -387,10 +388,10 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
             var min_label = $("<div></div>").addClass('yaxislabel').attr("id", 'linetrack_' + track_id + '_minval').text(track.prefs.min_value);
             var max_label = $("<div></div>").addClass('yaxislabel').attr("id", 'linetrack_' + track_id + '_maxval').text(track.prefs.max_value);
             
-            max_label.css({ position: "relative", top: "25px" });
+            max_label.css({ position: "relative", top: "25px", left: "10px" });
             max_label.prependTo(track.container_div);
     
-            min_label.css({ position: "relative", top: track.height_px + 55 + "px" });
+            min_label.css({ position: "relative", top: track.height_px + 55 + "px", left: "10px" });
             min_label.prependTo(track.container_div);
         });
     },
@@ -455,7 +456,8 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
             max_value = this.prefs.max_value,
             vertical_range = this.vertical_range,
             total_frequency = this.total_frequency,
-            height_px = this.height_px;
+            height_px = this.height_px,
+            mode = this.prefs.mode;
             
         ctx.beginPath();
         
@@ -466,16 +468,17 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
             var delta_x_px = 10;
         }
         
+        var x_scaled, y;
+        
         for ( var i = 0; i < data.length; i++ ) {
-            var x = data[i][0] - tile_low;
-            var y = data[i][1];
+            x_scaled = (data[i][0] - tile_low) * w_scale;
+            y = data[i][1];
             
-            if ( this.prefs.mode == "Intensity" ) {
+            if ( mode == "Intensity" ) {
                 // DRAW INTENSITY
                 if (y === null) {
                     continue;
                 }
-                x = x * w_scale;
                 if (y <= min_value) {
                     y = min_value;
                 } else if (y >= max_value) {
@@ -483,16 +486,17 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
                 }
                 y = 255 - Math.floor( (y - min_value) / vertical_range * 255 );
                 ctx.fillStyle = "rgb(" +y+ "," +y+ "," +y+ ")";
-                ctx.fillRect(x, 0, delta_x_px, this.height_px);
+                ctx.fillRect(x_scaled, 0, delta_x_px, this.height_px);
             }
             else {
                 // Missing data causes us to stop drawing
                 if (y === null) {
+                    if (in_path && mode === "Filled") {
+                        ctx.lineTo(x_scaled, height_px);
+                    }
                     in_path = false;
                     continue;
                 } else {
-                    // Translate
-                    x = x * w_scale;
                     // console.log(y, this.min_value, this.vertical_range, (y - this.min_value) / this.vertical_range * this.height_px);
                     if (y <= min_value) {
                         y = min_value;
@@ -501,16 +505,28 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
                     }
                     y = Math.round( height_px - (y - min_value) / vertical_range * height_px );
                     // console.log(canvas.get(0).height, canvas.get(0).width);
-                    if ( in_path ) {
-                        ctx.lineTo( x, y );
+                    if (in_path) {
+                        ctx.lineTo(x_scaled, y);
                     } else {
-                        ctx.moveTo( x, y );
                         in_path = true;
+                        if (mode === "Filled") {
+                            ctx.moveTo(x_scaled, height_px);
+                            ctx.lineTo(x_scaled, y);
+                        } else {
+                            ctx.moveTo(x_scaled, y);
+                        }
                     }
                 }
             }
         }
-        ctx.stroke();
+        if (mode === "Filled") {
+            if (in_path) {
+                ctx.lineTo(x_scaled, height_px);
+            }
+            ctx.fill();
+        } else {
+            ctx.stroke();
+        }
         parent_element.append( canvas );
         return canvas;
     }, gen_options: function(track_id) {
@@ -527,7 +543,7 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
             max_input = $('<input></input>').attr("id", maxval).val(max_val),
             mode_label = $('<label></label>').attr("for", mode).text("Display mode:"),
             mode_val = (this.prefs.mode === undefined ? "Line" : this.prefs.mode),
-            mode_input = $('<select id="' +mode+ '"><option value="Line" id="mode_Line">Line</option><option value="Intensity" id="mode_Intensity">Intensity</option></select>');
+            mode_input = $('<select id="' +mode+ '"><option value="Line" id="mode_Line">Line</option><option value="Filled" id="mode_Filled">Filled</option><option value="Intensity" id="mode_Intensity">Intensity</option></select>');
             
             mode_input.children("#mode_"+mode_val).attr('selected', 'selected');
             
