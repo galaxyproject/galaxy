@@ -439,8 +439,9 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
             return;
         }
         
-        var data = this.data_cache.get(key);
-        if (data === null) { return; }
+        var result = this.data_cache.get(key);
+        if (result === null) { return; }
+        console.log(result);
         
         canvas.css( {
             position: "absolute",

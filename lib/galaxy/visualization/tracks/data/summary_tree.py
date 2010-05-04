@@ -32,12 +32,12 @@ class SummaryTreeDataProvider( object ):
         level = int(max( level, 0 ))
         if level <= 0:
             return None
-
+        
         stats = st.chrom_stats[chrom]
         results = st.query(chrom, int(start), int(end), level)
         if results == "detail":
             return None
-        elif results == "draw":
+        elif results == "draw" or level <= 1:
             return "no_detail"
         else:
             return results, stats[level]["max"], stats[level]["avg"], stats[level]["delta"]

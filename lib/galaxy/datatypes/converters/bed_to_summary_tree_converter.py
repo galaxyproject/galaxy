@@ -15,7 +15,7 @@ def main():
     
     reader = BedReader( open( input_fname ) )
     
-    st = SummaryTree(block_size=100, levels=4, draw_cutoff=100, detail_cutoff=20)
+    st = SummaryTree(block_size=25, levels=6, draw_cutoff=150, detail_cutoff=30)
     for chrom, chrom_start, chrom_end, name, score in reader:
         st.insert_range(chrom, chrom_start, chrom_end)
     
