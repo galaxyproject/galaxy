@@ -272,7 +272,12 @@ ${h.js( 'galaxy.base', 'galaxy.panels', "json2", "jquery", "jquery.event.drag", 
             
             $.ajax({
                 url: "${h.url_for( action='chroms' )}", 
-                data: { vis_id: view.vis_id },
+                ## If vis is new, it doesn't have an id, so send the dbkey instead.
+                %if config.get('vis_id'):
+                    data: { vis_id: view.vis_id },
+                %else:
+                    data: { dbkey: view.dbkey },
+                %endif
                 dataType: "json",
                 success: function ( data ) {
                     view.chrom_data = data;

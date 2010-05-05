@@ -158,9 +158,9 @@ class TracksController( BaseController, UsesVisualization ):
         return trans.fill_template( 'tracks/browser.mako', config=config )
 
     @web.json
-    def chroms(self, trans, vis_id=None ):
+    def chroms(self, trans, vis_id=None, dbkey=None ):
         """
-        Returns a naturally sorted list of chroms/contigs for the given dbkey
+        Returns a naturally sorted list of chroms/contigs for either a given visualization or a given dbkey.
         """
         def check_int(s):
             if s.isdigit():
@@ -171,25 +171,33 @@ class TracksController( BaseController, UsesVisualization ):
         def split_by_number(s):
             return [ check_int(c) for c in re.split('([0-9]+)', s) ]
             
-        # Get visualization and config.
-        visualization = self.get_visualization( trans, vis_id, check_ownership=False, check_accessible=True )
-        visualization.config = self.get_visualization_config( trans, visualization )
-        if visualization is None:
-            raise web.httpexceptions.HTTPNotFound()
+        # Must specify either vis_id or dbkey.
+        if not vis_id and not dbkey:
+            return trans.show_error_message("No visualization id or dbkey specified.")
+            
+        # Need to get user and dbkey in order to get chroms data.
+        if vis_id:
+            # Use user, dbkey from viz.
+            visualization = self.get_visualization( trans, vis_id, check_ownership=False, check_accessible=True )
+            visualization.config = self.get_visualization_config( trans, visualization )
+            vis_user = visualization.user
+            vis_dbkey = visualization.config['dbkey']
+        else:
+            # No vis_id, so visualization is new. User is current user, dbkey must be given.
+            vis_user = trans.user
+            vis_dbkey = dbkey
             
         # Get chroms data.
-        chroms = self._chroms( trans, visualization )
+        chroms = self._chroms( trans, vis_user, vis_dbkey )
         to_sort = [{ 'chrom': chrom, 'len': length } for chrom, length in chroms.iteritems()]
         to_sort.sort(lambda a,b: cmp( split_by_number(a['chrom']), split_by_number(b['chrom']) ))
         return to_sort
 
-    def _chroms( self, trans, visualization ):
+    def _chroms( self, trans, user, dbkey ):
         """
-        Called by the browser to get a list of valid chromosomes and lengths
+        Helper method that returns chrom lengths for a given user and dbkey.
         """
         # If there is any dataset in the history of extension `len`, this will use it
-        user = visualization.user
-        dbkey = visualization.config['dbkey']
         if 'dbkeys' in user.preferences:
             user_keys = from_json_string( user.preferences['dbkeys'] )
             if dbkey in user_keys:
