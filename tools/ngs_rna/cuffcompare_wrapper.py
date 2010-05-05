@@ -52,7 +52,6 @@ def __main__():
         input2_file_name = tmp_output_dir + "/input2"
         os.symlink( options.input2, input2_file_name )
         cmd += " %s" % input2_file_name
-    print cmd
     
     # Run command.
     try:        
