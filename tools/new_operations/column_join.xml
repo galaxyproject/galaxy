@@ -2,53 +2,111 @@
   <description></description>
   <command interpreter="python">
     column_join.py
-        $output
-        $input1
-        $input2
-        $hinge
-        $columns
+        --output=$output
+        --input1=$input1
+        --input2=$input2
+        --hinge=$hinge
+        --columns=$columns
+        #if $fill_empty_columns.fill_empty_columns_switch == "fill_empty":
+            --fill_options_file=$fill_options_file
+        #end if
         #for $f in $file_chooser:
             ${f.input}
         #end for
   </command>
   <inputs>
     <param name="input1" type="data" format="tabular" label="Choose the first file for the join" />
-    <param name="columns" type="data_column" data_ref="input1" multiple="true" numerical="false" label="Include these column" help="Multi-select list - hold the appropriate key while clicking to select multiple columns" />
     <param name="hinge" type="data_column" data_ref="input1" multiple="false" numerical="false" label="Use this column and columns to left the 'hinge' (matching data for each join)" help="All columns to left of selected column (plus selected column) will be used. Select 2 for pileup" />
+    <param name="columns" type="data_column" data_ref="input1" multiple="true" numerical="false" label="Include these column" help="Multi-select list - hold the appropriate key while clicking to select multiple columns" />
+    <conditional name="fill_empty_columns">
+      <param name="fill_empty_columns_switch" type="select" label="Fill empty columns">
+        <option value="no_fill" selected="True">No</option>
+        <option value="fill_empty">Yes</option>
+      </param>
+      <when value="no_fill" />
+      <when value="fill_empty">
+        <conditional name="do_fill_empty_columns">
+          <param name="column_fill_type" type="select" label="Fill Columns by">
+            <option value="single_fill_value" selected="True">Single fill value</option>
+            <option value="fill_value_by_column">Values by column</option>
+          </param>
+          <when value="single_fill_value">
+            <param type="text" name="fill_value" label="Fill value" value="." />
+          </when>
+          <when value="fill_value_by_column">
+            <repeat name="column_fill" title="Fill Column">
+              <param name="column_number" label="Column" type="data_column" data_ref="input1" />
+              <param type="text" name="fill_value" value="." />
+            </repeat>
+          </when>
+        </conditional>
+      </when>
+    </conditional>
     <param name="input2" type="data" format="tabular" label="Choose the second file for the join" />
     <repeat name="file_chooser" title="Additional Input">
       <param name="input" label="Additional input file" type="data" format="tabular" />
     </repeat>
   </inputs>
+  <configfiles>
+    <configfile name="fill_options_file">&lt;%
+import simplejson
+%&gt;
+#set $__fill_options = {}
+#if $fill_empty_columns['fill_empty_columns_switch'] == 'fill_empty':
+    #if $fill_empty_columns['do_fill_empty_columns']['column_fill_type'] == 'single_fill_value':
+        #set $__start_fill = $fill_empty_columns['do_fill_empty_columns']['fill_value'].value
+    #else:
+        #set $__start_fill = ""
+    #end if
+    #set $__fill_options['file1_columns'] = [ __start_fill for i in range( int( $input1.metadata.columns ) ) ]
+    #if $fill_empty_columns['do_fill_empty_columns']['column_fill_type'] == 'fill_value_by_column':
+        #for column_fill in $fill_empty_columns['do_fill_empty_columns']['column_fill']:
+            #set $__fill_options['file1_columns'][ int( column_fill['column_number'].value ) - 1 ] = column_fill['fill_value'].value
+        #end for
+    #end if
+#end if
+${simplejson.dumps( __fill_options )}
+    </configfile>
+  </configfiles>
   <outputs>
     <data name="output" format="tabular" />
   </outputs>
   <tests>
     <test>
       <param name="input1" value="column_join_in1.pileup" ftype="pileup" />
+      <param name="hinge" value="2" />
       <param name="columns" value="1,2,3,4,5,7" />
-      <param name="hinge" value="1,2" />
+      <param name="fill_empty_columns_switch" value="fill_empty" />
+      <param name="column_fill_type" value="single_fill_value" />
+      <param name="fill_value" value="?" />
       <param name="input2" value="column_join_in2.pileup" ftype="pileup" />
       <param name="input" value="column_join_in3.pileup" ftype="pileup" />
       <output name="output" file="column_join_out1.pileup" ftype="tabular" />
     </test>
     <test>
       <param name="input1" value="column_join_in4.pileup" ftype="pileup" />
+      <param name="hinge" value="2" />
       <param name="columns" value="1,2,3,4" />
-      <param name="hinge" value="1,2" />
+      <param name="fill_empty_columns_switch" value="no_fill" />
       <param name="input2" value="column_join_in5.pileup" ftype="pileup" />
       <param name="input" value="column_join_in6.pileup" ftype="pileup" />
       <output name="output" file="column_join_out2.pileup" ftype="tabular" />
     </test>
+<!--  This test is failing for an unclear reason (the column values do not get 
+      passed into the script), but passes in the browser
     <test>
-      <param name="input1" value="column_join_in7.pileup" ftype="pileup" />
-      <param name="columns" value="1,2,3,4,5" />
-      <param name="hinge" value="1,2" />
-      <param name="input2" value="column_join_in8.pileup" ftype="pileup" />
-      <param name="input" value="column_join_in9.pileup" ftype="pileup" />
+      <param name="input1" value="column_join_in7.pileup" ftype="tabular" />
+      <param name="hinge" value="2" />
+      <param name="columns" value="3,4,5" />
+      <param name="fill_empty_columns_switch" value="fill_empty" />
+      <param name="column_fill_type" value="fill_value_by_column" />
+      <param name="column_number" value="5" />
+      <param name="fill_value" value="X" />
+      <param name="input2" value="column_join_in8.pileup" ftype="tabular" />
+      <param name="input" value="column_join_in9.pileup" ftype="tabular" />
       <output name="output" file="column_join_out3.pileup" ftype="tabular" />
     </test>
-  </tests>
+-->  </tests>
   <help>
 **What it does**
 

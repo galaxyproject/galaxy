@@ -13,7 +13,19 @@ usage: %prog output input1 input2 column1[,column2[,column3[,...]]] hinge1[,hing
 
 """
 
-import os, re, sys, tempfile
+import optparse, os, re, struct, sys, tempfile
+
+try:
+    simple_json_exception = None
+    from galaxy import eggs
+    from galaxy.util.bunch import Bunch
+    from galaxy.util import stringify_dictionary_keys
+    import pkg_resources
+    pkg_resources.require("simplejson")
+    import simplejson
+except Exception, e:
+    simplejson_exception = e
+    simplejson = None
 
 def stop_err( msg ):
     sys.stderr.write( msg )
@@ -136,17 +148,50 @@ def min_chr_pos( chr_pos ):
     return '%s\t%s' % tuple( min_ref_pos ), min_loc
 
 def __main__():
-    output = sys.argv[1]
-    input1 = sys.argv[2]
-    input2 = sys.argv[3]
-    hinge = int( sys.argv[4] )
-    cols = [ int( c ) for c in sys.argv[5].split( ',' ) ]
-    inputs = sys.argv[6:]
-    assert len( cols ) > 2, 'You need to select at least one column in addition to the first two'
+    parser = optparse.OptionParser()
+    parser.add_option( '', '--output', dest='output', help='' )
+    parser.add_option( '', '--input1', dest='input1', help='' )
+    parser.add_option( '', '--input2', dest='input2', help='' )
+    parser.add_option( '', '--hinge', dest='hinge', help='' )
+    parser.add_option( '', '--columns', dest='columns', help='' )
+    parser.add_option( '', '--fill_options_file', dest='fill_options_file', default=None, help='' )
+    (options, args) = parser.parse_args()
+    output = options.output
+    input1 = options.input1
+    input2 = options.input2
+    hinge = int( options.hinge )
+    cols = [ int( c ) for c in str( options.columns ).split( ',' ) if int( c ) > hinge ]
+    inputs = [ input1, input2 ]
+    if options.fill_options_file == "None":
+        inputs.extend( args )
+    else:
+        try:
+            col = int( args[0] )
+        except ValueError:
+            inputs.extend( args )
+    fill_options = None
+    if options.fill_options_file != "None" and options.fill_options_file is not None:
+        try:
+            if simplejson is None:
+                raise simplejson_exception
+            fill_options = Bunch( **stringify_dictionary_keys( simplejson.load( open( options.fill_options_file ) ) ) )
+        except Exception, e:
+            print "Warning: Ignoring fill options due to simplejson error (%s)." % e
+    if fill_options is None:
+        fill_options = Bunch()
+    if 'file1_columns' not in fill_options:
+        fill_options.file1_columns = None
+    if fill_options and fill_options.file1_columns:
+        fill_empty = {}
+        for col in cols:
+            fill_empty[ col ] = fill_options.file1_columns[ col - 1 ]
+    else:
+        fill_empty = None
+    assert len( cols ) > 0, 'You need to select at least one column in addition to the hinge'
+    delimiter = '\t'
     # make sure all files are sorted in same way, ascending
     tmp_input_files = []
-    input_files = [ input1, input2 ]
-    input_files.extend( inputs ) 
+    input_files = inputs[:]
     for in_file in input_files:
         tmp_file = tempfile.NamedTemporaryFile()
         tmp_file_name = tmp_file.name
@@ -162,10 +207,9 @@ def __main__():
     current_lines = [ f.readline() for f in tmp_input_files ]
     last_lines = ''.join( current_lines ).strip()
     last_loc = -1
-    i = 0
     while last_lines:
         # get the "minimum" hinge, which should come first, and the file location in list
-        hinges = [ '\t'.join( line.split( '\t' )[ :hinge ] ) for line in current_lines ]
+        hinges = [ delimiter.join( line.split( delimiter )[ :hinge ] ) for line in current_lines ]
         hinge_dict = {}
         for i in range( len( hinges ) ):
             if not hinge_dict.has_key( hinges[ i ] ):
@@ -174,33 +218,59 @@ def __main__():
         hinges = [ h for h in hinges if h ]
         current, loc = hinges[0], hinge_dict[ hinges[0] ]
         # first output empty columns for vertical alignment (account for "missing" files)
+        # write output if trailing empty columns
+        current_data = []
         if current != old_current:
-            last_loc = -1
-        if loc - last_loc > 1:
-            current_data = [ '' for col in range( ( loc - last_loc - 1 ) * len( [ col for col in cols if col > hinge ] ) ) ]
+            # fill trailing empty columns with appropriate fill value
+            if not first_line:
+                if last_loc < len( inputs ) - 1:
+                    if not fill_empty:
+                        filler = [ '' for col in range( ( len( inputs ) - last_loc - 1 ) * len( cols ) ) ]
+                    else:
+                        filler = [ fill_empty[ cols[ col % len( cols ) ] ] for col in range( ( len( inputs ) - last_loc - 1 ) * len( cols ) ) ]
+                    fout.write( '%s%s' % ( delimiter, delimiter.join( filler ) ) )
+                # insert line break before current line
+                fout.write( '\n' )
+            # fill leading empty columns with appropriate fill value
+            if loc > 0:
+                if not fill_empty:
+                    current_data = [ '' for col in range( loc * len( cols ) ) ]
+                else:
+                    current_data = [ fill_empty[ cols[ col % len( cols ) ] ] for col in range( loc * len( cols ) ) ]
         else:
-            current_data = []
+            if loc - last_loc > 1:
+                if not fill_empty:
+                    current_data = [ '' for col in range( ( loc - last_loc - 1 ) * len( cols ) ) ]
+                else:
+                    current_data = [ fill_empty[ cols[ col % len( cols ) ] ] for col in range( ( loc - last_loc - 1 ) * len( cols ) ) ]
         # now output actual data
-        split_line = current_lines[ loc ].strip().split( '\t' )
+        split_line = current_lines[ loc ].strip().split( delimiter )
         if ''.join( split_line ):
+            # add actual data to be output below
             for col in cols:
                 if col > hinge:
                     current_data.append( split_line[ col - 1 ] )
+            # grab next line for selected file
             current_lines[ loc ] = tmp_input_files[ loc ].readline()
+            # write relevant data to file
             if current == old_current:
-                if current_data:
-                    fout.write( '\t%s' % '\t'.join( current_data ) )
+                fout.write( '%s%s' % ( delimiter, delimiter.join( current_data ) ) )
             else:
-                if not first_line:
-                    fout.write( '\n' )
-                fout.write( '%s\t%s' % ( current, '\t'.join( current_data ) ) )
-                first_line = False
+                fout.write( '%s%s%s' % ( current, delimiter, delimiter.join( current_data ) ) )
+        last_loc = loc
         old_current = current
         last_lines = ''.join( current_lines ).strip()
-        last_loc = loc
+        first_line = False
+    # fill trailing empty columns for final line
+    if last_loc < len( inputs ) - 1:
+        if not fill_empty:
+            filler = [ '' for col in range( ( len( inputs ) - last_loc - 1 ) * len( cols ) ) ]
+        else:
+            filler = [ fill_empty[ cols[ col % len( cols ) ] ] for col in range( ( len( inputs ) - last_loc - 1 ) * len( cols ) ) ]
+        fout.write( '%s%s' % ( delimiter, delimiter.join( filler ) ) )
     fout.write( '\n' )
+    fout.close()
     for f in tmp_input_files:
         os.unlink( f.name )
-    fout.close()
 
 if __name__ == "__main__" : __main__()
