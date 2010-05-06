@@ -292,6 +292,11 @@ $(document).ready(function(){
                 </select>
             %elif field['type'] == 'WorkflowField':
                 <select name="sample_${index}_field_${field_index}">
+                    %if str(sample_values[field_index]) == 'none':
+                        <option value="none" selected>Select one</option>
+                    %else:
+                        <option value="none">Select one</option>
+                    %endif
                     %for option_index, option in enumerate(request.user.stored_workflows):
                         %if not option.deleted:
                             %if str(option.id) == str(sample_values[field_index]):
@@ -320,8 +325,10 @@ $(document).ready(function(){
         <td>
             %if sample_values[field_index]:
                 %if field['type'] == 'WorkflowField':
-                    <% workflow = trans.sa_session.query( trans.app.model.StoredWorkflow ).get( int(sample_values[field_index]) ) %>
-                    <a href="${h.url_for( controller='workflow', action='run', id=trans.security.encode_id(workflow.id) )}">${workflow.name}</a>
+                    %if str(sample_values[field_index]) != 'none':
+                        <% workflow = trans.sa_session.query( trans.app.model.StoredWorkflow ).get( int(sample_values[field_index]) ) %>
+                        <a href="${h.url_for( controller='workflow', action='run', id=trans.security.encode_id(workflow.id) )}">${workflow.name}</a>
+                    %endif
                 %else:
                     ${sample_values[field_index]}
                 %endif

@@ -1773,23 +1773,23 @@ class RequestsAdmin( BaseController ):
                                     message=message,
                                     status=status)
         
-#    def __sample_datasets(self, trans, **kwd):
-#        samples = trans.sa_session.query( trans.app.model.Sample ).all()
-#        for s in samples:
-#            if s.dataset_files:
-#                newdf = []
-#                for df in s.dataset_files:
-#                    if type(s.dataset_files[0]) == type([1,2]):
-#                        filepath = df[0]
-#                        status = df[1]
-#                        newdf.append(dict(filepath=filepath,
-#                                          status=status,
-#                                          name=filepath.split('/')[-1],
-#                                          error_msg='',
-#                                          size='Unknown'))
-#                        s.dataset_files = newdf
-#                        trans.sa_session.add( s )
-#                        trans.sa_session.flush()
+    def __sample_datasets(self, trans, **kwd):
+        samples = trans.sa_session.query( trans.app.model.Sample ).all()
+        for s in samples:
+            if s.dataset_files:
+                newdf = []
+                for df in s.dataset_files:
+                    if type(s.dataset_files[0]) == type([1,2]):
+                        filepath = df[0]
+                        status = df[1]
+                        newdf.append(dict(filepath=filepath,
+                                          status=status,
+                                          name=filepath.split('/')[-1],
+                                          error_msg='',
+                                          size='Unknown'))
+                        s.dataset_files = newdf
+                        trans.sa_session.add( s )
+                        trans.sa_session.flush()
 #                
 ##
 #### Request Type Stuff ###################################################
