@@ -48,13 +48,13 @@
         <data format="tabular" name="genes_exp" label="${tool.name} on ${on_string}: gene expression"/>
         <data format="tabular" name="tss_groups_exp" label="${tool.name} on ${on_string}: TSS groups expression"/>
         <data format="tabular" name="cds_exp_fpkm_tracking" label="${tool.name} on ${on_string}: CDS Expression FPKM Tracking"/>
-        <data format="tabular" name="splicing_diff" label="${tool.name} on ${on_string}: splicing diff"/>
-        <data format="tabular" name="cds_diff" label="${tool.name} on ${on_string}: CDS diff"/>
-        <data format="tabular" name="promoters_diff" label="${tool.name} on ${on_string}: promoters diff"/>
+        <data format="tabular" name="isoforms_fpkm_tracking" label="${tool.name} on ${on_string}: isoform FPKM tracking"/>
+        <data format="tabular" name="genes_fpkm_tracking" label="${tool.name} on ${on_string}: gene FPKM tracking"/>
         <data format="tabular" name="tss_groups_fpkm_tracking" label="${tool.name} on ${on_string}: TSS groups FPKM tracking" />
         <data format="tabular" name="cds_fpkm_tracking" label="${tool.name} on ${on_string}: CDS FPKM tracking"/>
-        <data format="tabular" name="genes_fpkm_tracking" label="${tool.name} on ${on_string}: gene FPKM tracking"/>
-        <data format="tabular" name="isoforms_fpkm_tracking" label="${tool.name} on ${on_string}: isoform FPKM tracking"/>        
+        <data format="tabular" name="splicing_diff" label="${tool.name} on ${on_string}: splicing diff"/>
+        <data format="tabular" name="promoters_diff" label="${tool.name} on ${on_string}: promoters diff"/>
+        <data format="tabular" name="cds_diff" label="${tool.name} on ${on_string}: CDS diff"/>
     </outputs>
 
     <tests>
@@ -65,7 +65,7 @@
     <help>
 **Cuffdiff Overview**
 
-Cuffdiff is part of Cufflinks_. Cuffdiff find significant changes in transcript expression, splicing, and promoter use. Please cite: Trapnell C, Williams BA, Pertea G, Mortazavi AM, Kwan G, van Baren MJ, Salzberg SL, Wold B, Pachter L. Transcript assembly and abundance estimation from RNA-Seq reveals thousands of new transcripts and switching among isoforms. (manuscript in press)
+Cuffdiff is part of Cufflinks_. Cuffdiff find significant changes in transcript expression, splicing, and promoter use. Please cite: Trapnell C, Williams BA, Pertea G, Mortazavi AM, Kwan G, van Baren MJ, Salzberg SL, Wold B, Pachter L. Transcript assembly and abundance estimation from RNA-Seq reveals thousands of new transcripts and switching among isoforms. Nature Biotechnology doi:10.1038/nbt.1621
 
 .. _Cufflinks: http://cufflinks.cbcb.umd.edu/
         
@@ -91,7 +91,19 @@ Cuffcompare takes Cufflinks or Cuffcompare GTF files as input along with two SAM
 
 **Outputs**
 
-TODO
+Cuffdiff produces many output files:
+
+1. Transcript FPKM expression tracking.
+2. Gene FPKM expression tracking; tracks the summed FPKM of transcripts sharing each gene_id
+3. Primary transcript FPKM tracking; tracks the summed FPKM of transcripts sharing each tss_id
+4. Coding sequence FPKM tracking; tracks the summed FPKM of transcripts sharing each p_id, indepedent of tss_id
+5. Transcript differential FPKM.
+6. Gene differential FPKM. Tests difference sin the summed FPKM of transcripts sharing each gene_id
+7. Primary transcript differential FPKM. Tests difference sin the summed FPKM of transcripts sharing each tss_id
+8. Coding sequence differential FPKM. Tests difference sin the summed FPKM of transcripts sharing each p_id independent of tss_id
+9. Differential splicing tests: this tab delimited file lists, for each primary transcript, the amount of overloading detected among its isoforms, i.e. how much differential splicing exists between isoforms processed from a single primary transcript. Only primary transcripts from which two or more isoforms are spliced are listed in this file.
+10. Differential promoter tests: this tab delimited file lists, for each gene, the amount of overloading detected among its primary transcripts, i.e. how much differential promoter use exists between samples. Only genes producing two or more distinct primary transcripts (i.e. multi-promoter genes) are listed here.
+11. Differential CDS tests: this tab delimited file lists, for each gene, the amount of overloading detected among its coding sequences, i.e. how much differential CDS output exists between samples. Only genes producing two or more distinct CDS (i.e. multi-protein genes) are listed here.
     
 -------
 

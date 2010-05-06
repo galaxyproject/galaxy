@@ -93,7 +93,7 @@
     <help>
 **Cuffcompare Overview**
 
-Cuffcompare is part of Cufflinks_. Cuffcompare helps you: (a) compare your assembled transcripts to a reference annotation and (b) track Cufflinks transcripts across multiple experiments (e.g. across a time course). Please cite: Trapnell C, Williams BA, Pertea G, Mortazavi AM, Kwan G, van Baren MJ, Salzberg SL, Wold B, Pachter L. Transcript assembly and abundance estimation from RNA-Seq reveals thousands of new transcripts and switching among isoforms. (manuscript in press)
+Cuffcompare is part of Cufflinks_. Cuffcompare helps you: (a) compare your assembled transcripts to a reference annotation and (b) track Cufflinks transcripts across multiple experiments (e.g. across a time course). Please cite: Trapnell C, Williams BA, Pertea G, Mortazavi AM, Kwan G, van Baren MJ, Salzberg SL, Wold B, Pachter L. Transcript assembly and abundance estimation from RNA-Seq reveals thousands of new transcripts and switching among isoforms. Nature Biotechnology doi:10.1038/nbt.1621
 
 .. _Cufflinks: http://cufflinks.cbcb.umd.edu/
         
