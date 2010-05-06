@@ -35,6 +35,7 @@
     <tool file="filters/changeCase.xml" />
     <tool file="filters/pasteWrapper.xml" />
     <tool file="filters/remove_beginning.xml" />
+    <tool file="filters/randomlines.xml" />
     <tool file="filters/headWrapper.xml" />
     <tool file="filters/tailWrapper.xml" />
      <tool file="filters/trimmer.xml" />

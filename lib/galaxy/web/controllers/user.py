@@ -902,7 +902,18 @@ class User( BaseController ):
             if not name or not key or not len_text:
                 message = "You must specify values for all the fields."
             else:
-                chrom_dict = {}
+                # Create new len file
+                new_len = trans.app.model.HistoryDatasetAssociation( extension="len", create_dataset=True, sa_session=trans.sa_session )
+                trans.sa_session.add( new_len )
+                new_len.name = name
+                new_len.visible = False
+                new_len.history_id = trans.get_history().id
+                new_len.state = trans.app.model.Job.states.OK
+                new_len.info = "custom build .len file"
+                trans.sa_session.flush()
+                
+                counter = 0
+                f = open(new_len.file_name, "w")
                 for line in len_text.split("\n"):
                     lst = line.strip().split()
                     if not lst or len(lst) < 2:
@@ -914,8 +925,10 @@ class User( BaseController ):
                     except ValueError:
                         lines_skipped += 1
                         continue
-                    chrom_dict[chrom] = length
-                dbkeys[key] = { "name": name, "chroms": chrom_dict }
+                    counter += 1
+                    f.write("%s\t%s\n" % (chrom, length))
+                f.close()
+                dbkeys[key] = { "name": name, "len": new_len.id, "count": counter }
         
         user.preferences['dbkeys'] = to_json_string(dbkeys)
         trans.sa_session.flush()

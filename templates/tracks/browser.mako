@@ -272,7 +272,6 @@ ${h.js( 'galaxy.base', 'galaxy.panels', "json2", "jquery", "jquery.event.drag", 
             
             $.ajax({
                 url: "${h.url_for( action='chroms' )}", 
-                ## If vis is new, it doesn't have an id, so send the dbkey instead.
                 %if config.get('vis_id'):
                     data: { vis_id: view.vis_id },
                 %else:
@@ -327,7 +326,7 @@ ${h.js( 'galaxy.base', 'galaxy.panels', "json2", "jquery", "jquery.event.drag", 
                         $("#track_" + track_id + "_editable").toggle();
                     });
                     del_icon.bind("click", function() {
-                        $("#track_" + track_id + "_li").fadeOut('slow', function() { $("#track_" + track_id).remove(); });
+                        $("#track_" + track_id + "_li").fadeOut('slow', function() { $("#track_" + track_id + "_li").remove(); });
                         view.remove_track(track);
                         view.update_options();
                     });
@@ -354,4 +353,3 @@ ${h.js( 'galaxy.base', 'galaxy.panels', "json2", "jquery", "jquery.event.drag", 
 
 </script>
 </%def>
-

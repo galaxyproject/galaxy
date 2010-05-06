@@ -99,7 +99,7 @@ class TracksController( BaseController, UsesVisualization ):
         user = trans.get_user()
         if 'dbkeys' in user.preferences:
             user_keys = from_json_string( user.preferences['dbkeys'] )
-            
+        
         dbkeys = [ (k, v) for k, v in trans.db_builds if k in self.len_files or k in user_keys ]
         return trans.fill_template( "tracks/new_browser.mako", dbkeys=dbkeys )
             
@@ -197,21 +197,24 @@ class TracksController( BaseController, UsesVisualization ):
         """
         Helper method that returns chrom lengths for a given user and dbkey.
         """
+        len_file = None
+        len_ds = None
         # If there is any dataset in the history of extension `len`, this will use it
         if 'dbkeys' in user.preferences:
             user_keys = from_json_string( user.preferences['dbkeys'] )
             if dbkey in user_keys:
-                return user_keys[dbkey]['chroms']
+                len_file = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( user_keys[dbkey]['len'] ).file_name
             
-        db_manifest = trans.db_dataset_for( dbkey )
-        if not db_manifest:
-            db_manifest = os.path.join( trans.app.config.tool_data_path, 'shared','ucsc','chrom', "%s.len" % dbkey )
-        else:
-            db_manifest = db_manifest.file_name
+        if not len_file:
+            len_ds = trans.db_dataset_for( dbkey )
+            if not len_ds:
+                len_file = os.path.join( trans.app.config.tool_data_path, 'shared','ucsc','chrom', "%s.len" % dbkey )
+            else:
+                len_file = len_ds.file_name
         manifest = {}
-        if not os.path.exists( db_manifest ):
+        if not os.path.exists( len_file ):
             return None
-        for line in open( db_manifest ):
+        for line in open( len_file ):
             if line.startswith("#"): continue
             line = line.rstrip("\r\n")
             fields = line.split("\t")
@@ -240,7 +243,9 @@ class TracksController( BaseController, UsesVisualization ):
 
             # Need to check states again for the converted version
             if converted_dataset and converted_dataset.state == model.Dataset.states.ERROR:
-                return messages.ERROR
+                job_id = trans.sa_session.query( trans.app.model.JobToOutputDatasetAssociation ).filter_by( dataset_id=converted_dataset.id ).first().job_id
+                job = trans.sa_session.query( trans.app.model.Job ).get( job_id )
+                return { 'kind': messages.ERROR, 'message': job.stderr }
                 
             if not converted_dataset or converted_dataset.state != model.Dataset.states.OK:
                 return messages.PENDING
@@ -256,13 +261,17 @@ class TracksController( BaseController, UsesVisualization ):
                     extra_info = "no_detail"
                 else:
                     frequencies, max_v, avg_v, delta = summary
-                    return { "dataset_type": data_sources['index'], "data": frequencies, "max": max_v, "avg": avg_v, "delta": delta }
+                    return { 'dataset_type': data_sources['index'], 'data': frequencies, 'max': max_v, 'avg': avg_v, 'delta': delta }
         
         dataset_type = data_sources['data']
         data_provider = dataset_type_to_data_provider[ dataset_type ]( dataset.get_converted_dataset(trans, dataset_type), dataset )
-
+        
         data = data_provider.get_data( chrom, low, high, **kwargs )
-        return { "dataset_type": dataset_type, "extra_info": extra_info, "data": data }
+        message = None
+        if isinstance(data, dict) and 'message' in data:
+            message = data['message']
+            data = data['data']
+        return { 'dataset_type': dataset_type, 'extra_info': extra_info, 'data': data, 'message': message }
     
     @web.expose
     def list_tracks( self, trans, hid ):

@@ -41,23 +41,26 @@ $(function() {
         <tr class="header">
             <th>Name</th>
             <th>Key</th>
-            <th>Chroms/Lengths</th>
+            <th>Number of Chroms</th>
             <th></th>
         </tr>
     % for key, dct in dbkeys.iteritems():
         <tr>
-            <td>${dct["name"] | h}</td>
+            <td>${dct['name'] | h}</td>
             <td>${key | h}</td>
             <td>
-                <span>${len(dct["chroms"])} entries</span>
-                <pre id="pre_${key}" class="db_hide">
-                    <table cellspacing="0" cellpadding="0">
-                        <tr><th>Chrom</th><th>Length</th></tr>
-                        % for chrom, chrom_len in dct["chroms"].iteritems():
-                            <tr><td>${chrom | h}</td><td>${chrom_len | h}</td></tr>
-                        % endfor
-                    </table>
-                </pre>
+##                <span>${len(dct["chroms"])} entries</span>
+##                <pre id="pre_${key}" class="db_hide">
+##                    <table cellspacing="0" cellpadding="0">
+##                        <tr><th>Chrom</th><th>Length</th></tr>
+##                        % for chrom, chrom_len in dct["chroms"].iteritems():
+##                            <tr><td>${chrom | h}</td><td>${chrom_len | h}</td></tr>
+##                        % endfor
+##                    </table>
+##                </pre>
+                % if 'count' in dct:
+                    ${dct['count']}
+                % endif
             </td>
             <td><form action="dbkeys" method="post"><input type="hidden" name="key" value="${key}" /><input type="submit" name="delete" value="Delete" /></form></td>
         </tr>

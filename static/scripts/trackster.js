@@ -5,7 +5,7 @@ var DEBUG = false;
 
 var DENSITY = 200,
     FEATURE_LEVELS = 10,
-    DATA_ERROR = "There was an error in indexing this dataset.",
+    DATA_ERROR = "There was an error in indexing this dataset. ",
     DATA_NOCONVERTER = "A converter for this dataset is not installed. Please check your datatypes_conf.xml file.",
     DATA_NONE = "No data for this chrom/contig.",
     DATA_PENDING = "Currently indexing... please wait",
@@ -118,17 +118,15 @@ $.extend( View.prototype, {
     },
     remove_track: function( track ) {
         track.container_div.fadeOut('slow', function() { $(this).remove(); });
-        delete this.tracks[track];        
+        delete this.tracks.splice(this.tracks.indexOf(track));
     },
     update_options: function() {
         var sorted = $("ul#sortable-ul").sortable('toArray');
-        var payload = [];
+        for (var id_i in sorted) {
+            var id = sorted[id_i].split("_li")[0].split("track_")[1];
+            $("#viewport").append( $("#track_" + id) );
+        }
         
-        var divs = $("#viewport > div").sort(function (a, b) {
-            return sorted.indexOf( $(a).attr('id') ) > sorted.indexOf( $(b).attr('id') );
-        });
-        $("#viewport > div").remove();
-        $("#viewport").html(divs);
         for (var track_id in view.tracks) {
             var track = view.tracks[track_id];
             if (track.update_options) {
@@ -234,13 +232,22 @@ $.extend( Track.prototype, {
 
         if (track.view.chrom) {
             $.getJSON( data_url, params, function (result) {
-                if (!result || result === "error") {
+                if (!result || result === "error" || result.kind === "error") {
                     track.container_div.addClass("error");
                     track.content_div.text(DATA_ERROR);
+                    if (result.message) {
+                        var track_id = track.view.tracks.indexOf(track);
+                        var error_link = $("<a href='javascript:void(0);'></a>").attr("id", track_id + "_error");
+                        error_link.text("Click to view error");
+                        $("#" + track_id + "_error").live("click", function() {                        
+                            show_modal( "Trackster Error", "<pre>" + result.message + "</pre>", { "Close" : hide_modal } );
+                        });
+                        track.content_div.append(error_link);
+                    }
                 } else if (result === "no converter") {
                     track.container_div.addClass("error");
                     track.content_div.text(DATA_NOCONVERTER);
-                } else if (result.data && result.data.length === 0 || result.data === null) {
+                } else if (result.data !== undefined && (result.data === null || result.data.length === 0)) {
                     track.container_div.addClass("nodata");
                     track.content_div.text(DATA_NONE);
                 } else if (result === "pending") {
@@ -441,7 +448,6 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
         
         var result = this.data_cache.get(key);
         if (result === null) { return; }
-        console.log(result);
         
         canvas.css( {
             position: "absolute",

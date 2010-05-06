@@ -10,7 +10,7 @@ from math import floor, ceil, log
 import logging
 log = logging.getLogger(__name__)
 
-MAX_VALS = 50 # only display first MAX_VALS datapoints
+MAX_VALS = 5000 # only display first MAX_VALS datapoints
 
 class BamDataProvider( object ):
     """
@@ -36,7 +36,7 @@ class BamDataProvider( object ):
             if chrom.startswith( 'chr' ):
                 try:
                     data = bamfile.fetch( start=start, end=end, reference=chrom[3:] )
-                except:
+                except ValueError:
                     return None
             else:
                 return None
@@ -74,4 +74,4 @@ class BamDataProvider( object ):
             results.append( [ qname, start, end, read['seq'], r1, r2 ] )
             
         bamfile.close()
-        return results
+        return { 'data': results, 'message': message }
