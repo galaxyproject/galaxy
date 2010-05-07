@@ -248,9 +248,12 @@
         var url_args = ${h.to_json_string( cur_filter_dict )};
         
         // Place "f-" in front of all filter arguments.
-        $.map(url_args, function(arg) {
-            return "f-" + arg;
-        });
+        for (arg in url_args)
+        {
+            value = url_args[arg];
+            delete url_args[arg];
+            url_args["f-" + arg] = value;
+        }
         
         // Add sort argument to URL args.
         url_args['sort'] = "${encoded_sort_key}";
