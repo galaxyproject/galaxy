@@ -145,12 +145,16 @@ function naturalSort(a, b){
 }
 
 // Replace select box with a text input box + autocomplete.
-// TODO: make work with dynamic tool inputs and then can replace all big selects.
+// TODO: make work with selects where refresh_on_change=True and refresh_on_change_values="..."
 function replace_big_select_inputs(min_length) {
-    $('select[name=dbkey]').each( function() {
+    // Set default for min_length.
+    if (min_length === undefined)
+        min_length = 20;
+    
+    $('select[refresh_on_change!="true"]').each( function() {
         var select_elt = $(this);
-        // Skip if # of options < threshold
-        if (min_length !== undefined && select_elt.find('option').length < min_length)
+        // Skip if # of options < min length.
+        if (select_elt.find('option').length < min_length)
             return;
 
         // Replace select with text + autocomplete.
