@@ -147,4 +147,4 @@ div.permissionContainer{padding-left:20px;}
 .tipsy-west{background-position:left center;}
 .editable-text{cursor:pointer;}
 .editable-text:hover{cursor: text;border: dotted #999999 1px;}
-.text-and-autocomplete-select{background-image:url(/static/images/fugue/plus-white.png);background-repeat: no-repeat;background-position:top right;}
+.text-and-autocomplete-select{background-image:url(/static/images/fugue/control-270.png);background-repeat: no-repeat;background-position:right;}
