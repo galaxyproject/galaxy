@@ -239,7 +239,7 @@ ${h.js( 'galaxy.base', 'galaxy.panels', "json2", "jquery", "jquery.event.drag", 
                 var sorted = $("ul#sortable-ul").sortable('toArray');
                 var payload = [];
                 for (var i in sorted) {
-                    var track_id = parseInt(sorted[i].split("track_")[1]),
+                    var track_id = parseInt(sorted[i].split("track_")[1].split("_li")[0]),
                         track = view.tracks[track_id];
                     
                     payload.push( {

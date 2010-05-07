@@ -118,7 +118,7 @@ $.extend( View.prototype, {
     },
     remove_track: function( track ) {
         track.container_div.fadeOut('slow', function() { $(this).remove(); });
-        delete this.tracks.splice(this.tracks.indexOf(track));
+        delete this.tracks[this.tracks.indexOf(track)];
     },
     update_options: function() {
         var sorted = $("ul#sortable-ul").sortable('toArray');
@@ -129,7 +129,7 @@ $.extend( View.prototype, {
         
         for (var track_id in view.tracks) {
             var track = view.tracks[track_id];
-            if (track.update_options) {
+            if (track && track.update_options) {
                 track.update_options(track_id);
             }
         }
@@ -173,7 +173,7 @@ $.extend( View.prototype, {
         $("#high").val( commatize(this.high) );
         if (!nodraw) {
             for ( var i = 0, len = this.tracks.length; i < len; i++ ) {
-                if (this.tracks[i].enabled) {
+                if (this.tracks[i] && this.tracks[i].enabled) {
                     this.tracks[i].draw();
                 }
             }
