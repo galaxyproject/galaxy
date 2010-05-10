@@ -1002,16 +1002,16 @@ def doIBS(n=100):
     expect 'input pbed path' 'basename' 'outpath' 'title' 'logpath' 'n'
     <command interpreter="python">
          rgGRR.py $i.extra_files_path/$i.metadata.base_name "$i.metadata.base_name"
-        '$out_file1' '$out_file1.files_path' "$title"  '$n' '$Z'         
+        '$out_file1' '$out_file1.files_path' "$title1"  '$n' '$Z' '$force'
     </command>
 
     """
     u="""<command interpreter="python">
          rgGRR.py $i.extra_files_path/$i.metadata.base_name "$i.metadata.base_name"
-        '$out_file1' '$out_file1.files_path' "$title"  '$n' '$Z'         
+        '$out_file1' '$out_file1.files_path' "$title"  '$n' '$Z' '$force'        
         </command>"""
 
-    if len(sys.argv) < 8:
+    if len(sys.argv) < 9:
         print >> sys.stdout, 'Need pbed inpath, basename, out_htmlname, outpath, title, logpath, nSNP, Zcutoff on command line please'
         print >> sys.stdout, u
         sys.exit(1)
@@ -1030,13 +1030,17 @@ def doIBS(n=100):
         Zcutoff = float(sys.argv[7])
     except:
         Zcutoff = 2.0
+    if sys.argv[7].lower()=='true':
+        forcerebuild = True
+    else:
+        forcerebuild = False
     try:
         os.makedirs(newfilepath)
     except:
         pass
     logf = file(logpath,'w')
     efp,ibase_name = os.path.split(inpath) # need to use these for outputs in files_path
-    ped,loglines = openOrMakeLDreduced(basename,ldpath,plinke)
+    ped,loglines = openOrMakeLDreduced(basename,ldpath,plinke,forcerebuild)
     if ped == None:
         print >> sys.stderr, '## doIBSpy problem - cannot open %s or %s - cannot run' % (ldreduced,basename)
         sys.exit(1)

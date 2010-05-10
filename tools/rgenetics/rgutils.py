@@ -280,7 +280,7 @@ def readMap(mapfile=None,allmarkers=False,rsdict={},c=None,spos=None,epos=None):
     mfile.close()
     return markers,snpcols,rslist,rsdict
 
-def openOrMakeLDreduced(basename,newfpath,plinke):
+def openOrMakeLDreduced(basename,newfpath,plinke='plink',forcerebuild=False):
     """ move out of the way - highly specific plink function to create or open
     an ld reduced and thinned data set for one of the ibs/grr methods..
     this should be part of the plinkJZ stuff - or bought in here maybe
@@ -300,14 +300,15 @@ def openOrMakeLDreduced(basename,newfpath,plinke):
     pedfn = os.path.join(newfpath,pedname)
     bmap = os.path.join(newfpath,'%s.bim' % basename)
     pmap = os.path.join(newfpath,'%s.map' % basename)
-    if os.path.exists(ldbedfn): # joy. already done
-        ped = plinkbinJZ.BPed(ldreduced)
-        ped.parse(quick=True)
-        return ped,loglines
-    if os.path.exists(ldpedfn): # why bother - for completeness I guess
-        ped = plinkbinJZ.LPed(ldreduced)
-        ped.parse()
-        return ped,loglines
+    if not forcerebuild:
+        if os.path.exists(ldbedfn): # joy. already done
+            ped = plinkbinJZ.BPed(ldreduced)
+            ped.parse(quick=True)
+            return ped,loglines
+        if os.path.exists(ldpedfn): # why bother - for completeness I guess
+            ped = plinkbinJZ.LPed(ldreduced)
+            ped.parse()
+            return ped,loglines
     if os.path.exists(bedfn): # run ld prune and thin and save these for next time
         nsnp = len(open(bmap,'r').readlines())
         plinktasks = [['--bfile',basename,'--indep-pairwise 50 40 0.2','--out %s' % basename],
@@ -320,6 +321,7 @@ def openOrMakeLDreduced(basename,newfpath,plinke):
         vclbase = [plinke,'--noweb']
         loglines = pruneLD(plinktasks=plinktasks,cd=newfpath,vclbase = vclbase)
         ped = plinkbinJZ.BPed(ldreduced)
+        ped.parse(quick=True)
         return ped,loglines
     if pedname and os.path.exists(pedfn): # screw it - return a bed - quicker to process
         nsnp = len(open(pmap,'r').readlines())

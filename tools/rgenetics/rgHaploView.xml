@@ -105,9 +105,9 @@
     <extra_files type="file" name='allnup.pdf' value="rgtestouts/rgHaploView/allnup.pdf" compare="diff" lines_diff="3675" />
     <extra_files type="file" name='Log_rgHaploViewtest1.txt' value="rgtestouts/rgHaploView/Log_rgHaploViewtest1.txt" compare="diff" lines_diff="20"/>
     <extra_files type="file" name='rgHaploViewtest1.ped.TESTS' value="rgtestouts/rgHaploView/rgHaploViewtest1.ped.TESTS" compare="diff" 
-            lines_diff="16"/>
+            lines_diff="20"/>
     <extra_files type="file" name='rgHaploViewtest1.ped.TAGS' value="rgtestouts/rgHaploView/rgHaploViewtest1.ped.TAGS" compare="diff"
-            lines_diff="16" />
+            lines_diff="20" />
  </output>
  </test>
 </tests>

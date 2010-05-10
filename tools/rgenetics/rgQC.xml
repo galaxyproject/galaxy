@@ -27,7 +27,7 @@
     <composite_data value='tinywga.fam' />
     </param>
     <param name='out_prefix' value='rgQCtest1' />
-    <output name='html_file' file='rgtestouts/rgQC/rgQCtest1.html' ftype='html' lines_diff='260'>
+    <output name='html_file' file='rgtestouts/rgQC/rgQCtest1.html' ftype='html' lines_diff='280'>
     <extra_files type="file" name='tinywga_All_Paged.pdf' value="rgtestouts/rgQC/tinywga_All_Paged.pdf" compare="diff" lines_diff="2600"/>
     <extra_files type="file" name='tinywga.log' value="rgtestouts/rgQC/tinywga.log" compare="diff" lines_diff="10"/>
     <extra_files type="file" name='tinywga.frq' value="rgtestouts/rgQC/tinywga.frq" compare="diff" />
