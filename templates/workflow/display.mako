@@ -108,7 +108,11 @@
               </div>
             %endif
             </td>
-            <td class="annotation">${step.annotation}</td>
+            <td class="annotation">
+                %if hasattr( step, "annotation") and step.annotation is not None:
+                    ${step.annotation}
+                %endif                
+            </td>
             </tr>
         %endfor
     </table>
