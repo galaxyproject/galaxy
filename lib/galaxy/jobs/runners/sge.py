@@ -165,6 +165,15 @@ class SGEJobRunner( object ):
             jt.nativeSpecification = ' '.join(nativeSpec)
 
         script = sge_template % (job_wrapper.galaxy_lib_dir, os.path.abspath( job_wrapper.working_directory ), command_line)
+        if self.app.config.set_metadata_externally:
+            output_fnames = [ str( o ) for o in job_wrapper.get_output_fnames() ]
+            script += "cd %s\n" % os.path.abspath( os.getcwd() )
+            script += "%s\n" % job_wrapper.setup_external_metadata( exec_dir = os.path.abspath( os.getcwd() ),
+                                                                    tmp_dir = self.app.config.new_file_path,
+                                                                    dataset_files_path = self.app.model.Dataset.file_path,
+                                                                    output_fnames = output_fnames,
+                                                                    set_extension = False,
+                                                                    kwds = { 'overwrite' : False } ) #we don't want to overwrite metadata that was copied over in init_meta(), as per established behavior
         fh = file( jt.remoteCommand, "w" )
         fh.write( script )
         fh.close()
