@@ -122,7 +122,7 @@ class InputDataModule( WorkflowModule ):
             .add_text( "name", "Name", value=self.state['name'] )
         return self.trans.fill_template( "workflow/editor_generic_form.mako",
                                          module=self, form=form )
-    def get_state( self ):
+    def get_state( self, secure=True ):
         return to_json_string( self.state )
     
     def update_state( self, incoming ):
