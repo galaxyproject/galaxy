@@ -1,0 +1,32 @@
+<tool id="filter_combined_via_tracking" name="Filter Combined Transcripts" version="0.1">
+    <description>using tracking file</description>
+    <command interpreter="python">
+        filter_transcripts_via_tracking.py 
+            $tracking_file
+            $transcripts_file
+            $filtered_transcripts
+            $sample_num
+    </command>
+    <inputs>
+        <param format="gtf" name="transcripts_file" type="data" label="Cufflinks assembled transcripts" help=""/>
+        <param format="tabular" name="tracking_file" type="data" label="Cuffcompare tracking file" help=""/>
+        <param name="sample_num" type="select" label="Sample Number">
+            <option value="1">1</option>
+            <option value="2">2</option>
+        </param>
+    </inputs>
+
+    <outputs>
+        <data format="gtf" name="filtered_transcripts"/>
+    </outputs>
+
+    <tests>
+    </tests>
+
+    <help>
+        Uses a tracking file (produced by cuffcompare) to filter a GTF file of transcripts (usually the transcripts produced by 
+        cufflinks). Filtering is done by extracting transcript IDs from tracking file and then filtering the 
+        GTF so that the output GTF contains only transcript found in the tracking file. Because a tracking file has multiple 
+        samples, a sample number is used to filter transcripts for a particular sample.
+    </help>
+</tool>
