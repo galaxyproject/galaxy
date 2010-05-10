@@ -79,7 +79,7 @@ class RequestsGrid( grids.Grid ):
     num_rows_per_page = 50
     preserve_state = True
     use_paging = True
-    default_filter = dict( deleted="False", state=model.Request.states.NEW)
+    default_filter = dict( deleted="False")
     columns = [
         NameColumn( "Name", 
                     key="name", 

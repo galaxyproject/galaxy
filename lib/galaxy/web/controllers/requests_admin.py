@@ -90,7 +90,7 @@ class RequestsGrid( grids.Grid ):
     num_rows_per_page = 50
     preserve_state = True
     use_paging = True
-    default_filter = dict( deleted="False", state=model.Request.states.SUBMITTED)
+    default_filter = dict( deleted="False")
     columns = [
         NameColumn( "Name", 
                     key="name", 
@@ -259,7 +259,7 @@ class RequestsAdmin( BaseController ):
         '''
         List all request made by the current user
         '''
-        #self.__sample_datasets(trans, **kwd)
+        self.__sample_datasets(trans, **kwd)
         if 'operation' in kwd:
             operation = kwd['operation'].lower()
             if not kwd.get( 'id', None ):
@@ -1774,7 +1774,9 @@ class RequestsAdmin( BaseController ):
                                     status=status)
         
     def __sample_datasets(self, trans, **kwd):
-        samples = trans.sa_session.query( trans.app.model.Sample ).all()
+        samples = trans.sa_session.query( trans.app.model.Sample )\
+                                  .filter( trans.app.model.Sample.table.c.deleted==False)\
+                                  .all()
         for s in samples:
             if s.dataset_files:
                 newdf = []
