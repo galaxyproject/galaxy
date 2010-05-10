@@ -20,4 +20,11 @@ if [ $FETCH_EGGS -eq 1 ]; then
         fi
     fi
 fi
+
+# Temporary: since builds.txt is now removed from source control, create it
+# from the sample if necessary
+if [ ! -f "tool-data/shared/ucsc/builds.txt" ]; then
+    cp tool-data/shared/ucsc/builds.txt.sample tool-data/shared/ucsc/builds.txt
+fi
+
 python ./scripts/paster.py serve universe_wsgi.ini $@

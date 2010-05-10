@@ -26,6 +26,7 @@ tool-data/sam_fa_indices.loc.sample
 tool-data/sequence_index_base.loc.sample
 tool-data/sequence_index_color.loc.sample
 tool-data/twobit.loc.sample
+tool-data/shared/ucsc/builds.txt.sample
 "
 
 DIRS="
