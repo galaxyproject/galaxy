@@ -52,10 +52,12 @@
    <composite_data value='tinywga.bim' />
    <composite_data value='tinywga.bed' />
    <composite_data value='tinywga.fam' />
+   <edit_attributes type='name' value='tinywga' /> 
  </param>
  <param name='phef' value='tinywga' ftype='pphe' >
    <metadata name='base_name' value='tinywga' />
    <composite_data value='tinywga.pphe' />
+   <edit_attributes type='name' value='tinywga' /> 
  </param>
  <param name='title1' value='rgGLMtest1' />
  <param name='predvar' value='c1' />

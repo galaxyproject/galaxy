@@ -25,6 +25,7 @@
     <composite_data value='tinywga.bim' />
     <composite_data value='tinywga.bed' />
     <composite_data value='tinywga.fam' />
+    <edit_attributes type='name' value='tinywga' /> 
     </param>
     <param name='out_prefix' value='rgQCtest1' />
     <output name='html_file' file='rgtestouts/rgQC/rgQCtest1.html' ftype='html' lines_diff='280'>

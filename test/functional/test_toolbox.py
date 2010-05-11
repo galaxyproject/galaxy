@@ -45,8 +45,10 @@ class ToolTestCase( TwillTestCase ):
                     new_name = edit_att.get( 'value', None )
                     assert new_name, 'You must supply the new dataset name as the value tag of the edit_attributes tag'
                     hda_id = self.get_history_as_data_list()[-1].get( 'id' )
-                    self.edit_hda_attribute_info( hda_id, new_name = new_name )
-                    print "Renamed uploaded file to:", new_name
+                    try:
+                        self.edit_hda_attribute_info( hda_id = str(hda_id), new_name = new_name )
+                    except:
+                        print "### call to edit_hda failed for hda_id",hda_id,"new_name=",new_name
                 else:
                     raise Exception( 'edit_attributes type (%s) is unimplemented' % edit_att.get( 'type', None ) )
         # We need to handle the case where we've uploaded a valid compressed file since the upload

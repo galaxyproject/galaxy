@@ -88,6 +88,7 @@
    <metadata name='base_name' value='tinywga' />
    <composite_data value='tinywga.ped' />
    <composite_data value='tinywga.map' />
+   <edit_attributes type='name' value='tinywga' /> 
   </param>
  <param name='ucsc_region' value='' />
  <param name='title' value='rgHaploViewtest1' />

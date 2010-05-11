@@ -541,7 +541,7 @@ class Tool:
                                 attrib['composite_data'].append( child )
                                 if composite_data_name is None:
                                     #generate a unique name; each test uses a fresh history
-                                    composite_data_name = '_COMPOSITE_RENAMED %i_' % ( composite_data_names_counter )
+                                    composite_data_name = '_COMPOSITE_RENAMED_%i_' % ( composite_data_names_counter )
                                     composite_data_names_counter += 1
                             elif child.tag == 'metadata':
                                 attrib['metadata'].append( child )
