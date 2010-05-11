@@ -100,8 +100,7 @@ class UploadDataset( Group ):
         self.file_type_to_ext = { 'auto':self.default_file_type }
         self.metadata_ref = 'files_metadata'
     def get_file_base_name( self, context ):
-        log.debug('### uploadDataset get base name context = %s' % str(context))
-        fd = context.get('files_metadata|base_name','?')
+        fd = context.get('files_metadata|base_name','Galaxy_Composite_file')
         return fd
     def get_file_type( self, context ):
         return context.get( self.file_type_name, self.default_file_type )
@@ -295,14 +294,16 @@ class UploadDataset( Group ):
                 temp_name, is_multi_byte = sniff.stream_to_file( StringIO.StringIO( d_type.generate_primary_file( dataset ) ), prefix='upload_auto_primary_file' )
                 dataset.primary_file = temp_name
                 dataset.space_to_tab = False
-                dataset.precreated_name = dataset.name = dataset.metadata['base_name'] # was 'Uploaded Composite Dataset (%s)' % ( file_type )
+                dsn = dataset.metadata.get('base_name','Uploaded Composite Dataset (%s)' % file_type)
+                dataset.precreated_name = dataset.name = dsn 
             else:
                 file_bunch, warnings = get_one_filename( groups_incoming[ 0 ] )
                 writable_files_offset = 1
                 dataset.primary_file = file_bunch.path
                 dataset.space_to_tab = file_bunch.space_to_tab
-                dataset.precreated_name = dataset.metadata['base_name'] # file_bunch.precreated_name
-                dataset.name = file_bunch.precreated_name
+                dsn = dataset.metadata.get('base_name',file_bunch.precreated_name)
+                dataset.precreated_name = dsn
+                dataset.name = dsn
                 dataset.warnings.extend( file_bunch.warnings )
             if dataset.primary_file is None:#remove this before finish, this should create an empty dataset
                 raise Exception( 'No primary dataset file was available for composite upload' )

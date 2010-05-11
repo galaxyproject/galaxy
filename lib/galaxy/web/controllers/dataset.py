@@ -246,7 +246,6 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistoryDatasetAssoc
                 ext = data.extension
                 path = data.file_name
                 fname = os.path.split(path)[-1]
-                basename = data.metadata.base_name
                 efp = data.extra_files_path
                 htmlname = os.path.splitext(outfname)[0]
                 if not htmlname.endswith(ext):
