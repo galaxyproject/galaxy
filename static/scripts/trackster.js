@@ -102,6 +102,7 @@ var View = function( chrom, title, vis_id, dbkey ) {
     this.zoom_factor = 3;
     this.zoom_level = 0;
     this.track_id_counter = 0;
+    this.has_changes = false;
 };
 $.extend( View.prototype, {
     add_track: function ( track ) {
@@ -117,10 +118,12 @@ $.extend( View.prototype, {
         this.label_tracks.push( label_track );
     },
     remove_track: function( track ) {
+        this.has_changes = true;
         track.container_div.fadeOut('slow', function() { $(this).remove(); });
         delete this.tracks[this.tracks.indexOf(track)];
     },
     update_options: function() {
+        this.has_changes = true;
         var sorted = $("ul#sortable-ul").sortable('toArray');
         for (var id_i in sorted) {
             var id = sorted[id_i].split("_li")[0].split("track_")[1];
@@ -215,7 +218,7 @@ $.extend( Track.prototype, {
     init_global: function () {
         this.header_div = $("<div class='track-header'>").text( this.name );
         this.content_div = $("<div class='track-content'>");
-        this.container_div = $("<div></div>").addClass('track').append( this.header_div ).append( this.content_div );
+        this.container_div = $("<div />").addClass('track').append( this.header_div ).append( this.content_div );
         this.parent_element.append( this.container_div );
     },
     init_each: function(params, success_fn) {
@@ -392,8 +395,8 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
             $('#linetrack_' + track_id + '_minval').remove();
             $('#linetrack_' + track_id + '_maxval').remove();
             
-            var min_label = $("<div></div>").addClass('yaxislabel').attr("id", 'linetrack_' + track_id + '_minval').text(track.prefs.min_value);
-            var max_label = $("<div></div>").addClass('yaxislabel').attr("id", 'linetrack_' + track_id + '_maxval').text(track.prefs.max_value);
+            var min_label = $("<div />").addClass('yaxislabel').attr("id", 'linetrack_' + track_id + '_minval').text(track.prefs.min_value);
+            var max_label = $("<div />").addClass('yaxislabel').attr("id", 'linetrack_' + track_id + '_maxval').text(track.prefs.max_value);
             
             max_label.css({ position: "relative", top: "25px", left: "10px" });
             max_label.prependTo(track.container_div);
@@ -537,7 +540,7 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
         parent_element.append( canvas );
         return canvas;
     }, gen_options: function(track_id) {
-        var container = $("<div></div>").addClass("form-row");
+        var container = $("<div />").addClass("form-row");
         
         var minval = 'track_' + track_id + '_minval',
             maxval = 'track_' + track_id + '_maxval',
@@ -604,7 +607,8 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
     init: function() {
         var track = this,
             key = track.view.max_low + '_' + track.view.max_high;
-        this.init_each({  low: track.view.max_low, 
+            
+            this.init_each({  low: track.view.max_low, 
                                     high: track.view.max_high, dataset_id: track.dataset_id,
                                     chrom: track.view.chrom, resolution: this.view.resolution }, function (result) {
             track.data_cache.set(key, result);
@@ -948,18 +952,18 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
         parent_element.append( new_canvas );
         return new_canvas;
     }, gen_options: function(track_id) {
-        var container = $("<div></div>").addClass("form-row");
+        var container = $("<div />").addClass("form-row");
 
         var block_color = 'track_' + track_id + '_block_color',
-            block_color_label = $('<label></label>').attr("for", block_color).text("Block color:"),
-            block_color_input = $('<input></input>').attr("id", block_color).attr("name", block_color).val(this.prefs.block_color),
+            block_color_label = $('<label />').attr("for", block_color).text("Block color:"),
+            block_color_input = $('<input />').attr("id", block_color).attr("name", block_color).val(this.prefs.block_color),
             label_color = 'track_' + track_id + '_label_color',
-            label_color_label = $('<label></label>').attr("for", label_color).text("Text color:"),
-            label_color_input = $('<input></input>').attr("id", label_color).attr("name", label_color).val(this.prefs.label_color),
+            label_color_label = $('<label />').attr("for", label_color).text("Text color:"),
+            label_color_input = $('<input />').attr("id", label_color).attr("name", label_color).val(this.prefs.label_color),
             show_count = 'track_' + track_id + '_show_count',
-            show_count_label = $('<label></label>').attr("for", show_count).text("Show summary counts"),
+            show_count_label = $('<label />').attr("for", show_count).text("Show summary counts"),
             show_count_input = $('<input type="checkbox" style="float:left;"></input>').attr("id", show_count).attr("name", show_count).attr("checked", this.prefs.show_counts),
-            show_count_div = $('<div></div>').append(show_count_input).append(show_count_label);
+            show_count_div = $('<div />').append(show_count_input).append(show_count_label);
             
         return container.append(block_color_label).append(block_color_input).append(label_color_label).append(label_color_input).append(show_count_div);
     }, update_options: function(track_id) {

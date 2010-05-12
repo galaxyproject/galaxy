@@ -48,6 +48,13 @@ dataset_type_to_data_provider = {
 }
 
 class DatasetSelectionGrid( grids.Grid ):
+    class DbKeyColumn( grids.GridColumn ):
+        def filter( self, trans, user, query, dbkey ):
+            """ Filter by dbkey. """
+            # use raw SQL b/c metadata is a BLOB
+            dbkey = dbkey.replace("'", "\\'")
+            return query.filter( "metadata like '%%\"dbkey\": [\"%s\"]%%' OR metadata like '%%\"dbkey\": \"%s\"%%'" % (dbkey, dbkey) )
+    
     # Grid definition.
     available_tracks = None
     title = "Add Tracks"
@@ -61,6 +68,7 @@ class DatasetSelectionGrid( grids.Grid ):
     columns = [
         grids.TextColumn( "Name", key="name", model_class=model.HistoryDatasetAssociation ),
         grids.GridColumn( "Filetype", key="extension" ),
+        DbKeyColumn( "Dbkey", key="dbkey", model_class=model.HistoryDatasetAssociation, visible=False )
     ]
     
     def build_initial_query( self, session ):

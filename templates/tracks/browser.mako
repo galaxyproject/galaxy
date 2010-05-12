@@ -110,7 +110,7 @@ ${h.js( 'galaxy.base', 'galaxy.panels', "json2", "jquery", "jquery.event.drag", 
                 error: function() { alert( "Couldn't create new browser" ) },
                 success: function(form_html) {
                     show_modal("New Track Browser", form_html, {
-                        "Cancel": function() { window.location = "/"; },
+                        "Cancel": function() { window.location = "${h.url_for( controller='visualization', action='list' )}"; },
                         "Continue": function() { $(document).trigger("convert_dbkeys"); continue_fn(); }
                     });
                     $("#new-title").focus();
@@ -118,6 +118,12 @@ ${h.js( 'galaxy.base', 'galaxy.panels', "json2", "jquery", "jquery.event.drag", 
                 }
             });
         %endif
+        
+        window.onbeforeunload = function() {
+            if ( view.has_changes ) {
+                return "There are unsaved changes to your visualization which will be lost.";
+            }
+        };
         
         // Execute this when everything is ready
         function init() {
@@ -192,7 +198,7 @@ ${h.js( 'galaxy.base', 'galaxy.panels', "json2", "jquery", "jquery.event.drag", 
             $("#add-track").bind( "click", function(e) {
                 $.ajax({
                     url: "${h.url_for( action='list_datasets' )}",
-                    data: {},
+                    data: { "f-dbkey": view.dbkey },
                     error: function() { alert( "Grid refresh failed" ); },
                     success: function(table_html) {
                         show_modal("Add Track &mdash; Select Dataset(s)", table_html, {
@@ -219,6 +225,7 @@ ${h.js( 'galaxy.base', 'galaxy.panels', "json2", "jquery", "jquery.event.drag", 
                                                     break;
                                             }
                                             view.add_track(new_track);
+                                            view.has_changes = true;
                                             sidebar_box(new_track);
                                         }
                                     });
@@ -262,13 +269,15 @@ ${h.js( 'galaxy.base', 'galaxy.panels', "json2", "jquery", "jquery.event.drag", 
                     },
                     success: function(vis_id) {
                         view.vis_id = vis_id;
+                        view.has_changes = false;
                         hide_modal();
-                    }
+                    },
+                    error: function() { alert("Could not save visualization"); }
                 });
             });
             
-            view.add_label_track( new LabelTrack( $("#top-labeltrack" ) ) );
-            view.add_label_track( new LabelTrack( $("#nav-labeltrack" ) ) );
+            view.add_label_track( new LabelTrack( $("#top-labeltrack") ) );
+            view.add_label_track( new LabelTrack( $("#nav-labeltrack") ) );
             
             $.ajax({
                 url: "${h.url_for( action='chroms' )}", 
@@ -328,7 +337,6 @@ ${h.js( 'galaxy.base', 'galaxy.panels', "json2", "jquery", "jquery.event.drag", 
                     del_icon.bind("click", function() {
                         $("#track_" + track_id + "_li").fadeOut('slow', function() { $("#track_" + track_id + "_li").remove(); });
                         view.remove_track(track);
-                        view.update_options();
                     });
                     icon_div.append(edit_icon).append(del_icon);
                     title.append(label).prepend(icon_div);
