@@ -99,6 +99,17 @@ class UploadDataset( Group ):
         self.default_file_type = 'txt'
         self.file_type_to_ext = { 'auto':self.default_file_type }
         self.metadata_ref = 'files_metadata'
+    def get_composite_dataset_name( self, context ):
+        #FIXME: HACK
+        #Special case of using 'base_name' metadata for use as Dataset name needs to be done in a General Fashion, as defined within a particular Datatype.
+        
+        #We get two different types of contexts here, one straight from submitted parameters, the other after being parsed into tool inputs
+        dataset_name = context.get('files_metadata|base_name', None )
+        if dataset_name is None:
+            dataset_name = context.get('files_metadata', {} ).get( 'base_name', None )
+        if dataset_name is None:
+            dataset_name = 'Uploaded Composite Dataset (%s)' % self.get_file_type( context )
+        return dataset_name
     def get_file_base_name( self, context ):
         fd = context.get('files_metadata|base_name','Galaxy_Composite_file')
         return fd
@@ -241,6 +252,7 @@ class UploadDataset( Group ):
                 for file_bunch in get_url_paste_urls_or_filename( context, override_name = name, override_info = info ):
                     if file_bunch.path:
                         break
+            file_bunch.space_to_tab = space_to_tab
             return file_bunch, warnings
         def get_filenames( context ):
             rval = []
@@ -287,24 +299,18 @@ class UploadDataset( Group ):
                 if meta_spec.set_in_upload:
                     if meta_name in files_metadata:
                         dataset.metadata[ meta_name ] = files_metadata[ meta_name ]
-            dataset_name = None
-            dataset_info = None
+            dataset.precreated_name = dataset.name = self.get_composite_dataset_name( context )
             if dataset.datatype.composite_type == 'auto_primary_file':
                 #replace sniff here with just creating an empty file
                 temp_name, is_multi_byte = sniff.stream_to_file( StringIO.StringIO( d_type.generate_primary_file( dataset ) ), prefix='upload_auto_primary_file' )
                 dataset.primary_file = temp_name
                 dataset.space_to_tab = False
-                dsn = dataset.metadata.get('base_name','Uploaded Composite Dataset (%s)' % file_type)
-                dataset.precreated_name = dataset.name = dsn 
             else:
                 file_bunch, warnings = get_one_filename( groups_incoming[ 0 ] )
                 writable_files_offset = 1
                 dataset.primary_file = file_bunch.path
                 dataset.space_to_tab = file_bunch.space_to_tab
-                dsn = dataset.metadata.get('base_name',file_bunch.precreated_name)
-                dataset.precreated_name = dsn
-                dataset.name = dsn
-                dataset.warnings.extend( file_bunch.warnings )
+                dataset.warnings.extend( warnings )
             if dataset.primary_file is None:#remove this before finish, this should create an empty dataset
                 raise Exception( 'No primary dataset file was available for composite upload' )
             keys = [ value.name for value in writable_files.values() ]
@@ -315,6 +321,7 @@ class UploadDataset( Group ):
                     dataset.composite_files[ key ] = None
                 else:
                     file_bunch, warnings = get_one_filename( group_incoming )
+                    dataset.warnings.extend( warnings )
                     if file_bunch.path:
                         dataset.composite_files[ key ] = file_bunch.__dict__
                     else:

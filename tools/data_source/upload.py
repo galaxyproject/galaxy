@@ -299,7 +299,7 @@ def add_composite_file( dataset, json_file, output_path, files_path ):
                     break
                 elif dataset.composite_file_paths[value.name] is not None:
                     if not value.is_binary:
-                        if uploaded_dataset.composite_files[ value.name ].space_to_tab:
+                        if value.space_to_tab:
                             sniff.convert_newlines_sep2tabs( dataset.composite_file_paths[ value.name ][ 'path' ] )
                         else:
                             sniff.convert_newlines( dataset.composite_file_paths[ value.name ][ 'path' ] )

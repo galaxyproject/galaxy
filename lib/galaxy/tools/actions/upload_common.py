@@ -102,8 +102,7 @@ def cleanup_unused_precreated_datasets( precreated_datasets ):
     for data in precreated_datasets:
         log.info( 'Cleaned up unclaimed precreated dataset (%s).' % ( data.id ) )
         data.state = data.states.ERROR
-        data.info = 'Unused precreated dataset to be deleted.'
-        data.deleted = True
+        data.info = 'No file contents were available.'
 
 def new_history_upload( trans, uploaded_dataset, state=None ):
     hda = trans.app.model.HistoryDatasetAssociation( name = uploaded_dataset.name,

@@ -203,7 +203,7 @@ class ToolRunner( BaseController ):
             d_type = dataset_upload_input.get_datatype( trans, kwd )
             
             if d_type.composite_type is not None:
-                datasets.append( create_dataset( 'Uploaded Composite Dataset (%s)' % dataset_upload_input.get_datatype_ext( trans, kwd ) ) )
+                datasets.append( create_dataset( dataset_upload_input.get_composite_dataset_name( kwd ) ) )
             else:
                 params = Bunch( ** tool_state.inputs[dataset_upload_input.name][0] )
                 if params.file_data not in [ None, "" ]:
