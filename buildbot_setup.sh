@@ -55,6 +55,7 @@ LINKS="
 SAMPLES="
 datatypes_conf.xml.sample
 universe_wsgi.ini.sample
+tool-data/shared/ucsc/builds.txt.sample
 "
 
 DIRS="
