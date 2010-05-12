@@ -582,7 +582,7 @@ class Gff( Tabular, _RemoteCallMixin ):
         """Initialize datatype, by adding GBrowse display app"""
         Tabular.__init__(self, **kwd)
         self.add_display_app( 'ucsc', 'display at UCSC', 'as_ucsc_display_file', 'ucsc_links' )
-        self.add_display_app( 'c_elegans', 'display in Wormbase', 'as_gbrowse_display_file', 'gbrowse_links' )
+        self.add_display_app( 'gbrowse', 'display in Gbrowse', 'as_gbrowse_display_file', 'gbrowse_links' )
     def set_meta( self, dataset, overwrite = True, **kwd ):
         i = 0
         for i, line in enumerate( file ( dataset.file_name ) ):
@@ -628,10 +628,24 @@ class Gff( Tabular, _RemoteCallMixin ):
                         continue
                     if line.startswith( '##sequence-region' ): # ##sequence-region IV 6000000 6030000
                         elems = line.split()
-                        seqid = elems[1] # IV
-                        start = elems[2] # 6000000
-                        stop = elems[3] # 6030000
-                        break
+                        if len( elems ) > 3:
+                            # line looks like:
+                            # ##sequence-region   ctg123 1 1497228 
+                            seqid = elems[1] # IV
+                            start = elems[2] # 6000000
+                            stop = elems[3] # 6030000
+                            break
+                        elif len( elems ) == 2 and elems[1].find( '..' ) > 0:
+                            # line looks like this:
+                            # ##sequence-region X:120000..140000
+                            elems = elems[1].split( ':' )
+                            seqid = elems[0]
+                            start = elems[1].split( '..' )[0]
+                            stop = elems[1].split( '..' )[1]
+                            break
+                        else:
+                            log.exception( "line (%s) uses an unsupported ##sequence-region definition." % str( line ) )
+                            break
                     # Allow UCSC style browser and track info in the GFF file
                     if line.startswith("browser position"):
                         pos_info = line.split()[-1]
@@ -652,7 +666,8 @@ class Gff( Tabular, _RemoteCallMixin ):
                             break
                     if i > 10:
                         break
-            except:
+            except Exception, e:
+                log.exception( str( e ) )
                 seqid, start, stop = ( '', '', '' ) 
             return ( seqid, str( start ), str( stop ) )
         else:
@@ -681,8 +696,9 @@ class Gff( Tabular, _RemoteCallMixin ):
             if seqid and start and stop:
                 for site_name, site_url in util.get_gbrowse_sites_by_build( dataset.dbkey ):
                     if site_name in app.config.gbrowse_display_sites:
-                        redirect_url = urllib.quote_plus( "%s%s/?ref=%s&start=%s&stop=%s&eurl=%%s" % 
-                                ( site_url, dataset.dbkey, seqid, start, stop ) )
+                        # Old method, the one uncommented below now seems to be the way GBrowse wants the request
+                        # redirect_url = urllib.quote_plus( "%s%s/?ref=%s&start=%s&stop=%s&eurl=%%s" % ( site_url, dataset.dbkey, seqid, start, stop ) )
+                        redirect_url = urllib.quote_plus( "%s/?q=%s:%s..%s" % ( site_url, seqid, start, stop ) )
                         link = self._get_remote_call_url( redirect_url, site_name, dataset, type, app, base_url )
                         ret_val.append( ( site_name, link ) )
         return ret_val

@@ -1,4 +1,11 @@
 # wormbase sites / supported genomes
-main	http://www.wormbase.org/db/seq/gbgff/c_elegans/	c_elegans,c_briggsae,c_remanei,c_brenneri,c_japonica,p_pristionchus,b_malayi
-test	http://dev.wormbase.org/db/seq/gbrowse/c_elegans/	c_elegans,c_briggsae,c_remanei,c_brenneri,c_japonica,p_pristionchus,b_malayi
+wormbase	http://www.wormbase.org/db/gb2/gbrowse/c_elegans	ce8,ce7,ce6,ce5,ce4,ce3,ce2,cb3,cb2,cb1,caeRem3,caeRem2,caeRem1,caePb2,caePb1,caeJap2,caeJap1
+#test	http://dev.wormbase.org/db/seq/gbrowse/c_elegans/	ce8,ce7,ce6,ce5,ce4,ce3,ce2,cb3,cb2,cb1,caeRem3,caeRem2,caeRem1,caePb2,caePb1,caeJap2,caeJap1
+
+# UCSC mirror that includes arabidopsis
 tair	http://arabidopsis.org/cgi-bin/gbrowse/	arabidopsis_tair8,arabidopsis
+
+# modENCODE worm and fly
+modencode_worm	http://modencode.oicr.on.ca/fgb2/gbrowse/worm	ce6
+modencode_fly	http://modencode.oicr.on.ca/fgb2/gbrowse/fly	dm2
+

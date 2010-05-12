@@ -108,7 +108,7 @@ use_new_layout = true
 # Comma separated list of bx / UCSC / gbrowse / GeneTrack browsers to use for viewing
 bx_display_sites = main
 ucsc_display_sites = main,test,archaea,ucla
-gbrowse_display_sites = main,test,tair
+gbrowse_display_sites = wormbase,tair,modencode_worm,modencode_fly
 # Define your GeneTrack servers in tool-data/shared/genetrack/genetrack_sites.txt
 #genetrack_display_sites =
 
