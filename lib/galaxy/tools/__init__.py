@@ -1646,12 +1646,6 @@ class DataSourceTool( Tool ):
             data.name = param_dict.get( 'name', data.name )
             data.info = param_dict.get( 'info', data.name )
             data.dbkey = param_dict.get( 'dbkey', data.dbkey )
-            # HACK to map modENCODEfly dbkey, which is always "fly" to be dm2
-            # and modENCODEworm dbkey, which is always "worm" to be ce6
-            if data.dbkey == 'fly':
-                data.dbkey = 'dm2'
-            elif data.dbkey == 'worm':
-                data.dbkey = 'ce6'
             data.extension = param_dict.get( 'data_type', data.extension )
         #TODO: these should be possible as part of data_source.py and external set_meta, see the upload tool:
         if data.extension in [ 'txt', 'tabular' ]:

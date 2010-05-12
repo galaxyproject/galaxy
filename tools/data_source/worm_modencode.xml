@@ -7,6 +7,11 @@
         <param name="GALAXY_URL" type="baseurl" value="/tool_runner?tool_id=modENCODEworm" />
     </inputs>
     <request_param_translation>
+        <request_param galaxy_name="dbkey" remote_name="dbkey" missing="ce6" >
+            <value_translation>
+                <value galaxy_value="ce6" remote_value="worm" />
+            </value_translation>
+        </request_param>
         <request_param galaxy_name="URL" remote_name="URL" missing="">
             <append_param separator="&amp;" first_separator="?" join="=">
                 <value name="d" missing="" />
