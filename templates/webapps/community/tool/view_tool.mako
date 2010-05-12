@@ -4,8 +4,12 @@
     from galaxy.web.framework.helpers import time_ago
     from urllib import quote_plus
     
+    menu_label = 'Edit information'
+    
     if cntrller in [ 'tool' ]:
         can_edit = trans.app.security_agent.can_edit_item( trans.user, tool )
+        if can_edit:
+            menu_label = 'Edit information or submit for approval'
         can_upload_new_version = trans.app.security_agent.can_upload_new_version( trans.user, tool, versions )
 
     visible_versions = []
@@ -89,7 +93,7 @@
             <a id="tool-${tool.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
             <div popupmenu="tool-${tool.id}-popup">
                 %if cntrller=='admin' or can_edit:
-                    <a class="action-button" href="${h.url_for( controller='common', action='edit_tool', id=trans.app.security.encode_id( tool.id ), cntrller=cntrller )}">Edit information</a>
+                    <a class="action-button" href="${h.url_for( controller='common', action='edit_tool', id=trans.app.security.encode_id( tool.id ), cntrller=cntrller )}">${menu_label}</a>
                 %endif
                 <a class="action-button" href="${h.url_for( controller='tool', action='download_tool', id=trans.app.security.encode_id( tool.id ) )}">Download tool</a>
                 %if cntrller=='admin' or trans.user==tool.user:
@@ -114,7 +118,9 @@
         </div>
         <div class="form-row">
             <label>Description:</label>
-            ${tool.user_description}
+            %if tool.user_description:
+                ${tool.user_description}
+            %endif
             <div style="clear: both"></div>
         </div>
         <div class="form-row">

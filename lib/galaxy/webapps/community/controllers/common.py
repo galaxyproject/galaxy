@@ -28,8 +28,11 @@ class CommonController( BaseController ):
             else:
                 # There must not be any categories associated with the tool
                 trans.app.security_agent.set_entity_category_associations( tools=[ tool ], categories=[] )
-            if params.get( 'description', False ):
-                tool.user_description = util.restore_text( params.get( 'description', '' ) )
+            user_description = util.restore_text( params.get( 'user_description', '' ) )
+            if user_description:
+                tool.user_description = user_description
+            else:
+                tool.user_description = ''
             trans.sa_session.add( tool )
             trans.sa_session.flush()
             message="Tool '%s' description and category associations have been saved" % tool.name
@@ -236,7 +239,10 @@ def set_categories( trans, obj, category_ids, delete_existing_assocs=True ):
 def get_tool( trans, id ):
     return trans.sa_session.query( trans.model.Tool ).get( trans.app.security.decode_id( id ) )
 def get_tools( trans ):
-    return trans.sa_session.query( trans.model.Tool ).order_by( trans.model.Tool.name )
+    # Return only the latest version of each tool
+    return trans.sa_session.query( trans.model.Tool ) \
+                           .filter( trans.model.Tool.newer_version_id == None ) \
+                           .order_by( trans.model.Tool.name )
 def get_approved_tools( trans, category=None ):
     # TODO: write this as a query using eagerload - will be much faster.
     ids = []

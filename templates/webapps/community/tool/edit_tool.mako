@@ -82,7 +82,11 @@ $().ready(function() {
                 </div>
                 <div class="form-row">
                     <label>Description:</label>
-                    <div class="form-row-input"><textarea name="description" rows="5" cols="35">${tool.user_description}</textarea></div>
+                    %if tool.user_description:
+                        <div class="form-row-input"><textarea name="user_description" rows="5" cols="35">${tool.user_description}</textarea></div>
+                    %else:
+                        <div class="form-row-input"><textarea name="user_description" rows="5" cols="35"></textarea></div>
+                    %endif
                     <div style="clear: both"></div>
                 </div>
                 <div class="form-row">

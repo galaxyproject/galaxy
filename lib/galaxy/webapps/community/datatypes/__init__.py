@@ -120,11 +120,13 @@ class Tool( object ):
                     rval.version = root.attrib['version']
                 except KeyError, e:
                     raise DatatypeVerificationError( 'Tool XML file does not conform to the specification.  Missing required &lt;tool&gt; tag attribute: %s' % e )
-                rval.description = None
+                rval.description = ''
                 desc_tag = root.find( 'description' )
-                if desc_tag is not None:
-                    rval.description = desc_tag.text.strip()
-                rval.message = 'Tool: %s %s, Version: %s, ID: %s' % ( rval.name, rval.description or '', rval.version, rval.id )
+                if desc_tag:
+                    description = desc_tag.text
+                    if description:
+                        rval.description = description.strip()
+                rval.message = 'Tool: %s %s, Version: %s, ID: %s' % ( str( rval.name ), str( rval.description ), str( rval.version ), str( rval.id ) )
                 return rval
         else:
             raise DatatypeVerificationError( 'Unable to find a properly formatted tool XML file' )
