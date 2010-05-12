@@ -10,7 +10,7 @@
         <request_param galaxy_name="URL" remote_name="URL" missing="">
             <append_param separator="&amp;" first_separator="?" join="=">
                 <value name="d" missing="" />
-                <value name="dbkey" missing="" />
+                <value name="dbkey" missing="dm2" />
                 <value name="q" missing="" />
                 <value name="s" missing="" />
                 <value name="t" missing="" />
