@@ -38,8 +38,16 @@
                     if for_editing:
                         display_url = h.url_for( controller='dataset', action='display', dataset_id=dataset_id, preview=True, filename='' )
                     else:
-                        display_url = h.url_for( controller='dataset', action='display_by_username_and_slug',
-                                    username=data.history.user.username, slug=dataset_id )
+                        # Get URL for display only.
+                        if data.history.user and data.history.user.username:
+                            display_url = h.url_for( controller='dataset', action='display_by_username_and_slug',
+                                                     username=data.history.user.username, slug=dataset_id )
+                        else:
+                            # HACK: revert to for_editing display URL when there is no user/username. This should only happen when
+                            # there's no user/username because dataset is being displayed by history/view after error reported.
+                            # There are no security concerns here because both dataset/display and dataset/display_by_username_and_slug
+                            # check user permissions (to the same degree) before displaying.
+                            display_url = h.url_for( controller='dataset', action='display', dataset_id=dataset_id, preview=True, filename='' )
                 %>
                 <a class="icon-button display tooltip" title="Display data in browser" href="${display_url}"
                 %if for_editing:
