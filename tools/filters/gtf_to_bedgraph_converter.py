@@ -9,16 +9,14 @@ def __main__():
     output_name = sys.argv[2]
     attribute_name = sys.argv[3]
     
-    # Create temp file.
-    tmp_name = tempfile.NamedTemporaryFile().name
+    # Create temp files.
+    tmp_name1 = tempfile.NamedTemporaryFile().name
+    tmp_name2 = tempfile.NamedTemporaryFile().name
     
     # Do conversion.
     skipped_lines = 0
     first_skipped_line = 0
-    out = open( tmp_name, 'w' )
-    
-    # Write track definition line.
-    out.write( "track type=bedGraph\n")
+    out = open( tmp_name1, 'w' )
     
     # Write track data to temporary file.
     i = 0
@@ -56,11 +54,20 @@ def __main__():
                 first_skipped_line = i + 1
     out.close()
     
-    # Sort tmp file to create bedgraph file; sort by chromosome name and chromosome start.
-    cmd = "sort -k1,1 -k2,2n < %s > %s" % ( tmp_name, output_name )
+    # Sort tmp file by chromosome name and chromosome start to create ordered track data.
+    cmd = "sort -k1,1 -k2,2n < %s > %s" % ( tmp_name1, tmp_name2 )
     try:
         os.system(cmd)
-        os.remove(tmp_name)
+        os.remove(tmp_name1)
+    except Exception, ex:
+        sys.stderr.write( "%s\n" % ex )
+        sys.exit(1)
+        
+    # Create bedgraph file by combining track definition with ordered track data.
+    cmd = "echo 'track type=bedGraph' | cat - %s > %s " % ( tmp_name2, output_name )
+    try:
+        os.system(cmd)
+        os.remove(tmp_name2)
     except Exception, ex:
         sys.stderr.write( "%s\n" % ex )
         sys.exit(1)
