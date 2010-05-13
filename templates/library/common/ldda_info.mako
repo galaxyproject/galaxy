@@ -80,6 +80,11 @@
             <div style="clear: both"></div>
         </div>
         <div class="form-row">
+            <label>Data type:</label>
+            ${ldda.ext}
+            <div style="clear: both"></div>
+        </div>
+        <div class="form-row">
             <label>Build:</label>
             ${ldda.dbkey}
             <div style="clear: both"></div>

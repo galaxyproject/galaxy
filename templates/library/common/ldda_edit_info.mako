@@ -101,6 +101,7 @@
             %if ldda.datatype.allow_datatype_change:
                 <form name="change_datatype" action="${h.url_for( controller='library_common', action='ldda_edit_info', cntrller=cntrller, library_id=library_id, folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ), use_panels=use_panels, show_deleted=show_deleted, )}" method="post">
                     <div class="form-row">
+                        <input type="hidden" name="id" value="${trans.security.encode_id( ldda.id )}"/>
                         <label>New Type:</label>
                         ${datatype( ldda, file_formats )}
                         <div class="toolParamHelp" style="clear: both;">

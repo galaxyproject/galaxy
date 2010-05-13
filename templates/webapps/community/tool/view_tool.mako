@@ -119,7 +119,7 @@
         <div class="form-row">
             <label>Description:</label>
             %if tool.user_description:
-                ${tool.user_description}
+                <pre>${tool.user_description}</pre>
             %endif
             <div style="clear: both"></div>
         </div>

@@ -83,7 +83,7 @@ $().ready(function() {
                 <div class="form-row">
                     <label>Description:</label>
                     %if tool.user_description:
-                        <div class="form-row-input"><textarea name="user_description" rows="5" cols="35">${tool.user_description}</textarea></div>
+                        <div class="form-row-input"><pre><textarea name="user_description" rows="5" cols="35">${tool.user_description}</textarea></pre></div>
                     %else:
                         <div class="form-row-input"><textarea name="user_description" rows="5" cols="35"></textarea></div>
                     %endif
