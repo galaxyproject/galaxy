@@ -147,6 +147,10 @@ function naturalSort(a, b){
 // Replace select box with a text input box + autocomplete.
 // TODO: make work with selects where refresh_on_change=True and refresh_on_change_values="..."
 function replace_big_select_inputs(min_length) {
+    // To do replace, jQuery's autocomplete plugin must be loaded.
+    if (typeof jQuery().autocomplete == "undefined")
+        return;
+    
     // Set default for min_length.
     if (min_length === undefined)
         min_length = 20;
@@ -182,11 +186,6 @@ function replace_big_select_inputs(min_length) {
             var text = $(this).text();
             var value = $(this).attr('value');
 
-            // HACK: dbkey-specific: ignore values that are '?'
-            if (value == '?') {
-                return;
-            }
-
             // Set options and mapping. Mapping is (i) [from text to value] AND (ii) [from value to value]. This
             // enables a user to type the value directly rather than select the text that represents the value. 
             select_options.push( text );
@@ -198,13 +197,6 @@ function replace_big_select_inputs(min_length) {
                 text_input_elt.attr('value', text);
             }
         });
-        
-        // HACK: dbkey-specific: add an unspecified option. We need to add this at the end b/c adding it first mucks
-        // up the autocomplete sorting for some reason. (I.e. All options that start with the first character of the
-        // first option are listed before the other, alphabetized options.)
-        select_options.push( "unspecified (?)" );
-        select_mapping[ "unspecified (?)"  ] = "?";
-        select_mapping[ "?" ] = "?";
         
         // Set initial text if it's empty.
         if ( text_input_elt.attr('value') == '' ) {
