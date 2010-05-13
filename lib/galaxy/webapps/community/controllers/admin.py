@@ -756,27 +756,27 @@ class AdminController( BaseController, Admin ):
                                                        status='error' ) )
         category = get_category( trans, id )
         if params.get( 'edit_category_button', False ):
-            old_name = category.name
-            new_name = util.restore_text( params.name )
-            new_description = util.restore_text( params.description )
-            if old_name != new_name:
+            new_name = util.restore_text( params.get( 'name', '' ) ).strip()
+            new_description = util.restore_text( params.get( 'description', '' ) ).strip()
+            if category.name != new_name or category.description != new_description:
                 if not new_name:
                     message = 'Enter a valid name'
                     status = 'error'
-                elif trans.sa_session.query( trans.app.model.Category ).filter( trans.app.model.Category.table.c.name==new_name ).first():
+                elif category.name != new_name and \
+                    trans.sa_session.query( trans.app.model.Category ).filter( trans.app.model.Category.table.c.name==new_name ).first():
                     message = 'A category with that name already exists'
                     status = 'error'
-            else:
-                category.name = new_name
-                category.description = new_description
-                trans.sa_session.add( category )
-                trans.sa_session.flush()
-                message = "The information has been saved for category '%s'" % ( new_name )
-                return trans.response.send_redirect( web.url_for( controller='admin',
-                                                                  action='manage_categories',
-                                                                  webapp=webapp,
-                                                                  message=util.sanitize_text( message ),
-                                                                  status='done' ) )
+                else:
+                    category.name = new_name
+                    category.description = new_description
+                    trans.sa_session.add( category )
+                    trans.sa_session.flush()
+                    message = "The information has been saved for category '%s'" % ( category.name )
+                    return trans.response.send_redirect( web.url_for( controller='admin',
+                                                                      action='manage_categories',
+                                                                      webapp=webapp,
+                                                                      message=util.sanitize_text( message ),
+                                                                      status='done' ) )
         return trans.fill_template( '/webapps/community/category/edit_category.mako',
                                     category=category,
                                     webapp=webapp,
