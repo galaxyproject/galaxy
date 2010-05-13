@@ -473,6 +473,7 @@ $.extend( Workflow.prototype, {
         this.has_changes = true;
         if ( this.active_node == node ) {
             // Reactive with new form_html
+            this.check_changes_in_active_form(); //Force changes to be saved even on new connection (previously dumped)
             parent.show_form_for_tool( node.form_html + node.tooltip, node );
         }
     },
