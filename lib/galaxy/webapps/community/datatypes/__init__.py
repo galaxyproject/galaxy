@@ -122,7 +122,7 @@ class Tool( object ):
                     raise DatatypeVerificationError( 'Tool XML file does not conform to the specification.  Missing required &lt;tool&gt; tag attribute: %s' % e )
                 rval.description = ''
                 desc_tag = root.find( 'description' )
-                if desc_tag:
+                if desc_tag is not None:
                     description = desc_tag.text
                     if description:
                         rval.description = description.strip()

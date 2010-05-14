@@ -16,6 +16,13 @@
         $(function(){
             $("input:text:first").focus();
         })
+        function confirmSubmit() {
+            if ( confirm( "After you have submitted your tool to be published, you will no longer be able to modify it.  Click OK to submit it." ) ) {
+                return true;
+            } else {
+                return false;
+            }
+        }
     </script>
 </%def>
 
@@ -89,9 +96,6 @@ $().ready(function() {
                     %endif
                     <div style="clear: both"></div>
                 </div>
-                <div class="form-row">
-                    <input type="submit" id="edit_tool_button" name="edit_tool_button" value="Save">
-                </div>
             </div>
         </div>
         <p/>
@@ -115,29 +119,25 @@ $().ready(function() {
                 </div>
             </div>
         </div>
-    </form>
-    <p/>
-    <div class="toolForm">
+        <p/>
         %if tool.is_new():
-            <div class="toolFormTitle">Get approval for publishing</div>
-            <div class="toolFormBody">
-                <form name="get_approval" id="get_approval" action="${h.url_for( controller='common', action='edit_tool' )}" method="post" >
-                    <input type="hidden" name="id" value="${trans.app.security.encode_id( tool.id )}"/>
-                    <input type="hidden" name="cntrller" value="${cntrller}"/>
+            <div class="toolForm">
+                <div class="toolFormTitle">Get approval for publishing</div>
+                <div class="toolFormBody">
                     <div class="form-row">
-                        <input type="submit" name="approval_button" value="Submit for approval"/>
+                        <input type="submit" name="approval_button" id="approval_button" value="Submit for approval" onClick="return confirmSubmit()" />
                     </div>
                     <div class="form-row">
                         <div class="toolParamHelp" style="clear: both;">
                             Tools must be approved before they are made available to others in the community.  After you have submitted
                             your tool to be published, you will no longer be able to modify it, so make sure the information above is
-                            correct and and save any changes before submitting for approval.
+                            correct before submitting for approval.
                         </div>  
                     </div>
-                </form>
+                </div>
             </div>
         %endif
-    </div>
+    </form>
 %else:
     ${render_msg( "You are not allowed to edit this tool", "error" )}
 %endif

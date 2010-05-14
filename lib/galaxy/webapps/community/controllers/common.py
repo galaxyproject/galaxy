@@ -43,6 +43,19 @@ class CommonController( BaseController ):
                                                               message=message,
                                                               status='done' ) )
         elif params.get( 'approval_button', False ):
+            if params.get( 'in_categories', False ):
+                in_categories = [ trans.sa_session.query( trans.app.model.Category ).get( x ) for x in util.listify( params.in_categories ) ]
+                trans.app.security_agent.set_entity_category_associations( tools=[ tool ], categories=in_categories )
+            else:
+                # There must not be any categories associated with the tool
+                trans.app.security_agent.set_entity_category_associations( tools=[ tool ], categories=[] )
+            user_description = util.restore_text( params.get( 'user_description', '' ) )
+            if user_description:
+                tool.user_description = user_description
+            else:
+                tool.user_description = ''
+            trans.sa_session.add( tool )
+            trans.sa_session.flush()
             # Move the state from NEW to WAITING
             event = trans.app.model.Event( state=trans.app.model.Tool.states.WAITING )
             tea = trans.app.model.ToolEventAssociation( tool, event )
