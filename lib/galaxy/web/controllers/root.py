@@ -276,6 +276,7 @@ class RootController( BaseController, UsesHistory, UsesAnnotations ):
                         return trans.show_error_message( "This dataset is currently being used as input or output.  You cannot change datatype until the jobs have completed or you have canceled them." )
                     trans.app.datatypes_registry.change_datatype( data, params.datatype )
                     trans.sa_session.flush()
+                    return trans.show_ok_message( "Changed the type of dataset '%s' to %s" % ( data.name, params.datatype ), refresh_frames=['history'] )
                 else:
                     return trans.show_error_message( "You are unable to change datatypes in this manner. Changing %s to %s is not allowed." % ( data.extension, params.datatype ) )
             elif params.save:
