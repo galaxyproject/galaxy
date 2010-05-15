@@ -472,7 +472,15 @@ class DatasetInterface( BaseController, UsesAnnotations, UsesHistoryDatasetAssoc
         if dataset:
             truncated, dataset_data = self.get_data( dataset, preview )
             dataset.annotation = self.get_item_annotation_str( trans, dataset.history.user, dataset )
-            return trans.fill_template_mako( "/dataset/display.mako", item=dataset, item_data=dataset_data, truncated=truncated )
+            
+            # If data is binary or an image, stream without template; otherwise, use display template.
+            # TODO: figure out a way to display images in display template.
+            if isinstance(dataset.datatype, datatypes.binary.Binary) or isinstance(dataset.datatype, datatypes.images.Image):
+                mime = trans.app.datatypes_registry.get_mimetype_by_extension( dataset.extension.lower() )
+                trans.response.set_content_type( mime )
+                return open( dataset.file_name )
+            else:
+                return trans.fill_template_mako( "/dataset/display.mako", item=dataset, item_data=dataset_data, truncated=truncated )
         else:
             raise web.httpexceptions.HTTPNotFound()
             
