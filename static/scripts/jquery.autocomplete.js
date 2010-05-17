@@ -13,7 +13,7 @@
 
 String.prototype.endsWith = function(str) {return (this.match(str+"$")==str)}
 
-
+// JG HACK: each autocomplete object should have its own return_key flag.
 var return_key_pressed_for_autocomplete = false;
 
 ;(function($) {

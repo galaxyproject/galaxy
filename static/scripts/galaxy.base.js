@@ -155,7 +155,7 @@ function replace_big_select_inputs(min_length) {
     if (min_length === undefined)
         min_length = 20;
     
-    $('select[refresh_on_change!="true"]').each( function() {
+    $('select').each( function() {
         var select_elt = $(this);
         // Skip if # of options < min length.
         if (select_elt.find('option').length < min_length)
@@ -199,7 +199,7 @@ function replace_big_select_inputs(min_length) {
         });
         
         // Set initial text if it's empty.
-        if ( text_input_elt.attr('value') == '' ) {
+        if ( start_value == '' || start_value == '?') {
             text_input_elt.attr('value', 'Click to Search or Select');
         }
         
@@ -231,9 +231,56 @@ function replace_big_select_inputs(min_length) {
                 }
             }
         };
-        
         text_input_elt.parents('form').submit( function() { submit_hook(); } );
+        
+        // Add custom event so that other objects can execute name --> value conversion whenever they want.
         $(document).bind("convert_dbkeys", function() { submit_hook(); } );
+        
+        // If select is refresh on change, mirror this behavior.
+        if (select_elt.attr('refresh_on_change') == 'true')
+        {
+            // Get refresh vals.
+            var refresh_vals = select_elt.attr('refresh_on_change_values');
+            if (refresh_vals !== undefined)
+                refresh_vals = refresh_vals.split(",")
+            text_input_elt.keyup( function( e ) 
+            {
+                if ( ( e.keyCode == 13 ) && // Return Key
+                     ( return_key_pressed_for_autocomplete == true ) ) // Make sure return key was for autocomplete.
+                {
+                    //
+                    // If value entered can be matched to value, do so and refresh by submitting parent form.
+                    //
+                    
+                    // Get new value and see if it can be matched.
+                    var cur_value = text_input_elt.attr('value');
+                    var new_value = select_mapping[cur_value];
+                    if (new_value !== null && new_value !== undefined) 
+                    {
+                        // Do refresh if new value is refresh value or if there are no refresh values.
+                        refresh = false;
+                        if (refresh_vals !== undefined)
+                        {
+                            for (var i= 0; i < refresh_vals.length; i++ )
+                                if (new_value == refresh_vals[i])
+                                {
+                                    refresh = true;
+                                    break;
+                                }
+                        }
+                        else
+                            // Refresh for all values.
+                            refresh = true;
+
+                        if (refresh)
+                        {
+                            text_input_elt.attr('value', new_value);
+                            text_input_elt.parents('form').submit();
+                        }
+                    }
+                }
+            });
+        }
     });
 }
 
