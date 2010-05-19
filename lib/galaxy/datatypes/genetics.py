@@ -349,6 +349,19 @@ class Rgenetics(Html):
         return True
 
 
+class ldIndep(Rgenetics):
+    """
+    LD (a good measure of redundancy of information) depleted Plink Binary compressed 2bit/geno
+    """
+    file_ext="ldreduced"
+
+    def __init__( self, **kwd ):
+        Rgenetics.__init__(self, **kwd)
+        self.add_composite_file( '%s_INDEP.bim', substitute_name_with_metadata = 'base_name', is_binary = True )
+        self.add_composite_file( '%s_INDEP.bed', substitute_name_with_metadata = 'base_name', is_binary = True )
+        self.add_composite_file( '%s_INDEP.fam', substitute_name_with_metadata = 'base_name', is_binary = True )
+
+
 class SNPMatrix(Rgenetics):
     """
     BioC SNPMatrix Rgenetics data collections

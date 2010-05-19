@@ -68,7 +68,7 @@ NPRE=${TOOL}test1
 echo "now doing $TOOL"
 OUTPATH="$OROOT/$TOOL"
 rm -rf $OUTPATH/*
-cmd="$TOOLPATH/$TOOL.py "$INPATH/tinywga" "tinywga" $OUTPATH/${NPRE}.html $OUTPATH "$NPRE" '100' '6'"
+cmd="$TOOLPATH/$TOOL.py "$INPATH/tinywga" "tinywga" $OUTPATH/${NPRE}.html $OUTPATH "$NPRE" '100' '6' 'true'"
 echo "Doing $cmd"
 python $TOOLPATH/$TOOL.py "$INPATH/tinywga" "tinywga" $OUTPATH/${NPRE}.html $OUTPATH "$NPRE" '100' '6' 
 # rgGRR.py $i.extra_files_path/$i.metadata.base_name "$i.metadata.base_name"

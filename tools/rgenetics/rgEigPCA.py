@@ -1,5 +1,5 @@
 """
-run smartpca 
+run smartpca
 
 This uses galaxy code developed by Dan to deal with
 arbitrary output files using an html dataset with it's own
@@ -25,8 +25,8 @@ smartpca runs Principal Components Analysis on input genotype data and
 5 different input formats are supported.  See ../CONVERTF/README
 for documentation on using the convertf program to convert between formats.
 
-The syntax of smartpca is "../bin/smartpca -p parfile".  We illustrate 
-how parfile works via a toy example (see example.perl in this directory).  
+The syntax of smartpca is "../bin/smartpca -p parfile".  We illustrate
+how parfile works via a toy example (see example.perl in this directory).
 This example takes input in EIGENSTRAT format.  The syntax of how to take input
 in other formats is analogous to the convertf program, see ../CONVERTF/README.
 
@@ -56,9 +56,9 @@ OPTIONAL PARAMETERS:
 numoutevec:     number of eigenvectors to output.  Default is 10.
 numoutlieriter: maximum number of outlier removal iterations.
   Default is 5.  To turn off outlier removal, set this parameter to 0.
-numoutlierevec: number of principal components along which to 
+numoutlierevec: number of principal components along which to
   remove outliers during each outlier removal iteration.  Default is 10.
-outliersigmathresh: number of standard deviations which an individual must 
+outliersigmathresh: number of standard deviations which an individual must
   exceed, along one of the top (numoutlierevec) principal components, in
   order for that individual to be removed as an outlier.  Default is 6.0.
 outlieroutname: output logfile of outlier individuals removed. If not specified,
@@ -78,17 +78,17 @@ nsnpldregress: If set to a positive integer, then LD correction is turned on,
   Default is 0 (no LD correction).  If desiring LD correction, we recommend 2.
 maxdistldregress: If doing LD correction, this is the maximum genetic distance
   (in Morgans) for previous SNPs used in LD correction.  Default is no maximum.
-poplistname:   If wishing to infer eigenvectors using only individuals from a 
-  subset of populations, and then project individuals from all populations 
+poplistname:   If wishing to infer eigenvectors using only individuals from a
+  subset of populations, and then project individuals from all populations
   onto those eigenvectors, this input file contains a list of population names,
-  one population name per line, which will be used to infer eigenvectors.  
-  It is assumed that the population of each individual is specified in the 
+  one population name per line, which will be used to infer eigenvectors.
+  It is assumed that the population of each individual is specified in the
   indiv file.  Default is to use individuals from all populations.
 phylipoutname: output file containing an fst matrix which can be used as input
   to programs in the PHYLIP package, such as the "fitch" program for
   constructing phylogenetic trees.
 noxdata:    if set to YES, all SNPs on X chr are excluded from the data set.
-  The smartpca default for this parameter is YES, since different variances 
+  The smartpca default for this parameter is YES, since different variances
   for males vs. females on X chr may confound PCA analysis.
 nomalexhet: if set to YES, any het genotypes on X chr for males are changed
   to missing data.  The smartpca default for this parameter is YES.
@@ -96,11 +96,11 @@ badsnpname: specifies a list of SNPs which should be excluded from the data set.
   Same format as example.snp.  Cannot be used if input is in
   PACKEDPED or PACKEDANCESTRYMAP format.
 popsizelimit: If set to a positive integer, the result is that only the first
-  popsizelimit individuals from each population will be included in the 
-  analysis. It is assumed that the population of each individual is specified 
+  popsizelimit individuals from each population will be included in the
+  analysis. It is assumed that the population of each individual is specified
   in the indiv file.  Default is to use all individuals in the analysis.
 
-The next 5 optional parameters allow the user to output genotype, snp and 
+The next 5 optional parameters allow the user to output genotype, snp and
   indiv files which will be identical to the input files except that:
     Any individuals set to Ignore in the input indiv file will be
       removed from the data set (see ../CONVERTF/README)
@@ -112,21 +112,10 @@ genotypeoutname: output genotype file
 snpoutname:      output snp file
 indivoutname:    output indiv file
 outputgroup: see documentation in ../CONVERTF/README
-
-
 """
 import sys,os,time,subprocess,string,glob
-from rgutils import RRun, galhtmlprefix, galhtmlpostfix, timenow, smartpca, rexe
-
+from rgutils import RRun, galhtmlprefix, galhtmlpostfix, timenow, smartpca, rexe, plinke
 verbose = False
-
-mapexts = ['.map','.bim','.pedsnp']
-mapexts += [x.upper() for x in mapexts] # ya never know
-genoexts = ['.ped','.bed','.pedsnp']
-genoexts += [x.upper() for x in genoexts]  
-indexts = ['.ped','.fam','.pedind']
-indexts += [x.upper() for x in indexts]  
-            
 
 def makePlot(eigpca='test.pca',title='test',pdfname='test.pdf',h=8,w=10,nfp=None,rexe=''):
     """
@@ -205,9 +194,43 @@ def makePlot(eigpca='test.pca',title='test',pdfname='test.pdf',h=8,w=10,nfp=None
     print >> sys.stdout, '\n'.join(R)
     print >> sys.stdout, rlog
 
-def getInfiles(infile=None):
+
+def getInfiles(basename=None,infpath=None,outfpath=None,plinke='plink',forcerebuild=False):
+    """
+    openOrMakeLDreduced(basename,newfpath,plinke='plink',forcerebuild=False)
+    ingeno = getLDreduced(infile,plinke)
+    gbase,gext = os.path.splitext(ingeno)
+    if gext == '.bed':
+       inmap = '%s.bim' % gbase
+       inped = '%s.fam' % gbase
+    elif gext == '.ped':
+       inmap = '%s.map' % gbase
+       inped = '%s.ped' % gbase
+    elif gext == '.tped':
+       inmap = '%s.tmap' % gbase
+       inped = '%s.tfam' % gbase
+    """
+    base,kind = getLDreducedFname(basename,infpath=infpath,outfpath=outfpath,plinke=plinke,forcerebuild=forcerebuild)
+    assert kind in ['lped','pbed','tped'],'## kind=%s - not lped,pbed,tped' % str(kind)
+    if kind=='lped':
+        return '%s.ped' % base,'%s.map' % base,'%s.ped' % base
+    elif kind=='pbed':
+        return '%s.bed' % base,'%s.bim' % base,'%s.fam' % base
+    elif kind == 'tped':
+        return '%s.tped' % base,'%s.tmap' % base,'%s.tfam' % base
+
+
+def getInfilesOld(infile=None):
+    """given a basename, find the best input files
+    """
+    mapexts = ['.map','.bim','.pedsnp']
+    mapexts += [x.upper() for x in mapexts] # ya never know
+    genoexts = ['.ped','.bed','.pedsnp']
+    genoexts += [x.upper() for x in genoexts]
+    indexts = ['.ped','.fam','.pedind']
+    indexts += [x.upper() for x in indexts]
     flist = glob.glob('%s*' % infile) # this should list all available rgenetics data files
-    exts = [os.path.splitext(x)[-1] for x in flist] # expect ['.ped','.map'] etc
+    exts = set([os.path.splitext(x)[-1] for x in flist]) # expect ['.ped','.map'] etc
     mapext = None
     genoext = None
     indext = None
@@ -234,7 +257,7 @@ def getInfiles(infile=None):
         sys.exit(1)
     if genoext == None:
         print '### no geno (%s) file found - cannot run eigensoft' % ','.join(genoexts)
-        sys.exit(1)    
+        sys.exit(1)
     return ingeno,inmap,inped
 
 def getfSize(fpath,outpath):
@@ -252,18 +275,18 @@ def getfSize(fpath,outpath):
         elif n > 0:
             size = ' (%d B)' % (int(n))
     return size
-  
+
 
 def runEigen():
     """ run the smartpca prog - documentation follows
 
-    smartpca.perl -i fakeped_100.eigenstratgeno -a fakeped_100.map -b fakeped_100.ind -p fakeped_100 -e fakeped_100.eigenvals -l 
+    smartpca.perl -i fakeped_100.eigenstratgeno -a fakeped_100.map -b fakeped_100.ind -p fakeped_100 -e fakeped_100.eigenvals -l
         fakeped_100.eigenlog -o fakeped_100.eigenout
 
 DOCUMENTATION OF smartpca.perl program:
 
-This program calls the smartpca program (see ../POPGEN/README). 
-For this to work, the bin directory containing smartpca MUST be in your path. 
+This program calls the smartpca program (see ../POPGEN/README).
+For this to work, the bin directory containing smartpca MUST be in your path.
 See ./example.perl for a toy example.
 
 ../bin/smartpca.perl
@@ -279,7 +302,7 @@ See ./example.perl for a toy example.
 -l example.log   : output logfile
 -m maxiter       : (Default is 5) maximum number of outlier removal iterations.
                    To turn off outlier removal, set -m 0.
--t topk          : (Default is 10) number of principal components along which 
+-t topk          : (Default is 10) number of principal components along which
                    to remove outliers during each outlier removal iteration.
 -s sigma         : (Default is 6.0) number of standard deviations which an
                    individual must exceed, along one of topk top principal
@@ -293,9 +316,9 @@ All files can be viewed however, by making links in the primary (HTML) history i
 
     <command interpreter="python">
     rgEigPCA.py "$i.extra_files_path/$i.metadata.base_name" "$title" "$out_file1"
-    "$out_file1.files_path" "$k" "$m" "$t" "$s" "$pca" 
+    "$out_file1.files_path" "$k" "$m" "$t" "$s" "$pca"
     </command>
-    
+
     """
     if len(sys.argv) < 9:
         print 'Need an input genotype file root, a title, a temp id and the temp file path for outputs,'
@@ -305,9 +328,10 @@ All files can be viewed however, by making links in the primary (HTML) history i
         print >> sys.stdout, 'rgEigPCA.py got %s' % (' '.join(sys.argv))
     skillme = ' %s' % string.punctuation
     trantab = string.maketrans(skillme,'_'*len(skillme))
-    ofname = sys.argv[5]        
+    ofname = sys.argv[5]
     progname = os.path.basename(sys.argv[0])
     infile = sys.argv[1]
+    infpath,base_name = os.path.split(infile) # can't leave anything here - readonly on PSU - so leave in outdir instead
     title = sys.argv[2].translate(trantab) # must replace all of these for urls containing title
     outfile1 = sys.argv[3]
     newfilepath = sys.argv[4]
@@ -328,8 +352,8 @@ All files can be viewed however, by making links in the primary (HTML) history i
     eigentitle = os.path.join(newfilepath,title)
     explanations=['Samples plotted in first 2 eigenvector space','Principle components','Eigenvalues',
     'Smartpca log (contents shown below)']
-    rplotname = 'PCAPlot.pdf' 
-    eigenexts = [rplotname, "pca.xls", "eval.xls"] 
+    rplotname = 'PCAPlot.pdf'
+    eigenexts = [rplotname, "pca.xls", "eval.xls"]
     newfiles = ['%s_%s' % (title,x) for x in eigenexts] # produced by eigenstrat
     rplotout = os.path.join(newfilepath,newfiles[0]) # for R plots
     eigenouts = [x for x in newfiles]
@@ -342,15 +366,12 @@ All files can be viewed however, by making links in the primary (HTML) history i
         os.makedirs(newfilepath)
     except:
         pass
-    ingeno,inmap,inped = getInfiles(infile=infile) # figure out what input files to feed smartpca    
-    # this is a mess. todo clean up - should each datatype have it's own directory? Yes
-    # probably. Then titles are universal - but userId libraries are separate.
-    smartCL = '%s -i %s -a %s -b %s -o %s -p %s -e %s -l %s -k %s -m %s -t %s -s %s' % \
-          (smartpca,ingeno, inmap, inped, eigenouts[1],'%s_eigensoftplot.pdf' % title,eigenouts[2],eigenlogf, \
+    smartCL = '%s -i %s.bed -a %s.bim -b %s.fam -o %s -p %s -e %s -l %s -k %s -m %s -t %s -s %s' % \
+          (smartpca,infile, infile, infile, eigenouts[1],'%s_eigensoftplot.pdf' % title,eigenouts[2],eigenlogf, \
            eigen_k, eigen_m, eigen_t, eigen_s)
     env = os.environ
-    p=subprocess.Popen(smartCL,shell=True,cwd=newfilepath)        
-    retval = p.wait() 
+    p=subprocess.Popen(smartCL,shell=True,cwd=newfilepath)
+    retval = p.wait()
     # copy the eigenvector output file needed for adjustment to the user's eigenstrat library directory
     elog = file(os.path.join(newfilepath,eigenlogf),'r').read()
     eeigen = os.path.join(newfilepath,'%s.evec' % eigenouts[1]) # need these for adjusting
@@ -360,7 +381,7 @@ All files can be viewed however, by making links in the primary (HTML) history i
         eigpcaRes = ''
     file(eigpca,'w').write(eigpcaRes)
     makePlot(eigpca=eigpca,pdfname=newfiles[0],title=title,nfp=newfilepath,rexe=rexe)
-    s = 'Output from %s run at %s<br/>\n' % (progname,timenow())       
+    s = 'Output from %s run at %s<br/>\n' % (progname,timenow())
     lf.write('<h4>%s</h4>\n' % s)
     lf.write('newfilepath=%s, rexe=%s' % (newfilepath,rexe))
     lf.write('(click on the image below to see a much higher quality PDF version)')
@@ -370,9 +391,10 @@ All files can be viewed however, by making links in the primary (HTML) history i
         lf.write('<a href="%s"><img src="%s" alt="%s" hspace="10" align="left" /></a></td></tr></table><br/>\n' \
             % (newfiles[0],thumbnail,explanations[0]))
     allfiles = os.listdir(newfilepath)
+    allfiles.sort()
     sizes = [getfSize(x,newfilepath) for x in allfiles]
-    allfiles = ['<li><a href="%s">%s %s</a></li>\n' % (x,x,sizes[i]) for i,x in enumerate(allfiles)] # html list
-    lf.write('<div class="document">All Files:<ol>%s</ol></div>' % ''.join(allfiles))
+    lallfiles = ['<li><a href="%s">%s %s</a></li>\n' % (x,x,sizes[i]) for i,x in enumerate(allfiles)] # html list
+    lf.write('<div class="document">All Files:<ol>%s</ol></div>' % ''.join(lallfiles))
     lf.write('<div class="document">Log %s contents follow below<p/>' % eigenlogf)
     lf.write('<pre>%s</pre></div>' % elog) # the eigenlog
     s = 'If you need to rerun this analysis, the command line used was\n%s\n<p/>' % (smartCL)

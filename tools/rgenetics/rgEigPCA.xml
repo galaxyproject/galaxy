@@ -10,7 +10,7 @@
     <inputs>
 
        <param name="i"  type="data" label="Input genotype data file"
-          size="120" format="eigenstratgeno,lped,pbed" />
+          size="120" format="ldindep" />
        <param name="title"  type="text" value="Ancestry PCA" label="Title for outputs from this run"
           size="80"  />
        <param name="k"  type="integer" value="4" label="Number of principal components to output"
@@ -35,7 +35,7 @@
 
 <tests>
  <test>
-   <param name='i' value='tinywga' ftype='pbed' >
+   <param name='i' value='tinywga' ftype='ldindep' >
    <metadata name='base_name' value='tinywga' />
    <composite_data value='tinywga.bim' />
    <composite_data value='tinywga.bed' />

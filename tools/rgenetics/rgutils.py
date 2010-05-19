@@ -1,5 +1,5 @@
-# utilities for rgenetics 
-# 
+# utilities for rgenetics
+#
 # copyright 2009 ross lazarus
 # released under the LGPL
 #
@@ -48,13 +48,13 @@ def oRRun(rcmd=[],outdir=None,title='myR',rexe='R'):
     in a temporary directory
     move everything, r script and all back to outdir which will be an html file
 
-    
+
       # test
-      RRun(rcmd=['print("hello cruel world")','q()'],title='test')    
+      RRun(rcmd=['print("hello cruel world")','q()'],title='test')
     """
     rlog = []
     print '### rexe = %s' % rexe
-    assert os.path.isfile(rexe) 
+    assert os.path.isfile(rexe)
     rname = '%s.R' % title
     stoname = '%s.R.log' % title
     rfname = rname
@@ -90,17 +90,17 @@ def oRRun(rcmd=[],outdir=None,title='myR',rexe='R'):
     else:
         flist = os.listdir('.')
     flist.sort
-    flist = [(x,x) for x in flist] 
+    flist = [(x,x) for x in flist]
     for i,x in enumerate(flist):
         if x == rname:
             flist[i] = (x,'R script for %s' % title)
         elif x == stoname:
-            flist[i] = (x,'R log for %s' % title)   
+            flist[i] = (x,'R log for %s' % title)
     if False and rmoutdir:
         os.removedirs(outdir)
     return rlog,flist # for html layout
-            
-            
+
+
 
 
 def RRun(rcmd=[],outdir=None,title='myR',tidy=True):
@@ -109,10 +109,10 @@ def RRun(rcmd=[],outdir=None,title='myR',tidy=True):
     in a temporary directory
     move everything, r script and all back to outdir which will be an html file
 
-    
+
       # test
-      RRun(rcmd=['print("hello cruel world")','q()'],title='test')   
-    echo "a <- c(5, 5); b <- c(0.5, 0.5)" | cat - RScript.R | R --slave \ --vanilla 
+      RRun(rcmd=['print("hello cruel world")','q()'],title='test')
+    echo "a <- c(5, 5); b <- c(0.5, 0.5)" | cat - RScript.R | R --slave \ --vanilla
     suggested by http://tolstoy.newcastle.edu.au/R/devel/05/09/2448.html
     """
     killme = string.punctuation + string.whitespace
@@ -149,29 +149,29 @@ def RRun(rcmd=[],outdir=None,title='myR',tidy=True):
         rlog.insert(0,'Nonzero exit code = %d' % retval) # indicate failure
     flist = os.listdir(outdir)
     flist.sort
-    flist = [(x,x) for x in flist] 
+    flist = [(x,x) for x in flist]
     for i,x in enumerate(flist):
         if x == rname:
             flist[i] = (x,'R script for %s' % title)
         elif x == stoname:
-            flist[i] = (x,'R log for %s' % title)  
+            flist[i] = (x,'R log for %s' % title)
     if tidy and tempout: # we used a temp one - fix that
         flist = os.listdir(outdir)
         for f in flist:
            if os.path.isdir(f):
-		flist2 = os.listdir(f)
+                flist2 = os.listdir(f)
                 for f2 in flist2:
-                   os.unlink(os.path.abspath(f2))  
+                   os.unlink(os.path.abspath(f2))
            else:
                 os.unlink(os.path.abspath(f))
-        os.rmdir(outdir) 
+        os.rmdir(outdir)
     return rlog,flist # for html layout
- 
+
 def runPlink(bfn='bar',ofn='foo',logf=None,plinktasks=[],cd='./',vclbase = []):
     """run a series of plink tasks and append log results to stdout
     vcl has a list of parameters for the spawnv
     common settings can all go in the vclbase list and are added to each plinktask
-    """    
+    """
     # root for all
     fplog,plog = tempfile.mkstemp()
     if type(logf) == type('  '): # open otherwise assume is file - ugh I'm in a hurry
@@ -201,10 +201,10 @@ def pruneLD(plinktasks=[],cd='./',vclbase = []):
     so lots more is perhaps less efficient - each window computational cost is
     ON^2 unless the code is smart enough to avoid unecessary computation where
     allele frequencies make it impossible to see ld > the r^2 cutoff threshold
-    So, do a window and move forward 20? 
-    The fine Plink docs at http://pngu.mgh.harvard.edu/~purcell/plink/summary.shtml#prune 
+    So, do a window and move forward 20?
+    The fine Plink docs at http://pngu.mgh.harvard.edu/~purcell/plink/summary.shtml#prune
     reproduced below
-    
+
 Sometimes it is useful to generate a pruned subset of SNPs that are in approximate linkage equilibrium with each other. This can be achieved via two commands: --indep which prunes based on the variance inflation factor (VIF), which recursively removes SNPs within a sliding window; second, --indep-pairwise which is similar, except it is based only on pairwise genotypic correlation.
 
 Hint The output of either of these commands is two lists of SNPs: those that are pruned out and those that are not. A separate command using the --extract or --exclude option is necessary to actually perform the pruning.
@@ -217,22 +217,22 @@ will create files
      plink.prune.in
      plink.prune.out
 
-Each is a simlpe list of SNP IDs; both these files can subsequently be specified as the argument for 
+Each is a simlpe list of SNP IDs; both these files can subsequently be specified as the argument for
 a --extract or --exclude command.
 
-The parameters for --indep are: window size in SNPs (e.g. 50), the number of SNPs to shift the 
+The parameters for --indep are: window size in SNPs (e.g. 50), the number of SNPs to shift the
 window at each step (e.g. 5), the VIF threshold. The VIF is 1/(1-R^2) where R^2 is the multiple correlation coefficient for a SNP being regressed on all other SNPs simultaneously. That is, this considers the correlations between SNPs but also between linear combinations of SNPs. A VIF of 10 is often taken to represent near collinearity problems in standard multiple regression analyses (i.e. implies R^2 of 0.9). A VIF of 1 would imply that the SNP is completely independent of all other SNPs. Practically, values between 1.5 and 2 should probably be used; particularly in small samples, if this threshold is too low and/or the window size is too large, too many SNPs may be removed.
 
 The second procedure is performed:
 plink --file data --indep-pairwise 50 5 0.5
 
-This generates the same output files as the first version; the only difference is that a 
+This generates the same output files as the first version; the only difference is that a
 simple pairwise threshold is used. The first two parameters (50 and 5) are the same as above (window size and step); the third parameter represents the r^2 threshold. Note: this represents the pairwise SNP-SNP metric now, not the multiple correlation coefficient; also note, this is based on the genotypic correlation, i.e. it does not involve phasing.
 
 To give a concrete example: the command above that specifies 50 5 0.5 would a) consider a
 window of 50 SNPs, b) calculate LD between each pair of SNPs in the window, b) remove one of a pair of SNPs if the LD is greater than 0.5, c) shift the window 5 SNPs forward and repeat the procedure.
 
-To make a new, pruned file, then use something like (in this example, we also convert the 
+To make a new, pruned file, then use something like (in this example, we also convert the
 standard PED fileset to a binary one):
 plink --file data --extract plink.prune.in --make-bed --out pruneddata
     """
@@ -254,7 +254,7 @@ plink --file data --extract plink.prune.in --make-bed --out pruneddata
         except:
             alog.append('### %s Strange - no std out from plink when running command line\n%s\n' % (timenow(),' '.join(vcl)))
     return alog
- 
+
 def readMap(mapfile=None,allmarkers=False,rsdict={},c=None,spos=None,epos=None):
     """abstract out - keeps reappearing
     """
@@ -280,65 +280,84 @@ def readMap(mapfile=None,allmarkers=False,rsdict={},c=None,spos=None,epos=None):
     mfile.close()
     return markers,snpcols,rslist,rsdict
 
-def openOrMakeLDreduced(basename,newfpath,plinke='plink',forcerebuild=False):
-    """ move out of the way - highly specific plink function to create or open
-    an ld reduced and thinned data set for one of the ibs/grr methods..
-    this should be part of the plinkJZ stuff - or bought in here maybe
+def getLDreducedFname(basename,infpath=None,outfpath=None,plinke='plink',forcerebuild=False):
+    """stub to get only the filename - not the Ped object
+    """
+    ldreduced,ftype = openLDreduced(basename,infpath=infpath,outfpath=outfpath,plinke=plinke,forcerebuild=forcerebuild,returnFname=True)
+    return ldreduced,ftype
+
+def openLDreduced(basename,infpath=None,outfpath=None,plinke='plink',forcerebuild=False,returnFname=False):
+    """ if file exists, return it else make and return
     """
     ldr = '%s_INDEP_THIN' % basename # we store ld reduced and thinned data
-    ldreduced = os.path.join(newfpath,ldr)
+    ldreduced = os.path.join(infpath,ldr)
     ped = None
     loglines = []
-    vclbase = []
     ldbedname = '%s.bed' % ldreduced
     ldpedname = '%s.ped' % ldreduced
     bedname = '%s.bed' % basename
     pedname = '%s.ped' % basename
-    ldbedfn = os.path.join(newfpath,ldbedname)
-    ldpedfn = os.path.join(newfpath,ldpedname)
-    bedfn = os.path.join(newfpath,bedname)
-    pedfn = os.path.join(newfpath,pedname)
-    bmap = os.path.join(newfpath,'%s.bim' % basename)
-    pmap = os.path.join(newfpath,'%s.map' % basename)
+    ldbedfn = os.path.join(outfpath,ldbedname)
+    ldpedfn = os.path.join(outfpath,ldpedname)
+    bedfn = os.path.join(outfpath,bedname)
+    pedfn = os.path.join(outfpath,pedname)
+    bmap = os.path.join(outfpath,'%s.bim' % basename)
+    pmap = os.path.join(outfpath,'%s.map' % basename)
     if not forcerebuild:
         if os.path.exists(ldbedfn): # joy. already done
+            if returnFname:
+                 return ldreduced,'pbed'
             ped = plinkbinJZ.BPed(ldreduced)
             ped.parse(quick=True)
             return ped,loglines
-        if os.path.exists(ldpedfn): # why bother - for completeness I guess
-            ped = plinkbinJZ.LPed(ldreduced)
-            ped.parse()
-            return ped,loglines
-    if os.path.exists(bedfn): # run ld prune and thin and save these for next time
-        nsnp = len(open(bmap,'r').readlines())
-        plinktasks = [['--bfile',basename,'--indep-pairwise 50 40 0.2','--out %s' % basename],
-            ['--bfile',basename,'--extract %s.prune.in --make-bed --out %s_INDEP' % (basename, basename)]]
+    ped,loglines = makeLDreduced(basename,infpath=infpath,outfpath=outfpath,plinke=plinke,forcerebuild=forcerebuild,returnFname=returnFname)
+    return ped,loglines
+
+def makeLDreduced(basename,infpath=None,outfpath=None,plinke='plink',forcerebuild=False,returnFname=False):
+    """ not there so make and leave in output dir for post job hook to copy back into input extra files path for next time
+    """
+    ldr = '%s_INDEP_THIN' % basename # we store ld reduced and thinned data
+    ldreduced = os.path.join(outfpath,ldr) # note where this is going
+    outbase = os.path.join(outfpath,basename)
+    inbase = os.path.join(infpath,basename)
+    ped = None
+    loglines = []
+    ldbedname = '%s.bed' % ldreduced
+    ldpedname = '%s.ped' % ldreduced
+    bedname = '%s.bed' % basename
+    pedname = '%s.ped' % basename
+    ldbedfn = os.path.join(infpath,ldbedname)
+    ldpedfn = os.path.join(infpath,ldpedname)
+    bedfn = os.path.join(infpath,bedname)
+    pedfn = os.path.join(infpath,pedname)
+    bmap = os.path.join(infpath,'%s.bim' % basename)
+    pmap = os.path.join(infpath,'%s.map' % basename)
+    thin = '0.1' # 10%
+    winsize = '50'
+    winmove = '40'
+    r2thresh = '0.2'
+    plinktasks = []
+    nsnp = None
+    if (not os.path.exists(bedfn)) and os.path.exists(pedfn): # setup make pbed
+        plinktasks = [['--file',inbase,'--make-bed','--out',inbase],] # setup conversion
+        nsnp = len(open(pmap,'r').readlines())
+    if os.path.exists(bedfn) or nsnp: # run ld prune and thin and save these for next time
+        if not nsnp:
+            nsnp = len(open(bmap,'r').readlines())
+        vclbase = [plinke,'--noweb']
+        plinktasks += [['--bfile',inbase,'--indep-pairwise %s %s %s' % (winsize,winmove,r2thresh),'--out %s' % outbase],
+            ['--bfile',inbase,'--extract %s.prune.in --make-bed --out %s_INDEP' % (outbase, outbase)]]
         if nsnp < 100: # if 9 snps --thin 0.1 will happily return 0 snps
-            plinktasks += [['--bfile %s_INDEP --make-bed --out %s' % (basename,ldreduced)],]
+            plinktasks += [['--bfile %s_INDEP --make-bed --out %s' % (outbase,ldreduced)],]
         else: # thin rather than copy
-            plinktasks += [['--bfile',basename,'--extract %s.prune.in --make-bed --out %s' % (basename, ldreduced)]]
+            plinktasks += [['--bfile %s_INDEP --thin %s --make-bed --out %s' % (outbase,thin,ldreduced),]]
         # subset of ld independent markers for eigenstrat and other requirements
         vclbase = [plinke,'--noweb']
-        loglines = pruneLD(plinktasks=plinktasks,cd=newfpath,vclbase = vclbase)
+        loglines = pruneLD(plinktasks=plinktasks,cd=outfpath,vclbase = vclbase)
+        if returnFname:
+            return ldreduced,'pbed'
         ped = plinkbinJZ.BPed(ldreduced)
         ped.parse(quick=True)
         return ped,loglines
-    if pedname and os.path.exists(pedfn): # screw it - return a bed - quicker to process
-        nsnp = len(open(pmap,'r').readlines())
-        if nsnp > 100:
-            plinktasks = [['--file',basename,'--make-bed','--out',basename],
-                     ['--bfile',basename,'--indep-pairwise 50 40 0.2','--out %s' % basename],
-                     ['--bfile',basename,'--extract %s.prune.in --make-bed --out %s_INDEP' % (basename, basename)],
-                     ['--bfile %s_INDEP --thin 0.1 --recode --out %s' % (bedname,ldreduced),]]
-        else: # no thin step
-            plinktasks = [['--file',basename,'--make-bed','--out',basename],
-                     ['--bfile',basename,'--indep-pairwise 50 40 0.2','--out %s' % basename],
-                     ['--bfile',basename,'--extract %s.prune.in --make-bed --out %s' % (basename, ldreduced)]]
-
-        # subset of ld independent markers for eigenstrat and other requirements
-        vclbase = [plinke,'--noweb']
-        loglines = pruneLD(plinktasks=plinktasks,cd=newfpath,vclbase = vclbase)
-        ped = plinkbinJZ.BPed(os.path.splitext(ldbedfn)[0])
-        ped.parse(quick=True)
-    return ped,loglines
+    raise Exception('InputNotFound','No input pbed or lped found in %s' % inpath)
 

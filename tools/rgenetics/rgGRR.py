@@ -3,7 +3,7 @@
 # could use clustering on the zscores to guess real relationships for unrelateds
 # but definitely need to draw last
 # added MAX_SHOW_ROWS to limit the length of the main report page
-# Changes for Galaxy integration 
+# Changes for Galaxy integration
 # added more robust knuth method for one pass mean and sd
 # no difference really - let's use scipy.mean() and scipy.std() instead...
 # fixed labels and changed to .xls for outlier reports so can open in excel
@@ -63,7 +63,7 @@ try:
 except NameError:
   from Sets import Set as set
 
-from rgutils import timenow,pruneLD,plinke,openOrMakeLDreduced
+from rgutils import timenow,plinke
 
 import plinkbinJZ
 
@@ -123,11 +123,10 @@ SVG_COLORS = ('cyan','dodgerblue','mediumpurple','forestgreen', 'lightgreen','go
 # dupe,parentchild,sibpair,halfsib,parents,unrel,unkn
 #('orange', 'red', 'green', 'chartreuse', 'blue', 'purple', 'gray')
 
-OUTLIERS_HEADER = 'Mean\tSdev\tZ(mean)\tZ(sdev)\tFID1\tIID1\tFID2\tIID2\tMean(Rel_Mean)\tSdev(Rel_Mean)\tMean(Rel_Sdev)\tSdev(Rel_Sdev)\n'
-OUTLIERS_HEADER_list = ['Mean','Sdev','ZMean','ZSdev','FID1','IID1','FID2','IID2',
-'RGMean_M','RGMean_SD','RGSD_M','RGSD_SD']
-TABLE_HEADER='fid1 iid1\tfid2 iid2\tmean\tsdev\tzmean\tzsdev\tgeno\trelcode\n'
-  
+OUTLIERS_HEADER_list = ['Mean','Sdev','ZMean','ZSdev','FID1','IID1','FID2','IID2','RelMean_M','RelMean_SD','RelSD_M','RelSD_SD','PID1','MID1','PID2','MID2','Ped']
+OUTLIERS_HEADER = '\t'.join(OUTLIERS_HEADER_list)
+TABLE_HEADER='fid1_iid1\tfid2_iid2\tmean\tsdev\tzmean\tzsdev\tgeno\trelcode\tpid1\tmid1\tpid2\tmid2\n'
+
 
 ### Relationship codes, text, and lookups/mappings
 N_RELATIONSHIP_TYPES = 7
@@ -148,7 +147,7 @@ OUTLIER_STDEVS = {
     REL_HALFSIBS:    2,
     REL_RELATED:     2,
     REL_UNRELATED:   3,
-    REL_UNKNOWN:     2,    
+    REL_UNKNOWN:     2,
     }
 # note now Z can be passed in
 
@@ -200,7 +199,7 @@ SVG_HEADER = '''<?xml version="1.0" standalone="no"?>
           var style = {"font-family":"Arial,Helvetica", "fill":"black", "font-size":12};
           var dist = 12;
           var yOffset = 4;
-  
+
           //A checkBox for each relationship type dupe,parentchild,sibpair,halfsib,parents,unrel,unkn
           checkBoxes["dupe"] = new checkBox("dupe","checkboxes",20,40,"cbRect","cbCross",true,"Duplicate",style,dist,yOffset,undefined,hideShowLayer);
           checkBoxes["parentchild"] = new checkBox("parentchild","checkboxes",20,60,"cbRect","cbCross",true,"Parent-Child",style,dist,yOffset,undefined,hideShowLayer);
@@ -211,7 +210,7 @@ SVG_HEADER = '''<?xml version="1.0" standalone="no"?>
           checkBoxes["unknown"] = new checkBox("unknown","checkboxes",20,160,"cbRect","cbCross",true,"Unknown",style,dist,yOffset,undefined,hideShowLayer);
 
       }
-                        
+
       function hideShowLayer(id, status, label) {
           var vis = "hidden";
           if (status) {
@@ -219,7 +218,7 @@ SVG_HEADER = '''<?xml version="1.0" standalone="no"?>
           }
           document.getElementById(id).setAttributeNS(null, 'visibility', vis);
       }
-     
+
       function showBTT(evt, rel, mm, dm, md, dd, n, mg, dg, lg, hg) {
     var x = parseInt(evt.pageX)-250;
     var y = parseInt(evt.pageY)-110;
@@ -316,7 +315,7 @@ SVG_HEADER = '''<?xml version="1.0" standalone="no"?>
         document.getElementById("otRmean").textContent = "relmean="+rmean;
         document.getElementById("otRsdev").textContent = "relsdev="+rsdev;
     document.getElementById("otHead").setAttribute('fill', fill);
-        
+
         var tt = document.getElementById("otTip");
     tt.setAttribute("transform", "translate("+x+","+y+")");
     tt.setAttribute('visibility', 'visible');
@@ -330,7 +329,7 @@ SVG_HEADER = '''<?xml version="1.0" standalone="no"?>
         document.getElementById("otTip").setAttributeNS(null, 'visibility', 'hidden');
       }
 
-     ]]>    
+     ]]>
   </script>
   <defs>
     <!-- symbols for check boxes -->
@@ -362,7 +361,7 @@ SVG_HEADER = '''<?xml version="1.0" standalone="no"?>
 
   <!-- Grid Lines -->
   <g style="fill:none; stroke:#dddddd; stroke-width:1; stroke-dasharray:2,2; text-anchor:end; shape-rendering:crispEdges">
-    
+
     <!-- Vertical grid lines -->
     <line x1="125" y1="0" x2="115" y2="600" />
     <line x1="230" y1="0" x2="230" y2="600" />
@@ -398,16 +397,16 @@ SVG_HEADER = '''<?xml version="1.0" standalone="no"?>
     <rect x="120" y="135" width="10" height="10" fill="%s" stroke="%s" stroke-width="1" cursor="pointer"/>
     <rect x="120" y="155" width="10" height="10" fill="%s" stroke="%s" stroke-width="1" cursor="pointer"/>
     <text x="15"  y="195" style="fill:black; stroke:none" font-size="12" font-family="Arial" >Zscore gt 15</text>
-    <circle cx="125" cy="192" r="6" style="stroke:red; fill:gold; fill-opacity:1.0; stroke-width:1;"/> 
+    <circle cx="125" cy="192" r="6" style="stroke:red; fill:gold; fill-opacity:1.0; stroke-width:1;"/>
     <text x="15" y="215" style="fill:black; stroke:none" font-size="12" font-family="Arial" >Zscore 4 to 15</text>
-    <circle cx="125" cy="212" r="3" style="stroke:gold; fill:gold; fill-opacity:1.0; stroke-width:1;"/> 
+    <circle cx="125" cy="212" r="3" style="stroke:gold; fill:gold; fill-opacity:1.0; stroke-width:1;"/>
     <text x="15" y="235" style="fill:black; stroke:none" font-size="12" font-family="Arial" >Zscore lt 4</text>
-    <circle cx="125" cy="232" r="2" style="stroke:gold; fill:gold; fill-opacity:1.0; stroke-width:1;"/> 
+    <circle cx="125" cy="232" r="2" style="stroke:gold; fill:gold; fill-opacity:1.0; stroke-width:1;"/>
     <g id="checkboxes">
     </g>
   </g>
 
- 
+
    <g style='fill:black; stroke:none' font-size="17" font-family="Arial">
     <!-- X Axis Labels -->
     <text x="480" y="660">Mean Alleles Shared</text>
@@ -415,7 +414,7 @@ SVG_HEADER = '''<?xml version="1.0" standalone="no"?>
     <text x="277"  y="630" >1.25</text>
     <text x="564"  y="630" >1.5</text>
     <text x="842" y="630" >1.75</text>
-    <text x="1140" y="630" >2.0</text>    
+    <text x="1140" y="630" >2.0</text>
   </g>
 
   <g transform="rotate(270)" style="fill:black; stroke:none" font-size="17" font-family="Arial">
@@ -464,7 +463,6 @@ SVG_FOOTER = '''
 </svg>
 '''
 
-OUTLIERS_HEADER = 'Mean\tSdev\tZ(mean)\tZ(sdev)\tFID1\tIID1\tFID2\tIID2\tMean(Mean)\tSdev(Mean)\tMean(Sdev)\tSdev(Sdev)\n'
 
 DEFAULT_MAX_SAMPLE_SIZE = 5000
 
@@ -492,7 +490,7 @@ def distance(point1, point2):
     dx = abs(x1 - x2)
     dy = abs(y1 - y2)
     return math.sqrt(dx**2 + dy**2)
-    
+
 def point_inside_polygon(x, y, poly):
     """ Determine if a point (x,y) is inside a given polygon or not
         poly is a list of (x,y) pairs.
@@ -513,7 +511,7 @@ def point_inside_polygon(x, y, poly):
                         xinters = (y-p1y)*(p2x-p1x)/(p2y-p1y)+p1x
                     if p1x == p2x or x <= xinters:
                         inside = not inside
-        p1x,p1y = p2x,p2y    
+        p1x,p1y = p2x,p2y
     return inside
 
 def readMap(pedfile):
@@ -524,7 +522,7 @@ def readMap(pedfile):
     if os.path.exists(mapfile):
         print 'readMap: %s' % (mapfile)
         fh = file(mapfile, 'r')
-    for line in fh:	    
+    for line in fh:
         marker_list.append(line.strip().split())
     fh.close()
     print 'readMap: %s markers' % (len(marker_list))
@@ -556,8 +554,8 @@ def calcMeanSD(useme):
         for i,x in enumerate(useme):
             delta = x - mean
             mean = mean + delta/(i+1) # knuth uses n+=1 at start
-            M2 = M2 + delta*(x - mean)      # This expression uses the new value of mean        
-        variance = M2/(n-1) # assume is sample so lose 1 DOF 
+            M2 = M2 + delta*(x - mean)      # This expression uses the new value of mean
+        variance = M2/(n-1) # assume is sample so lose 1 DOF
         sd = pow(variance,0.5)
     return mean,sd
 
@@ -574,7 +572,7 @@ def doIBSpy(ped=None,basename='',outdir=None,logf=None,
     tbl.write(TABLE_HEADER)
     svgf = '%s.svg' % (title)
     svg = file(os.path.join(outdir,svgf), 'w')
-   
+
     nMarkers = len(ped._markers)
     if nMarkers < 5:
         print sys.stderr, '### ERROR - %d is too few markers for reliable estimation in %s - terminating' % (nMarkers,PROGNAME)
@@ -591,7 +589,7 @@ def doIBSpy(ped=None,basename='',outdir=None,logf=None,
         sampleIndexes = sorted(random.sample(autosomals, nrsSamples))
 
     print ''
-    print 'Getting random.sample of %s from %s total' % (nrsSamples, nMarkers)    
+    print 'Getting random.sample of %s from %s total' % (nrsSamples, nMarkers)
     npairs = (nSubjects*(nSubjects-1))/2 # total rows in table
     newfiles=[svgf,tblf]
     explanations = ['rgGRR Plot (requires SVG)','Mean by SD alleles shared - %d rows' % npairs]
@@ -607,7 +605,7 @@ def doIBSpy(ped=None,basename='',outdir=None,logf=None,
         nValid = 0
         #getGenotypesByIndices(self, s, mlist, format)
         genos[s] = ped.getGenotypesByIndices(s, sampleIndexes, format='ref')
-        nValid = sum([1 for g in genos[s] if g])        
+        nValid = sum([1 for g in genos[s] if g])
         if not nValid:
             emptyRows.add(s)
             sub = ped.getSubject(s)
@@ -617,7 +615,7 @@ def doIBSpy(ped=None,basename='',outdir=None,logf=None,
     if verbose:
         print '@@Read %s genotypes in %s seconds' % (nGenotypes, rtime)
 
-    
+
     ### Now the expensive part.  For each pair of subjects, we get the mean number
     ### and standard deviation of shared alleles over all of the markers where both
     ### subjects have a known genotype.  Identical subjects should have mean shared
@@ -638,10 +636,10 @@ def doIBSpy(ped=None,basename='',outdir=None,logf=None,
     zstds  = [0.0 for x in xrange(tot)]   ## zstd score for each pair for the relgrp
     skip = set()
     ndone = 0     ## How many have been done so far
-    
+
     logf.write('Calculating %d pairs...\n' % (tot))
     logf.write('Estimated time is %2.2f to %2.2f seconds ...\n' % (estimatedTimeFast, estimatedTimeSlow))
-    
+
     t1sum = 0
     t2sum = 0
     t3sum = 0
@@ -663,11 +661,11 @@ def doIBSpy(ped=None,basename='',outdir=None,logf=None,
         int a1 = g1[i];
         int a2 = g2[i];
         if (a1 != 0 && a2 != 0) {
-            ngeno += 1;            
+            ngeno += 1;
             int shared = 2-abs(a1-a2);
             delta = shared - mean;
             mean = mean + delta/ngeno;
-            M2 += delta*(shared-mean); 
+            M2 += delta*(shared-mean);
             // yes that second time, the updated mean is used see calcmeansd above;
             //printf("%d %d %d %d %d %d\\n", i, a1, a2, ngeno, shared, squared);
             }
@@ -701,7 +699,7 @@ def doIBSpy(ped=None,basename='',outdir=None,logf=None,
 
             g2 = genos[s2]
             isFounder2 = _founder_cache.setdefault(s2, (did2==mid2))
-            
+
             # Determine the relationship for this pair
             relcode = REL_UNKNOWN
             if (fid2 == fid1):
@@ -768,8 +766,10 @@ def doIBSpy(ped=None,basename='',outdir=None,logf=None,
         sm = scipy.mean(useme)
         ss = scipy.std(useme)
         relstats[relCode] = {'sd':(sm,ss), 'mean':(mm,ms)}
-        logf.write('Relstate %s: mean(mean)=%3.2f sdev(mean)=%3.2f, mean(sdev)=%3.2f sdev(sdev)=%3.2f\n' % (relName, mm, ms, sm, ss))
-        
+        s = 'Relstate %s (n=%d): mean(mean)=%3.2f sdev(mean)=%3.2f, mean(sdev)=%3.2f sdev(sdev)=%3.2f\n' % \
+          (relName,relCounts[relCode], mm, ms, sm, ss)
+        logf.write(s)
+
     ### now fake z scores for each subject like abecasis recommends max(|zmu|,|zsd|)
     ### within each group, for each pair, z=(groupmean-pairmean)/groupsd
     available = len(means)
@@ -796,6 +796,9 @@ def doIBSpy(ped=None,basename='',outdir=None,logf=None,
                     r = rels[offset]
                 except IndexError:
                     logf.write('###OOPS offset %d available %d  pairnum %d  len(rels) %d', offset, available, pairnum, len(rels))
+                notfound = ('?',('?','0','0'))
+                relInfo = REL_LOOKUP.get(r,notfound)
+                relName, relColor, relStyle = relInfo
                 rmm,rmd = relstats[r]['mean'] # group mean, group meansd alleles shared
                 rdm,rdd = relstats[r]['sd'] # group sdmean, group sdsd alleles shared
 
@@ -819,16 +822,16 @@ def doIBSpy(ped=None,basename='',outdir=None,logf=None,
                     zrad = 3 # to 9
                 else: # > 15 6=24+
                     zrad=zrad/4
-                    zrad = min(zrad,6) # scale limit 
+                    zrad = min(zrad,6) # scale limit
                 zrad = max(2,max(zsd,zmean)) # as > 2, z grows
-                pair_data[pid] = (zmean,zsd,r,zrad)                 
+                pair_data[pid] = (zmean,zsd,r,zrad)
                 if max(zsd,zmean) > Zcutoff: # is potentially interesting
                     mean = means[offset]
                     sdev = sdevs[offset]
-                    outlierRecords[r].append((mean, sdev, zmean, zsd, fid1, iid1, fid2, iid2, rmm, rmd, rdm, rdd))
+                    outlierRecords[r].append((mean, sdev, zmean, zsd, fid1, iid1, fid2, iid2, rmm, rmd, rdm, rdd,did1,mid1,did2,mid2))
                     nOutliers += 1
-                tbl.write('%s_%s\t%s_%s\t%f\t%f\t%f\t%f\t%d\t%s\n' % \
-                          (fid1, iid1, fid2, iid2, mean, sdev, zmean,zsd, ngeno, relcode))
+                tbl.write('%s_%s\t%s_%s\t%f\t%f\t%f\t%f\t%d\t%s\t%s\t%s\t%s\t%s\n' % \
+                          (fid1, iid1, fid2, iid2, mean, sdev, zmean,zsd, ngeno, relName, did1,mid1,did2,mid2))
                 offset += 1
             pairnum += 1
     logf.write( 'Outliers: %s\n' % (nOutliers))
@@ -849,8 +852,8 @@ def doIBSpy(ped=None,basename='',outdir=None,logf=None,
         nrows = len(outliers)
         truncated = 0
         if nrows > MAX_SHOW_ROWS:
-            s = '<h3>%s outlying pairs (top %d of %d) from %s</h3><table border="0" cellpadding="3">' % (relName,
-                MAX_SHOW_ROWS,nrows,title)
+            s = '<h3>%s outlying pairs (top %d of %d) from %s</h3><table border="0" cellpadding="3">' % \
+               (relName,MAX_SHOW_ROWS,nrows,title)
             truncated = nrows - MAX_SHOW_ROWS
         else:
             s = '<h3>%s outlying pairs (n=%d) from %s</h3><table border="0" cellpadding="3">' % (relName,nrows,title)
@@ -865,10 +868,12 @@ def doIBSpy(ped=None,basename='',outdir=None,logf=None,
         repOut.append('<tr align="center">%s</tr>' % s)
         for n,rec in enumerate(outliers):
             #(mean, sdev, zmean, zsd, fid1, iid1, fid2, iid2, rmm, rmd, rdm, rdd) = rec
-            fh.write('%f\t%f\t%f\t%f\t%s\t%s\t%s\t%s\t%f\t%f\t%f\t%f\n' % tuple(rec))
-            # (mean, sdev, zmean, zsd, fid1, iid1, fid2, iid2, rmm, rmd, rdm, rdd))
+            s = '%f\t%f\t%f\t%f\t%s\t%s\t%s\t%s\t%f\t%f\t%f\t%f\t%s\t%s\t%s\t%s\t' % tuple(rec)
+            fh.write('%s%s\n' % (s,relName))
+            # (mean, sdev, zmean, zsd, fid1, iid1, fid2, iid2, rmm, rmd, rdm, rdd, did1,mid1,did2,mid2))
             s = '''<td>%f</td><td>%f</td><td>%f</td><td>%f</td><td>%s</td><td>%s</td>
-            <td>%s</td><td>%s</td><td>%f</td><td>%f</td><td>%f</td><td>%f</td>''' % tuple(rec)
+            <td>%s</td><td>%s</td><td>%f</td><td>%f</td><td>%f</td><td>%f</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td>''' % tuple(rec)
+            s = '%s<td>%s</td>' % (s,relName)
             if n < MAX_SHOW_ROWS:
                 repOut.append('<tr align="center">%s</tr>' % s)
         if truncated > 0:
@@ -876,7 +881,7 @@ def doIBSpy(ped=None,basename='',outdir=None,logf=None,
                                                                                             nrows))
         fh.close()
         repOut.append('</table><p>')
-        
+
     ### Now, draw the plot in jpeg and svg formats, and optionally in the PDF format
     ### if requested
     logf.write('Plotting ...')
@@ -904,7 +909,7 @@ def doIBSpy(ped=None,basename='',outdir=None,logf=None,
     ### with very specific information in their tooltips.  It would be nice to
     ### keep hte total number of plotted points in the SVG representation to
     ### ~10000 (certainly less than 100000?)
-    pointMap = {}    
+    pointMap = {}
     orderedRels = [y[1] for y in reversed(sorted([(relCounts.get(x, 0),x) for x in REL_LOOKUP.keys()]))]
     # do we really want this? I want out of zone points last and big
     for relCode in orderedRels:
@@ -922,12 +927,12 @@ def doIBSpy(ped=None,basename='',outdir=None,logf=None,
             if rel == relCode:
                 s1,s2 = pairs[x]
                 pid=(s1,s2)
-                zmean,zsd,r,zrad = pair_data[pid][:4]  
+                zmean,zsd,r,zrad = pair_data[pid][:4]
                 rpairs.append(pairs[x])
                 rgenos.append(ngenoL[x])
                 rmeans.append(means[x])
                 rsdevs.append(sdevs[x])
-                rz.append(zrad)                
+                rz.append(zrad)
         ### Now add the svg point group for this relationship to the svg file
         for x in range(len(rmeans)):
             svgX = '%d' % ((rmeans[x] - 1.0) * PLOT_WIDTH) # changed so mean scale is 1-2
@@ -962,16 +967,16 @@ def doIBSpy(ped=None,basename='',outdir=None,logf=None,
                     zrad = 3 # to 9
                 else: # > 9 5=15+
                     zrad=zrad/3
-                    zrad = min(zrad,5) # scale limit 
+                    zrad = min(zrad,5) # scale limit
                 if zrad <= 3:
                     svg.write('<circle cx="%d" cy="%d" r="%s" onmouseover="showOTT(evt, %d, \'%s,%s,%s,%s\', \'%s,%s,%s,%s\', %1.2f, %1.2f, %s, %1.2f, %1.2f)" onmouseout="hideOTT(evt)" />\n' % (svgX, svgY, zrad, relCode, fid1, iid1, did1, mid1, fid2, iid2, did2, mid2, mean, sdev, ngenos, rmean, rsdev))
                 else: # highlight pairs a long way from expectation by outlining circle in red
-                    svg.write("""<circle cx="%d" cy="%d" r="%s" style="stroke:red; fill:%s; fill-opacity:1.0; stroke-width:1;"  
-                    onmouseover="showOTT(evt, %d, \'%s,%s,%s,%s\', \'%s,%s,%s,%s\', %1.2f, %1.2f, %s, %1.2f, %1.2f)" 
+                    svg.write("""<circle cx="%d" cy="%d" r="%s" style="stroke:red; fill:%s; fill-opacity:1.0; stroke-width:1;"
+                    onmouseover="showOTT(evt, %d, \'%s,%s,%s,%s\', \'%s,%s,%s,%s\', %1.2f, %1.2f, %s, %1.2f, %1.2f)"
                     onmouseout="hideOTT(evt)" />\n""" % \
                     (svgX, svgY, zrad, svgColor, relCode, fid1, iid1, did1, mid1, fid2, iid2, did2, mid2, mean, sdev, ngenos, rmean, rsdev))
         svg.write('</g>\n')
-        
+
     ### Create a pdf as well if indicated on the command line
     ### WARNING! for framingham share, with about 50M pairs, this is a 5.5GB pdf!
 ##    if pdftoo:
@@ -1002,23 +1007,25 @@ def doIBS(n=100):
     expect 'input pbed path' 'basename' 'outpath' 'title' 'logpath' 'n'
     <command interpreter="python">
          rgGRR.py $i.extra_files_path/$i.metadata.base_name "$i.metadata.base_name"
-        '$out_file1' '$out_file1.files_path' "$title1"  '$n' '$Z' '$force'
+        '$out_file1' '$out_file1.files_path' "$title1"  '$n' '$Z' 
     </command>
 
     """
     u="""<command interpreter="python">
          rgGRR.py $i.extra_files_path/$i.metadata.base_name "$i.metadata.base_name"
-        '$out_file1' '$out_file1.files_path' "$title"  '$n' '$Z' '$force'        
-        </command>"""
+        '$out_file1' '$out_file1.files_path' "$title1"  '$n' '$Z'
+         </command>
+      """
 
-    if len(sys.argv) < 9:
+
+    if len(sys.argv) < 7:
         print >> sys.stdout, 'Need pbed inpath, basename, out_htmlname, outpath, title, logpath, nSNP, Zcutoff on command line please'
         print >> sys.stdout, u
         sys.exit(1)
     ts = '%s%s' % (string.punctuation,string.whitespace)
     ptran =  string.maketrans(ts,'_'*len(ts))
     inpath = sys.argv[1]
-    ldpath = os.path.split(inpath)[0]
+    ldinpath = os.path.split(inpath)[0]
     basename = sys.argv[2]
     outhtml = sys.argv[3]
     newfilepath = sys.argv[4]
@@ -1030,24 +1037,17 @@ def doIBS(n=100):
         Zcutoff = float(sys.argv[7])
     except:
         Zcutoff = 2.0
-    if sys.argv[7].lower()=='true':
-        forcerebuild = True
-    else:
-        forcerebuild = False
     try:
         os.makedirs(newfilepath)
     except:
         pass
     logf = file(logpath,'w')
     efp,ibase_name = os.path.split(inpath) # need to use these for outputs in files_path
-    ped,loglines = openOrMakeLDreduced(basename,ldpath,plinke,forcerebuild)
+    ped = plinkbinJZ.BPed(inpath)
+    ped.parse(quick=True)	
     if ped == None:
         print >> sys.stderr, '## doIBSpy problem - cannot open %s or %s - cannot run' % (ldreduced,basename)
         sys.exit(1)
-    if len(loglines) > 0:
-        logf.write('### first time for this input file - log from creating an ld reduced and thinned data set:\n')
-        logf.write(''.join(loglines))
-        logf.write('\n')
     newfiles,explanations,repOut = doIBSpy(ped=ped,basename=basename,outdir=newfilepath,
                                     logf=logf,nrsSamples=n,title=title,pdftoo=0,Zcutoff=Zcutoff)
     logf.close()
@@ -1056,14 +1056,14 @@ def doIBS(n=100):
     lf.write(galhtmlprefix % PROGNAME)
     # this is a mess. todo clean up - should each datatype have it's own directory? Yes
     # probably. Then titles are universal - but userId libraries are separate.
-    s = '<div>Output from %s run at %s<br>\n' % (PROGNAME,timenow())       
+    s = '<div>Output from %s run at %s<br>\n' % (PROGNAME,timenow())
     lf.write('<h4>%s</h4>\n' % s)
     fixed = ["'%s'" % x for x in sys.argv] # add quotes just in case
     s = 'If you need to rerun this analysis, the command line was\n<pre>%s</pre>\n</div>' % (' '.join(fixed))
     lf.write(s)
     # various ways of displaying svg - experiments related to missing svg mimetype on test (!)
-    #s = """<object data="%s" type="image/svg+xml"  width="%d" height="%d"> 
-    #       <embed src="%s" type="image/svg+xml" width="%d" height="%d" /> 
+    #s = """<object data="%s" type="image/svg+xml"  width="%d" height="%d">
+    #       <embed src="%s" type="image/svg+xml" width="%d" height="%d" />
     #       </object>""" % (newfiles[0],PLOT_WIDTH,PLOT_HEIGHT,newfiles[0],PLOT_WIDTH,PLOT_HEIGHT)
     s = """ <embed src="%s" type="image/svg+xml" width="%d" height="%d" />""" % (newfiles[0],PLOT_WIDTH,PLOT_HEIGHT)
     #s = """ <iframe src="%s" type="image/svg+xml" width="%d" height="%d" />""" % (newfiles[0],PLOT_WIDTH,PLOT_HEIGHT)
@@ -1077,10 +1077,10 @@ def doIBS(n=100):
     flist = os.listdir(newfilepath)
     for fname in flist:
         if not fname in newfiles:
-             lf.write('<li><a href="%s">%s</a></li>\n' % (fname,fname))            
+             lf.write('<li><a href="%s">%s</a></li>\n' % (fname,fname))
     lf.write('</ol></div>')
     lf.write('<div>%s</div>' % ('\n'.join(repOut))) # repOut is a list of tables
-    lf.write('<div><hr><h3>Log from this job (also stored in %s)</h3><pre>%s</pre><hr></div>' % (logfname,'\n'.join(logfs)))
+    lf.write('<div><hr><h3>Log from this job (also stored in %s)</h3><pre>%s</pre><hr></div>' % (logfname,''.join(logfs)))
     lf.write('</body></html>\n')
     lf.close()
     logf.close()
