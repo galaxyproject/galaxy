@@ -19,7 +19,7 @@
 
 <tests>
  <test>
-    <param name='i' value='tinywga' ftype='pbed' >
+    <param name='i' value='tinywga' ftype='ldindep' >
     <metadata name='base_name' value='tinywga' />
     <composite_data value='tinywga.bim' />
     <composite_data value='tinywga.bed' />       

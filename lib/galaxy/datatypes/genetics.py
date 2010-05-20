@@ -349,18 +349,6 @@ class Rgenetics(Html):
         return True
 
 
-class ldIndep(Rgenetics):
-    """
-    LD (a good measure of redundancy of information) depleted Plink Binary compressed 2bit/geno
-    """
-    file_ext="ldreduced"
-
-    def __init__( self, **kwd ):
-        Rgenetics.__init__(self, **kwd)
-        self.add_composite_file( '%s_INDEP.bim', substitute_name_with_metadata = 'base_name', is_binary = True )
-        self.add_composite_file( '%s_INDEP.bed', substitute_name_with_metadata = 'base_name', is_binary = True )
-        self.add_composite_file( '%s_INDEP.fam', substitute_name_with_metadata = 'base_name', is_binary = True )
-
 
 class SNPMatrix(Rgenetics):
     """
@@ -396,8 +384,8 @@ class Lped(Rgenetics):
     
     def __init__( self, **kwd ):
         Rgenetics.__init__(self, **kwd)
-        self.add_composite_file( '%s.ped', description = 'Pedigree File', substitute_name_with_metadata = 'base_name', is_binary = True )
-        self.add_composite_file( '%s.map', description = 'Map File', substitute_name_with_metadata = 'base_name', is_binary = True )
+        self.add_composite_file( '%s.ped', description = 'Pedigree File', substitute_name_with_metadata = 'base_name', is_binary = False )
+        self.add_composite_file( '%s.map', description = 'Map File', substitute_name_with_metadata = 'base_name', is_binary = False )
 
 
 class Pphe(Rgenetics):
@@ -408,7 +396,7 @@ class Pphe(Rgenetics):
 
     def __init__( self, **kwd ):
         Rgenetics.__init__(self, **kwd)
-        self.add_composite_file( '%s.pphe', description = 'Plink Phenotype File', substitute_name_with_metadata = 'base_name', is_binary = True )
+        self.add_composite_file( '%s.pphe', description = 'Plink Phenotype File', substitute_name_with_metadata = 'base_name', is_binary = False )
 
 
 
@@ -432,7 +420,8 @@ class Phe(Rgenetics):
 
     def __init__( self, **kwd ):
         Rgenetics.__init__(self, **kwd)
-        self.add_composite_file( '%s.phe', description = 'Phenotype File', substitute_name_with_metadata = 'base_name' )
+        self.add_composite_file( '%s.phe', description = 'Phenotype File', substitute_name_with_metadata = 'base_name',
+             is_binary = False )
 
 
 
@@ -445,7 +434,8 @@ class Fped(Rgenetics):
 
     def __init__( self, **kwd ):
         Rgenetics.__init__(self, **kwd)
-        self.add_composite_file( '%s.fped', description = 'FBAT format pedfile', substitute_name_with_metadata = 'base_name' )
+        self.add_composite_file( '%s.fped', description = 'FBAT format pedfile', substitute_name_with_metadata = 'base_name',
+              is_binary = False )
 
 
 class Pbed(Rgenetics):
@@ -456,9 +446,24 @@ class Pbed(Rgenetics):
     
     def __init__( self, **kwd ):
         Rgenetics.__init__(self, **kwd)
-        self.add_composite_file( '%s.bim', substitute_name_with_metadata = 'base_name', is_binary = True )
+        self.add_composite_file( '%s.bim', substitute_name_with_metadata = 'base_name', is_binary = False )
         self.add_composite_file( '%s.bed', substitute_name_with_metadata = 'base_name', is_binary = True )
-        self.add_composite_file( '%s.fam', substitute_name_with_metadata = 'base_name', is_binary = True )
+        self.add_composite_file( '%s.fam', substitute_name_with_metadata = 'base_name', is_binary = False )
+
+class ldIndep(Rgenetics):
+    """
+    LD (a good measure of redundancy of information) depleted Plink Binary compressed 2bit/geno
+    This is really a plink binary, but some tools work better with less redundancy so are constrained to
+    these files
+    """
+    file_ext="ldreduced"
+
+    def __init__( self, **kwd ):
+        Rgenetics.__init__(self, **kwd)
+        self.add_composite_file( '%s.bim', substitute_name_with_metadata = 'base_name', is_binary = False )
+        self.add_composite_file( '%s.bed', substitute_name_with_metadata = 'base_name', is_binary = True )
+        self.add_composite_file( '%s.fam', substitute_name_with_metadata = 'base_name', is_binary = False )
+
 
 class Eigenstratgeno(Rgenetics):
     """
@@ -470,9 +475,9 @@ class Eigenstratgeno(Rgenetics):
     
     def __init__( self, **kwd ):
         Rgenetics.__init__(self, **kwd)
-        self.add_composite_file( '%s.eigenstratgeno', substitute_name_with_metadata = 'base_name', is_binary = True )
-        self.add_composite_file( '%s.ind', substitute_name_with_metadata = 'base_name', is_binary = True )
-        self.add_composite_file( '%s.map', substitute_name_with_metadata = 'base_name', is_binary = True )
+        self.add_composite_file( '%s.eigenstratgeno', substitute_name_with_metadata = 'base_name', is_binary = False )
+        self.add_composite_file( '%s.ind', substitute_name_with_metadata = 'base_name', is_binary = False )
+        self.add_composite_file( '%s.map', substitute_name_with_metadata = 'base_name', is_binary = False )
         
 
 
@@ -524,7 +529,7 @@ class RexpBase( Html ):
     def __init__( self, **kwd ):
         Html.__init__(self,**kwd)
         self.add_composite_file( '%s.pheno', description = 'Phenodata tab text file', 
-          substitute_name_with_metadata = 'base_name', is_binary=True)
+          substitute_name_with_metadata = 'base_name', is_binary=False)
 
     def generate_primary_file( self, dataset = None ):
         """ 

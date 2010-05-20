@@ -54,9 +54,9 @@
     <param name="step" value="5000" />
     <param name="r2" value="0.1" />
     <output name='out_file1' file='rgtestouts/rgLDIndep/rgLDIndeptest1.pbed' ftype='pbed' compare="diff" lines_diff='7'>
-    <extra_files type="file" name='rgLDIndeptest1.bim' value="rgtestouts/rgLDIndep/rgLDIndeptest1.bim" compare="diff" />
+    <extra_files type="file" name='rgLDIndeptest1.bim' value="rgtestouts/rgLDIndep/rgLDIndeptest1.bim" compare="sim_size" delta="1000"/>
     <extra_files type="file" name='rgLDIndeptest1.fam' value="rgtestouts/rgLDIndep/rgLDIndeptest1.fam" compare="diff" />
-    <extra_files type="file" name='rgLDIndeptest1.bed' value="rgtestouts/rgLDIndep/rgLDIndeptest1.bed" compare="diff" />
+    <extra_files type="file" name='rgLDIndeptest1.bed' value="rgtestouts/rgLDIndep/rgLDIndeptest1.bed" compare="sim_size" delta = "1000" />
     </output>
  </test>
 </tests>

@@ -1,0 +1,18 @@
+<tool id="pbed2ldindepconvert" name="Convert plink pbed to ld reduced format" version="0.01">
+  <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
+  <!-- Used on the metadata edit page. -->
+  <command interpreter="python">
+   pbed_ldreduced_converter.py '$input1.extra_files_path/$input1.metadata.base_name' '60' '55' '0.1' '$output1' '$output1.files_path' 'plink'
+  </command>
+  <inputs>
+   <page>
+     <param format="pbed" name="input1" type="data" label="Choose a compressed Plink binary format genotype file"/>
+   </page>
+  </inputs>
+  <outputs>
+    <data format="ldindep" name="output1" metadata_source="input1"/>
+  </outputs>
+  <help>
+  </help>
+</tool>
+ 
