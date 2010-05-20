@@ -195,71 +195,6 @@ def makePlot(eigpca='test.pca',title='test',pdfname='test.pdf',h=8,w=10,nfp=None
     print >> sys.stdout, rlog
 
 
-def getInfiles(basename=None,infpath=None,outfpath=None,plinke='plink',forcerebuild=False):
-    """
-    openOrMakeLDreduced(basename,newfpath,plinke='plink',forcerebuild=False)
-    ingeno = getLDreduced(infile,plinke)
-    gbase,gext = os.path.splitext(ingeno)
-    if gext == '.bed':
-       inmap = '%s.bim' % gbase
-       inped = '%s.fam' % gbase
-    elif gext == '.ped':
-       inmap = '%s.map' % gbase
-       inped = '%s.ped' % gbase
-    elif gext == '.tped':
-       inmap = '%s.tmap' % gbase
-       inped = '%s.tfam' % gbase
-    """
-    base,kind = getLDreducedFname(basename,infpath=infpath,outfpath=outfpath,plinke=plinke,forcerebuild=forcerebuild)
-    assert kind in ['lped','pbed','tped'],'## kind=%s - not lped,pbed,tped' % str(kind)
-    if kind=='lped':
-        return '%s.ped' % base,'%s.map' % base,'%s.ped' % base
-    elif kind=='pbed':
-        return '%s.bed' % base,'%s.bim' % base,'%s.fam' % base
-    elif kind == 'tped':
-        return '%s.tped' % base,'%s.tmap' % base,'%s.tfam' % base
-
-
-def getInfilesOld(infile=None):
-    """given a basename, find the best input files
-    """
-    mapexts = ['.map','.bim','.pedsnp']
-    mapexts += [x.upper() for x in mapexts] # ya never know
-    genoexts = ['.ped','.bed','.pedsnp']
-    genoexts += [x.upper() for x in genoexts]
-    indexts = ['.ped','.fam','.pedind']
-    indexts += [x.upper() for x in indexts]
-    flist = glob.glob('%s*' % infile) # this should list all available rgenetics data files
-    exts = set([os.path.splitext(x)[-1] for x in flist]) # expect ['.ped','.map'] etc
-    mapext = None
-    genoext = None
-    indext = None
-    for e in mapexts:
-        if e in exts:
-            mapext = e
-            inmap = '%s%s' % (infile,e)
-            break
-    for e in genoexts:
-        if e in exts:
-            genoext = e
-            ingeno = '%s%s' % (infile,e)
-            break
-    for e in indexts:
-        if e in exts:
-            indext = e
-            inped = '%s%s' % (infile,e)
-            break
-    if mapext == None:
-        print '### no map (%s) file found - cannot run eigensoft' % ','.join(mapexts)
-        sys.exit(1)
-    if indext == None:
-        print '### no ind (%s) file found - cannot run eigensoft' % ','.join(indexts)
-        sys.exit(1)
-    if genoext == None:
-        print '### no geno (%s) file found - cannot run eigensoft' % ','.join(genoexts)
-        sys.exit(1)
-    return ingeno,inmap,inped
-
 def getfSize(fpath,outpath):
     """
     format a nice file size string
@@ -331,7 +266,7 @@ All files can be viewed however, by making links in the primary (HTML) history i
     ofname = sys.argv[5]
     progname = os.path.basename(sys.argv[0])
     infile = sys.argv[1]
-    infpath,base_name = os.path.split(infile) # can't leave anything here - readonly on PSU - so leave in outdir instead
+    infpath,base_name = os.path.split(infile) # now takes precomputed or autoconverted ldreduced dataset
     title = sys.argv[2].translate(trantab) # must replace all of these for urls containing title
     outfile1 = sys.argv[3]
     newfilepath = sys.argv[4]
