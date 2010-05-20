@@ -1,13 +1,30 @@
 <tool id="Sff_extractor" name="SFF converter" version="1.0.0">
   <description></description>
-  <command interpreter="python">sff_extract.py -s $out_file1 -q $out_file2 -x $out_file3 $input</command>
-   <inputs>
+  <command interpreter="python">
+    #if   str($fastq_output) == "fastq_false"  #sff_extract.py $clip --seq_file=$out_file3 --qual_file=$out_file4 --xml_file=$out_file2 $input
+    #elif str($fastq_output) == "fastq_true"   #sff_extract.py $clip --fastq --seq_file=$out_file1 --xml_file=$out_file2 $input
+    #end if#
+  </command>
+  <inputs>
     <param format="sff" name="input" type="data" label="Extract from this dataset"/>
+    <param name="clip" type="select" label="Completely remove ends with low qual and/or adaptor sequence">
+      <option value="">No</option>
+      <option value="--clip">Yes</option>
+    </param>
+    <param name="fastq_output" type="boolean" truevalue="fastq_true" falsevalue="fastq_false" checked="False" label="Do you want FASTQ file instead of FASTA + FASTA quality file?" />
   </inputs>
   <outputs>
-    <data format="fasta" name="out_file1" />
-    <data format="qual" name="out_file2" />
-    <data format="xml" name="out_file3" />
+    <data format="fastq" name="out_file1" >
+      <filter>fastq_output is True</filter>
+    </data>
+    <data format="xml" name="out_file2">
+    </data>  
+    <data format="fasta" name="out_file3">
+      <filter>fastq_output is False</filter>
+    </data>
+    <data format="qual" name="out_file4">
+      <filter>fastq_output is False</filter>
+    </data>
   </outputs>
   <help>
 **What it does**
