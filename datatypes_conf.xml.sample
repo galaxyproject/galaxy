@@ -206,6 +206,9 @@
         <!-- genome graphs ucsc file - first col is always marker then numeric values to plot -->
         <datatype extension="gg" type="galaxy.datatypes.genetics:GenomeGraphs"/>
         <!-- part of linkage format pedigree -->
+        <!-- information redundancy (LD) filtered plink pbed -->
+        <datatype extension="ldindep" type="galaxy.datatypes.genetics:ldIndep" display_in_upload="true">
+        </datatype>
         <datatype extension="malist" type="galaxy.datatypes.genetics:MAlist" display_in_upload="true"/>
         <!-- linkage format pedigree (separate .map file) -->
         <datatype extension="lped" type="galaxy.datatypes.genetics:Lped" display_in_upload="true">
@@ -215,6 +218,7 @@
         <!-- plink compressed file - has bed extension unfortunately -->
         <datatype extension="pbed" type="galaxy.datatypes.genetics:Pbed" display_in_upload="true">
             <converter file="pbed_to_lped_converter.xml" target_datatype="lped"/>
+            <converter file="pbed_ldreduced_converter.xml" target_datatype="ldindep"/>
         </datatype>
         <datatype extension="pheno" type="galaxy.datatypes.genetics:Pheno"/>
         <!-- phenotype file - plink format -->
