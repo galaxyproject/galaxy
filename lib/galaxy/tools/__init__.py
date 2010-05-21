@@ -563,6 +563,7 @@ class Tool:
                     attributes = {}
                     attributes['compare'] = attrib.pop( 'compare', 'diff' ).lower() #method of comparison
                     attributes['lines_diff'] = int( attrib.pop( 'lines_diff', '0' ) ) # allow a few lines (dates etc) to vary in logs
+                    attributes['delta'] = int( attrib.pop( 'delta', '10000' ) ) # allow a file size to vary if sim_size compare
                     attributes['sort'] = util.string_as_bool( attrib.pop( 'sort', False ) )
                     attributes['extra_files'] = []
                     for extra in output_elem.findall( 'extra_files' ):
@@ -573,6 +574,7 @@ class Tool:
                         assert extra_value is not None, 'extra_files requires a value attribute'
                         extra_attributes = {}
                         extra_attributes['compare'] = extra.get( 'compare', 'diff' ).lower() #method of comparison
+                        extra_attributes['delta'] = extra.get( 'delta', '0' ) # allow a file size to vary if sim_size compare
                         extra_attributes['lines_diff'] = int( extra.get( 'lines_diff', '0' ) ) # allow a few lines (dates etc) to vary in logs
                         extra_attributes['sort'] = util.string_as_bool( extra.get( 'sort', False ) )
                         attributes['extra_files'].append( ( extra_type, extra_value, extra_name, extra_attributes ) )

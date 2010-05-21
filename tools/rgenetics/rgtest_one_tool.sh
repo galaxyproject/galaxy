@@ -6,7 +6,8 @@ case $# in 0) echo "USAGE: ${0##*/} TooltoTest"; exit 1;;
            *)
 esac
 GALAXYROOT=`pwd`
-PATHTOGALAXY='/opt/galaxy' # whatever
+#PATHTOGALAXY='/opt/galaxy' # whatever
+PATHTOGALAXY='/share/shared/galaxy' # whatever
 echo "using $GALAXYROOT"
 # change this as needed for your local install
 INPATH="${GALAXYROOT}/test-data"
@@ -56,7 +57,9 @@ NPRE=${TOOL}test1
 echo "now doing $TOOL"
 OUTPATH="$OROOT/$TOOL"
 rm -rf $OUTPATH/*
-python $TOOLPATH/$TOOL.py -i "$INPATH/tinywga" -o $NPRE -s ${OUTPATH}/${NPRE}.html -p $OUTPATH
+CMD="python $TOOLPATH/$TOOL.py -i $INPATH/tinywga -o $NPRE -s ${OUTPATH}/${NPRE}.html -p $OUTPATH"
+echo "doing $CMD"
+$CMD
 # rgQC.py -i '$input_file.extra_files_path/$input_file.metadata.base_name' -o "$out_prefix" 
 # -s '$html_file' -p '$html_file.files_path' 
 #

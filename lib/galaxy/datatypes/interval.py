@@ -140,28 +140,32 @@ class Interval( Tabular ):
                 else:
                     empty_line_count += 1
     
+
     def get_estimated_display_viewport( self, dataset ):
         """Return a chrom, start, stop tuple for viewing a file."""
         if dataset.has_data() and dataset.state == dataset.states.OK:
             try:
                 c, s, e = dataset.metadata.chromCol, dataset.metadata.startCol, dataset.metadata.endCol
                 c, s, e = int(c)-1, int(s)-1, int(e)-1
-                
+                try:
+                    skipme = int(dataset.metadata.comment_lines)
+                except:
+                    skipme = 0
                 peek = []
                 for idx, line in enumerate(file(dataset.file_name)):
                     if line[0] != '#':
                         peek.append( line.rstrip( '\n\r' ).split() )
-                        if idx > 10:
+                        if idx > 100 and idx > skipme: # viewport should have at least 100 features
                             break
 
-                chr, start, stop = peek[0][c], int( peek[0][s] ), int( peek[0][e] )
+                chr, start, stop = peek[skipme][c], int( peek[skipme][s] ), int( peek[skipme][e] )
                 
-                for p in peek[1:]:
+                for p in peek[(skipme+1):]:
                     if p[0] == chr:
                         start = min( start, int( p[s] ) )
                         stop  = max( stop, int( p[e] ) )
             except Exception, exc:
-                #log.error( 'Viewport generation error -> %s ' % str(exc) )
+                log.error( 'Viewport generation error -> %s ' % str(exc) )
                 (chr, start, stop) = 'chr1', 1, 1000
             return (chr, str( start ), str( stop )) 
         else:
@@ -864,20 +868,42 @@ class Wiggle( Tabular, _RemoteCallMixin ):
         Tabular.__init__( self, **kwd )
         self.add_display_app( 'ucsc', 'display at UCSC', 'as_ucsc_display_file', 'ucsc_links' )
         self.add_display_app( 'gbrowse', 'display in Gbrowse', 'as_gbrowse_display_file', 'gbrowse_links' )
+
     def get_estimated_display_viewport( self, dataset ):
-        value = ( "", "", "" )
         num_check_lines = 100 # only check up to this many non empty lines
+        vstart = None
+        vend = 0
+        vwig_chr = '?'
+        value = None
         for i, line in enumerate( file( dataset.file_name ) ):
             line = line.rstrip( '\r\n' )
-            if line and line.startswith( "browser" ):
-                chr_info = line.split()[-1]
-                wig_chr, coords = chr_info.split( ":" )
-                start, end = coords.split( "-" )
-                value = ( wig_chr, start, end )
-                break
+            if line:
+                if line.startswith( "browser" ):
+                    chr_info = line.split()[-1]
+                    wig_chr, coords = chr_info.split( ":" )
+                    start, end = coords.split( "-" )
+                    value = ( wig_chr, start, end )
+                    break
+                # variableStep chrom=chr20
+                if line and (line.lower().startswith( "variablestep" ) or line.lower().startswith( "fixedstep" )):
+		    c = line.split("chr")[-1]
+                    c = c.split()[0]
+                    vwig_chr = 'chr%s' % c
+                else:
+                    try:
+		        offset = line.split()[0]
+                        offset = int(offset)
+                        vend = max(vend,offset)
+                        if not vstart:
+			    vstart = offset # first
+                    except:
+		         pass                    
             if i > num_check_lines:
                 break
+        if value == None:
+	    value = (vwig_chr, vstart, vend)
         return value
+
     def _get_viewer_range( self, dataset ):
         """Retrieve the chromosome, start, end for an external viewer."""
         if dataset.has_data:
