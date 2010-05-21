@@ -242,44 +242,50 @@ function replace_big_select_inputs(min_length) {
             // Get refresh vals.
             var refresh_vals = select_elt.attr('refresh_on_change_values');
             if (refresh_vals !== undefined)
-                refresh_vals = refresh_vals.split(",")
-            text_input_elt.keyup( function( e ) 
+                refresh_vals = refresh_vals.split(",");
+                
+            // Function that attempts to refresh based on the value in the text element.
+            var try_refresh_fn = function() 
             {
-                if ( ( e.keyCode == 13 ) && // Return Key
-                     ( return_key_pressed_for_autocomplete == true ) ) // Make sure return key was for autocomplete.
+                //
+                // If value entered can be matched to value, do so and refresh by submitting parent form.
+                //
+                
+                // Get new value and see if it can be matched.
+                var cur_value = text_input_elt.attr('value');
+                var new_value = select_mapping[cur_value];
+                if (new_value !== null && new_value !== undefined) 
                 {
-                    //
-                    // If value entered can be matched to value, do so and refresh by submitting parent form.
-                    //
-                    
-                    // Get new value and see if it can be matched.
-                    var cur_value = text_input_elt.attr('value');
-                    var new_value = select_mapping[cur_value];
-                    if (new_value !== null && new_value !== undefined) 
+                    // Do refresh if new value is refresh value or if there are no refresh values.
+                    refresh = false;
+                    if (refresh_vals !== undefined)
                     {
-                        // Do refresh if new value is refresh value or if there are no refresh values.
-                        refresh = false;
-                        if (refresh_vals !== undefined)
-                        {
-                            for (var i= 0; i < refresh_vals.length; i++ )
-                                if (new_value == refresh_vals[i])
-                                {
-                                    refresh = true;
-                                    break;
-                                }
-                        }
-                        else
-                            // Refresh for all values.
-                            refresh = true;
+                        for (var i= 0; i < refresh_vals.length; i++ )
+                            if (new_value == refresh_vals[i])
+                            {
+                                refresh = true;
+                                break;
+                            }
+                    }
+                    else
+                        // Refresh for all values.
+                        refresh = true;
 
-                        if (refresh)
-                        {
-                            text_input_elt.attr('value', new_value);
-                            text_input_elt.parents('form').submit();
-                        }
+                    if (refresh)
+                    {
+                        text_input_elt.attr('value', new_value);
+                        text_input_elt.parents('form').submit();
                     }
                 }
+            };
+            
+            // Attempt refresh if (a) result event fired by autocomplete (indicating autocomplete occurred) or (b) on keyup (in which
+            // case a user may have manually entered a value that needs to be refreshed).
+            text_input_elt.bind("result", try_refresh_fn);
+            text_input_elt.keyup( function(e) {
+                try_refresh_fn();
             });
+
         }
     });
 }

@@ -44,7 +44,7 @@ def js( *args ):
     TODO: This has a hardcoded "?v=2" to defeat caching. This should be done
           in a better way.
     """
-    return "\n".join( [ javascript_include_tag( "/static/scripts/" + name + ".js?v=2" ) for name in args ] )
+    return "\n".join( [ javascript_include_tag( "/static/scripts/" + name + ".js?v=3" ) for name in args ] )
     
 # Hashes
 
