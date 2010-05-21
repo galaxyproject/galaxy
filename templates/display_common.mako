@@ -19,13 +19,19 @@
 <%def name="get_item_name( item )">
     <% 
         # Start with exceptions, end with default.
-		if type( item ) is model.Page:
-			return item.title
-		elif type( item ) is model.Visualization:
-		    return item.title
-		if hasattr( item, 'get_display_name'):
-		    return item.get_display_name()
-		return item.name
+        if type( item ) is model.Page:
+            item_name = item.title
+        elif type( item ) is model.Visualization:
+            item_name = item.title
+        elif hasattr( item, 'get_display_name'):
+            item_name = item.get_display_name()
+        else:
+            item_name = item.name
+    	
+        # Encode in unicode.
+        if type( item_name ) is str:
+            item_name = unicode( item_name, 'utf-8' )
+        return item_name	
 	%>
 </%def>
 

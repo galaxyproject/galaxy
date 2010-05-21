@@ -296,8 +296,8 @@ class PageController( BaseController, Sharable, UsesAnnotations, UsesHistory, Us
                     return self.sharing( trans, **kwargs )
             session.flush()
             
-        # Build grid
-        grid = self._page_list( trans, *args, **kwargs )
+        # Build grid HTML and make sure to encode in utf-8 to support unicode characters.
+        grid = unicode( self._page_list( trans, *args, **kwargs ), 'utf-8' )
         
         # Build list of pages shared with user.
         shared_by_others = trans.sa_session \
@@ -313,7 +313,7 @@ class PageController( BaseController, Sharable, UsesAnnotations, UsesHistory, Us
              
     @web.expose
     def list_published( self, trans, *args, **kwargs ):
-        grid = self._all_published_list( trans, *args, **kwargs )
+        grid = unicode( self._all_published_list( trans, *args, **kwargs ), 'utf-8' )
         if 'async' in kwargs:
             return grid
         else:
