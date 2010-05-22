@@ -48,7 +48,7 @@
     <param name="t" value="2" />
     <param name="s" value="2" />
     <output name='out_file1' file='rgtestouts/rgEigPCA/rgEigPCAtest1.html' ftype='html' compare='diff' lines_diff='195'>
-    <extra_files type="file" name='rgEigPCAtest1_PCAPlot.pdf' value="rgtestouts/rgEigPCA/rgEigPCAtest1_PCAPlot.pdf" compare="sim_size" delta="30000"/>
+    <extra_files type="file" name='rgEigPCAtest1_PCAPlot.pdf' value="rgtestouts/rgEigPCA/rgEigPCAtest1_PCAPlot.pdf" compare="sim_size" delta="3000"/>
     </output>
     <output name='pca' file='rgtestouts/rgEigPCA/rgEigPCAtest1.txt' compare='diff'/>
  </test>

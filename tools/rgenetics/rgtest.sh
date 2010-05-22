@@ -1,14 +1,33 @@
 #!/bin/sh
 # script to generate all functional test outputs for each rgenetics tool
 # could be run at installation to ensure all dependencies are in place?
-GALAXYROOT=`pwd`
-echo "using $GALAXYROOT"
+if test $# -lt 2
+then
+   echo "We need to agree on 2 parameters - GalaxyRoot and OutRoot - use paths to galaxy and galaxy to re-create all test outputs"
+   echo "or more prudently, galaxy and /tmp/foo for checking without updating all your test-data"
+   echo "Exiting with no changes"
+   exit 1
+fi
+if [ $1 ]
+then
+  GALAXYROOT=$1
+else
+  GALAXYROOT=`pwd`
+fi
+if [ $2 ]
+then
+  OUTROOT=$2
+else
+  OUTROOT=`pwd`
+  OUTROOT="$OUTROOT/test-data"
+fi
+echo "using $GALAXYROOT as galaxyroot and $OUTROOT as outroot"
 # change this as needed for your local install
 INPATH="${GALAXYROOT}/test-data"
 BINPATH="${GALAXYROOT}/tool-data/rg/bin"
 TOOLPATH="${GALAXYROOT}/tools/rgenetics"
-OROOT="${GALAXYROOT}/test-data/rgtestouts"
-NORMALOROOT="${GALAXYROOT}/test-data"
+OROOT="${OUTROOT}/test-data/rgtestouts"
+NORMALOROOT="${OUTROOT}/test-data"
 mkdir -p $OROOT
 rm -rf $OROOT/*
 # needed for testing - but tool versions should be bumped if this is rerun?
