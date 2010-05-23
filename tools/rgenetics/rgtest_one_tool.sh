@@ -1,20 +1,20 @@
 #!/bin/sh
 # script to generate all functional test outputs for each rgenetics tool
 # could be run at installation to ensure all dependencies are in place?
-case $# in 0) echo "USAGE: ${0##*/} TooltoTest"; exit 1;;
-           [2-10]*) echo "Too many arguments - name of tool only"; exit 2;;
+case $# in 0) echo "USAGE: ${0##*/} TooltoTest galaxyRoot outRoot"; exit 1;;
+           [1-3]*) echo "Need ToolToTest and paths for galaxyRoot outRoot as parameters"; exit 2;;
+           [5-10]*) echo "Too many arguments - ToolToTest and paths for galaxyRoot outRoot as parameters"; exit 2;;
            *)
 esac
-GALAXYROOT=`pwd`
-#PATHTOGALAXY='/opt/galaxy' # whatever
-PATHTOGALAXY='/share/shared/galaxy' # whatever
+GALAXYROOT=$2
+OUTROOT=$3
 echo "using $GALAXYROOT"
 # change this as needed for your local install
 INPATH="${GALAXYROOT}/test-data"
 BINPATH="${GALAXYROOT}/tool-data/rg/bin"
-TOOLPATH="${PATHTOGALAXY}/tools/rgenetics"
-OROOT="${GALAXYROOT}/test-data/rgtestouts"
-NORMALOROOT="${GALAXYROOT}/test-data"
+TOOLPATH="${GALAXYROOT}/tools/rgenetics"
+OROOT="${OUTROOT}/test-data/rgtestouts"
+NORMALOROOT="${OUTROOT}/test-data"
 case "$1" in
 'rgManQQ')
 
