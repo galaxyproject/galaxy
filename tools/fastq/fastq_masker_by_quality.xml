@@ -1,0 +1,53 @@
+<tool id="fastq_masker_by_quality" name="FASTQ Masker" version="1.0.0">
+  <description>by quality score</description>
+  <command interpreter="python">fastq_masker_by_quality.py '$input_file' '$output_file' -f '${input_file.extension[len( 'fastq' ):]}' -s '${quality_score}' -c '${score_comparison}'
+      #if $mask_type.value == 'lowercase'
+      --lowercase
+      #else
+      -m '${mask_type}'
+      #end if
+  </command>
+  <inputs>
+    <param name="input_file" type="data" format="fastqsanger" label="File to mask" />
+    <param name="mask_type" type="select" label="Mask input with">
+      <option value="N">N's</option>
+      <option value="lowercase">Lowercase</option>
+    </param>
+    <param name="score_comparison" type="select" label="When score is">
+      <option value="le" selected="True">Less than or equal</option>
+      <option value="lt">Less than</option>
+      <option value="eq">Equal to</option>
+      <option value="ne">Not Equal to</option>
+      <option value="ge">Greater than</option>
+      <option value="gt">Greater than or equal</option>
+    </param>
+    <param name="quality_score" type="integer" value="0"/>
+  </inputs>
+  <outputs>
+    <data name="output_file" format="fastqsanger" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="input_file" value="sanger_full_range_original_sanger.fastqsanger" ftype="fastqsanger" />
+      <param name="mask_type" value="N" />
+      <param name="score_comparison" value="le" />
+      <param name="quality_score" value="20" />
+      <output name="output_file" file="sanger_full_range_masked_N.fastqsanger" />
+    </test>
+    <test>
+      <param name="input_file" value="sanger_full_range_original_sanger.fastqsanger" ftype="fastqsanger" />
+      <param name="mask_type" value="lowercase" />
+      <param name="score_comparison" value="le" />
+      <param name="quality_score" value="20" />
+      <output name="output_file" file="sanger_full_range_masked_lowercase.fastqsanger" />
+    </test>
+  </tests>
+  <help>
+**What it does**
+
+This tool allows masking base characters in FASTQ format files dependent upon user specified quality score value and comparison method.
+
+This tool is not available for use on color space (csSanger) formats.
+
+  </help>
+</tool>
