@@ -101,6 +101,7 @@ class Configuration( object ):
         # Configuration options for taking advantage of nginx features
         self.apache_xsendfile = kwargs.get( 'apache_xsendfile', False )
         self.nginx_x_accel_redirect_base = kwargs.get( 'nginx_x_accel_redirect_base', False )
+        self.nginx_x_archive_files_base = kwargs.get( 'nginx_x_archive_files_base', False )
         self.nginx_upload_store = kwargs.get( 'nginx_upload_store', False )
         self.nginx_upload_path = kwargs.get( 'nginx_upload_path', False )
         if self.nginx_upload_store:

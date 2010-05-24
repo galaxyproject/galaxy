@@ -391,6 +391,14 @@
                         %if 'zip' in comptypes:
                             <option value="zip">Download as a .zip file</option>
                         %endif
+                        %if 'ngxzip' in comptypes:
+                            ## We can safely have two default selected items since ngxzip, if present, will always be the only available type.
+                            <option value="ngxzip"
+                            %if default_action == 'download':
+                                selected
+                            %endif>
+                            >Download as a .zip file</option>
+                        %endif
                     %endif
                 </select>
                 <input type="submit" class="primary-button" name="action_on_datasets_button" id="action_on_datasets_button" value="Go"/>

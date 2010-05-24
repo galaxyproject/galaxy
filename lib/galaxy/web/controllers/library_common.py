@@ -106,6 +106,9 @@ class LibraryCommon( BaseController ):
                 message += "Don't navigate away from Galaxy or use the browser's \"stop\" or \"reload\" buttons (on this tab) until the "
                 message += "message \"This job is running\" is cleared from the \"Information\" column below for each selected dataset."
                 status = "info"
+            comptypes_t = comptypes
+            if trans.app.config.nginx_x_archive_files_base:
+                comptypes_t = ['ngxzip']
             return trans.fill_template( '/library/common/browse_library.mako',
                                         cntrller=cntrller,
                                         use_panels=use_panels,
@@ -113,7 +116,7 @@ class LibraryCommon( BaseController ):
                                         created_ldda_ids=created_ldda_ids,
                                         hidden_folder_ids=hidden_folder_ids,
                                         show_deleted=show_deleted,
-                                        comptypes=comptypes,
+                                        comptypes=comptypes_t,
                                         current_user_roles=current_user_roles,
                                         message=message,
                                         status=status )
@@ -1253,6 +1256,19 @@ class LibraryCommon( BaseController ):
                                     status=status )
     @web.expose
     def act_on_multiple_datasets( self, trans, cntrller, library_id, ldda_ids='', **kwd ):
+        class NgxZip( object ):
+            def __init__( self, url_base ):
+                self.files = {}
+                self.url_base = url_base
+            def add( self, file, relpath ):
+                self.files[file] = relpath
+            def __str__( self ):
+                rval = ''
+                for fname, relpath in self.files.items():
+                    size = os.stat( fname ).st_size
+                    quoted_fname = urllib.quote_plus( fname, '/' )
+                    rval += '- %i %s%s %s\n' % ( size, self.url_base, quoted_fname, relpath )
+                return rval
         # Perform an action on a list of library datasets.
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
@@ -1319,10 +1335,10 @@ class LibraryCommon( BaseController ):
                     trans.sa_session.add( ld )
                 trans.sa_session.flush()
                 message = "The selected datasets have been removed from this data library"
-            elif action in ['zip','tgz','tbz']:
+            elif action in ['zip','tgz','tbz','ngxzip']:
                 error = False
                 killme = string.punctuation + string.whitespace
-    		trantab = string.maketrans(killme,'_'*len(killme))
+                trantab = string.maketrans(killme,'_'*len(killme))
                 try:
                     outext = 'zip'
                     if action == 'zip':
@@ -1340,6 +1356,8 @@ class LibraryCommon( BaseController ):
                     elif action == 'tbz':
                         archive = util.streamball.StreamBall( 'w|bz2' )
                         outext = 'tbz2'
+                    elif action == 'ngxzip':
+                        archive = NgxZip( trans.app.config.nginx_x_archive_files_base )
                 except (OSError, zipfile.BadZipFile):
                     error = True
                     log.exception( "Unable to create archive for download" )
@@ -1347,7 +1365,7 @@ class LibraryCommon( BaseController ):
                     status = 'error'
                 except:
                      error = True
-         	     log.exception( "Unexpected error %s in create archive for download" % sys.exc_info()[0])
+                     log.exception( "Unexpected error %s in create archive for download" % sys.exc_info()[0])
                      message = "Unable to create archive for download, please report - %s" % sys.exc_info()[0]
                      status = 'error'
                 if not error:
@@ -1377,7 +1395,8 @@ class LibraryCommon( BaseController ):
                         seen.append( path )
                         zpath = os.path.split(path)[-1] # comes as base_name/fname
                         outfname,zpathext = os.path.splitext(zpath)
-                        if is_composite: # need to add all the components from the extra_files_path to the zip
+                        if is_composite:
+                            # need to add all the components from the extra_files_path to the zip
                             if zpathext == '':
                                 zpath = '%s.html' % zpath # fake the real nature of the html file 
                             try:
@@ -1391,8 +1410,8 @@ class LibraryCommon( BaseController ):
                             flist = glob.glob(os.path.join(ldda.dataset.extra_files_path,'*.*')) # glob returns full paths
                             for fpath in flist:
                                 efp,fname = os.path.split(fpath)
-               			if fname > '':
-				    fname = fname.translate(trantab)
+                                if fname > '':
+                                    fname = fname.translate(trantab)
                                 try:
                                     archive.add( fpath,fname )
                                 except IOError:
@@ -1409,7 +1428,7 @@ class LibraryCommon( BaseController ):
                                 log.exception( "Unable to write %s to temporary library download archive" % ldda.dataset.file_name)
                                 message = "Unable to create archive for download, please report this error"
                                 status = 'error'                            
-                    if not error:    
+                    if not error:
                         if action == 'zip':
                             archive.close()
                             tmpfh = open( tmpf )
@@ -1426,6 +1445,11 @@ class LibraryCommon( BaseController ):
                                 trans.response.set_content_type( "application/x-zip-compressed" )
                                 trans.response.headers[ "Content-Disposition" ] = "attachment; filename=%s.%s" % (outfname,outext)
                                 return tmpfh
+                        elif action == 'ngxzip':
+                            #trans.response.set_content_type( "application/x-zip-compressed" )
+                            #trans.response.headers[ "Content-Disposition" ] = "attachment; filename=%s.%s" % (outfname,outext)
+                            trans.response.headers[ "X-Archive-Files" ] = "zip"
+                            return archive
                         else:
                             trans.response.set_content_type( "application/x-tar" )
                             trans.response.headers[ "Content-Disposition" ] = "attachment; filename=%s.%s" % (outfname,outext)
