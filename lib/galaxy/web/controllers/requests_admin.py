@@ -805,7 +805,7 @@ class RequestsAdmin( BaseController ):
                                     sample_copy=self.__copy_sample(current_samples), 
                                     details='hide', edit_mode=util.restore_text( params.get( 'edit_mode', 'False'  ) ),
                                     message=message, status=status )
-    def __library_widgets(self, trans, user, sample_index, libraries, sample=None, **kwd):
+    def __library_widgets(self, trans, user, sample_index, libraries, sample=None, lib_id=None, folder_id=None, **kwd):
         '''
         This method creates the data library & folder selectbox for creating &
         editing samples. First we get a list of all the libraries accessible to
@@ -815,7 +815,8 @@ class RequestsAdmin( BaseController ):
         '''
         params = util.Params( kwd )
         # data library selectbox
-        lib_id = params.get( "sample_%i_library_id" % sample_index, 'none'  )
+        if not lib_id:
+            lib_id = params.get( "sample_%i_library_id" % sample_index, 'none'  )
         selected_lib = None
         if sample and lib_id == 'none':
             if sample.library:
@@ -834,7 +835,7 @@ class RequestsAdmin( BaseController ):
             lib_widget.add_option('Select one', 'none')
         # all the libraries available to the selected user
         for lib, hidden_folder_ids in libraries.items():
-            if str(lib.id) == lib_id:
+            if str(lib.id) == str(lib_id):
                 lib_widget.add_option(lib.name, lib.id, selected=True)
                 selected_lib, selected_hidden_folder_ids = lib, hidden_folder_ids.split(',')
             else:
@@ -855,7 +856,10 @@ class RequestsAdmin( BaseController ):
                 else:
                     current_fid = params.get( "sample_%i_folder_id" % sample_index, 'none'  )
         else:
-            current_fid = 'none'
+            if folder_id:
+                current_fid = folder_id
+            else:
+                current_fid = 'none'
         # first option
         if lib_id == 'none':
             folder_widget.add_option('Select one', 'none', selected=True)
@@ -995,29 +999,38 @@ class RequestsAdmin( BaseController ):
             # if the user has selected a sample no. to copy then copy the contents 
             # of the src sample to the new sample else an empty sample
             src_sample_index = int(params.get( 'copy_sample', -1  ))
+            # get the number of new copies of the src sample
+            num_sample_to_copy = int(params.get( 'num_sample_to_copy', 1  ))
             if src_sample_index == -1:
-                # empty sample
-                lib_widget, folder_widget = self.__library_widgets(trans, request.user, 
-                                                                   len(current_samples), 
-                                                                   libraries, None, **kwd)
-                current_samples.append(dict(name='Sample_%i' % (len(current_samples)+1),
-                                            barcode='',
-                                            library=None,
-                                            folder=None,
-                                            field_values=['' for field in request.type.sample_form.fields],
-                                            lib_widget=lib_widget,
-                                            folder_widget=folder_widget))
+                for ns in range(num_sample_to_copy):
+                    # empty sample
+                    lib_widget, folder_widget = self.__library_widgets(trans, request.user, 
+                                                                       len(current_samples), 
+                                                                       libraries, None, **kwd)
+                    current_samples.append(dict(name='Sample_%i' % (len(current_samples)+1),
+                                                barcode='',
+                                                library=None,
+                                                folder=None,
+                                                field_values=['' for field in request.type.sample_form.fields],
+                                                lib_widget=lib_widget,
+                                                folder_widget=folder_widget))
             else:
-                lib_widget, folder_widget = self.__library_widgets(trans, request.user, 
-                                                                   len(current_samples), 
-                                                                   libraries, None, **kwd)
-                current_samples.append(dict(name=current_samples[src_sample_index]['name']+'_%i' % (len(current_samples)+1),
-                                            barcode='',
-                                            library_id='none',
-                                            folder_id='none',
-                                            field_values=[val for val in current_samples[src_sample_index]['field_values']],
-                                            lib_widget=lib_widget,
-                                            folder_widget=folder_widget))
+                src_library_id = current_samples[src_sample_index]['lib_widget'].get_selected()[1]
+                src_folder_id = current_samples[src_sample_index]['folder_widget'].get_selected()[1]
+                for ns in range(num_sample_to_copy):
+                    lib_widget, folder_widget = self.__library_widgets(trans, request.user, 
+                                                                       len(current_samples), 
+                                                                       libraries, sample=None, 
+                                                                       lib_id=src_library_id,
+                                                                       folder_id=src_folder_id,
+                                                                       **kwd)
+                    current_samples.append(dict(name=current_samples[src_sample_index]['name']+'_%i' % (len(current_samples)+1),
+                                                barcode='',
+                                                library_id='none',
+                                                folder_id='none',
+                                                field_values=[val for val in current_samples[src_sample_index]['field_values']],
+                                                lib_widget=lib_widget,
+                                                folder_widget=folder_widget))
             return trans.fill_template( '/admin/requests/show_request.mako',
                                         request=request,
                                         request_details=self.request_details(trans, request.id),

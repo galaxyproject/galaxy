@@ -364,31 +364,28 @@ $(document).ready(function(){
             %endif
         </div>
         %if request.unsubmitted() and edit_mode == 'False':
-        <table class="grid">
-            <tbody>
-                <tr>
-                    <div class="form-row">
-                        <td>
-                            %if current_samples:                        
-                                <input type="submit" name="edit_samples_button" value="Edit samples"/>
-                            %endif
-                        </td>
-                        <td>
-                            <label>Import from csv file</label>           
-                            <input type="file" name="file_data" />
-                            <input type="submit" name="import_samples_button" value="Import samples"/>
-                        </td>
-                        <td>
-                            %if current_samples:
-                                <label>Copy from sample</label>
-                                ${sample_copy.get_html()}
-                            %endif
-                            <input type="submit" name="add_sample_button" value="Add New"/>
-                        </td>
-                    </div>
-                </tr> 
-            </tbody>
-        </table>
+            <table class="grid">
+                <tbody>
+                    <tr>
+                        <div class="form-row">
+                            <td>
+                                %if current_samples:
+                                    <label>Copy </label>
+                                    <input type="integer" name="num_sample_to_copy" value="1" size="3"/>
+                                    <label>sample(s) from sample</label>
+                                    ${sample_copy.get_html()}
+                                %endif
+                                <input type="submit" name="add_sample_button" value="Add New"/>
+                            </td>
+                            <td>
+                                %if current_samples:                        
+                                    <input type="submit" name="edit_samples_button" value="Edit samples"/>
+                                %endif
+                            </td>
+                        </div>
+                    </tr> 
+                </tbody>
+            </table>
         %endif
         %if request.unsubmitted() and (request.samples or current_samples): 
             <div class="form-row">
@@ -407,3 +404,25 @@ $(document).ready(function(){
         <input type="hidden" name="request_id" value="${request.id}" />
     </form>
 </div>
+
+
+<br/>
+%if request.unsubmitted():
+<div class="toolForm">
+    <div class="form-row">
+        <div class="msg_list">
+            <h4 class="msg_head"><u>Import Samples</u></h4>
+            <div class="msg_body">
+                <label>Import from csv file</label>           
+                <input type="file" name="file_data" />
+                <input type="submit" name="import_samples_button" value="Import samples"/>
+                <br/>
+                <div class="toolParamHelp" style="clear: both;">
+                    The csv file must be in the following format:<br/>
+                    SampleName,DataLibrary,DataLibraryFolder,FieldValue1,FieldValue2...
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+%endif

@@ -1572,14 +1572,14 @@ class TwillTestCase( unittest.TestCase ):
         self.check_page_for_string( 'There are no samples.' )
         # this redundant stmt below is add so that the second form in 
         # the page gets selected
-        tc.fv( "2", "request_id", request_id )
+        tc.fv( "3", "request_id", request_id )
         for sample_index, sample in enumerate(samples):
             tc.submit( "add_sample_button" )
             self.check_page_for_string( 'Sequencing Request "%s"' % request_name )
             sample_name, fields = sample
-            tc.fv( "2", "sample_%i_name" % sample_index, sample_name )
+            tc.fv( "3", "sample_%i_name" % sample_index, sample_name )
             for field_index, field_value in enumerate(fields):
-                tc.fv( "2", "sample_%i_field_%i" % ( sample_index, field_index ), field_value )
+                tc.fv( "3", "sample_%i_field_%i" % ( sample_index, field_index ), field_value )
         tc.submit( "save_samples_button" )
         for sample_name, fields in samples:
             self.check_page_for_string( sample_name )
