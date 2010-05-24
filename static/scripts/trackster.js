@@ -710,7 +710,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
         ctx.textAlign = "center";
         var gap = Math.round(w_scale / 2);
         if (name !== undefined && w_scale > px_per_char) {
-            ctx.fillStyle = "#555";
+            ctx.fillStyle = this.prefs.block_color;
             ctx.fillRect(x, y_center + 1, x_len, 9);
             ctx.fillStyle = "#eee";
             for (var c = 0, str_len = name.length; c < str_len; c++) {
@@ -720,7 +720,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                 }
             }
         } else {
-            ctx.fillStyle = "#555";
+            ctx.fillStyle = this.prefs.block_color;
             ctx.fillRect(x, y_center + 4, x_len, 3);
         }
     },
@@ -778,7 +778,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
         // console.log(( tile_low - this.view.low ) * w_scale, tile_index, w_scale);
         var ctx = new_canvas.get(0).getContext("2d"),
             px_per_char = ctx.measureText("A").width;
-        ctx.fillStyle = this.prefs.block_color;
+        ctx.fillStyle = block_color;
         ctx.font = this.default_font;
         ctx.textAlign = "right";
         
@@ -835,7 +835,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                     y_center = slots[feature_uid] * y_scale;
                     
                 if (result.dataset_type === "bai") {
-                    ctx.fillStyle = "#555";
+                    ctx.fillStyle = block_color;
                     if (feature[4] instanceof Array) {
                         var b1_start = Math.floor( Math.max(0, (feature[4][0] - tile_low) * w_scale) ),
                             b1_end   = Math.ceil( Math.min(width, Math.max(0, (feature[4][1] - tile_low) * w_scale)) ),
@@ -853,7 +853,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                             ctx.fillRect(b1_end + left_offset, y_center + 5, b2_start - b1_end, 1);
                         }
                     } else {
-                        ctx.fillStyle = "#555";
+                        ctx.fillStyle = block_color;
                         this.rect_or_text(ctx, w_scale, px_per_char, tile_low, tile_high, feature_start, feature_name, f_start + left_offset, f_end - f_start, y_center);
                     }
                     if (!no_detail && feature_start > tile_low) {
@@ -866,7 +866,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                             ctx.textAlign = "right";
                             ctx.fillText(feature_uid, f_start - 2 + left_offset, y_center + 8);
                         }
-                        ctx.fillStyle = "#555";
+                        ctx.fillStyle = block_color;
                     }
                         
                 } else if (result.dataset_type === "interval_index") {
