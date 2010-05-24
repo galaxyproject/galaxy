@@ -476,8 +476,7 @@
                                     // item_class='History').
                                     var item_elt_id = item_info.iclass + "-"  + item_id;
                                     var item_embed_html =                                     
-                                        "\
-                                         <p><div id='"  + item_elt_id + "' class='embedded-item " + item_info.singular.toLowerCase() + 
+                                        "<p><div id='"  + item_elt_id + "' class='embedded-item " + item_info.singular.toLowerCase() + 
                                                 " placeholder'> \
                                             <p class='title'>Embedded Galaxy " + item_info.singular + " '" + item_name + "'</p> \
                                             <p class='content'> \
@@ -487,24 +486,23 @@
                                         </div></p>";
                                     
                                     // Insert embedded item into document.
+                                    wym.insert("&nbsp;"); // Needed to prevent insertion from occurring in child element in webkit browsers.
                                     wym.insert(item_embed_html);
                                     
                                     // TODO: can we fix this?
                                     // Due to oddities of wym.insert() [likely due to inserting a <div> and/or a complete paragraph], an
-                                    // empty paragraph may be included either before or after an embedded item. Remove these paragraphs.
+                                    // empty paragraph (or two!) may be included either before an embedded item. Remove these paragraphs.
                                     $("#" + item_elt_id, wym._doc.body).each( function() {
                                         // Remove previous empty paragraphs.
-                                        var prev_elt = $(this).prev();
-                                        if ( prev_elt.length != 0 && jQuery.trim(prev_elt.text()) == "" )
-                                            prev_elt.remove();
-                                            
-                                        // Remove subsequent empty paragraphs.
-                                        /*
-                                        var next_elt = $(this).next();
-                                        var next_next_elt = next_elt.next();
-                                        if (next_next_elt.length != 0)
-                                            next_elt.remove();
-                                        */
+                                        var removing = true;
+                                        while (removing)
+                                        {
+                                            var prev_elt = $(this).prev();
+                                            if ( prev_elt.length != 0 && jQuery.trim(prev_elt.text()) == "" )
+                                                prev_elt.remove();
+                                            else
+                                                removing = false;
+                                        }
                                     });
                                     
                                 });
