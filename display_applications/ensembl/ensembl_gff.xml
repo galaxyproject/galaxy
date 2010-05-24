@@ -18,8 +18,7 @@
         
         <param type="data" name="gff_file" url="galaxy_${DATASET_HASH}.gff" />
         <param type="template" name="site_organism" strip="True" >
-            #set index = $site_dbkeys.index( $gff_file.dbkey )
-            $site_organisms[ $index ]
+            $site_organisms[ $site_dbkeys.index( $gff_file.dbkey ) ]
         </param>
         <param type="template" name="position" strip="True" >
 #set line_count = 0
@@ -82,8 +81,7 @@ ${chrom}:${start}-${end}
         
         <param type="data" name="gff_file" url="galaxy_${DATASET_HASH}.gff" />
         <param type="template" name="site_organism" strip="True" >
-            #set index = $site_dbkeys.index( $gff_file.dbkey )
-            $site_organisms[ $index ]
+            $site_organisms[ $site_dbkeys.index( $gff_file.dbkey ) ]
         </param>
         <param type="template" name="position" strip="True" >
             #set line_count = 0

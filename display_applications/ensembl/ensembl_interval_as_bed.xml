@@ -18,8 +18,7 @@
         
         <param type="data" name="bed_file" url="galaxy_${DATASET_HASH}.bed" format="bedstrict"/>
         <param type="template" name="site_organism" strip="True" >
-            #set index = $site_dbkeys.index( $bed_file.dbkey )
-            $site_organisms[ $index ]
+            $site_organisms[ $site_dbkeys.index( $bed_file.dbkey ) ]
         </param>
         <param type="template" name="position" strip="True" >
 #set line_count = 0
@@ -82,8 +81,7 @@ ${chrom}:${start + 1}-${end}
         
         <param type="data" name="bed_file" url="galaxy_${DATASET_HASH}.bed" format="bedstrict"/>
         <param type="template" name="site_organism" strip="True" >
-            #set index = $site_dbkeys.index( $bed_file.dbkey )
-            $site_organisms[ $index ]
+            $site_organisms[ $site_dbkeys.index( $bed_file.dbkey ) ]
         </param>
         <param type="template" name="position" strip="True" >
             #set line_count = 0

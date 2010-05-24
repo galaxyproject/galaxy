@@ -46,7 +46,7 @@ class BaseReplacer( object ):
 def main():
     usage = "usage: %prog [options] input_file output_file"
     parser = OptionParser( usage=usage )
-    parser.add_option( '-f', '--format', dest='format', type='choice', default='sanger', choices=( 'sanger', 'cssanger', 'solexa', 'illumina' ), help='FASTQ variant type' )
+    parser.add_option( '-f', '--format', dest='format', type='choice', default='sanger', choices=( 'sanger', 'solexa', 'illumina' ), help='FASTQ variant type' )
     parser.add_option( '-m', '--mask_character', dest='mask_character', default='N', help='Mask Character to use' )
     parser.add_option( '-c', '--score_comparison', type="choice", dest='score_comparison', default='le', choices=('gt','ge','eq','lt', 'le', 'ne' ), help='Mask base when score is' )
     parser.add_option( '-s', '--quality_score', type="float", dest='quality_score', default='0', help='Quality Score' )
