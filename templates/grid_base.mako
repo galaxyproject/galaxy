@@ -679,7 +679,12 @@
         <tr>
             <td width="75%">${self.render_grid_header( grid )}</td>
             <td></td>
-            <td width="25%" id="grid-message" valign="top">${render_message( message, status )}</td>
+            <td></td>
+        </tr>
+        <tr>
+            <td width="100%" id="grid-message" valign="top">${render_message( message, status )}</td>
+            <td></td>
+            <td></td>
         </tr>
     </table>
 
