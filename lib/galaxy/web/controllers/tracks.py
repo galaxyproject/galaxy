@@ -71,8 +71,8 @@ class DatasetSelectionGrid( grids.Grid ):
         DbKeyColumn( "Dbkey", key="dbkey", model_class=model.HistoryDatasetAssociation, visible=False )
     ]
     
-    def build_initial_query( self, session ):
-        return session.query( self.model_class ).join( model.History.table).join( model.Dataset.table )
+    def build_initial_query( self, trans ):
+        return trans.sa_session.query( self.model_class ).join( model.History.table).join( model.Dataset.table )
     def apply_default_filter( self, trans, query, **kwargs ):
         if self.available_tracks is None:
              self.available_tracks = trans.app.datatypes_registry.get_available_tracks()

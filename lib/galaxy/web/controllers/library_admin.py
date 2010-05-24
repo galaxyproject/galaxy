@@ -69,8 +69,8 @@ class LibraryListGrid( grids.Grid ):
     num_rows_per_page = 50
     preserve_state = False
     use_paging = True
-    def build_initial_query( self, session ):
-        return session.query( self.model_class )
+    def build_initial_query( self, trans ):
+        return trans.sa_session.query( self.model_class )
 
 class LibraryAdmin( BaseController ):
 
@@ -78,16 +78,16 @@ class LibraryAdmin( BaseController ):
 
     @web.expose
     @web.require_admin
-    def browse_libraries( self, trans, **kwargs ):
-        if 'operation' in kwargs:
-            operation = kwargs['operation'].lower()
+    def browse_libraries( self, trans, **kwd ):
+        if 'operation' in kwd:
+            operation = kwd['operation'].lower()
             if operation == "browse":
                 return trans.response.send_redirect( web.url_for( controller='library_common',
                                                                   action='browse_library',
                                                                   cntrller='library_admin',
-                                                                  **kwargs ) )
+                                                                  **kwd ) )
         # Render the list view
-        return self.library_list_grid( trans, **kwargs )
+        return self.library_list_grid( trans, **kwd )
     @web.expose
     @web.require_admin
     def create_library( self, trans, **kwd ):

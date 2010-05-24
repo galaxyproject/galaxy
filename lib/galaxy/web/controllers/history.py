@@ -110,8 +110,8 @@ class SharedHistoryListGrid( grids.Grid ):
         grids.GridOperation( "Unshare" )
     ]
     standard_filters = []
-    def build_initial_query( self, session ):
-        return session.query( self.model_class ).join( 'users_shared_with' )
+    def build_initial_query( self, trans ):
+        return trans.sa_session.query( self.model_class ).join( 'users_shared_with' )
     def apply_default_filter( self, trans, query, **kwargs ):
         return query.filter( model.HistoryUserShareAssociation.user == trans.user )
         
@@ -138,9 +138,9 @@ class HistoryAllPublishedGrid( grids.Grid ):
         key="free-text-search", visible=False, filterable="standard" )
                 )
     operations = []
-    def build_initial_query( self, session ):
+    def build_initial_query( self, trans ):
         # Join so that searching history.user makes sense.
-        return session.query( self.model_class ).join( model.User.table )
+        return trans.sa_session.query( self.model_class ).join( model.User.table )
     def apply_default_filter( self, trans, query, **kwargs ):
         # A public history is published, has a slug, and is not deleted.
         return query.filter( self.model_class.published == True ).filter( self.model_class.slug != None ).filter( self.model_class.deleted == False )

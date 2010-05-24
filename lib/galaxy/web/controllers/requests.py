@@ -126,8 +126,8 @@ class RequestsGrid( grids.Grid ):
     ]
     def apply_default_filter( self, trans, query, **kwd ):
         return query.filter_by( user=trans.user )
-    def build_initial_query( self, session ):
-        return session.query( self.model_class )
+    def build_initial_query( self, trans ):
+        return trans.sa_session.query( self.model_class )
 
 class Requests( BaseController ):
     request_grid = RequestsGrid()

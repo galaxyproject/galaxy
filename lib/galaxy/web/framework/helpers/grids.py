@@ -45,7 +45,6 @@ class Grid( object ):
         webapp = kwargs.get( 'webapp', 'galaxy' )
         status = kwargs.get( 'status', None )
         message = kwargs.get( 'message', None )
-        session = trans.sa_session
         # Build a base filter and sort key that is the combination of the saved state and defaults. Saved state takes preference over defaults.
         base_filter = {}
         if self.default_filter:
@@ -60,7 +59,7 @@ class Grid( object ):
             if pref_name in trans.get_user().preferences:
                 base_sort_key = from_json_string( trans.get_user().preferences[pref_name] )
         # Build initial query
-        query = self.build_initial_query( session )
+        query = self.build_initial_query( trans )
         query = self.apply_default_filter( trans, query, **kwargs )
         # Maintain sort state in generated urls
         extra_url_args = {}
@@ -258,8 +257,8 @@ class Grid( object ):
         pass
     def get_current_item( self, trans ):
         return None
-    def build_initial_query( self, session ):
-        return session.query( self.model_class )
+    def build_initial_query( self, trans ):
+        return trans.sa_session.query( self.model_class )
     def apply_default_filter( self, trans, query, **kwargs):
         return query
     

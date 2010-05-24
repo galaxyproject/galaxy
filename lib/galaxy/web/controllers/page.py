@@ -71,9 +71,9 @@ class PageAllPublishedGrid( grids.Grid ):
         cols_to_filter=[ columns[0], columns[1], columns[2], columns[3] ], 
         key="free-text-search", visible=False, filterable="standard" )
                 )
-    def build_initial_query( self, session ):
+    def build_initial_query( self, trans ):
         # Join so that searching history.user makes sense.
-        return session.query( self.model_class ).join( model.User.table )
+        return trans.sa_session.query( self.model_class ).join( model.User.table )
     def apply_default_filter( self, trans, query, **kwargs ):
         return query.filter( self.model_class.deleted==False ).filter( self.model_class.published==True )
                 

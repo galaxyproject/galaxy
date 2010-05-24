@@ -192,7 +192,7 @@ class TestLibrarySecurity( TwillTestCase ):
         # regular_user2 should not be to see the library since they do not have 
         # Role One which is associated with the LIBRARY_ACCESS permission
         self.login( email=regular_user2.email )
-        self.browse_libraries_regular_user( check_str1="You are not authorized to access any libraries" )
+        self.browse_libraries_regular_user( check_str1="No Items" )
         self.logout()
         # regular_user3 should not be able to see 1.bed from the analysis view's access librarys
         self.login( email=regular_user3.email )

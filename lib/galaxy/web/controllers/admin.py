@@ -103,8 +103,8 @@ class UserListGrid( grids.Grid ):
     use_paging = True
     def get_current_item( self, trans ):
         return trans.user
-    def build_initial_query( self, session ):
-        return session.query( self.model_class )
+    def build_initial_query( self, trans ):
+        return trans.sa_session.query( self.model_class )
 
 class RoleListGrid( grids.Grid ):
     class NameColumn( grids.TextColumn ):
@@ -197,8 +197,8 @@ class RoleListGrid( grids.Grid ):
     use_paging = True
     def get_current_item( self, trans ):
         return None
-    def build_initial_query( self, session ):
-        return session.query( self.model_class )
+    def build_initial_query( self, trans ):
+        return trans.sa_session.query( self.model_class )
     def apply_default_filter( self, trans, query, **kwargs ):
         return query.filter( model.Role.type != model.Role.types.PRIVATE )
 
@@ -275,8 +275,8 @@ class GroupListGrid( grids.Grid ):
     use_paging = True
     def get_current_item( self, trans ):
         return None
-    def build_initial_query( self, session ):
-        return session.query( self.model_class )
+    def build_initial_query( self, trans ):
+        return trans.sa_session.query( self.model_class )
 
 class AdminGalaxy( BaseController, Admin ):
     
