@@ -1,4 +1,4 @@
-<tool id="fastq_groomer" name="FASTQ Groomer" version="1.0.2">
+<tool id="fastq_groomer" name="FASTQ Groomer" version="1.0.3">
   <description>convert between various FASTQ quality formats</description>
   <command interpreter="python">fastq_groomer.py '$input_file' '$input_type' '$output_file'
 #if str( $options_type['options_type_selector'] ) == 'basic':
@@ -287,6 +287,15 @@
       <param name="force_quality_encoding" value="decimal" />
       <param name="summarize_input" value="summarize_input" />
       <output name="output_file" file="sanger_full_range_as_decimal_sanger.fastqsanger" />
+    </test>
+    <test>
+      <param name="input_file" value="sanger_full_range_as_tab_decimal_sanger.fastqsanger" ftype="fastq" />
+      <param name="input_type" value="sanger" />
+      <param name="options_type_selector" value="advanced" />
+      <param name="output_type" value="sanger" />
+      <param name="force_quality_encoding" value="ascii" />
+      <param name="summarize_input" value="summarize_input" />
+      <output name="output_file" file="sanger_full_range_original_sanger.fastqsanger" />
     </test>
     <!-- Solexa, range -5 - 62 -->
     <test>

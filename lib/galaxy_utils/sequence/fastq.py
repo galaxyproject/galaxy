@@ -41,7 +41,12 @@ class fastqSequencingRead( SequencingRead ):
     def convert_color_to_base_space( cls, sequence ):
         return cls.color_space_converter.to_base_space( sequence )
     def is_ascii_encoded( self ):
-        return ' ' not in self.quality #as per fastq definition only decimal quality strings can have spaces in them (and must have a trailing space)
+        #as per fastq definition only decimal quality strings can have spaces (and TABs for our purposes) in them (and must have a trailing space)
+        if ' ' in self.quality:
+            return False
+        if '\t' in self.quality:
+            return False
+        return True
     def get_ascii_quality_scores( self ):
         if self.is_ascii_encoded():
             return list( self.quality )
@@ -49,7 +54,7 @@ class fastqSequencingRead( SequencingRead ):
             quality = self.quality.rstrip() #decimal scores should have a trailing space
             if quality:
                 try:
-                    return [ chr( int( val ) + self.ascii_min - self.quality_min ) for val in quality.split( ' ' ) ]
+                    return [ chr( int( val ) + self.ascii_min - self.quality_min ) for val in quality.split() ]
                 except ValueError, e:
                     raise ValueError( 'Error Parsing quality String. ASCII quality strings cannot contain spaces (%s): %s' % ( self.quality, e ) )
             else:
@@ -60,7 +65,7 @@ class fastqSequencingRead( SequencingRead ):
         else:
             quality = self.quality.rstrip() #decimal scores should have a trailing space
             if quality:
-                return [ int( val ) for val in quality.split( ' ' ) if val.strip() ]
+                return [ int( val ) for val in quality.split() if val.strip() ]
             else:
                 return []
     def convert_read_to_format( self, format, force_quality_encoding = None ):
