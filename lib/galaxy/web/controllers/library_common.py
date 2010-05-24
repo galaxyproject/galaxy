@@ -1267,7 +1267,7 @@ class LibraryCommon( BaseController ):
                 for fname, relpath in self.files.items():
                     size = os.stat( fname ).st_size
                     quoted_fname = urllib.quote_plus( fname, '/' )
-                    rval += '- %i %s%s %s\n' % ( size, self.url_base, quoted_fname, relpath )
+                    rval += '- %i %s%s %s\r\n' % ( size, self.url_base, quoted_fname, relpath )
                 return rval
         # Perform an action on a list of library datasets.
         params = util.Params( kwd )
@@ -1429,6 +1429,8 @@ class LibraryCommon( BaseController ):
                                 message = "Unable to create archive for download, please report this error"
                                 status = 'error'                            
                     if not error:
+                        lname = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( library_id ) ).name
+                        fname = lname.replace( ' ', '_' ) + '_files'
                         if action == 'zip':
                             archive.close()
                             tmpfh = open( tmpf )
@@ -1443,21 +1445,21 @@ class LibraryCommon( BaseController ):
                                 status = 'error'
                             if not error:
                                 trans.response.set_content_type( "application/x-zip-compressed" )
-                                trans.response.headers[ "Content-Disposition" ] = "attachment; filename=%s.%s" % (outfname,outext)
+                                trans.response.headers[ "Content-Disposition" ] = "attachment; filename=%s.%s" % (fname,outext)
                                 return tmpfh
                         elif action == 'ngxzip':
-                            #trans.response.set_content_type( "application/x-zip-compressed" )
-                            #trans.response.headers[ "Content-Disposition" ] = "attachment; filename=%s.%s" % (outfname,outext)
+                            trans.response.set_content_type( "application/x-zip-compressed" )
+                            trans.response.headers[ "Content-Disposition" ] = "attachment; filename=%s.%s" % (fname,outext)
                             trans.response.headers[ "X-Archive-Files" ] = "zip"
                             return archive
                         else:
                             trans.response.set_content_type( "application/x-tar" )
-                            trans.response.headers[ "Content-Disposition" ] = "attachment; filename=%s.%s" % (outfname,outext)
+                            trans.response.headers[ "Content-Disposition" ] = "attachment; filename=%s.%s" % (fname,outext)
                             archive.wsgi_status = trans.response.wsgi_status()
                             archive.wsgi_headeritems = trans.response.wsgi_headeritems()
                             return archive.stream
             else: # unknown action
-		message = '### unknown action = %s in act_on_multiple_datasets' % action		
+                message = '### unknown action = %s in act_on_multiple_datasets' % action		
 
         return trans.response.send_redirect( web.url_for( controller='library_common',
                                                           action='browse_library',
