@@ -474,20 +474,39 @@
                                     // Embedded item HTML; item class is embedded in div container classes; this is necessary because the editor strips 
                                     // all non-standard attributes when it returns its content (e.g. it will not return an element attribute of the form 
                                     // item_class='History').
+                                    var item_elt_id = item_info.iclass + "-"  + item_id;
                                     var item_embed_html =                                     
                                         "\
-                                         <div id='"  + item_info.iclass + "-" + item_id + "' class='embedded-item " + item_info.singular.toLowerCase() + 
+                                         <p><div id='"  + item_elt_id + "' class='embedded-item " + item_info.singular.toLowerCase() + 
                                                 " placeholder'> \
                                             <p class='title'>Embedded Galaxy " + item_info.singular + " '" + item_name + "'</p> \
                                             <p class='content'> \
                                                 [Do not edit this block; Galaxy will fill it in with the annotated " +
-                                                item_info.singular.toLowerCase() + " when it is displayed.]</div> \
+                                                item_info.singular.toLowerCase() + " when it is displayed.] \
                                             </p> \
-                                        </div><p></p>";
+                                        </div></p>";
                                     
-                                    // Insert embedded representation into document.
-                                    // TODO: maybe try replace() instead to handle indenting?
+                                    // Insert embedded item into document.
                                     wym.insert(item_embed_html);
+                                    
+                                    // TODO: can we fix this?
+                                    // Due to oddities of wym.insert() [likely due to inserting a <div> and/or a complete paragraph], an
+                                    // empty paragraph may be included either before or after an embedded item. Remove these paragraphs.
+                                    $("#" + item_elt_id, wym._doc.body).each( function() {
+                                        // Remove previous empty paragraphs.
+                                        var prev_elt = $(this).prev();
+                                        if ( prev_elt.length != 0 && jQuery.trim(prev_elt.text()) == "" )
+                                            prev_elt.remove();
+                                            
+                                        // Remove subsequent empty paragraphs.
+                                        /*
+                                        var next_elt = $(this).next();
+                                        var next_next_elt = next_elt.next();
+                                        if (next_next_elt.length != 0)
+                                            next_elt.remove();
+                                        */
+                                    });
+                                    
                                 });
                                 hide_modal();
                             },
