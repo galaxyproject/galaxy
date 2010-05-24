@@ -33,7 +33,7 @@
         </datatype>
         <datatype extension="customtrack" type="galaxy.datatypes.interval:CustomTrack"/>
         <datatype extension="csfasta" type="galaxy.datatypes.sequence:csFasta" display_in_upload="true"/>
-        <datatype extension="data" type="galaxy.datatypes.data:Data" mimetype="application/octet-stream"/>
+        <datatype extension="data" type="galaxy.datatypes.data:Data" mimetype="application/octet-stream" max_optional_metadata_filesize="1048576" />
         <datatype extension="fasta" type="galaxy.datatypes.sequence:Fasta" display_in_upload="true">
             <converter file="fasta_to_tabular_converter.xml" target_datatype="tabular"/>
         </datatype>

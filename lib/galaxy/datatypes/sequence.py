@@ -148,6 +148,11 @@ class csFasta( Sequence ):
         except:
             pass
         return False
+    
+    def set_meta( self, dataset, **kwd ):
+        if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
+            return
+        return Sequence.set_meta( self, dataset, **kwd )
 
 class Fastq ( Sequence ):
     """Class representing a generic FASTQ sequence"""
@@ -158,6 +163,8 @@ class Fastq ( Sequence ):
         Set the number of sequences and the number of data lines
         in dataset.
         """
+        if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
+            return
         data_lines = 0
         sequences = 0
         seq_counter = 0     # blocks should be 4 lines long

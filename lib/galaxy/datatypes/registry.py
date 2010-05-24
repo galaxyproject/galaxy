@@ -64,6 +64,8 @@ class Registry( object ):
                             self.available_tracks.append( extension )
                         if display_in_upload:
                             self.upload_file_formats.append( extension )
+                        #max file size cut off for setting optional metadata
+                        self.datatypes_by_extension[extension].max_optional_metadata_filesize = elem.get( 'max_optional_metadata_filesize', None )
                         for converter in elem.findall( 'converter' ):
                             # Build the list of datatype converters which will later be loaded 
                             # into the calling app's toolbox.

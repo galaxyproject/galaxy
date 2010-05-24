@@ -57,6 +57,8 @@ class Data( object ):
     composite_type = None
     composite_files = odict()
     primary_file_name = 'index'
+    #A per datatype setting (inherited): max file size (in bytes) for setting optional metadata
+    _max_optional_metadata_filesize = None
     
     def __init__(self, **kwd):
         """Initialize the datatype"""
@@ -116,6 +118,18 @@ class Data( object ):
             if not value:
                 return True
         return False
+    def set_max_optional_metadata_filesize( self, max_value ):
+        try:
+            max_value = int( max_value )
+        except:
+            return
+        self.__class__._max_optional_metadata_filesize = max_value
+    def get_max_optional_metadata_filesize( self ):
+        rval = self.__class__._max_optional_metadata_filesize
+        if rval is None:
+            return -1
+        return rval
+    max_optional_metadata_filesize = property( get_max_optional_metadata_filesize, set_max_optional_metadata_filesize )
     def set_peek( self, dataset, is_multi_byte=False ):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
