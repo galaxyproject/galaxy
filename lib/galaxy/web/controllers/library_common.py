@@ -1,4 +1,4 @@
-import os, os.path, shutil, urllib, StringIO, re, gzip, tempfile, shutil, zipfile, copy, glob, string, zlib
+import os, os.path, shutil, urllib, StringIO, re, gzip, tempfile, shutil, zipfile, copy, glob, string
 from galaxy.web.base.controller import *
 from galaxy import util, jobs
 from galaxy.datatypes import sniff
@@ -1265,15 +1265,7 @@ class LibraryCommon( BaseController ):
             def __str__( self ):
                 rval = ''
                 for fname, relpath in self.files.items():
-                    f = open( fname, 'rb' )
-                    crc = zlib.crc32( '' )
-                    while True:
-                        chunk = f.read( 65536 )
-                        if not chunk:
-                            break
-                        crc = zlib.crc32( chunk, crc )
-                    f.close()
-                    crc = hex( crc & 0xffffffff ).replace( '0x', '', 1 )
+                    crc = '-'
                     size = os.stat( fname ).st_size
                     quoted_fname = urllib.quote_plus( fname, '/' )
                     rval += '%s %i %s%s %s\r\n' % ( crc, size, self.url_base, quoted_fname, relpath )
