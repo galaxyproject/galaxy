@@ -1265,9 +1265,18 @@ class LibraryCommon( BaseController ):
             def __str__( self ):
                 rval = ''
                 for fname, relpath in self.files.items():
+                    f = open( fname, 'rb' )
+                    crc = zlib.crc32( '' )
+                    while True:
+                        chunk = f.read( 65536 )
+                        if not chunk:
+                            break
+                        crc = zlib.crc32( chunk, crc )
+                    f.close()
+                    crc = hex( crc & 0xffffffff ).replace( '0x', '', 1 )
                     size = os.stat( fname ).st_size
                     quoted_fname = urllib.quote_plus( fname, '/' )
-                    rval += '- %i %s%s %s\r\n' % ( size, self.url_base, quoted_fname, relpath )
+                    rval += '%s %i %s%s %s\r\n' % ( crc, size, self.url_base, quoted_fname, relpath )
                 return rval
         # Perform an action on a list of library datasets.
         params = util.Params( kwd )
@@ -1448,7 +1457,7 @@ class LibraryCommon( BaseController ):
                                 trans.response.headers[ "Content-Disposition" ] = "attachment; filename=%s.%s" % (fname,outext)
                                 return tmpfh
                         elif action == 'ngxzip':
-                            trans.response.set_content_type( "application/x-zip-compressed" )
+                            trans.response.set_content_type( "application/zip" )
                             trans.response.headers[ "Content-Disposition" ] = "attachment; filename=%s.%s" % (fname,outext)
                             trans.response.headers[ "X-Archive-Files" ] = "zip"
                             return archive
