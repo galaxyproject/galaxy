@@ -1,0 +1,265 @@
+<tool id="plot_for_lda_output1" name="Draw ROC">
+	<description>Receiver Operating Characteristic plot</description>
+	<command interpreter="sh">r_wrapper.sh $script_file</command>
+
+	<inputs>
+		<param format="text" name="input" type="data" label="Source file"/>
+		<param name="my_title" size="30" type="text" value="ROC" label="Title of your plot" help="See syntax below">
+		</param>
+
+	</inputs>
+	<outputs>
+		<data format="pdf" name="pdf_output" />
+        <data format="txt" name="desc_output" />
+	</outputs>
+
+	<tests>
+		<test>
+			<param name="input" value="lda_analy_output.txt"/>
+			<param name="my_title" value="Test Plot"/>
+			<output name="pdf_output" file="plot_for_lda_output.pdf"/>
+			<output name="desc_output" file="empty_file.dat"/>
+		</test>
+	</tests>
+
+    <configfiles>
+            <configfile name="script_file">
+
+        rm(list = objects() )
+
+        ############# FORMAT X DATA #########################
+        format&lt;-function(data) {
+            ind=NULL
+            for(i in 1 : ncol(data)){
+                if (is.na(data[nrow(data),i])) {
+                    ind&lt;-c(ind,i)
+                }
+            }
+            #print(is.null(ind))
+            if (!is.null(ind)) {
+                data&lt;-data[,-c(ind)]
+            }
+
+            data
+        }
+
+        ########GET RESPONSES ###############################
+        get_resp&lt;- function(data) {
+            resp1&lt;-as.vector(data[,ncol(data)])
+                resp=numeric(length(resp1))
+            for (i in 1:length(resp1)) {
+                if (resp1[i]=="Control ") {
+                    resp[i] = 0
+                }
+                if (resp1[i]=="XLMR ") {
+                    resp[i] = 1
+                }
+            }
+                return(resp)
+        }
+
+        ######## CHARS TO NUMBERS ###########################
+        f_to_numbers&lt;- function(F) { 
+            ind&lt;-NULL
+            G&lt;-matrix(0,nrow(F), ncol(F))
+            for (i in 1:nrow(F)) {
+                for (j in 1:ncol(F)) {
+                    G[i,j]&lt;-as.integer(F[i,j])
+                }
+            }
+            return(G)
+        }
+
+        ###################NORMALIZING#########################
+        norm &lt;- function(M, a=NULL, b=NULL) {
+            C&lt;-NULL
+            ind&lt;-NULL
+
+            for (i in 1: ncol(M)) {
+                if (sd(M[,i])!=0) {
+                    M[,i]&lt;-(M[,i]-mean(M[,i]))/sd(M[,i])
+                }
+                #   else {print(mean(M[,i]))}   
+            }
+            return(M)
+        }
+
+        ##### LDA DIRECTIONS #################################
+        lda_dec &lt;- function(data, k){
+            priors=numeric(k)
+            grandmean&lt;-numeric(ncol(data)-1)
+            means=matrix(0,k,ncol(data)-1)
+            B = matrix(0, ncol(data)-1, ncol(data)-1)
+            N=nrow(data)
+            for (i in 1:k){
+                priors[i]=sum(data[,1]==i)/N
+                grp=subset(data,data\$group==i)
+                means[i,]=mean(grp[,2:ncol(data)])
+                #print(means[i,])
+                #print(priors[i])
+                #print(priors[i]*means[i,])
+                grandmean = priors[i]*means[i,] + grandmean           
+            }
+
+            for (i in 1:k) {
+                B= B + priors[i]*((means[i,]-grandmean)%*%t(means[i,]-grandmean))
+            }
+    
+            W = var(data[,2:ncol(data)])
+            svdW = svd(W)
+            inv_sqrtW =solve(svdW\$v %*% diag(sqrt(svdW\$d)) %*% t(svdW\$v))
+            B_star= t(inv_sqrtW)%*%B%*%inv_sqrtW
+            B_star_decomp = svd(B_star)
+            directions  = inv_sqrtW%*%B_star_decomp\$v
+            return( list(directions, B_star_decomp\$d) )                          
+        }
+
+        ################ NAIVE BAYES FOR 1D SIR OR LDA ##############
+        naive_bayes_classifier &lt;- function(resp, tr_data, test_data, k=2, tau) {
+            tr_data=data.frame(resp=resp, dir=tr_data)
+            means=numeric(k)
+            #print(k)
+            cl=numeric(k)
+            predclass=numeric(length(test_data))
+            for (i in 1:k) {
+                grp = subset(tr_data, resp==i)
+                means[i] = mean(grp\$dir)
+            #print(i, means[i])  
+            }
+            cutoff = tau*means[1]+(1-tau)*means[2] 
+            #print(tau)
+            #print(means)
+            #print(cutoff)
+            if (cutoff&gt;means[1]) {
+               cl[1]=1 
+               cl[2]=2
+            }
+            else {
+               cl[1]=2 
+               cl[2]=1
+            }
+
+            for (i in 1:length(test_data)) {
+
+                if (test_data[i] &lt;= cutoff) {
+                    predclass[i] = cl[1]
+            }
+                else {
+                    predclass[i] = cl[2] 
+            }  
+                }
+            #print(means)
+            #print(mean(means))
+            #X11()
+            #plot(test_data,pch=predclass, col=resp) 
+            predclass
+        }
+
+        ################# EXTENDED ERROR RATES #################
+        ext_error_rate &lt;- function(predclass, actualclass,msg=c("you forgot the message"), pr=1) {
+                 er=sum(predclass != actualclass)/length(predclass)
+
+                 matr&lt;-data.frame(predclass=predclass,actualclass=actualclass)
+                 escapes = subset(matr, actualclass==1)
+                 subjects = subset(matr, actualclass==2)      
+                 er_esc=sum(escapes\$predclass != escapes\$actualclass)/length(escapes\$predclass) 
+                 er_subj=sum(subjects\$predclass != subjects\$actualclass)/length(subjects\$predclass)   
+
+                 if (pr==1) {
+        #             print(paste(c(msg, 'overall : ', (1-er)*100, "%."),collapse=" "))
+        #             print(paste(c(msg, 'within escapes : ', (1-er_esc)*100, "%."),collapse=" "))
+        #             print(paste(c(msg, 'within subjects: ', (1-er_subj)*100, "%."),collapse=" ")) 
+            }
+            return(c((1-er)*100, (1-er_esc)*100, (1-er_subj)*100))                                                                                    
+        }
+
+        ## Main Function ##
+
+	files_alias&lt;-c("${my_title}")
+	tau=seq(0,1,by=0.005)
+	nfiles=1
+	f = c("${input}")
+
+	rez_ext&lt;-list()
+	for (i in 1:nfiles) {
+		rez_ext[[i]]&lt;-dget(paste(f[i], sep="",collapse=""))
+	}
+
+	tau&lt;-tau[1:(length(tau)-1)]
+	for (i in 1:nfiles) {
+		rez_ext[[i]]&lt;-rez_ext[[i]][,1:(length(tau)-1)]
+	}
+
+	######## OPTIMAIL TAU ###########################
+
+	#rez_ext
+
+	rate&lt;-c("Optimal tau","Tr total", "Tr Y", "Tr X")
+
+	m_tr&lt;-numeric(nfiles)
+	m_xp22&lt;-numeric(nfiles)
+	m_x&lt;-numeric(nfiles)
+
+	for (i in 1:nfiles) {
+		r&lt;-rez_ext[[i]]
+		#tr
+		rate&lt;-rbind(rate, c(files_alias[i]," "," "," ") )
+		mm&lt;-which((r[3,])==max(r[3,]))
+
+		m_tr[i]&lt;-mm[1]
+		rate&lt;-rbind(rate,c(tau[m_tr[i]],r[,m_tr[i]]))
+	}
+	print(rate)
+
+	pdf(file= paste("${pdf_output}"))
+
+	plot(rez_ext[[i]][2,]~rez_ext[[i]][3,], xlim=c(0,100), ylim=c(0,100), xlab="X", ylab="Y", type="l", lty=1, col="blue", xaxt='n', yaxt='n')
+	for (i in 1:nfiles) {
+		lines(rez_ext[[i]][2,]~rez_ext[[i]][3,], xlab="X", ylab="Y", type="l", lty=1, col=i)   
+		# pt=c(r,)
+		points(x=rez_ext[[i]][3,m_tr[i]],y=rez_ext[[i]][2,m_tr[i]], pch=16, col=i)  
+	}
+
+
+	title(main="${my_title}", adj=0, cex.main=1.1)
+	axis(2, at=c(0,20,40,60,80,100), labels=c('0','20','40','60','80','100%'))
+	axis(1, at=c(0,20,40,60,80,100), labels=c('0','20','40','60','80','100%')) 
+
+	#leg=c("10 kb","50 kb","100 kb")
+	#legend("bottomleft",legend=leg , col=c(1,2,3), lty=c(1,1,1))
+
+	#dev.off()
+
+		</configfile>
+	</configfiles>
+
+
+	<help>
+
+.. class:: infomark
+
+**What it does**
+
+This tool consists of the module to perform the Linear Discriminant Analysis as described in Carrel et al., 2006 (PMID: 17009873)
+
+*Carrel L, Park C, Tyekucheva S, Dunn J, Chiaromonte F, et al. (2006) Genomic Environment Predicts Expression Patterns on the Human 	Inactive X Chromosome. PLoS Genet 2(9): e151. doi:10.1371/journal.pgen.0020151*
+
+-----
+
+**Example**
+
+- Input file
+
+	A output file from "LDA" tool is used to perform it. 
+
+- Output file
+
+	There are two files produced:
+	(1) A summary file for LDA classification success rates with optimal tau
+	(2) An image file for plot
+
+</help>
+
+
+
+</tool>
