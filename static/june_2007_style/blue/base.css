@@ -137,7 +137,7 @@ div.permissionContainer{padding-left:20px;}
 .icon-button.disk{background:url(fugue.png) no-repeat 0px -208px;}
 .icon-button.annotate{background:url(fugue.png) no-repeat 0px -234px;}
 .icon-button.vis-chart{background:url(/static/images/fugue/chart.png) no-repeat;}
-.icon-button.go-to-full-screen{background:url(/static/images/fugue/arrow-045.png) no-repeat}
+.icon-button.go-to-full-screen{background:url(/static/images/fugue/external.png) no-repeat}
 .icon-button.import{background:url(/static/images/fugue/plus-circle.png) no-repeat}
 .tipsy{padding:5px;font-size:10px;filter:alpha(opacity=80);background-repeat:no-repeat;background-image:url(../images/tipsy.gif);}
 .tipsy-inner{padding:5px 8px 4px 8px;background-color:black;color:white;max-width:200px;text-align:center;}
