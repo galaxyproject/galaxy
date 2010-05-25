@@ -1,4 +1,4 @@
-import os, os.path, shutil, urllib, StringIO, re, gzip, tempfile, shutil, zipfile, copy, glob, string
+import os, os.path, shutil, urllib, StringIO, re, gzip, tempfile, shutil, zipfile, copy, glob, string, zlib
 from galaxy.web.base.controller import *
 from galaxy import util, jobs
 from galaxy.datatypes import sniff
