@@ -29,6 +29,9 @@ ${h.css( "history", "autocomplete_tagging" )}
 </%def>
 
 <%def name="center_panel()">
+<div class="unified-panel-header" unselectable="on">
+    <div class="unified-panel-header-inner">Trackster Visualization | ${config['title']}</div>
+</div>
 <div id="content">
     <div id="top-labeltrack"></div>
     <div id="viewport-container" style="overflow-x: hidden; overflow-y: auto;">
