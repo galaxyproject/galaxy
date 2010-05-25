@@ -3,7 +3,7 @@
 
 ${stylesheets()}
 ${grid_javascripts()}
-
+${render_grid_header( grid, False )}
 ${render_grid_table( grid, show_item_checkboxes=True )}
 
 ## Initialize the grid.

@@ -53,13 +53,13 @@ class DatasetSelectionGrid( grids.Grid ):
             """ Filter by dbkey. """
             # use raw SQL b/c metadata is a BLOB
             dbkey = dbkey.replace("'", "\\'")
-            return query.filter( "metadata like '%%\"dbkey\": [\"%s\"]%%' OR metadata like '%%\"dbkey\": \"%s\"%%'" % (dbkey, dbkey) )
+            return query.filter( or_( "metadata like '%%\"dbkey\": [\"%s\"]%%'" % dbkey, "metadata like '%%\"dbkey\": \"%s\"%%'" % dbkey ) )
     
     # Grid definition.
     available_tracks = None
     title = "Add Tracks"
     template = "/tracks/add_tracks.mako"
-    async_template = "/page/select_histories_grid_async.mako"
+    async_template = "/page/select_items_grid_async.mako"
     model_class = model.HistoryDatasetAssociation
     default_filter = { "deleted" : "False" , "shared" : "All" }
     default_sort_key = "name"
@@ -67,9 +67,15 @@ class DatasetSelectionGrid( grids.Grid ):
     use_paging = False
     columns = [
         grids.TextColumn( "Name", key="name", model_class=model.HistoryDatasetAssociation ),
-        grids.GridColumn( "Filetype", key="extension" ),
+        grids.TextColumn( "Filetype", key="extension", model_class=model.HistoryDatasetAssociation ),
         DbKeyColumn( "Dbkey", key="dbkey", model_class=model.HistoryDatasetAssociation, visible=False )
     ]
+    columns.append( 
+        grids.MulticolFilterColumn(  
+        "Search", 
+        cols_to_filter=[ columns[0], columns[1] ], 
+        key="free-text-search", visible=False, filterable="standard" )
+                )
     
     def build_initial_query( self, trans ):
         return trans.sa_session.query( self.model_class ).join( model.History.table).join( model.Dataset.table )
