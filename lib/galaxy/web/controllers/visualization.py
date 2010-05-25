@@ -25,6 +25,9 @@ class VisualizationListGrid( grids.Grid ):
         cols_to_filter=[ columns[0], columns[2] ], 
         key="free-text-search", visible=False, filterable="standard" )
                 )
+    global_actions = [
+        grids.GridAction( "Create new visualization", dict( action='create' ) )
+    ]
     operations = [
         grids.GridOperation( "View", allow_multiple=False, url_args=dict( controller='tracks', action='browser' ) ),
         grids.GridOperation( "Edit Attributes", allow_multiple=False, url_args=dict( action='edit') ),
@@ -284,7 +287,7 @@ class VisualizationController( BaseController, Sharable, UsesAnnotations, UsesVi
         
     @web.expose
     @web.require_login( "create visualizations" )
-    def create( self, trans, visualization_title="", visualization_slug="", visualization_annotation="" ):
+    def create( self, trans, visualization_title="", visualization_slug="", visualization_annotation="", visualization_dbkey="" ):
         """
         Create a new visualization
         """
@@ -311,7 +314,11 @@ class VisualizationController( BaseController, Sharable, UsesAnnotations, UsesVi
                 visualization_revision = model.VisualizationRevision()
                 visualization_revision.title = visualization_title
                 visualization_revision.visualization = visualization
+                # HACK: set visualization type to trackster; when we have multiple visualization types, we'll need to get type from the user.
+                visualization.type = 'trackster'
                 visualization.latest_revision = visualization_revision
+                # Visualization config is dbkey for now.
+                visualization.latest_revision.config = { 'dbkey' : visualization_dbkey }
                 visualization_revision.content = ""
                 # Persist
                 session = trans.sa_session
@@ -320,6 +327,7 @@ class VisualizationController( BaseController, Sharable, UsesAnnotations, UsesVi
                 # Display the management visualization
                 ## trans.set_message( "Visualization '%s' created" % visualization.title )
                 return trans.response.send_redirect( web.url_for( action='list' ) )
+                                
         return trans.show_form( 
             web.FormBuilder( web.url_for(), "Create new visualization", submit_text="Submit" )
                 .add_text( "visualization_title", "Visualization title", value=visualization_title, error=visualization_title_err )
@@ -329,6 +337,7 @@ class VisualizationController( BaseController, Sharable, UsesAnnotations, UsesVi
                                 from the visualization title, but can be edited. This field
                                 must contain only lowercase letters, numbers, and
                                 the '-' character.""" )
+                .add_select( "visualization_dbkey", "Visualization DbKey/Build", value=visualization_dbkey, options=self._get_dbkeys( trans ), error=None)
                 .add_text( "visualization_annotation", "Visualization annotation", value=visualization_annotation, error=visualization_annotation_err,
                             help="A description of the visualization; annotation is shown alongside published visualizations."),
                 template="visualization/create.mako" )

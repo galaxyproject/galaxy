@@ -1,7 +1,7 @@
 """
 Contains functionality needed in every web interface
 """
-import os, time, logging, re, string, sys
+import os, time, logging, re, string, sys, glob
 from datetime import datetime, timedelta
 from galaxy import config, tools, web, util
 from galaxy.web import error, form, url_for
@@ -165,6 +165,24 @@ class UsesHistoryDatasetAssociation:
         
 class UsesVisualization( SharableItemSecurity ):
     """ Mixin for controllers that use Visualization objects. """
+
+    len_files = None
+    
+    def _get_dbkeys( self, trans ):
+        """ Returns all valid dbkeys that a user can use in a visualization. """
+        
+        # Read len files.
+        if not self.len_files:
+            len_files = glob.glob(os.path.join( trans.app.config.tool_data_path, 'shared','ucsc','chrom', "*.len" ))
+            self.len_files = [ os.path.split(f)[1].split(".len")[0] for f in len_files ] # get xxx.len
+
+        user_keys = {}
+        user = trans.get_user()
+        if 'dbkeys' in user.preferences:
+            user_keys = from_json_string( user.preferences['dbkeys'] )
+        
+        dbkeys = [ (v, k) for k, v in trans.db_builds if k in self.len_files or k in user_keys ]
+        return dbkeys
     
     def get_visualization( self, trans, id, check_ownership=True, check_accessible=False ):
         """ Get a Visualization from the database by id, verifying ownership. """
@@ -184,28 +202,32 @@ class UsesVisualization( SharableItemSecurity ):
             # Trackster config; taken from tracks/browser
             latest_revision = visualization.latest_revision
             tracks = []
-        
+
+            # Set dbkey.
             try:
                 dbkey = latest_revision.config['dbkey']
             except KeyError:
                 dbkey = None
         
-            hda_query = trans.sa_session.query( trans.model.HistoryDatasetAssociation )
-            for t in visualization.latest_revision.config['tracks']:
-                dataset_id = t['dataset_id']
-                try:
-                    prefs = t['prefs']
-                except KeyError:
-                    prefs = {}
-                dataset = hda_query.get( dataset_id )
-                track_type, _ = dataset.datatype.get_track_type()
-                tracks.append( {
-                    "track_type": track_type,
-                    "name": dataset.name,
-                    "dataset_id": dataset.id,
-                    "prefs": simplejson.dumps(prefs),
-                } )
-                if dbkey is None: dbkey = dataset.dbkey # Hack for backward compat
+            # Set tracks.
+            if 'tracks' in latest_revision.config:
+                hda_query = trans.sa_session.query( trans.model.HistoryDatasetAssociation )
+                for t in visualization.latest_revision.config['tracks']:
+                    dataset_id = t['dataset_id']
+                    try:
+                        prefs = t['prefs']
+                    except KeyError:
+                        prefs = {}
+                    dataset = hda_query.get( dataset_id )
+                    track_type, _ = dataset.datatype.get_track_type()
+                    tracks.append( {
+                        "track_type": track_type,
+                        "name": dataset.name,
+                        "dataset_id": dataset.id,
+                        "prefs": simplejson.dumps(prefs),
+                    } )
+                    if dbkey is None: dbkey = dataset.dbkey # Hack for backward compat
+            
             
             ## TODO: chrom needs to be able to be set; right now it's empty.
             config = { "title": visualization.title, "vis_id": trans.security.encode_id( visualization.id ), 

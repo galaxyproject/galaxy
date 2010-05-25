@@ -718,6 +718,9 @@ class FormBuilder( object ):
         return self.add_input( 'text', label, name, value, error, help )
     def add_password( self, name, label, value=None, error=None, help=None  ):
         return self.add_input( 'password', label, name, value, error, help )
+    def add_select( self, name, label, value=None, options=[], error=None, help=None, use_label=True ):
+        self.inputs.append( SelectInput( name, label, value=value, options=options, error=error, help=help, use_label=use_label   ) ) 
+        return self
         
 class FormInput( object ):
     """
@@ -731,6 +734,12 @@ class FormInput( object ):
         self.error = error
         self.help = help
         self.use_label = use_label
+
+class SelectInput( FormInput ):
+    """ A select form input. """
+    def __init__( self, name, label, value=None, options=[], error=None, help=None, use_label=True ):
+        FormInput.__init__( self, "select", name, label, value=value, error=error, help=help, use_label=use_label )
+        self.options = options
     
 class FormData( object ):
     """

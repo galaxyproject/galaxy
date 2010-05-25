@@ -11,14 +11,8 @@
         <div class="form-row-input">
             <select name="dbkey" id="new-dbkey">
                 %for dbkey in dbkeys:
-                    <option value="${dbkey[0]}">${dbkey[1]}</option>
+                    <option value="${dbkey[1]}">${dbkey[0]}</option>
                 %endfor
-                
-                %if user_keys:
-                    %for key, chrom_dict in user_keys.iteritems():
-                        <option value="${key}">${chrom_dict['name']} (${key})</option>
-                    %endfor
-                %endif
             </select>
         </div>
         <div style="clear: both;"></div>

@@ -23,11 +23,17 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
+    ${h.js("jquery.autocomplete")}
     <script type="text/javascript">
         $(function(){
             $("input:text:first").focus();
         })
     </script>
+</%def>
+
+<%def name="stylesheets()">
+    ${parent.stylesheets()}
+    ${h.css("autocomplete_tagging")}
 </%def>
 
 <%def name="center_panel()">
@@ -59,29 +65,32 @@
                       ${_(input.label)}:
                   </label>
                 %endif
-                  <div class="form-row-input">
-                      %if input.type == 'textarea':
-                          <textarea name="${input.name}" cols="40">${input.value}</textarea>
-                      %else:
-                          <input type="${input.type}" name="${input.name}" value="${input.value}" size="40">
-                      %endif      
-                  </div>
-                  %if input.error:
-                  <div class="form-row-error-message">${input.error}</div>
-                  %endif
-                  %if input.help:
-                  <div class="toolParamHelp" style="clear: both;">
-                      ${input.help}
-                  </div>
-                  %endif
-    
-                      <div style="clear: both"></div>
-    
+                <div class="form-row-input">
+                    %if input.type == 'textarea':
+                        <textarea name="${input.name}" cols="40">${input.value}</textarea>
+                    %elif input.type == 'select':
+                        <select name="${input.name}">
+                            %for (name, value) in input.options:
+                                <option value="${value}">${name}</option>
+                            %endfor
+                        </select>
+                    %else:
+                        <input type="${input.type}" name="${input.name}" value="${input.value}" size="40">
+                    %endif      
+                </div>
+                %if input.error:
+                    <div class="form-row-error-message">${input.error}</div>
+                %endif
+                %if input.help:
+                    <div class="toolParamHelp" style="clear: both;">
+                        ${input.help}
                     </div>
-                %endfor
-                <div class="form-row"><input type="submit" value="${form.submit_text}"></div>
-    
-            </form>
+                %endif
+                <div style="clear: both"></div>
+        </div>
+        %endfor
+        <div class="form-row"><input type="submit" value="${form.submit_text}"></div>
+        </form>
         </div>
     </div>
 </%def>

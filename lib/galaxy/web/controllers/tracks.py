@@ -87,7 +87,6 @@ class TracksController( BaseController, UsesVisualization ):
     """
     
     available_tracks = None
-    len_files = None
     
     @web.expose
     @web.require_login()
@@ -99,17 +98,7 @@ class TracksController( BaseController, UsesVisualization ):
     @web.expose
     @web.require_login()
     def new_browser( self, trans ):
-        if not self.len_files:
-            len_files = glob.glob(os.path.join( trans.app.config.tool_data_path, 'shared','ucsc','chrom', "*.len" ))
-            self.len_files = [ os.path.split(f)[1].split(".len")[0] for f in len_files ] # get xxx.len
-        
-        user_keys = {}
-        user = trans.get_user()
-        if 'dbkeys' in user.preferences:
-            user_keys = from_json_string( user.preferences['dbkeys'] )
-        
-        dbkeys = [ (k, v) for k, v in trans.db_builds if k in self.len_files or k in user_keys ]
-        return trans.fill_template( "tracks/new_browser.mako", dbkeys=dbkeys )
+        return trans.fill_template( "tracks/new_browser.mako", dbkeys=self._get_dbkeys( trans ) )
             
     @web.json
     @web.require_login()
@@ -137,33 +126,11 @@ class TracksController( BaseController, UsesVisualization ):
         decoded_id = trans.security.decode_id( id )
         session = trans.sa_session
         vis = session.query( model.Visualization ).get( decoded_id )
-        latest_revision = vis.latest_revision
-        tracks = []
+        viz_config = self.get_visualization_config( trans, vis )
         
-        try:
-            dbkey = latest_revision.config['dbkey']
-        except KeyError:
-            dbkey = None
-        
-        hda_query = session.query( model.HistoryDatasetAssociation )
-        for t in vis.latest_revision.config['tracks']:
-            dataset_id = t['dataset_id']
-            try:
-                prefs = t['prefs']
-            except KeyError:
-                prefs = {}
-            dataset = hda_query.get( dataset_id )
-            track_type, _ = dataset.datatype.get_track_type()
-            tracks.append( {
-                "track_type": track_type,
-                "name": dataset.name,
-                "dataset_id": dataset.id,
-                "prefs": simplejson.dumps(prefs),
-            } )
-            if dbkey is None: dbkey = dataset.dbkey # Hack for backward compat
-                
-        config = { "title": vis.title, "vis_id": id, "tracks": tracks, "chrom": chrom, "dbkey": dbkey }
-        return trans.fill_template( 'tracks/browser.mako', config=config )
+        # Set config chrom.
+        viz_config[ 'chrom' ] = chrom
+        return trans.fill_template( 'tracks/browser.mako', config=viz_config )
 
     @web.json
     def chroms(self, trans, vis_id=None, dbkey=None ):
