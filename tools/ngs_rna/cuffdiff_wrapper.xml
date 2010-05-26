@@ -59,6 +59,22 @@
 
     <tests>
         <test>
+                <!--
+                    cuffdiff cuffcompare_out5.gtf cuffdiff_in1.sam cuffdiff_in2.sam 
+                -->
+                <param name="gtf_input" value="cuffcompare_out5.gtf" ftype="gtf" />
+                <param name="aligned_reads1" value="cuffdiff_in1.sam" ftype="sam" />
+                <param name="aligned_reads2" value="cuffdiff_in2.sam" ftype="sam" />
+                <!-- Defaults. -->
+                <param name="fdr" value="0.05" />
+                <param name="min_mapqual" value="0" ftype="sam" />
+                <param name="min_alignment_count" value="0" ftype="sam" />
+                <param name="sPaired" value="single" ftype="sam" />
+                
+                <!-- This won't pass until the test harness is updated to handle outputs better. -->
+                <!--
+                    <output name="XXXX" file="cuffdiff_out5.tracking" />
+                -->
         </test>
     </tests>
 
@@ -83,7 +99,7 @@ There is no such thing (yet) as an automated gearshift in expression analysis. I
 
 **Input format**
 
-Cuffcompare takes Cufflinks or Cuffcompare GTF files as input along with two SAM files containing the fragment alignments for two or more samples.
+Cuffdiff takes Cufflinks or Cuffcompare GTF files as input along with two SAM files containing the fragment alignments for two or more samples.
 
 .. ___: http://www.todo.org 
 
