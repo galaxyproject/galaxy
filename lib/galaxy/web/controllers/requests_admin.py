@@ -13,7 +13,7 @@ from sqlalchemy.sql import select
 import pexpect
 import ConfigParser, threading, time
 from amqplib import client_0_8 as amqp
-
+import csv
 log = logging.getLogger( __name__ )
 
 #
@@ -259,7 +259,6 @@ class RequestsAdmin( BaseController ):
         '''
         List all request made by the current user
         '''
-        self.__sample_datasets(trans, **kwd)
         if 'operation' in kwd:
             operation = kwd['operation'].lower()
             if not kwd.get( 'id', None ):
@@ -903,15 +902,19 @@ class RequestsAdmin( BaseController ):
         else:
             sample_index = 0
         while True:
+            lib_id = None
+            folder_id = None
             if params.get( 'sample_%i_name' % sample_index, ''  ):
                 # data library
                 try:
                     library = trans.sa_session.query( trans.app.model.Library ).get( int( params.get( 'sample_%i_library_id' % sample_index, None ) ) )
+                    lib_id = library.id
                 except:
                     library = None
                 # folder
                 try:
                     folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( int( params.get( 'sample_%i_folder_id' % sample_index, None ) ) )
+                    folder_id = folder.id
                 except:
                     if library:
                         folder = library.root_folder
@@ -925,11 +928,9 @@ class RequestsAdmin( BaseController ):
                 for field_index in range(len(request.type.sample_form.fields)):
                     sample_info['field_values'].append(util.restore_text( params.get( 'sample_%i_field_%i' % (sample_index, field_index), ''  ) ))
                 if edit_mode == 'False':
-                    sample_info['lib_widget'], sample_info['folder_widget'] = self.__library_widgets(trans, 
-                                                                                                     request.user, 
-                                                                                                     sample_index, 
-                                                                                                     libraries, 
-                                                                                                     None, **kwd)
+                    sample_info['lib_widget'], sample_info['folder_widget'] = self.__library_widgets(trans, request.user, 
+                                                                                                     sample_index, libraries, 
+                                                                                                     None, lib_id, folder_id, **kwd)
                     current_samples.append(sample_info)
                 else:
                     sample_info['lib_widget'], sample_info['folder_widget'] = self.__library_widgets(trans, 
@@ -948,7 +949,56 @@ class RequestsAdmin( BaseController ):
         copy_list.add_option('None', -1, selected=True)  
         for i, s in enumerate(current_samples):
             copy_list.add_option(s['name'], i)
-        return copy_list   
+        return copy_list  
+    def __import_samples(self, trans, request, current_samples, details, libraries, **kwd):
+        '''
+        This method reads the samples csv file and imports all the samples
+        The format of the csv file is:
+        SampleName,DataLibrary,DataLibraryFolder,Field1,Field2....
+        ''' 
+        try:
+            params = util.Params( kwd )
+            edit_mode = params.get( 'edit_mode', 'False' )
+            file_obj = params.get('file_data', '')
+            reader = csv.reader(file_obj.file)
+            for row in reader:
+                lib_id = None
+                folder_id = None
+                lib = trans.sa_session.query( trans.app.model.Library ) \
+                                      .filter( and_( trans.app.model.Library.table.c.name==row[1], \
+                                                     trans.app.model.Library.table.c.deleted==False ) )\
+                                      .first()
+                if lib:
+                    folder = trans.sa_session.query( trans.app.model.LibraryFolder ) \
+                                             .filter( and_( trans.app.model.LibraryFolder.table.c.name==row[2], \
+                                                            trans.app.model.LibraryFolder.table.c.deleted==False ) )\
+                                             .first()
+                    if folder:
+                        lib_id = lib.id
+                        folder_id = folder.id
+                lib_widget, folder_widget = self.__library_widgets(trans, request.user, len(current_samples), 
+                                                                   libraries, None, lib_id, folder_id, **kwd)
+                current_samples.append(dict(name=row[0], 
+                                            barcode='',
+                                            library=None,
+                                            folder=None,
+                                            lib_widget=lib_widget,
+                                            folder_widget=folder_widget,
+                                            field_values=row[3:]))  
+            return trans.fill_template( '/admin/requests/show_request.mako',
+                                        request=request,
+                                        request_details=self.request_details(trans, request.id),
+                                        current_samples=current_samples,
+                                        sample_copy=self.__copy_sample(current_samples), 
+                                        details=details,
+                                        edit_mode=edit_mode)
+        except:
+            return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                          action='list',
+                                                          operation='show_request',
+                                                          id=trans.security.encode_id(request.id),
+                                                          status='error',
+                                                          message='Error in importing samples file' ))
     @web.expose
     @web.require_login( "create/submit sequencing requests" )
     def show_request(self, trans, **kwd):
@@ -966,34 +1016,7 @@ class RequestsAdmin( BaseController ):
         # get the user entered sample details
         current_samples, details, edit_mode, libraries = self.__update_samples( trans, request, **kwd )
         if params.get('import_samples_button', False) == 'Import samples':
-            try:
-                lib_widget, folder_widget = self.__library_widgets(trans, request.user, 
-                                                                   len(current_samples), 
-                                                                   libraries, None, **kwd)
-                file_obj = params.get('file_data', '')
-                import csv
-                reader = csv.reader(file_obj.file)
-                for row in reader:
-                    current_samples.append(dict(name=row[0], 
-                                                barcode='',
-                                                library=None,
-                                                folder=None,
-                                                lib_widget=lib_widget,
-                                                folder_widget=folder_widget,
-                                                field_values=row[1:]))  
-                return trans.fill_template( '/admin/requests/show_request.mako',
-                                            request=request,
-                                            request_details=self.request_details(trans, request.id),
-                                            current_samples=current_samples,
-                                            sample_copy=self.__copy_sample(current_samples), 
-                                            details=details,
-                                            edit_mode=edit_mode)
-            except:
-                return trans.response.send_redirect( web.url_for( controller='requests_admin',
-                                                                  action='list',
-                                                                  status='error',
-                                                                  message='Error in importing samples file',
-                                                                  **kwd))
+            return self.__import_samples(trans, request, current_samples, details, libraries, **kwd)
         elif params.get('add_sample_button', False) == 'Add New':
             # add an empty or filled sample
             # if the user has selected a sample no. to copy then copy the contents 
@@ -1785,26 +1808,7 @@ class RequestsAdmin( BaseController ):
                                     dataset_index=dataset_index,
                                     message=message,
                                     status=status)
-        
-    def __sample_datasets(self, trans, **kwd):
-        samples = trans.sa_session.query( trans.app.model.Sample )\
-                                  .filter( trans.app.model.Sample.table.c.deleted==False)\
-                                  .all()
-        for s in samples:
-            if s.dataset_files:
-                newdf = []
-                for df in s.dataset_files:
-                    if type(s.dataset_files[0]) == type([1,2]):
-                        filepath = df[0]
-                        status = df[1]
-                        newdf.append(dict(filepath=filepath,
-                                          status=status,
-                                          name=filepath.split('/')[-1],
-                                          error_msg='',
-                                          size='Unknown'))
-                        s.dataset_files = newdf
-                        trans.sa_session.add( s )
-                        trans.sa_session.flush()
+
 #                
 ##
 #### Request Type Stuff ###################################################
