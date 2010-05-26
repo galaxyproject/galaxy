@@ -155,13 +155,16 @@ function replace_big_select_inputs(min_length) {
     if (min_length === undefined)
         min_length = 20;
     
-    // Replace only select that are NOT multiple because widget cannot handle multi-select.
-    $('select[multiple~=""]').each( function() {
+    $('select').each( function() {
         var select_elt = $(this);
         // Skip if # of options < min length.
         if (select_elt.find('option').length < min_length)
             return;
-
+            
+        // Skip multi-select because widget cannot handle multi-select.
+        if (select_elt.attr('multiple') == true)
+            return;
+        
         // Replace select with text + autocomplete.
         var start_value = select_elt.attr('value');
         
