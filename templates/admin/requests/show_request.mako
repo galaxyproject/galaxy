@@ -470,7 +470,7 @@ $(document).ready(function(){
                                 </td>
                             %endif
                             <td>
-                                %if current_samples:                        
+                                %if len(current_samples) and len(current_samples) <= len(request.samples):                     
                                     <input type="submit" name="edit_samples_button" value="Edit samples"/>
                                 %endif
                             </td>
@@ -506,21 +506,23 @@ $(document).ready(function(){
 
 %if request.unsubmitted():
 <div class="toolForm">
-    <div class="form-row">
-        <div class="msg_list">
-            <h4 class="msg_head"><u>Import Samples</u></h4>
-            <div class="msg_body">
-                <label>Import from csv file</label>           
-                <input type="file" name="file_data" />
-                <input type="submit" name="import_samples_button" value="Import samples"/>
-                <br/>
-                <div class="toolParamHelp" style="clear: both;">
-                    The csv file must be in the following format:<br/>
-                    SampleName,DataLibrary,DataLibraryFolder,FieldValue1,FieldValue2...
+    <form id="show_request" name="show_request" action="${h.url_for( controller='requests_admin', action='show_request', edit_mode=edit_mode )}" enctype="multipart/form-data" method="post" >
+        <div class="form-row">
+            <div class="msg_list">
+                <h4 class="msg_head"><u>Import samples from csv file</u></h4>
+                <div class="msg_body">
+                    <input type="file" name="file_data" />
+                    <input type="submit" name="import_samples_button" value="Import samples"/>
+                    <br/>
+                    <div class="toolParamHelp" style="clear: both;">
+                        The csv file must be in the following format:<br/>
+                        SampleName,DataLibrary,DataLibraryFolder,FieldValue1,FieldValue2...
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+        <input type="hidden" name="request_id" value="${request.id}" />
+    </form>
 </div>
 %endif
 

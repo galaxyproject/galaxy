@@ -30,6 +30,16 @@ $( function() {
 });
 </script>
 
+<%def name="javascripts()">
+   ${parent.javascripts()}
+   ${h.js("jquery.autocomplete", "autocomplete_tagging" )}
+</%def>
+
+<%def name="stylesheets()">
+    ${parent.stylesheets()}
+    ${h.css( "autocomplete_tagging" )}
+</%def>
+
 <br/>
 <br/>
 <ul class="manage-table-actions">
