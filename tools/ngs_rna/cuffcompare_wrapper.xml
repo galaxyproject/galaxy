@@ -50,6 +50,7 @@
     </inputs>
 
     <outputs>
+        <data format="txt" name="transcripts_accuracy" label="${tool.name} on ${on_string}: transcript accuracy"/>
         <data format="tabular" name="input1_tmap" label="${tool.name} on ${on_string}: data ${input1.hid} tmap file"/>
         <data format="tabular" name="input1_refmap" label="${tool.name} on ${on_string}: data ${input1.hid} refmap file"/>
         <data format="tabular" name="input2_tmap" label="${tool.name} on ${on_string}: data ${second_gtf.input2.hid} tmap file">
@@ -64,12 +65,11 @@
         <data format="tabular" name="transcripts_tracking" label="${tool.name} on ${on_string}: transcript tracking">
             <filter>second_gtf['use_second_gtf'] == "Yes"</filter>
         </data>
-        <data format="txt" name="transcripts_accuracy" label="${tool.name} on ${on_string}: transcript accuracy"/>
     </outputs>
 
     <tests>
         <!-- 
-            cuffcompare -r cuffcompare_in3.gtf -R cuffcompare_in1.gtf cuffcompare_in3.gtf
+            cuffcompare -r cuffcompare_in3.gtf -R cuffcompare_in1.gtf cuffcompare_in2.gtf
         -->
         <test>
             <param name="input1" value="cuffcompare_in1.gtf" ftype="gtf"/>
@@ -78,9 +78,10 @@
             <param name="use_ref_annotation" value="Yes"/>
             <param name="reference_annotation" value="cuffcompare_in3.gtf" ftype="gtf"/>
             <param name="ignore_nonoverlapping_reference" value="Yes"/>
-            <output name="transcripts_combined" file="cuffcompare_out5.gtf"/>
+            ## HACK: need to specify output name and it needs to work (right now it uses the final output file)
+            <output name="XXXX" file="cuffcompare_out6.tracking"/>
             <!--
-            <output name="transcripts_tracking" file="cuffcompare_out6.tracking"/>
+            ## TODO: transcripts combined file as well.
             <output name="input1_tmap" file="cuffcompare_out1.tmap"/>
             <output name="input1_refmap" file="cuffcompare_out2.refmap"/>
             <output name="input2_tmap" file="cuffcompare_out3.tmap"/>
