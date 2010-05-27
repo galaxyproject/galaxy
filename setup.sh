@@ -39,6 +39,7 @@ database/job_working_directory
 database/import
 database/pbs
 static/genetrack/plots
+tool-data/shared/jars
 "
 
 for sample in $SAMPLES; do
