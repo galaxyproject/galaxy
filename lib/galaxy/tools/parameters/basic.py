@@ -707,8 +707,8 @@ class GenomeBuildParameter( SelectToolParameter ):
     <select name="blah" last_selected_value="hg17">
     <option value="?">unspecified (?)</option>
     ...
-    <option value="hg18">Human Mar. 2006 (hg18)</option>
-    <option value="hg17" selected>Human May 2004 (hg17)</option>
+    <option value="hg18">Human Mar. 2006 (NCBI36/hg18) (hg18)</option>
+    <option value="hg17" selected>Human May 2004 (NCBI35/hg17) (hg17)</option>
     ...
     </select>
     
@@ -718,8 +718,8 @@ class GenomeBuildParameter( SelectToolParameter ):
     <select name="blah" last_selected_value="hg18">
     <option value="?">unspecified (?)</option>
     ...
-    <option value="hg18" selected>Human Mar. 2006 (hg18)</option>
-    <option value="hg17">Human May 2004 (hg17)</option>
+    <option value="hg18" selected>Human Mar. 2006 (NCBI36/hg18) (hg18)</option>
+    <option value="hg17">Human May 2004 (NCBI35/hg17) (hg17)</option>
     ...
     </select>
     
