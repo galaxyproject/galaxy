@@ -494,6 +494,11 @@
 
    ## Help about compression types
 
+   <div class="libraryItemBody">
+       <p class="infomark">
+           TIP: You can download individual library files by selecting "Download this dataset" from the context menu (triangle) next to the dataset's name.
+       </p>
+   </div>
    %if len( comptypes ) > 1:
        <div class="libraryItemBody">
            <p class="infomark">
