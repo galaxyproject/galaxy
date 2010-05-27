@@ -1174,6 +1174,7 @@ class RequestsAdmin( BaseController ):
         sample_name = current_samples[sample_index]['name']
         s = request.has_sample(sample_name)
         if s:
+            trans.sa_session.delete( s.values )
             trans.sa_session.delete( s )
             trans.sa_session.flush()
         del current_samples[sample_index]  
