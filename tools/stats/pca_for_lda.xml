@@ -14,7 +14,7 @@
     <tests>
         <test>
             <param name="input" value="pca_and_lda_analy_for_lda_input.tabular"/>
-            <output name="output" file="pca_for_lda_output.txt"/>
+            <output name="output" file="pca_for_lda_output.txt.re_match" compare="re_match"/>
         </test>
     </tests>
 
