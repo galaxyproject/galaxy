@@ -28,9 +28,9 @@
                 ## TODO: Make these CSS, just adding a "disabled" class to the normal
                 ## links should be enough. However the number of datasets being uploaded
                 ## at a time is usually small so the impact of these images is also small.
-                <img src="${h.url_for('/static/images/eye_icon_grey.png')}" width='16' height='16' alt='display data' title='display data' class='button display' border='0'>
+                <img title='Display Data' class='icon-button display_disabled' />
                 %if for_editing:
-                    <img src="${h.url_for('/static/images/pencil_icon_grey.png')}" width='16' height='16' alt='edit attributes' title='edit attributes' class='button edit' border='0'>
+                    <img title='Edit Attributes' class='icon-button edit_disabled' />
                 %endif
             %else:
                 <% 

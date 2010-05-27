@@ -184,11 +184,14 @@ class CSSProcessor( object ):
             # Find sprite properties (and remove them). Last takes precedence
             sprite_group_name = None
             sprite_filename = None
+            sprite_horiz_position = "0px"
             for name, value in properties:
                 if name == "-sprite-group":
                     sprite_group_name = value
                 elif name == "-sprite-image":
                     sprite_filename = value
+                elif name == "-sprite-horiz-position":
+                    sprite_horiz_position = value
                 else:
                     new_properties.append( ( name, value ) )
             # If a sprite filename was found, deal with it... 
@@ -197,7 +200,7 @@ class CSSProcessor( object ):
                     sprite_groups[sprite_group_name] = SpriteGroup( sprite_group_name )
                 sprite_group = sprite_groups[sprite_group_name]
                 sprite = sprite_group.add_or_get_sprite( sprite_filename )
-                new_properties.append( ( "background", "url(%s.png) no-repeat 0px -%dpx" % ( sprite_group.name, sprite.offset ) ) )
+                new_properties.append( ( "background", "url(%s.png) no-repeat %s -%dpx" % ( sprite_group.name, sprite_horiz_position, sprite.offset ) ) )
             # Save changed properties
             rules[i] = ( rules[i][0], new_properties )
         

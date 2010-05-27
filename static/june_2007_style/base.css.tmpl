@@ -730,6 +730,10 @@ div.permissionContainer {
     -sprite-group: history-buttons;
     -sprite-image: eye_icon_dark.png;
 }
+.icon-button.display_disabled {
+    -sprite-group: history-buttons;
+    -sprite-image: eye_icon_grey.png;
+}
 .icon-button.delete {
     -sprite-group: history-buttons;
     -sprite-image: delete_icon.png;
@@ -746,7 +750,10 @@ div.permissionContainer {
     -sprite-group: history-buttons;
     -sprite-image: pencil_icon_dark.png;
 }
-
+.icon-button.edit_disabled {
+    -sprite-group: history-buttons;
+    -sprite-image: pencil_icon_grey.png;
+}
 .icon-button.tag {
     -sprite-group: fugue;
     -sprite-image: fugue/tag-label.png;
@@ -792,14 +799,16 @@ div.permissionContainer {
     -sprite-image: fugue/sticky-note-text.png;
 }
 .icon-button.vis-chart {
-    background: url(/static/images/fugue/chart.png) no-repeat;
+    -sprite-group: fugue;
+    -sprite-image: fugue/chart.png;
 }
 .icon-button.go-to-full-screen {
-    background: url(/static/images/fugue/external.png) no-repeat;
+    -sprite-group: fugue;
+    -sprite-image: fugue/external.png;
 }
-
 .icon-button.import {
-    background:url(/static/images/fugue/plus-circle.png) no-repeat;
+    -sprite-group: fugue;
+    -sprite-image: fugue/plus-circle.png;
 }
 
 .tipsy {
@@ -843,7 +852,8 @@ div.permissionContainer {
 }
 
 .text-and-autocomplete-select {
-    background-image:url(/static/images/fugue/plus-white.png);
-    background-repeat: no-repeat;
-    background-position:top right;
+    -sprite-group: fugue;
+    -sprite-image: fugue/control-270.png;
+    -sprite-horiz-position: right;
 }
+    

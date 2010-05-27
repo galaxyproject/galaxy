@@ -121,10 +121,12 @@ div.permissionContainer{padding-left:20px;}
 .icon-button{width:16px;height:16px;display:block;float:left;margin-left:2px;text-indent:20px;background-repeat:no-repeat;background-position:0px 0px;padding:0;}
 .icon-button.display{background:url(history-buttons.png) no-repeat 0px -0px;}
 .icon-button.display:hover{background:url(history-buttons.png) no-repeat 0px -26px;}
-.icon-button.delete{background:url(history-buttons.png) no-repeat 0px -52px;}
-.icon-button.delete:hover{background:url(history-buttons.png) no-repeat 0px -78px;}
-.icon-button.edit{background:url(history-buttons.png) no-repeat 0px -104px;}
-.icon-button.edit:hover{background:url(history-buttons.png) no-repeat 0px -130px;}
+.icon-button.display_disabled{background:url(history-buttons.png) no-repeat 0px -52px;}
+.icon-button.delete{background:url(history-buttons.png) no-repeat 0px -78px;}
+.icon-button.delete:hover{background:url(history-buttons.png) no-repeat 0px -104px;}
+.icon-button.edit{background:url(history-buttons.png) no-repeat 0px -130px;}
+.icon-button.edit:hover{background:url(history-buttons.png) no-repeat 0px -156px;}
+.icon-button.edit_disabled{background:url(history-buttons.png) no-repeat 0px -182px;}
 .icon-button.tag{background:url(fugue.png) no-repeat 0px -0px;}
 .icon-button.tags{background:url(fugue.png) no-repeat 0px -26px;}
 .icon-button.tag--plus{background:url(fugue.png) no-repeat 0px -52px;}
@@ -136,9 +138,9 @@ div.permissionContainer{padding-left:20px;}
 .icon-button.bug{background:url(fugue.png) no-repeat 0px -182px;}
 .icon-button.disk{background:url(fugue.png) no-repeat 0px -208px;}
 .icon-button.annotate{background:url(fugue.png) no-repeat 0px -234px;}
-.icon-button.vis-chart{background:url(/static/images/fugue/chart.png) no-repeat;}
-.icon-button.go-to-full-screen{background:url(/static/images/fugue/external.png) no-repeat}
-.icon-button.import{background:url(/static/images/fugue/plus-circle.png) no-repeat}
+.icon-button.vis-chart{background:url(fugue.png) no-repeat 0px -260px;}
+.icon-button.go-to-full-screen{background:url(fugue.png) no-repeat 0px -286px;}
+.icon-button.import{background:url(fugue.png) no-repeat 0px -312px;}
 .tipsy{padding:5px;font-size:10px;filter:alpha(opacity=80);background-repeat:no-repeat;background-image:url(../images/tipsy.gif);}
 .tipsy-inner{padding:5px 8px 4px 8px;background-color:black;color:white;max-width:200px;text-align:center;}
 .tipsy-north{background-position:top center;}
@@ -146,5 +148,5 @@ div.permissionContainer{padding-left:20px;}
 .tipsy-east{background-position:right center;}
 .tipsy-west{background-position:left center;}
 .editable-text{cursor:pointer;}
-.editable-text:hover{cursor: text;border: dotted #999999 1px;}
-.text-and-autocomplete-select{background-image:url(/static/images/fugue/control-270.png);background-repeat: no-repeat;background-position:right;}
+.editable-text:hover{cursor:text;border:dotted #999999 1px;}
+.text-and-autocomplete-select{background:url(fugue.png) no-repeat right -338px;}

@@ -6,10 +6,10 @@
 
 import sys, string, os.path, tempfile, subprocess
 #from galaxy import eggs
-import pkg_resources
-pkg_resources.require( "Cheetah" )
+# import pkg_resources
+# pkg_resources.require( "Cheetah" )
 
-from Cheetah.Template import Template
+# from Cheetah.Template import Template
 from subprocess import Popen, PIPE
 
 assert sys.version_info[:2] >= ( 2, 4 )
@@ -62,11 +62,11 @@ shared_images = [
 ]
 
 
-vars, out_dir = sys.argv[1:]
+ini_file, out_dir = sys.argv[1:]
 
-for input, output in templates:
-    print input ,"->", output
-    subprocess.call( "./process_css.py %s %s:../images %s < %s > %s" % ( vars, out_dir, out_dir, input, os.path.join( out_dir, output ) ), shell=True )
+for in_file, out_file in templates:
+    print in_file ,"->", out_file
+    subprocess.call( "./process_css.py %s shared_images:../images %s < %s > %s" % ( ini_file, out_dir, in_file, os.path.join( out_dir, out_file ) ), shell=True )
 
   
 """

@@ -34,7 +34,7 @@ def css( *args ):
     TODO: This has a hardcoded "?v=2" to defeat caching. This should be done
           in a better way.
     """
-    return "\n".join( [ stylesheet_link_tag( "/static/style/" + name + ".css?v=2" ) for name in args ] )
+    return "\n".join( [ stylesheet_link_tag( "/static/style/" + name + ".css?v=3" ) for name in args ] )
         
 def js( *args ):
     """
