@@ -25,6 +25,7 @@ case "$OSTYPE" in
 esac
 
 LINKS="
+/galaxy/data/location/add_scores.loc
 /galaxy/data/location/alignseq.loc
 /galaxy/data/annotation_profiler
 /galaxy/data/annotation_profiler/annotation_profiler.loc
@@ -35,6 +36,7 @@ LINKS="
 /galaxy/data/location/bowtie_indices.loc
 /galaxy/data/location/bowtie_indices_color.loc
 /galaxy/data/location/bwa_index.loc
+/galaxy/data/location/codingSnps.loc
 /galaxy/data/location/encode_datasets.loc
 /galaxy/home/universe/encode_feature_partitions
 /galaxy/data/location/lastz_seqs.loc
