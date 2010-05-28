@@ -69,8 +69,6 @@ class LibraryListGrid( grids.Grid ):
     num_rows_per_page = 50
     preserve_state = False
     use_paging = True
-    def build_initial_query( self, trans ):
-        return trans.sa_session.query( self.model_class )
 
 class LibraryAdmin( BaseController ):
 

@@ -94,9 +94,7 @@ class ToolListGrid( grids.Grid ):
     num_rows_per_page = 50
     preserve_state = False
     use_paging = True
-    def build_initial_query( self, trans ):
-        return trans.sa_session.query( self.model_class )
-    def apply_default_filter( self, trans, query, **kwd ):
+    def apply_query_filter( self, trans, query, **kwd ):
         ids = kwd.get( 'ids', False )
         if not ids:
             # Display only approved tools
@@ -218,9 +216,7 @@ class ToolsByUserListGrid( grids.Grid ):
     num_rows_per_page = 50
     preserve_state = False
     use_paging = True
-    def build_initial_query( self, trans ):
-        return trans.sa_session.query( self.model_class )
-    def apply_default_filter( self, trans, query, **kwd ):
+    def apply_query_filter( self, trans, query, **kwd ):
         ids = kwd.get( 'ids', False )
         if not ids:
             # Display only approved tools
@@ -295,8 +291,6 @@ class ToolsByCategoryListGrid( grids.Grid ):
     num_rows_per_page = 50
     preserve_state = False
     use_paging = True
-    def build_initial_query( self, trans ):
-        return trans.sa_session.query( self.model_class )
 
 class ToolController( BaseController ):
 

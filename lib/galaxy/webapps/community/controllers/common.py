@@ -1,6 +1,5 @@
 import tarfile
 from galaxy.web.base.controller import *
-#from galaxy.web.controllers.admin import get_user, get_group, get_role
 from galaxy.webapps.community import model
 from galaxy.model.orm import *
 from galaxy.web.framework.helpers import time_ago, iff, grids

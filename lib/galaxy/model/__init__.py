@@ -548,8 +548,10 @@ class DatasetInstance( object ):
     def change_datatype( self, new_ext ):
         self.clear_associated_files()
         datatypes_registry.change_datatype( self, new_ext )
-    def get_size( self ):
+    def get_size( self, nice_size=False ):
         """Returns the size of the data on disk"""
+        if nice_size:
+            return galaxy.datatypes.data.nice_size( self.dataset.get_size() )
         return self.dataset.get_size()
     def set_size( self ):
         """Returns the size of the data on disk"""

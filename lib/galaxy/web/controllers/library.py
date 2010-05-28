@@ -44,9 +44,9 @@ class LibraryListGrid( grids.Grid ):
     num_rows_per_page = 50
     preserve_state = False
     use_paging = True
-    def build_initial_query( self, trans ):
+    def build_initial_query( self, trans, **kwargs ):
         return trans.sa_session.query( self.model_class ).filter( self.model_class.table.c.deleted == False )
-    def apply_default_filter( self, trans, query, **kwd ):
+    def apply_query_filter( self, trans, query, **kwd ):
         current_user_role_ids = [ role.id for role in trans.get_current_user_roles() ]
         library_access_action = trans.app.security_agent.permitted_actions.LIBRARY_ACCESS.action
         restricted_library_ids = [ lp.library_id for lp in trans.sa_session.query( trans.model.LibraryPermissions ) \

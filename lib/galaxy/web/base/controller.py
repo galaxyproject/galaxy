@@ -42,9 +42,9 @@ class BaseController( object ):
         elif class_name == 'Visualization':
             item_class = trans.model.Visualization
         elif class_name == 'Tool':
-            # TODO: Nate, this one should be changed to whatever you end up calling
-            # the pointer to the tool archive.
             item_class = trans.model.Tool
+        elif class_name == 'Job':
+            item_class == trans.model.Job
         else:
             item_class = None
         return item_class

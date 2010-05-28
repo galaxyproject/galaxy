@@ -34,7 +34,7 @@ class VisualizationListGrid( grids.Grid ):
         grids.GridOperation( "Share or Publish", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False ),
         grids.GridOperation( "Delete", condition=( lambda item: not item.deleted ), async_compatible=True, confirm="Are you sure you want to delete this visualization?" ),
     ]
-    def apply_default_filter( self, trans, query, **kwargs ):
+    def apply_query_filter( self, trans, query, **kwargs ):
         return query.filter_by( user=trans.user, deleted=False )
         
 class VisualizationAllPublishedGrid( grids.Grid ):
@@ -58,10 +58,10 @@ class VisualizationAllPublishedGrid( grids.Grid ):
         cols_to_filter=[ columns[0], columns[1], columns[2], columns[3] ], 
         key="free-text-search", visible=False, filterable="standard" )
                 )
-    def build_initial_query( self, trans ):
+    def build_initial_query( self, trans, **kwargs ):
         # Join so that searching history.user makes sense.
         return trans.sa_session.query( self.model_class ).join( model.User.table )
-    def apply_default_filter( self, trans, query, **kwargs ):
+    def apply_query_filter( self, trans, query, **kwargs ):
         return query.filter( self.model_class.deleted==False ).filter( self.model_class.published==True )
 
 

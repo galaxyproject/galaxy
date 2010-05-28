@@ -47,7 +47,7 @@ class PageListGrid( grids.Grid ):
         grids.GridOperation( "Share or Publish", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False ),
         grids.GridOperation( "Delete", confirm="Are you sure you want to delete this page?" ),
     ]
-    def apply_default_filter( self, trans, query, **kwargs ):
+    def apply_query_filter( self, trans, query, **kwargs ):
         return query.filter_by( user=trans.user, deleted=False )
         
 class PageAllPublishedGrid( grids.Grid ):
@@ -71,10 +71,10 @@ class PageAllPublishedGrid( grids.Grid ):
         cols_to_filter=[ columns[0], columns[1], columns[2], columns[3] ], 
         key="free-text-search", visible=False, filterable="standard" )
                 )
-    def build_initial_query( self, trans ):
+    def build_initial_query( self, trans, **kwargs ):
         # Join so that searching history.user makes sense.
         return trans.sa_session.query( self.model_class ).join( model.User.table )
-    def apply_default_filter( self, trans, query, **kwargs ):
+    def apply_query_filter( self, trans, query, **kwargs ):
         return query.filter( self.model_class.deleted==False ).filter( self.model_class.published==True )
                 
 class ItemSelectionGrid( grids.Grid ):
@@ -96,7 +96,7 @@ class ItemSelectionGrid( grids.Grid ):
     use_paging = True
     num_rows_per_page = 10
     
-    def apply_default_filter( self, trans, query, **kwargs ):
+    def apply_query_filter( self, trans, query, **kwargs ):
         return query.filter_by( user=trans.user )
                 
 class HistorySelectionGrid( ItemSelectionGrid ):
@@ -119,7 +119,7 @@ class HistorySelectionGrid( ItemSelectionGrid ):
         key="free-text-search", visible=False, filterable="standard" )
                 )
                 
-    def apply_default_filter( self, trans, query, **kwargs ):
+    def apply_query_filter( self, trans, query, **kwargs ):
         return query.filter_by( user=trans.user, purged=False )
         
 class HistoryDatasetAssociationSelectionGrid( ItemSelectionGrid ):
@@ -141,7 +141,7 @@ class HistoryDatasetAssociationSelectionGrid( ItemSelectionGrid ):
         cols_to_filter=[ columns[0], columns[1] ], 
         key="free-text-search", visible=False, filterable="standard" )
                 )
-    def apply_default_filter( self, trans, query, **kwargs ):
+    def apply_query_filter( self, trans, query, **kwargs ):
         # To filter HDAs by user, need to join HDA and History table and then filter histories by user. This is necessary because HDAs do not have
         # a user relation.
         return query.select_from( model.HistoryDatasetAssociation.table.join( model.History.table ) ).filter( model.History.user == trans.user )

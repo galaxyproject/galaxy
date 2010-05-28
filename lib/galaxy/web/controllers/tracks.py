@@ -77,9 +77,9 @@ class DatasetSelectionGrid( grids.Grid ):
         key="free-text-search", visible=False, filterable="standard" )
                 )
     
-    def build_initial_query( self, trans ):
+    def build_initial_query( self, trans, **kwargs ):
         return trans.sa_session.query( self.model_class ).join( model.History.table).join( model.Dataset.table )
-    def apply_default_filter( self, trans, query, **kwargs ):
+    def apply_query_filter( self, trans, query, **kwargs ):
         if self.available_tracks is None:
              self.available_tracks = trans.app.datatypes_registry.get_available_tracks()
         return query.filter( model.History.user == trans.user ) \

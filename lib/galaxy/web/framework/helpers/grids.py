@@ -45,9 +45,11 @@ class Grid( object ):
         webapp = kwargs.get( 'webapp', 'galaxy' )
         status = kwargs.get( 'status', None )
         message = kwargs.get( 'message', None )
-        # Build a base filter and sort key that is the combination of the saved state and defaults. Saved state takes preference over defaults.
+        # Build a base filter and sort key that is the combination of the saved state and defaults.
+        # Saved state takes preference over defaults.
         base_filter = {}
         if self.default_filter:
+            # default_filter is a dictionary that provides a default set of filters based on the grid's columns.
             base_filter = self.default_filter.copy()
         base_sort_key = self.default_sort_key
         if self.preserve_state:
@@ -59,8 +61,8 @@ class Grid( object ):
             if pref_name in trans.get_user().preferences:
                 base_sort_key = from_json_string( trans.get_user().preferences[pref_name] )
         # Build initial query
-        query = self.build_initial_query( trans )
-        query = self.apply_default_filter( trans, query, **kwargs )
+        query = self.build_initial_query( trans, **kwargs )
+        query = self.apply_query_filter( trans, query, **kwargs )
         # Maintain sort state in generated urls
         extra_url_args = {}
         # Determine whether use_default_filter flag is set.
@@ -101,7 +103,7 @@ class Grid( object ):
                        for element in item:
                            a_list = from_json_string_recurse( element )
                            decoded_list = decoded_list + a_list
-                   return decoded_list              
+                   return decoded_list
                 # If column filter found, apply it.
                 if column_filter is not None:
                     # TextColumns may have a mix of json and strings.
@@ -141,21 +143,18 @@ class Grid( object ):
             sort_key = base_sort_key
         encoded_sort_key = sort_key
         if sort_key:
-            # TODO: what if the model object of the grid column being sorted is not
-            # the same object as self.model_class?
             if sort_key.startswith( "-" ):
                 sort_key = sort_key[1:]
                 sort_order = 'desc'
+                # Can't use lower() on timestamp or integer objects, so func.lower() is not used here...
                 query = query.order_by( self.model_class.table.c.get( sort_key ).desc() ) 
-                # Can't use lower() on timestamp objects.
-                #query = query.order_by( func.lower( self.model_class.table.c.get( sort_key ) ).desc() )
             else:
                 sort_order = 'asc'
                 # See reason for not using lower() to do case-insensitive search.
                 query = query.order_by( self.model_class.table.c.get( sort_key ).asc() )
         extra_url_args['sort'] = encoded_sort_key
         # There might be a current row
-        current_item = self.get_current_item( trans )
+        current_item = self.get_current_item( trans, **kwargs )
         # Process page number.
         if self.use_paging:
             if 'page' in kwargs:
@@ -253,13 +252,16 @@ class Grid( object ):
                 error( "Invalid id" )
         return id
     # ---- Override these ----------------------------------------------------
-    def handle_operation( self, trans, operation, ids ):
+    def handle_operation( self, trans, operation, ids, **kwargs ):
         pass
-    def get_current_item( self, trans ):
+    def get_current_item( self, trans, **kwargs ):
         return None
-    def build_initial_query( self, trans ):
+    def build_initial_query( self, trans, **kwargs ):
         return trans.sa_session.query( self.model_class )
-    def apply_default_filter( self, trans, query, **kwargs):
+    def apply_query_filter( self, trans, query, **kwargs ):
+        # Applies a database filter that holds for all items in the grid.
+        # (gvk) Is this method necessary?  Why not simply build the entire query,
+        # including applying filters in the build_initial_query() method?
         return query
     
 class GridColumn( object ):
@@ -324,7 +326,7 @@ class TextColumn( GridColumn ):
             query = query.filter( self.get_filter( trans, user, column_filter ) )
         return query
     def get_filter( self, trans, user, column_filter ):
-        """ Returns a SQLAlchemy criterion derived from column_filter. """        
+        """ Returns a SQLAlchemy criterion derived from column_filter. """ 
         if isinstance( column_filter, basestring ):
             return self.get_single_filter( user, column_filter )
         elif isinstance( column_filter, list ):
@@ -336,7 +338,29 @@ class TextColumn( GridColumn ):
         """ Returns a SQLAlchemy criterion derived for a single filter. Single filter is the most basic filter--usually a string--and cannot be a list. """
         model_class_key_field = getattr( self.model_class, self.key )
         return func.lower( model_class_key_field ).like( "%" + a_filter.lower() + "%" )
-            
+
+class IntegerColumn( TextColumn ):
+    """
+    Integer column that employs freetext, but checks that the text is an integer, 
+    so support filtering on integer values.
+    
+    IMPORTANT NOTE: grids that use this column type should not include the column
+    in the cols_to_filter list of MulticolFilterColumn ( i.e., searching on this
+    column type should not be performed in the grid's standard search - it won't
+    throw exceptions, but it also will not find what you're looking for ).  Grids
+    that search on this column should use 'filterable="advanced"' so that searching
+    is only performed in the advanced search component, restricting the search to
+    the specific column.
+    
+    This is useful for searching on object ids or other integer columns.  See the 
+    JobIdColumn column in the SpecifiedDateListGrid class in the jobs controller of
+    the reports webapp for an example.
+    """
+    def get_single_filter( self, user, a_filter ):
+        model_class_key_field = getattr( self.model_class, self.key )
+        assert int( a_filter ), "The search entry must be an integer"
+        return model_class_key_field == int( a_filter )
+
 class OwnerAnnotationColumn( TextColumn, UsesAnnotations ):
     """ Column that displays and filters item owner's annotations. """
     def __init__( self, col_name, key, model_class, model_annotation_association_class, filterable ):
@@ -469,7 +493,31 @@ class DeletedColumn( GridColumn ):
            args = { self.key: val }
            accepted_filters.append( GridColumnFilter( label, args) )
         return accepted_filters
-        
+
+class StateColumn( GridColumn ):
+    """
+    Column that tracks and filters for items with state attribute.
+
+    IMPORTANT NOTE: self.model_class must have a states Bunch or dict if
+    this column type is used in the grid.
+    """
+    def get_value( self, trans, grid, item ):
+        return item.state
+    def filter( self, trans, user, query, column_filter ):
+        """Modify query to filter self.model_class by state."""
+        if column_filter == "All":
+            pass
+        elif column_filter in [ v for k, v in self.model_class.states.items() ]:
+            query = query.filter( self.model_class.state == column_filter )
+        return query
+    def get_accepted_filters( self ):
+        """Returns a list of accepted filters for this column."""
+        accepted_filters = []
+        for k, v in self.model_class.states.items():
+           args = { self.key: v }
+           accepted_filters.append( GridColumnFilter( v, args) )
+        return accepted_filters
+
 class SharingStatusColumn( GridColumn ):
     """ Grid column to indicate sharing status. """
     def get_value( self, trans, grid, item ):

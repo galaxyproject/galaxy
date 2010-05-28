@@ -101,10 +101,8 @@ class UserListGrid( grids.Grid ):
     num_rows_per_page = 50
     preserve_state = False
     use_paging = True
-    def get_current_item( self, trans ):
+    def get_current_item( self, trans, **kwargs ):
         return trans.user
-    def build_initial_query( self, trans ):
-        return trans.sa_session.query( self.model_class )
 
 class RoleListGrid( grids.Grid ):
     class NameColumn( grids.TextColumn ):
@@ -195,11 +193,7 @@ class RoleListGrid( grids.Grid ):
     num_rows_per_page = 50
     preserve_state = False
     use_paging = True
-    def get_current_item( self, trans ):
-        return None
-    def build_initial_query( self, trans ):
-        return trans.sa_session.query( self.model_class )
-    def apply_default_filter( self, trans, query, **kwargs ):
+    def apply_query_filter( self, trans, query, **kwargs ):
         return query.filter( model.Role.type != model.Role.types.PRIVATE )
 
 class GroupListGrid( grids.Grid ):
@@ -273,10 +267,6 @@ class GroupListGrid( grids.Grid ):
     num_rows_per_page = 50
     preserve_state = False
     use_paging = True
-    def get_current_item( self, trans ):
-        return None
-    def build_initial_query( self, trans ):
-        return trans.sa_session.query( self.model_class )
 
 class AdminGalaxy( BaseController, Admin ):
     
