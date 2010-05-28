@@ -1,10 +1,12 @@
 import operator, os
 from datetime import datetime, timedelta
-from galaxy.webapps.reports.base.controller import *
-import pkg_resources
-pkg_resources.require( "SQLAlchemy >= 0.4" )
-from sqlalchemy.orm import eagerload
-from sqlalchemy import desc
+from galaxy.web.base.controller import *
+#import pkg_resources
+#pkg_resources.require( "SQLAlchemy >= 0.4" )
+#from sqlalchemy.orm import eagerload
+#from sqlalchemy import desc
+from galaxy import model
+from galaxy.model.orm import *
 import logging
 log = logging.getLogger( __name__ )
 
@@ -12,32 +14,28 @@ class System( BaseController ):
     @web.expose
     def index( self, trans, **kwd ):
         params = util.Params( kwd )
-        msg = ''
-        
+        message = ''
         if params.userless_histories_days:
             userless_histories_days = params.userless_histories_days
         else:
             userless_histories_days = '60'
-            
         if params.deleted_histories_days:
             deleted_histories_days = params.deleted_histories_days
         else:
             deleted_histories_days = '60'
-            
         if params.deleted_datasets_days:
             deleted_datasets_days = params.deleted_datasets_days
         else:
             deleted_datasets_days = '60'
-            
         file_path, disk_usage, datasets, file_size_str = self.disk_usage( trans, **kwd )
         if 'action' in kwd:
             if kwd['action'] == "userless_histories":
-                userless_histories_days, msg = self.userless_histories( **kwd )
+                userless_histories_days, message = self.userless_histories( trans, **kwd )
             elif kwd['action'] == "deleted_histories":
-                deleted_histories_days, msg = self.deleted_histories( **kwd )
+                deleted_histories_days, message = self.deleted_histories( trans, **kwd )
             elif kwd['action'] == "deleted_datasets":
-                deleted_datasets_days, msg = self.deleted_datasets( **kwd )
-        return trans.fill_template( 'system.mako',
+                deleted_datasets_days, message = self.deleted_datasets( trans, **kwd )
+        return trans.fill_template( '/webapps/reports/system.mako',
                                     file_path=file_path,
                                     disk_usage=disk_usage,
                                     datasets=datasets,
@@ -45,49 +43,54 @@ class System( BaseController ):
                                     userless_histories_days=userless_histories_days,
                                     deleted_histories_days=deleted_histories_days,
                                     deleted_datasets_days=deleted_datasets_days,
-                                    msg=msg )
+                                    message=message )
 
-    def userless_histories( self, **kwd ):
+    def userless_histories( self, trans, **kwd ):
         """The number of userless histories and associated datasets that have not been updated for the specified number of days."""
         params = util.Params( kwd )
-        msg = ''
+        message = ''
         if params.userless_histories_days:
             userless_histories_days = int( params.userless_histories_days )
             cutoff_time = datetime.utcnow() - timedelta( days=userless_histories_days )
             history_count = 0
             dataset_count = 0
-            h = self.app.model.History
-            where = ( h.table.c.user_id==None ) & ( h.table.c.deleted=='f' ) & ( h.table.c.update_time < cutoff_time )
-            histories = h.query().filter( where ).options( eagerload( 'datasets' ) )
+            #h = self.app.model.History
+            #where = ( h.table.c.user_id==None ) & ( h.table.c.deleted=='f' ) & ( h.table.c.update_time < cutoff_time )
+            #histories = h.query().filter( where ).options( eagerload( 'datasets' ) )
     
-            for history in histories:
+            #for history in histories:
+            for history in trans.sa_session.query( model.History ) \
+                                           .filter( and_( model.History.table.c.user_id == None,
+                                                          model.History.table.c.deleted == True,
+                                                          model.History.table.c.update_time < cutoff_time ) ):
                 for dataset in history.datasets:
                     if not dataset.deleted:
                         dataset_count += 1
                 history_count += 1
-            msg = "%d userless histories ( including a total of %d datasets ) have not been updated for at least %d days." %( history_count, dataset_count, userless_histories_days )
+            message = "%d userless histories ( including a total of %d datasets ) have not been updated for at least %d days." %( history_count, dataset_count, userless_histories_days )
         else:
-            msg = "Enter the number of days."
-        return str( userless_histories_days ), msg
+            message = "Enter the number of days."
+        return str( userless_histories_days ), message
 
-    def deleted_histories( self, **kwd ):
+    def deleted_histories( self, trans, **kwd ):
         """
         The number of histories that were deleted more than the specified number of days ago, but have not yet been purged.
         Also included is the number of datasets associated with the histories.
         """
         params = util.Params( kwd )
-        msg = ''
+        message = ''
         if params.deleted_histories_days:
             deleted_histories_days = int( params.deleted_histories_days )
             cutoff_time = datetime.utcnow() - timedelta( days=deleted_histories_days )
             history_count = 0
             dataset_count = 0
             disk_space = 0
-            h = self.app.model.History
-            d = self.app.model.Dataset
-            where = ( h.table.c.deleted=='t' ) & ( h.table.c.purged=='f' ) & ( h.table.c.update_time < cutoff_time )
-            
-            histories = h.query().filter( where ).options( eagerload( 'datasets' ) )   
+            histories = trans.sa_session.query( model.History ) \
+                                        .filter( and_( model.History.table.c.deleted == True,
+                                                       model.History.table.c.purged == False,
+                                                       model.History.table.c.update_time < cutoff_time ) ) \
+                                        .options( eagerload( 'datasets' ) )
+
             for history in histories:
                 for hda in history.datasets:
                     if not hda.dataset.purged:
@@ -97,42 +100,39 @@ class System( BaseController ):
                         except:
                             pass
                 history_count += 1
-            msg = "%d histories ( including a total of %d datasets ) were deleted more than %d days ago, but have not yet been purged.  Disk space: " %( history_count, dataset_count, deleted_histories_days ) + str( disk_space )
+            message = "%d histories ( including a total of %d datasets ) were deleted more than %d days ago, but have not yet been purged.  Disk space: " %( history_count, dataset_count, deleted_histories_days ) + str( disk_space )
         else:
-            msg = "Enter the number of days."
-        return str( deleted_histories_days ), msg
+            message = "Enter the number of days."
+        return str( deleted_histories_days ), message
 
-    def deleted_datasets( self, **kwd ):
+    def deleted_datasets( self, trans, **kwd ):
         """The number of datasets that were deleted more than the specified number of days ago, but have not yet been purged."""
         params = util.Params( kwd )
-        msg = ''
+        message = ''
         if params.deleted_datasets_days:
             deleted_datasets_days = int( params.deleted_datasets_days )
             cutoff_time = datetime.utcnow() - timedelta( days=deleted_datasets_days )
             dataset_count = 0
             disk_space = 0
-            d = self.app.model.Dataset
-            where = ( d.table.c.deleted=='t' ) & ( d.table.c.purged=='f' ) & ( d.table.c.update_time < cutoff_time )
-    
-            datasets = d.query().filter( where )
-            for dataset in datasets:
+            for dataset in trans.sa_session.query( model.Dataset ) \
+                                           .filter( and_( model.Dataset.table.c.deleted == True,
+                                                          model.Dataset.table.c.purged == False,
+                                                          model.Dataset.table.c.update_time < cutoff_time ) ):
                 dataset_count += 1
                 try:
                     disk_space += dataset.file_size
                 except:
                     pass
-            msg = str( dataset_count ) + " datasets were deleted more than " + str( deleted_datasets_days ) + \
+            message = str( dataset_count ) + " datasets were deleted more than " + str( deleted_datasets_days ) + \
             " days ago, but have not yet been purged, disk space: " + str( disk_space ) + "."
         else:
-            msg = "Enter the number of days."
-        return str( deleted_datasets_days ), msg
-
+            message = "Enter the number of days."
+        return str( deleted_datasets_days ), message
     def get_disk_usage( self, file_path ):
         df_cmd = 'df -h ' + file_path
         is_sym_link = os.path.islink( file_path )
         file_system = disk_size = disk_used = disk_avail = disk_cap_pct = mount = None
         df_file = os.popen( df_cmd )
-
         while True:
             df_line = df_file.readline()
             df_line = df_line.strip()
@@ -159,22 +159,17 @@ class System( BaseController ):
                 break # EOF
         df_file.close()
         return ( file_system, disk_size, disk_used, disk_avail, disk_cap_pct, mount  )
-
     @web.expose
     def disk_usage( self, trans, **kwd ):
         file_path = trans.app.config.file_path
         disk_usage = self.get_disk_usage( file_path )
         min_file_size = 2**32 # 4 Gb
         file_size_str = nice_size( min_file_size )
-        hda = trans.model.HistoryDatasetAssociation
-        d = trans.model.Dataset
         datasets = []
-        where = ( d.table.c.file_size > min_file_size )
-        dataset_rows = d.query().filter( where ).order_by( desc( d.table.c.file_size ) )
-
-        for dataset in dataset_rows:
-            history_dataset_assoc = hda.filter_by( dataset_id=dataset.id ).order_by( desc( hda.table.c.history_id ) ).all()[0]
-            datasets.append( ( dataset.id, str( dataset.update_time )[0:10], history_dataset_assoc.history_id, dataset.deleted, dataset.file_size ) )
+        for dataset in trans.sa_session.query( model.Dataset ) \
+                                       .filter( model.Dataset.table.c.file_size > min_file_size ) \
+                                       .order_by( desc( model.Dataset.table.c.file_size ) ):
+            datasets.append( ( dataset.id, str( dataset.update_time )[0:10], dataset.history.history_id, dataset.deleted, dataset.file_size ) )
         return file_path, disk_usage, datasets, file_size_str
 
 def nice_size( size ):
@@ -191,4 +186,3 @@ def nice_size( size ):
             out  = "%.1f %s" % ( size, word )
             return out
     return '??? bytes'
-

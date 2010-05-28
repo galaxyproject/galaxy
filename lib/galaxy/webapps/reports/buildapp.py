@@ -25,7 +25,8 @@ def add_controllers( webapp, app ):
     Search for controllers in the 'galaxy.webapps.controllers' module and add 
     them to the webapp.
     """
-    from galaxy.webapps.reports.base.controller import BaseController
+    from galaxy.web.base.controller import BaseController
+    from galaxy.web.base.controller import ControllerUnavailable
     import galaxy.webapps.reports.controllers
     controller_dir = galaxy.webapps.reports.controllers.__path__[0]
     for fname in os.listdir( controller_dir ):

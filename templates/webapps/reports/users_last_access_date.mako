@@ -1,13 +1,13 @@
-<%inherit file="/base_panels.mako"/>
+<%inherit file="/base.mako"/>
+<%namespace file="/message.mako" import="render_msg" />
 
-<%def name="main_body()">
+%if message:
+    ${render_msg( message, status )}
+%endif
+
+<div class="toolForm">
     <h3 align="center">Date of Last Galaxy Login</h3>
     <h4 align="center">Listed in descending order by access date ( oldest date first )</h4>
-    %if msg:
-        <table align="center" width="70%" class="border" cellpadding="5" cellspacing="5">
-            <tr><td class="ok_bgr">${msg}</td></tr>
-        </table>
-    %endif
     <table align="center" width="70%" class="colored" cellpadding="5" cellspacing="5">
         <tr>
             <td>
@@ -48,4 +48,4 @@
             <tr><td>All users have logged in to Galaxy within the past ${not_logged_in_for_days} days</td></tr>
         %endif
     </table>
-</%def>
+</div>

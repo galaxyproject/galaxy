@@ -1,7 +1,7 @@
 from datetime import *
 from time import strftime
 import calendar, operator
-from galaxy.webapps.reports.base.controller import *
+from galaxy.web.base.controller import *
 import galaxy.model
 from galaxy.model.orm import *
 import pkg_resources
@@ -12,20 +12,15 @@ log = logging.getLogger( __name__ )
 
 class Users( BaseController ):
     @web.expose
-    def index( self, trans, **kwd ):
-        params = util.Params( kwd )
-        msg = params.get( 'msg', '' )
-        return trans.fill_template( 'users.mako', msg=msg )
-    @web.expose
     def registered_users( self, trans, **kwd ):
         params = util.Params( kwd )
-        msg = params.get( 'msg', '' )
+        message = params.get( 'message', '' )
         num_users = trans.sa_session.query( galaxy.model.User ).count()
-        return trans.fill_template( 'registered_users.mako', num_users=num_users, msg=msg )
+        return trans.fill_template( '/webapps/reports/registered_users.mako', num_users=num_users, message=message )
     @web.expose
     def registered_users_per_month( self, trans, **kwd ):
         params = util.Params( kwd )
-        msg = params.get( 'msg', '' )
+        message = params.get( 'message', '' )
         q = sa.select( ( sa.func.date_trunc( 'month', sa.func.date( galaxy.model.User.table.c.create_time ) ).label( 'date' ),
                          sa.func.count( galaxy.model.User.table.c.id ).label( 'num_users' ) ),
                        from_obj = [ galaxy.model.User.table ],
@@ -37,11 +32,11 @@ class Users( BaseController ):
                            row.num_users,
                            row.date.strftime( "%B" ),
                            row.date.strftime( "%Y" ) ) )
-        return trans.fill_template( 'registered_users_per_month.mako', users=users, msg=msg )
+        return trans.fill_template( '/webapps/reports/registered_users_per_month.mako', users=users, message=message )
     @web.expose
     def specified_month( self, trans, **kwd ):
         params = util.Params( kwd )
-        msg = params.get( 'msg', '' )
+        message = params.get( 'message', '' )
         year, month = map( int, params.get( 'month', datetime.utcnow().strftime( "%Y-%m" ) ).split( "-" ) )
         start_date = date( year, month, 1 )
         end_date = start_date + timedelta( days=calendar.monthrange( year, month )[1] )
@@ -60,16 +55,16 @@ class Users( BaseController ):
                             row.date.strftime( "%d" ), 
                             row.num_users, 
                             row.date.strftime( "%A" ) ) )
-        return trans.fill_template( 'registered_users_specified_month.mako', 
+        return trans.fill_template( '/webapps/reports/registered_users_specified_month.mako', 
                                     month_label=month_label, 
                                     year_label=year_label, 
                                     month=month, 
                                     users=users, 
-                                    msg=msg )
+                                    message=message )
     @web.expose
     def specified_date( self, trans, **kwd ):
         params = util.Params( kwd )
-        msg = params.get( 'msg', '' )
+        message = params.get( 'message', '' )
         year, month, day = map( int, params.get( 'specified_date', datetime.utcnow().strftime( "%Y-%m-%d" ) ).split( "-" ) )
         start_date = date( year, month, day )
         end_date = start_date + timedelta( days=1 )
@@ -86,18 +81,18 @@ class Users( BaseController ):
         users = []
         for row in q.execute():
             users.append( ( row.email ) )
-        return trans.fill_template( 'registered_users_specified_date.mako', 
+        return trans.fill_template( '/webapps/reports/registered_users_specified_date.mako', 
                                     specified_date=start_date, 
                                     day_label=day_label, 
                                     month_label=month_label, 
                                     year_label=year_label, 
                                     day_of_month=day_of_month, 
                                     users=users, 
-                                    msg=msg )
+                                    message=message )
     @web.expose
     def last_access_date( self, trans, **kwd ):
         params = util.Params( kwd )
-        msg = params.get( 'msg', '' )
+        message = params.get( 'message', '' )
         not_logged_in_for_days = params.get( 'not_logged_in_for_days', 90 )
         if not not_logged_in_for_days:
             not_logged_in_for_days = 0
@@ -115,7 +110,7 @@ class Users( BaseController ):
                 # The user has never logged in
                 users.append( ( user.email, "never logged in" ) )
         users = sorted( users, key=operator.itemgetter( 1 ), reverse=True )
-        return trans.fill_template( 'users_last_access_date.mako',
+        return trans.fill_template( '/webapps/reports/users_last_access_date.mako',
                                     users=users,
                                     not_logged_in_for_days=not_logged_in_for_days,
-                                    msg=msg )
+                                    message=message )
