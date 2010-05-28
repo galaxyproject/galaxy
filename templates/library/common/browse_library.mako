@@ -245,6 +245,7 @@
            <td id="libraryItemInfo">${render_library_item_info( ldda )}</td>
            <td>${uploaded_by}</td>
            <td>${ldda.create_time.strftime( "%Y-%m-%d" )}</td>
+           <td>${ldda.get_size( nice_size=True )}</td>
        </tr>
        <%
            my_row = row_counter.count
@@ -338,7 +339,7 @@
                    </div>
                %endif
            </div>
-           <td colspan="3"></td>
+           <td colspan="4"></td>
        </tr>
        <%
            my_row = row_counter.count
@@ -467,6 +468,7 @@
                    <th>Information</th>
                    <th>Uploaded By</th>
                    <th>Date</th>
+                   <th>File Size</th>
                </thead>
            </tr>
            <% row_counter = RowCounter() %>
