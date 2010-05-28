@@ -204,19 +204,6 @@ class RequestTypeGrid( grids.Grid ):
         grids.GridAction( "Create new request type", dict( controller='requests_admin', 
                                                            action='create_request_type' ) )
     ]
-    
-class DataTransferThread(threading.Thread):
-    def __init__(self, **kwargs):
-        threading.Thread.__init__(self, name=kwargs['name'])
-        self.dataset_index = kwargs['dataset_index']
-        self.cmd = kwargs['cmd']
-    def run(self):
-        try:
-            retcode = subprocess.call(self.cmd)
-        except Exception, e:
-            error_msg = "Data transfer failed. " + str(e) + "<br/>"
-            log.debug(error_msg)
-    
 
 #
 # ---- Request Controller ------------------------------------------------------ 
@@ -231,6 +218,29 @@ class RequestsAdmin( BaseController ):
     @web.require_admin
     def index( self, trans ):
         return trans.fill_template( "/admin/requests/index.mako" )
+
+    @web.json
+    def get_file_details( self, trans, id=None, file=None, folder_path=None ):
+        print >> sys.stderr, 'get_file_details', id, file
+        def print_ticks(d):
+            pass
+        # Avoid caching
+        trans.response.headers['Pragma'] = 'no-cache'
+        trans.response.headers['Expires'] = '0'
+        sample = trans.sa_session.query( self.app.model.Sample ).get( int(id) )
+        datatx_info = sample.request.type.datatx_info
+        cmd  = 'ssh %s@%s "ls -oghp %s"' % ( datatx_info['username'],
+                                           datatx_info['host'],
+                                           os.sep.join([folder_path, file]))
+        output = pexpect.run(cmd, events={'.ssword:*': datatx_info['password']+'\r\n', 
+                                          pexpect.TIMEOUT:print_ticks}, 
+                                          timeout=10)
+        #return output.split('\t')[0]
+        # Create new HTML for any that have changed
+        rval = {}
+        rval['name'] = unicode(output.replace('\n', '<br/>'))
+        return rval
+
     
     @web.json
     def sample_state_updates( self, trans, ids=None, states=None ):
@@ -1486,10 +1496,10 @@ class RequestsAdmin( BaseController ):
                                                               status='error',
                                                               message="Set a data library and folder for <b>%s</b> to transfer dataset(s)." % sample.name,
                                                               id=trans.security.encode_id(sample.request.id) ) )             
-        if sample.request.type.datatx_info.get('data_dir', ''):
-            folder_path = util.restore_text( sample.request.type.datatx_info.get('data_dir', '') )
-        else:
+        if params.get( 'folder_path', ''  ):
             folder_path = util.restore_text( params.get( 'folder_path', ''  ) )
+        else:
+            folder_path = util.restore_text( sample.request.type.datatx_info.get('data_dir', '') )
         return trans.fill_template( '/admin/requests/get_data.mako', 
                                     sample=sample, dataset_files=sample.dataset_files,
                                     message=message, status=status, files=[],
@@ -1508,9 +1518,9 @@ class RequestsAdmin( BaseController ):
                                                               message=message))
         def print_ticks(d):
             pass
-        cmd  = 'ssh %s@%s "ls -F %s"' % ( datatx_info['username'],
-                                          datatx_info['host'],
-                                          folder_path)
+        cmd  = 'ssh %s@%s "ls -p %s"' % ( datatx_info['username'],
+                                             datatx_info['host'],
+                                             folder_path)
         output = pexpect.run(cmd, events={'.ssword:*': datatx_info['password']+'\r\n', 
                                           pexpect.TIMEOUT:print_ticks}, 
                                           timeout=10)
@@ -1602,8 +1612,14 @@ class RequestsAdmin( BaseController ):
                     filepath = os.path.join(folder_path, f)
                     if f[-1] == os.sep:
                         # the selected item is a folder so transfer all the 
-                        # folder contents 
-                        self.__get_files_in_dir(trans, sample, filepath)
+                        # folder contents
+                        # FIXME 
+                        #self.__get_files_in_dir(trans, sample, filepath)
+                        return trans.response.send_redirect( web.url_for( controller='requests_admin',
+                                                                          action='get_data', 
+                                                                          sample_id=sample.id,
+                                                                          folder_path=folder_path,
+                                                                          open_folder=True))
                     else:
                         sample.dataset_files.append(dict(filepath=filepath,
                                                          status=sample.transfer_status.NOT_STARTED,
@@ -1613,9 +1629,10 @@ class RequestsAdmin( BaseController ):
                         trans.sa_session.add( sample )
                         trans.sa_session.flush()
             return trans.response.send_redirect( web.url_for( controller='requests_admin',
-                                                              action='show_datatx_page', 
-                                                              sample_id=trans.security.encode_id(sample.id),
-                                                              folder_path=folder_path))
+                                                              action='get_data', 
+                                                              sample_id=sample.id,
+                                                              folder_path=folder_path,
+                                                              open_folder=True))
 
         return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                           action='show_datatx_page', 
@@ -1747,42 +1764,6 @@ class RequestsAdmin( BaseController ):
                                                           action='show_datatx_page', 
                                                           sample_id=trans.security.encode_id(sample.id),
                                                           folder_path=datatx_info['data_dir']))
-        error_message = ''
-        transfer_script = "scripts/galaxy_messaging/server/data_transfer.py"
-        for index, dataset in enumerate(sample.dataset_files):
-            dfile = dataset[0]
-            status = dataset[1]
-            if status == sample.transfer_status.NOT_STARTED:
-                cmd = (   "python",
-                          transfer_script,
-                          datatx_info['host'],
-                          datatx_info['username'],
-                          datatx_info['password'],
-                          dfile,
-                          str(sample.id),
-                          str(index),
-                          trans.security.encode_id(sample.library.id), 
-                          trans.security.encode_id(sample.folder.id)  )
-#                # set the transfer status
-                sample.dataset_files[index][1] = sample.transfer_status.IN_PROGRESS
-                trans.sa_session.add( sample )
-                trans.sa_session.flush()
-                dtt = DataTransferThread(name='thread_'+str(index),
-                                         dataset_index=index, 
-                                         cmd=cmd)
-                dtt.start()
-        if error_message:
-            return trans.response.send_redirect( web.url_for( controller='requests_admin',
-                                                              action='show_datatx_page', 
-                                                              sample_id=trans.security.encode_id(sample.id),
-                                                              folder_path=os.path.dirname(dfile),
-                                                              status='error',
-                                                              message=error_message))
-        return trans.response.send_redirect( web.url_for( controller='requests_admin',
-                                                          action='show_datatx_page', 
-                                                          sample_id=trans.security.encode_id(sample.id),
-                                                          folder_path=os.path.dirname(dfile)))
-        
     @web.expose
     @web.require_admin
     def dataset_details( self, trans, **kwd ):

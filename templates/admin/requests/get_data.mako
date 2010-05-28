@@ -15,7 +15,34 @@ $(document).ready(function(){
         $(this).next(".msg_body").slideToggle(450);
     });
 });
+
+
+
+
 </script>
+
+<script type="text/javascript">
+   function display_file_details(sample_id, folder_path)
+   {
+       var w = document.get_data.files_list.selectedIndex;
+       var selected_value = document.get_data.files_list.options[w].value;
+       var cell = $("#file_details");
+       //var sample_id = sample.id
+        // Make ajax call
+        $.ajax( {
+            type: "POST",
+            url: "${h.url_for( controller='requests_admin', action='get_file_details' )}",
+            dataType: "json",
+            data: { id: sample_id, file: selected_value, folder_path: folder_path },
+            success : function ( data ) {
+                cell.html( '<label>'+data.name+'</label>' )
+            }
+        });
+       
+   }
+</script>
+
+
 <style type="text/css">
 .msg_head {
     padding: 0px 0px;
@@ -92,7 +119,7 @@ $(document).ready(function(){
 %endif
 
 ##<div class="toolForm">
-    <form name="get_data" action="${h.url_for( controller='requests_admin', action='get_data', sample_id=sample.id)}" method="post" >
+    <form name="get_data" id="get_data" action="${h.url_for( controller='requests_admin', action='get_data', sample_id=sample.id)}" method="post" >
         <div class="form-row">
             ##<div class="toolFormTitle">Select files for transfer</div>
             <h4>Select files for transfer</h4>
@@ -104,12 +131,16 @@ $(document).ready(function(){
                     <input type="submit" name="open_folder" value="Open folder"/>
                     <input type="submit" name="folder_up" value="Up"/>
                 </div>
-                <div class="form-row">
-                <select name="files_list" id="files_list" style="max-width: 98%; width: 98%; height: 150px; font-size: 100%;" multiple>
-                    %for index, f in enumerate(files):
-                        <option value="${f}">${f}</option>
-                    %endfor
-                </select> 
+                    <div class="form-row">
+                    <select name="files_list" id="files_list" style="max-width: 98%; width: 98%; height: 150px; font-size: 100%;" onChange="display_file_details(${sample.id}, '${folder_path}')" multiple>
+                        %for index, f in enumerate(files):
+                            <option value="${f}">${f}</option>
+                        %endfor
+                    </select> 
+                    <br/>
+                    <div id="file_details" class="toolParamHelp" style="clear: both;">
+                        
+                    </div>
                 </div>
                 <div class="form-row">
                     <div class="toolParamHelp" style="clear: both;">
