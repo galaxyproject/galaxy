@@ -30,7 +30,10 @@ ${h.css( "history", "autocomplete_tagging" )}
 
 <%def name="center_panel()">
 <div class="unified-panel-header" unselectable="on">
-    <div class="unified-panel-header-inner">Trackster Visualization | ${config['title']}</div>
+    <div class="unified-panel-header-inner">Trackster Visualization | ${config['title']}
+        <a id="save-button" class="panel-header-button right-float" href="javascript:void(0);">Save</a>
+        <a id="refresh-button" class="panel-header-button right-float" href="javascript:void(0);">Refresh</a>
+    </div>
 </div>
 <div id="content">
     <div id="top-labeltrack"></div>
@@ -68,16 +71,16 @@ ${h.css( "history", "autocomplete_tagging" )}
 
 <%def name="right_panel()">
     <div class="unified-panel-header" unselectable="on">
-        <div class="unified-panel-header-inner">Configuration</div>
+        <div class="unified-panel-header-inner">Configuration
+            <a id="add-track" class="panel-header-button right-float" href="javascript:void(0);">Add Tracks</a>
+        </div>
     </div>
     <form action="#" onsubmit="view.update_options();return false;">
 ##        <input name="title" id="title" value="${config.title}" />
         <div id="show-hide-move">
             <ul id="sortable-ul"></ul>
         </div>
-        <input type="submit" id="refresh-button" value="Refresh" />
-        <input type="button" id="save-button" value="Save" />
-        <input id="add-track" type="button" value="Add Tracks" />
+        <input type="submit" id="refresh-button" value="Refresh" style="display:none" />
     </form>
 
 </%def>
@@ -264,6 +267,7 @@ ${h.js( 'galaxy.base', 'galaxy.panels', "json2", "jquery", "jquery.event.drag", 
                 
                 $.ajax({
                     url: "${h.url_for( action='save' )}",
+                    type: "POST",
                     data: {
                         'vis_id': view.vis_id,
                         'vis_title': view.title,
@@ -294,7 +298,7 @@ ${h.js( 'galaxy.base', 'galaxy.panels', "json2", "jquery", "jquery.event.drag", 
                     view.chrom_data = data;
                     var chrom_options = '<option value="">Select Chrom/Contig</option>';
                     for (i in data) {
-                        var chrom = data[i]['chrom']
+                        var chrom = data[i]['chrom'];
                         chrom_options += '<option value="' + chrom + '">' + chrom + '</option>';
                     }
                     $("#chrom").html(chrom_options);

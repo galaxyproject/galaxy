@@ -118,6 +118,10 @@
     padding: 1px;
     display: inline-block;
 }
+.right-float {
+    float: right;
+    margin-left: 5px;
+}
 
 #top-labeltrack {
     border-bottom: solid #999 1px;

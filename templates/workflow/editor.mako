@@ -135,7 +135,7 @@
              "Layout": layout_editor,
              "Save" : save_current_workflow,
              ##"Load a Workflow" : load_workflow,
-             "Close": close_editor,
+             "Close": close_editor
         });
         
         function layout_editor() {

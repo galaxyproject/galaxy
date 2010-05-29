@@ -11,6 +11,7 @@ from os import path
 do_not_pack = set()
 
 cmd = "java -jar ../../scripts/yuicompressor.jar --type js %(fname)s -o packed/%(fname)s"
+# cmd = "java -jar ../../scripts/compiler.jar --compilation_level SIMPLE_OPTIMIZATIONS --js %(fname)s --js_output_file packed/%(fname)s"
 
 # If specific scripts specified on command line, just pack them, otherwise pack
 # all.

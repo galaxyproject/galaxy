@@ -78,17 +78,6 @@ $.extend( Cache.prototype, {
     }
 });
 
-var Drawer = function() {};
-$.extend( Drawer.prototype, {
-    intensity: function(ctx, max, data) {
-        
-        
-    },
-    
-});
-
-drawer = new Drawer();
-    
 var View = function( chrom, title, vis_id, dbkey ) {
     this.vis_id = vis_id;
     this.dbkey = dbkey;
@@ -543,14 +532,14 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
         var container = $("<div />").addClass("form-row");
         
         var minval = 'track_' + track_id + '_minval',
-            maxval = 'track_' + track_id + '_maxval',
-            mode = 'track_' + track_id + '_mode',
             min_label = $('<label></label>').attr("for", minval).text("Min value:"),
             min_val = (this.prefs.min_value === undefined ? "" : this.prefs.min_value),
             min_input = $('<input></input>').attr("id", minval).val(min_val),
+            maxval = 'track_' + track_id + '_maxval',
             max_label = $('<label></label>').attr("for", maxval).text("Max value:"),
             max_val = (this.prefs.max_value === undefined ? "" : this.prefs.max_value),
             max_input = $('<input></input>').attr("id", maxval).val(max_val),
+            mode = 'track_' + track_id + '_mode',
             mode_label = $('<label></label>').attr("for", mode).text("Display mode:"),
             mode_val = (this.prefs.mode === undefined ? "Line" : this.prefs.mode),
             mode_input = $('<select id="' +mode+ '"><option value="Line" id="mode_Line">Line</option><option value="Filled" id="mode_Filled">Filled</option><option value="Intensity" id="mode_Intensity">Intensity</option></select>');
@@ -562,7 +551,7 @@ $.extend( LineTrack.prototype, TiledTrack.prototype, {
         var min_value = $('#track_' + track_id + '_minval').val(),
             max_value = $('#track_' + track_id + '_maxval').val(),
             mode = $('#track_' + track_id + '_mode option:selected').val();
-        if ( min_value !== this.prefs.min_value || max_value !== this.prefs.max_value || mode != this.prefs.mode ) {
+        if ( min_value !== this.prefs.min_value || max_value !== this.prefs.max_value || mode !== this.prefs.mode ) {
             this.prefs.min_value = parseFloat(min_value);
             this.prefs.max_value = parseFloat(max_value);
             this.prefs.mode = mode;
@@ -601,16 +590,43 @@ var FeatureTrack = function ( name, dataset_id, prefs ) {
     if (prefs.block_color !== undefined) { this.prefs.block_color = prefs.block_color; }
     if (prefs.label_color !== undefined) { this.prefs.label_color = prefs.label_color; }
     if (prefs.show_counts !== undefined) { this.prefs.show_counts = prefs.show_counts; }
-    
 };
 $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
     init: function() {
         var track = this,
             key = track.view.max_low + '_' + track.view.max_high;
+            track.mode = "Auto";
+            if (track.mode_div) {
+                track.mode_div.remove();
+            }
             
             this.init_each({  low: track.view.max_low, 
                                     high: track.view.max_high, dataset_id: track.dataset_id,
                                     chrom: track.view.chrom, resolution: this.view.resolution }, function (result) {
+            
+            track.mode_div = $("<div class='right-float menubutton popup' />").text("Display Mode");
+            track.header_div.append(track.mode_div);
+            track.mode = "Auto";
+            var change_mode = function(name) {
+                track.mode_div.text(name);
+                track.mode = name;
+                track.tile_cache.clear();
+                track.draw();
+            };
+            make_popupmenu(track.mode_div, {
+                "Auto": function() {
+                    change_mode("Auto");
+                },
+                "Dense": function() {
+                    change_mode("Dense");
+                },
+                "Squish": function() {
+                    change_mode("Squish");
+                },
+                "Pack": function() {
+                    change_mode("Pack");
+                }
+            });
             track.data_cache.set(key, result);
             track.draw();
         });
@@ -623,7 +639,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
             track.data_queue[key] = true;
             $.getJSON( data_url, {  chrom: track.view.chrom, 
                                     low: low, high: high, dataset_id: track.dataset_id,
-                                    resolution: this.view.resolution }, function (result) {
+                                    resolution: this.view.resolution, mode: this.mode }, function (result) {
                 track.data_cache.set(key, result);
                 // console.log("datacache", track.data_cache.get(key));
                 delete track.data_queue[key];
@@ -631,10 +647,11 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
             });
         }
     },
-    incremental_slots: function( level, features, no_detail ) {
+    incremental_slots: function( level, features, no_detail, mode ) {
         if (!this.inc_slots[level]) {
             this.inc_slots[level] = {};
             this.inc_slots[level].w_scale = 1 / level;
+            this.inc_slots[level].mode = mode;
             this.s_e_by_tile[level] = {};
         }
         // TODO: Should calculate zoom tile index, which will improve performance
@@ -646,8 +663,15 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
             dummy_canvas = $("<canvas></canvas>").get(0).getContext("2d"),
             max_low = this.view.max_low;
             
-        var f_start, f_end, slotted = [];
+        var slotted = [];
         
+        // Reset packing when we change display mode
+        if (this.inc_slots[level].mode !== mode) {
+            delete this.inc_slots[level];
+            this.inc_slots[level] = { "mode": mode, "w_scale": w_scale };
+            delete this.s_e_by_tile[level];
+            this.s_e_by_tile[level] = {};
+        }
         // If feature already exists in slots (from previously seen tiles), use the same slot,
         // otherwise if not seen, add to "undone" list for slot calculation
         for (var i = 0, len = features.length; i < len; i++) {
@@ -663,15 +687,15 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
         
         // console.log("Slotted: ", features.length - undone.length, "/", features.length, slotted);
         for (var i = 0, len = undone.length; i < len; i++) {
-            var feature = features[undone[i]];
+            var feature = features[undone[i]],
                 feature_uid = feature[0],
                 feature_start = feature[1],
                 feature_end = feature[2],
-                feature_name = feature[3];
-            f_start = Math.floor( (feature_start - max_low) * w_scale );
-            f_end = Math.ceil( (feature_end - max_low) * w_scale );
+                feature_name = feature[3],
+                f_start = Math.floor( (feature_start - max_low) * w_scale ),
+                f_end = Math.ceil( (feature_end - max_low) * w_scale );
                         
-            if (!no_detail) {
+            if (feature_name !== undefined && !no_detail) {
                 var text_len = dummy_canvas.measureText(feature_name).width;
                 if (f_start - text_len < 0) {
                     f_end += text_len;
@@ -709,7 +733,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
     rect_or_text: function( ctx, w_scale, px_per_char, tile_low, tile_high, feature_start, name, x, x_len, y_center ) {
         ctx.textAlign = "center";
         var gap = Math.round(w_scale / 2);
-        if (name !== undefined && w_scale > px_per_char) {
+        if ( (this.mode === "Pack" || this.mode === "Auto") && name !== undefined && w_scale > px_per_char) {
             ctx.fillStyle = this.prefs.block_color;
             ctx.fillRect(x, y_center + 1, x_len, 9);
             ctx.fillStyle = "#eee";
@@ -729,7 +753,6 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
             tile_high = ( tile_index + 1 ) * DENSITY * resolution,
             tile_span = DENSITY * resolution;
         // console.log("drawing " + tile_index);
-        var slots, required_height;
 
         /*for (var k in this.data_cache.obj_cache) {
             var k_split = k.split("_"), k_low = k_split[0], k_high = k_split[1];
@@ -749,24 +772,26 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
             return;
         }
         
-        if (result.dataset_type === "summary_tree") {
-            required_height = 30;
-        } else {
-            // Calculate new slots incrementally for this new chunk of data and update height if necessary
-            var no_detail = (result.extra_info === "no_detail");
-            
-            var y_scale = ( no_detail ? this.vertical_nodetail_px : this.vertical_detail_px );
-            required_height = this.incremental_slots( this.view.zoom_res, result.data, no_detail ) * y_scale + 15;
-            parent_element.parent().css("height", Math.max(this.height_px, required_height) + "px");
-            slots = this.inc_slots[this.view.zoom_res];
-        }
-        
-        // console.log(tile_low, tile_high, tile_length, w_scale);
         var width = Math.ceil( tile_span * w_scale ),
             new_canvas = $("<canvas class='tile'></canvas>"),
             label_color = this.prefs.label_color,
             block_color = this.prefs.block_color,
-            left_offset = this.left_offset;
+            mode = this.mode,
+            no_detail = (mode === "Squish") || (mode === "Dense") && (mode !== "Pack") || (mode === "Auto" && (result.extra_info === "no_detail")),
+            left_offset = this.left_offset,
+            slots, required_height, y_scale;
+        
+        if (result.dataset_type === "summary_tree") {
+            required_height = 30;
+        } else if (mode === "Dense") {
+            required_height = 15;
+            y_scale = 10;
+        } else {
+            // Calculate new slots incrementally for this new chunk of data and update height if necessary
+            y_scale = ( no_detail ? this.vertical_nodetail_px : this.vertical_detail_px );
+            required_height = this.incremental_slots( this.view.zoom_res, result.data, no_detail, mode ) * y_scale + 15;
+            slots = this.inc_slots[this.view.zoom_res];
+        }
         
         new_canvas.css({
             position: "absolute",
@@ -775,6 +800,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
         });
         new_canvas.get(0).width = width + left_offset;
         new_canvas.get(0).height = required_height;
+        parent_element.parent().css("height", Math.max(this.height_px, required_height) + "px");
         // console.log(( tile_low - this.view.low ) * w_scale, tile_index, w_scale);
         var ctx = new_canvas.get(0).getContext("2d"),
             px_per_char = ctx.measureText("A").width;
@@ -832,8 +858,8 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
             if (feature_start <= tile_high && feature_end >= tile_low) {
                 var f_start = Math.floor( Math.max(0, (feature_start - tile_low) * w_scale) ),
                     f_end   = Math.ceil( Math.min(width, Math.max(0, (feature_end - tile_low) * w_scale)) ),
-                    y_center = slots[feature_uid] * y_scale;
-                    
+                    y_center = (mode === "Dense" ? 0 : slots[feature_uid] * y_scale);
+                
                 if (result.dataset_type === "bai") {
                     ctx.fillStyle = block_color;
                     if (feature[4] instanceof Array) {
@@ -856,7 +882,7 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                         ctx.fillStyle = block_color;
                         this.rect_or_text(ctx, w_scale, px_per_char, tile_low, tile_high, feature_start, feature_name, f_start + left_offset, f_end - f_start, y_center);
                     }
-                    if (!no_detail && feature_start > tile_low) {
+                    if (mode !== "Dense" && !no_detail && feature_start > tile_low) {
                         // Draw label
                         ctx.fillStyle = this.prefs.label_color;
                         if (tile_index === 0 && f_start - ctx.measureText(feature_name).width < 0) {
@@ -886,7 +912,8 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
                             thick_start = Math.floor( Math.max(0, (feature_ts - tile_low) * w_scale) );
                             thick_end = Math.ceil( Math.min(width, Math.max(0, (feature_te - tile_low) * w_scale)) );
                         }
-                        if (feature_name !== undefined && feature_start > tile_low) {
+                        if (mode !== "Dense" && feature_name !== undefined && feature_start > tile_low) {
+                            // Draw label
                             ctx.fillStyle = label_color;
                             if (tile_index === 0 && f_start - ctx.measureText(feature_name).width < 0) {
                                 ctx.textAlign = "left";
@@ -969,8 +996,9 @@ $.extend( FeatureTrack.prototype, TiledTrack.prototype, {
     }, update_options: function(track_id) {
         var block_color = $('#track_' + track_id + '_block_color').val(),
             label_color = $('#track_' + track_id + '_label_color').val(),
+            mode = $('#track_' + track_id + '_mode option:selected').val(),
             show_counts = $('#track_' + track_id + '_show_count').attr("checked");
-        if (block_color !== this.prefs.block_color || label_color !== this.prefs.label_color || show_counts != this.prefs.show_counts) {
+        if (block_color !== this.prefs.block_color || label_color !== this.prefs.label_color || show_counts !== this.prefs.show_counts) {
             this.prefs.block_color = block_color;
             this.prefs.label_color = label_color;
             this.prefs.show_counts = show_counts;
