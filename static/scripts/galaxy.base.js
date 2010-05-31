@@ -145,7 +145,6 @@ function naturalSort(a, b){
 }
 
 // Replace select box with a text input box + autocomplete.
-// TODO: make work with selects where refresh_on_change=True and refresh_on_change_values="..."
 function replace_big_select_inputs(min_length) {
     // To do replace, jQuery's autocomplete plugin must be loaded.
     if (typeof jQuery().autocomplete == "undefined")
@@ -207,8 +206,9 @@ function replace_big_select_inputs(min_length) {
             text_input_elt.attr('value', 'Click to Search or Select');
         }
         
-        // Sort option list
-        select_options = select_options.sort(naturalSort);
+        // Sort dbkey options list only.
+        if (select_elt.attr('name') == 'dbkey')
+            select_options = select_options.sort(naturalSort);
         
         // Do autocomplete.
         var autocomplete_options = { selectFirst: false, autoFill: false, mustMatch: false, matchContains: true, max: 1000, minChars : 0, hideForLessThanMinChars : false };
