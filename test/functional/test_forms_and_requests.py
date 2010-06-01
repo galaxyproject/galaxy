@@ -381,7 +381,6 @@ class TestFormsAndRequests( TwillTestCase ):
         for a in rt_actions:
             sa_session.delete( a )
         sa_session.flush()
-        
         ##################
         # Eliminate all non-private roles
         ##################
@@ -391,4 +390,14 @@ class TestFormsAndRequests( TwillTestCase ):
             # Manually delete the role from the database
             sa_session.refresh( role )
             sa_session.delete( role )
+            sa_session.flush()
+        ##################
+        # Eliminate all groups
+        ##################
+        for group in [ group_one ]:
+            self.mark_group_deleted( self.security.encode_id( group.id ), group.name )
+            self.purge_group( self.security.encode_id( group.id ), group.name )
+            # Manually delete the group from the database
+            refresh( group )
+            sa_session.delete( group )
             sa_session.flush()
