@@ -106,12 +106,12 @@
             %endif
         </ul>
         <ul class="loggedin-only" style="${style2}">
+            <li>Logged in as <span id="user-email">${user_email}</span></li>
             %if app.config.use_remote_user:
                 %if app.config.remote_user_logout_href:
                     <li><a target="galaxy_main" href="${app.config.remote_user_logout_href}">Logout</a></li>
                 %endif
             %else:
-                <li>Logged in as <span id="user-email">${user_email}</span></li>
                 <li><a target="galaxy_main" href="${h.url_for( controller='/user', action='index' )}">Preferences</a></li>
                 <%
                     if app.config.require_login:
