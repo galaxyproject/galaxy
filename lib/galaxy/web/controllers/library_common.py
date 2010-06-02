@@ -523,6 +523,20 @@ class LibraryCommon( BaseController ):
                                                               message=util.sanitize_text( message ),
                                                               status='error' ) )
         library = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( library_id ) )
+        if cntrller == 'library_admin':
+            # Get all associated hdas and lddas that use the same disk file.
+            associated_hdas = trans.sa_session.query( trans.model.HistoryDatasetAssociation ) \
+                                              .filter( and_( trans.model.HistoryDatasetAssociation.deleted == False,
+                                                             trans.model.HistoryDatasetAssociation.dataset_id == ldda.dataset_id ) ) \
+                                              .all()
+            associated_lddas = trans.sa_session.query( trans.model.LibraryDatasetDatasetAssociation ) \
+                                               .filter( and_( trans.model.LibraryDatasetDatasetAssociation.deleted == False,
+                                                              trans.model.LibraryDatasetDatasetAssociation.dataset_id == ldda.dataset_id,
+                                                              trans.model.LibraryDatasetDatasetAssociation.id != ldda.id ) ) \
+                                               .all()
+        else:
+            associated_hdas = []
+            associated_lddas = [] 
         # See if we have any associated templates
         widgets = []
         info_association, inherited = ldda.get_info_association()
@@ -534,6 +548,8 @@ class LibraryCommon( BaseController ):
                                     use_panels=use_panels,
                                     ldda=ldda,
                                     library=library,
+                                    associated_hdas=associated_hdas,
+                                    associated_lddas=associated_lddas,
                                     show_deleted=show_deleted,
                                     widgets=widgets,
                                     current_user_roles=current_user_roles,
@@ -702,15 +718,15 @@ class LibraryCommon( BaseController ):
                 if error:
                     status = 'error'
                     trans.response.send_redirect( web.url_for( controller='library_common',
-                                                                           action='upload_library_dataset',
-                                                                           cntrller=cntrller,
-                                                                           library_id=library_id,
-                                                                           folder_id=folder_id,
-                                                                           replace_id=replace_id,
-                                                                           upload_option=upload_option,
-                                                                           show_deleted=show_deleted,
-                                                                           message=util.sanitize_text( message ),
-                                                                           status='error' ) )
+                                                               action='upload_library_dataset',
+                                                               cntrller=cntrller,
+                                                               library_id=library_id,
+                                                               folder_id=folder_id,
+                                                               replace_id=replace_id,
+                                                               upload_option=upload_option,
+                                                               show_deleted=show_deleted,
+                                                               message=util.sanitize_text( message ),
+                                                               status='error' ) )
 
                 else:
                     # See if we have any inherited templates, but do not inherit contents.
@@ -722,13 +738,13 @@ class LibraryCommon( BaseController ):
                         template_id = 'None'
                         widgets = []
                     created_outputs_dict = trans.webapp.controllers[ 'library_common' ].upload_dataset( trans,
-                                                                                                   cntrller=cntrller,
-                                                                                                   library_id=library_id,
-                                                                                                   folder_id=folder_id,
-                                                                                                   template_id=template_id,
-                                                                                                   widgets=widgets,
-                                                                                                   replace_dataset=replace_dataset,
-                                                                                                   **kwd )
+                                                                                                        cntrller=cntrller,
+                                                                                                        library_id=library_id,
+                                                                                                        folder_id=folder_id,
+                                                                                                        template_id=template_id,
+                                                                                                        widgets=widgets,
+                                                                                                        replace_dataset=replace_dataset,
+                                                                                                        **kwd )
                     if created_outputs_dict:
                         total_added = len( created_outputs_dict.keys() )
                         ldda_id_list = [ str( v.id ) for k, v in created_outputs_dict.items() ]
@@ -1094,6 +1110,8 @@ class LibraryCommon( BaseController ):
                 library = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( library_id ) )
                 roles = trans.app.security_agent.get_legitimate_roles( trans, library, cntrller )
                 return trans.fill_template( "/library/common/upload.mako",
+                                            action='add_history_datasets_to_library',
+                                            cntrller=cntrller,
                                             upload_option=upload_option,
                                             library_id=library_id,
                                             folder_id=folder_id,
@@ -1877,9 +1895,24 @@ def activatable_folders_and_lddas( trans, folder ):
                             .all()
     return folders, lddas
 def branch_deleted( folder ):
-    # Return True if a folder belongs to a branc that has been deleted
+    # Return True if a folder belongs to a branch that has been deleted
     if folder.deleted:
         return True
     if folder.parent:
         return branch_deleted( folder.parent )
     return False
+def get_containing_library_from_library_dataset( trans, library_dataset ):
+    """Given a library_dataset, get the containing library"""
+    folder = library_dataset.folder
+    parent = folder
+    while folder.parent:
+        parent = folder.parent
+    # We have parent set to the library's root folder, which has the
+    # same name as the library
+    for library in trans.sa_session.query( trans.model.Library ) \
+                                   .filter( and_( trans.model.Library.table.c.deleted == False,
+                                                  trans.model.Library.table.c.name == parent.name ) ):
+        if library.root_folder == parent:
+            return library
+    return None
+            

@@ -11,9 +11,9 @@
             can_modify = trans.app.security_agent.can_modify_library_item( current_user_roles, item )
     %>
     %if widgets:
-        <p/>
-        <div class="toolForm">
-            %if editable and ( cntrller=='library_admin' or trans.app.security_agent.can_modify_library_item( current_user_roles, item ) ):
+        %if editable and ( cntrller=='library_admin' or trans.app.security_agent.can_modify_library_item( current_user_roles, item ) ):
+            <p/>
+            <div class="toolForm">
                 <div class="toolFormTitle">
                     %if inherited:
                         Other information <i>- this is an inherited template and is not required to be used with this ${item_type}</i>
@@ -54,20 +54,23 @@
                         </div>
                     </form>
                 </div>
-            %else:
-                <% contents = False %>
-                %for i, field in enumerate( widgets ):
-                    %if field[ 'widget' ].value:
-                        <%
-                            contents = True
-                            break
-                        %>
-                    %endif
-                %endfor
-                %if contents:
-                    <div class="toolForm">
-                        <div class="toolFormTitle">Other information about ${item.name}</div>
-                        <div class="toolFormBody">
+            </div>
+            <p/>
+        %else:
+            <% contents = False %>
+            %for i, field in enumerate( widgets ):
+                %if field[ 'widget' ].value:
+                    <%
+                        contents = True
+                        break
+                    %>
+                %endif
+            %endfor
+            %if contents:
+                <p/>
+                <div class="toolForm">
+                    <div class="toolFormTitle">Other information about ${item.name}</div>
+                    <div class="toolFormBody">
                         %for i, field in enumerate( widgets ):
                             %if field[ 'widget' ].value:
                                 <div class="form-row">
@@ -81,9 +84,10 @@
                             %endif
                         %endfor
                     </div>
-                %endif
+                </div>
+                <p/>
             %endif
-        </div>
+        %endif
     %endif
 </%def>
 

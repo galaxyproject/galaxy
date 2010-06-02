@@ -3,7 +3,8 @@
 <%namespace file="/library/common/common.mako" import="render_template_info" />
 <%
     from galaxy import util
-    from galaxy.web.controllers.library_common import branch_deleted
+    from galaxy.web.controllers.library_common import branch_deleted, get_containing_library_from_library_dataset
+    from galaxy.web.framework.helpers import time_ago
 
     if ldda == ldda.library_dataset.library_dataset_dataset_association:
         current_version = True
@@ -64,11 +65,13 @@
         %endif
     </div>
     <div class="toolFormBody">
-        <div class="form-row">
-            <label>Message:</label>
-            <pre>${ldda.message}</pre>
-            <div style="clear: both"></div>
-        </div>
+        %if ldda.message:
+            <div class="form-row">
+                <label>Message:</label>
+                <pre>${ldda.message}</pre>
+                <div style="clear: both"></div>
+            </div>
+        %endif
         <div class="form-row">
             <label>Uploaded by:</label>
             ${uploaded_by}
@@ -77,6 +80,11 @@
         <div class="form-row">
             <label>Date uploaded:</label>
             ${ldda.create_time.strftime( "%Y-%m-%d" )}
+            <div style="clear: both"></div>
+        </div>
+        <div class="form-row">
+            <label>File size:</label>
+            ${ldda.get_size( nice_size=True )}
             <div style="clear: both"></div>
         </div>
         <div class="form-row">
@@ -97,6 +105,20 @@
         <div class="form-row">
             <div>${ldda.blurb}</div>
         </div>
+        %for name, spec in ldda.metadata.spec.items():
+            <div class="form-row">
+                <label>${spec.desc.replace( ' (click box & select)', '' )}:</label>
+                <%
+                    metadata_val = ldda.metadata.get( name )
+                    if isinstance( metadata_val, trans.model.MetadataFile ):
+                        metadata_val = metadata_val.file_name
+                    elif isinstance( metadata_val, list ):
+                        metadata_val = ', '.join( metadata_val )
+                %>
+                ${metadata_val}
+                <div style="clear: both"></div>
+            </div>
+        %endfor
         %if ldda.peek != "no peek":
             <div class="form-row">
                <div id="info${ldda.id}" class="historyItemBody">
@@ -109,6 +131,79 @@
 </div>
 %if widgets:
     ${render_template_info( cntrller=cntrller, item_type='ldda', library_id=library_id, widgets=widgets, info_association=info_association, inherited=inherited, folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ), ldda_id=trans.security.encode_id( ldda.id ), editable=False )}
+%endif
+%if cntrller == 'library_admin':
+    %if associated_hdas:
+        <p/>
+        <b>History items that use this library dataset's disk file</b>
+        <div class="toolForm">
+            <table class="grid">
+                <thead>
+                    <tr>
+                        <th>History</th>
+                        <th>History Item</th>
+                        <th>Last Updated</th>
+                        <th>User</th>
+                    </tr>
+                </thead>
+                %for hda in associated_hdas:
+                    <tr>
+                        <td><a target="_blank" href="${h.url_for( controller='history', action='view', id=trans.security.encode_id( hda.history.id ) )}">${hda.history.get_display_name()}</a></td>
+                        <td>${hda.get_display_name()}</td>
+                        <td>${time_ago( hda.update_time )}</td>
+                        <td>
+                            %if hda.history.user:
+                                ${hda.history.user.email}
+                            %else:
+                                anonymous
+                            %endif
+                        </td>
+                    </tr>
+                %endfor
+            </table>
+        </div>
+        <p/>
+    %endif
+    %if associated_lddas:
+        <p/>
+        <b>Other library datasets that use this library dataset's disk file</b>
+        <div class="toolForm">
+            <table class="grid">
+                <thead>
+                    <tr>
+                        <th>Library</th>
+                        <th>Library Folder</th>
+                        <th>Library Dataset</th>
+                        <th>Last Updated</th>
+                        <th>User</th>
+                    </tr>
+                </thead>
+                %for copied_ldda in associated_lddas:
+                    <% containing_library = get_containing_library_from_library_dataset( trans, copied_ldda.library_dataset ) %>
+                    <tr>
+                        <td>
+                            %if containing_library:
+                                <a href="${h.url_for( controller='library_common', action='browse_library', id=trans.security.encode_id( containing_library.id ), cntrller=cntrller, use_panels=use_panels )}">${containing_library.get_display_name()}</a>
+                            %else:
+                                error finding library
+                            %endif
+                        </td>
+                        <td>${copied_ldda.library_dataset.folder.get_display_name()}</td>
+                        <td>${copied_ldda.get_display_name()}</td>
+                        <td>${time_ago( copied_ldda.update_time )}</td>
+                        <td>
+                            %if copied_ldda.user:
+                                ${copied_ldda.user.email}
+                            %else:
+                                anonymous
+                            %endif
+                        </td>
+                    </tr>
+                %endfor
+            </table>
+        </div>
+        <p/>
+    %endif
 %endif
 %if current_version:
     <% expired_lddas = [ e_ldda for e_ldda in ldda.library_dataset.expired_datasets ] %>
