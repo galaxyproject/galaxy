@@ -27,14 +27,14 @@
        <param name="input1" value="4.bed" dbkey="hg18"/>
        <param name="keep_empty" value=""/>
        <param name="summary" value=""/>
-       <param name="table_names" value="acembly,affyGnf1h,affyHuEx1,knownAlt,knownGene,mrna,multiz17way,multiz28way,refGene,snp126"/>
+       <param name="table_names" value="acembly,affyGnf1h,knownAlt,knownGene,mrna,multiz17way,multiz28way,refGene,snp126"/>
        <output name="out_file1" file="annotation_profiler_1.out" />
      </test>
      <test>
        <param name="input1" value="3.bed" dbkey="hg18"/>
        <param name="keep_empty" value=""/>
        <param name="summary" value="Summary"/>
-       <param name="table_names" value="acembly,affyGnf1h,affyHuEx1,knownAlt,knownGene,mrna,multiz17way,multiz28way,refGene,snp126"/>
+       <param name="table_names" value="acembly,affyGnf1h,knownAlt,knownGene,mrna,multiz17way,multiz28way,refGene,snp126"/>
        <output name="out_file1" file="annotation_profiler_2.out" />
      </test>
    </tests>
