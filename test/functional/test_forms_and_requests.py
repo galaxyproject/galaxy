@@ -382,6 +382,16 @@ class TestFormsAndRequests( TwillTestCase ):
             sa_session.delete( a )
         sa_session.flush()
         ##################
+        # Purge all libraries
+        ##################
+        for library in [ library_one ]:
+            self.delete_library_item( 'library_admin',
+                                      self.security.encode_id( library.id ),
+                                      self.security.encode_id( library.id ),
+                                      library.name,
+                                      item_type='library' )
+            self.purge_library( self.security.encode_id( library.id ), library.name )
+        ##################
         # Eliminate all non-private roles
         ##################
         for role in [ role_one, role_two ]:

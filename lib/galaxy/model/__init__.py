@@ -932,7 +932,7 @@ class LibraryFolder( object ):
         return [ ld for ld in self.datasets if not ld.library_dataset_dataset_association.dataset.deleted ]
     @property
     def active_datasets( self ):
-         # This needs to be a list
+        # This needs to be a list
         return [ ld.library_dataset_dataset_association.dataset for ld in self.datasets if not ld.library_dataset_dataset_association.deleted ]
     def get_display_name( self ):
         # Library folder name can be either a string or a unicode object. If string, 
@@ -997,8 +997,10 @@ class LibraryDatasetDatasetAssociation( DatasetInstance ):
         # FIXME: sa_session is must be passed to DataSetInstance if the create_dataset 
         # parameter in kwd is True so that the new object can be flushed.  Is there a better way?
         DatasetInstance.__init__( self, sa_session=sa_session, **kwd )
-        self.copied_from_history_dataset_association = copied_from_history_dataset_association
-        self.copied_from_library_dataset_dataset_association = copied_from_library_dataset_dataset_association
+        if copied_from_history_dataset_association:
+            self.copied_from_history_dataset_association_id = copied_from_history_dataset_association.id
+        if copied_from_library_dataset_dataset_association:
+            self.copied_from_library_dataset_dataset_association_id = copied_from_library_dataset_dataset_association.id
         self.library_dataset = library_dataset
         self.user = user
     def to_history_dataset_association( self, target_history, parent_id = None, add_to_history = False ):
@@ -1085,6 +1087,15 @@ class LibraryDatasetDatasetAssociation( DatasetInstance ):
             else:
                 return template.get_widgets( trans.user )
         return []
+    def get_display_name( self ):
+        """
+        LibraryDatasetDatasetAssociation name can be either a string or a unicode object.
+        If string, convert to unicode object assuming 'utf-8' format.
+        """
+        ldda_name = self.name
+        if isinstance( ldda_name, str ):
+            ldda_name = unicode( ldda_name, 'utf-8' )
+        return ldda_name
 
 class LibraryInfoAssociation( object ):
     def __init__( self, library, form_definition, info, inheritable=False ):
