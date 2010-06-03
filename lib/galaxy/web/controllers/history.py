@@ -454,7 +454,7 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesHistory 
                 
                 # Security check: make sure that members are relative, not absolute.
                 for tarinfo in history_archive_file.getmembers():
-                    if tarinfo.name.startswith("/") or tarinfo.name.startswith(".."):
+                    if tarinfo.name.startswith("/") or tarinfo.name.find("..") != -1:
                         return trans.show_error_message( 'Error importing history archive: archive file is invalid.' )
                 
                 # Unpack archive in temporary directory.
