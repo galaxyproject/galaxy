@@ -626,7 +626,7 @@ class TwillTestCase( unittest.TestCase ):
         self.check_page_for_string( 'This will change the datatype of the existing dataset but' )
         tc.fv( 'change_datatype', 'datatype', datatype )
         tc.submit( 'change' )
-        self.check_page_for_string( 'Edit Attributes' )
+        self.check_page_for_string( 'Changed the type of dataset' )
         self.home()
     def copy_history_item( self, source_dataset_ids='', target_history_ids=[], all_target_history_ids=[],
                            deleted_history_ids=[] ):
@@ -2080,4 +2080,3 @@ class TwillTestCase( unittest.TestCase ):
     def add_tag( self, item_id, item_class, context, new_tag, check_str='' ):
         self.visit_url( "%s/tag/add_tag_async?item_id=%s&item_class=%s&context=%s&new_tag=%s" % \
                         ( self.url, item_id, item_class, context, new_tag ) )
-        
