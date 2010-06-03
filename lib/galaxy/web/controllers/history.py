@@ -9,7 +9,7 @@ from galaxy.util.sanitize_html import sanitize_html
 from galaxy.tools.actions import upload_common
 from galaxy.tags.tag_handler import GalaxyTagHandler
 from sqlalchemy.sql.expression import ClauseElement
-import webhelpers, logging, operator, tempfile, subprocess, shutil
+import webhelpers, logging, operator, tempfile, subprocess, shutil, tarfile
 from datetime import datetime
 from cgi import escape
 
@@ -449,17 +449,18 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesHistory 
         
         if archived_history is not None:
             # Import archived history.
-            try:
-                archive_file = archived_history.file
-            
+            try:         
+                history_archive_file = tarfile.open( archived_history.file.name )
+                
+                # Security check: make sure that members are relative, not absolute.
+                for tarinfo in history_archive_file.getmembers():
+                    if tarinfo.name.startswith("/") or tarinfo.name.startswith(".."):
+                        return trans.show_error_message( 'Error importing history archive: archive file is invalid.' )
+                
                 # Unpack archive in temporary directory.
                 temp_output_dir = tempfile.mkdtemp()
-                cmd = "pax -z -r < %s " % archive_file.name
-                temp_stderr_name = tempfile.NamedTemporaryFile( dir=temp_output_dir ).name
-                temp_stderr = open( temp_stderr_name, 'wb' )
-                proc = subprocess.Popen( args=cmd, shell=True, cwd=temp_output_dir, stderr=temp_stderr.fileno() )
-                returncode = proc.wait()
-                temp_stderr.close()
+                history_archive_file.extractall( path=temp_output_dir )
+                history_archive_file.close()
             
                 # Read history attributes.
                 history_attr_in = open( '%s/%s' % ( temp_output_dir, 'history_attrs.txt'), 'rb' )
@@ -625,24 +626,14 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesHistory 
                 os.rename( datasets_attrs_file_name, new_name )
                 datasets_attrs_file_name = new_name
         
-                # Write temp file with all files to archive. These files are (a) history attributes file; (b) datasets attributes file; and (c)
-                # datasets files.
-                archive_list_file_name = tempfile.NamedTemporaryFile( dir=temp_output_dir ).name
-                archive_list_out = open( archive_list_file_name, 'w' )
-                archive_list_out.write( '%s\n' % history_attrs_file_name )
-                archive_list_out.write( '%s\n' % datasets_attrs_file_name )
-                for dataset in datasets:
-                    archive_list_out.write( '%s\n' % dataset.file_name )
-                archive_list_out.close()
-        
-                # Use 'pax' to create compressed tar archive of history's datasets. -s options uses a regular expression to replace path
-                # information.
-                cmd = "pax -w -s ',.*history_attrs.txt,history_attrs.txt,' -s ',.*datasets_attrs.txt,datasets_attrs.txt,' -s ',/.*/,datasets/,' -x tar -z -f %s.tar.gz < %s" % ( trans.security.encode_id( history.id ), archive_list_file_name )
-                temp_stderr_name = tempfile.NamedTemporaryFile( dir=temp_output_dir ).name
-                temp_stderr = open( temp_stderr_name, 'wb' )
-                proc = subprocess.Popen( args=cmd, shell=True, cwd=history_export_dir_name, stderr=temp_stderr.fileno() )
-                returncode = proc.wait()
-                temp_stderr.close()
+                # Write files to archive: (a) history attributes file; (b) datasets attributes file; and (c) datasets files.
+                history_archive_name = '%s/%s.tar.gz' % ( history_export_dir_name, trans.security.encode_id( history.id ) )
+                history_archive = tarfile.open( history_archive_name, "w:gz" )
+                history_archive.add( history_attrs_file_name, arcname="history_attrs.txt" )
+                history_archive.add( datasets_attrs_file_name, arcname="datasets_attrs.txt" )
+                for i, dataset in enumerate( datasets ) :
+                    history_archive.add( dataset.file_name, arcname="datasets/%s" % datasets_attrs[i]['file_name'] )
+                history_archive.close()
         
                 # Remove temp directory.
                 if os.path.exists( temp_output_dir ):
@@ -652,14 +643,13 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesHistory 
                 return trans.show_error_message( 'Error creating history archive. ' + str( e ) )
             
         # Stream archive.
-        archive_file_name = '%s/%s.tar.gz' % ( history_export_dir_name, trans.security.encode_id( history.id ) )
-        if os.path.exists( archive_file_name ):
+        if os.path.exists( history_archive_name ):
             valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
             hname = history.name
             hname = ''.join(c in valid_chars and c or '_' for c in hname)[0:150]
             trans.response.headers["Content-Disposition"] = "attachment; filename=Galaxy-History-%s.tar.gz" % ( hname )
             trans.response.set_content_type( 'application/x-gzip' )
-            return open( archive_file_name )
+            return open( history_archive_name )
         else:
             return
     
