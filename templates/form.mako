@@ -55,7 +55,18 @@
     <div class="form" style="margin: 1em">
         <div class="form-title">${form.title}</div>
         <div class="form-body">
-        <form name="${form.name}" action="${form.action}" method="post" >
+        <%
+            has_file_input = False
+            for input in form.inputs:
+                if input.type == 'file':
+                    has_file_input = True
+                    break
+        %>
+        <form name="${form.name}" action="${form.action}" method="post" 
+        %if has_file_input:
+             enctype="multipart/form-data"
+        %endif
+        >
             %for input in form.inputs:
                 <%
                 cls = "form-row"

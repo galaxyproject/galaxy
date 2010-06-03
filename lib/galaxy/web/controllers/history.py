@@ -6,9 +6,10 @@ from galaxy.model.mapping import desc
 from galaxy.model.orm import *
 from galaxy.util.json import *
 from galaxy.util.sanitize_html import sanitize_html
+from galaxy.tools.actions import upload_common
 from galaxy.tags.tag_handler import GalaxyTagHandler
 from sqlalchemy.sql.expression import ClauseElement
-import webhelpers, logging, operator
+import webhelpers, logging, operator, tempfile, subprocess, shutil
 from datetime import datetime
 from cgi import escape
 
@@ -441,6 +442,226 @@ class HistoryController( BaseController, Sharable, UsesAnnotations, UsesHistory 
             self.add_item_annotation( trans, history, new_annotation )
             trans.sa_session.flush()
             return new_annotation
+            
+    @web.expose
+    def import_archive( self, trans, archived_history=None ):
+        """ Import a history. """
+        
+        if archived_history is not None:
+            # Import archived history.
+            try:
+                archive_file = archived_history.file
+            
+                # Unpack archive in temporary directory.
+                temp_output_dir = tempfile.mkdtemp()
+                cmd = "pax -z -r < %s " % archive_file.name
+                temp_stderr_name = tempfile.NamedTemporaryFile( dir=temp_output_dir ).name
+                temp_stderr = open( temp_stderr_name, 'wb' )
+                proc = subprocess.Popen( args=cmd, shell=True, cwd=temp_output_dir, stderr=temp_stderr.fileno() )
+                returncode = proc.wait()
+                temp_stderr.close()
+            
+                # Read history attributes.
+                history_attr_in = open( '%s/%s' % ( temp_output_dir, 'history_attrs.txt'), 'rb' )
+                history_attr_str = ''
+                buffsize = 1048576
+                try:
+                    while True:
+                        history_attr_str += history_attr_in.read( buffsize )
+                        if not history_attr_str or len( history_attr_str ) % buffsize != 0:
+                            break
+                except OverflowError:
+                    pass
+                history_attrs = from_json_string( history_attr_str )
+            
+                # Create history.
+                # TODO: set tags, annotations.
+                new_history = model.History( name='imported: %s' % history_attrs['name'].encode( 'utf-8' ), user=trans.user )
+                trans.sa_session.add( new_history )
+                trans.sa_session.flush()
+                # TODO: Ignore hid_counter for now since it just artificially increases the hid for all the history's HDAs.
+                #new_history.hid_counter = history_attrs['hid_counter']
+                new_history.genome_build = history_attrs['genome_build']
+                trans.sa_session.flush()
+            
+                # Read datasets attributes.
+                datasets_attr_in = open( '%s/%s' % ( temp_output_dir, 'datasets_attrs.txt'), 'rb' )
+                datasets_attr_str = ''
+                buffsize = 1048576
+                try:
+                    while True:
+                        datasets_attr_str += datasets_attr_in.read( buffsize )
+                        if not datasets_attr_str or len( datasets_attr_str ) % buffsize != 0:
+                            break
+                except OverflowError:
+                    pass
+                datasets_attrs = from_json_string( datasets_attr_str )
+            
+                # Create datasets.            
+                for dataset_attrs in datasets_attrs:
+                    metadata = dataset_attrs['metadata']
+                
+                    # Create dataset and HDA.
+                    hda = trans.app.model.HistoryDatasetAssociation( name = dataset_attrs['name'].encode( 'utf-8' ),
+                                                                     extension = dataset_attrs['extension'],
+                                                                     hid = dataset_attrs['hid'],
+                                                                     info = dataset_attrs['info'].encode( 'utf-8' ),
+                                                                     blurb = dataset_attrs['blurb'],
+                                                                     peek = dataset_attrs['peek'],
+                                                                     designation = dataset_attrs['designation'],
+                                                                     visible = dataset_attrs['visible'],
+                                                                     dbkey = metadata['dbkey'],
+                                                                     metadata = metadata, 
+                                                                     history = new_history,
+                                                                     create_dataset = True,
+                                                                     sa_session = trans.sa_session )
+                    hda.state = hda.states.OK
+                    trans.sa_session.add( hda )
+                    trans.sa_session.flush()
+                    new_history.add_dataset( hda, genome_build = None )
+                    permissions = trans.app.security_agent.history_get_default_permissions( new_history )
+                    trans.app.security_agent.set_all_dataset_permissions( hda.dataset, permissions )
+                    trans.sa_session.flush()
+                
+                    # Copy dataset data.
+                    temp_dataset_name = '%s/datasets/%s' % ( temp_output_dir, dataset_attrs['file_name'] )
+                    shutil.copyfile( temp_dataset_name, hda.file_name )
+                
+                    # TODO: set tags, annotations.
+            
+                # Cleanup.
+                if os.path.exists( temp_output_dir ):
+                    shutil.rmtree( temp_output_dir )
+            
+                return trans.show_ok_message( message="History '%s' has been imported. " % history_attrs['name'] )
+            except Exception, e:
+                return trans.show_error_message( 'Error importing history archive. ' + str( e ) )  
+        
+            
+        return trans.show_form( 
+            web.FormBuilder( web.url_for(), "Import a History from an Archive", submit_text="Submit" )
+                .add_input( "file", "Archived History File", "archived_history", value=None, error=None ) 
+                            )
+            
+    @web.expose
+    def export_archive( self, trans, id=None ):
+        """ Export a history. """
+        
+        # Get history to export.
+        if id:
+            history = self.get_history( trans, id, check_ownership=False, check_accessible=True )
+        else:
+            # Use current history.
+            history = trans.history
+        
+        if not history:
+            return trans.show_error_message( "This history does not exist or you cannot export this history." )
+            
+        history_export_dir_name = "./database/export"
+        archive_file_name = '%s/%s.tar.gz' % ( history_export_dir_name, trans.security.encode_id( history.id ) )
+        # TODO: for now, always create archive when exporting; this is for debugging purposes.
+        if True:
+            # Condition for only creating an archive when history is newer than archive:
+            #not os.path.exists ( archive_file_name ) or datetime.utcfromtimestamp( os.path.getmtime( archive_file_name ) ) < history.update_time:
+            
+            # Create archive and stream back to client.
+            
+            # Simple method to convert strings to unicode in utf-8 format. Method should be used for all user input.
+            def unicode_wrangler( a_string ):
+                a_string_type = type ( a_string )
+                if a_string_type is str:
+                    return unicode( a_string, 'utf-8' )
+                elif a_string_type is unicode:
+                    return a_string.encode( 'utf-8' )
+            
+            try:    
+                # Use temporary directory for temp output files.
+                temp_output_dir = tempfile.mkdtemp()
+                
+                # Write history attributes to file.
+                # TODO: include tags, annotations.
+                history_attrs = {
+                    "create_time" : history.create_time.__str__(),
+                    "update_time" : history.update_time.__str__(),
+                    "name" : unicode_wrangler( history.name ),
+                    "hid_counter" : history.hid_counter,
+                    "genome_build" : history.genome_build
+                }
+                history_attrs_file_name = tempfile.NamedTemporaryFile( dir=temp_output_dir ).name
+                history_attrs_out = open( history_attrs_file_name, 'w' )
+                history_attrs_out.write( to_json_string( history_attrs ) )
+                history_attrs_out.close()
+                new_name = '%s/%s' % ( temp_output_dir, "history_attrs.txt" )
+                os.rename( history_attrs_file_name, new_name )
+                history_attrs_file_name = new_name
+                
+                # Write datasets' attributes to file.
+                # TODO: include tags, annotations.
+                datasets = self.get_history_datasets( trans, history )
+                datasets_attrs = []
+                for dataset in datasets:
+                    attribute_dict = {
+                        "create_time" : dataset.create_time.__str__(),
+                        "update_time" : dataset.update_time.__str__(),
+                        "hid" : dataset.hid,
+                        "name" : unicode_wrangler( dataset.name ),
+                        "info" : unicode_wrangler( dataset.info ),
+                        "blurb" : dataset.blurb,
+                        "peek" : dataset.peek,
+                        "extension" : dataset.extension,
+                        "metadata" : dict( dataset.metadata.items() ),
+                        "parent_id" : dataset.parent_id,
+                        "designation" : dataset.designation,
+                        "deleted" : dataset.deleted,
+                        "visible" : dataset.visible,
+                        "file_name" : dataset.file_name.split('/')[-1]
+                    }
+                    datasets_attrs.append( attribute_dict )
+                datasets_attrs_file_name = tempfile.NamedTemporaryFile( dir=temp_output_dir ).name
+                datasets_attrs_out = open( datasets_attrs_file_name, 'w' )
+                datasets_attrs_out.write( to_json_string( datasets_attrs ) )
+                datasets_attrs_out.close()
+                new_name = '%s/%s' % ( temp_output_dir, "datasets_attrs.txt" )
+                os.rename( datasets_attrs_file_name, new_name )
+                datasets_attrs_file_name = new_name
+        
+                # Write temp file with all files to archive. These files are (a) history attributes file; (b) datasets attributes file; and (c)
+                # datasets files.
+                archive_list_file_name = tempfile.NamedTemporaryFile( dir=temp_output_dir ).name
+                archive_list_out = open( archive_list_file_name, 'w' )
+                archive_list_out.write( '%s\n' % history_attrs_file_name )
+                archive_list_out.write( '%s\n' % datasets_attrs_file_name )
+                for dataset in datasets:
+                    archive_list_out.write( '%s\n' % dataset.file_name )
+                archive_list_out.close()
+        
+                # Use 'pax' to create compressed tar archive of history's datasets. -s options uses a regular expression to replace path
+                # information.
+                cmd = "pax -w -s ',.*history_attrs.txt,history_attrs.txt,' -s ',.*datasets_attrs.txt,datasets_attrs.txt,' -s ',/.*/,datasets/,' -x tar -z -f %s.tar.gz < %s" % ( trans.security.encode_id( history.id ), archive_list_file_name )
+                temp_stderr_name = tempfile.NamedTemporaryFile( dir=temp_output_dir ).name
+                temp_stderr = open( temp_stderr_name, 'wb' )
+                proc = subprocess.Popen( args=cmd, shell=True, cwd=history_export_dir_name, stderr=temp_stderr.fileno() )
+                returncode = proc.wait()
+                temp_stderr.close()
+        
+                # Remove temp directory.
+                if os.path.exists( temp_output_dir ):
+                    shutil.rmtree( temp_output_dir )
+                
+            except Exception, e:
+                return trans.show_error_message( 'Error creating history archive. ' + str( e ) )
+            
+        # Stream archive.
+        archive_file_name = '%s/%s.tar.gz' % ( history_export_dir_name, trans.security.encode_id( history.id ) )
+        if os.path.exists( archive_file_name ):
+            valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+            hname = history.name
+            hname = ''.join(c in valid_chars and c or '_' for c in hname)[0:150]
+            trans.response.headers["Content-Disposition"] = "attachment; filename=Galaxy-History-%s.tar.gz" % ( hname )
+            trans.response.set_content_type( 'application/x-gzip' )
+            return open( archive_file_name )
+        else:
+            return
     
     @web.expose
     @web.json
