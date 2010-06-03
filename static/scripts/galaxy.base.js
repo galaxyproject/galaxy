@@ -454,6 +454,15 @@ function init_history_items(historywrapper, noinit, nochanges) {
     }
 }
 
+function commatize( number ) {
+    number += ''; // Convert to string
+    var rgx = /(\d+)(\d{3})/;
+    while (rgx.test(number)) {
+        number = number.replace(rgx, '$1' + ',' + '$2');
+    }
+    return number;
+}
+
 $(document).ready( function() {
     // Links with confirmation
     $( "a[confirm]" ).click( function() {

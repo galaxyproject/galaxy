@@ -32,11 +32,11 @@ ${h.css( "history", "autocomplete_tagging" )}
 <div class="unified-panel-header" unselectable="on">
     <div class="unified-panel-header-inner">Trackster Visualization | ${config['title']}
         <a id="save-button" class="panel-header-button right-float" href="javascript:void(0);">Save</a>
-        <a id="refresh-button" class="panel-header-button right-float" href="javascript:void(0);">Refresh</a>
+        <a id="refresh-button" class="panel-header-button right-float" href="javascript:void(0);" onclick="view.update_options();return false;">Refresh</a>
     </div>
 </div>
 <div id="content">
-    <div id="top-labeltrack"></div>
+    <div id="top-labeltrack" style="position: relative;"></div>
     <div id="viewport-container" style="overflow-x: hidden; overflow-y: auto;">
         <div id="viewport"></div>
     </div>
@@ -63,7 +63,6 @@ ${h.css( "history", "autocomplete_tagging" )}
                     <img src="${h.url_for('/static/images/fugue/magnifier-zoom-out.png')}" />
                 </a>
             </form>
-            <div id="debug" style="float: right"></div>
         </div>
     </div>
 </div>
@@ -146,6 +145,9 @@ ${h.js( 'galaxy.base', 'galaxy.panels', "json2", "jquery", "jquery.event.drag", 
             });
 
             $("#content").bind("mousewheel", function( e, delta ) {
+                if (Math.abs(delta) < 0.5) {
+                    return;
+                }
                 if (delta > 0) {
                     view.zoom_in(e.pageX, $("#viewport-container"));
                 } else {
@@ -166,19 +168,19 @@ ${h.js( 'galaxy.base', 'galaxy.panels', "json2", "jquery", "jquery.event.drag", 
                 this.current_x = e.offsetX;
 
                 var delta_chrom = Math.round(delta / $(document).width() * view.span);
-                view.center += delta_chrom;
+                view.high += delta_chrom;
+                view.low += delta_chrom;
                 view.redraw();
             });
 
             // To adjust the size of the viewport to fit the fixed-height footer
             var refresh = function( e ) {
-                $("#viewport-container").height( $(window).height() - 120 );
+                $("#viewport-container").height( $(window).height() - 100 );
                 $("#nav-container").width( $("#center").width() );
                 view.redraw();
             };
             $(window).bind( "resize", function(e) { refresh(e); } );
-            $("#right-border").bind( "click", function(e) { refresh(e); } );
-            $("#right-border").bind( "dragend", function(e) { refresh(e); } );
+            $("#right-border").bind( "click dragend", function(e) { refresh(e); } );
             $(window).trigger( "resize" );
 
             $("#viewport-container").bind( "dragstart", function( e ) {
@@ -195,8 +197,9 @@ ${h.js( 'galaxy.base', 'galaxy.panels', "json2", "jquery", "jquery.event.drag", 
                 this.current_height = e.clientY;
                 this.current_x = e.offsetX;
 
-                var delta_chrom = Math.round(delta / $(document).width() * (view.high - view.low));
-                view.center -= delta_chrom;
+                var delta_chrom = Math.round(delta / $("#viewport-container").width() * (view.high - view.low));
+                view.high -= delta_chrom;
+                view.low -= delta_chrom;
                 view.redraw();
             });
 
@@ -285,6 +288,35 @@ ${h.js( 'galaxy.base', 'galaxy.panels', "json2", "jquery", "jquery.event.drag", 
             
             view.add_label_track( new LabelTrack( $("#top-labeltrack") ) );
             view.add_label_track( new LabelTrack( $("#nav-labeltrack") ) );
+            
+            $("#top-labeltrack").bind( "dragstart", function(e) {
+                this.drag_origin_x = e.clientX;
+                this.drag_origin_pos = e.clientX / $("#viewport-container").width() * (view.high - view.low) + view.low;
+                this.drag_div = $("<div />").css( { 
+                    "height": $("#viewport-container").height(), "top": "0px", "position": "absolute", 
+                    "background-color": "#cfc", "border": "1px solid #6a6", "opacity": 0.5
+                } ).appendTo( $(this) );
+            }).bind( "drag", function(e) {
+                var min = Math.min(e.clientX, this.drag_origin_x),
+                    max = Math.max(e.clientX, this.drag_origin_x),
+                    span = (view.high - view.low),
+                    width = $("#viewport-container").width();
+                
+                $("#low").val(commatize(Math.round(min / width * span) + view.low));
+                $("#high").val(commatize(Math.round(max / width * span) + view.low));
+                this.drag_div.css( { "left": min + "px", "width": (max - min) + "px" } );
+            }).bind( "dragend", function(e) {
+                var min = Math.min(e.clientX, this.drag_origin_x),
+                    max = Math.max(e.clientX, this.drag_origin_x),
+                    span = (view.high - view.low),
+                    width = $("#viewport-container").width(),
+                    old_low = view.low;
+                    
+                view.low = Math.round(min / width * span) + old_low;
+                view.high = Math.round(max / width * span) + old_low;
+                this.drag_div.remove();
+                view.redraw();
+            });
             
             $.ajax({
                 url: "${h.url_for( action='chroms' )}", 

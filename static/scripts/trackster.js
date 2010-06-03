@@ -1,7 +1,6 @@
 /* Trackster
     2010, James Taylor, Kanwei Li
 */
-var DEBUG = false;
 
 var DENSITY = 200,
     FEATURE_LEVELS = 10,
@@ -36,15 +35,6 @@ left_img_inv.src = "/static/images/visualization/strand_left_inv.png";
 left_img_inv.onload = function() {
     LEFT_STRAND_INV = CONTEXT.createPattern(left_img_inv, "repeat");
 };
-
-function commatize( number ) {
-    number += ''; // Convert to string
-    var rgx = /(\d+)(\d{3})/;
-    while (rgx.test(number)) {
-        number = number.replace(rgx, '$1' + ',' + '$2');
-    }
-    return number;
-}
 
 var Cache = function( num_elements ) {
     this.num_elements = num_elements;
@@ -87,11 +77,11 @@ var View = function( chrom, title, vis_id, dbkey ) {
     this.label_tracks = [];
     this.max_low = 0;
     this.max_high = 0;
-    this.center = (this.max_high - this.max_low) / 2;
-    this.zoom_factor = 3;
-    this.zoom_level = 0;
     this.track_id_counter = 0;
+    this.zoom_factor = 3;
+    this.min_separation = 30;
     this.has_changes = false;
+    this.reset();
 };
 $.extend( View.prototype, {
     add_track: function ( track ) {
@@ -129,27 +119,24 @@ $.extend( View.prototype, {
     reset: function() {
         this.low = this.max_low;
         this.high = this.max_high;
-        this.center = this.center = (this.max_high - this.max_low) / 2;
-        this.zoom_level = 0;
         $(".yaxislabel").remove();
     },        
     redraw: function(nodraw) {
-        this.span = this.max_high - this.max_low;
-        var span = this.span / Math.pow(this.zoom_factor, this.zoom_level),
-            low = this.center - (span / 2),
-            high = low + span;
+        var span = this.high - this.low,
+            low = this.low,
+            high = this.high;
         
-        if (low < 0) {
-            low = 0;
-            high = low + span;
-            
-        } else if (high > this.max_high) {
+        if (low < this.max_low) {
+            low = this.max_low;
+        }
+        if (high > this.max_high) {
             high = this.max_high;
-            low = high - span;
+        }
+        if (span < this.min_separation) {
+            high = low + this.min_separation;
         }
         this.low = Math.floor(low);
         this.high = Math.ceil(high);
-        this.center = Math.round( this.low + (this.high - this.low) / 2 );
         
         // 10^log10(range / DENSITY) Close approximation for browser window, assuming DENSITY = window width
         this.resolution = Math.pow( 10, Math.ceil( Math.log( (this.high - this.low) / 200 ) / Math.LN10 ) );
@@ -157,9 +144,9 @@ $.extend( View.prototype, {
         
         // Overview
         $("#overview-box").css( {
-            left: ( this.low / this.span ) * $("#overview-viewport").width(),
+            left: ( this.low / (this.max_high - this.max_low) ) * $("#overview-viewport").width(),
             // Minimum width for usability
-            width: Math.max( 12, ( ( this.high - this.low ) / this.span ) * $("#overview-viewport").width() )
+            width: Math.max( 12, (this.high - this.low)/(this.max_high - this.max_low) * $("#overview-viewport").width() )
         }).show();
         $("#low").val( commatize(this.low) );
         $("#high").val( commatize(this.high) );
@@ -174,26 +161,29 @@ $.extend( View.prototype, {
             }
         }
     },
-    zoom_in: function ( point, container ) {
-        if (this.max_high === 0 || this.high - this.low < 30) {
+    zoom_in: function (point, container) {
+        if (this.max_high === 0 || this.high - this.low < this.min_separation) {
             return;
         }
-        
-        if ( point ) {
-            this.center = point / container.width() * (this.high - this.low) + this.low;
+        var span = this.high - this.low,
+            cur_center = span / 2 + this.low,
+            new_half = (span / this.zoom_factor) / 2;
+        if (point) {
+            cur_center = point / container.width() * (this.high - this.low) + this.low;
         }
-        this.zoom_level += 1;
+        this.low = Math.round(cur_center - new_half);
+        this.high = Math.round(cur_center + new_half);
         this.redraw();
     },
     zoom_out: function () {
         if (this.max_high === 0) {
             return;
         }
-        if (this.zoom_level <= 0) {
-            this.zoom_level = 0;
-            return;            
-        }
-        this.zoom_level -= 1;
+        var span = this.high - this.low,
+            cur_center = span / 2 + this.low,
+            new_half = (span * this.zoom_factor) / 2;
+        this.low = Math.round(cur_center - new_half);
+        this.high = Math.round(cur_center + new_half);
         this.redraw();
     }
 });
@@ -269,8 +259,6 @@ $.extend( TiledTrack.prototype, Track.prototype, {
             high = this.view.high,
             range = high - low,
             resolution = this.view.resolution;
-            
-        if (DEBUG) { $("#debug").text(resolution + " " + this.view.zoom_res); }
 
         var parent_element = $("<div style='position: relative;'></div>"),
             w_scale = this.content_div.width() / range,
@@ -283,7 +271,7 @@ $.extend( TiledTrack.prototype, Track.prototype, {
         var tile_index = Math.floor( low / resolution / DENSITY );
         while ( ( tile_index * DENSITY * resolution ) < high ) {
             // Check in cache
-            var key = this.content_div.width() + '_' + this.view.zoom_level + '_' + tile_index;
+            var key = this.content_div.width() + '_' + w_scale + '_' + tile_index;
             var cached = this.tile_cache.get(key);
             if ( cached ) {
                 // console.log("cached tile " + tile_index);
