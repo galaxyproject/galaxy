@@ -573,7 +573,7 @@
         $(function(){
             ## Generic error handling
             $(document).ajaxError( function ( e, x ) {
-                console.log( e, x );
+                // console.log( e, x );
                 var message = x.responseText || x.statusText || "Could not connect to server";
                 show_modal( "Server error", message, { "Ignore error" : hide_modal } );
                 return false;
