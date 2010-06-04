@@ -50,12 +50,15 @@
     </inputs>
 
     <outputs>
-        <data format="expr" name="genes_expression" label="${tool.name} on ${on_string}: gene expression"/>
-        <data format="expr" name="transcripts_expression" label="${tool.name} on ${on_string}: transcript expression"/>
+        <data format="tabular" name="genes_expression" label="${tool.name} on ${on_string}: gene expression"/>
+        <data format="tabular" name="transcripts_expression" label="${tool.name} on ${on_string}: transcript expression"/>
         <data format="gtf" name="assembled_isoforms" label="${tool.name} on ${on_string}: assembled transcripts"/>
     </outputs>
 
     <tests>
+        <!--
+            Simple test that uses test data included with cufflinks.
+        -->
         <test>
             <param name="sPaired" value="single"/>
             <param name="input" value="cufflinks_in.sam"/>
@@ -65,12 +68,9 @@
             <param name="pre_mrna_fraction" value="0.05"/>
             <param name="min_map_quality" value="0"/>
             <param name="use_ref" value="No"/>
-            <output name="assembled_isoforms" file="cufflinks_out1.gtf"/>
-            <!--
-            Can't test these right now b/c .expr files aren't recognized. Need to add them?
             <output name="genes_expression" format="tabular" file="cufflinks_out3.expr"/>
             <output name="transcripts_expression" format="tabular" file="cufflinks_out2.expr"/>
-            -->
+            <output name="assembled_isoforms" file="cufflinks_out1.gtf"/>
         </test>
     </tests>
 
